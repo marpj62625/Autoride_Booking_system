@@ -1,0 +1,9 @@
+{
+  "appId": "com.autoride.admin",
+  "appName": "Autoride Admin",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

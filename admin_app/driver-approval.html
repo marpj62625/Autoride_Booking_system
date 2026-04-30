@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Autoride Admin - Driver Approval">
+    <title>Driver Approval - Autoride Admin</title>
+    <link rel="stylesheet" href="driver-approval.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <main class="container">
+        <header class="header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1 style="margin: 0; padding-bottom: 5px;">Driver Approval</h1>
+                <p style="margin: 0; color: #666;">Review and manage driver applications</p>
+            </div>
+            <a href="index.html" style="background:#f3f4f6; color:#111827; padding:8px 16px; border-radius:6px; text-decoration:none; font-weight:600; border:1px solid #d1d5db; display:flex; align-items:center; gap:8px; transition: all 0.2s;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Dashboard
+            </a>
+        </header>
+
+        <section class="wage-settings" style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <label for="wageInput" style="font-weight: 600;">Default Driver Wage (₱/day):</label>
+            <input type="number" id="wageInput" style="padding: 8px; width: 120px; border: 1px solid #ddd; border-radius: 4px;">
+            <button id="saveWageBtn" type="button" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">Save Wage</button>
+        </section>
+
+        <section class="toolbar">
+            <input id="searchInput" type="text" placeholder="Search by name, license, or contact">
+            <select id="statusFilter">
+                <option value="all">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+            <button id="refreshBtn" type="button">Refresh</button>
+        </section>
+
+        <section class="table-wrap">
+            <table id="driversTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>License Number</th>
+                        <th>Contact Info</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="driversBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty hidden">No driver applications found.</div>
+            <div id="loadingState" class="loading">Loading driver applications...</div>
+        </section>
+    </main>
+
+    <script src="driver-approval.js"></script>
+</body>
+</html>

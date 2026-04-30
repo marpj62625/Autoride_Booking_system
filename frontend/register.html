@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Autoride</title>
+    <!-- Add Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="config.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+            <!-- <a href="login.html?redirect=driver_portal/apply.html" class="btn-outline" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; width: auto;">Apply as Driver</a> -->
+        </nav>
+    </header>
+
+    <div class="auth-container" id="authContainer">
+        <a href="vehicles.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 1.5rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Dashboard
+        </a>
+        
+        <!-- STEP 1: Registration Form -->
+        <div class="auth-form-step" id="stepRegistration">
+            <h2 style="font-size: 1.75rem; margin-bottom: 1.5rem;">Create an Account</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" class="form-input" required placeholder="John Doe">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Gmail Address</label>
+                    <input type="email" id="email" class="form-input" required placeholder="example@gmail.com">
+                    <div id="domainWarning" class="domain-warning">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        Please use a @gmail.com address
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-input" required placeholder="••••••••">
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem; border: 1px dashed var(--border-color); padding: 1rem; border-radius: 8px;">
+                    <label style="margin-bottom: 5px;">Driver's License (Optional)</label>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Upload now to skip verification during checkout.</p>
+                    <input type="file" id="license" name="license" class="form-input" accept="image/*" style="font-size: 0.8rem; padding: 0.5rem;">
+                </div>
+                
+                <button type="submit" class="btn" id="regBtn">Register</button>
+            </form>
+        </div>
+
+        <!-- STEP 2: Email Verification -->
+        <div class="verification-step" id="stepVerification">
+            <h2 style="font-size: 1.75rem; margin-bottom: 1rem;">Verify Your Email</h2>
+            <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; font-size: 0.95rem;">
+                We've sent a 6-digit code to <strong id="displayEmail" style="color: var(--text-main);"></strong>.<br>
+                Please check your **Terminal Console** for the code.
+            </p>
+            
+            <div class="otp-input-group">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+            </div>
+
+            <button type="button" class="btn" id="verifyBtn">Verify & Complete</button>
+            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
+                <a href="#" onclick="location.reload()" style="color: var(--primary-color); text-decoration: none;">Try again with another email</a>
+            </p>
+        </div>
+        
+        <div id="message" style="text-align:center; margin-top: 1.5rem; font-weight: 500;"></div>
+
+        <div class="auth-links" id="authLinks" style="margin-top: 2rem; text-align:center; font-size: 0.95rem;">
+            <p style="color: var(--text-muted);">Already have an account? <a href="login.html" style="color: var(--primary-color); font-weight: 600;">Log in here</a></p>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectParam = urlParams.get('redirect') ? '?redirect=' + encodeURIComponent(urlParams.get('redirect')) : '';
+        
+        const emailInput = document.getElementById('email');
+        const domainWarning = document.getElementById('domainWarning');
+        const regForm = document.getElementById('registerForm');
+        const messageEl = document.getElementById('message');
+        const authContainer = document.getElementById('authContainer');
+        const displayEmail = document.getElementById('displayEmail');
+
+        // Real-time gmail validation
+        emailInput.addEventListener('input', () => {
+            const val = emailInput.value;
+            if (val && !val.toLowerCase().endsWith('@gmail.com')) {
+                domainWarning.style.display = 'flex';
+                emailInput.classList.add('input-invalid');
+            } else {
+                domainWarning.style.display = 'none';
+                emailInput.classList.remove('input-invalid');
+            }
+        });
+
+        // OTP Input Auto-focus
+        const digits = document.querySelectorAll('.otp-digit');
+        digits.forEach((d, idx) => {
+            d.addEventListener('input', (e) => {
+                if (e.target.value && idx < digits.length - 1) {
+                    digits[idx + 1].focus();
+                }
+            });
+            d.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                    digits[idx - 1].focus();
+                }
+            });
+        });
+
+        let registeredEmail = "";
+
+        regForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const licenseFile = document.getElementById('license').files[0];
+            
+            if (!email.toLowerCase().endsWith('@gmail.com')) {
+                messageEl.textContent = 'Only @gmail.com addresses are allowed.';
+                messageEl.style.color = 'var(--error)';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('email', email);
+            formData.append('password', password);
+            if (licenseFile) formData.append('license', licenseFile);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/register`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.verification_required) {
+                    registeredEmail = email;
+                    displayEmail.textContent = email;
+                    authContainer.classList.add('verification-active');
+                    messageEl.textContent = '';
+                } else {
+                    messageEl.textContent = 'Error: ' + (data.error || 'Failed to register');
+                    messageEl.style.color = 'var(--error)';
+                }
+            } catch (err) {
+                messageEl.textContent = 'Server connection error.';
+                messageEl.style.color = 'var(--error)';
+            }
+        });
+
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            const otp = Array.from(digits).map(d => d.value).join('');
+            if (otp.length < 6) {
+                messageEl.textContent = 'Please enter all 6 digits.';
+                messageEl.style.color = 'var(--error)';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: registeredEmail, otp })
+                });
+
+                if (response.ok) {
+                    messageEl.textContent = 'Email verified! Redirecting to login...';
+                    messageEl.style.color = 'var(--success)';
+                    setTimeout(() => {
+                        window.location.href = 'login.html' + redirectParam;
+                    }, 2000);
+                } else {
+                    const data = await response.json();
+                    messageEl.textContent = 'Error: ' + data.error;
+                    messageEl.style.color = 'var(--error)';
+                }
+            } catch (err) {
+                messageEl.textContent = 'Verification error.';
+                messageEl.style.color = 'var(--error)';
+            }
+        });
+    </script>
+    <script src="chat.js"></script>
+</body>
+</html>

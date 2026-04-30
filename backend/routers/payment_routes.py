@@ -1,0 +1,138 @@
+from flask import Blueprint, request, jsonify
+from database import get_cursor, commit_db
+
+payment_bp = Blueprint('payment', __name__)
+
+@payment_bp.route('/payment', methods=['POST'])
+def process_payment():
+    """Process a payment and update the corresponding booking status."""
+    try:
+        # Support both JSON and FormData (as checkout.html uses FormData for /payment)
+        if request.is_json:
+            data = request.json
+        else:
+            data = request.form
+
+        booking_id = data.get('booking_id')
+        amount = data.get('amount')
+        method = data.get('method', 'Credit Card')
+        reference_number = data.get('reference_number')
+
+        if not booking_id:
+            return jsonify({"error": "booking_id is required"}), 400
+
+        cur = get_cursor()
+
+        # 1. Insert into payments table
+        cur.execute("""
+            INSERT INTO payments (booking_id, amount, method, reference_number, status)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        """, (booking_id, amount, method, reference_number, 'Completed'))
+        
+        payment_id = cur.fetchone()['id']
+
+        # 2. Get booking details for points processing
+        cur.execute("SELECT user_id, applied_coupon_id, points_redeemed, points_earned FROM bookings WHERE id = %s", (booking_id,))
+        booking = cur.fetchone()
+
+        if booking:
+            user_id = booking['user_id']
+            redeemed = booking['points_redeemed'] or 0
+            earned = booking['points_earned'] or 0
+            coupon_id = booking['applied_coupon_id']
+
+            # Update User Loyalty Points (Redeem + Earn)
+            # Logic: New Points = Current + Earned - Redeemed
+            cur.execute("""
+                UPDATE users 
+                SET loyalty_points = loyalty_points + %s - %s 
+                WHERE id = %s
+            """, (earned, redeemed, user_id))
+
+            # Update Coupon usage count if applicable
+            if coupon_id:
+                cur.execute("UPDATE coupons SET times_used = times_used + 1 WHERE id = %s", (coupon_id,))
+
+        # 3. Update booking status to 'Confirmed' and payment_status to 'Paid' or 'Partially Paid'
+        cur.execute("SELECT payment_type FROM bookings WHERE id = %s", (booking_id,))
+        booking_info = cur.fetchone()
+        new_payment_status = 'Paid'
+        if booking_info and booking_info['payment_type'] == 'Downpayment':
+            new_payment_status = 'Partially Paid'
+
+        cur.execute("""
+            UPDATE bookings 
+            SET status = 'Confirmed', payment_status = %s
+            WHERE id = %s
+        """, (new_payment_status, booking_id,))
+
+        # 4. Update vehicle status to 'Booked'
+        cur.execute("""
+            UPDATE vehicles 
+            SET status = 'Booked' 
+            WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)
+        """, (booking_id,))
+
+        commit_db()
+
+        print(f"DEBUG: Payment received for booking {booking_id}. Payment ID: {payment_id}")
+        return jsonify({
+            "message": "Payment successful",
+            "payment_id": payment_id,
+            "status": "Confirmed"
+        }), 200
+
+    except Exception as e:
+        print(f"PAYMENT ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@payment_bp.route('/api/bookings/<int:booking_id>/pay-balance', methods=['POST'])
+def pay_balance(booking_id):
+    """Process remaining balance payment via customer app."""
+    try:
+        data = request.json if request.is_json else request.form
+        amount = data.get('amount')
+        method = data.get('method', 'Credit Card')
+        reference_number = data.get('reference_number')
+
+        cur = get_cursor()
+        
+        # Verify booking status and balance
+        cur.execute("SELECT id, payment_status, balance_amount, amount_paid FROM bookings WHERE id = %s", (booking_id,))
+        booking = cur.fetchone()
+        
+        if not booking:
+            return jsonify({"error": "Booking not found"}), 404
+            
+        if booking['payment_status'] != 'Partially Paid' or float(booking['balance_amount'] or 0) <= 0:
+            return jsonify({"error": "No balance to pay or booking already fully paid."}), 400
+
+        # Insert into payments table
+        cur.execute("""
+            INSERT INTO payments (booking_id, amount, method, reference_number, status)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        """, (booking_id, amount, method, reference_number, 'Completed'))
+        payment_id = cur.fetchone()['id']
+
+        # Update booking amounts and status
+        new_amount_paid = float(booking['amount_paid'] or 0) + float(amount)
+        cur.execute("""
+            UPDATE bookings 
+            SET amount_paid = %s, balance_amount = 0, payment_status = 'Paid'
+            WHERE id = %s
+        """, (new_amount_paid, booking_id))
+        
+        commit_db()
+        print(f"DEBUG: Balance Payment received for booking {booking_id}. Payment ID: {payment_id}")
+        
+        return jsonify({
+            "message": "Balance paid successfully",
+            "payment_id": payment_id,
+            "status": "Paid"
+        }), 200
+
+    except Exception as e:
+        print(f"BALANCE PAYMENT ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500

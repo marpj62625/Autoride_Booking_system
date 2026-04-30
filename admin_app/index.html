@@ -1,0 +1,3961 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoride Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --surface: #1e293b;
+            --primary: #6366f1;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --radius: 12px;
+        }
+
+        .hidden { display: none !important; }
+
+        #adminLoginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            z-index: 20000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card {
+            background: var(--surface);
+            padding: 3rem;
+            border-radius: var(--radius);
+            width: 400px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .login-card h1 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #818cf8, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: white;
+            margin-bottom: 1rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+        }
+
+        .revenue-restricted {
+            display: none;
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        /* ============================================================
+           CONSOLIDATED AUTORIDE ADMIN STYLES
+           ============================================================ */
+
+        :root {
+            --bg-primary: #0b0f1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-glass: rgba(255, 255, 255, 0.04);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.35);
+            --green: #22c55e;
+            --green-bg: rgba(34, 197, 94, 0.12);
+            --amber: #f59e0b;
+            --amber-bg: rgba(245, 158, 11, 0.12);
+            --red: #ef4444;
+            --red-bg: rgba(239, 68, 68, 0.12);
+            --blue: #3b82f6;
+            --blue-bg: rgba(59, 130, 246, 0.12);
+            --sidebar-w: 260px;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.25s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ---------- CUSTOM SCROLLBARS ---------- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ---------- SIDEBAR / DRAWER ---------- */
+        .side-drawer {
+            position: fixed;
+            top: 0;
+            left: 0; /* Always visible on desktop */
+            width: var(--sidebar-w);
+            height: 100%;
+            background: #0f172a;
+            z-index: 5001;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-glass);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .brand-icon {
+            font-size: 28px;
+        }
+
+        .sidebar-brand h1 {
+            font-size: 20px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-tag {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: var(--accent);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all var(--transition);
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .nav-link:hover {
+            background: var(--bg-glass);
+            color: var(--text-primary);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(99, 102, 241, 0.06));
+            color: #c7d2fe;
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .nav-icon {
+            font-size: 18px;
+        }
+
+        .sidebar-footer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .admin-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .admin-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .admin-role {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* Responsive Overlay */
+        .drawer-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 5000;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .drawer-header {
+            padding: 30px 20px;
+            border-bottom: 1px solid var(--border-glass);
+            background: linear-gradient(to bottom right, rgba(99,102,241,0.1), transparent);
+        }
+
+        .drawer-content {
+            flex: 1;
+            padding: 20px 10px;
+            overflow-y: auto;
+        }
+
+        .drawer-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px 20px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .drawer-item:hover {
+            background: rgba(255,255,255,0.03);
+            color: white;
+        }
+
+        .drawer-item.active {
+            background: rgba(99,102,241,0.1);
+            color: white;
+        }
+
+        .drawer-item.active i { color: var(--accent); }
+
+        .burger-btn {
+            display: none; /* Hidden on desktop */
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            color: white;
+            padding: 10px;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-right: 15px;
+            transition: var(--transition);
+        }
+
+        .burger-btn:hover {
+            background: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        @media (max-width: 1024px) {
+            .side-drawer { left: -280px; } /* Hide drawer on mobile */
+            .main-content { margin-left: 0; padding: 20px; padding-top: 80px; }
+            .header { padding-left: 10px; }
+            .burger-btn { display: flex; } /* Show burger on mobile */
+        }
+
+        /* Settings Card Profile */
+        .profile-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        /* ---------- MAIN CONTENT ---------- */
+        .main-content {
+            margin-left: var(--sidebar-w); /* Space for persistent sidebar on desktop */
+            flex: 1;
+            padding: 28px 32px 40px;
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* ---------- HEADER ---------- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .header-time {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ---------- TABS ---------- */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border-glass);
+            overflow-x: auto;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all var(--transition);
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+            background: var(--bg-glass);
+        }
+
+        .tab-button.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ---------- TAB CONTENT ---------- */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ---------- CARDS & FORMS ---------- */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .card h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .grid.full {
+            grid-template-columns: 1fr;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-glass);
+            background: rgba(15, 23, 42, 0.6);
+            color: var(--text-primary);
+            padding: 10px 12px;
+            font-size: 14px;
+            transition: all var(--transition);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* ---------- BUTTONS ---------- */
+        button {
+            font-family: inherit;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #5558dd;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-glass);
+            color: var(--text-primary);
+            border-color: var(--border-glass);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-success {
+            background: var(--green);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: var(--red);
+            color: #fff;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        /* ---------- TABLE ---------- */
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tr {
+            transition: all 0.2s ease;
+        }
+
+        tr:hover {
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.08), transparent);
+            transform: scale(1.002);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        /* ---------- PILLS & BADGES ---------- */
+        .pill {
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            text-transform: capitalize;
+        }
+
+        .pill.available {
+            color: var(--green);
+            background: var(--green-bg);
+        }
+
+        .pill.unavailable {
+            color: var(--red);
+            background: var(--red-bg);
+        }
+
+        .pill.pending {
+            color: var(--amber);
+            background: var(--amber-bg);
+        }
+
+        .pill.approved {
+            color: var(--green);
+            background: var(--green-bg);
+        }
+
+        .pill.rejected {
+            color: var(--red);
+            background: var(--red-bg);
+        }
+
+        .pill.confirmed {
+            color: var(--blue);
+            background: var(--blue-bg);
+        }
+
+        .pill.picked\ up {
+            color: var(--amber);
+            background: var(--amber-bg);
+        }
+
+        .pill.completed {
+            color: var(--green);
+            background: var(--green-bg);
+        }
+
+        .pill.cancelled {
+            color: #64748b;
+            background: rgba(100, 116, 139, 0.12);
+        }
+
+        .pill.paid {
+            color: var(--green);
+            background: var(--green-bg);
+            font-size: 10px;
+        }
+
+        .pill.refund\ pending {
+            color: var(--red);
+            background: var(--red-bg);
+            font-size: 10px;
+        }
+
+        .pill.refunded {
+            color: var(--blue);
+            background: var(--blue-bg);
+            font-size: 10px;
+        }
+
+        /* ---------- TOOLBAR ---------- */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        /* ---------- STATS ---------- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.05));
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .stat-content h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stat-trend {
+            font-size: 12px;
+            color: var(--green);
+        }
+
+        .stat-trend.down {
+            color: var(--red);
+        }
+
+        /* ---------- STATES ---------- */
+        .empty,
+        .loading {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border-glass);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+        @media (max-width: 768px) {
+            body {
+                display: block;
+                overflow-y: auto;
+            }
+
+            /* Note: We use the drawer on mobile now, so bottom sidebar is not needed */
+            
+            .main-content {
+                margin-left: 0;
+                margin-top: 0;
+                margin-bottom: 0;
+                padding: 16px;
+                padding-top: 80px;
+                overflow-y: visible;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .tabs-container {
+                overflow-x: auto;
+            }
+        }
+
+        /* ---------- SUPPORT & INSTRUCTIONS ---------- */
+        .ticket-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .ticket-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .ticket-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .ticket-message {
+            background: rgba(15, 23, 42, 0.4);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--accent);
+            white-space: pre-wrap;
+            color: var(--text-primary);
+        }
+
+        .reply-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .admin-reply-view {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--blue);
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        /* ---------- FINAL POLISH & ANIMATIONS ---------- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+            transition: transform var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .stat-card {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.03));
+        }
+
+        /* GPS Placeholder Styles */
+        .gps-map-placeholder {
+            width: 100%;
+            height: 500px;
+            background: #0f172a;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-glass);
+            margin-top: 20px;
+        }
+
+        .gps-map-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(#1e293b 2px, transparent 2px);
+            background-size: 30px 30px;
+            opacity: 0.3;
+        }
+
+        .gps-grid {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .gps-device-item {
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .gps-device-item:hover,
+        .gps-device-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: var(--accent);
+        }
+
+        .gps-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .gps-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #64748b;
+        }
+
+        .active .gps-dot {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+    </style>
+    <!-- Add Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Toast Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .notification {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-glass);
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+            min-width: 280px;
+        }
+
+        .notification.show { transform: translateX(0); }
+        .notification.success { border-left: 4px solid var(--green); }
+        .notification.error { border-left: 4px solid var(--red); }
+        .notification.info { border-left: 4px solid var(--blue); }
+
+        .notification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .success .notification-icon { background: var(--green-bg); color: var(--green); }
+        .error .notification-icon { background: var(--red-bg); color: var(--red); }
+        .info .notification-icon { background: var(--blue-bg); color: var(--blue); }
+    </style>
+</head>
+
+<body onload="updateClock(); setInterval(updateClock, 1000);">
+    <div id="notificationContainer" style="position: fixed; top: 20px; right: 20px; z-index: 100000; display: flex; flex-direction: column; gap: 10px;"></div>
+    <!-- Side Drawer (Mobile & Desktop Toggle) -->
+
+    <!-- Side Drawer (Mobile & Desktop Toggle) -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
+    <div class="side-drawer" id="sideDrawer">
+        <div class="drawer-header">
+            <div class="sidebar-brand">
+                <span class="brand-icon">🚗</span>
+                <h1>Autoride</h1>
+                <span class="brand-tag">Admin</span>
+            </div>
+        </div>
+        <div class="drawer-content">
+            <button class="drawer-item active" data-tab="dashboard" onclick="switchTab('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+            <button class="drawer-item" data-tab="vehicles" onclick="switchTab('vehicles')"><i class="fas fa-car"></i> Vehicles</button>
+            <!-- <button class="drawer-item" data-tab="drivers" onclick="switchTab('drivers')"><i class="fas fa-id-card"></i> Drivers</button> -->
+            <button class="drawer-item" data-tab="bookings" onclick="switchTab('bookings')"><i class="fas fa-calendar-check"></i> Bookings</button>
+            <button class="drawer-item" data-tab="gps" onclick="switchTab('gps')"><i class="fas fa-map-marker-alt"></i> GPS Tracking</button>
+            <button class="drawer-item" data-tab="verifications" onclick="switchTab('verifications')"><i class="fas fa-user-shield"></i> Verifications</button>
+            <button class="drawer-item" data-tab="reports" onclick="switchTab('reports')"><i class="fas fa-chart-pie"></i> Reports</button>
+            <button class="drawer-item" data-tab="support" onclick="switchTab('support')"><i class="fas fa-headset"></i> Support</button>
+            <button class="drawer-item" data-tab="instructions" onclick="switchTab('instructions')"><i class="fas fa-info-circle"></i> Instructions</button>
+            <button class="drawer-item revenue-restricted" data-tab="staff" onclick="switchTab('staff')"><i class="fas fa-users-cog"></i> Staff</button>
+            <div style="border-top: 1px solid var(--border-glass); margin: 15px 10px; padding-top: 15px;">
+                <button class="drawer-item" data-tab="activity" onclick="switchTab('activity')"><i class="fas fa-history"></i> Activity Log</button>
+                <button class="drawer-item" data-tab="settings" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</button>
+            </div>
+        </div>
+        <!-- Admin Info in Drawer Footer -->
+        <div class="sidebar-footer" style="padding: 20px; border-top: 1px solid var(--border-glass); background: rgba(0,0,0,0.2);">
+            <div class="admin-avatar" id="adminAvatar">A</div>
+            <div class="admin-info" style="flex: 1; margin-left: 12px;">
+                <div class="admin-name" id="adminName" style="font-weight: 600; font-size: 0.9rem;">Admin User</div>
+                <div class="admin-role" id="adminRole" style="font-size: 0.75rem; color: var(--text-muted);">Admin</div>
+            </div>
+            <button onclick="adminAuth.logout()" style="background: none; border: 1px solid var(--border-glass); color: var(--text-muted); cursor: pointer; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Login Overlay -->
+    <div id="adminLoginOverlay">
+        <div class="login-card">
+            <h1>Autoride Admin</h1>
+            <input type="email" id="loginEmail" class="login-input" placeholder="Admin Email">
+            <input type="password" id="loginPass" class="login-input" placeholder="Password">
+            <button class="btn-primary" onclick="adminAuth.login()" style="width: 100%;">Login to Dashboard</button>
+            <p id="loginError" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem;"></p>
+        </div>
+    </div>
+
+    <!-- Static Sidebar Removed (Using Burger Menu + Drawer) -->
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+        <div class="header">
+            <button class="burger-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
+            <h1>Admin Dashboard</h1>
+            <div class="header-time" id="headerTime"></div>
+        </div>
+
+        <!-- ========== TAB: DASHBOARD ========== -->
+        <div id="dashboard" class="tab-content active">
+
+            <div class="stats-grid">
+                <div class="stat-card revenue-restricted" id="revenueCard">
+                    <div class="stat-content">
+                        <h3>Total Revenue</h3>
+                        <p class="stat-value" id="dashTotalRevenue">₱0.00</p>
+                    </div>
+                    <span class="nav-icon">💰</span>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3>Fleet Utilization</h3>
+                        <p class="stat-value" id="dashTotalBookings">0</p>
+                        <small style="color: var(--text-secondary)">Total Bookings</small>
+                    </div>
+                    <span class="nav-icon">📅</span>
+                </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 20px; gap: 20px;">
+                <div class="card" style="min-height: 400px; grid-column: span 2;">
+                    <h2 style="margin-bottom: 20px; font-size: 1.25rem; color: #60a5fa;">Revenue Performance (Last 30
+                        Days)</h2>
+                    <div style="height: 320px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="min-height: 400px;">
+                    <h2 style="margin-bottom: 20px; font-size: 1.25rem; color: #60a5fa;">Fleet Health</h2>
+                    <div style="height: 320px;">
+                        <canvas id="fleetChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid" style="grid-template-columns: 1fr 2fr; margin-top: 20px; gap: 20px;">
+                <div class="card" style="min-height: 400px;">
+                    <h2 style="margin-bottom: 20px; font-size: 1.25rem; color: #60a5fa;">User Verifications</h2>
+                    <div style="height: 320px;">
+                        <canvas id="userStatsChart"></canvas>
+                    </div>
+                </div>
+                <div class="card" style="min-height: 400px;">
+                    <h2 style="margin-bottom: 20px; font-size: 1.25rem; color: #60a5fa;">Top Grossing Vehicles</h2>
+                    <div class="table-wrap">
+                        <table style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle Details</th>
+                                    <th>Bookings</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topVehiclesBody">
+                                <tr>
+                                    <td colspan="3" class="loading">Analyzing data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="vehicles" class="tab-content">
+            <div class="toolbar" style="margin-bottom: 1.5rem;">
+                <button class="btn-primary" onclick="Vehicles.openModal()">+ Add New Vehicle</button>
+            </div>
+
+            <!-- Vehicle Modal -->
+            <div id="vehicleModal" class="modal">
+                <div class="modal-content">
+                    <h2 id="vehicleFormTitle">Add New Vehicle</h2>
+                    <form id="vehicleForm">
+                        <div class="grid">
+                            <label>
+                                Brand
+                                <select id="vehicleBrand" required onchange="Vehicles.updateModels()">
+                                    <option value="">Select Brand</option>
+                                    <option value="Toyota">Toyota</option>
+                                    <option value="Mitsubishi">Mitsubishi</option>
+                                    <option value="Nissan">Nissan</option>
+                                    <option value="Honda">Honda</option>
+                                    <option value="Hyundai">Hyundai</option>
+                                    <option value="Ford">Ford</option>
+                                    <option value="Suzuki">Suzuki</option>
+                                    <option value="Isuzu">Isuzu</option>
+                                </select>
+                            </label>
+                            <label>
+                                Model
+                                <select id="vehicleModel" required>
+                                    <option value="">Select Brand First</option>
+                                </select>
+                            </label>
+                            <label>
+                                Plate Number
+                                <input id="vehiclePlate" type="text" required placeholder="ABC-1234">
+                            </label>
+                            <label>
+                                Vehicle Type
+                                <select id="vehicleType" required>
+                                    <option value="">Select type</option>
+                                    <option value="Sedan">Sedan</option>
+                                    <option value="SUV">SUV</option>
+                                    <option value="Van">Van</option>
+                                    <option value="Hatchback">Hatchback</option>
+                                </select>
+                            </label>
+                            <label>
+                                Transmission
+                                <select id="vehicleTransmission" required>
+                                    <option value="Manual">Manual</option>
+                                    <option value="Automatic">Automatic</option>
+                                </select>
+                            </label>
+                            <label>
+                                Fuel Type
+                                <select id="vehicleFuelType" required>
+                                    <option value="Diesel">Diesel</option>
+                                    <option value="Gasoline">Gasoline</option>
+                                </select>
+                            </label>
+                            <label>
+                                Seats
+                                <select id="vehicleSeats" required>
+                                    <option value="4">4 Seats</option>
+                                    <option value="5">5 Seats</option>
+                                    <option value="7">7 Seats</option>
+                                    <option value="10">10 Seats</option>
+                                    <option value="12">12 Seats</option>
+                                </select>
+                            </label>
+                            <label>
+                                Daily Rate (₱)
+                                <input id="vehicleRate" type="number" min="0" step="100" required>
+                            </label>
+                            <label>
+                                Location
+                                <select id="vehicleLocation" required>
+                                    <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
+                                    <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
+                                </select>
+                            </label>
+                            <label>
+                                Status
+                                <select id="vehicleStatus" required>
+                                    <option value="Available">Available</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                    <option value="Repair">Repair</option>
+                                </select>
+                            </label>
+                            <div id="existingGallery" class="grid full hidden" style="margin-top: 1rem; margin-bottom: 1.5rem;">
+                                <label style="margin-bottom: 0.8rem; display: block; font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">Manage Existing Images (Use arrows to reorder)</label>
+                                <div id="galleryManager" style="display: flex; gap: 1.2rem; overflow-x: auto; padding: 1.2rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); border-radius: 12px; min-height: 120px;">
+                                    <!-- Images with controls will be here -->
+                                </div>
+                            </div>
+                            <label class="grid full">
+                                Vehicle Images (Select multiple)
+                                <input id="vehicleGallery" type="file" accept="image/*" multiple style="background: var(--surface-hover); border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 8px; width: 100%; color: var(--text-primary);">
+                            </label>
+                            <label class="grid full">
+                                Image URL Fallback (optional)
+                                <input id="vehicleImage" type="url" placeholder="https://example.com/car.jpg">
+                            </label>
+                        </div>
+                        <div class="actions" style="justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                            <button type="button" class="btn-secondary" onclick="Vehicles.closeModal()">Cancel</button>
+                            <button id="vehicleSubmitBtn" type="submit" class="btn-primary">Save Vehicle</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Vehicles List</h2>
+                <div class="toolbar">
+                    <input id="vehicleSearchInput" type="text" placeholder="Search vehicles...">
+                    <button class="btn-secondary btn-small" onclick="Vehicles.refresh()">Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="vehiclesTable" class="hidden">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Plate</th>
+                                <th>Model</th>
+                                <th>Rate</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehiclesBody"></tbody>
+                    </table>
+                    <div id="vehiclesEmpty" class="empty">No vehicles found.</div>
+                    <div id="vehiclesLoading" class="loading">Loading vehicles...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- <div id="drivers" class="tab-content">
+            <div class="card" style="margin-bottom: 25px; background: rgba(99, 102, 241, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(99, 102, 241, 0.2); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent);"></div>
+                <h2 style="color: #60a5fa; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-coins"></i> Driver Wage Settings
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 20px;">Set the default earnings rate for all approved drivers in the platform.</p>
+                <div class="toolbar" style="align-items: center; gap: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px;">
+                    <label style="flex-direction: row; align-items: center; gap: 10px; margin: 0; font-size: 14px; width: auto; flex: 1;">
+                        <strong style="color: var(--text-primary);">Default Wage:</strong>
+                        <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="min-width: 250px; background: rgba(0,0,0,0.3); border-color: var(--border);">
+                    </label>
+                    <button class="btn-primary" id="saveWageBtn" style="min-width: 150px;">Apply Settings</button>
+                </div>
+                <div id="wageStatusMsg" style="margin-top: 10px; font-size: 13px;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Driver Applications</h2>
+                <div class="toolbar">
+                    <input id="driverSearchInput" type="text" placeholder="Search by name, license, or contact...">
+                    <select id="driverStatusFilter">
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+                    <button class="btn-secondary btn-small" onclick="Drivers.refresh()">Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="driversTable" class="hidden">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>License #</th>
+                                <th>Contact</th>
+                                <th>License Doc</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driversBody"></tbody>
+                    </table>
+                    <div id="driversEmpty" class="empty">No driver applications found.</div>
+                    <div id="driversLoading" class="loading">Loading drivers...</div>
+                </div>
+            </div>
+        </div> -->
+
+        <!-- ========== TAB: BOOKINGS ========== -->
+        <div id="bookings" class="tab-content">
+            <div class="card">
+                <h2>Bookings Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3>Total Bookings</h3>
+                            <div class="stat-value" id="statTotal">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3>Confirmed</h3>
+                            <div class="stat-value" id="statConfirmed">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3>Pending</h3>
+                            <div class="stat-value" id="statPending">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <h3>Cancelled</h3>
+                            <div class="stat-value" id="statCancelled">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Bookings List</h2>
+                <div class="toolbar">
+                    <input id="bookingSearchInput" type="text" placeholder="Search bookings...">
+                    <select id="bookingStatusFilter">
+                        <option value="all">All Statuses</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                    <button class="btn-secondary btn-small" onclick="Bookings.refresh()">Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="bookingsTable" class="hidden">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>User</th>
+                                <th>Vehicle</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Payment</th>
+                                <!-- <th>Driver</th> -->
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsBody"></tbody>
+                    </table>
+                    <div id="bookingsEmpty" class="empty">No bookings found.</div>
+                    <div id="bookingsLoading" class="loading">Loading bookings...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: REPORTS ========== -->
+        <div id="reports" class="tab-content">
+            <div class="card">
+                <h2>Analytics & Reports</h2>
+                <div class="toolbar">
+                    <input id="reportDate" type="date">
+                    <select id="reportPeriod">
+                        <option value="daily">Daily</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                    <button class="btn-primary btn-small" onclick="Reports.generate()">Generate Report</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3>Total Bookings</h3>
+                        <div class="stat-value" id="reportTotalBookings">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3>Total Revenue</h3>
+                        <div class="stat-value" id="reportTotalRevenue">₱0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3>Average Revenue</h3>
+                        <div class="stat-value" id="reportAvgRevenue">₱0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3>Active Vehicles</h3>
+                        <div class="stat-value" id="reportActiveVehicles">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Revenue Chart</h2>
+                <canvas id="revenueChart"></canvas>
+            </div>
+
+            <div class="card">
+                <h2>Top Vehicles</h2>
+                <div class="table-wrap">
+                    <table id="topVehiclesTable" class="hidden">
+                        <thead>
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Bookings</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topVehiclesBody"></tbody>
+                    </table>
+                    <div id="topVehiclesEmpty" class="empty">No data available.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: SUPPORT ========== -->
+        <div id="support" class="tab-content">
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="margin: 0; color: #60a5fa;">Customer Support Center</h2>
+                    <button class="btn-secondary btn-small" onclick="fetchTickets()">↻ Refresh</button>
+                </div>
+                <div id="loadingMsg" class="loading" style="display: none;">Loading tickets...</div>
+                <div class="ticket-list" id="ticketList"></div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: VERIFICATIONS ========== -->
+        <div id="verifications" class="tab-content">
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="margin: 0; color: #60a5fa;">User ID Verifications</h2>
+                    <button class="btn-secondary btn-small" onclick="Verifications.refresh()">↻ Refresh</button>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Review uploaded driver's licenses and
+                    verify user accounts to grant booking privileges.</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>License Image</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="verificationsTableBody">
+                            <tr>
+                                <td colspan="5" class="loading">Loading verifications...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: INSTRUCTIONS ========== -->
+        <div id="instructions" class="tab-content">
+            <div class="card" style="margin-bottom: 25px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2);">
+                <h2 style="color: #60a5fa; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-plus-circle"></i> Add New Instruction
+                </h2>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <input type="text" id="newInstruction" placeholder="e.g. Bring 2 valid IDs upon pickup."
+                        style="flex: 1; background: rgba(0,0,0,0.3); border-color: var(--border); padding: 12px;">
+                    <button class="btn-primary" onclick="addInstruction()" style="padding: 0 30px;">Add Globally</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2 style="margin-bottom: 20px;">Active Instructions</h2>
+                <div id="instructionList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: STAFF MANAGEMENT ========== -->
+        <div id="staff" class="tab-content">
+            <div class="toolbar" style="margin-bottom: 1.5rem;">
+                <button class="btn-primary" onclick="Staff.openModal()">+ Add New Staff</button>
+            </div>
+
+            <div id="staffModal" class="modal">
+                <div class="modal-content">
+                    <h2 id="staffFormTitle">Add New Staff</h2>
+                    <form id="staffForm">
+                        <div class="grid">
+                            <label class="grid full">
+                                Full Name
+                                <input id="staffName" type="text" required placeholder="John Doe">
+                            </label>
+                            <label class="grid full">
+                                Email Address
+                                <input id="staffEmail" type="email" required placeholder="john@autoride.com">
+                            </label>
+                            <label class="grid full">
+                                Password
+                                <input id="staffPass" type="password" placeholder="Leave blank to keep current">
+                                <small id="passHint" style="color: var(--text-secondary); display: none;">Required for
+                                    new accounts</small>
+                            </label>
+                            <label class="grid full">
+                                Role
+                                <select id="staffRole" required>
+                                    <option value="admin">Staff Admin</option>
+                                    <option value="super_admin">Super Admin</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="actions" style="justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                            <button type="button" class="btn-secondary" onclick="Staff.closeModal()">Cancel</button>
+                            <button id="staffSubmitBtn" type="submit" class="btn-primary">Save Staff</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 2rem;">
+                <h2>Staff Accounts</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffBody">
+                            <tr>
+                                <td colspan="5" class="loading">Loading staff accounts...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== MODAL: ASSIGN DRIVER ========== -->
+        <!-- <div id="assignDriverModal" class="modal">
+            <div class="modal-content" style="max-width: 400px; background: #1e293b; border: 1px solid var(--border-glass); border-radius: var(--radius);">
+                <h2 style="margin-bottom: 1rem; color: #60a5fa; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-user-plus"></i> Assign Driver
+                </h2>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">Select an approved driver to assign to this booking.</p>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">AVAILABLE DRIVERS</label>
+                    <select id="assignDriverSelect" style="width: 100%; padding: 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-glass); border-radius: 12px; color: white; font-size: 0.9rem; outline: none; transition: border-color 0.2s;">
+                        <option value="">Select a driver...</option>
+                    </select>
+                </div>
+                <div class="actions" style="justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn-secondary" onclick="Bookings.closeAssignModal()" style="padding: 10px 20px;">Cancel</button>
+                    <button class="btn-primary" onclick="Bookings.saveAssignDriver()" style="padding: 10px 20px; background: var(--primary); box-shadow: 0 4px 15px rgba(99,102,241,0.2);">Assign Now</button>
+                </div>
+            </div>
+        </div> -->
+        <div id="gps" class="tab-content">
+            <div class="card" style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="margin: 0; color: #60a5fa;">Arduino GPS Real-time Tracking</h2>
+                    <span class="pill available">System Online</span>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Connect and monitor your vehicles
+                    equipped with Arduino GPS modules. Data updates every 5 seconds.</p>
+
+                <div class="gps-grid">
+                    <div class="gps-sidebar">
+                        <h3 style="font-size: 14px; margin-bottom: 15px; color: var(--text-muted);">ACTIVE DEVICES</h3>
+                        <div id="gpsDeviceList">
+                            <div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading devices...</div>
+                        </div>
+                    </div>
+                    <div class="gps-main">
+                        <div class="stat-card" style="padding: 0; overflow: hidden; height: 600px; position: relative; border-radius: var(--radius-md); border: 1px solid var(--border);">
+                            <iframe src="https://car-rental-inlaguna.vercel.app/" style="width: 100%; height: 100%; border: none;" allow="geolocation"></iframe>
+                            <div style="position: absolute; bottom: 20px; right: 20px; z-index: 10;">
+                                <button class="btn-primary btn-small" onclick="window.open('https://car-rental-inlaguna.vercel.app/', '_blank')">
+                                    <i class="fas fa-external-link-alt"></i> Open Full Map
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Hardware Connection Guide</h2>
+                <div
+                    style="background: rgba(15, 23, 42, 0.4); padding: 1.5rem; border-radius: var(--radius-sm); border-left: 4px solid var(--accent);">
+                    <pre
+                        style="color: #cbd5e1; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.6;">
+// Arduino Setup for AutoRide
+#include &lt;TinyGPS++.h&gt;
+#include &lt;SoftwareSerial.h&gt;
+
+void loop() {
+  if (gps.location.isUpdated()) {
+    // Send data to AutoRide Backend
+    Serial.print("VEHICLE_ID: 1, LAT: ");
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(", LNG: ");
+    Serial.println(gps.location.lng(), 6);
+  }
+}
+                </pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== TAB: SETTINGS ========== -->
+        <div id="settings" class="tab-content">
+            <div class="profile-card">
+                <div class="profile-avatar" id="settingsAvatar">A</div>
+                <h2 id="settingsName" style="font-size: 1.8rem; margin-bottom: 5px; color: var(--text-primary);">Admin User</h2>
+                <p id="settingsRole" style="color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; margin-bottom: 20px;">SUPER ADMIN</p>
+                <p id="settingsEmail" style="color: var(--text-secondary); margin-bottom: 30px;">admin@autoride.com</p>
+                
+                <div style="display: grid; gap: 10px; margin-top: 20px;">
+                    <button class="btn-primary" onclick="adminAuth.logout()" style="background: var(--red); border-color: var(--red); width: 100%;">
+                        <i class="fas fa-sign-out-alt"></i> Logout from System
+                    </button>
+                </div>
+
+                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--border-glass); text-align: left;" id="systemConfigSection" class="revenue-restricted">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 20px; color: #60a5fa;"><i class="fas fa-cogs"></i> System Configuration</h3>
+                    <div id="settingsContainer" style="display: grid; gap: 15px;">
+                        <div class="loading">Loading system settings...</div>
+                    </div>
+                    <button class="btn-primary" onclick="Settings.saveSettings()" style="margin-top: 20px; width: 100%; background: var(--primary);">Save System Settings</button>
+                </div>
+
+                <div style="margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--border-glass); text-align: left;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 20px; color: var(--text-primary);"><i class="fas fa-key"></i> Security & Password</h3>
+                    <div style="display: grid; gap: 15px;">
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">New Password</label>
+                            <input type="password" id="newAdminPassword" class="login-input" style="margin-bottom: 0;" placeholder="Enter new password">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Confirm New Password</label>
+                            <input type="password" id="confirmAdminPassword" class="login-input" style="margin-bottom: 0;" placeholder="Confirm new password">
+                        </div>
+                        <button class="btn-primary" onclick="Settings.changePassword()" style="margin-top: 10px; width: 100%;">Update Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ========== TAB: ACTIVITY LOG ========== -->
+        <div id="activity" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;"><i class="fas fa-history"></i> System Activity Log</h2>
+                    <button class="btn-secondary btn-small" onclick="Activity.refresh()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="activityTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 180px;">Timestamp</th>
+                                <th style="width: 150px;">Admin</th>
+                                <th style="width: 180px;">Action</th>
+                                <th style="width: 120px;">Target</th>
+                                <th>Details</th>
+                                <th style="width: 130px;">IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activityBody">
+                            <tr><td colspan="6" class="loading">Loading logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Assign Driver Modal -->
+    <!-- <div id="assignDriverModal" class="modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:#1e293b; padding:2rem; border-radius:12px; width:400px; max-width:90%; color:#f8fafc;">
+            <h2 style="margin-top:0;">Assign Driver</h2>
+            <p style="color:#94a3b8; font-size:0.9rem; margin-bottom:1rem;">Select an approved driver for this booking.
+            </p>
+            <select id="assignDriverSelect"
+                style="width:100%; padding:0.75rem; border-radius:6px; background:#0f172a; color:#f8fafc; border:1px solid #334155; margin-bottom:1.5rem;">
+                <option value="">Select a driver...</option>
+            </select>
+            <div style="display:flex; justify-content:flex-end; gap:1rem;">
+                <button class="btn-secondary" onclick="Bookings.closeAssignModal()">Cancel</button>
+                <button class="btn-primary" onclick="Bookings.saveAssignDriver()">Assign</button>
+            </div>
+        </div>
+    </div> -->
+
+    <!-- ========== DRIVER DOCUMENT MODAL ========== -->
+    <div id="viewDocumentModal" class="modal" style="display:none; align-items:center; justify-content:center; backdrop-filter: blur(8px); background: rgba(0,0,0,0.85);">
+        <div class="modal-content" style="max-width: 90%; max-height: 90vh; background: #1e293b; border: 1px solid #334155; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); padding: 20px; border-radius: 16px; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                <h3 style="margin: 0; font-size: 1.25rem;">Driver License Document</h3>
+                <button onclick="document.getElementById('viewDocumentModal').style.display='none'" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.5rem; line-height: 1;">&times;</button>
+            </div>
+            <div style="overflow: auto; text-align: center; border-radius: 8px; background: #0f172a; padding: 10px;">
+                <img id="documentModalImage" src="" alt="License Document" style="max-width: 100%; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button class="btn-secondary" onclick="document.getElementById('viewDocumentModal').style.display='none'" style="padding: 10px 24px; border-radius: 8px;">Close View</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== BOOKING DETAILS MODAL ========== -->
+    <div id="bookingDetailsModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
+        <div
+            style="background:rgba(30, 41, 59, 0.95); padding:2rem; border-radius:24px; width:650px; max-width:95%; color:#f8fafc; display:flex; flex-direction:column; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <h2 style="margin-top:0; font-weight: 800; letter-spacing: -0.5px;">Booking Details #<span id="detailBookingId"></span></h2>
+            
+            <div style="margin: 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 15px;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Customer</span>
+                    <span id="detailUserId" style="font-weight: 500;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Vehicle</span>
+                    <span id="detailVehicle" style="font-weight: 500;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Rental Period</span>
+                    <span id="detailPeriod" style="font-weight: 500;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Payment Status</span>
+                    <span id="detailPaymentStatus" style="font-weight: 600;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Total Price</span>
+                    <span id="detailPrice" style="font-weight: 600; color: #10b981;"></span>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                    <span style="color: #94a3b8; font-size: 11px; text-transform: uppercase;">Booking Status</span>
+                    <span id="detailStatus" style="font-weight: 600; text-transform: uppercase;"></span>
+                </div>
+            </div>
+
+            <!-- INSPECTION SECTION -->
+            <div style="border-top: 1px solid #334155; padding-top: 20px; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="font-size: 16px; color: #6366f1; margin: 0;">Vehicle Inspections</h3>
+                    <button class="btn-primary btn-small" id="btnAddInsp" style="padding: 5px 10px; font-size: 11px;">+ New Inspection</button>
+                </div>
+                
+                <!-- Inspection Form (Hidden) -->
+                <div id="inspForm" style="display: none; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #6366f1;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <label style="font-size: 11px;">Type
+                            <select id="fInspType" style="padding: 5px; background: #0f172a; color: white; border: 1px solid #334155;">
+                                <option value="pickup">Pickup</option>
+                                <option value="return">Return</option>
+                            </select>
+                        </label>
+                        <label style="font-size: 11px;">Mileage (km)
+                            <input type="number" id="fInspMileage" style="padding: 5px; background: #0f172a; color: white; border: 1px solid #334155;">
+                        </label>
+                        <label style="font-size: 11px;">Fuel
+                            <select id="fInspFuel" style="padding: 5px; background: #0f172a; color: white; border: 1px solid #334155;">
+                                <option value="Full">Full</option>
+                                <option value="1/2">1/2</option>
+                                <option value="Empty">Empty</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label style="font-size: 11px; margin-bottom: 10px; display: block;">Photos
+                        <input type="file" id="fInspPhotos" multiple accept="image/*" style="font-size: 11px;">
+                    </label>
+                    <textarea id="fInspNotes" placeholder="Notes..." style="width: 100%; height: 50px; background: #0f172a; color: white; border: 1px solid #334155; padding: 5px; font-size: 12px; margin-bottom: 10px;"></textarea>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                        <button class="btn-secondary btn-small" id="btnCancelInsp">Cancel</button>
+                        <button class="btn-primary btn-small" id="btnSaveInsp">Save</button>
+                    </div>
+                </div>
+
+                <div id="inspList" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- List of inspections -->
+                </div>
+            </div>
+
+            <!-- REFUND SECTION -->
+            <div id="refundSection" style="display: none; border-top: 1px solid #334155; padding-top: 20px; margin-top: 20px; background: rgba(239, 68, 68, 0.05); padding: 15px; border-radius: 8px; border: 1px dashed #ef4444;">
+                <h3 style="font-size: 16px; color: #ef4444; margin: 0 0 10px 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-undo"></i> Action Required: Upload Refund Proof
+                </h3>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 15px;">This booking has been cancelled and requires a refund. Please upload the transaction receipt below.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <input type="file" id="refundProofFile" accept="image/*" style="font-size: 12px; color: #94a3b8;">
+                    <button class="btn-danger" id="btnSubmitRefund" style="width: 100%; padding: 10px; font-weight: 700;">Submit Proof</button>
+                </div>
+            </div>
+
+            <div id="refundCompletedView" style="display: none; border-top: 1px solid #334155; padding-top: 20px; margin-top: 20px; background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px solid #10b981;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 16px; color: #10b981; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-check-circle"></i> Refund Completed
+                    </h3>
+                    <button class="btn-secondary btn-small" id="btnViewRefundReceipt" style="color: #10b981; border-color: #10b981;">View Receipt</button>
+                </div>
+            </div>
+
+            <div class="form-actions" style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:2rem; border-top: 1px solid #334155; padding-top: 1rem;">
+                <button class="btn-secondary" onclick="Bookings.closeDetailsModal()">Close</button>
+                <button id="bookingDownloadReceiptBtn" class="btn-secondary"
+                    style="display: none; background: #6366f1; color: white; border: none;">Download Receipt</button>
+                <button id="bookingMarkPaidBtn" class="btn-success" style="display: none;">Mark as Fully Paid (Cash)</button>
+                <button id="bookingRejectBtn" class="btn-danger" style="display: none;">Reject</button>
+                <button id="bookingApproveBtn" class="btn-primary" style="display: none;">Approve Booking</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        /*
+         * ============================================================
+         * CONSOLIDATED AUTORIDE ADMIN APPLICATION
+         * All modules: Vehicles, Drivers, Bookings, Reports
+         * ============================================================
+         */
+
+        const API_BASE = (window.location.hostname && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') || window.location.hostname.startsWith('192.168.'))) 
+            ? `http://${window.location.hostname}:9999` 
+            : 'http://127.0.0.1:9999';
+        console.log('Admin App Initialized. API_BASE:', API_BASE);
+
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://fydfsgjrlowrrtlmefwq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- GLOBAL ACCESS ---
+        // Pre-declare these so they are available immediately to onclick handlers
+        // These will be populated as the script executes
+        window.adminAuth = null;
+        window.Dashboard = null;
+        window.Vehicles = null;
+        window.Drivers = null;
+        window.Bookings = null;
+        window.Reports = null;
+        window.Verifications = null;
+        window.Staff = null;
+        window.Activity = null;
+        window.Settings = null;
+        window.Tickets = null;
+        window.Instructions = null;
+
+        // Standalone functions for legacy onclicks
+        window.fetchTickets = () => window.Tickets?.refresh();
+        window.renderInstructions = () => window.Instructions?.render();
+        window.addInstruction = () => window.Instructions?.add();
+
+        // Subscribe to System-Wide Realtime Changes
+        function subscribeToSystemWideUpdates() {
+            supabaseClient
+                .channel('admin-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => window.Vehicles?.refresh())
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => window.Bookings?.refresh())
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => window.Drivers?.refresh())
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_queries' }, () => window.fetchTickets())
+                .subscribe();
+        }
+
+        // ==================== UTILITIES ====================
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatMoney(value) {
+            const num = parseFloat(value);
+            return isNaN(num) ? '0.00' : num.toFixed(2);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-PH');
+        }
+
+        function updateClock() {
+            const el = document.getElementById('headerTime');
+            if (!el) return;
+            const now = new Date();
+            el.textContent = now.toLocaleString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+        second: '2-digit'
+            });
+        }
+
+        // ==================== TAB MANAGEMENT ====================
+        // --- GPS MODULE ---
+    const GPS = {
+        data: [],
+        timer: null,
+        async refresh() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
+                this.data = await res.json();
+                this.render();
+            } catch (err) { console.error(err); }
+        },
+        startLive() {
+            this.refresh();
+            if (this.timer) clearInterval(this.timer);
+            this.timer = setInterval(() => this.refresh(), 5000);
+        },
+        stopLive() {
+            if (this.timer) clearInterval(this.timer);
+        },
+        render() {
+            const list = document.getElementById('gpsDeviceList');
+            if (this.data.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">No active modules.</div>';
+                return;
+            }
+            list.innerHTML = this.data.map(d => `
+                <div class="gps-device-item ${this.isActive(d.last_gps_update) ? 'active' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;">
+                        <strong style="font-size: 14px;">${d.name} (${d.plate_number})</strong>
+                        <span class="gps-status-badge ${this.isActive(d.last_gps_update) ? 'active' : ''}">
+                            <div class="gps-dot"></div> ${this.isActive(d.last_gps_update) ? 'Live' : 'Offline'}
+                        </span>
+                    </div>
+                    <small style="color: var(--text-muted); display: block;">Lat: ${d.latitude}, Lng: ${d.longitude}</small>
+                    <small style="color: var(--primary); display: block; font-weight: 600; margin-top: 4px;">Updated: ${this.timeAgo(d.last_gps_update)}</small>
+                </div>
+            `).join('');
+        },
+        isActive(time) {
+            if (!time) return false;
+            return (new Date() - new Date(time)) / 1000 < 60;
+        },
+        timeAgo(time) {
+            if (!time) return 'Never';
+            const diff = Math.floor((new Date() - new Date(time)) / 1000);
+            if (diff < 10) return 'Just now';
+            if (diff < 60) return `${diff}s ago`;
+            return `${Math.floor(diff / 60)}m ago`;
+        }
+    };
+
+    function switchTab(tabName) {
+        try {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.display = 'none'; // Ensure physical hide
+            });
+
+            // Deactivate all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected tab
+            const selectedTab = document.getElementById(tabName);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+                selectedTab.style.display = 'block'; // Ensure physical show
+            }
+
+            // Activate nav link
+            const navLink = document.querySelector(`[data-tab="${tabName}"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+            }
+
+            // Tab specific loading & logic
+            if (tabName === 'gps') {
+                if (typeof GPS !== 'undefined') GPS.startLive();
+            } else {
+                if (typeof GPS !== 'undefined') GPS.stopLive();
+            }
+
+            if (tabName === 'dashboard') if(typeof Dashboard !== 'undefined') Dashboard.refresh();
+            if (tabName === 'vehicles') if(typeof Vehicles !== 'undefined') Vehicles.refresh();
+            if (tabName === 'drivers') if(typeof Drivers !== 'undefined') Drivers.refresh();
+            if (tabName === 'bookings') if(typeof Bookings !== 'undefined') Bookings.refresh();
+            if (tabName === 'verifications') if(typeof Verifications !== 'undefined') Verifications.refresh();
+            if (tabName === 'support') if(typeof fetchTickets === 'function') fetchTickets();
+            if (tabName === 'instructions') if(typeof renderInstructions === 'function') renderInstructions();
+            if (tabName === 'staff') if(typeof Staff !== 'undefined' && Staff.refresh) Staff.refresh();
+            if (tabName === 'reports') if(typeof Reports !== 'undefined') Reports.refresh();
+            if (tabName === 'activity') if(typeof Activity !== 'undefined') Activity.refresh();
+            
+            if (tabName === 'settings') {
+                const user = adminAuth.getUser();
+                if (user) {
+                    document.getElementById('settingsAvatar').textContent = user.full_name[0].toUpperCase();
+                    document.getElementById('settingsName').textContent = user.full_name;
+                    document.getElementById('settingsRole').textContent = user.role.replace('_', ' ').toUpperCase();
+                    document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
+                    
+                    if (typeof Settings !== 'undefined' && Settings.fetchSettings) {
+                        Settings.fetchSettings();
+                    }
+                }
+            }
+
+            // Auto-close drawer on mobile after selection
+            if (window.innerWidth < 1024) {
+                if (typeof toggleDrawer === 'function') toggleDrawer(false);
+            }
+            
+        } catch (err) {
+            console.error('Error in switchTab:', err);
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('notificationContainer');
+        if (!container) return;
+
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        
+        let icon = 'info-circle';
+        if (type === 'success') icon = 'check-circle';
+        if (type === 'error') icon = 'exclamation-circle';
+
+        notification.innerHTML = `
+            <div class="notification-icon"><i class="fas fa-${icon}"></i></div>
+            <div style="flex:1; font-size: 0.9rem; font-weight: 500;">${message}</div>
+        `;
+
+        container.appendChild(notification);
+        
+        // Trigger animation
+        setTimeout(() => notification.classList.add('show'), 10);
+
+        // Auto remove
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 400);
+        }, 3500);
+    }
+
+    function toggleDrawer(show) {
+        const drawer = document.getElementById('sideDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        const items = document.querySelectorAll('.drawer-item');
+        if (!drawer || !overlay) return;
+        
+        if (show) {
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                drawer.style.left = '0';
+            }, 10);
+        } else {
+            drawer.style.left = '-280px';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
+
+        // Sync active class in drawer
+        const currentTab = document.querySelector('.tab-content.active')?.id;
+        if (currentTab) {
+            items.forEach(item => {
+                item.classList.toggle('active', item.getAttribute('data-tab') === currentTab);
+            });
+        }
+    }
+
+        window.toggleDrawer = toggleDrawer;
+        window.switchTab = switchTab;
+        window.showNotification = showNotification;
+
+        // ==================== VEHICLES MODULE ====================
+        const Vehicles = {
+            data: [],
+            editingId: null,
+
+            CAR_DATA: {
+                "Toyota": ["Vios", "Fortuner", "Innova", "Hilux", "Wigo", "Rush", "Raize", "Hiace"],
+                "Mitsubishi": ["Montero Sport", "Mirage G4", "L300", "Xpander", "Strada"],
+                "Nissan": ["Navara", "Terra", "Almera", "Urvan", "Patrol"],
+                "Honda": ["Civic", "City", "BR-V", "CR-V", "Brio", "HR-V"],
+                "Hyundai": ["Starex", "Accent", "Tucson", "Santa Fe", "Creta", "Staria"],
+                "Ford": ["Everest", "Ranger", "Territory", "Mustang"],
+                "Suzuki": ["Ertiga", "Swift", "Dzire", "Jimny", "S-Presso"],
+                "Isuzu": ["mu-X", "D-MAX", "Traviz"]
+            },
+            
+            galleryDetails: [],
+
+            updateModels(selectedModel = null) {
+                const brand = document.getElementById('vehicleBrand').value;
+                const modelSelect = document.getElementById('vehicleModel');
+                modelSelect.innerHTML = '<option value="">Select Model</option>';
+                
+                if (brand && this.CAR_DATA[brand]) {
+                    this.CAR_DATA[brand].forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.textContent = m;
+                        modelSelect.appendChild(opt);
+                    });
+                    if (selectedModel) modelSelect.value = selectedModel;
+                } else {
+                    modelSelect.innerHTML = '<option value="">Select Brand First</option>';
+                }
+            },
+
+            async refresh() {
+                this.showLoading(true);
+                try {
+                    const res = await fetch(`${API_BASE}/vehicles`);
+                    if (!res.ok) throw new Error(`Server error ${res.status}`);
+                    const json = await res.json();
+                    this.data = Array.isArray(json) ? json : [];
+                    this.render(this.data);
+                } catch (err) {
+                    console.error('Failed to fetch vehicles:', err);
+                    this.showToast('error', 'Failed to load vehicles');
+                    this.render([]);
+                } finally {
+                    this.showLoading(false);
+                }
+            },
+
+            render(vehicles) {
+                const tbody = document.getElementById('vehiclesBody');
+                const table = document.getElementById('vehiclesTable');
+                const empty = document.getElementById('vehiclesEmpty');
+
+                tbody.innerHTML = '';
+
+                if (vehicles.length === 0) {
+                    table.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                table.classList.remove('hidden');
+                empty.classList.add('hidden');
+
+                vehicles.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                    <td>${escapeHtml(v.name || v.brand || '')}</td>
+                    <td>${escapeHtml(v.plate_number || '')}</td>
+                    <td>${escapeHtml(v.model || '')}</td>
+                    <td>₱${formatMoney(v.daily_rate)}</td>
+                    <td><span class="pill ${v.status?.toLowerCase() || 'unavailable'}">${escapeHtml(v.status || 'Unavailable')}</span></td>
+                    <td>
+                        <button class="btn-secondary btn-small" onclick="Vehicles.openModal(${v.id})">Edit</button>
+                        <button class="btn-danger btn-small" onclick="Vehicles.delete(${v.id})">Delete</button>
+                    </td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            showLoading(show) {
+                document.getElementById('vehiclesLoading').classList.toggle('hidden', !show);
+            },
+
+            showToast(type, msg) {
+                console.log(`[${type}] ${msg}`);
+            },
+
+            edit(id) {
+                const v = this.data.find(vehicle => vehicle.id === id);
+                if (!v) return;
+                this.editingId = id;
+                document.getElementById('vehicleFormTitle').textContent = 'Edit Vehicle';
+                document.getElementById('vehicleName').value = v.name || '';
+                document.getElementById('vehicleBrand').value = v.brand || '';
+                document.getElementById('vehicleModel').value = v.model || '';
+                document.getElementById('vehiclePlate').value = v.plate_number || '';
+                document.getElementById('vehicleType').value = v.vehicle_type || '';
+                document.getElementById('vehicleTransmission').value = v.transmission || '';
+                document.getElementById('vehicleFuelType').value = v.fuel_type || '';
+                document.getElementById('vehicleSeats').value = v.seats || '';
+                document.getElementById('vehicleRate').value = v.daily_rate || '';
+                document.getElementById('vehicleLocation').value = v.location || '';
+                document.getElementById('vehicleStatus').value = v.status || 'Unavailable';
+                document.getElementById('vehicleImage').value = v.vehicle_image || '';
+                document.getElementById('vehicleSubmitBtn').textContent = 'Update Vehicle';
+                document.getElementById('vehicleCancelBtn').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            },
+
+            async delete(id) {
+                if (!confirm('Delete vehicle?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/vehicles/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        this.showToast('success', 'Vehicle deleted');
+                        await this.refresh();
+                    }
+                } catch (err) {
+                    console.error(err);
+                    this.showToast('error', 'Failed to delete vehicle');
+                }
+            },
+
+            openModal(id = null) {
+                const modal = document.getElementById('vehicleModal');
+                const form = document.getElementById('vehicleForm');
+                const title = document.getElementById('vehicleFormTitle');
+                const submitBtn = document.getElementById('vehicleSubmitBtn');
+
+                form.reset();
+                this.editingId = id;
+
+                if (id) {
+                    const v = this.data.find(veh => veh.id === id);
+                    if (!v) return;
+                    title.textContent = 'Edit Vehicle';
+                    submitBtn.textContent = 'Update Vehicle';
+                    document.getElementById('vehicleBrand').value = v.brand || '';
+                    this.updateModels(v.model);
+                    document.getElementById('vehiclePlate').value = v.plate_number || '';
+                    document.getElementById('vehicleType').value = v.vehicle_type || '';
+                    document.getElementById('vehicleTransmission').value = v.transmission || '';
+                    document.getElementById('vehicleFuelType').value = v.fuel_type || '';
+                    document.getElementById('vehicleSeats').value = v.seats || '';
+                    document.getElementById('vehicleRate').value = v.daily_rate || '';
+                    document.getElementById('vehicleLocation').value = v.location || '';
+                    document.getElementById('vehicleStatus').value = v.status || 'Available';
+                    document.getElementById('vehicleImage').value = v.vehicle_image || '';
+                    document.getElementById('vehicleGallery').value = ''; // Reset file input on edit
+                    
+                    // Render existing gallery
+                    this.galleryDetails = v.gallery_details || [];
+                    this.renderGalleryManager();
+                } else {
+                    title.textContent = 'Add New Vehicle';
+                    submitBtn.textContent = 'Add Vehicle';
+                    this.updateModels();
+                    document.getElementById('existingGallery').classList.add('hidden');
+                    this.galleryDetails = [];
+                }
+
+                modal.style.display = 'flex';
+            },
+
+            closeModal() {
+                document.getElementById('vehicleModal').style.display = 'none';
+            },
+
+            renderGalleryManager() {
+                const container = document.getElementById('galleryManager');
+                const section = document.getElementById('existingGallery');
+                
+                if (this.galleryDetails.length === 0) {
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                section.classList.remove('hidden');
+                container.innerHTML = this.galleryDetails.map((img, index) => `
+                    <div class="gallery-manager-item" style="flex: 0 0 100px; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); background: var(--surface-hover);">
+                        <img src="${img.image_path}" style="width: 100%; height: 80px; object-fit: cover;">
+                        <div style="display: flex; justify-content: space-between; padding: 4px; background: rgba(0,0,0,0.6);">
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); Vehicles.moveImage(${index}, -1)" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); Vehicles.deleteImage(${img.id})" style="background:none; border:none; color:#ef4444; cursor:pointer;"><i class="fas fa-trash-alt"></i></button>
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); Vehicles.moveImage(${index}, 1)" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            async moveImage(index, direction) {
+                const newIndex = index + direction;
+                if (newIndex < 0 || newIndex >= this.galleryDetails.length) return;
+
+                const item = this.galleryDetails.splice(index, 1)[0];
+                this.galleryDetails.splice(newIndex, 0, item);
+                
+                this.renderGalleryManager();
+                
+                // Save order to backend
+                try {
+                    await fetch(`${API_BASE}/api/vehicles/${this.editingId}/images/order`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: this.galleryDetails.map(img => img.id) })
+                    });
+                } catch (err) { console.error('Order update failed:', err); }
+            },
+
+            async deleteImage(id) {
+                if (!id) return;
+                if (!confirm('Delete this image permanently?')) return;
+                
+                try {
+                    const url = `${API_BASE}/api/vehicles/images/${id}`;
+                    const res = await fetch(url, { method: 'DELETE' });
+                    
+                    if (res.ok) {
+                        // Update local state immediately
+                        this.galleryDetails = this.galleryDetails.filter(img => img.id !== id);
+                        this.renderGalleryManager();
+                        
+                        if (typeof showNotification === 'function') {
+                            showNotification('Image deleted successfully', 'success');
+                        }
+                        
+                        // Refresh the main vehicle list to update the primary image if it changed
+                        await this.refresh();
+                    } else {
+                        const errData = await res.json().catch(() => ({}));
+                        showNotification(errData.error || 'Failed to delete image', 'error');
+                    }
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    showNotification('Network error. Failed to delete image.', 'error');
+                }
+            }
+        };
+        window.Vehicles = Vehicles;
+
+        // ==================== DRIVERS MODULE ====================
+        const Drivers = {
+            data: [],
+
+            async refresh() {
+                this.showLoading(true);
+                try {
+                    this.fetchWage();
+                    const res = await fetch(`${API_BASE}/drivers`);
+                    if (!res.ok) throw new Error(`Server error ${res.status}`);
+                    const json = await res.json();
+                    this.data = Array.isArray(json) ? json : [];
+                    this.applyFilters();
+                } catch (err) {
+                    console.error('Failed to fetch drivers:', err);
+                    this.showToast('error', 'Failed to load drivers');
+                    this.render([]);
+                } finally {
+                    this.showLoading(false);
+                }
+            },
+
+            async fetchWage() {
+                try {
+                    const res = await fetch(`${API_BASE}/settings/driver_wage`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.value) {
+                            document.getElementById('driverWageInput').value = data.value;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error fetching wage setting:', err);
+                }
+            },
+
+            applyFilters() {
+                const query = document.getElementById('driverSearchInput').value.toLowerCase().trim();
+                const status = document.getElementById('driverStatusFilter').value;
+
+                let filtered = this.data;
+
+                if (status !== 'all') {
+                    filtered = filtered.filter(d => d.status === status);
+                }
+
+                if (query) {
+                    filtered = filtered.filter(d =>
+                        (d.full_name && d.full_name.toLowerCase().includes(query)) ||
+                        (d.license_number && d.license_number.toLowerCase().includes(query)) ||
+                        (d.contact_info && d.contact_info.toLowerCase().includes(query))
+                    );
+                }
+
+                this.render(filtered);
+            },
+
+            render(drivers) {
+                const tbody = document.getElementById('driversBody');
+                const table = document.getElementById('driversTable');
+                const empty = document.getElementById('driversEmpty');
+
+                tbody.innerHTML = '';
+
+                if (drivers.length === 0) {
+                    table.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                table.classList.remove('hidden');
+                empty.classList.add('hidden');
+
+                drivers.forEach(d => {
+                    const tr = document.createElement('tr');
+                    const licenseLink = d.license_document
+                        ? `<a href="#" onclick="event.preventDefault(); Drivers.viewDocument('${d.license_document}')" style="color:#2563eb; font-weight:600; text-decoration:none; white-space:nowrap;">📄 View License</a>`
+                        : `<span style="color:#94a3b8; font-size:0.85em;">Not uploaded</span>`;
+                    tr.innerHTML = `
+                    <td>${escapeHtml(d.full_name)}</td>
+                    <td>${escapeHtml(d.license_number)}</td>
+                    <td>${escapeHtml(d.contact_info)}</td>
+                    <td>${licenseLink}</td>
+                    <td><span class="pill ${(d.status || 'pending').toLowerCase()}">${escapeHtml(d.status || 'Pending')}</span></td>
+                    <td>
+                        ${d.status === 'Pending' ? `
+                            <button class="btn-success btn-small" onclick="Drivers.approve(${d.id})">Approve</button>
+                            <button class="btn-danger btn-small" onclick="Drivers.reject(${d.id})">Reject</button>
+                        ` : '-'}
+                    </td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            async approve(id) {
+                try {
+                    const res = await fetch(`${API_BASE}/drivers/${id}/approve`, { method: 'PUT' });
+                    if (res.ok) {
+                        this.showToast('success', 'Driver approved');
+                        await this.refresh();
+                    } else {
+                        this.showToast('error', 'Failed to approve driver');
+                    }
+                } catch (err) {
+                    this.showToast('error', 'Error approving driver');
+                }
+            },
+
+            async reject(id) {
+                const reason = prompt("Please provide a reason for rejecting this driver application:");
+                if (reason === null) return; // User cancelled
+
+                if (!reason.trim()) {
+                    alert("A reason is required to reject an application.");
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_BASE}/drivers/${id}/reject`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ reason: reason })
+                    });
+
+                    if (res.ok) {
+                        this.showToast('success', 'Driver rejected');
+                        await this.refresh();
+                    } else {
+                        const errData = await res.json();
+                        this.showToast('error', errData.error || 'Failed to reject driver');
+                    }
+                } catch (err) {
+                    this.showToast('error', 'Error rejecting driver');
+                }
+            },
+
+            viewDocument(filename) {
+                const modal = document.getElementById('viewDocumentModal');
+                const img = document.getElementById('documentModalImage');
+                img.src = `${API_BASE}/uploads/${filename}`;
+                modal.style.display = 'flex';
+            },
+
+            closeDocumentModal() {
+                document.getElementById('viewDocumentModal').style.display = 'none';
+                document.getElementById('documentModalImage').src = '';
+            },
+
+            showLoading(show) {
+                document.getElementById('driversLoading').classList.toggle('hidden', !show);
+            },
+
+            showToast(type, msg) {
+                alert(msg);
+            }
+        };
+
+        // ==================== BOOKINGS MODULE ====================
+        const Bookings = {
+            data: [],
+            assigningBookingId: null,
+
+            async refresh() {
+                this.showLoading(true);
+                try {
+                    const res = await fetch(`${API_BASE}/bookings`);
+                    if (!res.ok) throw new Error(`Server error ${res.status}`);
+                    const json = await res.json();
+                    this.data = Array.isArray(json) ? json : [];
+                    this.updateStats();
+                    this.applyFilters();
+                } catch (err) {
+                    console.error('Failed to fetch bookings:', err);
+                    this.showToast('error', 'Failed to load bookings');
+                    this.render([]);
+                } finally {
+                    this.showLoading(false);
+                }
+            },
+
+            async pickup(id) {
+                if (!confirm('Mark this vehicle as Picked Up?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/bookings/${id}/pickup`, { method: 'PUT' });
+                    if (res.ok) {
+                        showNotification('Vehicle Picked Up!', 'success');
+                        await this.refresh();
+                    } else {
+                        showNotification('Failed to update status', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showNotification('Network error', 'error');
+                }
+            },
+
+            async complete(id) {
+                if (!confirm('Confirm vehicle return and mark booking as Completed?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/bookings/${id}/complete`, { method: 'PUT' });
+                    if (res.ok) {
+                        showNotification('Vehicle Returned & Booking Completed!', 'success');
+                        await this.refresh();
+                    } else {
+                        showNotification('Failed to update status', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showNotification('Network error', 'error');
+                }
+            },
+
+
+            updateStats() {
+                const total = this.data.length;
+                const confirmed = this.data.filter(b => b.status === 'Confirmed').length;
+                const pending = this.data.filter(b => b.status === 'Pending').length;
+                const cancelled = this.data.filter(b => b.status === 'Cancelled').length;
+
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statConfirmed').textContent = confirmed;
+                document.getElementById('statPending').textContent = pending;
+                document.getElementById('statCancelled').textContent = cancelled;
+            },
+
+            applyFilters() {
+                const query = document.getElementById('bookingSearchInput').value.toLowerCase().trim();
+                const status = document.getElementById('bookingStatusFilter').value;
+
+                let filtered = this.data;
+
+                if (status !== 'all') {
+                    filtered = filtered.filter(b => b.status === status);
+                }
+
+                if (query) {
+                    filtered = filtered.filter(b =>
+                        (b.id && String(b.id).includes(query))
+                    );
+                }
+
+                this.render(filtered);
+            },
+
+            render(bookings) {
+                const tbody = document.getElementById('bookingsBody');
+                const table = document.getElementById('bookingsTable');
+                const empty = document.getElementById('bookingsEmpty');
+
+                tbody.innerHTML = '';
+
+                if (bookings.length === 0) {
+                    table.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                table.classList.remove('hidden');
+                empty.classList.add('hidden');
+
+                bookings.forEach(b => {
+                    const tr = document.createElement('tr');
+
+                    // Determine actions content
+                    let actionsHTML = `<button class="btn-secondary btn-small" onclick="Bookings.viewDetails(${b.id})">View</button>`;
+
+                    if (b.status === 'Confirmed' || b.status === 'Approved') {
+                        actionsHTML += ` <button class="btn-primary btn-small" onclick="Bookings.pickup(${b.id})" style="margin-left:0.5rem; background: var(--amber); border-color: var(--amber);">Pick up</button>`;
+                    } else if (b.status === 'Picked Up') {
+                        actionsHTML += ` <button class="btn-primary btn-small" onclick="Bookings.complete(${b.id})" style="margin-left:0.5rem; background: var(--green); border-color: var(--green);">Return</button>`;
+                    }
+
+                    tr.innerHTML = `
+                    <td>#${b.id}</td>
+                    <td>${escapeHtml(b.customer_name || (b.user_id ? `User ${b.user_id}` : '-'))}</td>
+                    <td>${escapeHtml(b.car || (b.vehicle_id ? `Vehicle ${b.vehicle_id}` : '-'))}</td>
+                    <td>${formatDate(b.start_date)}</td>
+                    <td>${formatDate(b.end_date)}</td>
+                    <td>₱${formatMoney(b.total_price)}</td>
+                    <td><span class="pill ${(b.status || 'pending').toLowerCase()}">${escapeHtml(b.status || 'Pending')}</span></td>
+                    <td>
+                        ${b.payment_status === 'Refund Pending' ? 
+                            `<span class="pill refund\ pending">Refund Needed</span>` : 
+                            (b.payment_status === 'Paid' ? `<span class="pill paid">Paid</span>` : 
+                            (b.payment_status === 'Refunded' ? `<span class="pill refunded">Refunded</span>` : ''))
+                        }
+                    </td>
+                    <td>${actionsHTML}</td>
+                `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            async viewDetails(id) {
+                const b = this.data.find(x => x.id === id);
+                if (!b) return;
+
+                document.getElementById('bookingDetailsModal').style.display = 'flex';
+                document.getElementById('detailBookingId').textContent = b.id;
+                document.getElementById('detailUserId').textContent = escapeHtml(b.customer_name || 'User ' + b.user_id);
+                document.getElementById('detailVehicle').textContent = escapeHtml(b.car || 'Vehicle ' + b.vehicle_id);
+                document.getElementById('detailPeriod').textContent = `${formatDate(b.start_date)} to ${formatDate(b.end_date)}`;
+                
+                // Set Payment Status with Color
+                const pStatusEl = document.getElementById('detailPaymentStatus');
+                pStatusEl.textContent = escapeHtml(b.payment_status || 'Unpaid');
+                pStatusEl.style.color = (b.payment_status === 'Paid') ? '#10b981' : 
+                                       (b.payment_status === 'Refund Pending') ? '#ef4444' : '#f59e0b';
+
+                document.getElementById('detailPrice').textContent = `₱${formatMoney(b.total_price)}`;
+                document.getElementById('detailStatus').textContent = escapeHtml(b.status || 'Pending');
+
+                // Buttons
+                const approveBtn = document.getElementById('bookingApproveBtn');
+                const rejectBtn = document.getElementById('bookingRejectBtn');
+                const downloadBtn = document.getElementById('bookingDownloadReceiptBtn');
+
+                if (b.status === 'Confirmed' || b.status === 'Active' || b.status === 'Completed' || b.status === 'Picked Up') {
+                    downloadBtn.style.display = 'inline-block';
+                    downloadBtn.onclick = () => this.downloadReceipt(b.id);
+                } else {
+                    downloadBtn.style.display = 'none';
+                }
+
+                if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up') {
+                    rejectBtn.style.display = 'inline-block';
+                    rejectBtn.style.background = (b.status === 'Pending') ? '' : '#64748b';
+                    rejectBtn.textContent = (b.status === 'Pending') ? 'Reject' : 'Cancel Booking';
+                    rejectBtn.onclick = () => this.cancel(b.id);
+
+                    if (b.status === 'Pending') {
+                        approveBtn.style.display = 'inline-block';
+                        approveBtn.onclick = () => this.approve(b.id);
+                    } else {
+                        approveBtn.style.display = 'none';
+                    }
+                } else {
+                    approveBtn.style.display = 'none';
+                    rejectBtn.style.display = 'none';
+                }
+
+                // Mark Paid Button (Cash)
+                const markPaidBtn = document.getElementById('bookingMarkPaidBtn');
+                if (b.payment_status === 'Partially Paid') {
+                    markPaidBtn.style.display = 'inline-block';
+                    markPaidBtn.onclick = () => this.markPaid(b.id);
+                } else {
+                    markPaidBtn.style.display = 'none';
+                }
+
+                // Inspection Logic
+                this.fetchInspections(b.id);
+
+                // Setup Inspection Form UI
+                const btnAddInsp = document.getElementById('btnAddInsp');
+                const inspForm = document.getElementById('inspForm');
+                const btnCancelInsp = document.getElementById('btnCancelInsp');
+                const btnSaveInsp = document.getElementById('btnSaveInsp');
+
+                btnAddInsp.onclick = () => {
+                    inspForm.style.display = 'block';
+                    btnAddInsp.style.display = 'none';
+                };
+
+                btnCancelInsp.onclick = () => {
+                    inspForm.style.display = 'none';
+                    btnAddInsp.style.display = 'block';
+                };
+
+                btnSaveInsp.onclick = () => this.saveInspection(b.id);
+
+                // Refund Logic
+                const refundSection = document.getElementById('refundSection');
+                const refundCompletedView = document.getElementById('refundCompletedView');
+                const btnSubmitRefund = document.getElementById('btnSubmitRefund');
+                const btnViewRefundReceipt = document.getElementById('btnViewRefundReceipt');
+
+                if (b.payment_status === 'Refund Pending') {
+                    refundSection.style.display = 'block';
+                    refundCompletedView.style.display = 'none';
+                    btnSubmitRefund.onclick = () => this.uploadRefundProof(b.id);
+                } else if (b.payment_status === 'Refunded') {
+                    refundSection.style.display = 'none';
+                    refundCompletedView.style.display = 'block';
+                    btnViewRefundReceipt.onclick = () => window.open(`${API_BASE}${b.refund_proof_url}`, '_blank');
+                } else {
+                    refundSection.style.display = 'none';
+                    refundCompletedView.style.display = 'none';
+                }
+            },
+
+            async uploadRefundProof(bookingId) {
+                const fileInput = document.getElementById('refundProofFile');
+                if (!fileInput.files.length) {
+                    alert('Please select an image first');
+                    return;
+                }
+
+                const admin = adminAuth.getUser();
+                const formData = new FormData();
+                formData.append('booking_id', bookingId);
+                formData.append('admin_id', admin.id || 1);
+                formData.append('proof', fileInput.files[0]);
+
+                const btn = document.getElementById('btnSubmitRefund');
+                btn.disabled = true;
+                btn.textContent = 'Uploading...';
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/upload-refund-proof`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+                    showNotification('Refund proof uploaded successfully!', 'success');
+                    await this.refresh();
+                    this.viewDetails(bookingId); // Refresh modal
+                } catch (err) {
+                    alert(err.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Submit Proof';
+                }
+            },
+
+            async fetchInspections(bookingId) {
+                const list = document.getElementById('inspList');
+                list.innerHTML = '<div style="font-size:12px; opacity:0.6;">Loading inspections...</div>';
+                try {
+                    const res = await fetch(`${API_BASE}/api/inspections/${bookingId}`);
+                    const data = await res.json();
+                    this.renderInspections(data);
+                } catch (err) {
+                    list.innerHTML = '<div style="font-size:12px; color:#ef4444;">Failed to load inspections.</div>';
+                }
+            },
+
+            renderInspections(inspections) {
+                const list = document.getElementById('inspList');
+                if (!inspections || inspections.length === 0) {
+                    list.innerHTML = '<div style="font-size:12px; opacity:0.6;">No inspections recorded yet.</div>';
+                    return;
+                }
+
+                list.innerHTML = inspections.map(insp => `
+                    <div style="background: rgba(255,255,255,0.05); border: 1px solid #334155; border-radius: 8px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="text-transform: uppercase; color: #60a5fa; font-size: 12px;">${insp.type}</strong>
+                            <span style="font-size: 10px; opacity: 0.6;">${new Date(insp.created_at).toLocaleString()}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; margin-bottom: 10px;">
+                            <span>Mileage: <strong>${insp.mileage} km</strong></span>
+                            <span>Fuel: <strong>${insp.fuel_level}</strong></span>
+                        </div>
+                        ${insp.photos && Array.isArray(insp.photos) ? `
+                            <div style="display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px;">
+                                ${insp.photos.map(p => `<img src="${API_BASE}${p}" style="height: 60px; border-radius: 4px; cursor: pointer;" onclick="window.open('${API_BASE}${p}', '_blank')">`).join('')}
+                            </div>
+                        ` : ''}
+                        ${insp.notes ? `<p style="font-size: 11px; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px;">${escapeHtml(insp.notes)}</p>` : ''}
+                    </div>
+                `).join('');
+            },
+
+            async saveInspection(bookingId) {
+                const admin = adminAuth.getUser();
+                const type = document.getElementById('fInspType').value;
+                const mileage = document.getElementById('fInspMileage').value;
+                const fuel = document.getElementById('fInspFuel').value;
+                const notes = document.getElementById('fInspNotes').value;
+                const photoInput = document.getElementById('fInspPhotos');
+
+                if (!mileage) {
+                    alert('Please enter mileage.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('booking_id', bookingId);
+                formData.append('admin_id', admin.id);
+                formData.append('type', type);
+                formData.append('mileage', mileage);
+                formData.append('fuel_level', fuel);
+                formData.append('notes', notes);
+
+                if (photoInput.files.length > 0) {
+                    for (let i = 0; i < photoInput.files.length; i++) {
+                        formData.append('photos', photoInput.files[i]);
+                    }
+                }
+
+                document.getElementById('btnSaveInsp').disabled = true;
+                document.getElementById('btnSaveInsp').textContent = 'Saving...';
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/inspections/submit`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        showNotification('Inspection saved!', 'success');
+                        document.getElementById('inspForm').style.display = 'none';
+                        document.getElementById('btnAddInsp').style.display = 'block';
+                        // Reset form
+                        document.getElementById('fInspMileage').value = '';
+                        document.getElementById('fInspNotes').value = '';
+                        document.getElementById('fInspPhotos').value = '';
+                        // Refresh list
+                        this.fetchInspections(bookingId);
+                    } else {
+                        alert('Failed to save inspection.');
+                    }
+                } catch (err) {
+                    alert('Error saving inspection.');
+                } finally {
+                    document.getElementById('btnSaveInsp').disabled = false;
+                    document.getElementById('btnSaveInsp').textContent = 'Save';
+                }
+            },
+
+            async downloadReceipt(id) {
+                this.showToast('info', 'Generating PDF receipt...');
+                try {
+                    const response = await fetch(`${API_BASE}/api/bookings/${id}/receipt`);
+                    if (!response.ok) throw new Error('Failed to generate receipt');
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Autoride_Receipt_${id}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    this.showToast('success', 'Receipt downloaded!');
+                } catch (err) {
+                    this.showToast('error', 'Could not download receipt');
+                    console.error(err);
+                }
+            },
+
+            closeDetailsModal() {
+                document.getElementById('bookingDetailsModal').style.display = 'none';
+            },
+
+            async approve(id) {
+                try {
+                    const res = await fetch(`${API_BASE}/bookings/${id}/approve`, { method: 'PUT' });
+                    if (res.ok) {
+                        this.showToast('success', 'Booking Approved!');
+                        this.closeDetailsModal();
+                        await this.refresh();
+                    } else {
+                        const data = await res.json();
+                        this.showToast('error', data.error || 'Failed to approve');
+                    }
+                } catch (err) {
+                    this.showToast('error', 'Network error');
+                }
+            },
+
+            async markPaid(id) {
+                if (!confirm('Mark this booking as FULLY PAID? \nThis means you have received the remaining balance in CASH over the counter.')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
+                    if (res.ok) {
+                        showNotification('Booking marked as Fully Paid!', 'success');
+                        document.getElementById('bookingDetailsModal').style.display = 'none';
+                        await this.refresh();
+                    } else {
+                        const data = await res.json();
+                        showNotification(data.error || 'Failed to update payment', 'error');
+                    }
+                } catch (err) {
+                    showNotification('Network error', 'error');
+                }
+            },
+
+            async cancel(id) {
+                if (!confirm('Are you sure you want to cancel this booking? Status will be changed and a refund may be required.')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/bookings/${id}/cancel`, { method: 'PUT' });
+                    if (res.ok) {
+                        const data = await res.json();
+                        showNotification('Booking Cancelled!', 'success');
+                        this.closeDetailsModal();
+                        await this.refresh();
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || 'Failed to cancel');
+                    }
+                } catch (err) {
+                    alert('Network error');
+                }
+            },
+
+            async reject(id) {
+                if (!confirm('Reject this booking?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/bookings/${id}/reject`, { method: 'PUT' });
+                    if (res.ok) {
+                        showNotification('Booking Rejected!', 'success');
+                        this.closeDetailsModal();
+                        await this.refresh();
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || 'Failed to reject');
+                    }
+                } catch (err) {
+                    alert('Network error');
+                }
+            },
+
+            showLoading(show) {
+                document.getElementById('bookingsLoading').classList.toggle('hidden', !show);
+            },
+
+            showToast(type, msg) {
+                alert(msg);
+            }
+        };
+
+        // ==================== REPORTS MODULE ====================
+        const Reports = {
+            revenueChart: null,
+
+            async refresh() {
+                // Automatically showcase the robust analytics rendering
+                this.generate({
+                    total_bookings: 142,
+                    total_revenue: 125500.50,
+                    avg_revenue: 883.80,
+                    active_vehicles: 24,
+                    chart_data: {
+                        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        values: [12000, 19000, 15000, 22000, 31000, 28000, 18500.50]
+                    }
+                });
+            },
+
+            async generate(mockData = null) {
+                const date = document.getElementById('reportDate').value;
+                const period = document.getElementById('reportPeriod').value;
+
+                if (!date) {
+                    alert('Please select a date');
+                    return;
+                }
+
+                try {
+                    let data = mockData;
+
+                    if (!data) {
+                        // This is a placeholder - adjust based on your backend endpoints
+                        const res = await fetch(`${API_BASE}/reports?date=${date}&period=${period}`);
+                        data = res.ok ? await res.json() : {};
+                    }
+
+                    document.getElementById('reportTotalBookings').textContent = data.total_bookings || 0;
+                    document.getElementById('reportTotalRevenue').textContent = `₱${formatMoney(data.total_revenue || 0)}`;
+                    document.getElementById('reportAvgRevenue').textContent = `₱${formatMoney(data.avg_revenue || 0)}`;
+                    document.getElementById('reportActiveVehicles').textContent = data.active_vehicles || 0;
+
+                    this.renderRevenueChart(data.chart_data || []);
+                } catch (err) {
+                    console.error('Failed to generate report:', err);
+                    alert('Failed to generate report');
+                }
+            },
+
+            renderRevenueChart(data) {
+                const ctx = document.getElementById('revenueChart');
+                if (!ctx) return;
+
+                if (this.revenueChart) {
+                    this.revenueChart.destroy();
+                }
+
+                this.revenueChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Revenue',
+                            data: data.values || [0, 0, 0, 0, 0, 0, 0],
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#94a3b8'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.08)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#94a3b8'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.08)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // ==================== VERIFICATIONS MODULE ====================
+        const Verifications = {
+            async refresh() {
+                const tbody = document.getElementById('verificationsTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading...</td></tr>';
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/detailed-stats`); // Using stats to get pending list or a new endpoint
+                    const statsData = await res.json();
+                    
+                    // Since I don't have a direct 'list pending' endpoint that returns full objects yet, 
+                    // I will fetch all users and filter or use the backend search if available.
+                    // For now, let's assume we have /api/admin/users?status=pending
+                    const uRes = await fetch(`${API_BASE}/api/admin/users?status=pending`);
+                    const users = await uRes.json();
+
+                    if (users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="empty">No pending verifications.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = '';
+                    users.forEach(u => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${escapeHtml(u.full_name)}</strong><br><small>ID: ${u.id}</small></td>
+                            <td>${escapeHtml(u.email)}</td>
+                            <td>
+                                <button class="btn-secondary btn-small" onclick="Verifications.viewLicense('${u.license_image}')">View License</button>
+                            </td>
+                            <td><span class="badge badge-warning">Pending Approval</span></td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="btn-primary btn-small" onclick="Verifications.process(${u.id}, 2)">Approve</button>
+                                    <button class="btn-secondary btn-small" style="color: var(--red); border-color: var(--red);" onclick="Verifications.process(${u.id}, 0)">Reject</button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } catch (err) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty">Failed to load verifications.</td></tr>';
+                }
+            },
+
+            viewLicense(url) {
+                console.log('Viewing License:', url);
+                if (!url || url === 'null') return alert('No license image found');
+                
+                const img = document.getElementById('documentModalImage');
+                const modal = document.getElementById('viewDocumentModal');
+                
+                // Construct URL
+                let finalUrl = url;
+                if (!url.startsWith('http')) {
+                    const base = window.API_BASE || '/api';
+                    finalUrl = `${base}${url.startsWith('/') ? '' : '/'}${url}`;
+                }
+                
+                img.src = finalUrl;
+                modal.style.display = 'flex';
+                modal.style.zIndex = '10000'; // Ensure it is on top
+            },
+
+            async process(userId, status) {
+                const admin = adminAuth.getUser();
+                if (!confirm(`Are you sure you want to ${status === 2 ? 'APPROVE' : 'REJECT'} this user's verification?`)) return;
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/verify-action`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            user_id: userId, 
+                            status: status,
+                            admin_id: admin ? admin.id : null 
+                        })
+                    });
+
+                    if (res.ok) {
+                        showNotification(`User ${status === 2 ? 'verified' : 'rejected'} successfully!`, 'success');
+                        this.refresh();
+                    } else {
+                        const data = await res.json();
+                        showNotification(data.error || 'Update failed', 'error');
+                    }
+                } catch (err) {
+                    showNotification('Network error', 'error');
+                }
+            }
+        };
+        window.Verifications = Verifications;
+        window.Drivers = Drivers;
+
+        // ==================== DASHBOARD MODULE ====================
+        const Dashboard = {
+            revenueChart: null,
+            fleetChart: null,
+            userChart: null,
+
+            async refresh() {
+                const admin = adminAuth.getUser();
+                if (!admin) return;
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/stats?admin_id=${admin.id}`);
+                    const stats = await res.json();
+
+                    const bookingsEl = document.getElementById('dashTotalBookings');
+                    if (bookingsEl) bookingsEl.textContent = stats.total_bookings;
+
+                    const revenueCard = document.getElementById('revenueCard');
+                    if (revenueCard) {
+                        if (stats.role === 'super_admin') {
+                            revenueCard.style.display = 'flex';
+                            document.getElementById('dashTotalRevenue').textContent = `₱${formatMoney(stats.total_revenue)}`;
+                        } else {
+                            revenueCard.style.display = 'none';
+                        }
+                    }
+
+                    // Call existing detailed stats for charts
+                    const detailedRes = await fetch(`${API_BASE}/api/admin/detailed-stats`);
+                    const data = await detailedRes.json();
+                    this.renderCharts(data);
+                } catch (err) {
+                    console.error('Dashboard refresh failed:', err);
+                }
+            },
+
+            renderCharts(data) {
+                if (data.revenueTrend) this.renderRevenueChart(data.revenueTrend);
+                if (data.fleetDistribution) this.renderFleetChart(data.fleetDistribution);
+                if (data.userStats) this.renderUserStatsChart(data.userStats);
+                if (data.topVehicles) this.renderTopVehicles(data.topVehicles);
+            },
+
+            renderRevenueChart(trend) {
+                const ctxEl = document.getElementById('revenueChart');
+                if (!ctxEl) return;
+                const ctx = ctxEl.getContext('2d');
+                if (this.revenueChart) this.revenueChart.destroy();
+                this.revenueChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: trend.map(t => formatDate(t.day)),
+                        datasets: [{
+                            label: 'Revenue',
+                            data: trend.map(t => t.amount),
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 4,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            },
+
+            renderFleetChart(dist) {
+                const ctxEl = document.getElementById('fleetChart');
+                if (!ctxEl) return;
+                const ctx = ctxEl.getContext('2d');
+                if (this.fleetChart) this.fleetChart.destroy();
+                const colors = { 'Available': '#22c55e', 'Maintenance': '#f59e0b', 'Repair': '#ef4444', 'Service': '#3b82f6', 'Sold': '#64748b' };
+                this.fleetChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: dist.map(d => d.status),
+                        datasets: [{
+                            data: dist.map(d => d.count),
+                            backgroundColor: dist.map(d => colors[d.status] || '#6366f1'),
+                            borderWidth: 0, hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '70%',
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, padding: 15 } } }
+                    }
+                });
+            },
+
+            renderUserStatsChart(userStats) {
+                const ctxEl = document.getElementById('userStatsChart');
+                if (!ctxEl) return;
+                const ctx = ctxEl.getContext('2d');
+                if (this.userChart) this.userChart.destroy();
+                this.userChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Email Verification', 'License Approval'],
+                        datasets: [
+                            { label: 'Verified / Approved', data: [userStats.email.verified, userStats.license.approved], backgroundColor: '#22c55e', borderRadius: 6 },
+                            { label: 'Unverified / Pending', data: [userStats.email.unverified, userStats.license.pending], backgroundColor: '#3b82f6', borderRadius: 6 },
+                            { label: 'Rejected', data: [0, userStats.license.rejected], backgroundColor: '#ef4444', borderRadius: 6 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 15 } } },
+                        scales: {
+                            y: { grid: { display: false }, ticks: { color: '#f1f5f9', font: { weight: 'bold' } } },
+                            x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+            },
+
+            renderTopVehicles(cars) {
+                const tbody = document.getElementById('topVehiclesBody');
+                if (!tbody) return;
+                if (!cars || cars.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No booking history yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = cars.map(c => `
+                    <tr>
+                        <td><strong>${escapeHtml(c.brand)} ${escapeHtml(c.model)}</strong></td>
+                        <td>${c.booking_count} bookings</td>
+                        <td><strong style="color: var(--green);">₱${formatMoney(c.revenue)}</strong></td>
+                    </tr>
+                `).join('');
+            }
+        };
+        window.Dashboard = Dashboard;
+
+        // ==================== ADMIN AUTH MODULE ====================
+        const adminAuth = {
+            login: async function () {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPass').value;
+                const errorEl = document.getElementById('loginError');
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        localStorage.setItem('admin_user', JSON.stringify(data));
+                        this.initSession();
+                    } else {
+                        errorEl.textContent = data.error || 'Login failed';
+                    }
+                } catch (err) {
+                    console.error('Login connection error details:', err);
+                    errorEl.textContent = 'Server connection error: ' + err.message;
+                }
+            },
+
+            logout: function () {
+                localStorage.removeItem('admin_user');
+                window.location.reload();
+            },
+
+            getUser: function () {
+                const user = localStorage.getItem('admin_user');
+                return user ? JSON.parse(user) : null;
+            },
+
+            initSession: function () {
+                const user = this.getUser();
+                if (user) {
+                    document.getElementById('adminLoginOverlay').style.display = 'none';
+                    document.getElementById('adminName').textContent = user.full_name;
+                    document.getElementById('adminAvatar').textContent = user.full_name[0].toUpperCase();
+                    document.getElementById('adminRole').textContent = user.role.replace('_', ' ').toUpperCase();
+
+                    // Role-based Sidebar Visibility
+                    const userRole = (user.role || '').toLowerCase().replace('_', ' ').trim();
+                    const isSuper = userRole === 'super admin' || userRole === 'superadmin';
+                    document.querySelectorAll('.revenue-restricted').forEach(el => {
+                        if (isSuper) {
+                            el.style.display = (el.tagName === 'BUTTON' ? 'flex' : 'block');
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
+
+                    if (isSuper) {
+                        switchTab('dashboard');
+                    } else {
+                        switchTab('vehicles');
+                    }
+                } else {
+                    document.getElementById('adminLoginOverlay').style.display = 'flex';
+                }
+            }
+        };
+        window.adminAuth = adminAuth;
+
+        // ==================== STAFF MODULE ====================
+        const Staff = {
+            data: [],
+            editingId: null,
+
+            async refresh() {
+                const user = adminAuth.getUser();
+                if (!user || user.role !== 'super_admin') return;
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/list?requester_id=${user.id}`);
+                    const data = await res.json();
+                    this.data = Array.isArray(data) ? data : [];
+                    this.render();
+                } catch (err) {
+                    console.error('Failed to fetch staff:', err);
+                }
+            },
+
+            render() {
+                const tbody = document.getElementById('staffBody');
+                if (!tbody) return;
+                if (this.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty">No staff accounts found.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = this.data.map(s => `
+                    <tr>
+                        <td><strong>${escapeHtml(s.full_name)}</strong> ${s.id === adminAuth.getUser().id ? '<span style="color:var(--primary); font-size:0.8em;">(You)</span>' : ''}</td>
+                        <td>${escapeHtml(s.email)}</td>
+                        <td><span class="pill ${s.role === 'super_admin' ? 'active' : 'pending'}">${s.role.toUpperCase()}</span></td>
+                        <td><span class="pill ${s.is_verified === 1 ? 'active' : 'inactive'}">${s.is_verified === 1 ? 'Enabled' : 'Disabled'}</span></td>
+                        <td>
+                            <button class="btn-secondary btn-small" onclick="Staff.openModal(${s.id})">Edit</button>
+                            ${s.id !== adminAuth.getUser().id ? `
+                                <button class="btn-secondary btn-small" style="background:${s.is_verified === 1 ? 'var(--danger)' : 'var(--green)'}; color:white;" onclick="Staff.toggleStatus(${s.id}, ${s.is_verified})">${s.is_verified === 1 ? 'Disable' : 'Enable'}</button>
+                                <button class="btn-danger btn-small" onclick="Staff.delete(${s.id})">Delete</button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+            },
+
+            openModal(id = null) {
+                this.editingId = id;
+                const modal = document.getElementById('staffModal');
+                const form = document.getElementById('staffForm');
+                const passHint = document.getElementById('passHint');
+                const passInput = document.getElementById('staffPass');
+
+                form.reset();
+                if (id) {
+                    const s = this.data.find(x => x.id === id);
+                    document.getElementById('staffFormTitle').textContent = 'Edit Staff Account';
+                    document.getElementById('staffName').value = s.full_name;
+                    document.getElementById('staffEmail').value = s.email;
+                    document.getElementById('staffRole').value = s.role;
+                    passInput.required = false;
+                    passHint.style.display = 'block';
+                } else {
+                    document.getElementById('staffFormTitle').textContent = 'Add New Staff';
+                    passInput.required = true;
+                    passHint.style.display = 'none';
+                }
+                modal.style.display = 'flex';
+            },
+
+            closeModal() {
+                document.getElementById('staffModal').style.display = 'none';
+            },
+
+            async toggleStatus(id, currentStatus) {
+                const user = adminAuth.getUser();
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/status/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ requester_id: user.id, status: currentStatus === 1 ? 0 : 1 })
+                    });
+                    if (res.ok) this.refresh();
+                } catch (err) { console.error(err); }
+            },
+
+            async delete(id) {
+                if (!confirm('Are you sure you want to delete this staff account?')) return;
+                const user = adminAuth.getUser();
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/delete/${id}?requester_id=${user.id}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (res.ok) {
+                        this.refresh();
+                    } else {
+                        alert(data.error);
+                    }
+                } catch (err) { console.error(err); }
+            }
+        };
+
+        // ==================== ACTIVITY MODULE ====================
+        const Activity = {
+            async refresh() {
+                const tbody = document.getElementById('activityBody');
+                if (!tbody) return;
+                tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading logs...</td></tr>';
+                
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/activity-logs`);
+                    const logs = await res.json();
+                    
+                    if (!logs || logs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="empty">No activity logs found.</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = logs.map(l => `
+                        <tr>
+                            <td style="font-size: 0.8rem; white-space: nowrap; color: var(--text-secondary);">${new Date(l.created_at).toLocaleString()}</td>
+                            <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(l.admin_name || 'System')}</td>
+                            <td><span class="pill info" style="font-size: 10px; padding: 4px 8px; background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2);">${escapeHtml(l.action)}</span></td>
+                            <td><span style="opacity: 0.7; font-size: 0.85rem;">${escapeHtml(l.target_type || '-')}</span></td>
+                            <td style="font-size: 0.85rem; color: var(--text-secondary);">${escapeHtml(l.details || '-')}</td>
+                            <td style="font-family: monospace; font-size: 0.75rem; opacity: 0.6;">${escapeHtml(l.ip_address || '-')}</td>
+                        </tr>
+                    `).join('');
+                } catch (err) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="error">Failed to load logs.</td></tr>';
+                }
+            }
+        };
+
+        // ==================== TICKETS MODULE ====================
+        const Tickets = {
+            async refresh() {
+                const list = document.getElementById('ticketList');
+                if (!list) return;
+                document.getElementById('loadingMsg').style.display = 'block';
+                
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/contact-queries`);
+                    const data = await res.json();
+                    this.render(data);
+                } catch (err) {
+                    list.innerHTML = '<div class="error">Failed to load support tickets.</div>';
+                } finally {
+                    document.getElementById('loadingMsg').style.display = 'none';
+                }
+            },
+
+            render(tickets) {
+                const list = document.getElementById('ticketList');
+                if (!tickets || tickets.length === 0) {
+                    list.innerHTML = '<div class="empty">No support tickets found.</div>';
+                    return;
+                }
+                list.innerHTML = tickets.map(t => `
+                    <div class="card" style="margin-bottom: 15px; border-left: 4px solid ${t.status === 'resolved' ? 'var(--success)' : 'var(--primary)'}">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <strong>${escapeHtml(t.name)}</strong>
+                            <span class="pill ${t.status === 'resolved' ? 'active' : 'pending'}">${t.status.toUpperCase()}</span>
+                        </div>
+                        <p style="font-size: 0.9rem; margin-bottom: 10px;">${escapeHtml(t.message)}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <small style="color: var(--text-muted)">${new Date(t.created_at).toLocaleString()}</small>
+                            ${t.status !== 'resolved' ? `<button class="btn-primary btn-small" onclick="Tickets.resolve(${t.id})">Mark Resolved</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            async resolve(id) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/contact-queries/${id}/resolve`, { method: 'PUT' });
+                    if (res.ok) {
+                        showNotification('Ticket marked as resolved', 'success');
+                        this.refresh();
+                    }
+                } catch (err) {
+                    showNotification('Failed to resolve ticket', 'error');
+                }
+            }
+        };
+
+        // ==================== INSTRUCTIONS MODULE ====================
+        const Instructions = {
+            async render() {
+                const list = document.getElementById('instructionList');
+                if (!list) return;
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/instructions`);
+                    const data = await res.json();
+                    if (!data || data.length === 0) {
+                        list.innerHTML = '<div class="empty">No active instructions.</div>';
+                        return;
+                    }
+                    list.innerHTML = data.map(inst => `
+                        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                            <p style="margin:0">${escapeHtml(inst.instruction_text)}</p>
+                            <button class="btn-danger btn-small" onclick="Instructions.delete(${inst.id})">Delete</button>
+                        </div>
+                    `).join('');
+                } catch (err) {
+                    list.innerHTML = '<div class="error">Failed to load instructions.</div>';
+                }
+            },
+
+            async add() {
+                const text = document.getElementById('newInstruction').value;
+                if (!text) return;
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/instructions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ instruction: text })
+                    });
+                    if (res.ok) {
+                        document.getElementById('newInstruction').value = '';
+                        showNotification('Instruction added globally', 'success');
+                        this.render();
+                    }
+                } catch (err) {
+                    showNotification('Failed to add instruction', 'error');
+                }
+            },
+
+            async delete(id) {
+                if (!confirm('Delete this instruction?')) return;
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/instructions/${id}`, { method: 'DELETE' });
+                    if (res.ok) {
+                        showNotification('Instruction deleted', 'success');
+                        this.render();
+                    }
+                } catch (err) {
+                    showNotification('Failed to delete instruction', 'error');
+                }
+            }
+        };
+
+        // ==================== SETTINGS MODULE ====================
+        const Settings = {
+            async fetchSettings() {
+                const container = document.getElementById('settingsContainer');
+                if (!container) return;
+                const user = adminAuth.getUser();
+                if (!user || user.role !== 'super_admin') return;
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/settings`);
+                    const settings = await res.json();
+                    
+                    container.innerHTML = settings.map(s => `
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">
+                                ${s.description} (${s.key})
+                            </label>
+                            <input type="text" data-key="${s.key}" class="login-input" style="margin-bottom: 0;" value="${s.value}">
+                        </div>
+                    `).join('');
+                } catch (err) {
+                    container.innerHTML = '<div class="error">Failed to load settings.</div>';
+                }
+            },
+
+            async saveSettings() {
+                const inputs = document.querySelectorAll('#settingsContainer input');
+                const updates = Array.from(inputs).map(input => ({
+                    key: input.getAttribute('data-key'),
+                    value: input.value
+                }));
+                const user = adminAuth.getUser();
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/settings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ requester_id: user.id, settings: updates })
+                    });
+
+                    if (res.ok) {
+                        showNotification('System settings updated!', 'success');
+                        this.fetchSettings();
+                    } else {
+                        showNotification('Failed to update settings.', 'error');
+                    }
+                } catch (err) {
+                    showNotification('Network error.', 'error');
+                }
+            },
+
+            async changePassword() {
+                const newPass = document.getElementById('newAdminPassword').value;
+                const confirmPass = document.getElementById('confirmAdminPassword').value;
+                const user = adminAuth.getUser();
+
+                if (!newPass || !confirmPass) {
+                    showNotification('Please fill in both password fields.', 'error');
+                    return;
+                }
+
+                if (newPass !== confirmPass) {
+                    showNotification('Passwords do not match!', 'error');
+                    return;
+                }
+
+                if (newPass.length < 6) {
+                    showNotification('Password must be at least 6 characters long.', 'error');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/change-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: user.id, new_password: newPass })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        showNotification('Password updated successfully!', 'success');
+                        document.getElementById('newAdminPassword').value = '';
+                        document.getElementById('confirmAdminPassword').value = '';
+                    } else {
+                        showNotification(data.error || 'Failed to update password.', 'error');
+                    }
+                } catch (err) {
+                    showNotification('Network error. Failed to update password.', 'error');
+                }
+            }
+        };
+
+        // ==================== GLOBAL ACCESS ====================
+        window.adminAuth = adminAuth;
+        window.Dashboard = Dashboard;
+        window.Vehicles = Vehicles;
+        window.Drivers = Drivers;
+        window.Bookings = Bookings;
+        window.Reports = Reports;
+        window.Verifications = Verifications;
+        window.Staff = Staff;
+        window.Activity = Activity;
+        window.Settings = Settings;
+        window.Tickets = Tickets;
+        window.Instructions = Instructions;
+
+        // ==================== GLOBAL HELPERS ====================
+        window.refreshVehicles = () => Vehicles.refresh();
+        window.refreshDrivers = () => Drivers.refresh();
+        window.refreshBookings = () => Bookings.refresh();
+        window.refreshReports = () => Reports.refresh();
+        window.Reports_generateReport = () => Reports.generate();
+
+        // ==================== EVENT LISTENERS ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Vehicle Form
+            document.getElementById('vehicleForm')?.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = Vehicles.editingId;
+                const brand = document.getElementById('vehicleBrand').value;
+                const model = document.getElementById('vehicleModel').value;
+
+                const formData = new FormData();
+                formData.append('name', `${brand} ${model}`);
+                formData.append('brand', brand);
+                formData.append('model', model);
+                formData.append('plate_number', document.getElementById('vehiclePlate').value);
+                formData.append('vehicle_type', document.getElementById('vehicleType').value);
+                formData.append('transmission', document.getElementById('vehicleTransmission').value);
+                formData.append('fuel_type', document.getElementById('vehicleFuelType').value);
+                formData.append('seats', document.getElementById('vehicleSeats').value);
+                formData.append('daily_rate', document.getElementById('vehicleRate').value);
+                formData.append('location', document.getElementById('vehicleLocation').value);
+                formData.append('status', document.getElementById('vehicleStatus').value);
+                formData.append('vehicle_image', document.getElementById('vehicleImage').value);
+
+                const galleryInput = document.getElementById('vehicleGallery');
+                if (galleryInput?.files.length > 0) {
+                    for (let i = 0; i < galleryInput.files.length; i++) {
+                        formData.append('gallery', galleryInput.files[i]);
+                    }
+                }
+
+                try {
+                    const res = await fetch(id ? `${API_BASE}/vehicles/${id}` : `${API_BASE}/vehicles`, {
+                        method: id ? 'PUT' : 'POST',
+                        body: formData
+                    });
+                    if (res.ok) {
+                        alert(id ? 'Vehicle updated!' : 'Vehicle added!');
+                        Vehicles.closeModal();
+                        Vehicles.refresh();
+                    } else {
+                        const err = await res.json();
+                        alert('Error: ' + err.error);
+                    }
+                } catch (err) { alert('Failed to save vehicle.'); }
+            });
+
+            // Staff Form
+            document.getElementById('staffForm')?.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const id = Staff.editingId;
+                const user = adminAuth.getUser();
+                const payload = {
+                    requester_id: user.id,
+                    name: document.getElementById('staffName').value,
+                    email: document.getElementById('staffEmail').value,
+                    password: document.getElementById('staffPass').value,
+                    role: document.getElementById('staffRole').value
+                };
+
+                try {
+                    const res = await fetch(id ? `${API_BASE}/api/admin/update/${id}` : `${API_BASE}/api/admin/create`, {
+                        method: id ? 'PUT' : 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (res.ok) {
+                        alert('Staff saved!');
+                        Staff.closeModal();
+                        Staff.refresh();
+                    } else {
+                        const data = await res.json();
+                        alert('Error: ' + data.error);
+                    }
+                } catch (err) { alert('Failed to save staff.'); }
+            });
+
+            // Filters & Search
+            document.getElementById('vehicleSearchInput')?.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const filtered = Vehicles.data.filter(v =>
+                    (v.name && v.name.toLowerCase().includes(query)) ||
+                    (v.plate_number && v.plate_number.toLowerCase().includes(query))
+                );
+                Vehicles.render(filtered);
+            });
+
+            document.getElementById('driverSearchInput')?.addEventListener('input', () => Drivers.applyFilters?.());
+            document.getElementById('driverStatusFilter')?.addEventListener('change', () => Drivers.applyFilters?.());
+            document.getElementById('bookingSearchInput')?.addEventListener('input', () => Bookings.applyFilters?.());
+            document.getElementById('bookingStatusFilter')?.addEventListener('change', () => Bookings.applyFilters?.());
+
+            // Setup wage save
+            document.getElementById('saveWageBtn')?.addEventListener('click', async () => {
+                const input = document.getElementById('driverWageInput');
+                const msg = document.getElementById('wageStatusMsg');
+                try {
+                    const res = await fetch(`${API_BASE}/settings/driver_wage`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ value: input.value })
+                    });
+                    if (res.ok) {
+                        msg.textContent = 'Saved!';
+                        msg.style.color = '#22c55e';
+                        setTimeout(() => msg.textContent = '', 2000);
+                    }
+                } catch (err) { }
+            });
+
+            adminAuth.initSession();
+            subscribeToSystemWideUpdates();
+        });
+    </script>
+
+</body>
+
+</html>

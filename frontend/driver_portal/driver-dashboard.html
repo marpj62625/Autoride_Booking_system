@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; }
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 70px);
+        }
+        .sidebar {
+            background: #fff;
+            border-right: 1px solid #e2e8f0;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.02);
+            z-index: 10;
+        }
+        .sidebar-section { margin-bottom: 25px; }
+        .sidebar-section h3 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            color: #64748b;
+            letter-spacing: 0.05em;
+            margin-bottom: 15px;
+        }
+        .profile-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #fff;
+            border: 3px solid rgba(255,255,255,0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .profile-name { font-weight: 600; font-size: 1.1em; color: #f8fafc; }
+        .profile-status {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 12px;
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .main-content {
+            padding: 30px;
+            overflow-y: auto;
+            background: #f1f5f9;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            margin-bottom: 25px;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .card-header h2 { font-size: 1.35em; color: #0f172a; margin: 0; }
+        .booking-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .booking-table th, .booking-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .booking-table tr {
+            transition: all 0.2s ease;
+        }
+        .booking-table tbody tr:hover {
+            background-color: #f8fafc;
+            transform: translateY(-1px);
+        }
+        .booking-table th {
+            font-weight: 600;
+            color: #64748b;
+            background: #f8fafc;
+            text-transform: uppercase;
+            font-size: 0.75em;
+            letter-spacing: 0.05em;
+        }
+        .booking-table td {
+            color: #334155;
+            font-size: 0.95em;
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge.approved { background: #e0f2fe; color: #0284c7; }
+        .badge.ongoing { background: #dcfce7; color: #16a34a; box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2); animation: pulse 2s infinite; }
+        .badge.completed { background: #f1f5f9; color: #64748b; }
+        
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .action-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .action-btn.start { background: #3b82f6; color: white; }
+        .action-btn.start:hover { background: #2563eb; }
+        .action-btn.finish { background: #10b981; color: white; }
+        .action-btn.finish:hover { background: #059669; }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            z-index: 9999; justify-content: center; align-items: center;
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            background: white; border-radius: 16px; padding: 30px; width: 400px;
+            max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-header { font-size: 1.25em; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
+        .modal-body { color: #475569; font-size: 0.95em; margin-bottom: 25px; line-height: 1.5; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; }
+    </style>
+</head>
+<body>
+    <header style="background: #0f172a; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50;">
+        <div class="logo" style="font-weight: 800; font-size: 1.25em; color:#38bdf8;">Autoride Driver Pro</div>
+        <nav style="display:flex; gap:20px; align-items:center; font-size: 0.9em;">
+            <a href="/vehicles.html" style="color:#94a3b8; text-decoration:none; font-weight:500; transition: color 0.2s;">Main Site</a>
+            <span id="headerName" style="font-weight:600; padding: 4px 12px; background: rgba(255,255,255,0.1); border-radius: 20px;"></span>
+            <a href="#" onclick="logout()" style="color:#f87171; text-decoration:none; font-weight:600; transition: color 0.2s;">Logout</a>
+        </nav>
+    </header>
+
+    <div class="dashboard-layout" id="appLayout" style="display:none;">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="profile-card">
+                    <div class="profile-avatar" id="avatarInitials">D</div>
+                    <div class="profile-name" id="driverName">...</div>
+                    <div class="profile-status">Approved Driver</div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <h3>Navigation</h3>
+                <ul style="list-style:none; padding:0; margin:0;">
+                    <li style="margin-bottom:8px;">
+                        <a href="#" style="display:block; padding:10px 15px; background:#eff6ff; color:#2563eb; text-decoration:none; font-weight:600; border-radius:8px; display:flex; align-items:center; gap:10px;">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            My Schedule
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Assigned Client Trips</h2>
+                </div>
+                
+                <table class="booking-table">
+                    <thead>
+                        <tr>
+                            <th>Schedule</th>
+                            <th>Vehicle Assignment</th>
+                            <th>Client Details</th>
+                            <th>Pickup Location</th>
+                            <th>Current Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingsBody">
+                        <tr><td colspan="5" style="text-align:center; padding: 40px; color:#94a3b8;">Syncing schedule...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Safety Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header" id="confirmTitle">Confirm Action</div>
+            <div class="modal-body" id="confirmBody">Are you sure you want to proceed?</div>
+            <div class="modal-footer">
+                <button class="action-btn" style="background:#e2e8f0; color:#475569;" onclick="closeModal()">Cancel</button>
+                <button id="confirmExecuteBtn" class="action-btn" style="background:#3b82f6; color:white;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "/api";
+        const userId = localStorage.getItem('user_id');
+        const fullName = localStorage.getItem('full_name');
+
+        let pendingBookingId = null;
+        let pendingStatus = null;
+
+        if (!userId && !window.location.search.includes('demo=1')) {
+            window.location.href = '/login.html';
+        }
+
+        if(fullName) {
+            document.getElementById('headerName').textContent = fullName;
+            document.getElementById('driverName').textContent = fullName;
+            document.getElementById('avatarInitials').textContent = (fullName[0] || 'D').toUpperCase();
+        }
+
+        async function initDashboard() {
+            try {
+                if (window.location.search.includes('demo=1')) {
+                    document.getElementById('headerName').textContent = 'Jane Doe (Demo)';
+                    document.getElementById('driverName').textContent = 'Jane Doe';
+                    document.getElementById('avatarInitials').textContent = 'J';
+                    document.getElementById('appLayout').style.display = 'grid';
+                    renderBookings([
+                        { id: 101, start_date: '2026-05-01', end_date: '2026-05-03', brand: 'Honda', model: 'Civic', plate_number: 'XYZ-9876', client_name: 'John Smith', client_phone: '0917-123-4567', pickup_location: 'Manila Airport', status: 'Ongoing' },
+                        { id: 102, start_date: '2026-05-15', end_date: '2026-05-18', brand: 'Toyota', model: 'Innova', plate_number: 'ABC-1234', client_name: 'Maria Garcia', client_phone: '0918-987-6543', pickup_location: 'Makati City', status: 'Confirmed' }
+                    ]);
+                    return;
+                }
+
+                // Verify they are approved
+                const statusRes = await fetch(`${API_BASE}/driver/status?user_id=${userId}`);
+                const statusData = await statusRes.json();
+                
+                if (statusData.status !== 'Approved') {
+                    // Send them to apply screen to wait or see rejection
+                    window.location.href = 'apply.html';
+                    return;
+                }
+
+                // Show layout since verified
+                document.getElementById('appLayout').style.display = 'grid';
+
+                // Fetch their bookings
+                const bookRes = await fetch(`${API_BASE}/driver/bookings?user_id=${userId}`);
+                const bookings = await bookRes.json();
+                
+                renderBookings(bookings);
+
+            } catch (err) {
+                console.error(err);
+                alert("Failed to load dashboard data. Check server.");
+            }
+        }
+
+        function renderBookings(bookings) {
+            const tbody = document.getElementById('bookingsBody');
+            
+            if (!bookings || bookings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:40px; font-weight:500;">No assigned rentals yet.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            bookings.forEach(b => {
+                const dates = `<div style="font-weight:600; color:#1e293b; margin-bottom:4px;">${formatDate(b.start_date)}</div><div style="font-size:0.85em; color:#64748b;">Until ${formatDate(b.end_date)}</div>`;
+                let badgeClass = 'approved';
+                let actionBtn = '';
+                
+                if (b.status === 'Completed') badgeClass = 'completed';
+                if (b.status === 'Ongoing') badgeClass = 'ongoing';
+                
+                if (b.status === 'Confirmed' || b.status === 'Approved') {
+                    actionBtn = `<button onclick="confirmTripAction(${b.id}, 'Ongoing')" class="action-btn start">Start Trip</button>`;
+                } else if (b.status === 'Ongoing') {
+                    actionBtn = `<button onclick="confirmTripAction(${b.id}, 'Completed')" class="action-btn finish">Finish Trip</button>`;
+                } else {
+                    actionBtn = `<span style="color: #94a3b8; font-size: 0.85em; font-weight:500;">No actions</span>`;
+                }
+                
+                html += `
+                    <tr>
+                        <td>${dates}</td>
+                        <td>
+                            <div style="font-weight:600; color:#1e293b; margin-bottom:4px;">${b.brand} ${b.model}</div>
+                            <div style="font-size:0.85em; color:#64748b; background:#f1f5f9; display:inline-block; padding:2px 6px; border-radius:4px;">Plate: ${b.plate_number}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight:500; color:#1e293b;">${b.client_name}</div>
+                            <div style="font-size:0.85em; color:#64748b; margin-top:4px;">📞 ${b.client_phone || 'No phone'}</div>
+                        </td>
+                        <td style="font-weight:500; color:#475569;">${b.pickup_location || 'N/A'}</td>
+                        <td>
+                            <div style="display:flex; flex-direction: column; align-items:flex-start; gap:12px;">
+                                <span class="badge ${badgeClass}">${b.status}</span>
+                                ${actionBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function confirmTripAction(bookingId, status) {
+            pendingBookingId = bookingId;
+            pendingStatus = status;
+
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('confirmTitle');
+            const body = document.getElementById('confirmBody');
+            const btn = document.getElementById('confirmExecuteBtn');
+
+            if (status === 'Ongoing') {
+                title.textContent = 'Start Trip';
+                body.innerHTML = 'Are you sure you want to officially <strong>Start this Trip</strong>? This will notify the server that the rental is actively ongoing.';
+                btn.style.background = '#3b82f6';
+                btn.textContent = 'Yes, Start Trip';
+            } else {
+                title.textContent = 'Finish Trip';
+                body.innerHTML = 'Are you sure you want to officially <strong>Finish this Trip</strong>? This will mark the booking as fully completed.';
+                btn.style.background = '#10b981';
+                btn.textContent = 'Yes, Finish Trip';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+            pendingBookingId = null;
+            pendingStatus = null;
+        }
+
+        document.getElementById('confirmExecuteBtn').addEventListener('click', async () => {
+            if (!pendingBookingId || !pendingStatus) return closeModal();
+
+            const bookingId = pendingBookingId;
+            const newStatus = pendingStatus;
+            closeModal();
+
+            // For demo mode bypass
+            if (window.location.search.includes('demo=1')) {
+                alert(`Demo: Status would be safely updated to ${newStatus} in a real environment!`);
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/driver/bookings/${bookingId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, status: newStatus })
+                });
+
+                if (res.ok) {
+                    initDashboard(); // Re-fetch the data cleanly
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.error);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Failed to update status.");
+            }
+        });
+
+        function formatDate(dtStr) {
+            if (!dtStr) return '';
+            const d = new Date(dtStr);
+            return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        }
+
+        function logout() {
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('full_name');
+            window.location.href = '/login.html';
+        }
+
+        // Initialize on load
+        initDashboard();
+    </script>
+</body>
+</html>

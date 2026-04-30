@@ -1,0 +1,30 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Database
+*.sqlite3
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Mobile / IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Vercel
+.vercel/
+
+# Node (kung meron man)
+node_modules/
+dist/
+build/

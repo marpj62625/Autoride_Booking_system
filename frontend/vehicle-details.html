@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Details | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <style>
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .vehicle-info img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: var(--radius);
+            background: var(--surface-hover);
+            margin-bottom: 1.5rem;
+        }
+        .info-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+        .info-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+        .booking-card {
+            background: var(--surface-color);
+            padding: 2rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-premium);
+        }
+        .price-summary {
+            background: rgba(0,0,0,0.25);
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-color);
+        }
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        .price-total {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .discount-text {
+            color: var(--success);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .rule-note {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        /* Swipe Gallery */
+        .gallery-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+            margin-bottom: 1.5rem;
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: #0F172A;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .gallery-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            height: 100%;
+            scrollbar-width: none; /* Hide scrollbar for Firefox */
+        }
+        
+        .gallery-scroll::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for Chrome/Safari */
+        }
+
+        .gallery-slide {
+            flex: 0 0 100%;
+            width: 100%;
+            height: 100%;
+            scroll-snap-align: center;
+            position: relative;
+        }
+
+        .gallery-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            color: white;
+            transition: background 0.3s;
+        }
+
+        .gallery-nav:hover {
+            background: rgba(255, 255, 255, 0.6);
+            color: #0F172A;
+        }
+
+        .gallery-nav.prev { left: 10px; }
+        .gallery-nav.next { right: 10px; }
+
+        .gallery-dots {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--surface-color);
+            width: 20px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <span id="userGreeting" style="margin-right: 1.5rem; font-weight: 500; font-size: 0.9rem; color: var(--text-muted);"></span>
+            <a href="vehicles.html">Browse Vehicles</a>
+            <a href="dashboard.html" id="dashboardLink" style="display: none;">Dashboard</a>
+            <a href="profile.html" id="profileLink" style="display: none;">My Profile</a>
+            <a href="#" id="logoutBtn" style="display: none;">Logout</a>
+            <a href="login.html" id="loginLink">Login</a>
+            <!-- <a href="driver_portal/apply.html" id="applyDriverLink" class="btn-outline" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; width: auto;">Apply as Driver</a> -->
+            <a href="register.html" id="registerLink">Register</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div id="loadingMessage">Loading vehicle details...</div>
+        
+        <div class="details-grid" id="detailsContainer" style="display: none;">
+            <!-- Left: Vehicle Info -->
+            <div class="vehicle-info">
+                <div class="gallery-container" id="vehicleImageContainer">
+                    <button class="gallery-nav prev" id="galPrev" onclick="scrollGallery(-1)" style="display:none;">❮</button>
+                    <div class="gallery-scroll" id="galleryScroll">
+                        <!-- Images injected here -->
+                        <div class="gallery-slide" style="display: flex; align-items: center; justify-content: center; background: var(--surface-hover);">
+                            <svg width="64" height="64" fill="none" stroke="#94a3b8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        </div>
+                    </div>
+                    <button class="gallery-nav next" id="galNext" onclick="scrollGallery(1)" style="display:none;">❯</button>
+                    <div class="gallery-dots" id="galleryDots"></div>
+                    
+                    <button id="detailFavBtn" class="fav-btn" style="display: none; position: absolute; top: 15px; right: 15px; z-index: 10;" onclick="toggleFavorite(event)">
+                        <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </button>
+                </div>
+                <h2 id="vehicleName" style="font-size: 2rem;">Vehicle Name</h2>
+                <div class="status-badge status-available" id="vehicleStatus" style="margin-top: 0.5rem;">Available</div>
+                <div class="star-rating" id="vehicleRating" style="margin-top: 0.5rem; font-size: 1.1rem;"></div>
+                
+                <ul class="info-list">
+                    <li><span>Plate Number</span> <strong id="vehiclePlate">-</strong></li>
+                    <li><span>Type</span> <strong id="vehicleType">-</strong></li>
+                    <li><span>Transmission</span> <strong id="vehicleTrans">-</strong></li>
+                    <li><span>Seats</span> <strong id="vehicleSeats">-</strong></li>
+                    <li><span>Daily Rate</span> <strong class="vehicle-price" id="vehicleRate">-</strong></li>
+                </ul>
+            </div>
+
+            <!-- Right: Booking Form -->
+            <div class="booking-card">
+                <h3>Book this vehicle</h3>
+                
+                <div class="rule-note" id="instructionBox" style="display: none; background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <strong>Mandatory Requirements:</strong>
+                    <ul id="instructionList" style="margin: 0.5rem 0 0 1rem; padding: 0; font-size: 0.9rem;"></ul>
+                </div>
+
+                <div class="rule-note">
+                    <strong id="mileageLabel">Note:</strong> <span id="mileageText">Mileage Rule: 250 km per day.</span>
+                    <br><span id="discountText">Rentals of 7 days or more get a 10% discount!</span>
+                </div>
+
+                <form id="bookingForm">
+                    <div class="form-group">
+                        <label>Rental Type</label>
+                        <select id="rentalType" class="form-input" required>
+                            <option value="Self Drive">Self Drive</option>
+                            <option value="With Driver">With Driver</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Pickup Location</label>
+                        <select id="pickupLoc" class="form-input" required>
+                            <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
+                            <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Return Location</label>
+                        <select id="returnLoc" class="form-input" required>
+                            <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
+                            <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label>Start Date & Time</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="date" id="startDate" class="form-input" style="flex: 2;" required>
+                                <select id="startTime" class="form-input" style="flex: 1;"></select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date & Time</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="date" id="endDate" class="form-input" style="flex: 2;" required>
+                                <select id="endTime" class="form-input" style="flex: 1;"></select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Preferred Insurance Coverage</label>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 0.75rem; background: rgba(0,0,0,0.2); padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+                            <label style="font-weight: 500; display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer;">
+                                <input type="radio" name="insurance" value="Basic" data-price="0" checked style="margin-top: 3px;">
+                                <div>
+                                    <div>Basic Protection (₱0)</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">Standard passenger and third-party liability.</div>
+                                </div>
+                            </label>
+                            <label style="font-weight: 500; display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer;">
+                                <input type="radio" name="insurance" value="Standard" data-price="500" style="margin-top: 3px;">
+                                <div>
+                                    <div>Standard Protection (₱500/day)</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">Collision Damage Waiver (CDW) with ₱10k deductible.</div>
+                                </div>
+                            </label>
+                            <label style="font-weight: 500; display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer;">
+                                <input type="radio" name="insurance" value="Premium" data-price="1200" style="margin-top: 3px;">
+                                <div>
+                                    <div>Premium Protection (₱1200/day)</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 400;">Full coverage, zero deductible, and roadside assistance.</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Add-ons</label>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin-top: 0.5rem;">
+                            <label style="font-weight: 400; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" class="addon-checkbox" value="GPS" data-price="200"> GPS Navigation (₱200/day)
+                            </label>
+                            <label style="font-weight: 400; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" class="addon-checkbox" value="Child Seat" data-price="150"> Child Safety Seat (₱150/day)
+                            </label>
+                            <label style="font-weight: 400; display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" class="addon-checkbox" value="Roadside" data-price="100"> Roadside Assistance (₱100/day)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Split Billing Section -->
+                    <div class="form-group" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: var(--radius); border: 1px dashed var(--primary-color);">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--primary-color); font-weight: 600;">
+                            <input type="checkbox" id="splitBillCheck">
+                            Split this Bill with a Friend?
+                        </label>
+                        <div id="splitBillSection" style="display: none; margin-top: 1rem;">
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">They will receive a request to pay half of the total amount.</p>
+                            <label style="font-size: 0.9rem;">Friend's Email Address:</label>
+                            <input type="email" id="splitEmail" class="form-input" placeholder="friend@example.com" style="margin-top: 0.25rem;">
+                        </div>
+                    </div>
+
+
+                    <div class="price-summary">
+                        <div class="price-row">
+                            <span>Days:</span>
+                            <strong id="summaryDays">0</strong>
+                        </div>
+                        <div class="price-row">
+                            <span>Base Rate:</span>
+                            <strong id="summaryBase">₱0.00</strong>
+                        </div>
+                        <div class="price-row">
+                            <span>Add-ons & Insurance:</span>
+                            <strong id="summaryAddons">₱0.00</strong>
+                        </div>
+                        <div class="price-row" id="discountRow" style="display: none;">
+                            <span class="discount-text">7+ Days Discount (10%):</span>
+                            <strong class="discount-text" id="summaryDiscount">-₱0.00</strong>
+                        </div>
+                        <div class="price-row price-total">
+                            <span>Total Price:</span>
+                            <strong id="summaryTotal">₱0.00</strong>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn" id="submitBtn">Proceed to Payment</button>
+                    <div id="message" style="margin-top: 1rem; text-align: center;"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviewsSection" style="margin-top: 4rem; display: none;">
+            <h3 style="margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                Customer Reviews 
+                <span id="reviewCountBadge" style="background: var(--primary-color); color: white; border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.8rem;">0</span>
+            </h3>
+            <div id="reviewsList" style="display: grid; gap: 1.5rem;">
+                <!-- Filled via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('user_id');
+        const userFullName = localStorage.getItem('full_name');
+
+        if (userId) {
+            document.getElementById('userGreeting').textContent = `Hello, ${userFullName}`;
+            document.getElementById('logoutBtn').style.display = 'inline';
+            document.getElementById('dashboardLink').style.display = 'inline';
+            document.getElementById('profileLink').style.display = 'inline';
+            document.getElementById('loginLink').style.display = 'none';
+            document.getElementById('registerLink').style.display = 'none';
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.reload();
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const vehicleId = urlParams.get('id');
+        let dailyRate = 0;
+        let finalPrice = 0;
+        let addonPrice = 0;
+        let serviceFee = 0;
+        let selectedAddons = [];
+        
+        // Dynamic API Base Detection
+        const API_BASE = (function() {
+            const host = window.location.hostname;
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:9999';
+            if (host.startsWith('192.168.')) return `http://${host}:9999`;
+            return '/api'; // Safe fallback
+        })();
+
+        // System Settings Defaults
+        let systemSettings = {
+            mileage_limit: 250,
+            long_term_discount_days: 7,
+            long_term_discount_percent: 10
+        };
+
+        if (!vehicleId) {
+            document.getElementById('loadingMessage').textContent = 'No vehicle ID provided.';
+        } else {
+            fetchSystemSettings();
+            fetchVehicleDetails();
+        }
+
+        async function fetchSystemSettings() {
+            try {
+                const res = await fetch(`${API_BASE}/api/public/settings`);
+                if (res.ok) {
+                    const data = await res.json();
+                    systemSettings = {
+                        mileage_limit: parseInt(data.mileage_limit) || 250,
+                        long_term_discount_days: parseInt(data.long_term_discount_days) || 7,
+                        long_term_discount_percent: parseFloat(data.long_term_discount_percent) || 10,
+                        rental_terms: data.rental_terms
+                    };
+                    
+                    // Update UI Labels
+                    document.getElementById('mileageText').textContent = `Mileage Rule: ${systemSettings.mileage_limit} km per day.`;
+                    document.getElementById('discountText').textContent = `Rentals of ${systemSettings.long_term_discount_days} days or more get a ${systemSettings.long_term_discount_percent}% discount!`;
+                    
+                    // Update Modal Terms if present
+                    const agreementTerms = document.getElementById('agreementTermsList');
+                    if (agreementTerms && data.rental_terms) {
+                        // Optional: we can parse rental_terms or just update the specific line
+                    }
+                }
+            } catch (err) { console.error('Failed to fetch settings:', err); }
+        }
+
+        async function fetchVehicleDetails() {
+            try {
+                const response = await fetch(`${API_BASE}/vehicle/${vehicleId}?user_id=${userId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('detailsContainer').style.display = 'grid';
+                    
+                    document.getElementById('vehicleName').textContent = `${data.brand} ${data.model}`;
+                    document.getElementById('vehiclePlate').textContent = data.plate_number;
+                    document.getElementById('vehicleType').textContent = data.vehicle_type;
+                    document.getElementById('vehicleTrans').textContent = data.transmission;
+                    document.getElementById('vehicleSeats').textContent = data.seats;
+                    document.getElementById('vehicleRate').textContent = `₱${data.daily_rate}/day`;
+                    
+                    // Display status
+                    const statusEl = document.getElementById('vehicleStatus');
+                    statusEl.textContent = data.status;
+                    statusEl.className = `status-badge ${data.status.toLowerCase() === 'available' ? 'status-available' : 'status-booked'}`;
+                    
+                    if (data.status.toLowerCase() !== 'available') {
+                        document.getElementById('submitBtn').disabled = true;
+                        document.getElementById('submitBtn').textContent = 'Vehicle Booked';
+                        document.getElementById('message').innerHTML = '<span class="error">This vehicle is currently booked. You can try other dates or check back later.</span>';
+                    }
+
+                    if (data.pickup_instructions && data.pickup_instructions.length > 0) {
+                        const instBox = document.getElementById('instructionBox');
+                        const instList = document.getElementById('instructionList');
+                        instBox.style.display = 'block';
+                        instList.innerHTML = data.pickup_instructions.map(inst => `<li>${inst}</li>`).join('');
+                    }
+
+                    if (data.gallery && data.gallery.length > 0) {
+                        const scrollContainer = document.getElementById('galleryScroll');
+                        const dotsContainer = document.getElementById('galleryDots');
+                        
+                        scrollContainer.innerHTML = data.gallery.map(img => `
+                            <div class="gallery-slide"><img src="${img}" alt="Vehicle Image"></div>
+                        `).join('');
+
+                        dotsContainer.innerHTML = data.gallery.map((_, idx) => `
+                            <div class="dot ${idx === 0 ? 'active' : ''}"></div>
+                        `).join('');
+
+                        if (data.gallery.length > 1) {
+                            document.getElementById('galPrev').style.display = 'flex';
+                            document.getElementById('galNext').style.display = 'flex';
+                        }
+                    } else if (data.vehicle_image) {
+                        document.getElementById('galleryScroll').innerHTML = `
+                            <div class="gallery-slide"><img src="${data.vehicle_image}" alt="Vehicle Image"></div>
+                        `;
+                    }
+
+                    // Rating
+                    let stars = '';
+                    const r = Math.round(data.avg_rating || 0);
+                    for(let i=1; i<=5; i++) stars += `<span style="color: ${i <= r ? '#fbbf24' : '#cbd5e1'}">★</span>`;
+                    document.getElementById('vehicleRating').innerHTML = `${stars} (${data.avg_rating ? data.avg_rating.toFixed(1) : 'No reviews'})`;
+
+                    // Favorite State
+                    const favBtn = document.getElementById('detailFavBtn');
+                    if (favBtn) {
+                        favBtn.style.display = 'flex';
+                        if (data.is_favorite) favBtn.classList.add('active');
+                        else favBtn.classList.remove('active');
+                    }
+
+                    // Reviews
+                    if (data.reviews && data.reviews.length > 0) {
+                        document.getElementById('reviewsSection').style.display = 'block';
+                        document.getElementById('reviewCountBadge').textContent = data.reviews.length;
+                        const rList = document.getElementById('reviewsList');
+                        rList.innerHTML = data.reviews.map(rev => `
+                            <div style="background: var(--surface-hover); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border-color);">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                    <strong>${rev.full_name}</strong>
+                                    <span style="color: #fbbf24;">${'★'.repeat(rev.rating)}${'☆'.repeat(5-rev.rating)}</span>
+                                </div>
+                                <p style="color: var(--text-muted); font-style: italic;">"${rev.comment || 'No comment.'}"</p>
+                                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">${new Date(rev.created_at).toLocaleDateString()}</div>
+                            </div>
+                        `).join('');
+                    }
+
+                    dailyRate = parseFloat(data.daily_rate);
+                    
+                    // Set min dates
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('startDate').min = today;
+                    document.getElementById('endDate').min = today;
+                    
+                    // Populate time dropdowns
+                    const timeDrops = [document.getElementById('startTime'), document.getElementById('endTime')];
+                    timeDrops.forEach(select => {
+                        select.innerHTML = ''; // Clear first
+                        for(let h=8; h<=20; h++) {
+                            const ampm = h >= 12 ? 'PM' : 'AM';
+                            const displayH = h > 12 ? h-12 : h;
+                            const timeStr = `${displayH}:00 ${ampm}`;
+                            const option = new Option(timeStr, timeStr);
+                            select.add(option);
+                        }
+                    });
+
+                    // Restore booking draft if user just logged in
+                    restoreBookingDraft();
+                    
+                } else {
+                    document.getElementById('loadingMessage').textContent = 'Vehicle not found.';
+                }
+            } catch (err) {
+                document.getElementById('loadingMessage').textContent = 'Error connecting to server.';
+            }
+        }
+
+        async function toggleFavorite(e) {
+            e.preventDefault();
+            if (!userId || userId === 'null') {
+                alert('Please log in to add favorites!');
+                return;
+            }
+
+            const btn = document.getElementById('detailFavBtn');
+            const isActive = btn.classList.contains('active');
+            
+            try {
+                const response = await fetch(`${API_BASE}/toggle-favorite`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, vehicle_id: vehicleId })
+                });
+                if (response.ok) {
+                    btn.classList.toggle('active');
+                }
+            } catch (err) { console.error('Error toggling favorite:', err); }
+        }
+
+        // Calculate Price Logic
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+
+        function calculatePrice() {
+            if (!startDateInput.value || !endDateInput.value) return;
+            
+            const start = new Date(startDateInput.value);
+            const end = new Date(endDateInput.value);
+            
+            if (end < start) {
+                alert('End date cannot be before start date.');
+                endDateInput.value = startDateInput.value;
+                return;
+            }
+
+            const diffTime = Math.abs(end - start);
+            let days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            basePrice = days * dailyRate;
+            
+            // Calculate Extras (Addons + Insurance)
+            addonPrice = 0;
+            selectedAddons = [];
+            document.querySelectorAll('.addon-checkbox:checked').forEach(cb => {
+                addonPrice += parseFloat(cb.getAttribute('data-price')) * days;
+                selectedAddons.push(cb.value);
+            });
+
+            // Insurance
+            const insuranceEl = document.querySelector('input[name="insurance"]:checked');
+            const insDaily = parseFloat(insuranceEl.getAttribute('data-price'));
+            addonPrice += insDaily * days;
+
+            const subtotal = basePrice + addonPrice;
+            let discount = 0;
+            if (days >= systemSettings.long_term_discount_days) {
+                discount = subtotal * (systemSettings.long_term_discount_percent / 100);
+                document.getElementById('discountRow').style.display = 'flex';
+                document.getElementById('summaryDiscount').previousElementSibling.textContent = `${systemSettings.long_term_discount_days}+ Days Discount (${systemSettings.long_term_discount_percent}%):`;
+            } else {
+                document.getElementById('discountRow').style.display = 'none';
+            }
+
+            const valueBeforeFees = subtotal - discount;
+            finalPrice = valueBeforeFees;
+
+            document.getElementById('summaryDays').textContent = days;
+            document.getElementById('summaryBase').textContent = `₱${basePrice.toFixed(2)}`;
+            document.getElementById('summaryAddons').textContent = `₱${addonPrice.toFixed(2)}`;
+            document.getElementById('summaryDiscount').textContent = `-₱${discount.toFixed(2)}`;
+            document.getElementById('summaryTotal').textContent = `₱${finalPrice.toFixed(2)}`;
+        }
+
+        startDateInput.addEventListener('change', calculatePrice);
+        endDateInput.addEventListener('change', calculatePrice);
+        document.querySelectorAll('.addon-checkbox, input[name="insurance"]').forEach(el => {
+            el.addEventListener('change', calculatePrice);
+        });
+
+
+        // Split Bill Toggles
+        const splitBillCheck = document.getElementById('splitBillCheck');
+        if (splitBillCheck) {
+            splitBillCheck.addEventListener('change', function(e) {
+                document.getElementById('splitBillSection').style.display = e.target.checked ? 'block' : 'none';
+            });
+        }
+
+        // Modal Functions
+        function closeAgreement() {
+            document.getElementById('agreementModal').style.display = 'none';
+            // Reset checkbox for next open
+            document.getElementById('agreeCheckbox').checked = false;
+            document.getElementById('finalConfirmBtn').disabled = true;
+        }
+
+        // Restore Booking Draft if exists
+        function restoreBookingDraft() {
+            const draftKey = 'booking_draft_' + vehicleId;
+            const draftJson = sessionStorage.getItem(draftKey);
+            if (!draftJson) return;
+
+            try {
+                const draft = JSON.parse(draftJson);
+                if (document.getElementById('rentalType')) document.getElementById('rentalType').value = draft.rental_type || 'Self Drive';
+                if (document.getElementById('pickupLoc')) document.getElementById('pickupLoc').value = draft.pickup_location || '';
+                if (document.getElementById('returnLoc')) document.getElementById('returnLoc').value = draft.return_location || '';
+                if (startDateInput) startDateInput.value = draft.start_date || '';
+                if (endDateInput) endDateInput.value = draft.end_date || '';
+                if (document.getElementById('startTime')) document.getElementById('startTime').value = draft.start_time || '';
+                if (document.getElementById('endTime')) document.getElementById('endTime').value = draft.end_time || '';
+                
+                if (draft.addons && Array.isArray(draft.addons)) {
+                    document.querySelectorAll('.addon-checkbox').forEach(cb => {
+                        cb.checked = draft.addons.includes(cb.value);
+                    });
+                }
+                
+                if (draft.insurance) {
+                    const insRadio = document.querySelector(`input[name="insurance"][value="${draft.insurance}"]`);
+                    if (insRadio) insRadio.checked = true;
+                }
+
+                if (draft.is_split && splitBillCheck) {
+                    splitBillCheck.checked = true;
+                    document.getElementById('splitBillSection').style.display = 'block';
+                    if (document.getElementById('splitEmail')) document.getElementById('splitEmail').value = draft.split_email || '';
+                }
+
+                // Recalculate price
+                calculatePrice();
+                
+                // Clear draft after successful restoration (so it doesn't keep coming back)
+                sessionStorage.removeItem(draftKey);
+                console.log('Booking draft restored and cleared.');
+            } catch (err) {
+                console.error('Failed to restore booking draft:', err);
+            }
+        }
+
+        // Submit Booking (Prep for Checkout)
+        document.getElementById('bookingForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            if (!userId || userId === 'null') {
+                // Save data before redirecting
+                const bookingDraft = {
+                    rental_type: document.getElementById('rentalType').value,
+                    pickup_location: document.getElementById('pickupLoc').value,
+                    return_location: document.getElementById('returnLoc').value,
+                    start_date: startDateInput.value,
+                    end_date: endDateInput.value,
+                    start_time: document.getElementById('startTime').value,
+                    end_time: document.getElementById('endTime').value,
+                    addons: Array.from(document.querySelectorAll('.addon-checkbox:checked')).map(cb => cb.value),
+                    insurance: document.querySelector('input[name="insurance"]:checked').value,
+                    is_split: splitBillCheck ? splitBillCheck.checked : false,
+                    split_email: document.getElementById('splitEmail') ? document.getElementById('splitEmail').value : ''
+                };
+                sessionStorage.setItem('booking_draft_' + vehicleId, JSON.stringify(bookingDraft));
+                
+                alert('Please sign in to proceed with your booking. Your details have been saved.');
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                return;
+            }
+
+            if (!startDateInput.value || !endDateInput.value) {
+                alert('Please select rental dates.');
+                return;
+            }
+            
+            const isSplit = splitBillCheck && splitBillCheck.checked;
+            const splitEmail = document.getElementById('splitEmail') ? document.getElementById('splitEmail').value : null;
+            
+            if (isSplit && !splitEmail) {
+                alert('Please enter your friend\'s email address to split the bill.');
+                return;
+            }
+
+            // Show Agreement Modal
+            document.getElementById('agreementModal').style.display = 'flex';
+        });
+
+        function submitBookingFlow() {
+            const insuranceEl = document.querySelector('input[name="insurance"]:checked');
+            const days = parseInt(document.getElementById('summaryDays').textContent) || 1;
+            
+            // Build Comprehensive Booking Object
+            const bookingData = {
+                user_id: parseInt(userId),
+                vehicle_id: parseInt(vehicleId),
+                start_date: startDateInput.value,
+                end_date: endDateInput.value,
+                start_time: document.getElementById('startTime').value,
+                end_time: document.getElementById('endTime').value,
+                pickup_location: document.getElementById('pickupLoc').value,
+                return_location: document.getElementById('returnLoc').value,
+                rental_type: document.getElementById('rentalType').value,
+                addons: selectedAddons,
+                insurance_type: insuranceEl ? insuranceEl.value : 'Basic',
+                base_price: basePrice,
+                addon_price: addonPrice,
+                service_fee: serviceFee,
+                total_price: finalPrice,
+                days: days,
+                is_split: splitBillCheck ? splitBillCheck.checked : false,
+                split_email: document.getElementById('splitEmail') ? document.getElementById('splitEmail').value : null,
+                reference_num: 'AUT-' + Date.now().toString().slice(-6) + Math.random().toString(36).substring(2, 5).toUpperCase()
+            };
+
+            // Handover to Checkout
+            sessionStorage.setItem('pending_booking', JSON.stringify(bookingData));
+            window.location.href = 'checkout.html';
+        }
+        // Gallery Scroll Logic
+        function scrollGallery(direction) {
+            const scroll = document.getElementById('galleryScroll');
+            if(!scroll) return;
+            const slideWidth = scroll.clientWidth;
+            scroll.scrollBy({ left: direction * slideWidth, behavior: 'smooth' });
+        }
+        
+        document.getElementById('galleryScroll')?.addEventListener('scroll', (e) => {
+            const scroll = e.target;
+            const index = Math.round(scroll.scrollLeft / scroll.clientWidth);
+            document.querySelectorAll('.dot').forEach((dot, i) => {
+                if (i === index) dot.classList.add('active');
+                else dot.classList.remove('active');
+            });
+        });
+    </script>
+    <!-- Rental Agreement Modal -->
+    <div id="agreementModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index:10000; justify-content:center; align-items:center; padding: 20px;">
+        <div style="background: var(--surface-color); border: 1px solid var(--border-color); padding:2.5rem; border-radius: var(--radius); max-width:600px; width:100%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-premium);">
+            <h2 style="margin-top:0; color: var(--text-main); font-size: 1.4rem; font-weight: 800;">📋 Rental Agreement</h2>
+            <div style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; font-size: 0.9rem; line-height: 1.8; margin: 1.5rem 0; border: 1px solid var(--border-color); color: var(--text-muted);">
+                <p style="color: var(--text-main); margin-bottom: 1rem;">By proceeding with this booking, you agree to the following terms and conditions of Autoride System:</p>
+                <ul id="agreementTermsList" style="margin-left: 1.5rem; display: grid; gap: 0.75rem;">
+                    <li><strong style="color: var(--text-main);">Fuel Policy:</strong> The vehicle must be returned with the same level of fuel as provided at pickup.</li>
+                    <li><strong style="color: var(--text-main);">Mileage Rule:</strong> <span id="modalMileageRule">250 km per day limit.</span> Excess mileage will be charged at ₱10 per km.</li>
+                    <li><strong style="color: var(--text-main);">Driver Responsibility:</strong> You must be the primary driver and hold a valid license (already verified).</li>
+                    <li><strong style="color: var(--text-main);">Late Return:</strong> Late returns will incur a penalty of ₱500 per hour.</li>
+                    <li><strong style="color: var(--text-main);">Damages:</strong> Any damages not covered by selected insurance are the driver's responsibility.</li>
+                </ul>
+            </div>
+            <label style="display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; margin-bottom: 2rem; font-size: 0.95rem;">
+                <input type="checkbox" id="agreeCheckbox" onchange="document.getElementById('finalConfirmBtn').disabled = !this.checked" style="margin-top: 4px; accent-color: var(--primary-color);">
+                <span>I have read and agree to the Autoride Rental Agreement and Policies.</span>
+            </label>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn-outline" style="padding: 10px 20px;" onclick="closeAgreement()">Cancel</button>
+                <button id="finalConfirmBtn" class="btn" disabled style="padding: 10px 20px;" onclick="submitBookingFlow()">Confirm & Pay</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="chat.js"></script>
+</body>
+</html>
