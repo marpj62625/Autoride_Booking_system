@@ -134,8 +134,11 @@
         const urlParams = new URLSearchParams(window.location.search);
         let redirectUrl = urlParams.get('redirect') || 'vehicles.html';
 
-        // Fallback for API_BASE if config.js fails
-        const API_BASE = window.API_BASE || window.location.origin;
+        // Safe check for API_BASE (avoid redeclaration error)
+        if (typeof window.API_BASE === 'undefined') {
+            window.API_BASE = window.location.origin;
+        }
+        const API_BASE = window.API_BASE;
         
         const authContainer = document.getElementById('authContainer');
         const displayEmail = document.getElementById('displayEmail');
