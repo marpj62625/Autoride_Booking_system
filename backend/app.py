@@ -1963,7 +1963,7 @@ def pay_split_bill():
 
 # ==================== ADMIN BOOKING MANAGEMENT ====================
 
-@app.route('/bookings', methods=['GET'])
+@app.route('/api/bookings', methods=['GET'])
 def get_all_bookings():
     """Get all bookings with customer, vehicle, and driver info for admin panel."""
     admin_id = request.args.get('admin_id')
@@ -2035,7 +2035,7 @@ def assign_booking_driver(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/bookings/<int:booking_id>/approve', methods=['PUT'])
+@app.route('/api/bookings/<int:booking_id>/approve', methods=['PUT'])
 def approve_booking(booking_id):
     """Approve a pending booking."""
     try:
@@ -2164,7 +2164,7 @@ def reject_booking(booking_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/bookings/<int:booking_id>/cancel', methods=['PUT'])
+@app.route('/api/bookings/<int:booking_id>/cancel', methods=['PUT'])
 def admin_cancel_booking(booking_id):
     """Cancel an approved/confirmed booking and trigger refund if needed."""
     try:
