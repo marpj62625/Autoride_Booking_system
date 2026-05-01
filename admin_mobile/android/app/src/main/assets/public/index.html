@@ -1206,7 +1206,14 @@
     alert('Autoride Mobile Admin v2.2.3 (PRODUCTION TEST)'); // VERSION ALERT
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
-    console.log('API_URL set to:', API_URL);
+    
+    // Global API fetcher for production
+    window.apiFetch = async function(path, options = {}) {
+        let cleanPath = path.startsWith('/') ? path.slice(1) : path;
+        let url = `${API_URL}/${cleanPath}`;
+        return fetch(url, options);
+    };
+    const apiFetch = window.apiFetch;
 
 
     const adminAuth = {
