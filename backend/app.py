@@ -895,7 +895,7 @@ def get_vehicle_categories():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/vehicles', methods=['GET'])
+@app.route('/vehicles', methods=['GET'])
 def get_vehicles():
     user_id = request.args.get('user_id')
     favorites_only = request.args.get('favorites_only') == 'true'
@@ -961,7 +961,7 @@ def get_vehicles():
             cur.close()
 
 
-@app.route('/api/vehicles', methods=['POST'])
+@app.route('/vehicles', methods=['POST'])
 def create_vehicle():
     try:
         # We now expect multipart/form-data
@@ -1031,7 +1031,7 @@ def create_vehicle():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/vehicles/<int:vehicle_id>', methods=['PUT'])
+@app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
 def update_vehicle(vehicle_id):
     try:
         # Support both JSON (old) and Form Data (new)
@@ -1117,7 +1117,7 @@ def update_vehicle(vehicle_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
+@app.route('/vehicles/<int:vehicle_id>', methods=['DELETE'])
 def delete_vehicle(vehicle_id):
     try:
         cur = get_cursor()
@@ -1150,7 +1150,7 @@ def delete_vehicle(vehicle_id):
             cur.close()
 
 # --- GPS TRACKING ROUTES ---
-@app.route('/api/vehicles/<int:vehicle_id>/location', methods=['POST'])
+@app.route('/vehicles/<int:vehicle_id>/location', methods=['POST'])
 def update_vehicle_location(vehicle_id):
     """Update GPS coordinates for a specific vehicle."""
     data = request.json
@@ -1175,7 +1175,7 @@ def update_vehicle_location(vehicle_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/gps-locations', methods=['GET'])
+@app.route('/admin/gps-locations', methods=['GET'])
 def get_all_gps_locations():
     """Fetch real-time location for all active vehicles."""
     admin_id = request.args.get('admin_id')
@@ -1209,7 +1209,7 @@ def get_all_gps_locations():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/vehicle/<int:vehicle_id>', methods=['GET'])
+@app.route('/vehicle/<int:vehicle_id>', methods=['GET'])
 def get_vehicle(vehicle_id):
     user_id = request.args.get('user_id')
     try:
@@ -1270,7 +1270,7 @@ def get_vehicle(vehicle_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/vehicles/images/<int:image_id>', methods=['DELETE'])
+@app.route('/vehicles/images/<int:image_id>', methods=['DELETE'])
 def delete_vehicle_image(image_id):
     print(f"DEBUG: Attempting to delete vehicle image with ID: {image_id}")
     try:
@@ -1322,7 +1322,7 @@ def delete_vehicle_image(image_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/vehicles/<int:vehicle_id>/images/order', methods=['PUT'])
+@app.route('/vehicles/<int:vehicle_id>/images/order', methods=['PUT'])
 def update_image_order(vehicle_id):
     data = request.json
     order = data.get('order') # Expecting list of image IDs in order
@@ -1352,7 +1352,7 @@ def update_image_order(vehicle_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/maintenance/migrate', methods=['GET'])
+@app.route('/maintenance/migrate', methods=['GET'])
 def run_migration():
     try:
         cur = get_cursor()
@@ -1365,7 +1365,7 @@ def run_migration():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/book', methods=['POST'])
+@app.route('/book', methods=['POST'])
 def book():
     data = request.json
     try:
@@ -1460,7 +1460,7 @@ def book():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/payment', methods=['POST'])
+@app.route('/payment', methods=['POST'])
 def payment():
     try:
         booking_id = request.form.get('booking_id')
@@ -1550,7 +1550,7 @@ def payment():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/user-bookings', methods=['GET'])
+@app.route('/user-bookings', methods=['GET'])
 def user_bookings():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -1577,7 +1577,7 @@ def user_bookings():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/profile', methods=['GET'])
+@app.route('/profile', methods=['GET'])
 def profile():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -1598,7 +1598,7 @@ def profile():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/update-profile', methods=['POST'])
+@app.route('/update-profile', methods=['POST'])
 def update_profile():
     try:
         user_id = request.form.get('user_id')
@@ -1671,7 +1671,7 @@ def cancel_booking():
     finally:
         if 'cur' in locals():
             cur.close()
-@app.route('/api/toggle-favorite', methods=['POST'])
+@app.route('/toggle-favorite', methods=['POST'])
 def toggle_favorite():
     data = request.json
     user_id = data.get('user_id')
@@ -1703,7 +1703,7 @@ def toggle_favorite():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/favorites', methods=['GET'])
+@app.route('/favorites', methods=['GET'])
 def get_favorites():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -1726,7 +1726,7 @@ def get_favorites():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/review', methods=['POST'])
+@app.route('/review', methods=['POST'])
 def add_review():
     data = request.json
     user_id = data.get('user_id')
@@ -1751,7 +1751,7 @@ def add_review():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/reviews/<int:vehicle_id>', methods=['GET'])
+@app.route('/reviews/<int:vehicle_id>', methods=['GET'])
 def get_reviews(vehicle_id):
     try:
         cur = get_cursor()
@@ -1772,7 +1772,7 @@ def get_reviews(vehicle_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/saved-payment', methods=['POST'])
+@app.route('/saved-payment', methods=['POST'])
 def save_payment():
     data = request.json
     user_id = data.get('user_id')
@@ -1797,7 +1797,7 @@ def save_payment():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/saved-payments', methods=['GET'])
+@app.route('/saved-payments', methods=['GET'])
 def get_saved_payments():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -1816,7 +1816,7 @@ def get_saved_payments():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/modify-booking', methods=['POST'])
+@app.route('/modify-booking', methods=['POST'])
 def modify_booking():
     data = request.json
     booking_id = data.get('booking_id')
@@ -1870,7 +1870,7 @@ def modify_booking():
             cur.close()
 
 
-@app.route('/api/split-bill/request', methods=['POST'])
+@app.route('/split-bill/request', methods=['POST'])
 def request_split_bill():
     data = request.json
     booking_id = data.get('booking_id')
@@ -1903,7 +1903,7 @@ def request_split_bill():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/split-bills', methods=['GET'])
+@app.route('/split-bills', methods=['GET'])
 def get_split_bills():
     user_email = request.args.get('email')
     if not user_email:
@@ -1932,7 +1932,7 @@ def get_split_bills():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/split-bill/pay', methods=['POST'])
+@app.route('/split-bill/pay', methods=['POST'])
 def pay_split_bill():
     data = request.json
     split_id = data.get('split_id')
@@ -1961,7 +1961,7 @@ def pay_split_bill():
 
 # ==================== ADMIN BOOKING MANAGEMENT ====================
 
-@app.route('/api/bookings', methods=['GET'])
+@app.route('/bookings', methods=['GET'])
 def get_all_bookings():
     """Get all bookings with customer, vehicle, and driver info for admin panel."""
     admin_id = request.args.get('admin_id')
@@ -2006,7 +2006,7 @@ def get_all_bookings():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/bookings/<int:booking_id>/assign_driver', methods=['PUT'])
+@app.route('/admin/bookings/<int:booking_id>/assign_driver', methods=['PUT'])
 def assign_booking_driver(booking_id):
     """Assign an approved driver to a confirmed/pending booking."""
     data = request.json
@@ -2033,7 +2033,7 @@ def assign_booking_driver(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/bookings/<int:booking_id>/approve', methods=['PUT'])
+@app.route('/bookings/<int:booking_id>/approve', methods=['PUT'])
 def approve_booking(booking_id):
     """Approve a pending booking."""
     try:
@@ -2133,7 +2133,7 @@ def user_cancel_booking():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/bookings/<int:booking_id>/reject', methods=['PUT'])
+@app.route('/bookings/<int:booking_id>/reject', methods=['PUT'])
 def reject_booking(booking_id):
     """Reject a pending booking."""
     try:
@@ -2162,7 +2162,7 @@ def reject_booking(booking_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/bookings/<int:booking_id>/cancel', methods=['PUT'])
+@app.route('/bookings/<int:booking_id>/cancel', methods=['PUT'])
 def admin_cancel_booking(booking_id):
     """Cancel an approved/confirmed booking and trigger refund if needed."""
     try:
@@ -2205,7 +2205,7 @@ def admin_cancel_booking(booking_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/inspections/submit', methods=['POST'])
+@app.route('/inspections/submit', methods=['POST'])
 def submit_inspection():
     """Submit a vehicle inspection with multiple photos."""
     try:
@@ -2255,7 +2255,7 @@ def submit_inspection():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/inspections/<int:booking_id>', methods=['GET'])
+@app.route('/inspections/<int:booking_id>', methods=['GET'])
 def get_inspections(booking_id):
     """Retrieve all inspections for a specific booking."""
     try:
@@ -2268,7 +2268,7 @@ def get_inspections(booking_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/bookings/<int:booking_id>/pickup', methods=['PUT'])
+@app.route('/bookings/<int:booking_id>/pickup', methods=['PUT'])
 def pickup_booking(booking_id):
     """Mark a booking as Picked Up."""
     try:
@@ -2303,7 +2303,7 @@ def pickup_booking(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/bookings/<int:booking_id>/complete', methods=['PUT'])
+@app.route('/bookings/<int:booking_id>/complete', methods=['PUT'])
 def complete_booking(booking_id):
     """Mark a booking as Completed/Returned."""
     try:
@@ -2342,7 +2342,7 @@ def complete_booking(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/settings/driver_wage', methods=['GET', 'PUT'])
+@app.route('/settings/driver_wage', methods=['GET', 'PUT'])
 def handle_driver_wage():
     try:
         cur = get_cursor()
@@ -2370,7 +2370,7 @@ def handle_driver_wage():
 
 # ==================== ADMIN DRIVER APPROVAL ====================
 
-@app.route('/api/drivers', methods=['GET'])
+@app.route('/drivers', methods=['GET'])
 def get_all_drivers():
     """Get all driver applications for admin panel."""
     try:
@@ -2389,7 +2389,7 @@ def get_all_drivers():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/drivers/<int:driver_id>/approve', methods=['PUT', 'POST'])
+@app.route('/drivers/<int:driver_id>/approve', methods=['PUT', 'POST'])
 def approve_driver(driver_id):
     """Approve a pending driver application."""
     try:
@@ -2421,7 +2421,7 @@ def approve_driver(driver_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/drivers/<int:driver_id>/reject', methods=['PUT', 'POST'])
+@app.route('/drivers/<int:driver_id>/reject', methods=['PUT', 'POST'])
 def reject_driver(driver_id):
     """Reject a pending driver application."""
     data = request.json or {}
@@ -2457,7 +2457,7 @@ def reject_driver(driver_id):
 
 # ==================== DRIVER PORTAL API ====================
 
-@app.route('/api/driver/apply', methods=['POST'])
+@app.route('/driver/apply', methods=['POST'])
 def apply_driver():
     # Ensure license_document column exists (safe migration)
     try:
@@ -2508,7 +2508,7 @@ def apply_driver():
             cur.close()
 
 
-@app.route('/api/driver/status', methods=['GET'])
+@app.route('/driver/status', methods=['GET'])
 def driver_status():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -2527,7 +2527,7 @@ def driver_status():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/driver/bookings', methods=['GET'])
+@app.route('/driver/bookings', methods=['GET'])
 def get_driver_bookings():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -2561,7 +2561,7 @@ def get_driver_bookings():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/driver/bookings/<int:booking_id>/status', methods=['PUT'])
+@app.route('/driver/bookings/<int:booking_id>/status', methods=['PUT'])
 def update_driver_booking_status(booking_id):
     data = request.json
     user_id = data.get('user_id')
@@ -2598,7 +2598,7 @@ def update_driver_booking_status(booking_id):
 # ==================== ADMIN REPORTS & ANALYTICS ====================
 
 
-@app.route('/api/admin/detailed-stats', methods=['GET'])
+@app.route('/admin/detailed-stats', methods=['GET'])
 def get_detailed_stats():
     """Aggregated stats for the executive dashboard charts."""
     admin_id = request.args.get('admin_id')
@@ -2701,7 +2701,7 @@ def get_detailed_stats():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/bookings/<int:booking_id>/receipt', methods=['GET'])
+@app.route('/bookings/<int:booking_id>/receipt', methods=['GET'])
 def download_receipt(booking_id):
     """Generate and download a PDF receipt for a booking."""
     try:
@@ -2741,7 +2741,7 @@ def download_receipt(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/reports/top-vehicles', methods=['GET'])
+@app.route('/reports/top-vehicles', methods=['GET'])
 def report_top_vehicles():
     """Top 5 most-rented vehicles with booking count and total revenue."""
     admin_id = request.args.get('admin_id')
@@ -2790,7 +2790,7 @@ def report_top_vehicles():
             cur.close()
 
 
-@app.route('/api/support', methods=['POST'])
+@app.route('/support', methods=['POST'])
 def submit_support():
     data = request.json
     name = data.get('name')
@@ -2815,7 +2815,7 @@ def submit_support():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/support', methods=['GET'])
+@app.route('/admin/support', methods=['GET'])
 def get_all_support_tickets():
     try:
         cur = get_cursor()
@@ -2829,7 +2829,7 @@ def get_all_support_tickets():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/support/<int:ticket_id>', methods=['PUT'])
+@app.route('/admin/support/<int:ticket_id>', methods=['PUT'])
 def resolve_support_ticket(ticket_id):
     data = request.json
     reply = data.get('admin_reply', '')
