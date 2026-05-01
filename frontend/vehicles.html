@@ -185,7 +185,8 @@
                     document.getElementById('vehiclesGrid').innerHTML = '<p class="error">Failed to load vehicles.</p>';
                 }
             } catch (err) {
-                document.getElementById('vehiclesGrid').innerHTML = '<p class="error">Error connecting to server.</p>';
+                console.error('Fetch Error:', err);
+                document.getElementById('vehiclesGrid').innerHTML = `<p class="error">Error connecting to server: ${err.message}</p>`;
             }
         }
 
