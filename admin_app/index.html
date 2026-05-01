@@ -3445,7 +3445,7 @@ void loop() {
         window.Dashboard = Dashboard;
 
         // ==================== ADMIN AUTH MODULE ====================
-        const adminAuth = {
+        window.adminAuth = {
             login: async function () {
                 const email = document.getElementById('loginEmail').value;
                 const password = document.getElementById('loginPass').value;
@@ -3842,7 +3842,6 @@ void loop() {
         };
 
         // ==================== GLOBAL ACCESS ====================
-        window.adminAuth = adminAuth;
         window.Dashboard = Dashboard;
         window.Vehicles = Vehicles;
         window.Drivers = Drivers;
