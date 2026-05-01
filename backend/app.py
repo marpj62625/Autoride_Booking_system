@@ -18,6 +18,7 @@ from datetime import datetime
 app = Flask(__name__, 
             static_folder='../frontend', 
             static_url_path='')
+app.url_map.strict_slashes = False
 CORS(app, resources={r"/*": {
     "origins": "*",
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -33,6 +34,10 @@ def add_header(response):
 
 # Initialize database session management
 init_db_helpers(app)
+
+@app.route('/api/test/')
+def test_connection():
+    return jsonify({"status": "ok", "message": "Backend is reachable!"})
 
 # Initialize Supabase Client for Storage
 supabase: SupabaseClient = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -890,7 +895,7 @@ def get_vehicle_categories():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/vehicles', methods=['GET'])
+@app.route('/api/vehicles', methods=['GET'])
 def get_vehicles():
     user_id = request.args.get('user_id')
     favorites_only = request.args.get('favorites_only') == 'true'
@@ -956,7 +961,7 @@ def get_vehicles():
             cur.close()
 
 
-@app.route('/vehicles', methods=['POST'])
+@app.route('/api/vehicles', methods=['POST'])
 def create_vehicle():
     try:
         # We now expect multipart/form-data
@@ -1026,7 +1031,7 @@ def create_vehicle():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
+@app.route('/api/vehicles/<int:vehicle_id>', methods=['PUT'])
 def update_vehicle(vehicle_id):
     try:
         # Support both JSON (old) and Form Data (new)
@@ -1112,7 +1117,7 @@ def update_vehicle(vehicle_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/vehicles/<int:vehicle_id>', methods=['DELETE'])
+@app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
 def delete_vehicle(vehicle_id):
     try:
         cur = get_cursor()
