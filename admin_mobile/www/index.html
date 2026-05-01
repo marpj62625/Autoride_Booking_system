@@ -2200,7 +2200,7 @@
             list.innerHTML = this.data.map(v => {
                 const name = v.full_name || 'Unnamed User';
                 const initial = name[0] ? name[0].toUpperCase() : '?';
-                const licenseUrl = v.license_image_url || '';
+                const licenseUrl = v.license_image || v.license_image_url || '';
                 
                 return `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
