@@ -483,7 +483,7 @@ def get_user_points():
 temp_otps = {}
 temp_email_otps = {}
 
-@app.route('/auth/verify-email', methods=['POST'])
+@app.route('/api/auth/verify-email', methods=['POST'])
 def verify_email():
     """Verify the 6-digit OTP sent to the user's gmail."""
     data = request.json
@@ -515,7 +515,7 @@ def verify_email():
     else:
         return jsonify({"error": "Invalid or expired verification code"}), 400
 
-@app.route('/auth/google', methods=['POST'])
+@app.route('/api/auth/google', methods=['POST'])
 def google_auth():
     data = request.json
     credential = data.get('credential')
@@ -613,7 +613,7 @@ def google_auth():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/auth/request-otp', methods=['POST'])
+@app.route('/api/auth/request-otp', methods=['POST'])
 def request_otp():
     data = request.json
     phone = data.get('phone')
@@ -677,7 +677,7 @@ def request_otp():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/auth/verify-otp', methods=['POST'])
+@app.route('/api/auth/verify-otp', methods=['POST'])
 def verify_otp():
     data = request.json
     phone = data.get('phone')
