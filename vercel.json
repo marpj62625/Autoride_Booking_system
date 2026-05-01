@@ -4,10 +4,6 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/**",
-      "use": "@vercel/static"
     }
   ],
   "rewrites": [
@@ -16,9 +12,20 @@
       "destination": "/api/index.py"
     },
     {
+      "source": "/admin_app/(.*)",
+      "destination": "/admin_app/$1"
+    },
+    {
+      "source": "/admin_mobile/(.*)",
+      "destination": "/admin_mobile/$1"
+    },
+    {
+      "source": "/frontend/(.*)",
+      "destination": "/frontend/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/frontend/$1"
     }
-  ],
-  "cleanUrls": true
+  ]
 }
