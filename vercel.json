@@ -6,6 +6,10 @@
       "use": "@vercel/python"
     },
     {
+      "src": "admin_app/**",
+      "use": "@vercel/static"
+    },
+    {
       "src": "frontend/**",
       "use": "@vercel/static"
     }
@@ -14,6 +18,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/admin_app/(.*)",
+      "destination": "/admin_app/$1"
     },
     {
       "source": "/(.*)",
