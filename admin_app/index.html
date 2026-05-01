@@ -2257,7 +2257,7 @@ void loop() {
             async refresh() {
                 this.showLoading(true);
                 try {
-                    const res = await fetch(`${API_BASE}/vehicles`);
+                    const res = await apiFetch('api/vehicles');
                     if (!res.ok) throw new Error(`Server error ${res.status}`);
                     const json = await res.json();
                     this.data = Array.isArray(json) ? json : [];
@@ -2631,7 +2631,7 @@ void loop() {
             async refresh() {
                 this.showLoading(true);
                 try {
-                    const res = await fetch(`${API_BASE}/bookings`);
+                    const res = await apiFetch('api/bookings');
                     if (!res.ok) throw new Error(`Server error ${res.status}`);
                     const json = await res.json();
                     this.data = Array.isArray(json) ? json : [];
