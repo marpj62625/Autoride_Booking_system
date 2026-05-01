@@ -16,12 +16,12 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/:path*",
       "destination": "/api/index.py"
     },
     {
-      "source": "/admin_app/(.*)",
-      "destination": "/admin_app/$1"
+      "source": "/admin_app/:path*",
+      "destination": "/admin_app/:path*"
     },
     {
       "source": "/(.*)",
