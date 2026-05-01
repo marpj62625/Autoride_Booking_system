@@ -172,11 +172,10 @@
         if (typeof window.API_BASE === 'undefined') {
             window.API_BASE = window.location.origin;
         }
-        const API_BASE = window.API_BASE;
 
         async function fetchVehicles() {
             try {
-                let url = userId ? `${API_BASE}/api/vehicles/categories?user_id=${userId}` : `${API_BASE}/api/vehicles/categories?`;
+                let url = userId ? `${window.API_BASE}/api/vehicles/categories?user_id=${userId}` : `${window.API_BASE}/api/vehicles/categories?`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
