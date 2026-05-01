@@ -2218,6 +2218,15 @@
                 const initial = name[0] ? name[0].toUpperCase() : '?';
                 const licenseUrl = v.license_image || v.license_image_url || '';
                 
+                const actionButtons = licenseUrl 
+                    ? `<button onclick="Verifications.viewLicense('${licenseUrl}')" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px;">
+                            <i class="fas fa-id-card" style="margin-right: 6px;"></i> License
+                       </button>
+                       <button onclick="Verifications.process(${v.id}, 2)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--success); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);">Approve</button>`
+                    : `<div style="flex: 1; text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border: 1px dashed var(--border);">
+                            <i class="fas fa-clock" style="margin-right: 5px;"></i> Waiting for Upload
+                       </div>`;
+
                 return `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
                     <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
@@ -2230,10 +2239,7 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 12px;">
-                        <button onclick="Verifications.viewLicense('${licenseUrl}')" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px;">
-                            <i class="fas fa-id-card" style="margin-right: 6px;"></i> License
-                        </button>
-                        <button onclick="Verifications.process(${v.id}, 2)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--success); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);">Approve</button>
+                        ${actionButtons}
                     </div>
                 </div>
                 `;
