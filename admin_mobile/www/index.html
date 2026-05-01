@@ -2005,16 +2005,18 @@
         async pickup(id) {
             if (!confirm('Mark this vehicle as picked up?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/pickup`, { method: 'PUT' });
+                const res = await apiFetch(`bookings/${id}/pickup`, { method: 'PUT' });
                 if (res.ok) { alert('Successfully picked up!'); this.refresh(); }
-            } catch (err) { alert('Action failed'); }
+                else { alert('Failed: ' + res.status); }
+            } catch (err) { alert('Action failed: ' + err.message); }
         },
         async complete(id) {
             if (!confirm('Mark this vehicle as returned?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/complete`, { method: 'PUT' });
+                const res = await apiFetch(`bookings/${id}/complete`, { method: 'PUT' });
                 if (res.ok) { alert('Vehicle returned successfully!'); this.refresh(); }
-            } catch (err) { alert('Action failed'); }
+                else { alert('Failed: ' + res.status); }
+            } catch (err) { alert('Action failed: ' + err.message); }
         },
         /*
         async assign(id) {
