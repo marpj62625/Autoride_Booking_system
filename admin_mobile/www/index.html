@@ -2549,7 +2549,13 @@
             list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching logs...</div>';
 
             try {
-                const res = await fetch(`${API_BASE}/api/admin/activity-logs`);
+                // Ensure window.API_BASE is set
+                if (typeof window.API_BASE === 'undefined') {
+                    window.API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                        ? 'http://localhost:5000' 
+                        : '';
+                }
+                const res = await fetch(`${window.API_BASE}/api/admin/activity-logs`);
                 const logs = await res.json();
                 
                 if (!logs || logs.length === 0) {

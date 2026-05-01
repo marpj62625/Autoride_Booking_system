@@ -16,14 +16,10 @@
             ? 'http://localhost:5000' 
             : ''; 
 
-        // Helper to ensure all production calls are absolute from root
+        // Helper to ensure all production calls go through the /api route
         async function apiFetch(path, options = {}) {
-            let url = path;
-            if (API_BASE === '' && !path.startsWith('/')) {
-                url = '/' + path;
-            } else {
-                url = API_BASE + (path.startsWith('/') ? '' : '/') + path;
-            }
+            let cleanPath = path.startsWith('/') ? path.slice(1) : path;
+            let url = (API_BASE || '') + '/api/' + cleanPath;
             return fetch(url, options);
         }
 
