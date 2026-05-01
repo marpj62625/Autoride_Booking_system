@@ -35,7 +35,7 @@ def add_header(response):
 # Initialize database session management
 init_db_helpers(app)
 
-@app.route('/api/test/')
+@app.route('/test/')
 def test_connection():
     return jsonify({"status": "ok", "message": "Backend is reachable!"})
 
@@ -367,7 +367,7 @@ def login():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/verify-action', methods=['POST'])
+@app.route('/admin/verify-action', methods=['POST'])
 def admin_verify_user():
     data = request.json
     user_id = data.get('user_id')
@@ -396,7 +396,7 @@ def admin_verify_user():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/user/verify-status', methods=['GET'])
+@app.route('/user/verify-status', methods=['GET'])
 def check_verify_status():
     user_id = request.args.get('user_id')
     if not user_id: return jsonify({"error": "Missing user_id"}), 400
@@ -410,7 +410,7 @@ def check_verify_status():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/user/upload-license', methods=['POST'])
+@app.route('/user/upload-license', methods=['POST'])
 def upload_license():
     user_id = request.form.get('user_id')
     if not user_id: return jsonify({"error": "User ID required"}), 400
@@ -789,7 +789,7 @@ def upload_refund_proof():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles/categories', methods=['GET'])
+@app.route('/vehicles/categories', methods=['GET'])
 def get_vehicle_categories():
     user_id = request.args.get('user_id')
     favorites_only = request.args.get('favorites_only') == 'true'
