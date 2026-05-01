@@ -2,21 +2,22 @@ import psycopg
 from psycopg_pool import ConnectionPool
 from config import SUPABASE_DB_URL
 
-# Create a connection pool with min 1, max 10 connections
-try:
-    db_pool = ConnectionPool(conninfo=SUPABASE_DB_URL, min_size=1, max_size=10)
-    if not db_pool:
-        print("Failed to create connection pool!")
-except Exception as e:
-    print(f"Error creating connection pool: {e}")
-    db_pool = None
+db_pool = None
+
+def init_pool():
+    global db_pool
+    if db_pool is None:
+        try:
+            db_pool = ConnectionPool(conninfo=SUPABASE_DB_URL, min_size=1, max_size=10)
+        except Exception as e:
+            print(f"Error creating connection pool: {e}")
+            raise e
 
 from flask import g
 from psycopg.rows import dict_row
 
 def get_connection():
-    if not db_pool:
-        raise Exception("Database connection pool not initialized. Check Supabase URL in config.py")
+    init_pool()
     return db_pool.getconn()
 
 def release_connection(conn):
