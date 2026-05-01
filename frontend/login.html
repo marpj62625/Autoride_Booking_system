@@ -207,6 +207,7 @@
         }
 
         async function handleCredentialResponse(response) {
+            console.log('Google credential received. Sending to backend...');
             showMessage('Verifying Google account...');
             try {
                 const res = await fetch(`${API_BASE}/api/auth/google`, {
@@ -217,7 +218,10 @@
                         is_driver: isDriverLogin 
                     })
                 });
+                console.log('Backend response status:', res.status);
                 const data = await res.json();
+                console.log('Backend response data:', data);
+
                 if (res.ok) {
                     if (data.verification_required) {
                         unverifiedEmail = data.email;
@@ -231,6 +235,7 @@
                     showMessage('Google Login Error: ' + (data.error || 'Unknown error'), true);
                 }
             } catch (err) {
+                console.error('Fetch error:', err);
                 showMessage('Server connection error.', true);
             }
         }
