@@ -112,7 +112,7 @@
             
             btn.textContent = '...';
             try {
-                const res = await fetch(`${API_BASE_URL}/api/newsletter`, {
+                const res = await fetch(`${API_BASE}/api/newsletter`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ email })
@@ -173,7 +173,7 @@
 
         async function fetchVehicles() {
             try {
-                let url = userId ? `${API_BASE_URL}/api/vehicles/categories?user_id=${userId}` : `${API_BASE_URL}/api/vehicles/categories?`;
+                let url = userId ? `${API_BASE}/api/vehicles/categories?user_id=${userId}` : `${API_BASE}/api/vehicles/categories?`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
@@ -253,7 +253,7 @@
             const btn = event.currentTarget;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/toggle-favorite`, {
+                const response = await fetch(`${API_BASE}/toggle-favorite`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, vehicle_id: vehicleId })
