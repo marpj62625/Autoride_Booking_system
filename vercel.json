@@ -4,24 +4,12 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "admin_app/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "frontend/**",
-      "use": "@vercel/static"
     }
   ],
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/(.*)",
       "destination": "/api/index.py"
-    },
-    {
-      "source": "/admin_app/:path*",
-      "destination": "/admin_app/:path*"
     },
     {
       "source": "/(.*)",
