@@ -424,10 +424,18 @@ def upload_license():
         
     try:
         cur = get_cursor()
-        filename = secure_filename(f"license_{user_id}_{int(datetime.now().timestamp())}_{file.filename}")
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        url = f"/uploads/{filename}"
+        filename = f"license_{user_id}_{int(datetime.now().timestamp())}.jpg"
+        
+        # Upload to Supabase Storage instead of local disk
+        file_data = file.read()
+        res = supabase.storage.from_('verifications').upload(
+            path=filename,
+            file=file_data,
+            file_options={"content-type": "image/jpeg"}
+        )
+        
+        # Get public URL
+        url = supabase.storage.from_('verifications').get_public_url(filename)
         
         # is_verified = 1 means 'Pending Review'
         cur.execute("UPDATE users SET license_image_url = %s, is_verified = 1 WHERE id = %s", (url, user_id))
