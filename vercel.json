@@ -17,8 +17,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/index.py",
-      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      "destination": "/api/index.py"
     },
     {
       "source": "/admin_app/:path*",
