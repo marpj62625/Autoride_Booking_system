@@ -8,3 +8,5 @@ google-auth
 requests
 supabase
 gunicorn
+fpdf2
+python-dotenv
