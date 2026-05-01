@@ -1188,9 +1188,7 @@
     };
     console.log('Mobile Admin Script Starting...');
     alert('Autoride Mobile Admin v2.2.1 (DEBUG)'); // VERSION ALERT
-    const API_BASE = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1') || window.location.origin.includes('capacitor://'))
-        ? 'https://autoride-booking-system.vercel.app' 
-        : 'https://autoride-booking-system.vercel.app';
+    const API_BASE = 'https://autoride-booking-system.vercel.app';
     console.log('API_BASE set to:', API_BASE);
 
 
@@ -1284,7 +1282,7 @@
             const listContainer = document.getElementById('vehiclesList');
             listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching from server...</div>';
             try {
-                const res = await fetch(`${API_BASE}/vehicles`);
+                const res = await fetch(`${API_BASE}/api/vehicles`);
                 if (!res.ok) throw new Error('Server not reachable');
                 this.data = await res.json();
                 this.render();
@@ -1471,7 +1469,7 @@
         async delete(id) {
             if (!confirm('Delete this vehicle?')) return;
             try {
-                const res = await fetch(`${API_BASE}/vehicles/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${API_BASE}/api/vehicles/${id}`, { method: 'DELETE' });
                 if (res.ok) this.refresh();
             } catch (err) { showNotification('Error deleting vehicle', 'error'); }
         },
@@ -1508,7 +1506,7 @@
         }
 
         const method = id ? 'PUT' : 'POST';
-        const url = id ? `${API_BASE}/vehicles/${id}` : `${API_BASE}/vehicles`;
+        const url = id ? `${API_BASE}/api/vehicles/${id}` : `${API_BASE}/api/vehicles`;
         try {
             const res = await fetch(url, {
                 method,
