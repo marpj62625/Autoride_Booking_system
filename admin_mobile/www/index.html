@@ -2191,11 +2191,6 @@
                 }
                 
                 this.data = await res.json();
-                console.log('Verifications data:', this.data);
-                
-                // RAW DEBUG ALERT
-                alert('DEBUG: Data received from ' + url + '\n\n' + JSON.stringify(this.data));
-                
                 this.render();
             } catch (err) {
                 console.error('Refresh Error:', err);
