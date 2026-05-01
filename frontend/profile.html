@@ -154,12 +154,8 @@
         const userId = localStorage.getItem('user_id');
         if (!userId) window.location.href = 'login.html';
 
-        // API Base Detection
-        const API_BASE = (function() {
-            const host = window.location.hostname;
-            const port = window.location.port || '9999';
-            return `http://${host}:${port}`;
-        })();
+        // Use global API_BASE from config.js or fallback to origin
+        const API_BASE = window.API_BASE || window.location.origin;
 
         async function fetchProfile() {
             try {

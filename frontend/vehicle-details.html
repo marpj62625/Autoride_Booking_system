@@ -395,13 +395,8 @@
         let serviceFee = 0;
         let selectedAddons = [];
         
-        // Dynamic API Base Detection
-        const API_BASE = (function() {
-            const host = window.location.hostname;
-            if (host === 'localhost' || host === '127.0.0.1') return 'http://127.0.0.1:9999';
-            if (host.startsWith('192.168.')) return `http://${host}:9999`;
-            return '/api'; // Safe fallback
-        })();
+        // Use global API_BASE from config.js or fallback to origin
+        const API_BASE = window.API_BASE || window.location.origin;
 
         // System Settings Defaults
         let systemSettings = {
@@ -444,7 +439,7 @@
 
         async function fetchVehicleDetails() {
             try {
-                const response = await fetch(`${API_BASE}/vehicle/${vehicleId}?user_id=${userId}`);
+                const response = await fetch(`${API_BASE}/api/vehicle/${vehicleId}?user_id=${userId}`);
                 if (response.ok) {
                     const data = await response.json();
                     
@@ -571,7 +566,7 @@
             const isActive = btn.classList.contains('active');
             
             try {
-                const response = await fetch(`${API_BASE}/toggle-favorite`, {
+                const response = await fetch(`${API_BASE}/api/toggle-favorite`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, vehicle_id: vehicleId })

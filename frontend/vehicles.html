@@ -168,8 +168,8 @@
             window.location.reload();
         });
 
-        // Search and display vehicles
-        let allVehicles = [];
+        // Use global API_BASE from config.js or fallback to origin
+        const API_BASE = window.API_BASE || window.location.origin;
 
         async function fetchVehicles() {
             try {
@@ -254,7 +254,7 @@
             const btn = event.currentTarget;
 
             try {
-                const response = await fetch(`${API_BASE}/toggle-favorite`, {
+                const response = await fetch(`${API_BASE}/api/toggle-favorite`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: userId, vehicle_id: vehicleId })

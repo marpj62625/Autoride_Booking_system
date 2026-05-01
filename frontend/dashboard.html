@@ -240,13 +240,8 @@
         const userId = localStorage.getItem('user_id');
         const userFullName = localStorage.getItem('full_name');
 
-        // Dynamic API Base Detection
-        const API_BASE = (function() {
-            const host = window.location.hostname;
-            const port = window.location.port || '9999';
-            if (host === 'localhost' || host === '127.0.0.1') return `http://${host}:${port}`;
-            return `http://${host}:${port}`;
-        })();
+        // Use global API_BASE from config.js or fallback to origin
+        const API_BASE = window.API_BASE || window.location.origin;
 
         if (!userId || userId === 'null') {
             window.location.href = 'login.html';
@@ -283,19 +278,19 @@
         async function fetchDashboard() {
             try {
                 // Fetch User Bookings
-                const bookingsRes = await fetch(`${API_BASE}/user-bookings?user_id=${userId}`);
+                const bookingsRes = await fetch(`${API_BASE}/api/user-bookings?user_id=${userId}`);
                 let bookings = [];
                 if (bookingsRes.ok) bookings = await bookingsRes.json();
                 
                 let userEmail = "";
-                const profRes = await fetch(`${API_BASE}/profile?user_id=${userId}`);
+                const profRes = await fetch(`${API_BASE}/api/profile?user_id=${userId}`);
                 if (profRes.ok) {
                     const profData = await profRes.json();
                     userEmail = profData.email;
                 }
 
                 if (userEmail) {
-                    const splitRes = await fetch(`${API_BASE}/split-bills?email=${userEmail}`);
+                    const splitRes = await fetch(`${API_BASE}/api/split-bills?email=${userEmail}`);
                     if (splitRes.ok) {
                          const splits = await splitRes.json();
                          renderSplitBills(splits);
@@ -553,7 +548,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/modify-booking`, {
+                const response = await fetch(`${API_BASE}/api/modify-booking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -582,7 +577,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/review`, {
+                const response = await fetch(`${API_BASE}/api/review`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
