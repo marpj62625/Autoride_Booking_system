@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from app import app
 
-# This middleware strips the /api prefix before passing it to Flask
+# This middleware strips the /api prefix AND optional trailing slash before passing it to Flask
 class PrefixMiddleware(object):
     def __init__(self, app, prefix=''):
         self.app = app
@@ -14,9 +14,17 @@ class PrefixMiddleware(object):
 
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
+        
+        # 1. Strip the /api prefix
         if path.startswith(self.prefix):
-            environ['PATH_INFO'] = path[len(self.prefix):]
+            path = path[len(self.prefix):]
             environ['SCRIPT_NAME'] = self.prefix
+        
+        # 2. Strip trailing slash to ensure matching with Flask routes (e.g. /admin/stats/ -> /admin/stats)
+        if len(path) > 1 and path.endswith('/'):
+            path = path[:-1]
+            
+        environ['PATH_INFO'] = path
         return self.app(environ, start_response)
 
 # Apply the middleware

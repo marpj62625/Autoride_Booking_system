@@ -438,8 +438,8 @@ def upload_license():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/users', methods=['GET'])
-@app.route('/api/admin/pending-verifications', methods=['GET'])
+@app.route('/admin/users', methods=['GET'])
+@app.route('/admin/pending-verifications', methods=['GET'])
 def admin_list_users():
     status = request.args.get('status')
     if request.path == '/api/admin/pending-verifications':
@@ -463,7 +463,7 @@ def admin_list_users():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/user/points', methods=['GET'])
+@app.route('/user/points', methods=['GET'])
 def get_user_points():
     user_id = request.args.get('user_id')
     if not user_id:
@@ -483,7 +483,7 @@ def get_user_points():
 temp_otps = {}
 temp_email_otps = {}
 
-@app.route('/api/auth/verify-email', methods=['POST'])
+@app.route('/auth/verify-email', methods=['POST'])
 def verify_email():
     """Verify the 6-digit OTP sent to the user's gmail."""
     data = request.json
@@ -515,7 +515,7 @@ def verify_email():
     else:
         return jsonify({"error": "Invalid or expired verification code"}), 400
 
-@app.route('/api/auth/google', methods=['POST'])
+@app.route('/auth/google', methods=['POST'])
 def google_auth():
     data = request.json
     credential = data.get('credential')
@@ -613,7 +613,7 @@ def google_auth():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/auth/request-otp', methods=['POST'])
+@app.route('/auth/request-otp', methods=['POST'])
 def request_otp():
     data = request.json
     phone = data.get('phone')
@@ -677,7 +677,7 @@ def request_otp():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/auth/verify-otp', methods=['POST'])
+@app.route('/auth/verify-otp', methods=['POST'])
 def verify_otp():
     data = request.json
     phone = data.get('phone')
@@ -703,7 +703,7 @@ def verify_otp():
         return jsonify({"error": "Invalid or expired OTP"}), 401
 
 
-@app.route('/api/coupons/verify', methods=['POST'])
+@app.route('/coupons/verify', methods=['POST'])
 def verify_coupon():
     data = request.json
     code = data.get('code')
@@ -742,7 +742,7 @@ def verify_coupon():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/upload-refund-proof', methods=['POST'])
+@app.route('/admin/upload-refund-proof', methods=['POST'])
 def upload_refund_proof():
     booking_id = request.form.get('booking_id')
     admin_id = request.form.get('admin_id')
