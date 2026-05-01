@@ -19,7 +19,9 @@
         // Helper to ensure all production calls go through the /api route
         async function apiFetch(path, options = {}) {
             let cleanPath = path.startsWith('/') ? path.slice(1) : path;
-            let url = (API_BASE || '') + '/api/' + cleanPath;
+            // Force /api/ prefix in production if not present
+            let prefix = (API_BASE === '') ? '/api/' : (API_BASE.endsWith('/') ? 'api/' : '/api/');
+            let url = API_BASE + prefix + cleanPath;
             return fetch(url, options);
         }
 
