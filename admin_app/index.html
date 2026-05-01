@@ -1978,9 +1978,8 @@ void loop() {
          * ============================================================
          */
 
-        const API_BASE = (window.location.hostname && (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1') || window.location.hostname.startsWith('192.168.'))) 
-            ? `http://${window.location.hostname}:9999` 
-            : 'http://127.0.0.1:9999';
+
+        console.log('Admin App Initialized. API_BASE:', API_BASE);
         console.log('Admin App Initialized. API_BASE:', API_BASE);
 
         // Initialize Supabase
@@ -1988,21 +1987,8 @@ void loop() {
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- GLOBAL ACCESS ---
-        // Pre-declare these so they are available immediately to onclick handlers
-        // These will be populated as the script executes
-        window.adminAuth = null;
-        window.Dashboard = null;
-        window.Vehicles = null;
-        window.Drivers = null;
-        window.Bookings = null;
-        window.Reports = null;
-        window.Verifications = null;
-        window.Staff = null;
-        window.Activity = null;
-        window.Settings = null;
-        window.Tickets = null;
-        window.Instructions = null;
+
+        // Standalone functions for legacy onclicks
 
         // Standalone functions for legacy onclicks
         window.fetchTickets = () => window.Tickets?.refresh();
