@@ -26,6 +26,12 @@
             }
             return fetch(url, options);
         }
+
+        // Global module placeholders to prevent early interaction errors
+        window.adminAuth = { login: () => console.log('adminAuth not yet loaded') };
+        window.Vehicles = {};
+        window.Drivers = {};
+        window.Bookings = {};
     </script>
     <style>
         :root {
