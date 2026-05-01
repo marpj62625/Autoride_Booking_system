@@ -112,9 +112,9 @@
             color: var(--danger);
         }
 
-        /* ============================================================
-           CONSOLIDATED AUTORIDE ADMIN STYLES
-           ============================================================ */
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:5000' 
+            : '';
 
         :root {
             --bg-primary: #0b0f1a;
@@ -2465,7 +2465,7 @@ void loop() {
                 this.showLoading(true);
                 try {
                     this.fetchWage();
-                    const res = await fetch(`${API_BASE}/drivers`);
+                    const res = await fetch(`${API_BASE}/api/drivers`);
                     if (!res.ok) throw new Error(`Server error ${res.status}`);
                     const json = await res.json();
                     this.data = Array.isArray(json) ? json : [];
@@ -2481,7 +2481,7 @@ void loop() {
 
             async fetchWage() {
                 try {
-                    const res = await fetch(`${API_BASE}/settings/driver_wage`);
+                    const res = await fetch(`${API_BASE}/api/settings/driver_wage`);
                     if (res.ok) {
                         const data = await res.json();
                         if (data.value) {
@@ -3009,7 +3009,7 @@ void loop() {
 
             async approve(id) {
                 try {
-                    const res = await fetch(`${API_BASE}/bookings/${id}/approve`, { method: 'PUT' });
+                    const res = await fetch(`${API_BASE}/api/bookings/${id}/approve`, { method: 'PUT' });
                     if (res.ok) {
                         this.showToast('success', 'Booking Approved!');
                         this.closeDetailsModal();
@@ -3043,7 +3043,7 @@ void loop() {
             async cancel(id) {
                 if (!confirm('Are you sure you want to cancel this booking? Status will be changed and a refund may be required.')) return;
                 try {
-                    const res = await fetch(`${API_BASE}/bookings/${id}/cancel`, { method: 'PUT' });
+                    const res = await fetch(`${API_BASE}/api/bookings/${id}/cancel`, { method: 'PUT' });
                     if (res.ok) {
                         const data = await res.json();
                         showNotification('Booking Cancelled!', 'success');
@@ -3061,7 +3061,7 @@ void loop() {
             async reject(id) {
                 if (!confirm('Reject this booking?')) return;
                 try {
-                    const res = await fetch(`${API_BASE}/bookings/${id}/reject`, { method: 'PUT' });
+                    const res = await fetch(`${API_BASE}/api/bookings/${id}/reject`, { method: 'PUT' });
                     if (res.ok) {
                         showNotification('Booking Rejected!', 'success');
                         this.closeDetailsModal();
@@ -3873,7 +3873,7 @@ void loop() {
                 }
 
                 try {
-                    const res = await fetch(id ? `${API_BASE}/vehicles/${id}` : `${API_BASE}/vehicles`, {
+                    const res = await fetch(id ? `${API_BASE}/api/vehicles/${id}` : `${API_BASE}/api/vehicles`, {
                         method: id ? 'PUT' : 'POST',
                         body: formData
                     });
@@ -3938,7 +3938,7 @@ void loop() {
                 const input = document.getElementById('driverWageInput');
                 const msg = document.getElementById('wageStatusMsg');
                 try {
-                    const res = await fetch(`${API_BASE}/settings/driver_wage`, {
+                    const res = await fetch(`${API_BASE}/api/settings/driver_wage`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ value: input.value })
