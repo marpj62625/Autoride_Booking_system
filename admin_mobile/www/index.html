@@ -800,6 +800,22 @@
             </div>
         </div>
     </div>
+    
+    <!-- LICENSE PREVIEW MODAL -->
+    <div id="licensePreviewModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);">
+        <div class="modal-content" style="max-width: 95%; padding: 15px; border-radius: 20px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 1.1rem; color: white;">License Preview</h3>
+                <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="menu-btn" style="width: 34px; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="border-radius: 12px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; min-height: 200px; border: 1px solid rgba(255,255,255,0.1);">
+                <img id="licensePreviewImg" src="" style="width: 100%; height: auto; display: block;" onerror="this.src='https://via.placeholder.com/400x250?text=Failed+to+load+image'">
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="btn-premium" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--primary); border: none; color: white; font-weight: 800;">Close Preview</button>
+            </div>
+        </div>
+    </div>
 
     <!-- <div id="assignDriverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; padding: 20px; align-items: center; justify-content: center;">
         <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
@@ -2226,7 +2242,16 @@
         viewLicense(url) {
             if (!url) return alert('No license image uploaded');
             const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-            window.open(fullUrl, '_blank');
+            
+            // Show in-app preview instead of window.open which fails in Capacitor
+            const modal = document.getElementById('licensePreviewModal');
+            const img = document.getElementById('licensePreviewImg');
+            if (modal && img) {
+                img.src = fullUrl;
+                modal.style.display = 'flex';
+            } else {
+                window.open(fullUrl, '_blank');
+            }
         },
         async process(userId, status) {
             const admin = adminAuth.getUser();
