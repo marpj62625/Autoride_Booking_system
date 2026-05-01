@@ -5,8 +5,8 @@
     { "source": "/(.*)", "destination": "/frontend/$1" }
   ],
   "functions": {
-    "api/index.py": {
-      "runtime": "@vercel/python"
+    "api/*.py": {
+      "runtime": "python@3.9"
     }
   }
 }
