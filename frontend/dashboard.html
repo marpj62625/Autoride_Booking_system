@@ -240,8 +240,11 @@
         const userId = localStorage.getItem('user_id');
         const userFullName = localStorage.getItem('full_name');
 
-        // Use global API_BASE from config.js or fallback to origin
-        const API_BASE = window.API_BASE || window.location.origin;
+        // Ensure API_BASE is available globally
+        if (typeof window.API_BASE === 'undefined') {
+            window.API_BASE = window.location.origin;
+        }
+        const API_BASE = window.API_BASE;
 
         if (!userId || userId === 'null') {
             window.location.href = 'login.html';
