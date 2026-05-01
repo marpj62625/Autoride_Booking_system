@@ -114,7 +114,19 @@
 
         const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
             ? 'http://localhost:5000' 
-            : '';
+            : ''; 
+
+        // Helper to ensure all production calls are absolute from root
+        async function apiFetch(path, options = {}) {
+            // If path doesn't start with / and API_BASE is empty (production), prepend /
+            let url = path;
+            if (API_BASE === '' && !path.startsWith('/')) {
+                url = '/' + path;
+            } else {
+                url = API_BASE + (path.startsWith('/') ? '' : '/') + path;
+            }
+            return fetch(url, options);
+        }
 
         :root {
             --bg-primary: #0b0f1a;
@@ -3429,7 +3441,7 @@ void loop() {
                 const errorEl = document.getElementById('loginError');
 
                 try {
-                    const res = await fetch(`${API_BASE}/api/admin/login`, {
+                    const res = await apiFetch('api/admin/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })
