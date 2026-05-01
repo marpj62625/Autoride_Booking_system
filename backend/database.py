@@ -8,9 +8,13 @@ def init_pool():
     global db_pool
     if db_pool is None:
         try:
-            db_pool = ConnectionPool(conninfo=SUPABASE_DB_URL, min_size=1, max_size=10)
+            print(f"DEBUG: Initializing ConnectionPool with URL: {SUPABASE_DB_URL[:20]}...")
+            db_pool = ConnectionPool(conninfo=SUPABASE_DB_URL, min_size=1, max_size=5)
+            print("DEBUG: ConnectionPool initialized successfully")
         except Exception as e:
-            print(f"Error creating connection pool: {e}")
+            import traceback
+            print(f"CRITICAL: Error creating connection pool: {e}")
+            print(traceback.format_exc())
             raise e
 
 from flask import g

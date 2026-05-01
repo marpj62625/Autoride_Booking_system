@@ -93,9 +93,9 @@ def migrate_settings_v2():
     finally:
         if 'cur' in locals(): cur.close()
 
-# Run migration on startup
-with app.app_context():
-    migrate_settings_v2()
+# Run migration on startup (Disabled for Vercel stability)
+# with app.app_context():
+#     migrate_settings_v2()
 
 def migrate_payment_cancellation():
     """Adds columns for downpayments and customer cancellations."""
