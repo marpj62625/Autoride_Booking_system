@@ -3879,7 +3879,7 @@ void loop() {
                 }
 
                 try {
-                    const res = await fetch(id ? `${API_BASE}/api/vehicles/${id}` : `${API_BASE}/api/vehicles`, {
+                    const res = await fetch(id ? `${API_BASE}/vehicles/${id}` : `${API_BASE}/vehicles`, {
                         method: id ? 'PUT' : 'POST',
                         body: formData
                     });
@@ -3908,7 +3908,7 @@ void loop() {
                 };
 
                 try {
-                    const res = await fetch(id ? `${API_BASE}/api/admin/update/${id}` : `${API_BASE}/api/admin/create`, {
+                    const res = await fetch(id ? `${API_BASE}/admin/update/${id}` : `${API_BASE}/admin/create`, {
                         method: id ? 'PUT' : 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -3944,7 +3944,7 @@ void loop() {
                 const input = document.getElementById('driverWageInput');
                 const msg = document.getElementById('wageStatusMsg');
                 try {
-                    const res = await fetch(`${API_BASE}/api/settings/driver_wage`, {
+                    const res = await fetch(`${API_BASE}/settings/driver_wage`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ value: input.value })
