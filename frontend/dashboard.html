@@ -564,7 +564,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/api/modify-booking`, {
+                const response = await fetch(`${API_BASE}/modify-booking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -593,7 +593,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/api/review`, {
+                const response = await fetch(`${API_BASE}/review`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -619,7 +619,7 @@
             if (!confirm('Are you ABSOLUTELY sure you want to cancel this booking? This action cannot be undone.')) return;
             
             try {
-                const response = await fetch(`${API_BASE}/api/bookings/${id}/cancel`, {
+                const response = await fetch(`${API_BASE}/bookings/${id}/cancel`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -647,7 +647,7 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch(`${API_BASE}/api/bookings/${id}/receipt`);
+                const response = await fetch(`${API_BASE}/bookings/${id}/receipt`);
                 if (response.ok) {
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
