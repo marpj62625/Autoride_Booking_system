@@ -3,7 +3,7 @@
    Handles fetching, filtering, approving, and rejecting bookings
    ============================================================ */
 
-const API_BASE = "/api";
+// Using global API_BASE from index.html
 
 // DOM references
 const bookingsBody  = document.getElementById('bookingsBody');

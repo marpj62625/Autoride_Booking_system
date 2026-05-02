@@ -3,7 +3,7 @@
    Handles fetching report data and rendering Chart.js charts
    ============================================================ */
 
-const API_BASE = "/api";
+// Using global API_BASE from index.html
 
 // ==================== DOM REFERENCES ====================
 const reportDate        = document.getElementById('reportDate');

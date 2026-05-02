@@ -1,4 +1,4 @@
-const API_BASE = "/api";
+// Using global API_BASE from index.html
 
 const driversBody = document.getElementById("driversBody");
 const searchInput = document.getElementById("searchInput");
