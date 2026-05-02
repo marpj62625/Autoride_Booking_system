@@ -1468,8 +1468,8 @@ def book():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/payment', methods=['POST'])
-def payment():
+@app.route('/legacy-payment', methods=['POST'])
+def legacy_payment():
     try:
         booking_id = request.form.get('booking_id')
         amount = request.form.get('amount')

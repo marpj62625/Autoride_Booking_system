@@ -3,7 +3,9 @@
   "appName": "Autoride Admin",
   "webDir": "www",
   "server": {
-    "androidScheme": "http",
-    "cleartext": true
+    "cleartext": true,
+    "allowNavigation": [
+      "autoride-booking-system.vercel.app"
+    ]
   }
 }

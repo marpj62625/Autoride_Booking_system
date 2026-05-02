@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from database import get_cursor, commit_db
+import json
 
 payment_bp = Blueprint('payment', __name__)
 
@@ -75,6 +76,27 @@ def process_payment():
         """, (booking_id,))
 
         commit_db()
+
+        # 5. Send Email Receipt
+        try:
+            # Re-fetch everything needed for the receipt
+            cur.execute("""
+                SELECT b.id, u.full_name, u.email, v.brand, v.model, b.start_date, b.end_date, b.total_price,
+                       p.reference_number, p.method
+                FROM bookings b
+                JOIN users u ON b.user_id = u.id
+                JOIN vehicles v ON b.vehicle_id = v.id
+                JOIN payments p ON p.booking_id = b.id
+                WHERE b.id = %s AND p.id = %s
+            """, (booking_id, payment_id))
+            receipt_data = cur.fetchone()
+            
+            if receipt_data:
+                # Import here to avoid circular dependency
+                from app import send_receipt_email
+                send_receipt_email(receipt_data['email'], dict(receipt_data))
+        except Exception as email_err:
+            print(f"ERROR SENDING RECEIPT EMAIL: {email_err}")
 
         print(f"DEBUG: Payment received for booking {booking_id}. Payment ID: {payment_id}")
         return jsonify({
