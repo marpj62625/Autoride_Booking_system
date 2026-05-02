@@ -1566,13 +1566,13 @@ def user_bookings():
         
     try:
         cur = get_cursor()
-        # Fetch bookings with vehicle info
+        # Fetch bookings with vehicle info - Sort by ID DESC to see newest first
         query = """
             SELECT b.*, v.brand, v.model, v.plate_number 
             FROM bookings b
             JOIN vehicles v ON b.vehicle_id = v.id
             WHERE b.user_id = %s
-            ORDER BY b.start_date DESC
+            ORDER BY b.id DESC
         """
         cur.execute(query, (user_id,))
         data = cur.fetchall()
