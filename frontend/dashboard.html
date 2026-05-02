@@ -286,7 +286,7 @@
                 console.log("DEBUG: Fetching dashboard for User ID:", userId);
                 
                 // Fetch User Bookings
-                const bookingsRes = await fetch(`${API_BASE}/api/user-bookings?user_id=${userId}`);
+                const bookingsRes = await fetch(`${API_BASE}/user-bookings?user_id=${userId}`);
                 let bookings = [];
                 if (bookingsRes.ok) {
                     bookings = await bookingsRes.json();
@@ -296,7 +296,7 @@
                 }
                 
                 let userEmail = "";
-                const profRes = await fetch(`${API_BASE}/api/profile?user_id=${userId}`);
+                const profRes = await fetch(`${API_BASE}/profile?user_id=${userId}`);
                 if (profRes.ok) {
                     const profData = await profRes.json();
                     userEmail = profData.email;
@@ -304,7 +304,7 @@
                 }
 
                 if (userEmail) {
-                    const splitRes = await fetch(`${API_BASE}/api/split-bills?email=${userEmail}`);
+                    const splitRes = await fetch(`${API_BASE}/split-bills?email=${userEmail}`);
                     if (splitRes.ok) {
                          const splits = await splitRes.json();
                          console.log("DEBUG: Split bills received:", splits);
