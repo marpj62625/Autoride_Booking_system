@@ -1053,7 +1053,7 @@
                     </div>
                     <div style="grid-column: span 1;">
                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Model</label>
-                        <select id="vModel" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+                        <select id="vModel" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required onchange="Vehicles.applySpecs(this.value)">
                             <option value="">Select Brand First</option>
                         </select>
                     </div>
@@ -1333,6 +1333,35 @@
             "Isuzu": ["mu-X", "D-MAX", "Traviz"]
         },
 
+        CAR_SPECS: {
+            "Vios": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "Fortuner": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Innova": { seats: "7", type: "MPV", fuel: "Diesel" },
+            "Hilux": { seats: "5", type: "Pickup", fuel: "Diesel" },
+            "Wigo": { seats: "5", type: "Hatchback", fuel: "Gasoline" },
+            "Rush": { seats: "7", type: "SUV", fuel: "Gasoline" },
+            "Raize": { seats: "5", type: "SUV", fuel: "Gasoline" },
+            "Hiace": { seats: "12", type: "Van", fuel: "Diesel" },
+            "Montero Sport": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Mirage G4": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "L300": { seats: "10", type: "Van", fuel: "Diesel" },
+            "Xpander": { seats: "7", type: "MPV", fuel: "Gasoline" },
+            "Strada": { seats: "5", type: "Pickup", fuel: "Diesel" },
+            "Navara": { seats: "5", type: "Pickup", fuel: "Diesel" },
+            "Terra": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Almera": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "Urvan": { seats: "12", type: "Van", fuel: "Diesel" },
+            "Civic": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "City": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "BR-V": { seats: "7", type: "SUV", fuel: "Gasoline" },
+            "CR-V": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Brio": { seats: "5", type: "Hatchback", fuel: "Gasoline" },
+            "Ertiga": { seats: "7", type: "MPV", fuel: "Gasoline" },
+            "Jimny": { seats: "4", type: "SUV", fuel: "Gasoline" },
+            "Everest": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Ranger": { seats: "5", type: "Pickup", fuel: "Diesel" }
+        },
+
         updateModels(selectedModel = null) {
             const brand = document.getElementById('vBrand').value;
             const modelSelect = document.getElementById('vModel');
@@ -1345,9 +1374,24 @@
                     opt.textContent = m;
                     modelSelect.appendChild(opt);
                 });
-                if (selectedModel) modelSelect.value = selectedModel;
+                if (selectedModel) {
+                    modelSelect.value = selectedModel;
+                    this.applySpecs(selectedModel);
+                }
             } else {
                 modelSelect.innerHTML = '<option value="">Select Brand First</option>';
+            }
+        },
+
+        applySpecs(model) {
+            const editingId = document.getElementById('editId').value;
+            if (!model || editingId) return; // Don't auto-fill if editing existing
+            const specs = this.CAR_SPECS[model];
+            if (specs) {
+                if (specs.seats) document.getElementById('vSeats').value = specs.seats;
+                if (specs.type) document.getElementById('vType').value = specs.type;
+                if (specs.fuel) document.getElementById('vFuel').value = specs.fuel;
+                console.log(`Mobile: Auto-filled specs for ${model}`);
             }
         },
 
