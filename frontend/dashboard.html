@@ -283,22 +283,31 @@
 
         async function fetchDashboard() {
             try {
+                console.log("DEBUG: Fetching dashboard for User ID:", userId);
+                
                 // Fetch User Bookings
                 const bookingsRes = await fetch(`${API_BASE}/api/user-bookings?user_id=${userId}`);
                 let bookings = [];
-                if (bookingsRes.ok) bookings = await bookingsRes.json();
+                if (bookingsRes.ok) {
+                    bookings = await bookingsRes.json();
+                    console.log("DEBUG: Bookings received:", bookings);
+                } else {
+                    console.error("DEBUG: Failed to fetch bookings. Status:", bookingsRes.status);
+                }
                 
                 let userEmail = "";
                 const profRes = await fetch(`${API_BASE}/api/profile?user_id=${userId}`);
                 if (profRes.ok) {
                     const profData = await profRes.json();
                     userEmail = profData.email;
+                    console.log("DEBUG: Profile loaded for email:", userEmail);
                 }
 
                 if (userEmail) {
                     const splitRes = await fetch(`${API_BASE}/api/split-bills?email=${userEmail}`);
                     if (splitRes.ok) {
                          const splits = await splitRes.json();
+                         console.log("DEBUG: Split bills received:", splits);
                          renderSplitBills(splits);
                     }
                 }
@@ -308,7 +317,8 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('dashboardContent').style.display = 'grid';
             } catch (err) {
-                document.getElementById('loading').innerHTML = '<span class="error">Server error loading dashboard.</span>';
+                console.error("DEBUG: Dashboard Fetch Error:", err);
+                document.getElementById('loading').innerHTML = '<span class="error">Server error loading dashboard. Check console for details.</span>';
             }
         }
 
