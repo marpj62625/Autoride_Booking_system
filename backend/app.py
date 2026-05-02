@@ -1566,11 +1566,11 @@ def user_bookings():
         
     try:
         cur = get_cursor()
-        # Fetch bookings with vehicle info - Sort by ID DESC to see newest first
+        # Fetch bookings with vehicle info - Use LEFT JOIN to ensure booking shows even if vehicle data has issues
         query = """
             SELECT b.*, v.brand, v.model, v.plate_number 
             FROM bookings b
-            JOIN vehicles v ON b.vehicle_id = v.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
             WHERE b.user_id = %s
             ORDER BY b.id DESC
         """
