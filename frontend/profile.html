@@ -14,13 +14,20 @@
             gap: 2rem;
             margin-top: 2rem;
         }
-        .profile-sidebar {
-            background: var(--surface-color);
-            padding: 2.5rem 2rem;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            text-align: center;
-            box-shadow: var(--shadow-premium);
+        @media (max-width: 768px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+            .profile-sidebar, .profile-main {
+                padding: 1.5rem;
+            }
+            .avatar-placeholder {
+                width: 80px;
+                height: 80px;
+                font-size: 2rem;
+            }
         }
         .profile-main {
             background: var(--surface-color);
@@ -128,7 +135,7 @@
                 </h3>
                 
                 <form id="profileForm">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="profile-form-grid">
                         <div class="form-group">
                             <label>Full Name</label>
                             <input type="text" id="editName" class="form-input" required>
@@ -138,6 +145,19 @@
                             <input type="text" id="editPhone" class="form-input" placeholder="09XX XXX XXXX">
                         </div>
                     </div>
+                    <style>
+                        .profile-form-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 20px;
+                        }
+                        @media (max-width: 600px) {
+                            .profile-form-grid {
+                                grid-template-columns: 1fr;
+                                gap: 10px;
+                            }
+                        }
+                    </style>
                     <div class="form-group" style="margin-top: 10px;">
                         <label>Email Address</label>
                         <input type="email" id="editEmail" class="form-input" readonly style="opacity: 0.6; cursor: not-allowed;">
