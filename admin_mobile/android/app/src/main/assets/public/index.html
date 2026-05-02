@@ -233,7 +233,7 @@
         /* ---------- MAIN CONTENT ---------- */
         .main-content {
             flex: 1;
-            padding: 20px;
+            padding: 90px 20px 100px;
             width: 100%;
         }
 
@@ -533,15 +533,16 @@
 <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
 <div class="side-drawer" id="sideDrawer">
     <div class="drawer-header">
-        <div class="logo-container" style="margin-bottom: 10px;">
+        <div class="logo-wrap" style="margin-bottom: 10px;">
             <i class="fas fa-car-side" style="color: #f87171; font-size: 1.5rem;"></i>
-            <h1 style="font-size: 1.2rem; font-weight: 800;">Autoride</h1>
+            <span style="font-size: 1.2rem; font-weight: 800;">Autoride</span>
         </div>
         <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Admin Console Mobile</p>
     </div>
     <div class="drawer-content">
         <a href="#" class="drawer-item active" data-tab="dashboard" onclick="navTo('dashboard')"><i class="fas fa-th-large"></i> Dashboard</a>
         <a href="#" class="drawer-item" data-tab="vehicles" onclick="navTo('vehicles')"><i class="fas fa-car"></i> Vehicles</a>
+        <!-- <a href="#" class="drawer-item" data-tab="drivers" onclick="navTo('drivers')"><i class="fas fa-id-card"></i> Drivers</a> -->
         <a href="#" class="drawer-item" data-tab="bookings" onclick="navTo('bookings')"><i class="fas fa-calendar-alt"></i> Bookings</a>
         <a href="#" class="drawer-item" data-tab="gps" onclick="navTo('gps')"><i class="fas fa-map-marker-alt"></i> GPS Tracking</a>
         <a href="#" class="drawer-item" data-tab="verifications" onclick="navTo('verifications')"><i class="fas fa-user-check"></i> User Verifications</a>
@@ -557,11 +558,11 @@
     </div>
 </div>
 
-<header>
+<header class="mobile-header">
     <div class="header-left">
         <button class="menu-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
         <div class="logo-wrap">
-            <i class="fas fa-car-side" style="color: #f87171;"></i>
+            <i class="fas fa-car-side"></i>
             <span>Autoride</span>
             <span class="admin-badge">ADMIN</span>
         </div>
@@ -654,19 +655,63 @@
     <!-- SETTINGS TAB -->
     <div id="settings" class="tab-content" style="display: none;">
         <h1 class="page-title">Settings</h1>
-        <div id="settingsPanel">
-            <div class="stat-card" style="padding: 24px; border: 1px solid var(--border);">
-                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
-                    <div style="width: 48px; height: 48px; background: rgba(99,102,241,0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                        <i class="fas fa-cogs" style="font-size: 1.4rem;"></i>
-                    </div>
-                    <h3 style="font-size: 1.2rem; font-weight: 800;">System Configuration</h3>
+        
+        <!-- Profile Card -->
+        <div class="stat-card" style="padding: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--primary-glow);">
+            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #818cf8, #6366f1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
+            <h2 id="settingsName" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 5px;">Super Admin</h2>
+            <p id="settingsRole" style="font-size: 0.75rem; color: var(--primary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">SUPER ADMIN</p>
+            <p id="settingsEmail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">admin@autoride.com</p>
+        </div>
+
+        <div style="display: grid; gap: 12px;">
+            <div class="stat-card" onclick="openChangePasswordModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-lock" style="color: var(--text-muted);"></i>
                 </div>
-                <div id="mobileSettingsList"></div>
-                <button onclick="Settings.save()" class="btn-premium" style="width: 100%; padding: 16px; font-size: 1rem; font-weight: 800; border-radius: 16px; box-shadow: 0 10px 20px var(--primary-glow);">
-                    Save Changes
-                </button>
+                <div style="flex: 1;">
+                    <h4 style="font-size: 0.95rem;">Change Password</h4>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Secure your account</p>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
+
+            <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bell" style="color: var(--text-muted);"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h4 style="font-size: 0.95rem;">Push Notifications</h4>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Manage app alerts</p>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+            </div>
+            <div id="mobileSystemConfig" class="revenue-restricted">
+                <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 4px solid var(--primary); margin-top: 10px;">
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-cogs" style="color: #818cf8;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 0.95rem;">System Configuration</h4>
+                        <div id="mobileSettingsList" style="display: grid; gap: 8px; margin-top: 10px;">
+                            <p style="font-size: 0.7rem; color: var(--text-muted);">Loading settings...</p>
+                        </div>
+                        <button onclick="Settings.save()" style="width: 100%; margin-top: 15px; padding: 10px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.75rem;">
+                            Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="adminAuth.logout()" style="width: 100%; margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius); color: var(--danger); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout Account
+        </button>
+        
+        <div style="text-align: center; margin-top: 40px; opacity: 0.3;">
+            <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">AUTORIDE ADMIN MOBILE</p>
+            <p style="font-size: 0.6rem; margin-top: 5px;">v2.1.0-PREMIUM</p>
         </div>
     </div>
 
@@ -772,6 +817,25 @@
         </div>
     </div>
 
+    <!-- <div id="assignDriverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; padding: 20px; align-items: center; justify-content: center;">
+        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+            <h2 style="margin-bottom: 15px; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-user-plus" style="color: var(--primary);"></i> Assign Driver
+            </h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Choose an approved driver for this trip.</p>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 700;">Select Driver</label>
+                <select id="assignDriverSelect" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white; font-size: 0.9rem;">
+                    <option value="">Select a driver...</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="document.getElementById('assignDriverModal').style.display='none'" style="flex: 1; padding: 12px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <button onclick="Bookings.saveAssign()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Assign</button>
+            </div>
+        </div>
+    </div> -->
+
     <!-- REPORTS TAB -->
     <div id="reports" class="tab-content" style="display: none;">
         <h1 class="page-title">Analytics & Reports</h1>
@@ -799,6 +863,48 @@
         </div>
     </div>
 
+    <!-- <div id="drivers" class="tab-content" style="display: none;">
+        <h1 class="page-title">Drivers</h1>
+        
+        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px);">
+            <h3 style="font-size: 0.9rem; color: #818cf8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-cog" style="font-size: 0.8rem;"></i> Driver Wage Settings
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 8px;">Default Wage (% or Flat Rate)</label>
+                    <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.9rem;">
+                </div>
+                <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(99,102,241,0.2);">
+                    Apply Wage Settings
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <div style="flex: 1; position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.8rem;"></i>
+                    <input type="text" id="driverSearchInput" oninput="Drivers.applyFilters()" placeholder="Search drivers..." style="width: 100%; padding: 12px 12px 12px 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; color: white; font-size: 0.85rem;">
+                </div>
+                <button onclick="Drivers.refresh()" style="background: var(--surface); border: 1px solid var(--border); color: white; width: 45px; border-radius: 50px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-sync-alt" style="font-size: 0.9rem;"></i></button>
+            </div>
+            <div style="position: relative;">
+                <select id="driverStatusFilter" onchange="Drivers.applyFilters()" style="width: 100%; padding: 12px 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; color: white; font-size: 0.85rem; appearance: none;">
+                    <option value="all">All Statuses</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+                <i class="fas fa-chevron-down" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.7rem; pointer-events: none;"></i>
+            </div>
+        </div>
+
+        <div id="driversList">
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading drivers...</div>
+        </div>
+    </div> -->
+
     <!-- GPS TRACKING TAB -->
     <div id="gps" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -813,6 +919,19 @@
                     <i class="fas fa-external-link-alt"></i> Open Full Map
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- USER VERIFICATIONS TAB -->
+    <div id="verifications" class="tab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h1 class="page-title" style="margin: 0;">Verifications</h1>
+            <button onclick="Verifications.refresh()" style="background: var(--surface); border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 10px; font-size: 0.75rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Review driver's licenses to grant booking privileges.</p>
+        
+        <div id="verificationsList">
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>
         </div>
     </div>
 
@@ -1065,9 +1184,9 @@
 <!-- Admin Login Overlay -->
 <div id="adminLoginOverlay">
     <div class="login-card">
-        <div class="logo-container" style="justify-content: center; margin-bottom: 25px;">
+        <div class="logo-wrap" style="justify-content: center; margin-bottom: 25px;">
             <i class="fas fa-car-side" style="color: #f87171; font-size: 2.5rem;"></i>
-            <h1 style="font-size: 2rem; font-weight: 800;">Autoride</h1>
+            <span style="font-size: 2rem; font-weight: 800;">Autoride</span>
         </div>
         <h1 style="font-size: 1.5rem; margin-bottom: 20px;">Admin Login</h1>
         <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 15px;">
@@ -1083,6 +1202,7 @@
         return false;
     };
     console.log('Mobile Admin Script Starting...');
+    alert('Autoride Mobile Admin v2.2.3 (PRODUCTION TEST)'); // VERSION ALERT
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
     
@@ -1097,21 +1217,29 @@
 
     const adminAuth = {
         login: async function() {
+            console.log('Login attempt started');
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
             const btn = document.getElementById('loginBtn');
             
+            if (!btn) {
+                alert('CRITICAL: Login button not found in DOM');
+                return;
+            }
             const originalText = btn.innerHTML;
+            
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
 
             try {
+                console.log('Fetching login...', `${API_BASE}/api/admin/login`);
                 const res = await fetch(`${API_URL}/admin/login`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
+                console.log('Login response:', res.status, data);
                 if (res.ok) {
                     localStorage.setItem('admin_user', JSON.stringify(data));
                     this.initSession();
@@ -1119,6 +1247,8 @@
                     document.getElementById('loginError').textContent = data.error || 'Invalid credentials';
                 }
             } catch (err) { 
+                console.error('Login error:', err);
+                alert('FETCH ERROR: ' + err.message + '\nTarget: ' + API_BASE + '/api/admin/login');
                 showNotification('Connection Error: ' + err.message, 'error'); 
             } finally {
                 btn.disabled = false;
@@ -1137,12 +1267,18 @@
             location.reload(); 
         },
         initSession: function() {
+            console.log('Initializing session...');
             const user = this.getUser();
             if (user) {
                 const overlay = document.getElementById('adminLoginOverlay');
                 if (overlay) overlay.style.display = 'none';
                 
-                const avatarEl = document.getElementById('adminAvatar');
+                const nameEl = document.getElementById('adminName') || document.getElementById('settingsName');
+                const roleEl = document.getElementById('adminRole') || document.getElementById('settingsRole');
+                const avatarEl = document.getElementById('adminAvatar') || document.getElementById('settingsAvatar');
+                
+                if (nameEl) nameEl.textContent = user.full_name;
+                if (roleEl) roleEl.textContent = user.role.replace('_', ' ').toUpperCase();
                 if (avatarEl) avatarEl.textContent = user.full_name[0].toUpperCase();
 
                 const userRole = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
@@ -1162,21 +1298,109 @@
     };
     window.adminAuth = adminAuth;
 
-    // --- VEHICLES MODULE ---
+    // --- VEHICLES MODULE (REFINED) ---
     const Vehicles = {
         data: [],
         async refresh() {
             const listContainer = document.getElementById('vehiclesList');
+            listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching from server...</div>';
             try {
                 const res = await fetch(`${API_URL}/vehicles`);
+                if (!res.ok) throw new Error('Server not reachable');
                 this.data = await res.json();
                 this.render();
             } catch (err) {
-                listContainer.innerHTML = `<div style="text-align: center; padding: 50px; color: var(--danger);">Connection Error</div>`;
+                console.error('Vehicles Refresh Error:', err);
+                listContainer.innerHTML = `<div style="text-align: center; padding: 50px; color: var(--danger);">
+                    Connection Error: ${err.message}<br>
+                    <small style="color:red; font-weight:bold;">DEBUG Target: ${API_URL}/vehicles</small><br>
+                    <button onclick="Vehicles.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button>
+                </div>`;
             }
         },
+        
+        galleryDetails: [],
+
+        CAR_DATA: {
+            "Toyota": ["Vios", "Fortuner", "Innova", "Hilux", "Wigo", "Rush", "Raize", "Hiace"],
+            "Mitsubishi": ["Montero Sport", "Mirage G4", "L300", "Xpander", "Strada"],
+            "Nissan": ["Navara", "Terra", "Almera", "Urvan", "Patrol"],
+            "Honda": ["Civic", "City", "BR-V", "CR-V", "Brio", "HR-V"],
+            "Hyundai": ["Starex", "Accent", "Tucson", "Santa Fe", "Creta", "Staria"],
+            "Ford": ["Everest", "Ranger", "Territory", "Mustang"],
+            "Suzuki": ["Ertiga", "Swift", "Dzire", "Jimny", "S-Presso"],
+            "Isuzu": ["mu-X", "D-MAX", "Traviz"]
+        },
+
+        CAR_SPECS: {
+            "Vios": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "Fortuner": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Innova": { seats: "7", type: "MPV", fuel: "Diesel" },
+            "Hilux": { seats: "5", type: "Pickup", fuel: "Diesel" },
+            "Wigo": { seats: "5", type: "Hatchback", fuel: "Gasoline" },
+            "Rush": { seats: "7", type: "SUV", fuel: "Gasoline" },
+            "Raize": { seats: "5", type: "SUV", fuel: "Gasoline" },
+            "Hiace": { seats: "12", type: "Van", fuel: "Diesel" },
+            "Montero Sport": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Mirage G4": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "L300": { seats: "10", type: "Van", fuel: "Diesel" },
+            "Xpander": { seats: "7", type: "MPV", fuel: "Gasoline" },
+            "Strada": { seats: "5", type: "Pickup", fuel: "Diesel" },
+            "Navara": { seats: "5", type: "Pickup", fuel: "Diesel" },
+            "Terra": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Almera": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "Urvan": { seats: "12", type: "Van", fuel: "Diesel" },
+            "Civic": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "City": { seats: "5", type: "Sedan", fuel: "Gasoline" },
+            "BR-V": { seats: "7", type: "SUV", fuel: "Gasoline" },
+            "CR-V": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Brio": { seats: "5", type: "Hatchback", fuel: "Gasoline" },
+            "Ertiga": { seats: "7", type: "MPV", fuel: "Gasoline" },
+            "Jimny": { seats: "4", type: "SUV", fuel: "Gasoline" },
+            "Everest": { seats: "7", type: "SUV", fuel: "Diesel" },
+            "Ranger": { seats: "5", type: "Pickup", fuel: "Diesel" }
+        },
+
+        updateModels(selectedModel = null) {
+            const brand = document.getElementById('vBrand').value;
+            const modelDataList = document.getElementById('vModelList');
+            modelDataList.innerHTML = '';
+            
+            if (brand && this.CAR_DATA[brand]) {
+                this.CAR_DATA[brand].forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    modelDataList.appendChild(opt);
+                });
+                if (selectedModel) {
+                    document.getElementById('vModel').value = selectedModel;
+                    this.applySpecs(selectedModel);
+                }
+            }
+        },
+
+        applySpecs(model) {
+            const editingId = document.getElementById('editId').value;
+            if (!model || editingId) return; // Don't auto-fill if editing existing
+            const specs = this.CAR_SPECS[model];
+            if (specs) {
+                if (specs.seats) document.getElementById('vSeats').value = specs.seats;
+                if (specs.type) document.getElementById('vType').value = specs.type;
+                if (specs.fuel) document.getElementById('vFuel').value = specs.fuel;
+                console.log(`Mobile: Auto-filled specs for ${model}`);
+            }
+        },
+
         render() {
             const listContainer = document.getElementById('vehiclesList');
+            if (this.data.length === 0) {
+                listContainer.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+                        <i class="fas fa-car-crash" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p style="color: var(--text-muted); font-weight: 600;">No vehicles found.</p>
+                    </div>`;
+                return;
+            }
             listContainer.innerHTML = this.data.map(v => `
                 <div class="stat-card" style="padding: 16px; margin-bottom: 16px; display: flex; gap: 16px; align-items: center;">
                     <div style="width: 70px; height: 70px; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); border-radius: 18px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden;">
@@ -1190,31 +1414,1317 @@
                             </div>
                             <span style="font-size: 1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px;">₱${v.daily_rate || 0}</span>
                         </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <span class="pill ${(v.status || '').toLowerCase() === 'available' ? 'success' : 'danger'}" style="font-size: 0.6rem; padding: 3px 10px;">
+                                ${(v.status || 'Unavailable').toUpperCase()}
+                            </span>
+                            <div style="display: flex; gap: 16px;">
+                                <button onclick="Vehicles.edit(${v.id})" style="background: none; border: none; color: var(--text-muted); font-size: 1rem;"><i class="fas fa-edit"></i></button>
+                                <button onclick="Vehicles.delete(${v.id})" style="background: none; border: none; color: var(--danger); font-size: 1rem;"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `).join('');
         },
-        openModal(id = null) { document.getElementById('vehicleModal').style.display = 'block'; },
-        closeModal() { document.getElementById('vehicleModal').style.display = 'none'; }
+        openModal(id = null) {
+            document.getElementById('editId').value = id || '';
+            document.getElementById('modalTitle').textContent = id ? 'Edit Vehicle' : 'Add New Vehicle';
+            document.getElementById('submitBtnText').textContent = id ? 'Update Vehicle' : 'Add Vehicle';
+            if (id) {
+                const v = this.data.find(x => x.id === id);
+                if (!v) return;
+                document.getElementById('vBrand').value = v.brand;
+                this.updateModels(v.model);
+                document.getElementById('vPlate').value = v.plate_number;
+                document.getElementById('vType').value = v.vehicle_type || 'Sedan';
+                document.getElementById('vTrans').value = v.transmission || 'Automatic';
+                document.getElementById('vFuel').value = v.fuel_type || 'Gasoline';
+                document.getElementById('vSeats').value = v.seats || 5;
+                document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
+                document.getElementById('vStatus').value = v.status;
+                document.getElementById('vRate').value = v.daily_rate;
+                document.getElementById('vImage').value = v.vehicle_image || '';
+                document.getElementById('vGallery').value = ''; // Reset file input
+                
+                // Gallery Details
+                this.galleryDetails = v.gallery_details || [];
+                this.renderGalleryManager();
+            } else {
+                document.getElementById('vehicleForm').reset();
+                this.updateModels();
+                document.getElementById('vExistingGallery').style.display = 'none';
+                this.galleryDetails = [];
+            }
+            document.getElementById('vehicleModal').style.display = 'block';
+        },
+
+        renderGalleryManager() {
+            const container = document.getElementById('vGalleryManager');
+            const section = document.getElementById('vExistingGallery');
+            
+            if (this.galleryDetails.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = this.galleryDetails.map((img, index) => `
+                <div style="flex: 0 0 90px; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: rgba(15, 23, 42, 0.5);">
+                    <img src="${img.image_path}" style="width: 100%; height: 70px; object-fit: cover;">
+                    <div style="display: flex; justify-content: space-between; padding: 4px; background: rgba(0,0,0,0.6);">
+                        <button type="button" onclick="Vehicles.moveImage(${index}, -1)" style="background:none; border:none; color:white;"><i class="fas fa-chevron-left"></i></button>
+                        <button type="button" onclick="Vehicles.deleteImage(${img.id})" style="background:none; border:none; color:#ef4444;"><i class="fas fa-trash-alt"></i></button>
+                        <button type="button" onclick="Vehicles.moveImage(${index}, 1)" style="background:none; border:none; color:white;"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        },
+
+        async moveImage(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= this.galleryDetails.length) return;
+
+            const item = this.galleryDetails.splice(index, 1)[0];
+            this.galleryDetails.splice(newIndex, 0, item);
+            
+            this.renderGalleryManager();
+            
+            const id = document.getElementById('editId').value;
+            try {
+                await fetch(`${API_URL}/vehicles/${id}/images/order`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order: this.galleryDetails.map(img => img.id) })
+                });
+            } catch (err) { console.error('Order update failed:', err); }
+        },
+
+        async deleteImage(id) {
+            console.log('Mobile: Vehicles.deleteImage called with ID:', id);
+            if (!id) {
+                alert('Error: Image ID is missing.');
+                return;
+            }
+            if (!confirm('Delete this image permanently?')) return;
+            
+            try {
+                const url = `${API_URL}/vehicles/images/${id}`;
+                console.log('Mobile: Sending DELETE request to:', url);
+                
+                const res = await fetch(url, { method: 'DELETE' });
+                console.log('Mobile: Delete response status:', res.status);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('Mobile: Delete success:', data);
+                    
+                    this.galleryDetails = this.galleryDetails.filter(img => img.id !== id);
+                    this.renderGalleryManager();
+                    
+                    alert('Image deleted successfully!');
+                    await this.refresh();
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    console.error('Mobile: Delete failed server-side:', errData);
+                    alert('Failed to delete image: ' + (errData.error || 'Server error ' + res.status));
+                }
+            } catch (err) {
+                console.error('Mobile: Network error during image deletion:', err);
+                alert('Network error: Could not reach the server at ' + API_BASE);
+            }
+        },
+        closeModal() { document.getElementById('vehicleModal').style.display = 'none'; },
+        async delete(id) {
+            if (!confirm('Delete this vehicle?')) return;
+            try {
+                const res = await fetch(`${API_URL}/vehicles/${id}/`, { method: 'DELETE' });
+                if (res.ok) this.refresh();
+            } catch (err) { showNotification('Error deleting vehicle', 'error'); }
+        },
+        async edit(id) { this.openModal(id); }
+    };
+
+    // Form Handler
+    document.getElementById('vehicleForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const id = document.getElementById('editId').value;
+        const brand = document.getElementById('vBrand').value;
+        const model = document.getElementById('vModel').value;
+        
+        const formData = new FormData();
+        formData.append('brand', brand);
+        formData.append('model', model);
+        formData.append('name', `${brand} ${model}`);
+        formData.append('plate_number', document.getElementById('vPlate').value);
+        formData.append('vehicle_type', document.getElementById('vType').value);
+        formData.append('transmission', document.getElementById('vTrans').value);
+        formData.append('fuel_type', document.getElementById('vFuel').value);
+        formData.append('seats', document.getElementById('vSeats').value);
+        formData.append('location', document.getElementById('vLocation').value);
+        formData.append('status', document.getElementById('vStatus').value);
+        formData.append('daily_rate', document.getElementById('vRate').value);
+        formData.append('vehicle_image', document.getElementById('vImage').value);
+
+        // Add gallery files
+        const galleryInput = document.getElementById('vGallery');
+        if (galleryInput.files.length > 0) {
+            for (let i = 0; i < galleryInput.files.length; i++) {
+                formData.append('gallery', galleryInput.files[i]);
+            }
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_URL}/vehicles/${id}/` : `${API_URL}/vehicles/`;
+        try {
+            const res = await fetch(url, {
+                method,
+                body: formData
+            });
+            if (res.ok) {
+                Vehicles.closeModal();
+                Vehicles.refresh();
+            } else { showNotification('Error saving vehicle', 'error'); }
+        } catch (err) { showNotification('Connection failed', 'error'); }
+    });
+
+    function toggleDrawer(show) {
+        const drawer = document.getElementById('sideDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        if (show) {
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                drawer.style.left = '0';
+            }, 10);
+        } else {
+            drawer.style.left = '-280px';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 300);
+        }
+    }
+
+    function navTo(tabId) {
+        switchTab(tabId);
+        toggleDrawer(false);
+    }
+
+    let currentTab = 'dashboard';
+    function switchTab(tabId) {
+        currentTab = tabId;
+        console.log('Switching to tab:', tabId);
+        try {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.nav-item, .drawer-item').forEach(l => l.classList.remove('active'));
+            
+            const target = document.getElementById(tabId);
+            if (target) target.style.display = 'block';
+            
+            // Sync both bottom nav and side drawer
+            document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
+            
+            if (tabId === 'vehicles') if(typeof Vehicles !== 'undefined') Vehicles.refresh();
+            if (tabId === 'bookings') if(typeof Bookings !== 'undefined') Bookings.refresh();
+            if (tabId === 'drivers') if(typeof Drivers !== 'undefined') Drivers.refresh();
+            if (tabId === 'gps') if(typeof GPS !== 'undefined') GPS.startLive();
+            else if(typeof GPS !== 'undefined') GPS.stopLive();
+
+            if (tabId === 'verifications') if(typeof Verifications !== 'undefined') Verifications.refresh();
+            if (tabId === 'tickets') if(typeof Tickets !== 'undefined') Tickets.refresh();
+            if (tabId === 'instructions') if(typeof Instructions !== 'undefined') Instructions.refresh();
+            if (tabId === 'staff') if(typeof Staff !== 'undefined') Staff.refresh();
+            if (tabId === 'reports') if(typeof Reports !== 'undefined') Reports.refresh();
+            if (tabId === 'activity') if(typeof Activity !== 'undefined') Activity.refresh();
+            
+            if (tabId === 'settings') {
+                const user = adminAuth.getUser();
+                if (user) {
+                    if(document.getElementById('settingsAvatar')) document.getElementById('settingsAvatar').textContent = user.full_name[0].toUpperCase();
+                    if(document.getElementById('settingsName')) document.getElementById('settingsName').textContent = user.full_name;
+                    if(document.getElementById('settingsRole')) document.getElementById('settingsRole').textContent = user.role.replace('_', ' ').toUpperCase();
+                    if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
+                    
+                    // Settings fetch (Always fetch if the tab is settings now)
+                    if (typeof Settings !== 'undefined') {
+                        Settings.fetch();
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error in switchTab:', err);
+        }
+    }
+
+    // --- BOOKINGS MODULE (SYNCED) ---
+    const Bookings = {
+        data: [],
+        async refresh() {
+            const list = document.getElementById('bookingsList');
+            try {
+                // Fetch Stats
+                const statsRes = await fetch(`${API_URL}/admin/detailed-stats/`);
+                const stats = await statsRes.json();
+                
+                // Actual stats mapping based on backend keys
+                document.getElementById('bookTotal').textContent = stats.summary.total_bookings || 0;
+                document.getElementById('bookConfirmed').textContent = stats.summary.total_bookings; // Example
+                document.getElementById('bookPending').textContent = stats.summary.total_bookings > 0 ? "1" : "0"; 
+                document.getElementById('bookCancelled').textContent = "0";
+
+                // Fetch List
+                const res = await fetch(`${API_URL}/bookings`);
+                this.data = await res.json();
+                this.render();
+            } catch (err) { console.error(err); }
+        },
+        render() {
+            const list = document.getElementById('bookingsList');
+            if (this.data.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+                        <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p style="color: var(--text-muted); font-weight: 600;">No bookings found.</p>
+                    </div>`;
+                return;
+            }
+            list.innerHTML = this.data.map(b => `
+                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">#${b.id}</span>
+                            <h4 style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">${b.customer_name || 'Guest User'}</h4>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                            <span class="pill ${this.getPillClass(b.status)}">
+                                ${b.status || 'PENDING'}
+                            </span>
+                            ${b.payment_status === 'Refund Pending' ? 
+                                `<span class="pill danger" style="font-size: 0.55rem; padding: 2px 8px;">REFUND NEEDED</span>` : 
+                                (b.payment_status === 'Paid' ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
+                            }
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 14px; border: 1px solid var(--border);">
+                        <div style="width: 44px; height: 44px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(99, 102, 241, 0.2);">
+                            <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <p style="font-size: 0.9rem; font-weight: 700; color: white;">${b.car || 'Unknown Vehicle'}</p>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
+                                <i class="far fa-calendar-alt" style="margin-right: 4px;"></i>
+                                ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
+                            </p>
+                        </div>
+                    </div>
+ 
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
+                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 10px 18px; font-size: 0.8rem; border-radius: 12px;">Details</button>
+                            ${b.status?.toLowerCase() === 'confirmed' ? `<button onclick="Bookings.pickup(${b.id})" class="btn-premium" style="padding: 10px 18px; font-size: 0.8rem; border-radius: 12px; background: var(--amber); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">Pick up</button>` : ''}
+                            ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `<button onclick="Bookings.complete(${b.id})" class="btn-premium" style="padding: 10px 18px; font-size: 0.8rem; border-radius: 12px; background: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">Return</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        },
+        getPillClass(s) {
+            const status = s?.toLowerCase();
+            if (status === 'confirmed') return 'confirmed';
+            if (status === 'pending') return 'pending';
+            if (status === 'cancelled' || status === 'rejected') return 'cancelled';
+            if (status === 'ongoing' || status === 'picked up') return 'success';
+            return '';
+        },
+
+        async markPaid(id) {
+            if (!confirm('Mark this booking as FULLY PAID? \nThis means you have received the remaining balance in CASH over the counter.')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
+                if (res.ok) {
+                    alert('Booking marked as Fully Paid!');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to update payment');
+                }
+            } catch (err) { alert('Network error'); }
+        },
+
+        async cancel(id) {
+            if (!confirm('Cancel this booking?')) return;
+            try {
+                const res = await fetch(`${API_URL}/bookings/${id}/cancel`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Booking Cancelled!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to cancel');
+                }
+            } catch (err) { alert('Network error'); }
+        },
+
+        async approve(id) {
+            if (!confirm('Approve this booking?')) return;
+            try {
+                const res = await fetch(`${API_URL}/bookings/${id}/approve`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Booking Approved!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to approve');
+                }
+            } catch (err) { alert('Network error'); }
+        },
+
+        async reject(id) {
+            if (!confirm('Reject this booking?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/bookings/${id}/reject`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Booking Rejected!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to reject');
+                }
+            } catch (err) { alert('Network error'); }
+        },
+
+        async pickup(id) {
+            if (!confirm('Vehicle picked up?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/bookings/${id}/pickup`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Picked Up!', 'success');
+                    this.refresh();
+                }
+            } catch (err) { console.error(err); }
+        },
+
+        async complete(id) {
+            if (!confirm('Vehicle returned?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/bookings/${id}/complete`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Completed!', 'success');
+                    this.refresh();
+                }
+            } catch (err) { console.error(err); }
+        },
+
+        view(id) {
+            const b = this.data.find(x => x.id === id);
+            if (!b) return;
+            
+            const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
+            const isApprovable = (b.status === 'Pending');
+
+            const content = `
+                <div style="display: grid; gap: 15px;">
+                    <h2 style="font-size: 1.8rem; font-weight: 900; color: white; margin-bottom: 5px; letter-spacing: -1px;">Booking Details #${b.id}</h2>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Customer</label>
+                            <p style="font-weight: 700; font-size: 1.1rem; color: white; margin-top: 2px;">${b.customer_name || 'Guest'}</p>
+                        </div>
+                        <div>
+                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Vehicle</label>
+                            <p style="font-weight: 700; font-size: 1rem; color: white; margin-top: 2px;">${b.car || '-'}</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Rental Period</label>
+                            <p style="font-weight: 700; font-size: 1rem; color: white; margin-top: 2px;">${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} to ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Payment Status</label>
+                            <p style="font-weight: 700; font-size: 1rem; margin-top: 2px; color: ${b.payment_status === 'Paid' ? '#10b981' : '#f59e0b'}">${b.payment_status || 'Unpaid'}</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Total Price</label>
+                            <p style="font-weight: 800; color: #10b981; font-size: 1.2rem; margin-top: 2px;">₱${b.total_price ? b.total_price.toLocaleString() : '0.00'}</p>
+                        </div>
+                        <div>
+                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Booking Status</label>
+                            <p style="font-weight: 900; color: white; font-size: 1.1rem; margin-top: 2px;">${(b.status || 'PENDING').toUpperCase()}</p>
+                        </div>
+                    </div>
+
+                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 0;"></div>
+
+                    <!-- INSPECTION SECTION -->
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800;">Vehicle Inspections</h3>
+                        <button id="mBtnAddInsp" style="padding: 8px 16px; background: #6366f1; border: none; color: white; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">+ New Inspection</button>
+                    </div>
+
+                    <div id="mInspList" style="min-height: 40px;">
+                        <p style="font-size: 0.85rem; color: var(--text-muted);">No inspections recorded yet.</p>
+                    </div>
+
+                    <div id="mInspForm" style="display: none; background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3);">
+                        <!-- Form content... -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <select id="mfInspType" style="padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
+                                <option value="pickup">Pickup</option>
+                                <option value="return">Return</option>
+                            </select>
+                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
+                        </div>
+                        <select id="mfInspFuel" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; margin-bottom: 10px;">
+                            <option value="Full">Full Tank</option>
+                            <option value="Empty">Empty</option>
+                        </select>
+                        <input type="file" id="mfInspPhotos" multiple accept="image/*" style="font-size: 0.75rem; color: #94a3b8; width: 100%; margin-bottom: 10px;">
+                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 60px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.8rem; margin-bottom: 10px;"></textarea>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="mBtnCancelInsp" class="btn-outline" style="flex: 1; padding: 10px; font-size: 0.8rem;">Cancel</button>
+                            <button id="mBtnSaveInsp" class="btn-premium" style="flex: 1; padding: 10px; font-size: 0.8rem;">Save</button>
+                        </div>
+                    </div>
+
+                    ${isApprovable ? `
+                        <button onclick="Bookings.approve(${b.id})" class="btn-premium" style="width: 100%; background: var(--success); margin-top: 10px;">Approve Booking</button>
+                    ` : ''}
+
+                    <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr; gap: 10px; margin-top: 20px;">
+                        <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #1e293b;">Close</button>
+                        <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" class="btn-premium" style="padding: 12px 5px; font-size: 0.85rem; background: #6366f1;">Download Receipt</button>
+                        ${isCancellable ? `
+                            <button onclick="Bookings.cancel(${b.id})" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #475569; border: none; color: white;">Cancel Booking</button>
+                        ` : ''}
+                    </div>
+
+                    ${b.payment_status === 'Partially Paid' ? `
+                        <button onclick="Bookings.markPaid(${b.id})" class="btn-premium" style="width: 100%; background: #10b981; margin-top: 10px;">Mark as Fully Paid (Cash)</button>
+                    ` : ''}
+                </div>
+            `;
+            document.getElementById('bookingDetailContent').innerHTML = content;
+            document.getElementById('bookingDetailsModal').style.display = 'flex'; // Use flex for centering
+
+            // Attach Inspection Events
+            const btnAdd = document.getElementById('mBtnAddInsp');
+            const form = document.getElementById('mInspForm');
+            const btnCancel = document.getElementById('mBtnCancelInsp');
+            const btnSave = document.getElementById('mBtnSaveInsp');
+
+            btnAdd.onclick = () => { form.style.display = 'block'; btnAdd.style.display = 'none'; };
+            btnCancel.onclick = () => { form.style.display = 'none'; btnAdd.style.display = 'block'; };
+            btnSave.onclick = () => this.saveInspection(id);
+
+            this.fetchInspections(id);
+        },
+
+        async uploadRefundProof(bookingId) {
+            const fileInput = document.getElementById('mRefundProofFile');
+            if (!fileInput.files.length) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('booking_id', bookingId);
+            formData.append('admin_id', 1); // Mock admin_id
+            formData.append('proof', fileInput.files[0]);
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Uploading...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/upload-refund-proof`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+                showNotification('Refund proof uploaded!', 'success');
+                this.refresh(); // Refresh main list
+                this.view(bookingId); // Refresh modal
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Proof';
+            }
+        },
+
+        async fetchInspections(bookingId) {
+            const list = document.getElementById('mInspList');
+            list.innerHTML = '<div style="font-size:0.7rem; opacity:0.5;">Loading...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/inspections/${bookingId}`);
+                const data = await res.json();
+                this.renderInspections(data);
+            } catch (err) {
+                list.innerHTML = '<div style="font-size:0.7rem; color:var(--danger);">Error loading inspections.</div>';
+            }
+        },
+
+        renderInspections(inspections) {
+            const list = document.getElementById('mInspList');
+            if (!inspections || inspections.length === 0) {
+                list.innerHTML = '<div style="font-size:0.7rem; opacity:0.5;">No inspections yet.</div>';
+                return;
+            }
+
+            list.innerHTML = inspections.map(insp => `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="text-transform: uppercase; color: #60a5fa; font-size: 0.7rem;">${insp.type}</strong>
+                        <span style="font-size: 0.6rem; opacity: 0.5;">${new Date(insp.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div style="display: flex; gap: 15px; font-size: 0.7rem; margin-bottom: 8px;">
+                        <span>Mileage: <strong>${insp.mileage}km</strong></span>
+                        <span>Fuel: <strong>${insp.fuel_level}</strong></span>
+                    </div>
+                    ${insp.photos && Array.isArray(insp.photos) ? `
+                        <div style="display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 5px;">
+                            ${insp.photos.map(p => `<img src="${API_BASE}${p}" style="height: 45px; border-radius: 6px;" onclick="window.open('${API_BASE}${p}', '_blank')">`).join('')}
+                        </div>
+                    ` : ''}
+                    ${insp.notes ? `<p style="font-size: 0.65rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 5px; margin: 0;">${insp.notes}</p>` : ''}
+                </div>
+            `).join('');
+        },
+
+        async saveInspection(bookingId) {
+            const user = adminAuth.getUser();
+            const mileage = document.getElementById('mfInspMileage').value;
+            const photoInput = document.getElementById('mfInspPhotos');
+
+            if (!mileage) { alert('Enter mileage'); return; }
+
+            const formData = new FormData();
+            formData.append('booking_id', bookingId);
+            formData.append('admin_id', user.id);
+            formData.append('type', document.getElementById('mfInspType').value);
+            formData.append('mileage', mileage);
+            formData.append('fuel_level', document.getElementById('mfInspFuel').value);
+            formData.append('notes', document.getElementById('mfInspNotes').value);
+
+            if (photoInput.files.length > 0) {
+                for (let i = 0; i < photoInput.files.length; i++) {
+                    formData.append('photos', photoInput.files[i]);
+                }
+            }
+
+            const saveBtn = document.getElementById('mBtnSaveInsp');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/inspections/submit`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    showNotification('Inspection saved!', 'success');
+                    document.getElementById('mInspForm').style.display = 'none';
+                    document.getElementById('mBtnAddInsp').style.display = 'block';
+                    this.fetchInspections(bookingId);
+                } else {
+                    alert('Failed to save inspection');
+                }
+            } catch (err) { alert('Error saving'); }
+            finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        },
+        async pickup(id) {
+            if (!confirm('Mark this vehicle as picked up?')) return;
+            try {
+                const res = await apiFetch(`bookings/${id}/pickup`, { method: 'PUT' });
+                if (res.ok) { alert('Successfully picked up!'); this.refresh(); }
+                else { alert('Failed: ' + res.status); }
+            } catch (err) { alert('Action failed: ' + err.message); }
+        },
+        async complete(id) {
+            if (!confirm('Mark this vehicle as returned?')) return;
+            try {
+                const res = await apiFetch(`bookings/${id}/complete`, { method: 'PUT' });
+                if (res.ok) { alert('Vehicle returned successfully!'); this.refresh(); }
+                else { alert('Failed: ' + res.status); }
+            } catch (err) { alert('Action failed: ' + err.message); }
+        },
+        /*
+        async assign(id) {
+            this.currentBookingId = id;
+            const select = document.getElementById('assignDriverSelect');
+            select.innerHTML = '<option value="">Loading drivers...</option>';
+            document.getElementById('assignDriverModal').style.display = 'flex';
+
+            try {
+                const res = await fetch(`${API_BASE}/drivers`);
+                const drivers = await res.json();
+                const approved = drivers.filter(d => d.status === 'Approved');
+
+                if (approved.length === 0) {
+                    select.innerHTML = '<option value="">No approved drivers found</option>';
+                } else {
+                    select.innerHTML = '<option value="">Select a driver...</option>' + 
+                        approved.map(d => `<option value="${d.id}">${d.full_name}</option>`).join('');
+                }
+            } catch (err) {
+                select.innerHTML = '<option value="">Failed to load drivers</option>';
+            }
+        },
+        async saveAssign() {
+            const driverId = document.getElementById('assignDriverSelect').value;
+            if (!driverId) { alert('Please select a driver'); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/bookings/${this.currentBookingId}/assign_driver`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ driver_id: parseInt(driverId) })
+                });
+
+                if (res.ok) {
+                    alert('Driver assigned successfully!');
+                    document.getElementById('assignDriverModal').style.display = 'none';
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Failed to assign driver');
+                }
+            } catch (err) { alert('Network error'); }
+        }
+        */
+    };
+
+    // --- DRIVERS MODULE (FULL SYNC) ---
+    const Drivers = {
+        data: [],
+        async refresh() {
+            const list = document.getElementById('driversList');
+            try {
+                this.fetchWage();
+                const res = await fetch(`${API_BASE}/drivers`);
+                this.data = await res.json();
+                this.applyFilters();
+            } catch (err) {
+                list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error loading drivers.</div>`;
+            }
+        },
+        async fetchWage() {
+            try {
+                const res = await fetch(`${API_BASE}/settings/driver_wage`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.value) document.getElementById('driverWageInput').value = data.value;
+                }
+            } catch (err) {}
+        },
+        async saveWage() {
+            const val = document.getElementById('driverWageInput').value;
+            try {
+                const res = await fetch(`${API_BASE}/settings/driver_wage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ value: val })
+                });
+                if (res.ok) alert('Wage setting saved!');
+            } catch (err) { alert('Failed to save wage'); }
+        },
+        applyFilters() {
+            const query = document.getElementById('driverSearchInput').value.toLowerCase().trim();
+            const status = document.getElementById('driverStatusFilter').value;
+            let filtered = this.data;
+            if (status !== 'all') filtered = filtered.filter(d => d.status === status);
+            if (query) {
+                filtered = filtered.filter(d => 
+                    (d.full_name && d.full_name.toLowerCase().includes(query)) ||
+                    (d.license_number && d.license_number.toLowerCase().includes(query))
+                );
+            }
+            this.render(filtered);
+        },
+        render(drivers) {
+            const list = document.getElementById('driversList');
+            if (drivers.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No drivers found.</div>';
+                return;
+            }
+            list.innerHTML = drivers.map(d => `
+                <div class="stat-card" style="padding: 18px; margin-bottom: 12px; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div>
+                            <h4 style="font-size: 1rem;">${d.full_name}</h4>
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">${d.license_number}</p>
+                        </div>
+                        <span style="font-size: 0.6rem; padding: 4px 8px; border-radius: 10px; background: ${this.getStatusBg(d.status)}; color: ${this.getStatusColor(d.status)}; font-weight: 800; text-transform: uppercase;">
+                            ${d.status || 'PENDING'}
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        <div style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-phone" style="margin-right: 5px;"></i> ${d.contact_info}</div>
+                        <div style="display: flex; gap: 8px;">
+                            ${d.license_document ? `<button onclick="window.open('${API_BASE}/uploads/${d.license_document}')" style="background: rgba(99,102,241,0.1); border: 1px solid var(--primary); color: var(--primary); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">License</button>` : ''}
+                            ${d.status === 'Pending' ? `
+                                <button onclick="Drivers.approve(${d.id})" style="background: var(--success); border: none; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Approve</button>
+                                <button onclick="Drivers.reject(${d.id})" style="background: var(--danger); border: none; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Reject</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        },
+        getStatusBg(s) {
+            if (s === 'Approved') return 'rgba(16, 185, 129, 0.1)';
+            if (s === 'Pending') return 'rgba(251, 191, 36, 0.1)';
+            return 'rgba(239, 68, 68, 0.1)';
+        },
+        getStatusColor(s) {
+            if (s === 'Approved') return 'var(--success)';
+            if (s === 'Pending') return '#fbbf24';
+            return 'var(--danger)';
+        },
+        async approve(id) {
+            if (!confirm('Approve this driver?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/drivers/${id}/approve`, { method: 'PUT' });
+                if (res.ok) { alert('Driver approved!'); this.refresh(); }
+            } catch (err) { alert('Action failed'); }
+        },
+        async reject(id) {
+            const reason = prompt("Reason for rejection:");
+            if (!reason) return;
+            try {
+                const res = await fetch(`${API_BASE}/drivers/${id}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                if (res.ok) { alert('Driver rejected'); this.refresh(); }
+            } catch (err) { alert('Action failed'); }
+        }
+    };
+
+    // --- VERIFICATIONS MODULE ---
+    const Verifications = {
+        data: [],
+        async refresh() {
+            const list = document.getElementById('verificationsList');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Fetching...</div>';
+            
+            try {
+                const url = `${API_BASE}/api/admin/users?status=pending`;
+                console.log('Fetching verifications from:', url);
+                const res = await fetch(url);
+                
+                if (!res.ok) {
+                    const errTxt = await res.text();
+                    alert('API Error: ' + res.status + '\n' + errTxt);
+                    list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);">Server Error ' + res.status + '</div>';
+                    return;
+                }
+                
+                this.data = await res.json();
+                this.render();
+            } catch (err) {
+                console.error('Refresh Error:', err);
+                alert('Connection Error: ' + err.message);
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);">Connection Error</div>';
+            }
+        },
+        render() {
+            const list = document.getElementById('verificationsList');
+            if (!this.data || this.data.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+                        <i class="fas fa-user-shield" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p style="color: var(--text-muted); font-weight: 600;">No pending verifications.</p>
+                    </div>`;
+                return;
+            }
+            list.innerHTML = this.data.map(v => {
+                const name = v.full_name || 'Unnamed User';
+                const initial = name[0] ? name[0].toUpperCase() : '?';
+                const licenseUrl = v.license_image || v.license_image_url || '';
+                
+                const actionButtons = licenseUrl 
+                    ? `<button onclick="Verifications.viewLicense('${licenseUrl}')" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px;">
+                            <i class="fas fa-id-card" style="margin-right: 6px;"></i> License
+                       </button>
+                       <button onclick="Verifications.process(${v.id}, 2)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--success); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);">Approve</button>`
+                    : `<div style="flex: 1; text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border: 1px dashed var(--border);">
+                            <i class="fas fa-clock" style="margin-right: 5px;"></i> Waiting for Upload
+                       </div>`;
+
+                return `
+                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+                    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
+                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow);">
+                            ${initial}
+                        </div>
+                        <div style="flex: 1;">
+                            <h4 style="font-size: 1.05rem; font-weight: 800; color: white;">${name}</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">${v.email || 'No Email'}</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        ${actionButtons}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        },
+        viewLicense(url) {
+            if (!url) return alert('No license image uploaded');
+            const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+            
+            // Show in-app preview instead of window.open which fails in Capacitor
+            const modal = document.getElementById('licensePreviewModal');
+            const img = document.getElementById('licensePreviewImg');
+            if (modal && img) {
+                img.src = fullUrl;
+                modal.style.display = 'flex';
+            } else {
+                window.open(fullUrl, '_blank');
+            }
+        },
+        async process(userId, status) {
+            const admin = adminAuth.getUser();
+            if (!confirm(`Are you sure you want to ${status === 2 ? 'APPROVE' : 'REJECT'} this user?`)) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/verify-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId, 
+                        status: status,
+                        admin_id: admin ? admin.id : 1
+                    })
+                });
+                if (res.ok) {
+                    alert('Action successful!');
+                    this.refresh();
+                } else {
+                    const d = await res.json();
+                    alert(d.error || 'Failed to update');
+                }
+            } catch (err) { alert('Network error: ' + err.message); }
+        }
+    };
+
+    // --- TICKETS MODULE ---
+    const Tickets = {
+        data: [],
+        async refresh() {
+            const list = document.getElementById('ticketsList');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tickets`);
+                this.data = await res.json();
+                this.updateStats();
+                this.render();
+            } catch (err) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found.</div>';
+            }
+        },
+        updateStats() {
+            const open = this.data.filter(t => t.status === 'open').length;
+            const resolved = this.data.filter(t => t.status === 'resolved').length;
+            document.getElementById('ticketOpenCount').textContent = open;
+            document.getElementById('ticketResolvedCount').textContent = resolved;
+        },
+        render() {
+            const list = document.getElementById('ticketsList');
+            if (this.data.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+                        <i class="fas fa-ticket-alt" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p style="color: var(--text-muted); font-weight: 600;">No support tickets found.</p>
+                    </div>`;
+                return;
+            }
+            list.innerHTML = this.data.map(t => `
+                <div class="stat-card" style="padding: 20px; margin-bottom: 16px; ${t.status === 'resolved' ? 'opacity: 0.6;' : ''}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="font-size: 1rem; font-weight: 800; color: white;">${t.subject || 'No Subject'}</h4>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${t.user_name || t.email}</p>
+                        </div>
+                        <span class="pill ${t.status === 'open' ? 'danger' : 'success'}" style="font-size: 0.55rem; padding: 3px 10px;">
+                            ${t.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 18px; line-height: 1.6; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border-left: 3px solid var(--primary);">${t.message}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
+                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">${new Date(t.created_at).toLocaleDateString()}</span>
+                        ${t.status === 'open' ? `
+                            <button onclick="Tickets.resolve(${t.id})" class="btn-premium" style="padding: 8px 16px; font-size: 0.75rem; border-radius: 10px; box-shadow: 0 4px 12px var(--primary-glow);">Resolve</button>
+                        ` : '<span style="font-size: 0.75rem; color: var(--success); font-weight: 800;"><i class="fas fa-check-circle"></i> RESOLVED</span>'}
+                    </div>
+                </div>
+            `).join('');
+        },
+        async resolve(id) {
+            if (!confirm('Mark ticket as resolved?')) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/tickets/${id}/resolve`, { method: 'PUT' });
+                if (res.ok) { this.refresh(); }
+            } catch (err) { alert('Action failed'); }
+        }
+    };
+
+    // --- INSTRUCTIONS MODULE ---
+    const Instructions = {
+        data: [],
+        async refresh() {
+            const list = document.getElementById('instructionsList');
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/instructions`);
+                this.data = await res.json();
+                this.render();
+            } catch (err) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No instructions found.</div>';
+            }
+        },
+        render() {
+            const list = document.getElementById('instructionsList');
+            if (this.data.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No active instructions.</div>';
+                return;
+            }
+            list.innerHTML = this.data.map(inst => `
+                <div class="stat-card" style="padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1; padding-right: 15px;">
+                        <p style="font-size: 0.85rem; line-height: 1.4;">${inst.instruction_text}</p>
+                    </div>
+                    <span style="font-size: 0.55rem; padding: 3px 8px; border-radius: 8px; background: ${inst.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${inst.is_active ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800; text-transform: uppercase;">
+                        ${inst.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+            `).join('');
+        },
+        async add() {
+            const text = document.getElementById('newInstructionInput').value;
+            if (!text) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/instructions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instruction: text, is_active: true })
+                });
+                if (res.ok) {
+                    document.getElementById('newInstructionInput').value = '';
+                    this.refresh();
+                }
+            } catch (err) { alert('Failed to add'); }
+        }
+    };
+
+    // --- STAFF MODULE ---
+    const Staff = {
+        data: [],
+        editingId: null,
+        async refresh() {
+            const user = adminAuth.getUser();
+            if (!user) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/list?requester_id=${user.id}`);
+                this.data = await res.json();
+                this.render();
+            } catch (err) {
+                console.error(err);
+            }
+        },
+        render() {
+            const list = document.getElementById('staffList');
+            const currentUser = adminAuth.getUser();
+            if (this.data.length === 0) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No staff accounts.</div>';
+                return;
+            }
+            list.innerHTML = this.data.map(s => `
+                <div style="padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div>
+                            <h4 style="font-size: 0.95rem;">${s.full_name} ${s.id === currentUser.id ? '<span style="color:var(--primary); font-size:0.75rem;">(You)</span>' : ''}</h4>
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">${s.email}</p>
+                        </div>
+                        <span style="font-size: 0.6rem; padding: 4px 10px; border-radius: 10px; background: ${s.role === 'super_admin' ? 'rgba(255,255,255,0.1)' : 'rgba(251,191,36,0.1)'}; color: ${s.role === 'super_admin' ? 'white' : '#fbbf24'}; font-weight: 800; text-transform: uppercase;">
+                            ${s.role.replace('_', ' ')}
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75rem; color: ${s.is_verified === 1 ? 'var(--success)' : 'var(--danger)'}; font-weight: 600;">
+                            ${s.is_verified === 1 ? 'Enabled' : 'Disabled'}
+                        </span>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="Staff.openModal(${s.id})" style="padding: 6px 12px; background: #334155; border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">Edit</button>
+                            ${s.id !== currentUser.id ? `
+                                <button onclick="Staff.toggleStatus(${s.id}, ${s.is_verified})" style="padding: 6px 12px; background: ${s.is_verified === 1 ? 'var(--danger)' : 'var(--success)'}; border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">
+                                    ${s.is_verified === 1 ? 'Disable' : 'Enable'}
+                                </button>
+                                <button onclick="Staff.delete(${s.id})" style="padding: 6px 12px; background: var(--danger); border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">Delete</button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        },
+        openModal(id = null) {
+            this.editingId = id;
+            const modal = document.getElementById('staffModal');
+            const hint = document.getElementById('staffPassHint');
+            const pass = document.getElementById('staffPass');
+            
+            document.getElementById('staffForm').reset();
+            if (id) {
+                const s = this.data.find(x => x.id === id);
+                document.getElementById('staffFormTitle').textContent = 'Edit Staff Account';
+                document.getElementById('staffName').value = s.full_name;
+                document.getElementById('staffEmail').value = s.email;
+                document.getElementById('staffRole').value = s.role;
+                pass.required = false;
+                hint.style.display = 'block';
+            } else {
+                document.getElementById('staffFormTitle').textContent = 'Add New Staff';
+                pass.required = true;
+                hint.style.display = 'none';
+            }
+            modal.style.display = 'flex';
+        },
+        closeModal() {
+            document.getElementById('staffModal').style.display = 'none';
+        },
+        async toggleStatus(id, current) {
+            const user = adminAuth.getUser();
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/status/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ requester_id: user.id, status: current === 1 ? 0 : 1 })
+                });
+                if (res.ok) this.refresh();
+            } catch (err) { alert('Failed to update status'); }
+        },
+        async delete(id) {
+            if (!confirm('Are you sure?')) return;
+            const user = adminAuth.getUser();
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/delete/${id}?requester_id=${user.id}`, { method: 'DELETE' });
+                if (res.ok) this.refresh();
+                else {
+                    const data = await res.json();
+                    alert(data.error);
+                }
+            } catch (err) { alert('Failed to delete'); }
+        },
+        async submit(e) {
+            e.preventDefault();
+            const id = this.editingId;
+            const user = adminAuth.getUser();
+            const payload = {
+                requester_id: user.id,
+                name: document.getElementById('staffName').value,
+                email: document.getElementById('staffEmail').value,
+                password: document.getElementById('staffPass').value,
+                role: document.getElementById('staffRole').value
+            };
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_BASE}/api/admin/update/${id}` : `${API_BASE}/api/admin/create`;
+            try {
+                const res = await fetch(url, {
+                    method, headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    this.closeModal();
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + (data.error || 'Operation failed'));
+                }
+            } catch (err) { alert('Connection error'); }
+        }
+    };
+
+
+
+    // --- GPS MODULE ---
+    const GPS = {
+        data: [],
+        timer: null,
+        async refresh() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
+                this.data = await res.json();
+                this.render();
+            } catch (err) { console.error(err); }
+        },
+        startLive() {
+            this.refresh();
+            this.timer = setInterval(() => this.refresh(), 5000); // 5s updates
+        },
+        stopLive() {
+            if (this.timer) clearInterval(this.timer);
+        },
+        render() {
+            const list = document.getElementById('gpsDeviceList');
+            if (this.data.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">No active modules.</div>';
+                return;
+            }
+            list.innerHTML = this.data.map(d => `
+                <div style="background: rgba(99,102,241,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="font-size: 0.9rem;">${d.name} (${d.plate_number})</strong>
+                        <span style="font-size: 0.6rem; color: ${this.isActive(d.last_gps_update) ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800;">
+                            ${this.isActive(d.last_gps_update) ? '<i class="fas fa-circle" style="font-size:0.5rem;"></i> LIVE' : 'OFFLINE'}
+                        </span>
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Lat: ${d.latitude}, Lng: ${d.longitude}</p>
+                    <p style="font-size: 0.65rem; color: var(--primary); margin-top: 5px; font-weight: 600;">Last update: ${this.timeAgo(d.last_gps_update)}</p>
+                </div>
+            `).join('');
+        },
+        isActive(time) {
+            if (!time) return false;
+            const diff = (new Date() - new Date(time)) / 1000;
+            return diff < 60; // Active if updated in last 60s
+        },
+        timeAgo(time) {
+            if (!time) return 'Never';
+            const diff = Math.floor((new Date() - new Date(time)) / 1000);
+            if (diff < 10) return 'Just now';
+            if (diff < 60) return `${diff}s ago`;
+            return `${Math.floor(diff / 60)}m ago`;
+        }
+    };
+
+
+
+    // --- ACTIVITY MODULE ---
+    const Activity = {
+        async refresh() {
+            const list = document.getElementById('activityList');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching logs...</div>';
+
+            try {
+                const res = await apiFetch(`admin/activity-logs`);
+                const logs = await res.json();
+                
+                if (!logs || logs.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">No activity logs found.</div>';
+                    return;
+                }
+
+                list.innerHTML = logs.map(l => `
+                    <div class="stat-card" style="padding: 16px; margin-bottom: 12px; border-left: 3px solid var(--primary); background: rgba(255,255,255,0.02);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 24px; height: 24px; background: rgba(99,102,241,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--primary);">
+                                    <i class="fas fa-user-shield"></i>
+                                </div>
+                                <strong style="font-size: 0.9rem; color: white;">${l.admin_name || 'System'}</strong>
+                            </div>
+                            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">${new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div style="font-size: 0.65rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
+                            ${l.action.replace(/_/g, ' ')}
+                        </div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 8px;">${l.details || '-'}</p>
+                        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; opacity: 0.6;">
+                            <span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${new Date(l.created_at).toLocaleDateString()}</span>
+                            <span style="font-family: monospace; font-size: 0.6rem; letter-spacing: 1px;">${l.ip_address || '-'}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--danger);">Failed to load logs.</div>';
+            }
+        }
+    };
+
+    // --- REPORTS MODULE ---
+    const Reports = {
+        chart: null,
+        async refresh() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/detailed-stats`);
+                const data = await res.json();
+                
+                document.getElementById('repAvgRev').textContent = '₱' + Math.floor(data.summary.total_revenue / (data.summary.total_bookings || 1)).toLocaleString();
+                document.getElementById('repActive').textContent = data.summary.total_bookings;
+
+                this.renderChart(data.revenueTrend);
+                this.renderTop(data.topVehicles);
+            } catch (err) { console.error(err); }
+        },
+        renderChart(trend) {
+            const ctx = document.getElementById('reportsRevenueChart').getContext('2d');
+            if (this.chart) this.chart.destroy();
+            this.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: trend.map(t => t.day.split('-')[2]),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: trend.map(t => t.amount),
+                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                        borderColor: '#818cf8',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    }
+                }
+            });
+        },
+        renderTop(cars) {
+            const container = document.getElementById('reportsTopVehicles');
+            container.innerHTML = cars.slice(0, 3).map(c => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(255,255,255,0.02); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: white;">${c.brand} ${c.model}</span>
+                        <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">${c.booking_count} bookings</span>
+                    </div>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${c.revenue.toLocaleString()}</span>
+                </div>
+            `).join('');
+        }
     };
 
     // --- SETTINGS MODULE ---
     const Settings = {
         async fetch() {
             const list = document.getElementById('mobileSettingsList');
-            if (!list) return;
+            const user = adminAuth.getUser();
+            if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) return;
             
             try {
-                const res = await fetch(`${API_BASE}/api/public/settings`);
-                if (!res.ok) throw new Error('Settings not reachable');
-                const rawData = await res.json();
-                
-                const data = [
-                    { key: 'mileage_limit', value: rawData.mileage_limit, description: 'Mileage Limit (km/day)' },
-                    { key: 'long_term_discount_percent', value: rawData.long_term_discount_percent, description: 'Long Term Discount (%)' },
-                    { key: 'long_term_discount_days', value: rawData.long_term_discount_days, description: 'Discount Threshold (Days)' }
-                ];
-
+                const res = await fetch(`${API_BASE}/api/admin/settings`);
+                const data = await res.json();
                 list.innerHTML = data.map(s => `
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px;">${s.description}</label>
@@ -1224,16 +2734,12 @@
                     </div>
                 `).join('');
             } catch (err) {
-                list.innerHTML = `<div style="text-align: center; padding: 20px;">
-                    <p style="color: var(--danger); font-size: 0.8rem; margin-bottom: 10px;">Failed to load settings.</p>
-                    <button onclick="Settings.fetch()" class="btn-outline" style="padding: 5px 15px; font-size: 0.7rem;">Retry</button>
-                </div>`;
+                list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
             }
         },
         async save() {
             const inputs = document.querySelectorAll('#mobileSettingsList input');
-            const updates = {};
-            inputs.forEach(i => updates[i.dataset.key] = i.value);
+            const updates = Array.from(inputs).map(i => ({ key: i.dataset.key, value: i.value }));
             const user = adminAuth.getUser();
 
             try {
@@ -1251,35 +2757,6 @@
             } catch (err) { showNotification('Network error', 'error'); }
         }
     };
-
-    function toggleDrawer(show) {
-        const drawer = document.getElementById('sideDrawer');
-        const overlay = document.getElementById('drawerOverlay');
-        if (show) {
-            overlay.style.display = 'block';
-            setTimeout(() => { overlay.style.opacity = '1'; drawer.style.left = '0'; }, 10);
-        } else {
-            drawer.style.left = '-280px';
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.style.display = 'none', 300);
-        }
-    }
-
-    function navTo(tabId) { switchTab(tabId); toggleDrawer(false); }
-
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-        document.querySelectorAll('.nav-item, .drawer-item').forEach(l => l.classList.remove('active'));
-        
-        const target = document.getElementById(tabId);
-        if (target) target.style.display = 'block';
-        
-        document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
-        
-        if (tabId === 'dashboard') refreshDashboard();
-        if (tabId === 'vehicles') Vehicles.refresh();
-        if (tabId === 'settings') Settings.fetch();
-    }
 
     async function refreshDashboard() {
         try {

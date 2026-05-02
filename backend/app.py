@@ -3109,7 +3109,7 @@ def chat_endpoint():
 
 
 
-@app.route('/api/admin/login', methods=['POST'])
+@app.route('/admin/login', methods=['POST'])
 def admin_login():
     data = request.json
     email = data.get('email')
@@ -3144,7 +3144,7 @@ def admin_login():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/list', methods=['GET'])
+@app.route('/admin/list', methods=['GET'])
 def list_admins():
     requester_id = request.args.get('requester_id')
     try:
@@ -3162,7 +3162,7 @@ def list_admins():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/update/<int:user_id>', methods=['PUT'])
+@app.route('/admin/update/<int:user_id>', methods=['PUT'])
 def update_admin(user_id):
     data = request.json
     requester_id = data.get('requester_id')
@@ -3202,7 +3202,7 @@ def update_admin(user_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/delete/<int:user_id>', methods=['DELETE'])
+@app.route('/admin/delete/<int:user_id>', methods=['DELETE'])
 def delete_admin(user_id):
     requester_id = request.args.get('requester_id')
     try:
@@ -3231,7 +3231,7 @@ def delete_admin(user_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/status/<int:user_id>', methods=['PUT'])
+@app.route('/admin/status/<int:user_id>', methods=['PUT'])
 def toggle_admin_status(user_id):
     data = request.json
     requester_id = data.get('requester_id')
@@ -3262,7 +3262,7 @@ def toggle_admin_status(user_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/create', methods=['POST'])
+@app.route('/admin/create', methods=['POST'])
 def create_admin():
     data = request.json
     requester_id = data.get('requester_id') # Matches frontend
@@ -3308,7 +3308,7 @@ def create_admin():
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/api/admin/stats', methods=['GET'])
+@app.route('/admin/stats', methods=['GET'])
 def get_admin_stats():
     admin_id = request.args.get('admin_id')
     
@@ -3361,7 +3361,7 @@ def get_admin_stats():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/change-password', methods=['POST'])
+@app.route('/admin/change-password', methods=['POST'])
 def change_admin_password():
     data = request.json
     user_id = data.get('user_id')
@@ -3386,7 +3386,7 @@ def change_admin_password():
     finally:
         if 'cur' in locals(): cur.close()
         
-@app.route('/api/admin/settings', methods=['GET', 'POST'])
+@app.route('/admin/settings', methods=['GET', 'POST'])
 def handle_admin_settings():
     """Unified endpoint for viewing and updating system settings."""
     if request.method == 'GET':
@@ -3436,7 +3436,7 @@ def handle_admin_settings():
         finally:
             if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/activity-logs', methods=['GET'])
+@app.route('/admin/activity-logs', methods=['GET'])
 def get_activity_logs():
     try:
         cur = get_cursor()
