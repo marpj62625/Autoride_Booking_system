@@ -495,6 +495,9 @@
                         <div class="receipt-line"><span>Method:</span> <strong>${receipt.method}</strong></div>
                     `;
                     document.getElementById('receiptTotal').textContent = `₱${receipt.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                    
+                    // Force close all overlays
+                    document.getElementById('agreementModal').style.display = 'none';
                     document.getElementById('receiptModal').style.display = 'flex';
                     
                     confetti({
