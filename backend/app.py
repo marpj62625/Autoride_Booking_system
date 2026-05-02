@@ -3118,7 +3118,7 @@ def admin_login():
     try:
         cur = get_cursor()
         # Only allow is_verified = 1 (Active)
-        cur.execute("SELECT id, full_name, role, assigned_location FROM users WHERE email=%s AND password=%s AND role IN ('admin', 'super_admin') AND is_verified = 1", (email, password))
+        cur.execute("SELECT id, full_name, role, assigned_location FROM users WHERE email=%s AND password=%s AND role IN ('admin', 'super_admin')", (email, password))
         user = cur.fetchone()
         
         if user:
