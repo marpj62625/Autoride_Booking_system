@@ -1053,9 +1053,8 @@
                     </div>
                     <div style="grid-column: span 1;">
                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Model</label>
-                        <select id="vModel" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required onchange="Vehicles.applySpecs(this.value)">
-                            <option value="">Select Brand First</option>
-                        </select>
+                        <input id="vModel" list="vModelList" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required onchange="Vehicles.applySpecs(this.value)" placeholder="Model">
+                        <datalist id="vModelList"></datalist>
                     </div>
                     <div style="grid-column: span 1;">
                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Plate Number</label>
@@ -1364,22 +1363,19 @@
 
         updateModels(selectedModel = null) {
             const brand = document.getElementById('vBrand').value;
-            const modelSelect = document.getElementById('vModel');
-            modelSelect.innerHTML = '<option value="">Select Model</option>';
+            const modelDataList = document.getElementById('vModelList');
+            modelDataList.innerHTML = '';
             
             if (brand && this.CAR_DATA[brand]) {
                 this.CAR_DATA[brand].forEach(m => {
                     const opt = document.createElement('option');
                     opt.value = m;
-                    opt.textContent = m;
-                    modelSelect.appendChild(opt);
+                    modelDataList.appendChild(opt);
                 });
                 if (selectedModel) {
-                    modelSelect.value = selectedModel;
+                    document.getElementById('vModel').value = selectedModel;
                     this.applySpecs(selectedModel);
                 }
-            } else {
-                modelSelect.innerHTML = '<option value="">Select Brand First</option>';
             }
         },
 

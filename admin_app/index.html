@@ -1267,9 +1267,8 @@
                             </label>
                             <label>
                                 Model
-                                <select id="vehicleModel" required onchange="Vehicles.applySpecs(this.value)">
-                                    <option value="">Select Brand First</option>
-                                </select>
+                                <input id="vehicleModel" list="modelList" required onchange="Vehicles.applySpecs(this.value)" placeholder="Type or select model">
+                                <datalist id="modelList"></datalist>
                             </label>
                             <label>
                                 Plate Number
@@ -2265,22 +2264,19 @@ void loop() {
 
             updateModels(selectedModel = null) {
                 const brand = document.getElementById('vehicleBrand').value;
-                const modelSelect = document.getElementById('vehicleModel');
-                modelSelect.innerHTML = '<option value="">Select Model</option>';
+                const modelDataList = document.getElementById('modelList');
+                modelDataList.innerHTML = '';
                 
                 if (brand && this.CAR_DATA[brand]) {
                     this.CAR_DATA[brand].forEach(m => {
                         const opt = document.createElement('option');
                         opt.value = m;
-                        opt.textContent = m;
-                        modelSelect.appendChild(opt);
+                        modelDataList.appendChild(opt);
                     });
                     if (selectedModel) {
-                        modelSelect.value = selectedModel;
+                        document.getElementById('vehicleModel').value = selectedModel;
                         this.applySpecs(selectedModel);
                     }
-                } else {
-                    modelSelect.innerHTML = '<option value="">Select Brand First</option>';
                 }
             },
 
