@@ -248,9 +248,8 @@
         // Dynamic API Base Detection
         const API_BASE = (function() {
             const host = window.location.hostname;
-            const port = window.location.port || '9999';
-            if (host === 'localhost' || host === '127.0.0.1') return `http://${host}:${port}`;
-            return `http://${host}:${port}`;
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:9999';
+            return ''; // Empty for production (Vercel)
         })();
 
         let currentPaymentType = 'Full';
@@ -442,14 +441,14 @@
                     formData.append('method', document.querySelector('#paymentMethods .method.active strong').textContent);
                     formData.append('reference_number', 'RES-' + Math.random().toString(36).substr(2, 9).toUpperCase());
                     
-                    response = await fetch(`${API_BASE}/payment`, {
+                    response = await fetch(`${API_BASE}/api/payment`, {
                         method: 'POST',
                         body: formData
                     });
                     result = await response.json();
                 } else {
                     // For NEW booking: Create first, then Pay immediately
-                    const bookRes = await fetch(`${API_BASE}/book`, {
+                    const bookRes = await fetch(`${API_BASE}/api/book`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(bookingData)
@@ -465,7 +464,7 @@
                     formData.append('method', document.querySelector('#paymentMethods .method.active strong').textContent);
                     formData.append('reference_number', 'RES-' + Math.random().toString(36).substr(2, 9).toUpperCase());
                     
-                    response = await fetch(`${API_BASE}/payment`, {
+                    response = await fetch(`${API_BASE}/api/payment`, {
                         method: 'POST',
                         body: formData
                     });
