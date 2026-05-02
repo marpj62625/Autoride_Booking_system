@@ -2255,7 +2255,7 @@ void loop() {
             async refresh() {
                 this.showLoading(true);
                 try {
-                    const res = await apiFetch('api/vehicles');
+                    const res = await apiFetch('vehicles');
                     if (!res.ok) throw new Error(`Server error ${res.status}`);
                     const json = await res.json();
                     this.data = Array.isArray(json) ? json : [];
@@ -2471,7 +2471,7 @@ void loop() {
                 this.showLoading(true);
                 try {
                     this.fetchWage();
-                    const res = await fetch(`${API_BASE}/api/drivers`);
+                    const res = await apiFetch('drivers');
                     if (!res.ok) throw new Error(`Server error ${res.status}`);
                     const json = await res.json();
                     this.data = Array.isArray(json) ? json : [];
@@ -2629,7 +2629,7 @@ void loop() {
             async refresh() {
                 this.showLoading(true);
                 try {
-                    const res = await apiFetch('api/bookings');
+                    const res = await apiFetch('bookings');
                     if (!res.ok) throw new Error(`Server error ${res.status}`);
                     const json = await res.json();
                     this.data = Array.isArray(json) ? json : [];
@@ -3297,7 +3297,7 @@ void loop() {
                 if (!admin) return;
 
                 try {
-                    const res = await apiFetch(`api/admin/stats?admin_id=${admin.id}`);
+                    const res = await apiFetch(`admin/stats?admin_id=${admin.id}`);
                     const stats = await res.json();
 
                     const bookingsEl = document.getElementById('dashTotalBookings');
