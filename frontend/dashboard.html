@@ -242,7 +242,11 @@
 
         // Ensure API_BASE is available globally
         if (typeof window.API_BASE === 'undefined') {
-            window.API_BASE = window.location.origin;
+            if (window.location.hostname.includes('vercel.app')) {
+                window.API_BASE = window.location.origin + '/api';
+            } else {
+                window.API_BASE = window.location.origin;
+            }
         }
 
         if (!userId || userId === 'null') {

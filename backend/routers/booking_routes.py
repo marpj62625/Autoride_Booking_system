@@ -103,7 +103,7 @@ def book_vehicle():
         print(f"BOOKING ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@booking_bp.route('/api/bookings/<int:booking_id>/cancel', methods=['POST'])
+@booking_bp.route('/bookings/<int:booking_id>/cancel', methods=['POST'])
 def cancel_booking(booking_id):
     """Customer cancels their own booking."""
     try:
