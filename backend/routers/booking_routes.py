@@ -40,8 +40,12 @@ def book_vehicle():
         cur = get_cursor()
         
         # Security Check: Ensure user has an approved license
-        # PostgreSQL Boolean returns True/False. Legacy may use 1 or 2 (Fully Verified).
-        is_verified = user.get('is_verified')
+        cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
+        user_row = cur.fetchone()
+        if not user_row:
+            return jsonify({"error": "User not found"}), 404
+            
+        is_verified = user_row.get('is_verified')
         if not is_verified or is_verified in [0, False, 'false', '0']:
             return jsonify({
                 "error": "License verification required", 
