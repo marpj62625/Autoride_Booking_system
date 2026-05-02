@@ -460,98 +460,105 @@ footer {
 
 /* Mobile (≤768px) */
 @media (max-width: 768px) {
-    /* Header - More Compact & No Overlap */
+    /* Header - Robust App-Like Layout */
     header {
-        padding: 0.6rem 0.75rem;
-        flex-direction: column; /* Stack logo and nav on very small screens */
-        align-items: center;
-        gap: 0.4rem;
-    }
-
-    header h1 {
-        font-size: 1.1rem;
-    }
-
-    header nav {
-        gap: 0.6rem;
+        padding: 0.5rem 1rem;
+        flex-direction: row; /* Keep horizontal but wrap carefully */
+        flex-wrap: wrap;
         justify-content: center;
-        width: 100%;
-    }
-
-    header nav a {
-        font-size: 0.75rem;
-        white-space: nowrap;
-    }
-
-    #userGreeting {
-        display: none; /* Hide greeting on mobile header to save space */
-    }
-
-    /* Container */
-    .container {
-        padding: 0.75rem;
-    }
-
-    /* 2 COLUMNS ON MOBILE - Enhanced spacing */
-    .vehicles-grid {
-        grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
     }
 
-    .vehicle-card {
-        border-radius: 10px;
-    }
-
-    .vehicle-image {
-        height: 110px;
-    }
-
-    .vehicle-content {
-        padding: 0.75rem;
-    }
-
-    .vehicle-title {
-        font-size: 0.85rem;
+    header h1 {
+        font-size: 1.2rem;
+        width: 100%; /* Force logo to its own line for maximum space */
+        text-align: center;
         margin-bottom: 0.25rem;
     }
 
+    header nav {
+        gap: 0.5rem;
+        justify-content: center;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 0.4rem;
+        border-radius: 20px;
+    }
+
+    header nav a {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    #userGreeting {
+        display: none;
+    }
+
+    /* Global Container Padding Fix */
+    .container {
+        padding: 0.5rem; /* Minimum padding for maximum content */
+    }
+
+    /* 2 COLUMNS ON MOBILE - High Density */
+    .vehicles-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.4rem;
+    }
+
+    .vehicle-card {
+        border-radius: 8px;
+    }
+
+    .vehicle-image {
+        height: 100px;
+    }
+
+    .vehicle-content {
+        padding: 0.6rem;
+    }
+
+    .vehicle-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
     .star-rating {
-        font-size: 0.65rem;
-        margin-bottom: 0.4rem;
+        font-size: 0.6rem;
+        margin: 0.25rem 0;
     }
 
     .vehicle-price {
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
     }
 
+    /* Badge Over Image */
     .status-badge {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.6rem;
-        line-height: 1;
         position: absolute;
-        top: 100px; /* Position it over the image border */
-        right: 5px;
-        z-index: 5;
-        background: rgba(11, 15, 26, 0.8) !important;
+        top: 8px;
+        left: 8px;
+        padding: 2px 6px;
+        font-size: 0.55rem;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.7) !important;
         backdrop-filter: blur(4px);
+        z-index: 10;
+        border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* --- Auth Pages --- */
-    .auth-container {
-        margin: 1rem auto;
-        padding: 1.25rem;
-        max-width: 95%;
+    .btn-outline {
+        padding: 0.5rem;
+        font-size: 0.75rem;
     }
 
-    /* --- Details Page Fixes --- */
-    .details-grid {
-        grid-template-columns: 1fr !important;
-        gap: 1rem;
-    }
-    
-    [style*="display: grid; grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important; /* Stack columns on mobile */
+    /* Hide redundant info in 2-col */
+    .star-rating span:last-child {
+        display: none; /* Hide "(No reviews)" text */
     }
 }
 
