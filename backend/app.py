@@ -3045,14 +3045,57 @@ def get_vehicle_categories():
 
 @app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
 def get_vehicle_details_v2(vehicle_id):
+    user_id = request.args.get('user_id')
     try:
         cur = get_cursor()
         cur.execute("SELECT * FROM vehicles WHERE id = %s", (vehicle_id,))
         vehicle = cur.fetchone()
-        if not vehicle: return jsonify({"error": "Vehicle not found"}), 404
+        if not vehicle:
+            return jsonify({"error": "Vehicle not found"}), 404
         v_dict = dict(vehicle)
-        cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY display_order ASC", (vehicle_id,))
-        v_dict['gallery_details'] = [dict(r) for r in cur.fetchall()]
+
+        # Reviews
+        cur.execute("""
+            SELECT r.*, u.full_name, u.profile_picture 
+            FROM reviews r
+            JOIN users u ON r.user_id = u.id
+            WHERE r.vehicle_id = %s
+            ORDER BY r.created_at DESC
+        """, (vehicle_id,))
+        v_dict['reviews'] = [dict(r) for r in cur.fetchall()]
+
+        # Avg Rating
+        cur.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE vehicle_id = %s", (vehicle_id,))
+        avg_row = cur.fetchone()
+        avg = avg_row['avg_rating'] if avg_row else None
+        v_dict['avg_rating'] = float(avg) if avg else 0
+
+        # Favorite status
+        v_dict['is_favorite'] = False
+        if user_id and user_id != 'null':
+            cur.execute("SELECT 1 FROM favorites WHERE user_id = %s AND vehicle_id = %s", (user_id, vehicle_id))
+            if cur.fetchone():
+                v_dict['is_favorite'] = True
+
+        # Gallery Images
+        try:
+            cur.execute("SELECT id, image_path, is_primary, order_index FROM vehicle_images WHERE vehicle_id = %s ORDER BY order_index ASC, id ASC", (vehicle_id,))
+            gallery_images = cur.fetchall()
+        except Exception:
+            cur.execute("SELECT id, image_path, is_primary, id as order_index FROM vehicle_images WHERE vehicle_id = %s ORDER BY id ASC", (vehicle_id,))
+            gallery_images = cur.fetchall()
+
+        v_dict['gallery'] = [row['image_path'] for row in gallery_images]
+        v_dict['gallery_details'] = [dict(row) for row in gallery_images]
+
+        # Pickup Instructions
+        try:
+            cur.execute("SELECT description FROM pickup_instructions")
+            instructions = cur.fetchall()
+            v_dict['pickup_instructions'] = [row['description'] for row in instructions]
+        except Exception:
+            v_dict['pickup_instructions'] = []
+
         return jsonify(v_dict), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
