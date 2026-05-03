@@ -3033,7 +3033,7 @@ def get_vehicle_categories():
     try:
         cur = get_cursor()
         print("DEBUG: Executing categories query...")
-        cur.execute("SELECT DISTINCT brand, model, vehicle_image, daily_rate, vehicle_type FROM vehicles WHERE status != 'Sold' ORDER BY brand, model")
+        cur.execute("SELECT MIN(id) as id, brand, model, vehicle_image, MIN(daily_rate) as daily_rate, vehicle_type, MIN(seats) as seats, fuel_type, STRING_AGG(DISTINCT transmission, '/') as transmission, location, COUNT(*) as total_units, SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) as available_units FROM vehicles WHERE status != 'Sold' GROUP BY brand, model, vehicle_image, vehicle_type, fuel_type, location ORDER BY brand, model")
         categories = cur.fetchall()
         print(f"DEBUG: Found {len(categories)} categories")
         return jsonify([dict(c) for c in categories]), 200
