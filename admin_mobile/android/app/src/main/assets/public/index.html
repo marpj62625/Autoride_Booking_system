@@ -2974,15 +2974,16 @@
         openModal(bookingId, type) {
             const b = Bookings.data.find(x => x.id === bookingId);
             if (!b) return;
-            
+
+            // Reset first, then set values (order matters!)
+            document.getElementById('inspectionForm').reset();
+            this.currentPhotos = [];
+            document.getElementById('inspectPhotoPreview').innerHTML = '';
+
             document.getElementById('inspectBookingId').value = bookingId;
             document.getElementById('inspectType').value = type;
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
             document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
-            
-            document.getElementById('inspectionForm').reset();
-            this.currentPhotos = [];
-            document.getElementById('inspectPhotoPreview').innerHTML = '';
             
             document.getElementById('inspectionModal').style.display = 'block';
         },

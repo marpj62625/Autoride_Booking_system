@@ -3137,13 +3137,52 @@ def get_admin_stats_v2():
             cur.execute(book_q); stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
             cur.execute(v_q); stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
 
+        # Revenue trend
         cur.execute("SELECT DATE(start_date) as day, SUM(total_price) as amount FROM bookings WHERE payment_status = 'Paid' GROUP BY day ORDER BY day DESC LIMIT 7")
-        trend = []
-        for t in cur.fetchall():
-            trend.append({"day": str(t['day']), "amount": float(t['amount'] or 0)})
+        trend = [{"day": str(t['day']), "amount": float(t['amount'] or 0)} for t in cur.fetchall()]
             
+        # Fleet distribution
         cur.execute("SELECT status, COUNT(*) as count FROM vehicles GROUP BY status")
         fleet = [{"status": f['status'], "count": int(f['count'])} for f in cur.fetchall()]
+
+        # Booking status breakdown
+        cur.execute("SELECT status, COUNT(*) as count FROM bookings GROUP BY status")
+        booking_breakdown = {r['status'].lower(): int(r['count']) for r in cur.fetchall()}
+
+        # User verification stats
+        try:
+            cur.execute("SELECT license_status, COUNT(*) as count FROM users WHERE license_status IS NOT NULL GROUP BY license_status")
+            lic_rows = {r['license_status']: int(r['count']) for r in cur.fetchall()}
+            cur.execute("SELECT COUNT(*) as count FROM users WHERE is_verified = TRUE")
+            verified_count = int(cur.fetchone()['count'] or 0)
+            cur.execute("SELECT COUNT(*) as count FROM users WHERE is_verified = FALSE")
+            unverified_count = int(cur.fetchone()['count'] or 0)
+            user_stats = {
+                "email": {"verified": verified_count, "unverified": unverified_count},
+                "license": {
+                    "approved": lic_rows.get('approved', 0),
+                    "pending": lic_rows.get('pending', 0),
+                    "rejected": lic_rows.get('rejected', 0)
+                }
+            }
+        except Exception:
+            user_stats = {"email": {"verified": 0, "unverified": 0}, "license": {"approved": 0, "pending": 0, "rejected": 0}}
+
+        # Top grossing vehicles
+        try:
+            cur.execute("""
+                SELECT v.brand, v.model, v.plate_number,
+                       COUNT(b.id) as booking_count,
+                       COALESCE(SUM(b.total_price), 0) as revenue
+                FROM vehicles v
+                LEFT JOIN bookings b ON b.vehicle_id = v.id AND b.payment_status = 'Paid'
+                GROUP BY v.id, v.brand, v.model, v.plate_number
+                ORDER BY revenue DESC
+                LIMIT 5
+            """)
+            top_vehicles = [{"brand": r['brand'], "model": r['model'], "booking_count": int(r['booking_count']), "revenue": float(r['revenue'])} for r in cur.fetchall()]
+        except Exception:
+            top_vehicles = []
         
         return jsonify({
             "summary": stats, 
@@ -3151,7 +3190,9 @@ def get_admin_stats_v2():
             "total_bookings": stats['total_bookings'],
             "revenueTrend": trend, 
             "fleetDistribution": fleet,
-            "userStats": {"license": {"approved": 0, "pending": 0, "rejected": 0}}
+            "bookingsByStatus": booking_breakdown,
+            "userStats": user_stats,
+            "topVehicles": top_vehicles
         }), 200
     except Exception as e: 
         print(f"ERROR in get_admin_stats: {e}")
