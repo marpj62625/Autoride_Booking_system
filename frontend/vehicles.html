@@ -201,13 +201,14 @@
                 let url = userId ? `${window.API_BASE}/api/vehicles/categories?user_id=${userId}` : `${window.API_BASE}/api/vehicles/categories?`;
                 
                 const response = await fetch(url);
-                const data = await response.json();
                 
                 if (response.ok) {
+                    const data = await response.json();
                     allVehicles = data;
                     renderVehicles(allVehicles);
                 } else {
-                    document.getElementById('vehiclesGrid').innerHTML = '<p class="error">Failed to load vehicles.</p>';
+                    console.error('Server error:', response.status);
+                    document.getElementById('vehiclesGrid').innerHTML = '<p class="error">Failed to load vehicles from server.</p>';
                 }
             } catch (err) {
                 console.error('Fetch Error:', err);
