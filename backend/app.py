@@ -2958,7 +2958,7 @@ def create_admin():
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/api/vehicles', methods=['GET'])
+@app.route('/api/vehicles', methods=['GET'], strict_slashes=False)
 def get_vehicles():
     try:
         cur = get_cursor()
@@ -3028,7 +3028,7 @@ def delete_vehicle(vehicle_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles/categories', methods=['GET'])
+@app.route('/api/vehicles/categories', methods=['GET'], strict_slashes=False)
 def get_vehicle_categories():
     try:
         cur = get_cursor()
@@ -3059,7 +3059,7 @@ def get_vehicle_details_v2(vehicle_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/stats', methods=['GET'])
+@app.route('/api/admin/stats', methods=['GET'], strict_slashes=False)
 def get_admin_stats_v2():
     admin_id = request.args.get('admin_id')
     try:
