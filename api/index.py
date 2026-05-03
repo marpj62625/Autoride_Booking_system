@@ -27,8 +27,8 @@ class PrefixMiddleware(object):
         environ['PATH_INFO'] = path
         return self.app(environ, start_response)
 
-# Apply the middleware
-app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/api')
+# Middleware removed because /api prefix is now handled directly in app.py routes
+# app.wsgi_app = PrefixMiddleware(app.wsgi_app, prefix='/api')
 
 # Handler for Vercel
 handler = app
