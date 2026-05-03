@@ -2966,12 +2966,17 @@ def get_vehicles():
         data = cur.fetchall()
         vehicles = []
         for v in data:
-            v_dict = dict(v)
-            cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY display_order ASC", (v['id'],))
+            v_dict = {k: (float(val) if hasattr(val, '__float__') and not isinstance(val, (int, bool, float)) else (str(val) if hasattr(val, 'isoformat') else val)) for k, val in dict(v).items()}
+            try:
+                cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY order_index ASC, id ASC", (v['id'],))
+            except Exception:
+                cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY id ASC", (v['id'],))
             v_dict['gallery_details'] = [dict(r) for r in cur.fetchall()]
             vehicles.append(v_dict)
         return jsonify(vehicles), 200
     except Exception as e:
+        import traceback
+        print(f"ERROR in get_vehicles: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
