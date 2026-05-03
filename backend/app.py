@@ -3498,6 +3498,40 @@ def delete_vehicle(vehicle_id):
     finally:
         if 'cur' in locals(): cur.close()
 
+@app.route('/vehicles/categories', methods=['GET'])
+def get_vehicle_categories():
+    """Returns unique vehicle categories (brand/model) for filtering."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT DISTINCT brand, model, vehicle_image, daily_rate, vehicle_type FROM vehicles WHERE status != 'Sold' ORDER BY brand, model")
+        categories = cur.fetchall()
+        return jsonify([dict(c) for c in categories]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
+def get_vehicle_details(vehicle_id):
+    """Returns full details for a specific vehicle."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM vehicles WHERE id = %s", (vehicle_id,))
+        vehicle = cur.fetchone()
+        if not vehicle:
+            return jsonify({"error": "Vehicle not found"}), 404
+            
+        v_dict = dict(vehicle)
+        # Fetch gallery
+        cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY display_order ASC", (vehicle_id,))
+        v_dict['gallery_details'] = cur.fetchall()
+        
+        return jsonify(v_dict), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/admin/stats', methods=['GET'])
 def get_admin_stats():
     admin_id = request.args.get('admin_id')
