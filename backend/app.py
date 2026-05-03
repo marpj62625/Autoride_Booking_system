@@ -3491,10 +3491,13 @@ def delete_vehicle(vehicle_id):
 def get_vehicle_categories():
     try:
         cur = get_cursor()
+        print("DEBUG: Executing categories query...")
         cur.execute("SELECT DISTINCT brand, model, vehicle_image, daily_rate, vehicle_type FROM vehicles WHERE status != 'Sold' ORDER BY brand, model")
         categories = cur.fetchall()
+        print(f"DEBUG: Found {len(categories)} categories")
         return jsonify([dict(c) for c in categories]), 200
     except Exception as e:
+        print(f"ERROR in get_vehicle_categories: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
@@ -3533,27 +3536,33 @@ def get_admin_stats_v2():
             cur.execute(rev_q + " AND pickup_location = %s", (location_filter,))
             stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
             cur.execute(book_q + " WHERE pickup_location = %s", (location_filter,))
-            stats['total_bookings'] = cur.fetchone()['count']
+            stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
             cur.execute(v_q + " AND location = %s", (location_filter,))
-            stats['active_vehicles'] = cur.fetchone()['count']
+            stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
         else:
             cur.execute(rev_q); stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
-            cur.execute(book_q); stats['total_bookings'] = cur.fetchone()['count']
-            cur.execute(v_q); stats['active_vehicles'] = cur.fetchone()['count']
+            cur.execute(book_q); stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
+            cur.execute(v_q); stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
 
         cur.execute("SELECT DATE(created_at) as day, SUM(total_price) as amount FROM bookings WHERE payment_status = 'Paid' GROUP BY day ORDER BY day DESC LIMIT 7")
-        trend = cur.fetchall()
+        trend = []
+        for t in cur.fetchall():
+            trend.append({"day": str(t['day']), "amount": float(t['amount'] or 0)})
+            
         cur.execute("SELECT status, COUNT(*) as count FROM vehicles GROUP BY status")
-        fleet = cur.fetchall()
-        cur.execute("SELECT is_verified, COUNT(*) as count FROM users GROUP BY is_verified")
-        u_stats = cur.fetchall()
+        fleet = [{"status": f['status'], "count": int(f['count'])} for f in cur.fetchall()]
         
         return jsonify({
-            "summary": stats, "total_revenue": stats['total_revenue'], "total_bookings": stats['total_bookings'],
-            "revenueTrend": [dict(t) for t in trend], "fleetDistribution": [dict(f) for f in fleet],
-            "userStats": {"license": {"approved": 0, "pending": 0, "rejected": 0}} # Mocked for dashboard
+            "summary": stats, 
+            "total_revenue": stats['total_revenue'], 
+            "total_bookings": stats['total_bookings'],
+            "revenueTrend": trend, 
+            "fleetDistribution": fleet,
+            "userStats": {"license": {"approved": 0, "pending": 0, "rejected": 0}}
         }), 200
-    except Exception as e: return jsonify({"error": str(e)}), 500
+    except Exception as e: 
+        print(f"ERROR in get_admin_stats: {e}")
+        return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
 
