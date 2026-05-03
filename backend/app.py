@@ -2086,6 +2086,77 @@ def approve_booking(booking_id):
         if 'cur' in locals():
             cur.close()
 
+@app.route('/inspections/submit', methods=['POST'])
+def submit_inspection():
+    """Submit a vehicle inspection (pickup or return)."""
+    try:
+        # Handle Multipart Form (for images)
+        booking_id = request.form.get('booking_id')
+        inspection_type = request.form.get('inspection_type') # 'pickup' or 'return'
+        mileage = request.form.get('mileage')
+        fuel_level = request.form.get('fuel_level')
+        notes = request.form.get('notes')
+        inspector_id = request.form.get('inspector_id')
+        
+        if not booking_id or not inspection_type:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        photo_urls = []
+        # Handle multiple photo uploads
+        if 'photos' in request.files:
+            files = request.files.getlist('photos')
+            for file in files:
+                if file.filename != '':
+                    filename = f"inspect_{booking_id}_{inspection_type}_{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
+                    
+                    # Upload to Supabase Storage
+                    file_data = file.read()
+                    supabase.storage.from_('uploads').upload(
+                        path=filename,
+                        file=file_data,
+                        file_options={"content-type": file.content_type}
+                    )
+                    url = supabase.storage.from_('uploads').get_public_url(filename)
+                    photo_urls.append(url)
+
+        cur = get_cursor()
+        
+        # Save to database
+        import json
+        cur.execute("""
+            INSERT INTO vehicle_inspections (booking_id, inspection_type, photos, mileage, fuel_level, notes, inspector_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (booking_id, inspection_type, json.dumps(photo_urls), mileage, fuel_level, notes, inspector_id))
+        
+        inspection_id = cur.fetchone()['id']
+        
+        # Auto-update booking status if it's a return inspection
+        if inspection_type == 'return':
+            cur.execute("UPDATE bookings SET status = 'Completed' WHERE id = %s", (booking_id,))
+            # Mark vehicle as available
+            cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)", (booking_id,))
+
+        commit_db()
+        return jsonify({"message": "Inspection submitted successfully", "id": inspection_id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/inspections/<int:booking_id>', methods=['GET'])
+def get_inspections(booking_id):
+    """Get all inspections for a booking."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM vehicle_inspections WHERE booking_id = %s ORDER BY created_at ASC", (booking_id,))
+        inspections = cur.fetchall()
+        return jsonify([dict(i) for i in inspections]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/api/cancel-booking', methods=['POST'])
 def user_cancel_booking():
     """Allow a user to cancel their own booking."""
