@@ -1773,10 +1773,14 @@ def submit_inspection():
         
         inspection_id = cur.fetchone()['id']
         
-        # Auto-update booking status if it's a return inspection
-        if inspection_type == 'return':
+        # Auto-update booking and vehicle status based on inspection type
+        if inspection_type == 'pickup':
+            # Mark booking as Picked Up and vehicle as Rented
+            cur.execute("UPDATE bookings SET status = 'Picked Up' WHERE id = %s", (booking_id,))
+            cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)", (booking_id,))
+        elif inspection_type == 'return':
+            # Mark booking as Completed and vehicle as Available
             cur.execute("UPDATE bookings SET status = 'Completed' WHERE id = %s", (booking_id,))
-            # Mark vehicle as available
             cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)", (booking_id,))
 
         commit_db()
