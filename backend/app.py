@@ -3615,6 +3615,15 @@ def get_admin_stats():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/detailed-stats', methods=['GET'])
+def get_admin_detailed_stats():
+    admin_id = request.args.get('admin_id')
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT role, assigned_location FROM users WHERE id=%s", (admin_id,))
+        admin = cur.fetchone()
+        
+        if not admin or admin['role'] not in ['admin', 'super_admin']:
+            return jsonify({"error": "Forbidden"}), 403
 
         location_filter = admin['assigned_location'] if admin['role'] == 'admin' else None
 
