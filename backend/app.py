@@ -1969,7 +1969,7 @@ def pay_split_bill():
 
 # ==================== ADMIN BOOKING MANAGEMENT ====================
 
-@app.route('/bookings', methods=['GET'])
+@app.route('/api/bookings', methods=['GET'])
 def get_all_bookings():
     """Get all bookings with customer, vehicle, and driver info for admin panel."""
     admin_id = request.args.get('admin_id')
@@ -2086,45 +2086,7 @@ def approve_booking(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/bookings', methods=['GET'])
-def get_all_bookings():
-    """Get all bookings with customer, vehicle, and driver info for admin panel."""
-    admin_id = request.args.get('admin_id')
-    try:
-        cur = get_cursor()
-        location_filter = None
-        if admin_id:
-            cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (admin_id,))
-            admin = cur.fetchone()
-            if admin and admin['role'] == 'admin' and admin['assigned_location']:
-                location_filter = admin['assigned_location']
-
-        query = """
-            SELECT b.id, u.full_name AS customer_name,
-                   CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
-                   b.start_date, b.end_date, b.total_price, b.status,
-                   b.payment_status,
-                   b.pickup_location, b.rental_type, b.addons,
-                   b.driver_id, d.full_name AS driver_name
-            FROM bookings b
-            JOIN users u ON b.user_id = u.id
-            JOIN vehicles v ON b.vehicle_id = v.id
-            LEFT JOIN drivers d ON b.driver_id = d.id
-        """
-        params = []
-        if location_filter:
-            query += " WHERE b.pickup_location = %s "
-            params.append(location_filter)
-        query += " ORDER BY b.id DESC"
-        cur.execute(query, tuple(params))
-        data = cur.fetchall()
-        return jsonify([dict(row) for row in data]), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
-
-@app.route('/inspections/submit', methods=['POST'])
+@app.route('/api/inspections/submit', methods=['POST'])
 def submit_inspection():
     """Submit a vehicle inspection (pickup or return)."""
     try:
@@ -2182,7 +2144,7 @@ def submit_inspection():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/inspections/<int:booking_id>', methods=['GET'])
+@app.route('/api/inspections/<int:booking_id>', methods=['GET'])
 def get_inspections(booking_id):
     """Get all inspections for a booking."""
     try:
