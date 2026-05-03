@@ -454,7 +454,7 @@
 
         async function fetchVehicleDetails() {
             try {
-                const response = await fetch(`${API_BASE}/api/vehicle/${vehicleId}?user_id=${userId}`);
+                const response = await fetch(`${API_BASE}/api/vehicles/${vehicleId}?user_id=${userId}`);
                 if (response.ok) {
                     const data = await response.json();
                     
