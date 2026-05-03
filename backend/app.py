@@ -2086,6 +2086,44 @@ def approve_booking(booking_id):
         if 'cur' in locals():
             cur.close()
 
+@app.route('/bookings', methods=['GET'])
+def get_all_bookings():
+    """Get all bookings with customer, vehicle, and driver info for admin panel."""
+    admin_id = request.args.get('admin_id')
+    try:
+        cur = get_cursor()
+        location_filter = None
+        if admin_id:
+            cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (admin_id,))
+            admin = cur.fetchone()
+            if admin and admin['role'] == 'admin' and admin['assigned_location']:
+                location_filter = admin['assigned_location']
+
+        query = """
+            SELECT b.id, u.full_name AS customer_name,
+                   CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
+                   b.start_date, b.end_date, b.total_price, b.status,
+                   b.payment_status,
+                   b.pickup_location, b.rental_type, b.addons,
+                   b.driver_id, d.full_name AS driver_name
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN vehicles v ON b.vehicle_id = v.id
+            LEFT JOIN drivers d ON b.driver_id = d.id
+        """
+        params = []
+        if location_filter:
+            query += " WHERE b.pickup_location = %s "
+            params.append(location_filter)
+        query += " ORDER BY b.id DESC"
+        cur.execute(query, tuple(params))
+        data = cur.fetchall()
+        return jsonify([dict(row) for row in data]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/inspections/submit', methods=['POST'])
 def submit_inspection():
     """Submit a vehicle inspection (pickup or return)."""
@@ -3379,17 +3417,170 @@ def create_admin():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/vehicles', methods=['GET'])
+def get_vehicles():
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM vehicles ORDER BY id DESC")
+        data = cur.fetchall()
+        
+        # Format images and gallery for mobile
+        vehicles = []
+        for v in data:
+            v_dict = dict(v)
+            # Fetch gallery images for this vehicle
+            cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY display_order ASC", (v['id'],))
+            v_dict['gallery_details'] = cur.fetchall()
+            vehicles.append(v_dict)
+            
+        return jsonify(vehicles), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/vehicles', methods=['POST'])
+def add_vehicle():
+    data = request.json
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+        """, (data['brand'], data['model'], data['plate_number'], data['vehicle_type'], data['transmission'], 
+              data['fuel_type'], data['seats'], data['location'], data['status'], data['daily_rate'], data['vehicle_image']))
+        
+        new_id = cur.fetchone()['id']
+        
+        # Handle Gallery Images if provided as URLs
+        if 'gallery' in data and isinstance(data['gallery'], list):
+            for i, img_url in enumerate(data['gallery']):
+                cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, display_order) VALUES (%s, %s, %s)", 
+                           (new_id, img_url, i))
+        
+        commit_db()
+        return jsonify({"message": "Vehicle added", "id": new_id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
+def update_vehicle(vehicle_id):
+    data = request.json
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, 
+                               fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s
+            WHERE id=%s
+        """, (data['brand'], data['model'], data['plate_number'], data['vehicle_type'], data['transmission'], 
+              data['fuel_type'], data['seats'], data['location'], data['status'], data['daily_rate'], data['vehicle_image'], vehicle_id))
+        
+        commit_db()
+        return jsonify({"message": "Vehicle updated"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/vehicles/<int:vehicle_id>', methods=['DELETE'])
+def delete_vehicle(vehicle_id):
+    try:
+        cur = get_cursor()
+        # Delete gallery images first
+        cur.execute("DELETE FROM vehicle_images WHERE vehicle_id = %s", (vehicle_id,))
+        cur.execute("DELETE FROM vehicles WHERE id = %s", (vehicle_id,))
+        commit_db()
+        return jsonify({"message": "Vehicle deleted"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/admin/stats', methods=['GET'])
 def get_admin_stats():
     admin_id = request.args.get('admin_id')
-    
     try:
         cur = get_cursor()
+        # Basic Security check
         cur.execute("SELECT role, assigned_location FROM users WHERE id=%s", (admin_id,))
-        admin = cur.fetchone()
+        adm = cur.fetchone()
         
-        if not admin or admin['role'] not in ['admin', 'super_admin']:
-            return jsonify({"error": "Forbidden"}), 403
+        location_filter = None
+        if adm and adm['role'] == 'admin':
+            location_filter = adm['assigned_location']
+
+        # 1. Summary Stats
+        stats = {"total_revenue": 0, "total_bookings": 0, "active_vehicles": 0}
+        
+        rev_q = "SELECT SUM(total_price) as rev FROM bookings WHERE payment_status = 'Paid'"
+        book_q = "SELECT COUNT(*) as count FROM bookings"
+        v_q = "SELECT COUNT(*) as count FROM vehicles WHERE status = 'Available'"
+        
+        if location_filter:
+            rev_q += " AND pickup_location = %s"
+            book_q += " WHERE pickup_location = %s"
+            v_q += " AND location = %s"
+            cur.execute(rev_q, (location_filter,))
+            stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
+            cur.execute(book_q, (location_filter,))
+            stats['total_bookings'] = cur.fetchone()['count']
+            cur.execute(v_q, (location_filter,))
+            stats['active_vehicles'] = cur.fetchone()['count']
+        else:
+            cur.execute(rev_q)
+            stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
+            cur.execute(book_q)
+            stats['total_bookings'] = cur.fetchone()['count']
+            cur.execute(v_q)
+            stats['active_vehicles'] = cur.fetchone()['count']
+
+        # 2. Revenue Trend (Last 7 days)
+        cur.execute("""
+            SELECT DATE(created_at) as day, SUM(total_price) as amount 
+            FROM bookings WHERE payment_status = 'Paid' 
+            GROUP BY day ORDER BY day DESC LIMIT 7
+        """)
+        trend = cur.fetchall()
+        
+        # 3. Fleet Distribution
+        cur.execute("SELECT status, COUNT(*) as count FROM vehicles GROUP BY status")
+        fleet = cur.fetchall()
+        
+        # 4. Top Vehicles
+        cur.execute("""
+            SELECT v.brand, v.model, COUNT(b.id) as booking_count, SUM(b.total_price) as revenue
+            FROM bookings b JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE b.payment_status = 'Paid'
+            GROUP BY v.brand, v.model ORDER BY revenue DESC LIMIT 5
+        """)
+        top_v = cur.fetchall()
+        
+        # 5. User Stats
+        cur.execute("SELECT is_verified, COUNT(*) as count FROM users GROUP BY is_verified")
+        u_stats = cur.fetchall()
+        user_data = {"email": {"verified": 0, "unverified": 0}, "license": {"approved": 0, "pending": 0, "rejected": 0}}
+        for r in u_stats:
+            if r['is_verified'] == 2: user_data['license']['approved'] += r['count']
+            elif r['is_verified'] == 1: user_data['license']['pending'] += r['count']
+            else: user_data['license']['rejected'] += r['count']
+
+        return jsonify({
+            "summary": stats,
+            "total_revenue": stats['total_revenue'],
+            "total_bookings": stats['total_bookings'],
+            "revenueTrend": [dict(t) for t in trend],
+            "fleetDistribution": [dict(f) for f in fleet],
+            "topVehicles": [dict(v) for v in top_v],
+            "userStats": user_data
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/detailed-stats', methods=['GET'])
 
         location_filter = admin['assigned_location'] if admin['role'] == 'admin' else None
 
