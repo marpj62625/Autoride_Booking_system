@@ -2284,69 +2284,6 @@ def admin_cancel_booking(booking_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/inspections/submit', methods=['POST'])
-def submit_inspection():
-    """Submit a vehicle inspection with multiple photos."""
-    try:
-        booking_id = request.form.get('booking_id')
-        inspection_type = request.form.get('type') # 'pickup' or 'return'
-        mileage = request.form.get('mileage')
-        fuel_level = request.form.get('fuel_level')
-        notes = request.form.get('notes')
-        inspector_id = request.form.get('admin_id') # Who is submitting
-
-        if not booking_id or not inspection_type:
-            return jsonify({"error": "Missing booking_id or inspection_type"}), 400
-
-        # Handle multiple photo uploads
-        uploaded_photos = []
-        if 'photos' in request.files:
-            files = request.files.getlist('photos')
-            for file in files:
-                if file and file.filename:
-                    filename = secure_filename(f"insp_{booking_id}_{inspection_type}_{datetime.now().timestamp()}_{file.filename}")
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                    file.save(filepath)
-                    uploaded_photos.append(f"/uploads/{filename}")
-
-        cur = get_cursor()
-        cur.execute("""
-            INSERT INTO vehicle_inspections (booking_id, inspection_type, photos, mileage, fuel_level, notes, inspector_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
-        """, (booking_id, inspection_type, json.dumps(uploaded_photos), mileage, fuel_level, notes, inspector_id))
-        inspection_id = cur.fetchone()['id']
-        
-        # Log the activity
-        log_activity(
-            admin_id=inspector_id,
-            admin_name="Staff/Driver",
-            action=f'SUBMIT_{inspection_type.upper()}_INSPECTION',
-            target_type='VEHICLE',
-            target_id=str(booking_id),
-            details=f"Submitted {inspection_type} inspection for booking #{booking_id}. Photos: {len(uploaded_photos)}"
-        )
-        
-        commit_db()
-        return jsonify({"message": f"{inspection_type.capitalize()} inspection submitted", "id": inspection_id}), 201
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
-
-@app.route('/inspections/<int:booking_id>', methods=['GET'])
-def get_inspections(booking_id):
-    """Retrieve all inspections for a specific booking."""
-    try:
-        cur = get_cursor()
-        cur.execute("SELECT * FROM vehicle_inspections WHERE booking_id = %s ORDER BY created_at ASC", (booking_id,))
-        inspections = cur.fetchall()
-        return jsonify(inspections), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-    finally:
-        if 'cur' in locals(): cur.close()
-
 @app.route('/bookings/<int:booking_id>/pickup', methods=['PUT'])
 def pickup_booking(booking_id):
     """Mark a booking as Picked Up."""
