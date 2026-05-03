@@ -2958,7 +2958,7 @@ def create_admin():
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/api/vehicles', methods=['GET'], strict_slashes=False)
+@app.route('/vehicles', methods=['GET'], strict_slashes=False)
 def get_vehicles():
     try:
         cur = get_cursor()
@@ -2968,7 +2968,7 @@ def get_vehicles():
         for v in data:
             v_dict = dict(v)
             cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY display_order ASC", (v['id'],))
-            v_dict['gallery_details'] = cur.fetchall()
+            v_dict['gallery_details'] = [dict(r) for r in cur.fetchall()]
             vehicles.append(v_dict)
         return jsonify(vehicles), 200
     except Exception as e:
@@ -2976,7 +2976,7 @@ def get_vehicles():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles', methods=['POST'])
+@app.route('/vehicles', methods=['POST'])
 def add_vehicle():
     data = request.json
     try:
@@ -2997,7 +2997,7 @@ def add_vehicle():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles/<int:vehicle_id>', methods=['PUT'])
+@app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
 def update_vehicle(vehicle_id):
     data = request.json
     try:
@@ -3015,7 +3015,7 @@ def update_vehicle(vehicle_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
+@app.route('/vehicles/<int:vehicle_id>', methods=['DELETE'])
 def delete_vehicle(vehicle_id):
     try:
         cur = get_cursor()
@@ -3028,7 +3028,7 @@ def delete_vehicle(vehicle_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles/categories', methods=['GET'], strict_slashes=False)
+@app.route('/vehicles/categories', methods=['GET'], strict_slashes=False)
 def get_vehicle_categories():
     try:
         cur = get_cursor()
@@ -3043,7 +3043,7 @@ def get_vehicle_categories():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/vehicles/<int:vehicle_id>', methods=['GET'])
+@app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
 def get_vehicle_details_v2(vehicle_id):
     try:
         cur = get_cursor()
@@ -3052,14 +3052,14 @@ def get_vehicle_details_v2(vehicle_id):
         if not vehicle: return jsonify({"error": "Vehicle not found"}), 404
         v_dict = dict(vehicle)
         cur.execute("SELECT id, image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY display_order ASC", (vehicle_id,))
-        v_dict['gallery_details'] = cur.fetchall()
+        v_dict['gallery_details'] = [dict(r) for r in cur.fetchall()]
         return jsonify(v_dict), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/stats', methods=['GET'], strict_slashes=False)
+@app.route('/admin/stats', methods=['GET'], strict_slashes=False)
 def get_admin_stats_v2():
     admin_id = request.args.get('admin_id')
     try:
@@ -3107,7 +3107,7 @@ def get_admin_stats_v2():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/admin/detailed-stats', methods=['GET'])
+@app.route('/admin/detailed-stats', methods=['GET'])
 def get_admin_detailed_stats():
     admin_id = request.args.get('admin_id')
     try:
@@ -3120,7 +3120,6 @@ def get_admin_detailed_stats():
 
         location_filter = admin['assigned_location'] if admin['role'] == 'admin' else None
 
-        # Common stats
         bk_query = "SELECT COUNT(*) as count FROM bookings b"
         vh_query = "SELECT COUNT(*) as count FROM vehicles v"
         params = []
@@ -3142,7 +3141,6 @@ def get_admin_detailed_stats():
             "role": admin['role']
         }
 
-        # Revenue restricted to Super Admin or Branch Admin (for their own branch)
         rev_query = "SELECT SUM(total_price) as revenue FROM bookings b"
         if location_filter:
             rev_query += " WHERE b.pickup_location = %s AND b.status = 'Confirmed'"
@@ -3170,7 +3168,6 @@ def change_admin_password():
 
     try:
         cur = get_cursor()
-        # Verify user exists and is an admin
         cur.execute("SELECT id, role FROM users WHERE id=%s", (user_id,))
         user = cur.fetchone()
         if not user or user['role'] not in ['admin', 'super_admin']:
@@ -3208,7 +3205,6 @@ def handle_admin_settings():
 
         try:
             cur = get_cursor()
-            # Verify super_admin role
             cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
             user = cur.fetchone()
             if not user or user['role'] != 'super_admin':
@@ -3219,7 +3215,6 @@ def handle_admin_settings():
             
             commit_db()
 
-            # Log activity
             log_activity(
                 admin_id=requester_id,
                 admin_name=user['full_name'],
@@ -3246,7 +3241,7 @@ def get_activity_logs():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/public/settings', methods=['GET'])
+@app.route('/public/settings', methods=['GET'])
 def get_public_settings():
     """Returns non-sensitive system settings for the customer app."""
     try:
@@ -3265,6 +3260,7 @@ def get_public_settings():
         return jsonify({"error": str(e)}), 400
     finally:
         if 'cur' in locals(): cur.close()
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=9999, debug=True)
