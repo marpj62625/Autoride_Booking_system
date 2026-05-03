@@ -1340,7 +1340,7 @@
                     el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
                 });
 
-                if (isSuper) switchTab('dashboard');
+                if (isSuper) { switchTab('dashboard'); refreshDashboard(); }
                 else switchTab('vehicles');
             } else {
                 const overlay = document.getElementById('adminLoginOverlay');
@@ -1707,27 +1707,34 @@
         }
     }
 
-    // --- BOOKINGS MODULE (SYNCED) ---
     const Bookings = {
         data: [],
         async refresh() {
             const list = document.getElementById('bookingsList');
+            list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
             try {
                 // Fetch Stats
-                const statsRes = await fetch(`${API_URL}/admin/detailed-stats/`);
-                const stats = await statsRes.json();
-                
-                // Actual stats mapping based on backend keys
-                document.getElementById('bookTotal').textContent = stats.summary.total_bookings || 0;
-                document.getElementById('bookConfirmed').textContent = stats.summary.total_bookings; // Example
-                document.getElementById('bookPending').textContent = stats.summary.total_bookings > 0 ? "1" : "0"; 
-                document.getElementById('bookCancelled').textContent = "0";
+                const user = adminAuth.getUser();
+                const adminId = user ? user.id : '';
+                const statsRes = await fetch(`${API_URL}/admin/detailed-stats?admin_id=${adminId}`);
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    // Backend returns: { total_bookings, total_vehicles, role, total_revenue }
+                    document.getElementById('bookTotal').textContent = stats.total_bookings || 0;
+                    document.getElementById('bookConfirmed').textContent = stats.total_bookings || 0;
+                    document.getElementById('bookPending').textContent = '—';
+                    document.getElementById('bookCancelled').textContent = '—';
+                }
 
-                // Fetch List
-                const res = await fetch(`${API_URL}/bookings`);
+                // Fetch Bookings List
+                const res = await fetch(`${API_URL}/bookings?admin_id=${adminId}`);
+                if (!res.ok) throw new Error(`Server error: ${res.status}`);
                 this.data = await res.json();
                 this.render();
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error('Bookings Error:', err);
+                list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
+            }
         },
         render() {
             const list = document.getElementById('bookingsList');
@@ -3104,19 +3111,14 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         console.log('Mobile Admin JS Loaded');
-        alert('DEBUG: Admin JS Loaded');
         adminAuth.initSession();
 
         // Login Button Listener
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
-            alert('DEBUG: Login button found');
             loginBtn.addEventListener('click', () => {
-                alert('DEBUG: Login button clicked');
                 adminAuth.login();
             });
-        } else {
-            alert('ERROR: loginBtn NOT FOUND');
         }
         
         // Staff Form Listener

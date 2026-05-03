@@ -109,7 +109,7 @@ def process_payment():
         print(f"PAYMENT ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@payment_bp.route('/api/bookings/<int:booking_id>/pay-balance', methods=['POST'])
+@payment_bp.route('/bookings/<int:booking_id>/pay-balance', methods=['POST'])
 def pay_balance(booking_id):
     """Process remaining balance payment via customer app."""
     try:

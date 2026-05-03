@@ -1297,7 +1297,7 @@ def update_profile():
             cur.close()
 
 
-@app.route('/api/cancel-booking', methods=['POST'])
+@app.route('/cancel-booking', methods=['POST'])
 def cancel_booking():
     data = request.json
     booking_id = data.get('booking_id')
@@ -1611,7 +1611,7 @@ def pay_split_bill():
 
 # ==================== ADMIN BOOKING MANAGEMENT ====================
 
-@app.route('/api/bookings', methods=['GET'])
+@app.route('/bookings', methods=['GET'])
 def get_all_bookings():
     """Get all bookings with customer, vehicle, and driver info for admin panel."""
     admin_id = request.args.get('admin_id')
@@ -1728,7 +1728,7 @@ def approve_booking(booking_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/inspections/submit', methods=['POST'])
+@app.route('/inspections/submit', methods=['POST'])
 def submit_inspection():
     """Submit a vehicle inspection (pickup or return)."""
     try:
@@ -1786,7 +1786,7 @@ def submit_inspection():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/inspections/<int:booking_id>', methods=['GET'])
+@app.route('/inspections/<int:booking_id>', methods=['GET'])
 def get_inspections(booking_id):
     """Get all inspections for a booking."""
     try:
@@ -1799,7 +1799,7 @@ def get_inspections(booking_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/cancel-booking', methods=['POST'])
+@app.route('/cancel-booking', methods=['POST'])
 def user_cancel_booking():
     """Allow a user to cancel their own booking."""
     try:
@@ -2508,7 +2508,7 @@ def resolve_support_ticket(ticket_id):
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/instructions', methods=['GET', 'POST'])
+@app.route('/admin/instructions', methods=['GET', 'POST'])
 def manage_instructions():
     try:
         cur = get_cursor()
@@ -2531,7 +2531,7 @@ def manage_instructions():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/newsletter', methods=['POST'])
+@app.route('/newsletter', methods=['POST'])
 def subscribe_newsletter():
     data = request.json
     email = data.get('email')
@@ -2549,7 +2549,7 @@ def subscribe_newsletter():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/validate-coupon', methods=['POST'])
+@app.route('/validate-coupon', methods=['POST'])
 def validate_coupon():
     data = request.json or {}
     code = data.get('code', '').strip().upper()
@@ -2582,7 +2582,7 @@ def validate_coupon():
 
 # --- Admin Verification Endpoints ---
 
-@app.route('/api/admin/pending-verifications', methods=['GET'])
+@app.route('/admin/pending-verifications', methods=['GET'])
 def get_pending_verifications():
     try:
         cur = get_cursor()
@@ -2596,7 +2596,7 @@ def get_pending_verifications():
         if 'cur' in locals():
             cur.close()
 
-@app.route('/api/admin/verify-user', methods=['POST'])
+@app.route('/admin/verify-user', methods=['POST'])
 def verify_user():
     data = request.json or {}
     user_id = data.get('user_id')
@@ -2726,7 +2726,7 @@ def match_chatbot_intent(message):
             "Or you can visit our **Support** page to submit a ticket for personalized assistance!")
 
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/chat', methods=['POST'])
 def chat_endpoint():
     """Smart FAQ chatbot endpoint"""
     data = request.json

@@ -164,7 +164,7 @@ def cancel_booking(booking_id):
         print(f"CANCEL ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@booking_bp.route('/api/admin/bookings/<int:booking_id>/mark-paid', methods=['POST'])
+@booking_bp.route('/admin/bookings/<int:booking_id>/mark-paid', methods=['POST'])
 def admin_mark_paid(booking_id):
     """Admin marks a partially paid booking as fully paid (Over the counter cash)."""
     try:
