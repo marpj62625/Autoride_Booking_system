@@ -3124,7 +3124,7 @@ def get_admin_stats_v2():
         if location_filter:
             cur.execute(rev_q + " AND pickup_location = %s", (location_filter,))
             stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
-            cur.execute(book_q + " WHERE pickup_location = %s", (location_filter,))
+            cur.execute(book_q + " AND pickup_location = %s", (location_filter,))
             stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
             cur.execute(v_q + " AND location = %s", (location_filter,))
             stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
@@ -3133,7 +3133,7 @@ def get_admin_stats_v2():
             cur.execute(book_q); stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
             cur.execute(v_q); stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
 
-        cur.execute("SELECT DATE(created_at) as day, SUM(total_price) as amount FROM bookings WHERE payment_status = 'Paid' GROUP BY day ORDER BY day DESC LIMIT 7")
+        cur.execute("SELECT DATE(start_date) as day, SUM(total_price) as amount FROM bookings WHERE payment_status = 'Paid' GROUP BY day ORDER BY day DESC LIMIT 7")
         trend = []
         for t in cur.fetchall():
             trend.append({"day": str(t['day']), "amount": float(t['amount'] or 0)})
