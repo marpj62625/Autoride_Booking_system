@@ -2763,9 +2763,12 @@ def chat_endpoint():
 
 
 
-@app.route('/admin/login', methods=['POST'])
+@app.route('/admin/login', methods=['POST'], strict_slashes=False)
 def admin_login():
+    print(f"DEBUG: admin_login called with data={request.json}")
     data = request.json
+    if not data:
+        return jsonify({"error": "No data received"}), 400
     email = data.get('email')
     password = data.get('password')
     

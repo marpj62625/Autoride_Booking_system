@@ -3000,7 +3000,7 @@ void loop() {
                 document.getElementById('btnSaveInsp').textContent = 'Saving...';
 
                 try {
-                    const res = await fetch(`${API_BASE}/api/inspections/submit`, {
+                    const res = await fetch(`${API_BASE}/inspections/submit`, {
                         method: 'POST',
                         body: formData
                     });
@@ -3029,7 +3029,7 @@ void loop() {
             async downloadReceipt(id) {
                 this.showToast('info', 'Generating PDF receipt...');
                 try {
-                    const response = await fetch(`${API_BASE}/api/bookings/${id}/receipt`);
+                    const response = await fetch(`${API_BASE}/bookings/${id}/receipt`);
                     if (!response.ok) throw new Error('Failed to generate receipt');
 
                     const blob = await response.blob();
@@ -3054,7 +3054,7 @@ void loop() {
 
             async approve(id) {
                 try {
-                    const res = await fetch(`${API_BASE}/api/bookings/${id}/approve`, { method: 'PUT' });
+                    const res = await fetch(`${API_BASE}/bookings/${id}/approve`, { method: 'PUT' });
                     if (res.ok) {
                         this.showToast('success', 'Booking Approved!');
                         this.closeDetailsModal();
@@ -3071,7 +3071,7 @@ void loop() {
             async markPaid(id) {
                 if (!confirm('Mark this booking as FULLY PAID? \nThis means you have received the remaining balance in CASH over the counter.')) return;
                 try {
-                    const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
+                    const res = await fetch(`${API_BASE}/admin/bookings/${id}/mark-paid`, { method: 'POST' });
                     if (res.ok) {
                         showNotification('Booking marked as Fully Paid!', 'success');
                         document.getElementById('bookingDetailsModal').style.display = 'none';
@@ -3088,7 +3088,7 @@ void loop() {
             async cancel(id) {
                 if (!confirm('Are you sure you want to cancel this booking? Status will be changed and a refund may be required.')) return;
                 try {
-                    const res = await fetch(`${API_BASE}/api/bookings/${id}/cancel`, { method: 'PUT' });
+                    const res = await fetch(`${API_BASE}/bookings/${id}/cancel`, { method: 'PUT' });
                     if (res.ok) {
                         const data = await res.json();
                         showNotification('Booking Cancelled!', 'success');
@@ -3106,7 +3106,7 @@ void loop() {
             async reject(id) {
                 if (!confirm('Reject this booking?')) return;
                 try {
-                    const res = await fetch(`${API_BASE}/api/bookings/${id}/reject`, { method: 'PUT' });
+                    const res = await fetch(`${API_BASE}/bookings/${id}/reject`, { method: 'PUT' });
                     if (res.ok) {
                         showNotification('Booking Rejected!', 'success');
                         this.closeDetailsModal();
@@ -3237,13 +3237,13 @@ void loop() {
                 tbody.innerHTML = '<tr><td colspan="5" class="loading">Loading...</td></tr>';
 
                 try {
-                    const res = await fetch(`${API_BASE}/api/admin/detailed-stats`); // Using stats to get pending list or a new endpoint
+                    const res = await fetch(`${API_BASE}/admin/detailed-stats`); // Using stats to get pending list or a new endpoint
                     const statsData = await res.json();
                     
                     // Since I don't have a direct 'list pending' endpoint that returns full objects yet, 
                     // I will fetch all users and filter or use the backend search if available.
                     // For now, let's assume we have /api/admin/users?status=pending
-                    const uRes = await fetch(`${API_BASE}/api/admin/users?status=pending`);
+                    const uRes = await fetch(`${API_BASE}/admin/users?status=pending`);
                     const users = await uRes.json();
 
                     if (users.length === 0) {
@@ -3299,7 +3299,7 @@ void loop() {
                 if (!confirm(`Are you sure you want to ${status === 2 ? 'APPROVE' : 'REJECT'} this user's verification?`)) return;
 
                 try {
-                    const res = await fetch(`${API_BASE}/api/admin/verify-action`, {
+                    const res = await fetch(`${API_BASE}/admin/verify-action`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -3353,7 +3353,7 @@ void loop() {
                     }
 
                     // Call existing detailed stats for charts
-                    const detailedRes = await fetch(`${API_BASE}/api/admin/detailed-stats`);
+                    const detailedRes = await fetch(`${API_BASE}/admin/detailed-stats`);
                     const data = await detailedRes.json();
                     this.renderCharts(data);
                 } catch (err) {
@@ -3475,7 +3475,7 @@ void loop() {
                 const errorEl = document.getElementById('loginError');
 
                 try {
-                    const res = await apiFetch('api/admin/login', {
+                    const res = await apiFetch('admin/login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, password })

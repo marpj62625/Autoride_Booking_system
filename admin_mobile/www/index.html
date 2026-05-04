@@ -1376,8 +1376,8 @@
             } catch (err) {
                 console.error('Vehicles Refresh Error:', err);
                 listContainer.innerHTML = `<div style="text-align: center; padding: 50px; color: var(--danger);">
-                    Connection Error: ${err.message}<br>
-                    <small style="color:red; font-weight:bold;">DEBUG Target: ${API_URL}/vehicles</small><br>
+                    <i class="fas fa-exclamation-circle" style="font-size: 2rem; margin-bottom: 10px;"></i><br>
+                    Could not load vehicles. Check your connection.<br>
                     <button onclick="Vehicles.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button>
                 </div>`;
             }
@@ -2329,8 +2329,8 @@
                 this.render();
             } catch (err) {
                 console.error('Refresh Error:', err);
-                alert('Connection Error: ' + err.message);
-                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);">Connection Error</div>';
+                console.error('Connection Error:', err.message);
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-wifi" style="font-size:2rem; margin-bottom:10px;"></i><br>Connection Error. Please retry.</div>';
             }
         },
         render() {
