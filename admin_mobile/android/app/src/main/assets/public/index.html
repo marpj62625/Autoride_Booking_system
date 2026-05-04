@@ -1713,23 +1713,27 @@
             const list = document.getElementById('bookingsList');
             list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
             try {
-                // Fetch Stats
+                // Fetch Stats and List in parallel
                 const user = adminAuth.getUser();
                 const adminId = user ? user.id : '';
-                const statsRes = await fetch(`${API_URL}/admin/detailed-stats?admin_id=${adminId}`);
+
+                const [statsRes, listRes] = await Promise.all([
+                    fetch(`${API_URL}/admin/stats?admin_id=${adminId}`),
+                    fetch(`${API_URL}/bookings?admin_id=${adminId}`)
+                ]);
+
+                // Update booking counts from stats
                 if (statsRes.ok) {
                     const stats = await statsRes.json();
-                    // Backend returns: { total_bookings, total_vehicles, role, total_revenue }
+                    const breakdown = stats.bookingsByStatus || {};
                     document.getElementById('bookTotal').textContent = stats.total_bookings || 0;
-                    document.getElementById('bookConfirmed').textContent = stats.total_bookings || 0;
-                    document.getElementById('bookPending').textContent = '—';
-                    document.getElementById('bookCancelled').textContent = '—';
+                    document.getElementById('bookConfirmed').textContent = (breakdown['confirmed'] || 0) + (breakdown['approved'] || 0);
+                    document.getElementById('bookPending').textContent = breakdown['pending'] || 0;
+                    document.getElementById('bookCancelled').textContent = (breakdown['cancelled'] || 0) + (breakdown['rejected'] || 0);
                 }
 
-                // Fetch Bookings List
-                const res = await fetch(`${API_URL}/bookings?admin_id=${adminId}`);
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
-                this.data = await res.json();
+                if (!listRes.ok) throw new Error(`Server error: ${listRes.status}`);
+                this.data = await listRes.json();
                 this.render();
             } catch (err) {
                 console.error('Bookings Error:', err);
@@ -2298,7 +2302,7 @@
             list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Fetching...</div>';
             
             try {
-                const url = `${API_BASE}/api/admin/users?status=pending`;
+                const url = `${API_URL}/admin/pending-verifications`;
                 console.log('Fetching verifications from:', url);
                 const res = await fetch(url);
                 
@@ -2833,16 +2837,23 @@
             const user = adminAuth.getUser();
             if (!user) return;
             const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
-            // Map the stats from the simplified /stats response
-            document.getElementById('dashTotalRevenue').textContent = '₱' + (data.total_revenue || 0).toLocaleString();
+            // Update stat cards
+            document.getElementById('dashTotalRevenue').textContent = '₱' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
             document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
             
-            // Optional: If you want to keep charts, you'll need the /detailed-stats endpoint in backend
-            // For now, let's just update the counters to avoid errors.
-            if (typeof Chart !== 'undefined' && data.revenueTrend) initCharts(data);
-        } catch (err) { console.error('Dashboard Refresh Error:', err); }
+            // Render top grossing vehicles
+            if (data.topVehicles) renderTopVehicles(data.topVehicles);
+
+            // Init charts with full data
+            if (typeof Chart !== 'undefined') initCharts(data);
+        } catch (err) { 
+            console.error('Dashboard Refresh Error:', err); 
+            document.getElementById('dashTotalRevenue').textContent = '₱—';
+            document.getElementById('dashTotalBookings').textContent = '—';
+        }
     }
 
     function renderTopVehicles(cars) {

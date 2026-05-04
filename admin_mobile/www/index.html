@@ -1249,12 +1249,7 @@
 </div>
 
 <script>
-    window.onerror = function(msg, url, lineNo, columnNo, error) {
-        alert('Error: ' + msg + '\nLine: ' + lineNo + '\nURL: ' + url);
-        return false;
-    };
-    console.log('Mobile Admin Script Starting...');
-    console.log('Autoride Mobile Admin v2.2.3 (PRODUCTION TEST)');
+    console.log('Autoride Admin Mobile v2.2.3 loaded.');
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
     
@@ -3158,6 +3153,43 @@
                 else switchTab(currentTab); 
             }
         }, 30000);
+
+        // ---- Android Back Button Handler ----
+        const handleBackButton = (e) => {
+            if (e && e.preventDefault) e.preventDefault();
+
+            // 1. Close any open modal first
+            const modals = document.querySelectorAll('.premium-modal, #inspectionModal, #licensePreviewModal, #changePasswordModal');
+            for (const m of modals) {
+                if (m.style.display === 'flex' || m.style.display === 'block') {
+                    m.style.display = 'none';
+                    return;
+                }
+            }
+            // 2. Close side drawer if open
+            const drawer = document.getElementById('sideDrawer');
+            if (drawer && drawer.style.left === '0px') {
+                toggleDrawer(false);
+                return;
+            }
+            // 3. Show logout confirmation
+            if (confirm('Logout from Autoride Admin?\n\nPress OK to logout and exit.')) {
+                localStorage.removeItem('admin_user');
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.exitApp();
+                } else {
+                    location.reload();
+                }
+            }
+        };
+
+        // Standard Cordova/Capacitor back button DOM event
+        document.addEventListener('backbutton', handleBackButton, false);
+
+        // Capacitor App plugin (v3+)
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            document.addEventListener('backbutton', handleBackButton, false);
+        }
     });
 
     // Global Bindings for HTML Access
