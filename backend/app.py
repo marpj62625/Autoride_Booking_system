@@ -450,7 +450,7 @@ def upload_license():
 @app.route('/admin/pending-verifications', methods=['GET'])
 def admin_list_users():
     status = request.args.get('status')
-    if request.path == '/api/admin/pending-verifications':
+    if 'pending-verifications' in request.path:
         status = 'pending'
         
     print(f"DEBUG: admin_list_users called with status={status} via path={request.path}")
