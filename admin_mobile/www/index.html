@@ -526,6 +526,23 @@
     </style>
 </head>
 <body>
+    <!-- Exit Confirmation Modal (Android Back Button) -->
+    <div id="exitConfirmModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(6px);">
+        <div style="background: #1e293b; width: 100%; max-width: 500px; padding: 32px 24px 40px; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -20px 60px rgba(0,0,0,0.5);">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="width: 60px; height: 60px; background: rgba(239,68,68,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid rgba(239,68,68,0.3);">
+                    <i class="fas fa-sign-out-alt" style="color: #ef4444; font-size: 1.5rem;"></i>
+                </div>
+                <h3 style="font-size: 1.3rem; font-weight: 800; color: white; margin-bottom: 8px;">Exit App?</h3>
+                <p style="font-size: 0.9rem; color: #94a3b8; font-weight: 500;">You will be logged out and the app will close.</p>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button onclick="hideExitConfirm()" style="flex: 1; padding: 16px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; font-weight: 700; font-size: 1rem;">Cancel</button>
+                <button onclick="confirmExit()" style="flex: 1; padding: 16px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 16px; color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 8px 20px rgba(239,68,68,0.4);">Logout &amp; Exit</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Container -->
     <div class="notification-container" id="notificationContainer"></div>
 
@@ -3155,8 +3172,32 @@
         }, 30000);
 
         // ---- Android Back Button Handler ----
+        // Uses custom modal instead of window.confirm() (which is blocked on Android WebView)
+        window.showExitConfirm = function() {
+            document.getElementById('exitConfirmModal').style.display = 'flex';
+        };
+        window.hideExitConfirm = function() {
+            document.getElementById('exitConfirmModal').style.display = 'none';
+        };
+        window.confirmExit = function() {
+            localStorage.removeItem('admin_user');
+            document.getElementById('exitConfirmModal').style.display = 'none';
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.exitApp();
+            } else {
+                location.reload();
+            }
+        };
+
         const handleBackButton = (e) => {
             if (e && e.preventDefault) e.preventDefault();
+
+            // If exit modal is open, close it
+            const exitModal = document.getElementById('exitConfirmModal');
+            if (exitModal && exitModal.style.display === 'flex') {
+                hideExitConfirm();
+                return;
+            }
 
             // 1. Close any open modal first
             const modals = document.querySelectorAll('.premium-modal, #inspectionModal, #licensePreviewModal, #changePasswordModal');
@@ -3172,23 +3213,16 @@
                 toggleDrawer(false);
                 return;
             }
-            // 3. Show logout confirmation
-            if (confirm('Logout from Autoride Admin?\n\nPress OK to logout and exit.')) {
-                localStorage.removeItem('admin_user');
-                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                    window.Capacitor.Plugins.App.exitApp();
-                } else {
-                    location.reload();
-                }
-            }
+            // 3. Show custom exit confirmation modal
+            showExitConfirm();
         };
 
-        // Standard Cordova/Capacitor back button DOM event
+        // Register for both Capacitor and Cordova back button events
         document.addEventListener('backbutton', handleBackButton, false);
 
-        // Capacitor App plugin (v3+)
-        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-            document.addEventListener('backbutton', handleBackButton, false);
+        // Capacitor App plugin listener (most reliable for Capacitor 3+)
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+            window.Capacitor.Plugins.App.addListener('backButton', handleBackButton);
         }
     });
 
