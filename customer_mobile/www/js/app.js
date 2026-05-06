@@ -1,5 +1,5 @@
 /**
- * Autoride Customer Mobile App — Main Application Script
+ * Autoride Customer Mobile App ï¿½ Main Application Script
  * All screens, API calls, and business logic live here.
  * Import utils.js for pure utility functions.
  */
@@ -7,12 +7,7 @@
 // ??? CONFIG ??????????????????????????????????????????????????????????????????
 const API_BASE = 'https://autoride-booking-system.vercel.app';
 
-// ??? IMPORTS ?????????????????????????????????????????????????????????????????
-import {
-  isGmailAddress, isBlank, normalizePhone, isValidLastFour,
-  formatPHP, validateUploadFile, validateDateRange,
-  calculateBookingPrice, sanitizeInput
-} from './utils.js';
+// utils.js loaded as separate script tag
 
 // ??? STATE ???????????????????????????????????????????????????????????????????
 let currentUser = { id: null, fullName: '', isVerified: 0 };
@@ -150,20 +145,30 @@ const MAIN_PAGES = ['page-home','page-vehicles','page-bookings','page-profile','
 const NAV_MAP = { 'page-home':'nav-home','page-vehicles':'nav-vehicles','page-bookings':'nav-bookings','page-profile':'nav-profile','page-more':'nav-more' };
 
 function showPage(id) {
-  // Hide all pages
+  // Hide all pages including splash
   document.querySelectorAll('.page, .auth-page').forEach(p => {
     p.classList.remove('active');
     p.style.display = 'none';
   });
+  // Also hide splash explicitly
+  const splash = document.getElementById('page-splash');
+  if (splash) { splash.classList.remove('active'); splash.style.display = 'none'; }
+
   // Show target
   const target = document.getElementById(id);
   if (!target) return;
-  if (target.classList.contains('auth-page')) {
+
+  if (id === 'page-splash') {
     target.style.display = 'flex';
+    target.classList.add('active');
+  } else if (target.classList.contains('auth-page')) {
+    target.style.display = 'flex';
+    target.classList.add('active');
   } else {
     target.style.display = 'block';
+    target.classList.add('active');
   }
-  target.classList.add('active');
+
   // Bottom nav
   const nav = document.getElementById('bottomNav');
   if (MAIN_PAGES.includes(id)) {
@@ -211,7 +216,7 @@ function statusPill(status) {
     'Rejected':'pill-rejected','Unpaid':'pill-unpaid','Partially Paid':'pill-partially-paid',
     'Paid':'pill-paid','Refund Pending':'pill-refund-pending','Refunded':'pill-refunded'
   };
-  return `<span class="pill ${map[status]||''}">${status||'—'}</span>`;
+  return `<span class="pill ${map[status]||''}">${status||'ï¿½'}</span>`;
 }
 
 async function updateNotifBadge() {
@@ -447,9 +452,9 @@ function renderVehicles(list) {
       </div>
       <div class="vehicle-info">
         <h3>${v.brand} ${v.model}</h3>
-        <div class="vehicle-meta"><i class="fas fa-car-side"></i> ${v.vehicle_type || '—'} &nbsp; <i class="fas fa-cog"></i> ${v.transmission || '—'} &nbsp; <i class="fas fa-gas-pump"></i> ${v.fuel_type || '—'}</div>
-        <div class="vehicle-meta"><i class="fas fa-users"></i> ${v.seats || '—'} seats</div>
-        <div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ${v.location || '—'}</div>
+        <div class="vehicle-meta"><i class="fas fa-car-side"></i> ${v.vehicle_type || 'ï¿½'} &nbsp; <i class="fas fa-cog"></i> ${v.transmission || 'ï¿½'} &nbsp; <i class="fas fa-gas-pump"></i> ${v.fuel_type || 'ï¿½'}</div>
+        <div class="vehicle-meta"><i class="fas fa-users"></i> ${v.seats || 'ï¿½'} seats</div>
+        <div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ${v.location || 'ï¿½'}</div>
         <div class="vehicle-rate">${formatPHP(v.daily_rate)} <span>/ day</span></div>
       </div>
     </div>`).join('');
@@ -508,8 +513,8 @@ function renderVehicleDetail(v) {
           <div class="vehicle-rate">${formatPHP(v.daily_rate)} <span>/ day</span></div>
           <div style="color:#ffc107;font-size:0.9rem;">? ${(v.avg_rating||0).toFixed(1)} (${(v.reviews||[]).length})</div>
         </div>
-        <div class="vehicle-meta"><i class="fas fa-car-side"></i> ${v.vehicle_type||'—'} &nbsp; <i class="fas fa-cog"></i> ${v.transmission||'—'} &nbsp; <i class="fas fa-gas-pump"></i> ${v.fuel_type||'—'} &nbsp; <i class="fas fa-users"></i> ${v.seats||'—'} seats</div>
-        <div class="vehicle-meta" style="margin-top:6px;"><i class="fas fa-map-marker-alt"></i> ${v.location||'—'}</div>
+        <div class="vehicle-meta"><i class="fas fa-car-side"></i> ${v.vehicle_type||'ï¿½'} &nbsp; <i class="fas fa-cog"></i> ${v.transmission||'ï¿½'} &nbsp; <i class="fas fa-gas-pump"></i> ${v.fuel_type||'ï¿½'} &nbsp; <i class="fas fa-users"></i> ${v.seats||'ï¿½'} seats</div>
+        <div class="vehicle-meta" style="margin-top:6px;"><i class="fas fa-map-marker-alt"></i> ${v.location||'ï¿½'}</div>
         ${v.plate_number ? `<div class="vehicle-meta"><i class="fas fa-id-card"></i> ${v.plate_number}</div>` : ''}
         <div style="background:#fff3cd;border-radius:var(--radius-sm);padding:10px;margin-top:10px;font-size:0.8rem;color:#856404;">
           <i class="fas fa-tag"></i> Rentals of ${ltDays}+ days get a <strong>${ltPct}% discount</strong>!
@@ -585,7 +590,7 @@ function openBookingForm(vehicleId) {
       </div>
       <div class="card">
         <h4 style="font-weight:700;margin-bottom:14px;">Insurance</h4>
-        <div class="option-card selected" onclick="selectInsurance('Basic',0,this)"><input type="radio" name="insurance" checked> <div><strong>Basic</strong><br><small style="color:var(--text-secondary);">Included — PHP 0.00</small></div></div>
+        <div class="option-card selected" onclick="selectInsurance('Basic',0,this)"><input type="radio" name="insurance" checked> <div><strong>Basic</strong><br><small style="color:var(--text-secondary);">Included ï¿½ PHP 0.00</small></div></div>
         <div class="option-card" onclick="selectInsurance('Comprehensive',500,this)"><input type="radio" name="insurance"> <div><strong>Comprehensive</strong><br><small style="color:var(--text-secondary);">PHP 500.00 / booking</small></div></div>
       </div>
       <div class="card">
@@ -662,7 +667,7 @@ function updateBookingPrice() {
   const el = document.getElementById('priceBreakdown');
   el.innerHTML = `
     <h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>
-    <div class="price-row"><span>Base (${result.days} days × ${formatPHP(v.daily_rate)})</span><span>${formatPHP(result.basePrice)}</span></div>
+    <div class="price-row"><span>Base (${result.days} days ï¿½ ${formatPHP(v.daily_rate)})</span><span>${formatPHP(result.basePrice)}</span></div>
     ${result.addonPrice > 0 ? `<div class="price-row"><span>Add-ons</span><span>${formatPHP(result.addonPrice)}</span></div>` : ''}
     <div class="price-row"><span>Insurance (${selectedInsurance.type})</span><span>${formatPHP(result.insurancePrice)}</span></div>
     ${result.longTermDiscount > 0 ? `<div class="price-row" style="color:var(--success);"><span>Long-term Discount (${appSettings.long_term_discount_percent}%)</span><span>-${formatPHP(result.longTermDiscount)}</span></div>` : ''}
@@ -935,9 +940,9 @@ function renderBookingDetail(b) {
           ${statusPill(b.status)}
         </div>
         <div class="price-row"><span>Rental Period</span><span>${b.start_date} ? ${b.end_date}</span></div>
-        <div class="price-row"><span>Rental Type</span><span>${b.rental_type||'—'}</span></div>
-        <div class="price-row"><span>Pickup</span><span>${[b.pickup_barangay,b.pickup_municipality,b.pickup_province].filter(Boolean).join(', ')||b.pickup_location||'—'}</span></div>
-        <div class="price-row"><span>Return</span><span>${[b.return_barangay,b.return_municipality,b.return_province].filter(Boolean).join(', ')||'—'}</span></div>
+        <div class="price-row"><span>Rental Type</span><span>${b.rental_type||'ï¿½'}</span></div>
+        <div class="price-row"><span>Pickup</span><span>${[b.pickup_barangay,b.pickup_municipality,b.pickup_province].filter(Boolean).join(', ')||b.pickup_location||'ï¿½'}</span></div>
+        <div class="price-row"><span>Return</span><span>${[b.return_barangay,b.return_municipality,b.return_province].filter(Boolean).join(', ')||'ï¿½'}</span></div>
         <div class="price-row"><span>Insurance</span><span>${b.insurance_type||'Basic'}</span></div>
         ${b.addons ? `<div class="price-row"><span>Add-ons</span><span>${b.addons}</span></div>` : ''}
       </div>
@@ -1141,7 +1146,7 @@ async function openGpsMap(vehicleId) {
   setTimeout(() => {
     if (!gpsMap) {
       gpsMap = L.map('map').setView([14.5995, 120.9842], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(gpsMap);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'ï¿½ OpenStreetMap' }).addTo(gpsMap);
     }
     fetchVehicleLocation(vehicleId);
     startGpsPolling(vehicleId);
@@ -1282,7 +1287,7 @@ async function doUpdateProfile() {
   const phone = document.getElementById('editPhone').value.trim();
   document.getElementById('editPhoneErr').textContent = '';
   if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11)) {
-    document.getElementById('editPhoneErr').textContent = 'Phone must be 10–11 digits.'; return;
+    document.getElementById('editPhoneErr').textContent = 'Phone must be 10ï¿½11 digits.'; return;
   }
   const fd = new FormData();
   fd.append('user_id', currentUser.id);
@@ -1382,7 +1387,7 @@ async function loadSavedPayments() {
     const data = await apiCall(`/saved-payments?user_id=${currentUser.id}`);
     const el = document.getElementById('savedPaymentsContent');
     const listHtml = data.length
-      ? data.map(p => `<div class="payment-card-item"><div class="payment-card-icon"><i class="fas fa-credit-card"></i></div><div><strong>${p.card_type}</strong><br><small style="color:var(--text-secondary);">•••• ${p.last_four} — ${p.provider}</small></div></div>`).join('')
+      ? data.map(p => `<div class="payment-card-item"><div class="payment-card-icon"><i class="fas fa-credit-card"></i></div><div><strong>${p.card_type}</strong><br><small style="color:var(--text-secondary);">ï¿½ï¿½ï¿½ï¿½ ${p.last_four} ï¿½ ${p.provider}</small></div></div>`).join('')
       : '<div class="empty-state"><i class="fas fa-credit-card"></i><p>No saved payment methods</p></div>';
     el.innerHTML = `
       <div class="page-header">
@@ -1437,7 +1442,7 @@ async function loadFavorites() {
             </div>
             <div class="vehicle-info">
               <h3>${v.brand} ${v.model}</h3>
-              <div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ${v.location||'—'}</div>
+              <div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ${v.location||'ï¿½'}</div>
               <div class="vehicle-rate">${formatPHP(v.daily_rate)} <span>/ day</span></div>
             </div>
           </div>`).join('')

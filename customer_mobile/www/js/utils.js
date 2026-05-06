@@ -233,14 +233,5 @@ function sanitizeInput(str) {
   return str.replace(/[<>"'`\\]/g, '');
 }
 
-export {
-  isGmailAddress,
-  isBlank,
-  normalizePhone,
-  isValidLastFour,
-  formatPHP,
-  validateUploadFile,
-  validateDateRange,
-  calculateBookingPrice,
-  sanitizeInput
-};
+// Remove ES module export for browser/WebView compatibility
+// All functions are available globally in this file
