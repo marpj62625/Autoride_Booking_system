@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+    <style>
+        :root {
+            --primary: #e63946;
+            --primary-dark: #c1121f;
+            --primary-light: #ff6b6b;
+            --bg-page: #f8f9fa;
+            --bg-card: #ffffff;
+            --bg-input: #f1f3f5;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --text-muted: #adb5bd;
+            --success: #2dc653;
+            --warning: #f4a261;
+            --danger: #e63946;
+            --info: #4361ee;
+            --border: #dee2e6;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --shadow-card: 0 2px 12px rgba(0,0,0,0.08);
+            --shadow-modal: 0 8px 32px rgba(0,0,0,0.16);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; }
+        body { background:var(--bg-page); color:var(--text-primary); min-height:100vh; overflow-x:hidden; line-height:1.5; }
+        .hidden { display:none !important; }
+        .page { display:none; min-height:100vh; padding-bottom:80px; }
+        .page.active { display:block; }
+        .auth-page { display:none; min-height:100vh; padding-bottom:0; }
+        .auth-page.active { display:flex; flex-direction:column; }
+        /* Loading Overlay */
+        #loadingOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:9999; display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
+        .spinner { width:40px; height:40px; border:4px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        /* Toast */
+        .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:#fff; padding:12px 20px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; white-space:nowrap; max-width:90vw; text-align:center; }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .toast.toast-success { background:var(--success); }
+        .toast.toast-error { background:var(--danger); }
+        .toast.toast-info { background:var(--info); }
+        /* Bottom Nav */
+        .bottom-nav { position:fixed; bottom:0; left:0; right:0; height:65px; background:var(--bg-card); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:center; padding:0 5px; padding-bottom:env(safe-area-inset-bottom); z-index:1000; box-shadow:0 -2px 12px rgba(0,0,0,0.08); }
+        .bottom-nav button { background:none; border:none; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:4px; font-size:0.65rem; font-weight:600; flex:1; padding:8px 0; cursor:pointer; transition:color 0.2s; }
+        .bottom-nav button i { font-size:1.3rem; }
+        .bottom-nav button.active { color:var(--primary); }
+        /* Page Header */
+        .page-header { background:var(--bg-card); padding:16px 20px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:100; }
+        .page-header h2 { font-size:1.1rem; font-weight:700; flex:1; }
+        .back-btn { background:none; border:none; color:var(--text-primary); font-size:1.2rem; cursor:pointer; padding:4px; }
+        /* Cards */
+        .card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:12px; }
+        /* Buttons */
+        .btn-primary { background:var(--primary); color:#fff; border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .btn-primary:active { background:var(--primary-dark); }
+        .btn-secondary { background:var(--bg-input); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; transition:background 0.2s; }
+        .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
+        .btn-danger { background:var(--danger); color:#fff; border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
+        .btn-sm { padding:8px 14px; font-size:0.8rem; border-radius:var(--radius-sm); }
+        /* Forms */
+        .form-group { margin-bottom:16px; }
+        .form-group label { display:block; font-size:0.85rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
+        .form-group input, .form-group select, .form-group textarea { width:100%; padding:12px 14px; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); font-size:0.95rem; color:var(--text-primary); outline:none; transition:border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--primary); background:#fff; }
+        .form-group textarea { resize:vertical; min-height:80px; }
+        .field-error { color:var(--danger); font-size:0.78rem; margin-top:4px; display:block; }
+        /* Status Pills */
+        .pill { display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
+        .pill-pending { background:#fff3cd; color:#856404; }
+        .pill-confirmed { background:#cfe2ff; color:#084298; }
+        .pill-approved { background:#d1e7dd; color:#0a3622; }
+        .pill-picked-up { background:#e2d9f3; color:#432874; }
+        .pill-completed { background:#d1e7dd; color:#0a3622; }
+        .pill-cancelled { background:#f8d7da; color:#842029; }
+        .pill-rejected { background:#f8d7da; color:#842029; }
+        .pill-unpaid { background:#f8d7da; color:#842029; }
+        .pill-partially-paid { background:#fff3cd; color:#856404; }
+        .pill-paid { background:#d1e7dd; color:#0a3622; }
+        .pill-refund-pending { background:#fff3cd; color:#856404; }
+        .pill-refunded { background:#cfe2ff; color:#084298; }
+        /* Auth screens */
+        .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; }
+        .auth-logo { text-align:center; margin-bottom:32px; }
+        .auth-logo i { font-size:3rem; color:var(--primary); }
+        .auth-logo h1 { font-size:2rem; font-weight:800; color:var(--text-primary); letter-spacing:-1px; margin-top:8px; }
+        .auth-logo p { color:var(--text-secondary); font-size:0.9rem; margin-top:4px; }
+        .auth-card { background:var(--bg-card); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal); padding:28px 24px; width:100%; max-width:420px; }
+        .auth-card h2 { font-size:1.4rem; font-weight:800; margin-bottom:4px; }
+        .auth-card p.subtitle { color:var(--text-secondary); font-size:0.875rem; margin-bottom:24px; }
+        .auth-link { text-align:center; margin-top:16px; font-size:0.875rem; color:var(--text-secondary); }
+        .auth-link a { color:var(--primary); font-weight:600; text-decoration:none; }
+        .divider { display:flex; align-items:center; gap:12px; margin:16px 0; color:var(--text-muted); font-size:0.8rem; }
+        .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+        .btn-google { background:#fff; color:#333; border:1.5px solid var(--border); padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
+        .btn-google img { width:20px; height:20px; }
+        /* OTP Input */
+        .otp-inputs { display:flex; gap:10px; justify-content:center; margin:20px 0; }
+        .otp-inputs input { width:44px; height:52px; text-align:center; font-size:1.4rem; font-weight:700; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); outline:none; }
+        .otp-inputs input:focus { border-color:var(--primary); background:#fff; }
+        /* Home screen */
+        .home-banner { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; padding:24px 20px; margin-bottom:0; }
+        .home-banner h2 { font-size:1.3rem; font-weight:800; }
+        .home-banner p { font-size:0.875rem; opacity:0.85; margin-top:4px; }
+        .points-badge { background:rgba(255,255,255,0.2); border-radius:var(--radius-sm); padding:8px 14px; display:inline-flex; align-items:center; gap:8px; margin-top:12px; font-size:0.85rem; font-weight:600; }
+        .quick-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; padding:16px; }
+        .quick-action-btn { background:var(--bg-card); border:none; border-radius:var(--radius-md); padding:14px 8px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; box-shadow:var(--shadow-card); transition:transform 0.15s; }
+        .quick-action-btn:active { transform:scale(0.95); }
+        .quick-action-btn i { font-size:1.4rem; color:var(--primary); }
+        .quick-action-btn span { font-size:0.7rem; font-weight:600; color:var(--text-secondary); text-align:center; }
+        .section-header { display:flex; align-items:center; justify-content:space-between; padding:0 16px; margin-bottom:10px; }
+        .section-header h3 { font-size:1rem; font-weight:700; }
+        .section-header a { font-size:0.8rem; color:var(--primary); font-weight:600; text-decoration:none; }
+        /* Vehicle Cards */
+        .vehicle-grid { display:grid; grid-template-columns:1fr; gap:12px; padding:16px; }
+        .vehicle-card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); overflow:hidden; cursor:pointer; transition:transform 0.15s; }
+        .vehicle-card:active { transform:scale(0.98); }
+        .vehicle-img-wrap { position:relative; height:160px; overflow:hidden; }
+        .vehicle-img-wrap img { width:100%; height:100%; object-fit:cover; }
+        .badge-available { position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:#fff; font-size:0.7rem; font-weight:700; padding:4px 8px; border-radius:20px; }
+        .vehicle-info { padding:14px; }
+        .vehicle-info h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
+        .vehicle-meta { font-size:0.78rem; color:var(--text-secondary); margin-bottom:4px; }
+        .vehicle-meta i { width:14px; color:var(--text-muted); }
+        .vehicle-location { font-size:0.78rem; color:var(--text-secondary); margin-bottom:8px; }
+        .vehicle-rate { font-size:1.1rem; font-weight:800; color:var(--primary); }
+        .vehicle-rate span { font-size:0.75rem; font-weight:500; color:var(--text-muted); }
+        /* Filter chips */
+        .filter-chips { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
+        .filter-chips::-webkit-scrollbar { display:none; }
+        .chip { background:var(--bg-input); border:1.5px solid transparent; border-radius:20px; padding:6px 14px; font-size:0.8rem; font-weight:600; color:var(--text-secondary); cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+        .chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        /* Booking list */
+        .booking-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform 0.15s; }
+        .booking-item:active { transform:scale(0.98); }
+        .booking-item h4 { font-size:0.95rem; font-weight:700; margin-bottom:4px; }
+        .booking-item .booking-meta { font-size:0.8rem; color:var(--text-secondary); margin-bottom:8px; }
+        .booking-item .booking-footer { display:flex; align-items:center; justify-content:space-between; }
+        /* Profile */
+        .profile-avatar { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primary); }
+        .profile-avatar-placeholder { width:80px; height:80px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#fff; border:3px solid var(--primary-dark); }
+        .verify-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:0.78rem; font-weight:700; }
+        .verify-0 { background:#f8d7da; color:#842029; }
+        .verify-1 { background:#fff3cd; color:#856404; }
+        .verify-2 { background:#d1e7dd; color:#0a3622; }
+        /* Star rating */
+        .star-rating { display:flex; gap:6px; }
+        .star-rating i { font-size:1.8rem; color:var(--border); cursor:pointer; transition:color 0.15s; }
+        .star-rating i.active { color:#ffc107; }
+        /* Gallery */
+        .gallery-scroll { display:flex; gap:10px; overflow-x:auto; padding:0 16px 10px; scrollbar-width:none; }
+        .gallery-scroll::-webkit-scrollbar { display:none; }
+        .gallery-img { width:200px; height:130px; object-fit:cover; border-radius:var(--radius-sm); flex-shrink:0; }
+        /* Map */
+        #map { height:350px; width:100%; border-radius:var(--radius-md); }
+        /* Chat */
+        .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+        .chat-msg { max-width:80%; padding:10px 14px; border-radius:var(--radius-md); font-size:0.875rem; line-height:1.4; }
+        .chat-msg.user { background:var(--primary); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+        .chat-msg.bot { background:var(--bg-card); color:var(--text-primary); align-self:flex-start; border-bottom-left-radius:4px; box-shadow:var(--shadow-card); }
+        .chat-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--bg-card); border-top:1px solid var(--border); }
+        .chat-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:none; border-radius:var(--radius-sm); font-size:0.9rem; outline:none; }
+        .chat-input-row button { background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px 16px; cursor:pointer; }
+        /* Notification item */
+        .notif-item { background:var(--bg-card); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; border-left:4px solid var(--primary); }
+        .notif-item.unread { background:#fff5f5; }
+        .notif-item p { font-size:0.875rem; color:var(--text-primary); }
+        .notif-item small { font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block; }
+        /* Price breakdown */
+        .price-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.875rem; }
+        .price-row:last-child { border-bottom:none; }
+        .price-row.total { font-weight:800; font-size:1rem; color:var(--primary); }
+        /* Inspection photos */
+        .photo-thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+        .photo-thumb { width:70px; height:70px; object-fit:cover; border-radius:var(--radius-sm); }
+        /* Saved payment card */
+        .payment-card-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; }
+        .payment-card-icon { width:44px; height:44px; background:var(--bg-input); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:var(--primary); }
+        /* Review item */
+        .review-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:14px; margin-bottom:10px; }
+        .review-item .reviewer { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+        .review-item .reviewer img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+        .review-item .reviewer .avatar-placeholder { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:0.9rem; }
+        .review-stars { color:#ffc107; font-size:0.85rem; }
+        /* More screen */
+        .more-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:transform 0.15s; }
+        .more-item:active { transform:scale(0.98); }
+        .more-item-icon { width:44px; height:44px; background:rgba(230,57,70,0.1); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1.2rem; color:var(--primary); }
+        .more-item-text h4 { font-size:0.95rem; font-weight:700; }
+        .more-item-text p { font-size:0.78rem; color:var(--text-secondary); margin-top:2px; }
+        /* Splash */
+        #page-splash { display:none; background:var(--primary); min-height:100vh; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+        #page-splash.active { display:flex; }
+        #page-splash h1 { color:#fff; font-size:2.5rem; font-weight:800; letter-spacing:-1px; }
+        #page-splash p { color:rgba(255,255,255,0.8); font-size:1rem; }
+        .splash-spinner { width:36px; height:36px; border:4px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; margin-top:8px; }
+        /* Overlay pages */
+        .overlay-page { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-page); z-index:500; overflow-y:auto; }
+        .overlay-page.active { display:block; }
+        /* Empty state */
+        .empty-state { text-align:center; padding:40px 20px; color:var(--text-muted); }
+        .empty-state i { font-size:3rem; margin-bottom:12px; display:block; }
+        .empty-state p { font-size:0.9rem; }
+        /* Addon/insurance options */
+        .option-card { background:var(--bg-input); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; display:flex; align-items:flex-start; gap:10px; cursor:pointer; border:1.5px solid transparent; transition:border-color 0.2s; }
+        .option-card input[type=radio], .option-card input[type=checkbox] { margin-top:2px; accent-color:var(--primary); }
+        .option-card.selected { border-color:var(--primary); background:#fff5f5; }
+        /* Notification badge */
+        .notif-badge { position:absolute; top:-4px; right:-4px; background:var(--primary); color:#fff; font-size:0.6rem; font-weight:800; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        .notif-btn-wrap { position:relative; display:inline-block; }
+        /* Booking detail actions */
+        .action-btn-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+        /* Split payment */
+        .split-status { background:var(--bg-input); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; }
+        /* Favorites */
+        .fav-btn { background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted); transition:color 0.2s; }
+        .fav-btn.active { color:#e63946; }
+        /* Scroll container for pages */
+        .scroll-content { padding:16px; }
+        /* Input with icon */
+        .input-icon-wrap { position:relative; }
+        .input-icon-wrap i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); }
+        .input-icon-wrap input { padding-left:36px; }
+        /* Coupon row */
+        .coupon-row { display:flex; gap:8px; }
+        .coupon-row input { flex:1; }
+        .coupon-row button { padding:12px 16px; background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; white-space:nowrap; }
+        /* Rental type toggle */
+        .toggle-group { display:flex; background:var(--bg-input); border-radius:var(--radius-sm); padding:4px; gap:4px; }
+        .toggle-group button { flex:1; padding:10px; border:none; border-radius:6px; font-weight:600; font-size:0.875rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
+        .toggle-group button.active { background:var(--primary); color:#fff; }
+        /* Receipt */
+        .receipt-card { background:var(--bg-card); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal); padding:24px; margin:16px; }
+        .receipt-card .receipt-header { text-align:center; margin-bottom:20px; }
+        .receipt-card .receipt-header i { font-size:3rem; color:var(--success); }
+        .receipt-card .receipt-header h2 { font-size:1.3rem; font-weight:800; margin-top:8px; }
+        .receipt-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.875rem; }
+        .receipt-row:last-child { border-bottom:none; }
+        .receipt-row strong { font-weight:700; }
+    </style>
+</head>
+<body>
+
+<!-- ???????????????????????????????????????????????????????????
+     LOADING OVERLAY
+??????????????????????????????????????????????????????????? -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <p style="color:var(--text-secondary);font-size:0.875rem;">Please wait...</p>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     SPLASH SCREEN
+??????????????????????????????????????????????????????????? -->
+<div id="page-splash" class="active">
+  <i class="fas fa-car" style="font-size:4rem;color:rgba(255,255,255,0.9)"></i>
+  <h1>Autoride</h1>
+  <p>Your ride, your way</p>
+  <div class="splash-spinner"></div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     LOGIN
+??????????????????????????????????????????????????????????? -->
+<div id="page-login" class="auth-page">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <i class="fas fa-car"></i>
+      <h1>Autoride</h1>
+      <p>Book your perfect ride</p>
+    </div>
+    <div class="auth-card">
+      <h2>Welcome back</h2>
+      <p class="subtitle">Sign in to your account</p>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" placeholder="yourname@gmail.com" autocomplete="email">
+        <span class="field-error" id="loginEmailErr"></span>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+        <span class="field-error" id="loginPasswordErr"></span>
+      </div>
+      <span class="field-error" id="loginErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
+      <button class="btn-primary" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+      <div class="divider">or</div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+        Sign in with Google
+      </button>
+      <div class="auth-link" style="margin-top:12px;">
+        <a href="#" onclick="showPage('page-phone-login')"><i class="fas fa-phone"></i> Login with Phone</a>
+      </div>
+      <div class="auth-link">
+        Don't have an account? <a href="#" onclick="showPage('page-register')">Register</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     REGISTER
+??????????????????????????????????????????????????????????? -->
+<div id="page-register" class="auth-page">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <i class="fas fa-car"></i>
+      <h1>Autoride</h1>
+    </div>
+    <div class="auth-card">
+      <h2>Create Account</h2>
+      <p class="subtitle">Join Autoride today</p>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="regName" placeholder="Juan dela Cruz">
+        <span class="field-error" id="regNameErr"></span>
+      </div>
+      <div class="form-group">
+        <label>Gmail Address</label>
+        <input type="email" id="regEmail" placeholder="yourname@gmail.com">
+        <span class="field-error" id="regEmailErr"></span>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPassword" placeholder="At least 8 characters">
+        <span class="field-error" id="regPasswordErr"></span>
+      </div>
+      <span class="field-error" id="regErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
+      <button class="btn-primary" onclick="doRegister()"><i class="fas fa-user-plus"></i> Create Account</button>
+      <div class="auth-link">Already have an account? <a href="#" onclick="showPage('page-login')">Sign In</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     OTP VERIFY
+??????????????????????????????????????????????????????????? -->
+<div id="page-otp-verify" class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Verify Email</h2>
+      <p class="subtitle">Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p>
+      <div class="otp-inputs">
+        <input type="number" maxlength="1" id="otp0" oninput="otpNext(this,1)">
+        <input type="number" maxlength="1" id="otp1" oninput="otpNext(this,2)">
+        <input type="number" maxlength="1" id="otp2" oninput="otpNext(this,3)">
+        <input type="number" maxlength="1" id="otp3" oninput="otpNext(this,4)">
+        <input type="number" maxlength="1" id="otp4" oninput="otpNext(this,5)">
+        <input type="number" maxlength="1" id="otp5" oninput="otpNext(this,-1)">
+      </div>
+      <span class="field-error" id="otpErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
+      <button class="btn-primary" onclick="doVerifyEmail()">Verify</button>
+      <div class="auth-link" style="margin-top:12px;"><a href="#" onclick="resendOtp()">Resend Code</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     PHONE LOGIN
+??????????????????????????????????????????????????????????? -->
+<div id="page-phone-login" class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Phone Login</h2>
+      <p class="subtitle">Login with your phone number</p>
+      <div id="phoneStep1">
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="phoneNumber" placeholder="09XXXXXXXXX">
+          <span class="field-error" id="phoneErr"></span>
+        </div>
+        <button class="btn-primary" onclick="doRequestOtp()">Send OTP</button>
+      </div>
+      <div id="phoneStep2" class="hidden">
+        <div class="form-group">
+          <label>Enter OTP</label>
+          <div class="otp-inputs">
+            <input type="number" maxlength="1" id="smsOtp0" oninput="otpNextSms(this,1)">
+            <input type="number" maxlength="1" id="smsOtp1" oninput="otpNextSms(this,2)">
+            <input type="number" maxlength="1" id="smsOtp2" oninput="otpNextSms(this,3)">
+            <input type="number" maxlength="1" id="smsOtp3" oninput="otpNextSms(this,4)">
+            <input type="number" maxlength="1" id="smsOtp4" oninput="otpNextSms(this,5)">
+            <input type="number" maxlength="1" id="smsOtp5" oninput="otpNextSms(this,-1)">
+          </div>
+          <span class="field-error" id="smsOtpErr"></span>
+        </div>
+        <button class="btn-primary" onclick="doVerifyPhone()">Verify OTP</button>
+      </div>
+      <div class="auth-link"><a href="#" onclick="showPage('page-login')"><i class="fas fa-arrow-left"></i> Back to Login</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     BOTTOM NAVIGATION
+??????????????????????????????????????????????????????????? -->
+<nav class="bottom-nav hidden" id="bottomNav">
+  <button onclick="showPage('page-home')" id="nav-home"><i class="fas fa-home"></i><span>Home</span></button>
+  <button onclick="showPage('page-vehicles')" id="nav-vehicles"><i class="fas fa-car"></i><span>Browse</span></button>
+  <button onclick="showPage('page-bookings')" id="nav-bookings"><i class="fas fa-calendar-check"></i><span>Bookings</span></button>
+  <button onclick="showPage('page-profile')" id="nav-profile"><i class="fas fa-user"></i><span>Profile</span></button>
+  <button onclick="showPage('page-more')" id="nav-more"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
+</nav>
+
+<!-- ???????????????????????????????????????????????????????????
+     HOME
+??????????????????????????????????????????????????????????? -->
+<div id="page-home" class="page">
+  <div class="home-banner">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h2>Hello, <span id="homeUserName">there</span>! ??</h2>
+        <p>Where would you like to go today?</p>
+      </div>
+      <div class="notif-btn-wrap">
+        <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:1.1rem;cursor:pointer;">
+          <i class="fas fa-bell"></i>
+        </button>
+        <span class="notif-badge hidden" id="notifBadge">0</span>
+      </div>
+    </div>
+    <div class="points-badge"><i class="fas fa-star"></i> <span id="homePoints">0</span> Loyalty Points</div>
+  </div>
+  <div class="quick-actions">
+    <button class="quick-action-btn" onclick="showPage('page-vehicles')">
+      <i class="fas fa-car"></i><span>Browse Cars</span>
+    </button>
+    <button class="quick-action-btn" onclick="showPage('page-bookings')">
+      <i class="fas fa-calendar-check"></i><span>My Bookings</span>
+    </button>
+    <button class="quick-action-btn" onclick="showOverlay('page-support')">
+      <i class="fas fa-headset"></i><span>Support</span>
+    </button>
+    <button class="quick-action-btn" onclick="showOverlay('page-chatbot')">
+      <i class="fas fa-robot"></i><span>Chat</span>
+    </button>
+  </div>
+  <div class="section-header">
+    <h3>Recent Bookings</h3>
+    <a href="#" onclick="showPage('page-bookings')">See all</a>
+  </div>
+  <div id="recentBookings" class="scroll-content" style="padding-top:0;">
+    <div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings yet</p></div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     VEHICLES BROWSE
+??????????????????????????????????????????????????????????? -->
+<div id="page-vehicles" class="page">
+  <div class="page-header">
+    <h2>Browse Vehicles</h2>
+    <button onclick="showOverlay('page-favorites')" style="background:none;border:none;color:var(--primary);font-size:1.1rem;cursor:pointer;"><i class="fas fa-heart"></i></button>
+  </div>
+  <div class="filter-chips" id="vehicleFilters">
+    <span class="chip active" onclick="filterVehicles('all',this)">All</span>
+    <span class="chip" onclick="filterVehicles('Sedan',this)">Sedan</span>
+    <span class="chip" onclick="filterVehicles('SUV',this)">SUV</span>
+    <span class="chip" onclick="filterVehicles('Van',this)">Van</span>
+    <span class="chip" onclick="filterVehicles('Pickup',this)">Pickup</span>
+    <span class="chip" onclick="filterVehicles('Automatic',this)">Automatic</span>
+    <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
+  </div>
+  <div id="vehicleGrid" class="vehicle-grid">
+    <div class="empty-state"><i class="fas fa-car"></i><p>Loading vehicles...</p></div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     BOOKINGS HISTORY
+??????????????????????????????????????????????????????????? -->
+<div id="page-bookings" class="page">
+  <div class="page-header"><h2>My Bookings</h2></div>
+  <div id="bookingsList" class="scroll-content">
+    <div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings yet</p></div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     PROFILE
+??????????????????????????????????????????????????????????? -->
+<div id="page-profile" class="page">
+  <div class="page-header"><h2>My Profile</h2></div>
+  <div class="scroll-content">
+    <div class="card" style="text-align:center;padding:24px;">
+      <div id="profileAvatarWrap" style="display:flex;justify-content:center;margin-bottom:12px;">
+        <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">?</div>
+      </div>
+      <h3 id="profileName" style="font-size:1.2rem;font-weight:800;"></h3>
+      <p id="profileEmail" style="color:var(--text-secondary);font-size:0.875rem;margin-top:4px;"></p>
+      <div style="margin-top:10px;">
+        <span class="verify-badge" id="profileVerifyBadge">Not Verified</span>
+      </div>
+      <div class="points-badge" style="justify-content:center;margin-top:10px;background:rgba(230,57,70,0.1);color:var(--primary);">
+        <i class="fas fa-star"></i> <span id="profilePoints">0</span> Loyalty Points
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="font-weight:700;margin-bottom:14px;">Edit Profile</h4>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="editName" placeholder="Full Name">
+      </div>
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="editPhone" placeholder="09XXXXXXXXX">
+        <span class="field-error" id="editPhoneErr"></span>
+      </div>
+      <div class="form-group">
+        <label>Profile Picture</label>
+        <button class="btn-secondary" onclick="pickProfilePicture()"><i class="fas fa-camera"></i> Choose Photo</button>
+        <img id="profilePicPreview" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-top:8px;display:none;">
+      </div>
+      <button class="btn-primary" onclick="doUpdateProfile()">Save Changes</button>
+    </div>
+    <div class="card">
+      <h4 style="font-weight:700;margin-bottom:14px;">Account</h4>
+      <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-license-upload')"><i class="fas fa-id-card"></i> Upload / Update License</button>
+      <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-saved-payments')"><i class="fas fa-credit-card"></i> Saved Payment Methods</button>
+      <button class="btn-secondary" onclick="showOverlay('page-favorites')"><i class="fas fa-heart"></i> My Favorites</button>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     MORE
+??????????????????????????????????????????????????????????? -->
+<div id="page-more" class="page">
+  <div class="page-header"><h2>More</h2></div>
+  <div class="scroll-content">
+    <div class="more-item" onclick="showOverlay('page-support')">
+      <div class="more-item-icon"><i class="fas fa-headset"></i></div>
+      <div class="more-item-text"><h4>Support</h4><p>Submit a support ticket</p></div>
+      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" onclick="showOverlay('page-chatbot')">
+      <div class="more-item-icon"><i class="fas fa-robot"></i></div>
+      <div class="more-item-text"><h4>Chat Assistant</h4><p>Get quick answers</p></div>
+      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" onclick="showOverlay('page-notifications')">
+      <div class="more-item-icon"><i class="fas fa-bell"></i></div>
+      <div class="more-item-text"><h4>Notifications</h4><p>View all alerts</p></div>
+      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" onclick="showOverlay('page-newsletter')">
+      <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
+      <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
+      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" onclick="doLogout()" style="margin-top:20px;">
+      <div class="more-item-icon" style="background:rgba(230,57,70,0.1);"><i class="fas fa-sign-out-alt" style="color:var(--danger);"></i></div>
+      <div class="more-item-text"><h4 style="color:var(--danger);">Log Out</h4><p>Sign out of your account</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
+     OVERLAY PAGES
+??????????????????????????????????????????????????????????? -->
+<div id="page-vehicle-detail" class="overlay-page"><div id="vehicleDetailContent"></div></div>
+<div id="page-booking-form" class="overlay-page"><div id="bookingFormContent"></div></div>
+<div id="page-payment" class="overlay-page"><div id="paymentContent"></div></div>
+<div id="page-receipt" class="overlay-page"><div id="receiptContent"></div></div>
+<div id="page-booking-detail" class="overlay-page"><div id="bookingDetailContent"></div></div>
+<div id="page-inspection" class="overlay-page"><div id="inspectionContent"></div></div>
+<div id="page-gps-map" class="overlay-page"><div id="gpsMapContent"></div></div>
+<div id="page-review" class="overlay-page"><div id="reviewContent"></div></div>
+<div id="page-license-upload" class="overlay-page" onclick="openLicenseUpload()"><div id="licenseUploadContent"></div></div>
+<div id="page-saved-payments" class="overlay-page"><div id="savedPaymentsContent"></div></div>
+<div id="page-favorites" class="overlay-page"><div id="favoritesContent"></div></div>
+<div id="page-split-payment" class="overlay-page" onclick="loadSplitPayment()"><div id="splitPaymentContent"></div></div>
+<div id="page-support" class="overlay-page" onclick="loadSupport()"><div id="supportContent"></div></div>
+<div id="page-chatbot" class="overlay-page" onclick="loadChatbot()"><div id="chatbotContent"></div></div>
+<div id="page-notifications" class="overlay-page"><div id="notificationsContent"></div></div>
+<div id="page-newsletter" class="overlay-page" onclick="loadNewsletter()"><div id="newsletterContent"></div></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

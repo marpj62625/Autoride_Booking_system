@@ -16,6 +16,10 @@
     {
       "src": "admin_mobile/www/**",
       "use": "@vercel/static"
+    },
+    {
+      "src": "customer_mobile/www/**",
+      "use": "@vercel/static"
     }
   ],
   "rewrites": [
@@ -30,6 +34,10 @@
     {
       "source": "/admin_mobile/(.*)",
       "destination": "admin_mobile/www/$1"
+    },
+    {
+      "source": "/customer/(.*)",
+      "destination": "customer_mobile/www/$1"
     },
     {
       "source": "/(.*)",

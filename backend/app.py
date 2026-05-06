@@ -2654,11 +2654,11 @@ CHATBOT_FAQ = [
     },
     {
         "keywords": ["insurance", "coverage", "accident", "damage", "protection"],
-        "response": "🛡️ **Insurance & Coverage:**\n\n• **Basic Insurance** — Included free with every rental\n• **Premium Insurance** — Available as add-on for comprehensive coverage\n• Covers collision damage, theft, and third-party liability\n• Deductible may apply for certain claims\n\nWe recommend premium insurance for peace of mind on longer trips!"
+        "response": "🛡︝ **Insurance & Coverage:**\n\n• **Basic Insurance** — Included free with every rental\n• **Premium Insurance** — Available as add-on for comprehensive coverage\n• Covers collision damage, theft, and third-party liability\n• Deductible may apply for certain claims\n\nWe recommend premium insurance for peace of mind on longer trips!"
     },
     {
         "keywords": ["pickup", "location", "where", "saan", "branch", "drop off", "return", "delivery"],
-        "response": "📍 **Pickup & Return Locations:**\n\nYou set your preferred pickup and return locations during booking:\n• Enter your **Province, Municipality, and Barangay**\n• Separate pickup and return locations are supported\n• Delivery to your location may be available\n\nExact availability depends on vehicles in your area."
+        "response": "📝 **Pickup & Return Locations:**\n\nYou set your preferred pickup and return locations during booking:\n• Enter your **Province, Municipality, and Barangay**\n• Separate pickup and return locations are supported\n• Delivery to your location may be available\n\nExact availability depends on vehicles in your area."
     },
     {
         "keywords": ["register", "sign up", "create account", "gawa account", "account"],
@@ -2666,7 +2666,7 @@ CHATBOT_FAQ = [
     },
     {
         "keywords": ["forgot password", "reset password", "can't login", "hindi makapasok", "password reset"],
-        "response": "🔐 **Password Reset:**\n\nIf you forgot your password:\n1. Go to the Login page\n2. Click 'Forgot Password'\n3. Enter your registered email\n4. Check your inbox for the reset link\n5. Set a new password\n\nStill can't access your account? Submit a support ticket and we'll help!"
+        "response": "🔝 **Password Reset:**\n\nIf you forgot your password:\n1. Go to the Login page\n2. Click 'Forgot Password'\n3. Enter your registered email\n4. Check your inbox for the reset link\n5. Set a new password\n\nStill can't access your account? Submit a support ticket and we'll help!"
     },
     {
         "keywords": ["contact", "phone", "email", "support", "help", "customer service", "tulong"],
@@ -3356,6 +3356,61 @@ def get_public_settings():
         return jsonify({"error": str(e)}), 400
     finally:
         if 'cur' in locals(): cur.close()
+
+
+# ==================== CUSTOMER GPS ENDPOINT ====================
+
+@app.route('/vehicles/<int:vehicle_id>/location', methods=['GET'])
+def get_vehicle_location_for_customer(vehicle_id):
+    """
+    Customer-facing GPS endpoint.
+    Returns latitude, longitude, and last_gps_update for a specific vehicle.
+    Only accessible if the requesting user has an active booking for this vehicle.
+    """
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+
+    try:
+        cur = get_cursor()
+
+        # Security: verify the user has an active booking for this vehicle
+        cur.execute("""
+            SELECT id FROM bookings
+            WHERE vehicle_id = %s
+              AND user_id = %s
+              AND status IN ('Confirmed', 'Approved', 'Picked Up')
+            LIMIT 1
+        """, (vehicle_id, user_id))
+        booking = cur.fetchone()
+
+        if not booking:
+            return jsonify({
+                "error": "Access denied. No active booking found for this vehicle."
+            }), 403
+
+        # Fetch GPS data
+        cur.execute(
+            "SELECT latitude, longitude, last_gps_update FROM vehicles WHERE id = %s",
+            (vehicle_id,)
+        )
+        vehicle = cur.fetchone()
+
+        if not vehicle:
+            return jsonify({"error": "Vehicle not found"}), 404
+
+        return jsonify({
+            "vehicle_id": vehicle_id,
+            "latitude": vehicle['latitude'],
+            "longitude": vehicle['longitude'],
+            "last_gps_update": str(vehicle['last_gps_update']) if vehicle['last_gps_update'] else None
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
 
 if __name__ == '__main__':

@@ -1,0 +1,20 @@
+{
+  "appId": "com.autoride.customer",
+  "appName": "Autoride",
+  "webDir": "www",
+  "server": {
+    "cleartext": true,
+    "allowNavigation": [
+      "autoride-booking-system.vercel.app"
+    ],
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera", "photos"]
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}
