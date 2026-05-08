@@ -652,60 +652,196 @@ function renderVehicleDetail(v) {
 }
 
 // BOOKING FORM
+var PICKUP_LOCATIONS = [
+  { label: 'San Pablo City, Laguna', value: 'San Pablo City, Laguna', province: 'Laguna', municipality: 'San Pablo City', barangay: '' },
+  { label: 'Tanauan/Sto. Tomas, Batangas', value: 'Tanauan/Sto. Tomas, Batangas', province: 'Batangas', municipality: 'Tanauan', barangay: 'Sto. Tomas' }
+];
+
+var INSURANCE_OPTIONS = [
+  { type: 'Basic Protection', pricePerDay: 0, desc: 'Standard passenger and third-party liability.' },
+  { type: 'Standard Protection', pricePerDay: 500, desc: 'Collision Damage Waiver (CDW) with ?10k deductible.' },
+  { type: 'Premium Protection', pricePerDay: 1200, desc: 'Full coverage, zero deductible, and roadside assistance.' }
+];
+
+var ADDON_OPTIONS = [
+  { name: 'GPS Navigation', pricePerDay: 200 },
+  { name: 'Child Safety Seat', pricePerDay: 150 },
+  { name: 'Roadside Assistance', pricePerDay: 100 }
+];
+
 function openBookingForm(vehicleId) {
   bookingFormVehicle = currentVehicleDetail;
   couponData = null;
   selectedAddons = [];
-  selectedInsurance = { type: 'Basic', price: 0 };
+  selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
   var today = new Date().toISOString().split('T')[0];
   var el = document.getElementById('bookingFormContent');
   if (!el) return;
+
+  var locationOptions = PICKUP_LOCATIONS.map(function(loc, i) {
+    return '<option value="' + loc.value + '">' + loc.label + '</option>';
+  }).join('');
+
+  var insuranceHtml = INSURANCE_OPTIONS.map(function(ins, i) {
+    var priceLabel = ins.pricePerDay === 0 ? 'Included (?0)' : '?' + ins.pricePerDay.toLocaleString() + '/day';
+    return '<div class="option-card' + (i === 0 ? ' selected' : '') + '" onclick="selectInsuranceOpt(' + i + ',this)">' +
+      '<input type="radio" name="insurance"' + (i === 0 ? ' checked' : '') + '>' +
+      '<div><strong>' + ins.type + '</strong> <span style="color:var(--primary);font-weight:700;">' + priceLabel + '</span>' +
+      '<br><small style="color:var(--text-secondary);">' + ins.desc + '</small></div>' +
+      '</div>';
+  }).join('');
+
+  var addonsHtml = ADDON_OPTIONS.map(function(addon, i) {
+    return '<div class="option-card" id="addon_' + i + '" onclick="toggleAddon(' + i + ',this)">' +
+      '<input type="checkbox" id="addonChk_' + i + '">' +
+      '<div><strong>' + addon.name + '</strong> <span style="color:var(--primary);font-weight:700;">?' + addon.pricePerDay + '/day</span></div>' +
+      '</div>';
+  }).join('');
+
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-booking-form\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
-    '<div class="scroll-content">' +
+    '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
     '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfStartErr"></span></div>' +
     '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfEndErr"></span></div>' +
     '</div>' +
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Pickup Location</h4>' +
-    '<div class="form-group"><label>Province</label><input type="text" id="bfPickupProvince" placeholder="e.g. Metro Manila"></div>' +
-    '<div class="form-group"><label>Municipality</label><input type="text" id="bfPickupMunicipality" placeholder="e.g. Quezon City"></div>' +
-    '<div class="form-group"><label>Barangay</label><input type="text" id="bfPickupBarangay" placeholder="e.g. Diliman"></div>' +
+
+    // Pickup or Delivery
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Service Type</h4>' +
+    '<div class="toggle-group">' +
+    '<button id="btnPickup" class="active" onclick="setServiceType(\'pickup\')"><i class="fas fa-map-marker-alt"></i> Pick-Up</button>' +
+    '<button id="btnDelivery" onclick="setServiceType(\'delivery\')"><i class="fas fa-truck"></i> Delivery</button>' +
+    '</div><input type="hidden" id="bfServiceType" value="pickup">' +
+
+    // Pick-up location selector
+    '<div id="pickupSection" style="margin-top:14px;">' +
+    '<div class="form-group"><label>Pick-Up Location</label>' +
+    '<select id="bfPickupLocation" onchange="onPickupLocationChange()">' + locationOptions + '</select></div>' +
+    '<div class="form-group"><label>Return Location</label>' +
+    '<select id="bfReturnLocation">' + locationOptions + '</select></div>' +
     '</div>' +
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Return Location</h4>' +
-    '<div class="form-group"><label>Province</label><input type="text" id="bfReturnProvince" placeholder="e.g. Metro Manila"></div>' +
-    '<div class="form-group"><label>Municipality</label><input type="text" id="bfReturnMunicipality" placeholder="e.g. Quezon City"></div>' +
-    '<div class="form-group"><label>Barangay</label><input type="text" id="bfReturnBarangay" placeholder="e.g. Diliman"></div>' +
-    '</div>' +
+
+    // Delivery address with map link
+    '<div id="deliverySection" style="display:none;margin-top:14px;">' +
+    '<div class="form-group"><label>Delivery Address</label>' +
+    '<input type="text" id="bfDeliveryAddress" placeholder="Enter full delivery address"></div>' +
+    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" placeholder="Barangay"></div>' +
+    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" placeholder="Municipality or City"></div>' +
+    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" placeholder="Province"></div>' +
+    '<a href="https://maps.google.com" target="_blank" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map"></i> Open Google Maps to find your location</a>' +
+    '</div></div>' +
+
+    // Rental Type
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Type</h4>' +
     '<div class="toggle-group">' +
     '<button id="btnSelfDrive" class="active" onclick="setRentalType(\'Self-Drive\')">Self-Drive</button>' +
     '<button id="btnWithDriver" onclick="setRentalType(\'With Driver\')">With Driver</button>' +
     '</div><input type="hidden" id="bfRentalType" value="Self-Drive"></div>' +
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Insurance</h4>' +
-    '<div class="option-card selected" onclick="selectInsurance(\'Basic\',0,this)"><input type="radio" name="insurance" checked> <div><strong>Basic</strong><br><small>Included - PHP 0.00</small></div></div>' +
-    '<div class="option-card" onclick="selectInsurance(\'Comprehensive\',500,this)"><input type="radio" name="insurance"> <div><strong>Comprehensive</strong><br><small>PHP 500.00 / booking</small></div></div>' +
-    '</div>' +
+
+    // Insurance
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Preferred Insurance Coverage</h4>' +
+    insuranceHtml + '</div>' +
+
+    // Add-ons
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Add-ons</h4>' +
+    addonsHtml + '</div>' +
+
+    // Payment Type
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Payment Type</h4>' +
     '<div class="toggle-group">' +
     '<button id="btnFull" class="active" onclick="setPaymentType(\'Full\')">Full Payment</button>' +
     '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
     '</div><input type="hidden" id="bfPaymentType" value="Full"></div>' +
+
+    // Coupon
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Coupon Code</h4>' +
     '<div class="coupon-row"><input type="text" id="bfCoupon" placeholder="Enter coupon code"><button onclick="applyCoupon()">Apply</button></div>' +
     '<div id="couponMsg" style="font-size:0.8rem;margin-top:6px;"></div></div>' +
+
+    // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
     '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:8px;">Available: <strong>' + (currentUser.loyaltyPoints || 0) + ' pts</strong></p>' +
     '<div class="form-group"><label>Points to Redeem</label><input type="number" id="bfPoints" min="0" max="' + (currentUser.loyaltyPoints || 0) + '" value="0" onchange="updateBookingPrice()"></div>' +
     '</div>' +
+
+    // Price Breakdown
     '<div class="card" id="priceBreakdown"><h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4><p style="color:var(--text-muted);font-size:0.875rem;">Select dates to see pricing</p></div>' +
+
+    // Mileage notice
     '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;font-size:0.8rem;color:#084298;">Daily mileage limit: <strong>' + (appSettings.mileage_limit || 250) + ' km</strong></div>' +
+
+    // Split Bill
+    '<div class="card" style="border:2px dashed var(--primary);">' +
+    '<h4 style="font-weight:700;margin-bottom:8px;"><i class="fas fa-users" style="color:var(--primary);"></i> Split this Bill with a Friend?</h4>' +
+    '<p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">Enter your friend\'s email to split the cost after booking.</p>' +
+    '<div class="form-group"><label>Friend\'s Email (optional)</label><input type="email" id="bfSplitEmail" placeholder="friend@gmail.com"></div>' +
+    '</div>' +
+
     '<span class="field-error" id="bfErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" onclick="submitBooking()"><i class="fas fa-check"></i> Confirm Booking</button>' +
+    '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitBooking()"><i class="fas fa-check"></i> Confirm Booking</button>' +
     '</div>';
+
   showOverlay('page-booking-form');
+  // Auto-set return location to match pickup
+  onPickupLocationChange();
+}
+
+function setServiceType(type) {
+  document.getElementById('bfServiceType').value = type;
+  document.getElementById('btnPickup').classList.toggle('active', type === 'pickup');
+  document.getElementById('btnDelivery').classList.toggle('active', type === 'delivery');
+  document.getElementById('pickupSection').style.display = type === 'pickup' ? 'block' : 'none';
+  document.getElementById('deliverySection').style.display = type === 'delivery' ? 'block' : 'none';
+}
+
+function onPickupLocationChange() {
+  var pickupEl = document.getElementById('bfPickupLocation');
+  var returnEl = document.getElementById('bfReturnLocation');
+  if (pickupEl && returnEl) {
+    returnEl.value = pickupEl.value;
+  }
+}
+
+function selectInsuranceOpt(idx, el) {
+  var ins = INSURANCE_OPTIONS[idx];
+  var days = getBookingDays();
+  selectedInsurance = { type: ins.type, pricePerDay: ins.pricePerDay, price: ins.pricePerDay * days };
+  var cards = document.querySelectorAll('#bookingFormContent .option-card');
+  for (var i = 0; i < cards.length; i++) {
+    if (cards[i].querySelector('input[name="insurance"]')) cards[i].classList.remove('selected');
+  }
+  if (el) el.classList.add('selected');
+  updateBookingPrice();
+}
+
+function toggleAddon(idx, el) {
+  var addon = ADDON_OPTIONS[idx];
+  var chk = document.getElementById('addonChk_' + idx);
+  var days = getBookingDays();
+  var existing = selectedAddons.findIndex(function(a) { return a.name === addon.name; });
+  if (existing >= 0) {
+    selectedAddons.splice(existing, 1);
+    if (el) el.classList.remove('selected');
+    if (chk) chk.checked = false;
+  } else {
+    selectedAddons.push({ name: addon.name, price: addon.pricePerDay * days, pricePerDay: addon.pricePerDay });
+    if (el) el.classList.add('selected');
+    if (chk) chk.checked = true;
+  }
+  updateBookingPrice();
+}
+
+function getBookingDays() {
+  var startEl = document.getElementById('bfStartDate');
+  var endEl = document.getElementById('bfEndDate');
+  if (!startEl || !endEl || !startEl.value || !endEl.value) return 1;
+  var start = new Date(startEl.value);
+  var end = new Date(endEl.value);
+  return Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 }
 
 function setRentalType(type) {
@@ -744,11 +880,20 @@ function updateBookingPrice() {
   if (!start || !end) return;
   var v = bookingFormVehicle;
   if (!v) return;
+  var days = getBookingDays();
+
+  // Recalculate per-day prices
+  var insPrice = (selectedInsurance.pricePerDay || 0) * days;
+  selectedInsurance.price = insPrice;
+  selectedAddons = selectedAddons.map(function(a) {
+    return Object.assign({}, a, { price: a.pricePerDay * days });
+  });
+
   var ptsEl = document.getElementById('bfPoints');
   var pts = ptsEl ? (parseInt(ptsEl.value) || 0) : 0;
   var cpPct = couponData ? couponData.discount_percent : 0;
   var result = calculateBookingPrice(
-    v.daily_rate, start, end, selectedAddons, selectedInsurance.price,
+    v.daily_rate, start, end, selectedAddons, insPrice,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
     cpPct, pts
@@ -761,7 +906,7 @@ function updateBookingPrice() {
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
     '<div class="price-row"><span>Base (' + result.days + ' days x ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
     (result.addonPrice > 0 ? '<div class="price-row"><span>Add-ons</span><span>' + formatPHP(result.addonPrice) + '</span></div>' : '') +
-    '<div class="price-row"><span>Insurance (' + selectedInsurance.type + ')</span><span>' + formatPHP(result.insurancePrice) + '</span></div>' +
+    (insPrice > 0 ? '<div class="price-row"><span>Insurance (' + selectedInsurance.type + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
     (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
     (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
@@ -809,17 +954,36 @@ function submitBooking() {
     cpPct, pts
   );
   var payType = document.getElementById('bfPaymentType').value;
+  var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
+  var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
+  var returnLocation, returnProvince, returnMunicipality, returnBarangay;
+
+  if (serviceType === 'pickup') {
+    var pickupSel = document.getElementById('bfPickupLocation');
+    var returnSel = document.getElementById('bfReturnLocation');
+    pickupLocation = pickupSel ? pickupSel.value : '';
+    returnLocation = returnSel ? returnSel.value : '';
+    var pickupData = PICKUP_LOCATIONS.find(function(l) { return l.value === pickupLocation; }) || {};
+    var returnData = PICKUP_LOCATIONS.find(function(l) { return l.value === returnLocation; }) || {};
+    pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
+    returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
+  } else {
+    pickupLocation = [document.getElementById('bfDeliveryBarangay').value, document.getElementById('bfDeliveryMunicipality').value, document.getElementById('bfDeliveryProvince').value].filter(Boolean).join(', ');
+    pickupProvince = sanitizeInput(document.getElementById('bfDeliveryProvince').value);
+    pickupMunicipality = sanitizeInput(document.getElementById('bfDeliveryMunicipality').value);
+    pickupBarangay = sanitizeInput(document.getElementById('bfDeliveryBarangay').value);
+    returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
+  }
+
+  var splitEmail = document.getElementById('bfSplitEmail') ? document.getElementById('bfSplitEmail').value.trim() : '';
+
   var payload = {
     user_id: currentUser.id,
     vehicle_id: bookingFormVehicle.id,
     start_date: start, end_date: end,
-    pickup_location: [document.getElementById('bfPickupProvince').value, document.getElementById('bfPickupMunicipality').value, document.getElementById('bfPickupBarangay').value].filter(Boolean).join(', '),
-    pickup_province: sanitizeInput(document.getElementById('bfPickupProvince').value),
-    pickup_municipality: sanitizeInput(document.getElementById('bfPickupMunicipality').value),
-    pickup_barangay: sanitizeInput(document.getElementById('bfPickupBarangay').value),
-    return_province: sanitizeInput(document.getElementById('bfReturnProvince').value),
-    return_municipality: sanitizeInput(document.getElementById('bfReturnMunicipality').value),
-    return_barangay: sanitizeInput(document.getElementById('bfReturnBarangay').value),
+    pickup_location: pickupLocation,
+    pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
+    return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
     rental_type: document.getElementById('bfRentalType').value,
     addons: selectedAddons.map(function(a) { return a.name; }),
     insurance_type: selectedInsurance.type,
@@ -831,7 +995,9 @@ function submitBooking() {
     applied_coupon_id: couponData ? couponData.coupon_id : null,
     discount_amount: result.couponDiscount + result.longTermDiscount,
     points_redeemed: pts,
-    points_earned: result.pointsEarned
+    points_earned: result.pointsEarned,
+    service_type: serviceType,
+    split_with_email: splitEmail || null
   };
   showLoading(true);
   apiCall('/book', { method: 'POST', body: JSON.stringify(payload) })
