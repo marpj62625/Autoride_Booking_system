@@ -4,7 +4,7 @@
  */
 
 // CONFIG
-var API_BASE = 'https://autoride-booking-system.vercel.app';
+var API_BASE = 'https://autoride-booking-system.vercel.app/api';
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
