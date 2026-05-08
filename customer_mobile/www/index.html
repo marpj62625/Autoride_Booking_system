@@ -249,33 +249,6 @@
 <body style="background:#e63946;">
 <noscript><div style="color:white;padding:20px;font-size:1.2rem;">JavaScript is disabled or failed to load.</div></noscript>
 
-<!-- DEBUG PANEL - shows immediately, no JS needed -->
-<div id="debugPanel" style="position:fixed;top:0;left:0;width:100%;background:#000;color:#0f0;font-family:monospace;font-size:11px;padding:8px;z-index:99999;max-height:50vh;overflow-y:auto;">
-  <div>&#x25BA; HTML loaded OK</div>
-  <div id="dbg"></div>
-</div>
-
-<script>
-// Inline debug - runs before any external scripts
-(function() {
-  var dbg = document.getElementById('dbg');
-  function log(msg, color) {
-    var d = document.createElement('div');
-    d.style.color = color || '#0f0';
-    d.textContent = msg;
-    dbg.appendChild(d);
-  }
-  window._dbgLog = log;
-  log('Inline script running OK');
-  log('User Agent: ' + navigator.userAgent.substring(0, 80));
-  log('Location: ' + window.location.href);
-  window.onerror = function(msg, src, line, col, err) {
-    log('JS ERROR: ' + msg + ' [' + (src||'').split('/').pop() + ':' + line + ']', '#f00');
-    return false;
-  };
-})();
-</script>
-
 <!-- ???????????????????????????????????????????????????????????
      LOADING OVERLAY
 ??????????????????????????????????????????????????????????? -->

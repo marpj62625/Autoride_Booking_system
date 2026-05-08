@@ -204,7 +204,6 @@ var NAV_MAP = {
 };
 
 function showPage(id) {
-  if (window._dbgLog) window._dbgLog('showPage: ' + id);
   // Hide splash
   var splash = document.getElementById('page-splash');
   if (splash) { splash.style.display = 'none'; }
@@ -300,14 +299,7 @@ function updateNotifBadge() {
 
 // STARTUP
 function initApp() {
-  if (window._dbgLog) window._dbgLog('initApp() called');
-  // Hide debug panel after 5 seconds if app loads OK
-  setTimeout(function() {
-    var dp = document.getElementById('debugPanel');
-    if (dp) dp.style.display = 'none';
-  }, 8000);
   Session.load().then(function(user) {
-    if (window._dbgLog) window._dbgLog('Session loaded: ' + (user ? 'user#' + user.id : 'none'));
     if (user && user.id) {
       currentUser = user;
       apiCall('/public/settings').then(function(s) {
@@ -318,20 +310,13 @@ function initApp() {
       showPage('page-login');
     }
     updateNotifBadge();
-  }).catch(function(err) {
-    if (window._dbgLog) window._dbgLog('Session.load error: ' + err, '#f00');
+  }).catch(function() {
     showPage('page-login');
   });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  if (window._dbgLog) window._dbgLog('DOMContentLoaded fired');
-  initApp();
-});
-document.addEventListener('deviceready', function() {
-  if (window._dbgLog) window._dbgLog('deviceready fired');
-  initApp();
-});
+document.addEventListener('DOMContentLoaded', function() { initApp(); });
+document.addEventListener('deviceready', function() { initApp(); });
 
 // AUTH: LOGIN
 function doLogin() {
