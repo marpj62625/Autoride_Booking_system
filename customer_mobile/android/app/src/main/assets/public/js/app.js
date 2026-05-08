@@ -297,8 +297,11 @@ function updateNotifBadge() {
   });
 }
 
-// STARTUP
+// STARTUP - run immediately when script loads, also on events as fallback
+var _appInitialized = false;
 function initApp() {
+  if (_appInitialized) return;
+  _appInitialized = true;
   Session.load().then(function(user) {
     if (user && user.id) {
       currentUser = user;
@@ -315,8 +318,12 @@ function initApp() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', function() { initApp(); });
-document.addEventListener('deviceready', function() { initApp(); });
+// Try immediately (script already loaded after DOM)
+initApp();
+
+// Also listen for events as fallback
+document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('deviceready', initApp);
 
 // AUTH: LOGIN
 function doLogin() {
