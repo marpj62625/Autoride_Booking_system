@@ -3068,13 +3068,39 @@ def delete_vehicle(vehicle_id):
 def get_vehicle_categories():
     try:
         cur = get_cursor()
-        print("DEBUG: Executing categories query...")
-        cur.execute("SELECT MIN(id) as id, brand, model, vehicle_image, MIN(daily_rate) as daily_rate, vehicle_type, MIN(seats) as seats, fuel_type, STRING_AGG(DISTINCT transmission, '/') as transmission, location, COUNT(*) as total_units, SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) as available_units FROM vehicles WHERE status != 'Sold' GROUP BY brand, model, vehicle_image, vehicle_type, fuel_type, location ORDER BY brand, model")
+        cur.execute("""
+            SELECT 
+                MIN(id) as id,
+                brand,
+                model,
+                MIN(vehicle_image) as vehicle_image,
+                MIN(daily_rate) as daily_rate,
+                MIN(vehicle_type) as vehicle_type,
+                MIN(seats) as seats,
+                MIN(fuel_type) as fuel_type,
+                MIN(transmission) as transmission,
+                MIN(location) as location,
+                COUNT(*) as total_units,
+                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN 1 ELSE 0 END) as available_units
+            FROM vehicles
+            WHERE status != 'Sold'
+            GROUP BY brand, model
+            ORDER BY brand, model
+        """)
         categories = cur.fetchall()
-        print(f"DEBUG: Found {len(categories)} categories")
-        return jsonify([dict(c) for c in categories]), 200
+        result = []
+        for c in categories:
+            d = dict(c)
+            # Convert Decimal to float for JSON serialization
+            if d.get('daily_rate'):
+                d['daily_rate'] = float(d['daily_rate'])
+            d['available_units'] = int(d.get('available_units') or 0)
+            d['total_units'] = int(d.get('total_units') or 0)
+            result.append(d)
+        return jsonify(result), 200
     except Exception as e:
-        print(f"ERROR in get_vehicle_categories: {e}")
+        import traceback
+        print(f"ERROR in get_vehicle_categories: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
