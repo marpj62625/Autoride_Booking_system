@@ -6015,79 +6015,94 @@ def get_vehicles():
 
 
 @app.route('/vehicles', methods=['POST'])
-
 def add_vehicle():
-
-    data = request.json
-
+    # Support both JSON and FormData
+    if request.is_json:
+        data = request.json
+    else:
+        data = request.form
     try:
-
         cur = get_cursor()
-
-        cur.execute("""
-
-            INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image)
-
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-
-        """, (data['brand'], data['model'], data['plate_number'], data['vehicle_type'], data['transmission'], 
-
-              data['fuel_type'], data['seats'], data['location'], data['status'], data['daily_rate'], data['vehicle_image']))
-
+        # Ensure color column exists
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
+        color = data.get('color') or None
+        # Handle image upload if file provided
+        vehicle_image = data.get('vehicle_image', '')
+        if 'gallery' in request.files:
+            files = request.files.getlist('gallery')
+            if files and files[0].filename:
+                file = files[0]
+                filename = 'vehicle_' + str(__import__('time').time()) + '_' + file.filename
+                file_data = file.read()
+                try:
+                    supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": file.content_type})
+                    vehicle_image = supabase.storage.from_('uploads').get_public_url(filename)
+                except Exception:
+                    pass
+        cur.execute(
+            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
+             data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
+             data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color)
+        )
         new_id = cur.fetchone()['id']
-
-        if 'gallery' in data and isinstance(data['gallery'], list):
-
-            for i, img_url in enumerate(data['gallery']):
-
-                cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, display_order) VALUES (%s, %s, %s)", (new_id, img_url, i))
-
+        # Handle additional gallery files
+        if 'gallery' in request.files:
+            files = request.files.getlist('gallery')
+            for i, f in enumerate(files):
+                if f.filename:
+                    fname = 'gallery_' + str(new_id) + '_' + str(i) + '_' + f.filename
+                    fdata = f.read()
+                    try:
+                        supabase.storage.from_('uploads').upload(path=fname, file=fdata, file_options={"content-type": f.content_type})
+                        img_url = supabase.storage.from_('uploads').get_public_url(fname)
+                        cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (new_id, img_url, i))
+                    except Exception:
+                        pass
         commit_db()
-
         return jsonify({"message": "Vehicle added", "id": new_id}), 201
-
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals(): cur.close()
 
 
-
 @app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
-
 def update_vehicle(vehicle_id):
-
-    data = request.json
-
+    # Support both JSON and FormData
+    if request.is_json:
+        data = request.json
+    else:
+        data = request.form
     try:
-
         cur = get_cursor()
-
-        cur.execute("""
-
-            UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, 
-
-                               fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s
-
-            WHERE id=%s
-
-        """, (data['brand'], data['model'], data['plate_number'], data['vehicle_type'], data['transmission'], 
-
-              data['fuel_type'], data['seats'], data['location'], data['status'], data['daily_rate'], data['vehicle_image'], vehicle_id))
-
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
+        color = data.get('color') or None
+        # Handle image upload if file provided
+        vehicle_image = data.get('vehicle_image', '')
+        if 'gallery' in request.files:
+            files = request.files.getlist('gallery')
+            if files and files[0].filename:
+                file = files[0]
+                filename = 'vehicle_' + str(vehicle_id) + '_' + str(__import__('time').time()) + '_' + file.filename
+                file_data = file.read()
+                try:
+                    supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": file.content_type})
+                    vehicle_image = supabase.storage.from_('uploads').get_public_url(filename)
+                    cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (vehicle_id, vehicle_image, 0))
+                except Exception:
+                    pass
+        cur.execute(
+            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s WHERE id=%s",
+            (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
+             data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
+             data.get('status'), data.get('daily_rate'), vehicle_image, color, vehicle_id)
+        )
         commit_db()
-
         return jsonify({"message": "Vehicle updated"}), 200
-
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals(): cur.close()
 
 
