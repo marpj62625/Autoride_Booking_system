@@ -438,40 +438,59 @@ def send_receipt_email(email: str, details: dict):
     from email.mime.text import MIMEText as MIMETextPart
 
     subject = 'Autoride Booking Receipt - Booking #' + str(details['id'])
-    addons_text = str(details.get('addons', 'None') or 'None')
-    insurance_text = str(details.get('insurance_type', 'Basic Protection') or 'Basic Protection')
-    total_price = float(details.get('total_price', 0) or 0)
-    amount_paid = float(details.get('amount_paid', total_price) or total_price)
-    ref_num = str(details.get('reference_number', '') or 'N/A')
-    method = str(details.get('method', 'N/A') or 'N/A')
     full_name = str(details.get('full_name', 'Customer'))
     brand = str(details.get('brand', ''))
     model_name = str(details.get('model', ''))
     start_date = str(details.get('start_date', ''))
     end_date = str(details.get('end_date', ''))
     booking_id = str(details['id'])
+    total_price = float(details.get('total_price', 0) or 0)
+    amount_paid = float(details.get('amount_paid', total_price) or total_price)
+    base_price = float(details.get('base_price', 0) or 0)
+    addon_price = float(details.get('addon_price', 0) or 0)
+    insurance_price = float(details.get('insurance_price', 0) or 0)
+    discount_amount = float(details.get('discount_amount', 0) or 0)
+    balance_amount = float(details.get('balance_amount', 0) or 0)
+    payment_type = str(details.get('payment_type', 'Full') or 'Full')
+    insurance_text = str(details.get('insurance_type', 'Basic Protection') or 'Basic Protection')
+    addons_raw = str(details.get('addons', '') or '')
+    ref_num = str(details.get('reference_number', '') or 'N/A')
+    method = str(details.get('method', 'N/A') or 'N/A')
     receipt_url = 'https://autoride-booking-system.vercel.app/api/bookings/' + booking_id + '/receipt'
 
-    rows = (
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Vehicle</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + brand + ' ' + model_name + "</td></tr>"
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Rental Period</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + start_date + ' to ' + end_date + "</td></tr>"
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Insurance</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + insurance_text + "</td></tr>"
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;'>Add-ons</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;'>" + addons_text + "</td></tr>"
+    # Build breakdown rows
+    breakdown = (
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:50%;'>Base Rental</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(base_price) + "</td></tr>"
     )
-    pay_rows = (
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Total Amount</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>PHP " + '{:,.2f}'.format(total_price) + "</td></tr>"
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Amount Paid</td>"
-        "<td style='padding:11px 16px;font-size:14px;color:#e63946;font-weight:bold;border-bottom:1px solid #dee2e6;'>PHP " + '{:,.2f}'.format(amount_paid) + "</td></tr>"
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Payment Method</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + method + "</td></tr>"
-        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;'>Reference No.</td>"
-        "<td style='padding:11px 16px;font-size:13px;color:#212529;'>" + ref_num + "</td></tr>"
+    if addon_price > 0 and addons_raw and addons_raw != 'None':
+        addon_list = [a.strip() for a in addons_raw.split(',') if a.strip()]
+        for addon in addon_list:
+            breakdown += (
+                "<tr><td style='padding:8px 16px 8px 24px;font-size:12px;color:#6c757d;border-bottom:1px solid #dee2e6;'>+ " + addon + "</td>"
+                "<td style='padding:8px 16px;font-size:12px;color:#212529;border-bottom:1px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(addon_price / max(1, len(addon_list))) + "</td></tr>"
+            )
+    if insurance_price > 0:
+        breakdown += (
+            "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Insurance (" + insurance_text + ")</td>"
+            "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(insurance_price) + "</td></tr>"
+        )
+    if discount_amount > 0:
+        breakdown += (
+            "<tr><td style='padding:10px 16px;font-size:13px;color:#2dc653;border-bottom:1px solid #dee2e6;'>Discount</td>"
+            "<td style='padding:10px 16px;font-size:13px;color:#2dc653;border-bottom:1px solid #dee2e6;text-align:right;'>- PHP " + '{:,.2f}'.format(discount_amount) + "</td></tr>"
+        )
+    breakdown += (
+        "<tr><td style='padding:12px 16px;font-size:14px;font-weight:bold;color:#212529;'>TOTAL</td>"
+        "<td style='padding:12px 16px;font-size:14px;font-weight:bold;color:#e63946;text-align:right;'>PHP " + '{:,.2f}'.format(total_price) + "</td></tr>"
     )
+    if payment_type == 'Downpayment' and balance_amount > 0:
+        breakdown += (
+            "<tr><td style='padding:10px 16px;font-size:13px;color:#e63946;border-top:2px solid #dee2e6;'>Paid Now (20%)</td>"
+            "<td style='padding:10px 16px;font-size:13px;color:#e63946;border-top:2px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(amount_paid) + "</td></tr>"
+            "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;'>Remaining Balance</td>"
+            "<td style='padding:10px 16px;font-size:13px;color:#6c757d;text-align:right;'>PHP " + '{:,.2f}'.format(balance_amount) + "</td></tr>"
+        )
 
     html = (
         "<body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;'>"
@@ -481,21 +500,35 @@ def send_receipt_email(email: str, details: dict):
         "<h1 style='color:#fff;margin:0;font-size:26px;'>Autoride</h1>"
         "<p style='color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px;'>Your ride, your way</p></td></tr>"
         "<tr><td style='background:#2dc653;padding:12px;text-align:center;'>"
+        "<p style='color:#fff;margin:0;font-size:14px;font-weight:bold;'>Booking Confirmed! - Booking #" + booking_id + "</p></td></tr>"
         "<tr><td style='padding:24px 28px 10px;'>"
         "<p style='font-size:15px;color:#212529;margin:0;'>Hello <strong>" + full_name + "</strong>,</p>"
         "<p style='font-size:13px;color:#6c757d;margin:8px 0 0;'>Thank you for choosing Autoride! Your payment has been received and your booking is confirmed.</p>"
         "</td></tr>"
         "<tr><td style='padding:16px 28px;'>"
+        "<p style='font-size:13px;font-weight:bold;color:#212529;margin:0 0 10px;'>Booking Details</p>"
         "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
-        "<tr><td colspan='2' style='background:#e63946;padding:11px 16px;'>"
-        "<p style='color:#fff;margin:0;font-size:13px;font-weight:bold;'>Booking #" + booking_id + "</p></td></tr>"
-        + rows +
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Vehicle</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + brand + " " + model_name + "</td></tr>"
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Rental Period</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + start_date + " to " + end_date + "</td></tr>"
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Insurance</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + insurance_text + "</td></tr>"
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;'>Add-ons</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;'>" + (addons_raw if addons_raw and addons_raw != 'None' else 'None') + "</td></tr>"
         "</table></td></tr>"
         "<tr><td style='padding:0 28px 16px;'>"
+        "<p style='font-size:13px;font-weight:bold;color:#212529;margin:0 0 10px;'>Price Breakdown</p>"
         "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
-        "<tr><td colspan='2' style='background:#212529;padding:11px 16px;'>"
-        "<p style='color:#fff;margin:0;font-size:13px;font-weight:bold;'>Payment Details</p></td></tr>"
-        + pay_rows +
+        + breakdown +
+        "</table></td></tr>"
+        "<tr><td style='padding:0 28px 16px;'>"
+        "<p style='font-size:13px;font-weight:bold;color:#212529;margin:0 0 10px;'>Payment Details</p>"
+        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Method</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + method + "</td></tr>"
+        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;'>Reference No.</td>"
+        "<td style='padding:10px 16px;font-size:13px;color:#212529;font-weight:bold;'>" + ref_num + "</td></tr>"
         "</table></td></tr>"
         "<tr><td style='padding:0 28px 16px;text-align:center;'>"
         "<a href='" + receipt_url + "' style='display:inline-block;background:#e63946;color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-size:14px;font-weight:bold;'>Download PDF Receipt</a>"
@@ -516,8 +549,7 @@ def send_receipt_email(email: str, details: dict):
         "</table></td></tr></table></body></html>"
     )
 
-    print('RECEIPT EMAIL LOG - TO: ' + email + ' BOOKING: #' + booking_id)
-
+    print('RECEIPT EMAIL - TO: ' + email + ' BOOKING: #' + booking_id)
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
@@ -2329,25 +2361,19 @@ def legacy_payment():
         
 
         # Get details for receipt email
-
         cur.execute("""
-
-            SELECT b.id, u.email, u.full_name, v.brand, v.model, b.start_date, b.end_date, b.total_price, 
-
+            SELECT b.id, u.email, u.full_name, v.brand, v.model,
+                   b.start_date, b.end_date, b.total_price, b.amount_paid,
+                   b.addons, b.insurance_type, b.insurance_price,
+                   b.base_price, b.addon_price, b.discount_amount,
+                   b.payment_type, b.balance_amount,
                    p.reference_number, p.method
-
             FROM bookings b
-
             JOIN users u ON b.user_id = u.id
-
             JOIN vehicles v ON b.vehicle_id = v.id
-
             JOIN payments p ON p.booking_id = b.id
-
             WHERE b.id = %s
-
             ORDER BY p.id DESC LIMIT 1
-
         """, (booking_id,))
 
         details = cur.fetchone()

@@ -79,9 +79,12 @@ def process_payment():
 
         # 5. Send Email Receipt
         try:
-            # Re-fetch everything needed for the receipt
             cur.execute("""
-                SELECT b.id, u.full_name, u.email, v.brand, v.model, b.start_date, b.end_date, b.total_price,
+                SELECT b.id, u.full_name, u.email, v.brand, v.model,
+                       b.start_date, b.end_date, b.total_price, b.amount_paid,
+                       b.addons, b.insurance_type, b.insurance_price,
+                       b.base_price, b.addon_price, b.discount_amount,
+                       b.payment_type, b.balance_amount,
                        p.reference_number, p.method
                 FROM bookings b
                 JOIN users u ON b.user_id = u.id
@@ -90,9 +93,7 @@ def process_payment():
                 WHERE b.id = %s AND p.id = %s
             """, (booking_id, payment_id))
             receipt_data = cur.fetchone()
-            
             if receipt_data:
-                # Import here to avoid circular dependency
                 from app import send_receipt_email
                 send_receipt_email(receipt_data['email'], dict(receipt_data))
         except Exception as email_err:
