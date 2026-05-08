@@ -1078,6 +1078,23 @@
                         <input type="text" id="vPlate" placeholder="ABC-1234" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
                     </div>
                     <div style="grid-column: span 1;">
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Color</label>
+                        <input type="text" id="vColor" placeholder="e.g. Red, Black, White" list="vColorList" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                        <datalist id="vColorList">
+                            <option value="White">
+                            <option value="Black">
+                            <option value="Silver">
+                            <option value="Gray">
+                            <option value="Red">
+                            <option value="Blue">
+                            <option value="Brown">
+                            <option value="Gold">
+                            <option value="Green">
+                            <option value="Orange">
+                            <option value="Beige">
+                        </datalist>
+                    </div>
+                    <div style="grid-column: span 1;">
                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Vehicle Type</label>
                         <select id="vType" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
                             <option value="">Select type</option>
@@ -1085,6 +1102,8 @@
                             <option value="SUV">SUV</option>
                             <option value="Van">Van</option>
                             <option value="Hatchback">Hatchback</option>
+                            <option value="MPV">MPV</option>
+                            <option value="Pickup">Pickup</option>
                         </select>
                     </div>
                     <div style="grid-column: span 1;">
@@ -1501,6 +1520,7 @@
                 document.getElementById('vBrand').value = v.brand;
                 this.updateModels(v.model);
                 document.getElementById('vPlate').value = v.plate_number;
+                document.getElementById('vColor').value = v.color || '';
                 document.getElementById('vType').value = v.vehicle_type || 'Sedan';
                 document.getElementById('vTrans').value = v.transmission || 'Automatic';
                 document.getElementById('vFuel').value = v.fuel_type || 'Gasoline';
@@ -1621,6 +1641,7 @@
         formData.append('model', model);
         formData.append('name', `${brand} ${model}`);
         formData.append('plate_number', document.getElementById('vPlate').value);
+        formData.append('color', document.getElementById('vColor').value || '');
         formData.append('vehicle_type', document.getElementById('vType').value);
         formData.append('transmission', document.getElementById('vTrans').value);
         formData.append('fuel_type', document.getElementById('vFuel').value);
