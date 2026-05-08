@@ -6917,6 +6917,105 @@ def get_vehicle_location_for_customer(vehicle_id):
 
 
 if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=9999, debug=True)
 
     app.run(host='0.0.0.0', port=9999, debug=True)
 
+
+
+# ==================== COLOR SELECTION AND VEHICLE UNITS ====================
+
+@app.route('/vehicles/colors', methods=['GET'])
+def get_vehicle_colors():
+    """Get available colors for a brand+model."""
+    brand = request.args.get('brand', '')
+    model = request.args.get('model', '')
+    if not brand or not model:
+        return jsonify({'error': 'brand and model are required'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
+        commit_db()
+        cur.execute(
+            "SELECT DISTINCT COALESCE(color, 'Not Specified') as color, COUNT(*) as total, "
+            "SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN 1 ELSE 0 END) as available "
+            "FROM vehicles WHERE brand = %s AND model = %s GROUP BY color ORDER BY color",
+            (brand, model)
+        )
+        colors = cur.fetchall()
+        return jsonify([dict(c) for c in colors]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/vehicles/units', methods=['GET'])
+def get_vehicle_units():
+    """Get all individual units for a brand+model, optionally filtered by color. Shows all statuses."""
+    brand = request.args.get('brand', '')
+    model = request.args.get('model', '')
+    color = request.args.get('color', '')
+    user_id = request.args.get('user_id', '')
+    if not brand or not model:
+        return jsonify({'error': 'brand and model are required'}), 400
+    try:
+        cur = get_cursor()
+        if color and color != 'all' and color != 'Not Specified':
+            cur.execute(
+                "SELECT * FROM vehicles WHERE brand = %s AND model = %s AND COALESCE(color, 'Not Specified') = %s ORDER BY status ASC, id ASC",
+                (brand, model, color)
+            )
+        else:
+            cur.execute(
+                "SELECT * FROM vehicles WHERE brand = %s AND model = %s ORDER BY status ASC, id ASC",
+                (brand, model)
+            )
+        units = cur.fetchall()
+        result = []
+        for u in units:
+            d = dict(u)
+            if d.get('daily_rate'):
+                d['daily_rate'] = float(d['daily_rate'])
+            d['color_display'] = d.get('color') or 'Not Specified'
+            d['is_favorite'] = False
+            if user_id:
+                cur.execute("SELECT 1 FROM favorites WHERE user_id = %s AND vehicle_id = %s", (user_id, d['id']))
+                if cur.fetchone():
+                    d['is_favorite'] = True
+            try:
+                cur.execute("SELECT image_path FROM vehicle_images WHERE vehicle_id = %s ORDER BY order_index ASC, id ASC", (d['id'],))
+                d['gallery'] = [g['image_path'] for g in cur.fetchall()]
+            except Exception:
+                d['gallery'] = []
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/user/profile-full', methods=['GET'])
+def get_full_profile():
+    """Get complete user profile including phone, email, license image."""
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id is required'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "SELECT id, full_name, email, phone, profile_picture, license_image_url, is_verified, loyalty_points FROM users WHERE id = %s",
+            (user_id,)
+        )
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        d = dict(user)
+        d['loyalty_points'] = int(d.get('loyalty_points') or 0)
+        d['is_verified'] = int(d.get('is_verified') or 0)
+        return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()

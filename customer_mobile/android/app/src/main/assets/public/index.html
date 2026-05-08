@@ -497,6 +497,8 @@
       </div>
       <h3 id="profileName" style="font-size:1.2rem;font-weight:800;"></h3>
       <p id="profileEmail" style="color:var(--text-secondary);font-size:0.875rem;margin-top:4px;"></p>
+      <div style="margin-top:6px;font-size:0.8rem;color:var(--text-secondary);"><i class="fas fa-phone" style="color:var(--primary);margin-right:6px;"></i><span id="profilePhoneDisplay">Loading...</span></div>
+      <div style="margin-top:4px;font-size:0.8rem;color:var(--text-secondary);"><i class="fas fa-envelope" style="color:var(--primary);margin-right:6px;"></i><span id="profileEmailDisplay"></span></div>
       <div style="margin-top:10px;">
         <span class="verify-badge" id="profileVerifyBadge">Not Verified</span>
       </div>
@@ -523,8 +525,12 @@
       <button class="btn-primary" onclick="doUpdateProfile()">Save Changes</button>
     </div>
     <div class="card">
+      <h4 style="font-weight:700;margin-bottom:10px;"><i class="fas fa-id-card" style="color:var(--primary);margin-right:8px;"></i>Uploaded License / ID</h4>
+      <div id="profileLicenseThumb"><p style="font-size:0.8rem;color:var(--text-muted);">Loading...</p></div>
+      <button class="btn-secondary" style="margin-top:10px;" onclick="showOverlay('page-license-upload')"><i class="fas fa-upload"></i> Upload / Update License</button>
+    </div>
+    <div class="card">
       <h4 style="font-weight:700;margin-bottom:14px;">Account</h4>
-      <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-license-upload')"><i class="fas fa-id-card"></i> Upload / Update License</button>
       <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-saved-payments')"><i class="fas fa-credit-card"></i> Saved Payment Methods</button>
       <button class="btn-secondary" onclick="showOverlay('page-favorites')"><i class="fas fa-heart"></i> My Favorites</button>
     </div>

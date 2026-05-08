@@ -533,7 +533,8 @@ function buildImgUrl(path) {
   if (path.startsWith('http')) return path;
   return API_BASE.replace('/api', '') + '/' + path;
 }
-// VEHICLES
+
+// VEHICLES - Step 1: Browse models
 function loadVehicles() {
   showLoading(true);
   apiCall('/vehicles/categories')
@@ -551,23 +552,24 @@ function loadVehicles() {
 function renderVehicles(list) {
   var grid = document.getElementById('vehicleGrid');
   if (!grid) return;
-  var available = list.filter(function(v) { return (v.available_units || 0) > 0; });
-  if (!available.length) {
+  if (!list.length) {
     grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles available</p></div>';
     return;
   }
-  grid.innerHTML = available.map(function(v) {
-    var imgSrc = buildImgUrl(v.vehicle_image);
+  grid.innerHTML = list.map(function(v) {
     var vid = v.id || v.representative_id;
-          return '<div class="vehicle-card" onclick="openVehicleDetail(' + vid + ')">' +
+    var availBadge = (v.available_units > 0)
+      ? '<span class="badge-available">' + v.available_units + ' available</span>'
+      : '<span class="badge-available" style="background:rgba(230,57,70,0.8);">Unavailable</span>';
+    return '<div class="vehicle-card" onclick="openColorSelection(\'' + v.brand + '\',\'' + v.model + '\')">' +
       '<div class="vehicle-img-wrap">' +
       '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
-      '<span class="badge-available">' + (v.available_units || 0) + ' available</span>' +
+      availBadge +
       '</div>' +
       '<div class="vehicle-info">' +
       '<h3>' + v.brand + ' ' + v.model + '</h3>' +
       '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + '</div>' +
-      '<div class="vehicle-meta">' + (v.seats || '-') + ' seats</div>' +
+      '<div class="vehicle-meta"><i class="fas fa-users"></i> ' + (v.seats || '-') + ' seats</div>' +
       '<div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
       '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
       '</div></div>';
@@ -583,6 +585,278 @@ function filterVehicles(filter, chipEl) {
     return v.vehicle_type === filter || v.transmission === filter || v.fuel_type === filter;
   });
   renderVehicles(filtered);
+}
+
+// VEHICLES - Step 2: Color selection
+function openColorSelection(brand, model) {
+  showLoading(true);
+  apiCall('/vehicles/colors?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model))
+    .then(function(colors) {
+      renderColorSelection(brand, model, colors);
+      showOverlay('page-color-selection');
+    })
+    .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
+}
+
+function renderColorSelection(brand, model, colors) {
+  var el = document.getElementById('colorSelectionContent');
+  if (!el) return;
+  var colorCards = colors.map(function(c) {
+    var colorName = c.color || 'Not Specified';
+    var available = parseInt(c.available) || 0;
+    var total = parseInt(c.total) || 0;
+    var colorStyle = getColorStyle(colorName);
+    return '<div class="card" style="cursor:pointer;margin-bottom:10px;" onclick="openVehicleUnits(\'' +
+      encodeURIComponent(brand) + '\',\'' + encodeURIComponent(model) + '\',\'' + encodeURIComponent(colorName) + '\')">' +
+      '<div style="display:flex;align-items:center;gap:14px;">' +
+      '<div style="width:44px;height:44px;border-radius:50%;background:' + colorStyle + ';border:2px solid var(--border);flex-shrink:0;"></div>' +
+      '<div style="flex:1;">' +
+      '<div style="font-weight:700;font-size:0.95rem;">' + colorName + '</div>' +
+      '<div style="font-size:0.78rem;color:var(--text-secondary);">' + available + ' available of ' + total + ' units</div>' +
+      '</div>' +
+      '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
+      '</div></div>';
+  }).join('');
+
+  el.innerHTML = '<div class="page-header">' +
+    '<button class="back-btn" onclick="closeOverlay(\'page-color-selection\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<h2>' + brand + ' ' + model + '</h2></div>' +
+    '<div class="scroll-content">' +
+    '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">Select a color to view available units:</p>' +
+    colorCards +
+    '<div class="card" style="cursor:pointer;margin-bottom:10px;border:1.5px dashed var(--border);" onclick="openVehicleUnits(\'' +
+    encodeURIComponent(brand) + '\',\'' + encodeURIComponent(model) + '\',\'all\')">' +
+    '<div style="display:flex;align-items:center;gap:14px;">' +
+    '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e63946,#4361ee,#2dc653);border:2px solid var(--border);flex-shrink:0;"></div>' +
+    '<div style="flex:1;"><div style="font-weight:700;font-size:0.95rem;">View All Colors</div></div>' +
+    '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
+    '</div></div>' +
+    '</div>';
+}
+
+function getColorStyle(colorName) {
+  var map = {
+    'red': '#e63946', 'white': '#f8f9fa', 'black': '#212529', 'silver': '#adb5bd',
+    'gray': '#6c757d', 'grey': '#6c757d', 'blue': '#4361ee', 'green': '#2dc653',
+    'yellow': '#ffc107', 'orange': '#f4a261', 'brown': '#795548', 'gold': '#ffd700',
+    'maroon': '#800000', 'beige': '#f5f5dc', 'pearl': '#f0ece3', 'champagne': '#f7e7ce'
+  };
+  var key = colorName.toLowerCase().trim();
+  return map[key] || '#dee2e6';
+}
+
+// VEHICLES - Step 3: Individual units
+function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
+  var brand = decodeURIComponent(brandEnc);
+  var model = decodeURIComponent(modelEnc);
+  var color = decodeURIComponent(colorEnc);
+  showLoading(true);
+  apiCall('/vehicles/units?brand=' + brandEnc + '&model=' + modelEnc + '&color=' + colorEnc + '&user_id=' + (currentUser.id || ''))
+    .then(function(units) {
+      renderVehicleUnits(brand, model, color, units);
+      showOverlay('page-vehicle-units');
+    })
+    .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
+}
+
+function renderVehicleUnits(brand, model, color, units) {
+  var el = document.getElementById('vehicleUnitsContent');
+  if (!el) return;
+  var title = brand + ' ' + model + (color !== 'all' ? ' (' + color + ')' : '');
+  var unitsHtml = units.map(function(v) {
+    var isAvailable = ['Available'].indexOf(v.status) >= 0;
+    var statusColor = isAvailable ? 'var(--success)' : (v.status === 'Booked' ? 'var(--info)' : 'var(--warning)');
+    var imgSrc = (v.gallery && v.gallery.length) ? buildImgUrl(v.gallery[0]) : buildImgUrl(v.vehicle_image);
+    return '<div class="card" style="margin-bottom:14px;">' +
+      '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
+      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/400x180?text=No+Image\'">' +
+      '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
+      (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
+      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Plate</span><br><strong>' + (v.plate_number || 'N/A') + '</strong></div>' +
+      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Seats</span><br><strong>' + (v.seats || '-') + '</strong></div>' +
+      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Fuel</span><br><strong>' + (v.fuel_type || '-') + '</strong></div>' +
+      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Transmission</span><br><strong>' + (v.transmission || '-') + '</strong></div>' +
+      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Location</span><br><strong>' + (v.location || '-') + '</strong></div>' +
+      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Rate</span><br><strong style="color:var(--primary);">' + formatPHP(v.daily_rate) + '/day</strong></div>' +
+      '</div>' +
+      (isAvailable
+        ? '<button class="btn-primary" onclick="openVehicleDetail(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book This Vehicle</button>'
+        : '<button class="btn-secondary" disabled style="opacity:0.5;cursor:not-allowed;"><i class="fas fa-ban"></i> Not Available (' + v.status + ')</button>'
+      ) +
+      '</div>';
+  }).join('');
+
+  el.innerHTML = '<div class="page-header">' +
+    '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-units\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<h2>' + title + '</h2></div>' +
+    '<div class="scroll-content" style="padding-bottom:80px;">' +
+    '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">' + units.length + ' unit(s) found</p>' +
+    (units.length ? unitsHtml : '<div class="empty-state"><i class="fas fa-car"></i><p>No units found for this selection</p></div>') +
+    '</div>';
+}
+
+function toggleFav(vehicleId, btn) {
+  if (!currentUser.id) { showToast('Please log in first.', 'error'); return; }
+  apiCall('/toggle-favorite', { method: 'POST', body: JSON.stringify({ user_id: currentUser.id, vehicle_id: vehicleId }) })
+    .then(function(data) {
+      if (btn) btn.classList.toggle('active', data.is_favorite);
+      showToast(data.message, 'success');
+    })
+    .catch(function(err) { showToast(err.message, 'error'); });
+}
+
+function renderVehicles(list) {
+  var grid = document.getElementById('vehicleGrid');
+  if (!grid) return;
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles found</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map(function(v) {
+    var vid = v.id || v.representative_id;
+    var available = parseInt(v.available_units) || 0;
+    var availBadge = available > 0
+      ? '<span class="badge-available">' + available + ' available</span>'
+      : '<span class="badge-available" style="background:rgba(230,57,70,0.85);">Unavailable</span>';
+    return '<div class="vehicle-card" onclick="openColorSelection(\'' + encodeURIComponent(v.brand) + '\',\'' + encodeURIComponent(v.model) + '\')">' +
+      '<div class="vehicle-img-wrap">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+      availBadge +
+      '</div>' +
+      '<div class="vehicle-info">' +
+      '<h3>' + v.brand + ' ' + v.model + '</h3>' +
+      '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + '</div>' +
+      '<div class="vehicle-meta"><i class="fas fa-users"></i> ' + (v.seats || '-') + ' seats</div>' +
+      '<div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
+      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function filterVehicles(filter, chipEl) {
+  var chips = document.querySelectorAll('#vehicleFilters .chip');
+  for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
+  chipEl.classList.add('active');
+  if (filter === 'all') { renderVehicles(allVehicles); return; }
+  var filtered = allVehicles.filter(function(v) {
+    return v.vehicle_type === filter || v.transmission === filter || v.fuel_type === filter;
+  });
+  renderVehicles(filtered);
+}
+
+// STEP 1: Model tapped - show color selection
+function openColorSelection(brandEnc, modelEnc) {
+  var brand = decodeURIComponent(brandEnc);
+  var model = decodeURIComponent(modelEnc);
+  var el = document.getElementById('vehicleDetailContent');
+  if (!el) return;
+  el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div><div class="scroll-content"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div></div>';
+  showOverlay('page-vehicle-detail');
+  showLoading(true);
+  apiCall('/vehicles/colors?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model))
+    .then(function(colors) {
+      if (colors.length <= 1) {
+        openVehicleUnits(brand, model, colors.length === 1 ? colors[0].color : 'all');
+        return;
+      }
+      var bEnc = encodeURIComponent(brand);
+      var mEnc = encodeURIComponent(model);
+      var colorCards = colors.map(function(c) {
+        var avail = parseInt(c.available) || 0;
+        var colorName = c.color || 'Not Specified';
+        var cEnc = encodeURIComponent(colorName);
+        var knownColors = ['red','blue','black','white','silver','gray','grey','green','yellow','orange','brown','purple','pink','gold','beige'];
+        var dot = knownColors.indexOf(colorName.toLowerCase()) >= 0
+          ? '<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:' + colorName.toLowerCase() + ';border:2px solid #dee2e6;margin-right:10px;"></span>'
+          : '<i class="fas fa-circle" style="color:#adb5bd;margin-right:10px;"></i>';
+        return '<div class="card" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px;" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'' + cEnc + '\')">' +
+          '<div style="display:flex;align-items:center;">' + dot + '<strong>' + colorName + '</strong></div>' +
+          '<div style="text-align:right;margin-right:10px;">' +
+          '<div style="font-size:0.8rem;color:#6c757d;">' + c.total + ' unit' + (c.total != 1 ? 's' : '') + '</div>' +
+          '<div style="font-size:0.75rem;font-weight:700;color:' + (avail > 0 ? '#2dc653' : '#e63946') + ';">' + (avail > 0 ? avail + ' available' : 'Unavailable') + '</div>' +
+          '</div><i class="fas fa-chevron-right" style="color:#adb5bd;"></i></div>';
+      }).join('');
+      el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
+        '<div class="scroll-content" style="padding-bottom:80px;">' +
+        '<p style="font-size:0.875rem;color:#6c757d;margin-bottom:14px;"><i class="fas fa-palette" style="color:#e63946;margin-right:6px;"></i>Select a color:</p>' +
+        colorCards +
+        '<div class="card" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:14px;" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')"><strong>Show All Colors</strong><i class="fas fa-chevron-right" style="color:#adb5bd;"></i></div>' +
+        '</div>';
+    })
+    .catch(function(err) { showToast(err.message, 'error'); closeOverlay('page-vehicle-detail'); })
+    .finally(function() { showLoading(false); });
+}
+
+// STEP 2: Color selected - show individual units
+function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
+  var brand = decodeURIComponent(brandEnc);
+  var model = decodeURIComponent(modelEnc);
+  var color = decodeURIComponent(colorEnc);
+  var bEnc = encodeURIComponent(brand);
+  var mEnc = encodeURIComponent(model);
+  var el = document.getElementById('vehicleDetailContent');
+  if (!el) return;
+  el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div><div class="scroll-content"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading units...</p></div></div>';
+  showLoading(true);
+  apiCall('/vehicles/units?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model) + '&color=' + encodeURIComponent(color) + '&user_id=' + (currentUser.id || ''))
+    .then(function(units) {
+      if (!units.length) {
+        el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
+          '<div class="scroll-content"><div class="empty-state"><i class="fas fa-car"></i><p>No units found</p></div></div>';
+        return;
+      }
+      var unitsHtml = units.map(function(v) {
+        var isAvailable = v.status === 'Available';
+        var canBook = isAvailable && parseInt(currentUser.isVerified) === 2;
+        var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
+        var galleryHtml = galleryImgs.map(function(img) {
+          return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.src=\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
+        }).join('');
+        return '<div class="card" style="margin-bottom:16px;">' +
+          (galleryHtml ? '<div class="gallery-scroll" style="margin:-16px -16px 14px;">' + galleryHtml + '</div>' : '') +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+          '<h4 style="font-weight:800;">' + v.brand + ' ' + v.model + '</h4>' +
+          '<span style="padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + v.status + '</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">' +
+          '<div style="font-size:0.8rem;"><i class="fas fa-palette" style="color:var(--primary);width:16px;"></i> ' + (v.color_display || v.color || 'N/A') + '</div>' +
+          '<div style="font-size:0.8rem;"><i class="fas fa-id-card" style="color:var(--primary);width:16px;"></i> ' + (v.plate_number || 'N/A') + '</div>' +
+          '<div style="font-size:0.8rem;"><i class="fas fa-users" style="color:var(--primary);width:16px;"></i> ' + (v.seats || '-') + ' seats</div>' +
+          '<div style="font-size:0.8rem;"><i class="fas fa-gas-pump" style="color:var(--primary);width:16px;"></i> ' + (v.fuel_type || '-') + '</div>' +
+          '<div style="font-size:0.8rem;"><i class="fas fa-cog" style="color:var(--primary);width:16px;"></i> ' + (v.transmission || '-') + '</div>' +
+          '<div style="font-size:0.8rem;"><i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;"></i> ' + (v.location || '-') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
+          (canBook
+            ? '<button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="selectVehicleUnit(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book</button>'
+            : '<button style="width:auto;padding:10px 16px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:var(--radius-sm);font-size:0.8rem;cursor:not-allowed;" disabled>' +
+              (isAvailable ? '<i class="fas fa-lock"></i> Verify License' : '<i class="fas fa-ban"></i> Not Available') + '</button>'
+          ) +
+          '</div></div>';
+      }).join('');
+      el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')">' +
+        '<i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + (color !== 'all' ? ' - ' + color : '') + '</h2></div>' +
+        '<div class="scroll-content" style="padding-bottom:80px;">' + unitsHtml + '</div>';
+    })
+    .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
+}
+
+// STEP 3: Book button tapped on a specific unit
+function selectVehicleUnit(vehicleId) {
+  showLoading(true);
+  apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
+    .then(function(v) {
+      currentVehicleDetail = v;
+      openBookingForm(vehicleId);
+    })
+    .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
 }
 
 function toggleFav(vehicleId, btn) {
@@ -904,13 +1178,13 @@ function updateBookingPrice() {
   var el = document.getElementById('priceBreakdown');
   if (!el) return;
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
-    '<div class="price-row"><span>Base Rate (' + result.days + ' days × ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
+    '<div class="price-row"><span>Base Rate (' + result.days + ' days ï¿½ ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
     // Individual add-ons
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
-      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days × ?' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
+      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days ï¿½ ?' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
     }).join('') : '') +
     // Insurance detail
-    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days × ?' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
+    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days ï¿½ ?' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
     (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Long-term Discount (' + (appSettings.long_term_discount_percent || 10) + '%)</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
     (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-ticket-alt"></i> Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
@@ -1092,7 +1366,7 @@ function openPaymentScreen(bookingId, priceResult, payType) {
 
   // Build detailed breakdown
   var breakdownHtml =
-    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days × ' + formatPHP(bookingFormVehicle ? bookingFormVehicle.daily_rate : 0) + ')</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
+    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days ï¿½ ' + formatPHP(bookingFormVehicle ? bookingFormVehicle.daily_rate : 0) + ')</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
       return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);"></i> ' + a.name + '</span><span>' + formatPHP(a.price) + '</span></div>';
     }).join('') : '') +
@@ -1134,14 +1408,14 @@ function openPaymentScreen(bookingId, priceResult, payType) {
     '<div class="option-card" id="pmCard" onclick="selectPayMethod(\'Credit Card\',this)" style="margin-bottom:8px;">' +
     '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
-    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--warning);">Coming soon — integration in progress</small></div>' +
+    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--warning);">Coming soon ï¿½ integration in progress</small></div>' +
     '</div>' +
 
     // Maya (placeholder)
     '<div class="option-card" id="pmMaya" onclick="selectPayMethod(\'Maya\',this)" style="margin-bottom:8px;">' +
     '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<span style="color:#fff;font-weight:800;font-size:0.7rem;">M</span></div>' +
-    '<div><strong>Maya</strong><br><small style="color:var(--warning);">Coming soon — integration in progress</small></div>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--warning);">Coming soon ï¿½ integration in progress</small></div>' +
     '</div>' +
 
     // Cash
@@ -1639,38 +1913,71 @@ function submitReview(vehicleId) {
 function loadProfile() {
   if (!currentUser.id) return;
   showLoading(true);
-  Promise.all([
-    apiCall('/profile?user_id=' + currentUser.id),
-    apiCall('/user/points?user_id=' + currentUser.id),
-    apiCall('/user/verify-status?user_id=' + currentUser.id)
-  ]).then(function(results) {
-    var profile = results[0];
-    var pts = results[1];
-    var verif = results[2];
-    var nameEl = document.getElementById('profileName');
-    var emailEl = document.getElementById('profileEmail');
-    var editNameEl = document.getElementById('editName');
-    var editPhoneEl = document.getElementById('editPhone');
-    var pointsEl = document.getElementById('profilePoints');
-    if (nameEl) nameEl.textContent = profile.full_name || '';
-    if (emailEl) emailEl.textContent = profile.email || '';
-    if (editNameEl) editNameEl.value = profile.full_name || '';
-    if (editPhoneEl) editPhoneEl.value = profile.phone || '';
-    if (pointsEl) pointsEl.textContent = pts.points || 0;
-    currentUser.loyaltyPoints = pts.points || 0;
-    currentUser.isVerified = verif.is_verified !== undefined ? verif.is_verified : (profile.is_verified || 0);
-    Session.save(currentUser);
-    var badge = document.getElementById('profileVerifyBadge');
-    var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-    if (badge) {
-      badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
-      badge.className = 'verify-badge verify-' + currentUser.isVerified;
-    }
-    var placeholder = document.getElementById('profileAvatarPlaceholder');
-    if (placeholder && profile.full_name) placeholder.textContent = profile.full_name[0].toUpperCase();
-  })
-  .catch(function(err) { showToast(err.message, 'error'); })
-  .finally(function() { showLoading(false); });
+  apiCall('/user/profile-full?user_id=' + currentUser.id)
+    .then(function(profile) {
+      var nameEl = document.getElementById('profileName');
+      var emailEl = document.getElementById('profileEmail');
+      var editNameEl = document.getElementById('editName');
+      var editPhoneEl = document.getElementById('editPhone');
+      var pointsEl = document.getElementById('profilePoints');
+      if (nameEl) nameEl.textContent = profile.full_name || '';
+      if (emailEl) emailEl.textContent = profile.email || '';
+      if (editNameEl) editNameEl.value = profile.full_name || '';
+      if (editPhoneEl) editPhoneEl.value = profile.phone || '';
+      if (pointsEl) pointsEl.textContent = profile.loyalty_points || 0;
+      currentUser.loyaltyPoints = profile.loyalty_points || 0;
+      currentUser.isVerified = profile.is_verified !== undefined ? profile.is_verified : 0;
+      currentUser.email = profile.email || '';
+      Session.save(currentUser);
+
+      // Verification badge
+      var badge = document.getElementById('profileVerifyBadge');
+      var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+      if (badge) {
+        badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+        badge.className = 'verify-badge verify-' + currentUser.isVerified;
+      }
+
+      // Profile picture
+      var avatarWrap = document.getElementById('profileAvatarWrap');
+      if (avatarWrap) {
+        if (profile.profile_picture) {
+          avatarWrap.innerHTML = '<img class="profile-avatar" src="' + buildImgUrl(profile.profile_picture) + '" alt="Avatar">';
+        } else {
+          var placeholder = document.getElementById('profileAvatarPlaceholder');
+          if (placeholder) placeholder.textContent = (profile.full_name || '?')[0].toUpperCase();
+        }
+      }
+
+      // Phone and email display
+      var phoneDisplay = document.getElementById('profilePhoneDisplay');
+      if (phoneDisplay) phoneDisplay.textContent = profile.phone || 'Not set';
+      var emailDisplay = document.getElementById('profileEmailDisplay');
+      if (emailDisplay) emailDisplay.textContent = profile.email || '';
+
+      // License image thumbnail
+      var licenseThumb = document.getElementById('profileLicenseThumb');
+      if (licenseThumb) {
+        if (profile.license_image_url) {
+          licenseThumb.innerHTML = '<img src="' + profile.license_image_url + '" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;cursor:pointer;" onclick="viewLicenseImage(\'' + profile.license_image_url + '\')" alt="License ID">';
+        } else {
+          licenseThumb.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license uploaded yet</p>';
+        }
+      }
+    })
+    .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
+}
+
+function viewLicenseImage(url) {
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = '<div style="position:relative;width:100%;max-width:500px;">' +
+    '<p style="color:#fff;text-align:center;margin-bottom:10px;font-weight:700;">Uploaded License / ID</p>' +
+    '<img src="' + url + '" style="width:100%;border-radius:var(--radius-md);" alt="License">' +
+    '<button onclick="this.parentElement.parentElement.remove()" style="display:block;width:100%;margin-top:12px;background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);padding:12px;font-weight:700;cursor:pointer;">Close</button>' +
+    '</div>';
+  document.body.appendChild(modal);
 }
 
 function pickProfilePicture() {
