@@ -219,24 +219,48 @@ def send_receipt_email(email: str, details: dict):
     """Sends a detailed booking receipt via SMTP."""
     subject = f"Autoride Receipt: Booking #{details['id']}"
     
+    # Build add-ons and insurance text
+    addons_text = details.get('addons', 'None') or 'None'
+    insurance_text = details.get('insurance_type', 'Basic Protection') or 'Basic Protection'
+    insurance_price = details.get('insurance_price', 0) or 0
+    
     body = f"""
 Hello {details['full_name']},
 
 Thank you for choosing Autoride! Your payment has been received and your booking is confirmed.
 
---- RECEIPT DETAILS ---
-Booking ID: #{details['id']}
-Vehicle: {details['brand']} {details['model']}
-Rental Period: {details['start_date']} to {details['end_date']}
-Total Paid: PHP{float(details['total_price']):,.2f}
-Reference Number: {details['reference_number']}
-Payment Method: {details['method']}
-Status: Confirmed
+????????????????????????????????????????
+           AUTORIDE BOOKING RECEIPT
+????????????????????????????????????????
 
-You can view your booking details and track your vehicle in your dashboard.
+Booking ID:       #{details['id']}
+Vehicle:          {details['brand']} {details['model']}
+Rental Period:    {details['start_date']} to {details['end_date']}
+Insurance:        {insurance_text}
+Add-ons:          {addons_text}
+
+????????????????????????????????????????
+PAYMENT DETAILS
+????????????????????????????????????????
+Total Amount:     PHP {float(details['total_price']):,.2f}
+Amount Paid:      PHP {float(details.get('amount_paid', details['total_price'])):,.2f}
+Payment Method:   {details['method']}
+Reference No.:    {details.get('reference_number', 'N/A')}
+Status:           CONFIRMED ?
+
+????????????????????????????????????????
+
+IMPORTANT REMINDERS:
+• Bring 2 valid government-issued IDs upon pickup
+• Mileage limit: 250 km/day (excess charged at ?10/km)
+• Return vehicle with same fuel level as pickup
+• Late return penalty: ?500/hour
+
+You can view your booking and track your vehicle in the Autoride app.
 Safe travels!
 
 The Autoride Team
+autoride-booking-system.vercel.app
     """
     
     # LOG TO TERMINAL

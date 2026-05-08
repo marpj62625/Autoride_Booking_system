@@ -904,15 +904,20 @@ function updateBookingPrice() {
   var el = document.getElementById('priceBreakdown');
   if (!el) return;
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
-    '<div class="price-row"><span>Base (' + result.days + ' days x ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
-    (result.addonPrice > 0 ? '<div class="price-row"><span>Add-ons</span><span>' + formatPHP(result.addonPrice) + '</span></div>' : '') +
-    (insPrice > 0 ? '<div class="price-row"><span>Insurance (' + selectedInsurance.type + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
-    (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
-    (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
-    (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
-    '<div class="price-row total"><span>Total</span><span>' + formatPHP(result.total) + '</span></div>' +
-    (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);"><span>Due Now (20%)</span><span>' + formatPHP(nowDue) + '</span></div>' : '') +
-    '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;">You will earn <strong>' + result.pointsEarned + ' pts</strong></div>';
+    '<div class="price-row"><span>Base Rate (' + result.days + ' days × ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
+    // Individual add-ons
+    (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
+      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days × ?' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
+    }).join('') : '') +
+    // Insurance detail
+    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days × ?' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
+    (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Long-term Discount (' + (appSettings.long_term_discount_percent || 10) + '%)</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
+    (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-ticket-alt"></i> Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
+    (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
+    '<div class="price-row total" style="margin-top:4px;"><span>Total</span><span>' + formatPHP(result.total) + '</span></div>' +
+    (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
+    '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' : '') +
+    '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
 }
 
 function applyCoupon() {
@@ -999,17 +1004,82 @@ function submitBooking() {
     service_type: serviceType,
     split_with_email: splitEmail || null
   };
+  // Show rental agreement before submitting
+  showRentalAgreement(payload, result, payType);
+}
+
+// RENTAL AGREEMENT MODAL
+var _pendingBookingPayload = null;
+var _pendingPriceResult = null;
+var _pendingPayType = null;
+
+function showRentalAgreement(payload, result, payType) {
+  _pendingBookingPayload = payload;
+  _pendingPriceResult = result;
+  _pendingPayType = payType;
+
+  // Remove existing modal if any
+  var existing = document.getElementById('rentalAgreementModal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'rentalAgreementModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9000;display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML =
+    '<div style="background:var(--bg-card);width:100%;max-width:500px;border-radius:24px 24px 0 0;padding:24px;max-height:85vh;overflow-y:auto;">' +
+    '<div style="text-align:center;margin-bottom:16px;">' +
+    '<i class="fas fa-file-contract" style="font-size:2rem;color:var(--primary);"></i>' +
+    '<h3 style="font-size:1.2rem;font-weight:800;margin-top:8px;">Rental Agreement</h3>' +
+    '</div>' +
+    '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:0.8rem;line-height:1.7;">' +
+    '<p style="margin-bottom:8px;">By proceeding, you agree to the Autoride Rental Terms and Conditions:</p>' +
+    '<p><strong>Fuel Policy:</strong> Return the vehicle with the same fuel level as at pickup.</p>' +
+    '<p><strong>Mileage Rule:</strong> ' + (appSettings.mileage_limit || 250) + ' km/day limit. Excess charged at ?10/km.</p>' +
+    '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
+    '<p><strong>Late Return:</strong> Penalty of ?500 per hour for late returns.</p>' +
+    '<p><strong>Damages:</strong> Any damages not covered by your selected insurance are your responsibility.</p>' +
+    '<p><strong>Cancellation:</strong> 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup.</p>' +
+    '</div>' +
+    '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:0.8rem;">' +
+    '<strong>Mandatory Requirements:</strong>' +
+    '<ul style="margin-top:6px;padding-left:16px;">' +
+    '<li>Must present 2 valid government-issued IDs upon pickup</li>' +
+    '<li>Driver\'s license must be valid and verified in the system</li>' +
+    '</ul>' +
+    '</div>' +
+    '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;font-size:0.875rem;cursor:pointer;">' +
+    '<input type="checkbox" id="agreeCheck" style="margin-top:2px;accent-color:var(--primary);width:18px;height:18px;">' +
+    '<span>I have read and agree to the Autoride Rental Agreement and Policies.</span>' +
+    '</label>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+    '<button class="btn-secondary" onclick="document.getElementById(\'rentalAgreementModal\').remove()">Cancel</button>' +
+    '<button class="btn-primary" onclick="confirmAndBook()" id="confirmPayBtn"><i class="fas fa-lock"></i> Confirm & Pay</button>' +
+    '</div>' +
+    '</div>';
+  document.body.appendChild(modal);
+}
+
+function confirmAndBook() {
+  var agreeCheck = document.getElementById('agreeCheck');
+  if (!agreeCheck || !agreeCheck.checked) {
+    showToast('Please read and agree to the rental terms first.', 'error');
+    return;
+  }
+  var modal = document.getElementById('rentalAgreementModal');
+  if (modal) modal.remove();
+
   showLoading(true);
-  apiCall('/book', { method: 'POST', body: JSON.stringify(payload) })
+  apiCall('/book', { method: 'POST', body: JSON.stringify(_pendingBookingPayload) })
     .then(function(data) {
       activeBookingId = data.booking_id;
       closeOverlay('page-booking-form');
       closeOverlay('page-vehicle-detail');
       NotifStore.add('Booking #' + data.booking_id + ' received! Our team will review it shortly.');
-      openPaymentScreen(data.booking_id, result, payType);
+      openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      document.getElementById('bfErr').textContent = err.message || 'Booking failed. Please try again.';
+      var errEl = document.getElementById('bfErr');
+      if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
     })
     .finally(function() { showLoading(false); });
 }
@@ -1019,27 +1089,109 @@ function openPaymentScreen(bookingId, priceResult, payType) {
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
+
+  // Build detailed breakdown
+  var breakdownHtml =
+    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days × ' + formatPHP(bookingFormVehicle ? bookingFormVehicle.daily_rate : 0) + ')</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
+    (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
+      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);"></i> ' + a.name + '</span><span>' + formatPHP(a.price) + '</span></div>';
+    }).join('') : '') +
+    (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
+    (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
+    (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
+    '<div class="price-row total"><span>Total</span><span>' + formatPHP(priceResult.total) + '</span></div>' +
+    (payType === 'Downpayment' ?
+      '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20%)</span><span>' + formatPHP(nowDue) + '</span></div>' +
+      '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance</span><span>' + formatPHP(priceResult.balanceAmount) + '</span></div>' : '');
+
+  el.innerHTML =
+    '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Payment</h2></div>' +
-    '<div class="scroll-content">' +
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:10px;">Booking #' + bookingId + '</h4>' +
-    '<div class="price-row"><span>Total Amount</span><span>' + formatPHP(priceResult.total) + '</span></div>' +
-    '<div class="price-row total"><span>Amount Due Now</span><span>' + formatPHP(nowDue) + '</span></div>' +
-    (payType === 'Downpayment' ? '<div class="price-row"><span>Remaining Balance</span><span>' + formatPHP(priceResult.balanceAmount) + '</span></div>' : '') +
-    '</div>' +
+    '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Booking summary
     '<div class="card">' +
-    '<div class="form-group"><label>Method</label><select id="payMethod"><option>GCash</option><option>Credit Card</option><option>Debit Card</option><option>Cash (Over the counter)</option></select></div>' +
-    '<div class="form-group"><label>Reference Number</label><input type="text" id="payRef" placeholder="Transaction reference number"></div>' +
-    '<div class="form-group"><label>Payment Proof (optional)</label>' +
-    '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Proof</button>' +
+    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:8px;"></i>Booking #' + bookingId + ' Summary</h4>' +
+    breakdownHtml +
+    '<div style="margin-top:10px;padding:10px;background:var(--primary);border-radius:var(--radius-sm);text-align:center;">' +
+    '<div style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Amount Due Now</div>' +
+    '<div style="color:#fff;font-size:1.4rem;font-weight:800;">' + formatPHP(nowDue) + '</div>' +
+    '</div></div>' +
+
+    // Payment method
+    '<div class="card">' +
+    '<h4 style="font-weight:700;margin-bottom:14px;">Select Payment Method</h4>' +
+
+    // GCash
+    '<div class="option-card" id="pmGcash" onclick="selectPayMethod(\'GCash\',this)" style="margin-bottom:8px;">' +
+    '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:800;font-size:0.7rem;">G</span></div>' +
+    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Send to: 09XX-XXX-XXXX (Autoride)</small></div>' +
+    '</div>' +
+
+    // Credit/Debit Card (placeholder)
+    '<div class="option-card" id="pmCard" onclick="selectPayMethod(\'Credit Card\',this)" style="margin-bottom:8px;">' +
+    '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
+    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--warning);">Coming soon — integration in progress</small></div>' +
+    '</div>' +
+
+    // Maya (placeholder)
+    '<div class="option-card" id="pmMaya" onclick="selectPayMethod(\'Maya\',this)" style="margin-bottom:8px;">' +
+    '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:800;font-size:0.7rem;">M</span></div>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--warning);">Coming soon — integration in progress</small></div>' +
+    '</div>' +
+
+    // Cash
+    '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'Cash (Over the counter)\',this)">' +
+    '<div style="width:40px;height:40px;background:#2dc653;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<i class="fas fa-money-bill-wave" style="color:#fff;font-size:1rem;"></i></div>' +
+    '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay at our office upon pickup</small></div>' +
+    '</div>' +
+
+    '<input type="hidden" id="payMethod" value="GCash">' +
+    '</div>' +
+
+    // Reference number & proof (shown for GCash/online)
+    '<div class="card" id="onlinePayFields">' +
+    '<div class="form-group"><label>Reference / Transaction Number</label>' +
+    '<input type="text" id="payRef" placeholder="e.g. 1234567890"></div>' +
+    '<div class="form-group"><label>Payment Screenshot / Proof</label>' +
+    '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>' +
     '<img id="payProofPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;display:none;">' +
-    '<span class="field-error" id="payProofErr"></span></div></div>' +
-    '<div class="card"><button class="btn-outline" onclick="showOverlay(\'page-split-payment\')"><i class="fas fa-users"></i> Split Payment</button></div>' +
+    '<span class="field-error" id="payProofErr"></span></div>' +
+    '</div>' +
+
+    // Split payment
+    '<div class="card" style="border:1.5px dashed var(--primary);">' +
+    '<button class="btn-outline" onclick="showOverlay(\'page-split-payment\')" style="width:100%;">' +
+    '<i class="fas fa-users"></i> Split Payment with a Friend</button>' +
+    '</div>' +
+
     '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" onclick="submitPayment(' + bookingId + ',' + nowDue + ')"><i class="fas fa-lock"></i> Pay ' + formatPHP(nowDue) + '</button>' +
+    '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-lock"></i> Pay ' + formatPHP(nowDue) + '</button>' +
     '</div>';
+
+  // Auto-select GCash
+  var gcashEl = document.getElementById('pmGcash');
+  if (gcashEl) gcashEl.classList.add('selected');
+
   showOverlay('page-payment');
+}
+
+function selectPayMethod(method, el) {
+  document.getElementById('payMethod').value = method;
+  var cards = document.querySelectorAll('#paymentContent .option-card');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+  if (el) el.classList.add('selected');
+  // Show/hide reference fields
+  var onlineFields = document.getElementById('onlinePayFields');
+  if (onlineFields) {
+    onlineFields.style.display = (method === 'Cash (Over the counter)') ? 'none' : 'block';
+  }
 }
 
 function pickPaymentProof() {
@@ -1065,6 +1217,13 @@ function submitPayment(bookingId, amount) {
   var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
   var errEl = document.getElementById('payErr');
   if (errEl) errEl.textContent = '';
+
+  // Validate reference for online payments
+  if (method !== 'Cash (Over the counter)' && !ref) {
+    if (errEl) errEl.textContent = 'Please enter your reference/transaction number.';
+    return;
+  }
+
   showLoading(true);
   var promise;
   if (paymentProofBlob) {
@@ -1081,8 +1240,8 @@ function submitPayment(bookingId, amount) {
   promise
     .then(function(data) {
       closeOverlay('page-payment');
-      NotifStore.add('Payment confirmed for Booking #' + bookingId + '!');
-      showReceipt(bookingId, data);
+      NotifStore.add('Payment confirmed for Booking #' + bookingId + '! A receipt has been sent to your email.');
+      showReceipt(bookingId, data, amount, method, ref);
     })
     .catch(function(err) {
       if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
@@ -1090,22 +1249,60 @@ function submitPayment(bookingId, amount) {
     .finally(function() { showLoading(false); });
 }
 
-function showReceipt(bookingId, data) {
+function showReceipt(bookingId, data, amountPaid, method, refNum) {
   var receipt = data.receipt || {};
+  var vehicle = bookingFormVehicle || {};
+  var now = new Date();
+  var dateStr = now.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
+  var timeStr = now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
   var el = document.getElementById('receiptContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
+
+  var addonsText = selectedAddons.length > 0 ? selectedAddons.map(function(a) { return a.name; }).join(', ') : 'None';
+  var insText = selectedInsurance.type || 'Basic Protection';
+
+  el.innerHTML =
+    '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-receipt\');showPage(\'page-bookings\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Receipt</h2></div>' +
+    '<div class="scroll-content" style="padding-bottom:100px;">' +
     '<div class="receipt-card">' +
-    '<div class="receipt-header"><i class="fas fa-check-circle"></i><h2>Payment Successful!</h2><p style="color:var(--text-secondary);font-size:0.875rem;">Your booking is confirmed</p></div>' +
+    '<div class="receipt-header">' +
+    '<i class="fas fa-check-circle" style="font-size:3.5rem;color:var(--success);"></i>' +
+    '<h2>Booking Confirmed!</h2>' +
+    '<p style="color:var(--text-secondary);font-size:0.875rem;">Your receipt has been sent to your email</p>' +
+    '</div>' +
+
+    // Receipt details
+    '<div style="border-top:2px dashed var(--border);padding-top:16px;margin-top:8px;">' +
     '<div class="receipt-row"><span>Booking ID</span><strong>#' + bookingId + '</strong></div>' +
-    (receipt.brand ? '<div class="receipt-row"><span>Vehicle</span><strong>' + receipt.brand + ' ' + receipt.model + '</strong></div>' : '') +
-    (receipt.start_date ? '<div class="receipt-row"><span>Period</span><strong>' + receipt.start_date + ' to ' + receipt.end_date + '</strong></div>' : '') +
-    (receipt.amount ? '<div class="receipt-row"><span>Amount Paid</span><strong>' + formatPHP(receipt.amount) + '</strong></div>' : '') +
-    (receipt.reference_number ? '<div class="receipt-row"><span>Reference</span><strong>' + receipt.reference_number + '</strong></div>' : '') +
-    '<div style="margin-top:16px;"><button class="btn-primary" onclick="downloadReceipt(' + bookingId + ')"><i class="fas fa-download"></i> Download PDF Receipt</button></div>' +
+    '<div class="receipt-row"><span>Vehicle</span><strong>' + (receipt.brand || vehicle.brand || '') + ' ' + (receipt.model || vehicle.model || '') + '</strong></div>' +
+    (receipt.start_date ? '<div class="receipt-row"><span>Rental Period</span><strong>' + receipt.start_date + ' ? ' + receipt.end_date + '</strong></div>' : '') +
+    '<div class="receipt-row"><span>Insurance</span><strong>' + insText + '</strong></div>' +
+    '<div class="receipt-row"><span>Add-ons</span><strong>' + addonsText + '</strong></div>' +
+    '<div class="receipt-row"><span>Payment Method</span><strong>' + (method || receipt.method || 'GCash') + '</strong></div>' +
+    (refNum ? '<div class="receipt-row"><span>Reference No.</span><strong>' + refNum + '</strong></div>' : '') +
+    '<div class="receipt-row"><span>Date & Time</span><strong>' + dateStr + ', ' + timeStr + '</strong></div>' +
+    '</div>' +
+
+    // Amount
+    '<div style="background:var(--primary);border-radius:var(--radius-sm);padding:14px;text-align:center;margin:16px 0;">' +
+    '<div style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Amount Paid</div>' +
+    '<div style="color:#fff;font-size:1.6rem;font-weight:800;">' + formatPHP(amountPaid || receipt.amount || 0) + '</div>' +
+    '</div>' +
+
+    // Email notice
+    '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:12px;text-align:center;margin-bottom:16px;font-size:0.8rem;color:#084298;">' +
+    '<i class="fas fa-envelope"></i> A receipt has been sent to <strong>' + (currentUser.email || 'your email') + '</strong>' +
+    '</div>' +
+
+    '<button class="btn-primary" onclick="downloadReceipt(' + bookingId + ')" style="margin-bottom:10px;">' +
+    '<i class="fas fa-download"></i> Download PDF Receipt</button>' +
+    '<button class="btn-secondary" onclick="closeOverlay(\'page-receipt\');showPage(\'page-bookings\')">' +
+    '<i class="fas fa-list"></i> View My Bookings</button>' +
+    '</div>' +
     '</div>';
+
   showOverlay('page-receipt');
 }
 
