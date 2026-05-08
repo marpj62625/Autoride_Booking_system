@@ -501,12 +501,19 @@ function doVerifyPhone() {
 function loadHome() {
   var nameEl = document.getElementById('homeUserName');
   if (nameEl) nameEl.textContent = currentUser.fullName || 'there';
-  if (!currentUser.id) return;
   apiCall('/user/points?user_id=' + currentUser.id)
     .then(function(pts) {
+      var pts_val = parseInt(pts.points) || 0;
       var el = document.getElementById('homePoints');
-      if (el) el.textContent = pts.points || 0;
-      currentUser.loyaltyPoints = pts.points || 0;
+      if (el) el.textContent = pts_val.toLocaleString();
+      var el2 = document.getElementById('homePoints2');
+      if (el2) el2.textContent = pts_val.toLocaleString();
+      currentUser.loyaltyPoints = pts_val;
+      var progress = Math.min(100, (pts_val / 2000) * 100);
+      var bar = document.getElementById('loyaltyBar');
+      if (bar) bar.style.width = progress + '%';
+      var ptsNeeded = document.getElementById('ptsNeeded');
+      if (ptsNeeded) ptsNeeded.textContent = Math.max(0, 2000 - pts_val).toLocaleString() + ' pts more to unlock Gold benefits';
     }).catch(function() {});
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(bookings) {
@@ -516,12 +523,25 @@ function loadHome() {
       if (!recent.length) {
         el.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings yet</p></div>';
       } else {
+        var statusColors = {
+          'Pending': '#fbbf24', 'Confirmed': '#34d399', 'Approved': '#34d399',
+          'Picked Up': '#a78bfa', 'Completed': '#a78bfa', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+        };
         el.innerHTML = recent.map(function(b) {
-          return '<div class="booking-item" onclick="openBookingDetail(' + b.id + ')">' +
-            '<h4>' + (b.brand || '') + ' ' + (b.model || '') + '</h4>' +
-            '<div class="booking-meta">' + b.start_date + ' to ' + b.end_date + '</div>' +
-            '<div class="booking-footer">' + statusPill(b.status) + ' ' + statusPill(b.payment_status) + '</div>' +
-            '</div>';
+          var color = statusColors[b.status] || '#a1a1aa';
+          return '<div style="background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;margin-bottom:10px;cursor:pointer;" onclick="openBookingDetail(' + b.id + ')">' +
+            '<div style="height:3px;background:' + color + ';opacity:0.5;"></div>' +
+            '<div style="padding:14px;display:flex;align-items:center;gap:12px;">' +
+            '<div style="width:48px;height:48px;border-radius:14px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<i class="fas fa-car" style="color:#52525b;font-size:1.1rem;"></i></div>' +
+            '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:800;font-size:0.875rem;color:#fff;">' + (b.brand || '') + ' ' + (b.model || '') + '</div>' +
+            '<div style="font-size:0.72rem;color:#52525b;margin-top:2px;">' + b.start_date + ' to ' + b.end_date + '</div>' +
+            '<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;background:' + color + '22;color:' + color + ';">' + b.status + '</span>' +
+            '</div>' +
+            '<div style="text-align:right;flex-shrink:0;">' +
+            '<div style="font-weight:800;font-size:0.875rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
+            '</div></div></div>';
         }).join('');
       }
     }).catch(function() {});
@@ -1586,31 +1606,94 @@ function downloadReceipt(bookingId) {
 }
 
 // BOOKINGS
+var _allBookingsData = [];
+
 function loadBookings() {
   if (!currentUser.id) return;
   showLoading(true);
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(data) {
-      var el = document.getElementById('bookingsList');
-      if (!el) return;
-      if (!data.length) {
-        el.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings yet</p></div>';
-      } else {
-        el.innerHTML = data.map(function(b) {
-          return '<div class="booking-item" onclick="openBookingDetail(' + b.id + ')">' +
-            '<h4>' + (b.brand || '') + ' ' + (b.model || '') + (b.plate_number ? ' (' + b.plate_number + ')' : '') + '</h4>' +
-            '<div class="booking-meta">' + b.start_date + ' to ' + b.end_date + '</div>' +
-            '<div class="booking-meta">' + formatPHP(b.total_price) + '</div>' +
-            '<div class="booking-footer">' + statusPill(b.status) + ' ' + statusPill(b.payment_status) + '</div>' +
-            '</div>';
-        }).join('');
-      }
+      _allBookingsData = data;
+      // Update stats
+      var total = data.length;
+      var completed = data.filter(function(b) { return b.status === 'Completed'; }).length;
+      var spent = data.filter(function(b) { return b.payment_status === 'Paid'; }).reduce(function(s, b) { return s + parseFloat(b.total_price || 0); }, 0);
+      var statTotal = document.getElementById('bkStatTotal');
+      var statDone = document.getElementById('bkStatDone');
+      var statSpent = document.getElementById('bkStatSpent');
+      if (statTotal) statTotal.querySelector('div').textContent = total;
+      if (statDone) statDone.querySelector('div').textContent = completed;
+      if (statSpent) statSpent.querySelector('div').textContent = spent > 0 ? ('P' + (spent / 1000).toFixed(1) + 'k') : '-';
+      renderBookingsList(data);
     })
     .catch(function(err) {
       var el = document.getElementById('bookingsList');
       if (el) el.innerHTML = '<div class="empty-state"><p>' + err.message + '</p></div>';
     })
     .finally(function() { showLoading(false); });
+}
+
+function filterBookingsList(filter, btn) {
+  // Update tab styles
+  var tabs = document.querySelectorAll('#bookingFilterTabs button');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].style.background = 'transparent';
+    tabs[i].style.color = '#52525b';
+  }
+  if (btn) {
+    btn.style.background = 'linear-gradient(135deg,#dc2626,#9b1a1a)';
+    btn.style.color = '#fff';
+  }
+  var filtered = filter === 'all' ? _allBookingsData : _allBookingsData.filter(function(b) {
+    if (filter === 'Confirmed') return b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up';
+    return b.status === filter;
+  });
+  renderBookingsList(filtered);
+}
+
+function renderBookingsList(data) {
+  var el = document.getElementById('bookingsList');
+  if (!el) return;
+  if (!data.length) {
+    el.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings found</p></div>';
+    return;
+  }
+  var statusColors = {
+    'Pending': '#fbbf24', 'Confirmed': '#34d399', 'Approved': '#34d399',
+    'Picked Up': '#a78bfa', 'Completed': '#a78bfa', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+  };
+  el.innerHTML = data.map(function(b) {
+    var color = statusColors[b.status] || '#a1a1aa';
+    var payColor = b.payment_status === 'Paid' ? '#60a5fa' : '#f87171';
+    return '<div style="background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:24px;overflow:hidden;margin-bottom:12px;cursor:pointer;" onclick="openBookingDetail(' + b.id + ')">' +
+      '<div style="height:3px;background:' + color + ';opacity:0.5;"></div>' +
+      '<div style="padding:14px;">' +
+      '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">' +
+      '<div style="width:56px;height:56px;border-radius:16px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+      '<i class="fas fa-car" style="color:#3f3f46;font-size:1.3rem;"></i></div>' +
+      '<div style="flex:1;min-width:0;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
+      '<h3 style="font-weight:900;font-size:0.875rem;color:#fff;line-height:1.2;">' + (b.brand || '') + ' ' + (b.model || '') + '</h3>' +
+      '<span style="padding:3px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;background:' + color + '22;color:' + color + ';flex-shrink:0;">' + b.status + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.7rem;color:#52525b;margin-top:4px;">' + (b.color || '') + (b.color && b.plate_number ? ' · ' : '') + (b.plate_number || '') + '</div>' +
+      '</div></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">' +
+      '<div style="background:#1a1a1a;border-radius:12px;padding:10px;">' +
+      '<div style="font-size:0.6rem;color:#52525b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Pick-up</div>' +
+      '<div style="font-size:0.75rem;font-weight:800;color:#fff;">' + b.start_date + '</div>' +
+      '</div>' +
+      '<div style="background:#1a1a1a;border-radius:12px;padding:10px;">' +
+      '<div style="font-size:0.6rem;color:#52525b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Return</div>' +
+      '<div style="font-size:0.75rem;font-weight:800;color:#fff;">' + b.end_date + '</div>' +
+      '</div></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<span style="padding:3px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;background:' + payColor + '22;color:' + payColor + ';">' + (b.payment_status || 'Unpaid') + '</span>' +
+      '</div>' +
+      '<div style="font-weight:900;font-size:0.95rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
+      '</div></div></div>';
+  }).join('');
 }
 
 function openBookingDetail(bookingId) {
