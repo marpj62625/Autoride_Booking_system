@@ -554,6 +554,16 @@ function buildImgUrl(path) {
   return API_BASE.replace('/api', '') + '/' + path;
 }
 
+function searchVehicles(query) {
+  var q = (query || '').toLowerCase();
+  var filtered = q ? allVehicles.filter(function(v) {
+    return (v.brand + ' ' + v.model + ' ' + (v.vehicle_type || '') + ' ' + (v.location || '')).toLowerCase().indexOf(q) >= 0;
+  }) : allVehicles;
+  var countEl = document.getElementById('vehicleCount');
+  if (countEl) countEl.textContent = filtered.length + ' vehicle' + (filtered.length !== 1 ? 's' : '') + ' found';
+  renderVehicles(filtered);
+}
+
 // VEHICLES - Step 1: Browse models
 function loadVehicles() {
   showLoading(true);
@@ -573,26 +583,42 @@ function renderVehicles(list) {
   var grid = document.getElementById('vehicleGrid');
   if (!grid) return;
   if (!list.length) {
-    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles available</p></div>';
+    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles found</p></div>';
     return;
   }
+  var countEl = document.getElementById('vehicleCount');
+  if (countEl) countEl.textContent = list.length + ' vehicle' + (list.length !== 1 ? 's' : '') + ' found';
   grid.innerHTML = list.map(function(v) {
-    var vid = v.id || v.representative_id;
-    var availBadge = (v.available_units > 0)
-      ? '<span class="badge-available">' + v.available_units + ' available</span>'
-      : '<span class="badge-available" style="background:rgba(230,57,70,0.8);">Unavailable</span>';
-    return '<div class="vehicle-card" onclick="openColorSelection(\'' + v.brand + '\',\'' + v.model + '\')">' +
+    var avail = parseInt(v.available_units) || 0;
+    var badgeClass = avail > 0 ? 'badge-avail-yes' : 'badge-avail-no';
+    var badgeText = avail > 0 ? ('<span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available') : 'Unavailable';
+    var bEnc = encodeURIComponent(v.brand);
+    var mEnc = encodeURIComponent(v.model);
+    return '<div class="vehicle-card" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')">' +
       '<div class="vehicle-img-wrap">' +
       '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
-      availBadge +
+      '<span class="badge-available ' + badgeClass + '">' + badgeText + '</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
+      '<div>' +
       '<h3>' + v.brand + ' ' + v.model + '</h3>' +
-      '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + '</div>' +
-      '<div class="vehicle-meta"><i class="fas fa-users"></i> ' + (v.seats || '-') + ' seats</div>' +
-      '<div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
-      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
-      '</div></div>';
+      '<div style="display:flex;gap:6px;margin-top:4px;">' +
+      '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
+      '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.transmission || '-') + '</span>' +
+      '</div></div>' +
+      '<div style="text-align:right;">' +
+      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + '</div>' +
+      '<div style="font-size:0.65rem;color:#52525b;margin-top:1px;">per day</div>' +
+      '</div></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
+      '<div style="display:flex;align-items:center;gap:6px;">' +
+      '<i class="fas fa-map-marker-alt" style="color:#3f3f46;font-size:0.75rem;"></i>' +
+      '<span style="font-size:0.75rem;color:#52525b;">' + (v.location || '-') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:4px;background:rgba(220,38,38,0.1);color:#f87171;padding:5px 12px;border-radius:12px;font-size:0.75rem;font-weight:700;">' +
+      'View <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i></div>' +
+      '</div></div></div>';
   }).join('');
 }
 
