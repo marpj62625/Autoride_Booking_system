@@ -204,6 +204,14 @@ var NAV_MAP = {
 };
 
 function showPage(id) {
+  // Close ALL overlays first
+  var overlays = document.querySelectorAll('.overlay-page');
+  for (var i = 0; i < overlays.length; i++) {
+    overlays[i].classList.remove('active');
+    overlays[i].style.display = 'none';
+  }
+  stopGpsPolling();
+
   // Hide splash
   var splash = document.getElementById('page-splash');
   if (splash) { splash.style.display = 'none'; }
@@ -305,6 +313,12 @@ function initApp() {
   Session.load().then(function(user) {
     if (user && user.id) {
       currentUser = user;
+      // Always refresh verification status from server
+      apiCall('/user/verify-status?user_id=' + user.id)
+        .then(function(v) {
+          currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : user.isVerified;
+          Session.save(currentUser);
+        }).catch(function() {});
       apiCall('/public/settings').then(function(s) {
         Object.assign(appSettings, s);
       }).catch(function() {});
@@ -340,6 +354,12 @@ function doLogin() {
     .then(function(data) {
       currentUser = { id: data.user_id, fullName: data.full_name, isVerified: data.is_verified || 0 };
       Session.save(currentUser);
+      // Always fetch fresh verification status after login
+      apiCall('/user/verify-status?user_id=' + data.user_id)
+        .then(function(v) {
+          currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (data.is_verified || 0);
+          Session.save(currentUser);
+        }).catch(function() {});
       apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
       showPage('page-home');
     })
@@ -508,6 +528,11 @@ function loadHome() {
   updateNotifBadge();
 }
 
+function buildImgUrl(path) {
+  if (!path) return 'https://via.placeholder.com/400x200?text=No+Image';
+  if (path.startsWith('http')) return path;
+  return API_BASE.replace('/api', '') + '/' + path;
+}
 // VEHICLES
 function loadVehicles() {
   showLoading(true);
@@ -532,11 +557,11 @@ function renderVehicles(list) {
     return;
   }
   grid.innerHTML = available.map(function(v) {
-    var imgSrc = v.vehicle_image ? (API_BASE + '/' + v.vehicle_image) : 'https://via.placeholder.com/400x200?text=No+Image';
+    var imgSrc = buildImgUrl(v.vehicle_image);
     var vid = v.id || v.representative_id;
-    return '<div class="vehicle-card" onclick="openVehicleDetail(' + vid + ')">' +
+          return '<div class="vehicle-card" onclick="openVehicleDetail(' + vid + ')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + imgSrc + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
       '<span class="badge-available">' + (v.available_units || 0) + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
@@ -586,12 +611,12 @@ function renderVehicleDetail(v) {
   var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
   var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
   var mileage = appSettings.mileage_limit || '250';
-  var canBook = currentUser.isVerified == 2;
+  var canBook = parseInt(currentUser.isVerified) === 2;
   var el = document.getElementById('vehicleDetailContent');
   if (!el) return;
   var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
   var galleryHtml = galleryImgs.map(function(img) {
-    return '<img class="gallery-img" src="' + API_BASE + '/' + img + '" onerror="this.src=\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
+    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.src=\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
   }).join('');
   var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
     return '<div class="review-item"><div class="reviewer">' +
@@ -1440,7 +1465,7 @@ function loadFavorites() {
         '<div class="vehicle-grid" style="padding:16px;">' +
         (data.length ? data.map(function(v) {
           return '<div class="vehicle-card" onclick="openVehicleDetail(' + v.id + ')">' +
-            '<div class="vehicle-img-wrap"><img src="' + (v.vehicle_image ? API_BASE + '/' + v.vehicle_image : 'https://via.placeholder.com/400x200?text=No+Image') + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'"></div>' +
+            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'"></div>' +
             '<div class="vehicle-info"><h3>' + v.brand + ' ' + v.model + '</h3>' +
             '<div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
             '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div></div></div>';
