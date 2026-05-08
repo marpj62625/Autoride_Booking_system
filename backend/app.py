@@ -433,142 +433,104 @@ def send_verification_email(email: str, otp: str):
 
 
 def send_receipt_email(email: str, details: dict):
+    """Sends an HTML booking receipt email via SMTP."""
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText as MIMETextPart
 
-    """Sends a detailed booking receipt via SMTP."""
+    subject = 'Autoride Booking Receipt - Booking #' + str(details['id'])
+    addons_text = str(details.get('addons', 'None') or 'None')
+    insurance_text = str(details.get('insurance_type', 'Basic Protection') or 'Basic Protection')
+    total_price = float(details.get('total_price', 0) or 0)
+    amount_paid = float(details.get('amount_paid', total_price) or total_price)
+    ref_num = str(details.get('reference_number', '') or 'N/A')
+    method = str(details.get('method', 'N/A') or 'N/A')
+    full_name = str(details.get('full_name', 'Customer'))
+    brand = str(details.get('brand', ''))
+    model_name = str(details.get('model', ''))
+    start_date = str(details.get('start_date', ''))
+    end_date = str(details.get('end_date', ''))
+    booking_id = str(details['id'])
+    receipt_url = 'https://autoride-booking-system.vercel.app/api/bookings/' + booking_id + '/receipt'
 
-    subject = f"Autoride Receipt: Booking #{details['id']}"
+    rows = (
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Vehicle</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + brand + ' ' + model_name + "</td></tr>"
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Rental Period</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + start_date + ' to ' + end_date + "</td></tr>"
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Insurance</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + insurance_text + "</td></tr>"
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;'>Add-ons</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;'>" + addons_text + "</td></tr>"
+    )
+    pay_rows = (
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Total Amount</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>PHP " + '{:,.2f}'.format(total_price) + "</td></tr>"
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Amount Paid</td>"
+        "<td style='padding:11px 16px;font-size:14px;color:#e63946;font-weight:bold;border-bottom:1px solid #dee2e6;'>PHP " + '{:,.2f}'.format(amount_paid) + "</td></tr>"
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Payment Method</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + method + "</td></tr>"
+        "<tr><td style='padding:11px 16px;font-size:13px;color:#6c757d;'>Reference No.</td>"
+        "<td style='padding:11px 16px;font-size:13px;color:#212529;'>" + ref_num + "</td></tr>"
+    )
 
-    
+    html = (
+        "<body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;'>"
+        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f4f4;padding:30px 0;'>"
+        "<tr><td align='center'><table width='600' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);'>"
+        "<tr><td style='background:#e63946;padding:28px;text-align:center;'>"
+        "<h1 style='color:#fff;margin:0;font-size:26px;'>Autoride</h1>"
+        "<p style='color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px;'>Your ride, your way</p></td></tr>"
+        "<tr><td style='background:#2dc653;padding:12px;text-align:center;'>"
+        "<tr><td style='padding:24px 28px 10px;'>"
+        "<p style='font-size:15px;color:#212529;margin:0;'>Hello <strong>" + full_name + "</strong>,</p>"
+        "<p style='font-size:13px;color:#6c757d;margin:8px 0 0;'>Thank you for choosing Autoride! Your payment has been received and your booking is confirmed.</p>"
+        "</td></tr>"
+        "<tr><td style='padding:16px 28px;'>"
+        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
+        "<tr><td colspan='2' style='background:#e63946;padding:11px 16px;'>"
+        "<p style='color:#fff;margin:0;font-size:13px;font-weight:bold;'>Booking #" + booking_id + "</p></td></tr>"
+        + rows +
+        "</table></td></tr>"
+        "<tr><td style='padding:0 28px 16px;'>"
+        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
+        "<tr><td colspan='2' style='background:#212529;padding:11px 16px;'>"
+        "<p style='color:#fff;margin:0;font-size:13px;font-weight:bold;'>Payment Details</p></td></tr>"
+        + pay_rows +
+        "</table></td></tr>"
+        "<tr><td style='padding:0 28px 16px;text-align:center;'>"
+        "<a href='" + receipt_url + "' style='display:inline-block;background:#e63946;color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-size:14px;font-weight:bold;'>Download PDF Receipt</a>"
+        "</td></tr>"
+        "<tr><td style='padding:0 28px 16px;'>"
+        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#fff3cd;border-radius:8px;border-left:4px solid #f4a261;'>"
+        "<tr><td style='padding:14px;'>"
+        "<p style='margin:0 0 6px;font-size:12px;font-weight:bold;color:#856404;'>Important Reminders</p>"
+        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Bring 2 valid government-issued IDs upon pickup</p>"
+        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Mileage limit: 250 km/day (excess: PHP 10/km)</p>"
+        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Return vehicle with same fuel level as pickup</p>"
+        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Late return penalty: PHP 500/hour</p>"
+        "</td></tr></table></td></tr>"
+        "<tr><td style='background:#f8f9fa;padding:18px 28px;text-align:center;border-top:1px solid #dee2e6;'>"
+        "<p style='margin:0;font-size:12px;color:#6c757d;'>Safe travels! The Autoride Team</p>"
+        "<p style='margin:4px 0 0;font-size:11px;color:#adb5bd;'>autoride-booking-system.vercel.app</p>"
+        "</td></tr>"
+        "</table></td></tr></table></body></html>"
+    )
 
-    # Build add-ons and insurance text
-
-    addons_text = details.get('addons', 'None') or 'None'
-
-    insurance_text = details.get('insurance_type', 'Basic Protection') or 'Basic Protection'
-
-    insurance_price = details.get('insurance_price', 0) or 0
-
-    
-
-    body = f"""
-
-Hello {details['full_name']},
-
-
-
-Thank you for choosing Autoride! Your payment has been received and your booking is confirmed.
-
-
-
-????????????????????????????????????????
-
-           AUTORIDE BOOKING RECEIPT
-
-????????????????????????????????????????
-
-
-
-Booking ID:       #{details['id']}
-
-Vehicle:          {details['brand']} {details['model']}
-
-Rental Period:    {details['start_date']} to {details['end_date']}
-
-Insurance:        {insurance_text}
-
-Add-ons:          {addons_text}
-
-
-
-????????????????????????????????????????
-
-PAYMENT DETAILS
-
-????????????????????????????????????????
-
-Total Amount:     PHP {float(details['total_price']):,.2f}
-
-Amount Paid:      PHP {float(details.get('amount_paid', details['total_price'])):,.2f}
-
-Payment Method:   {details['method']}
-
-Reference No.:    {details.get('reference_number', 'N/A')}
-
-Status:           CONFIRMED ?
-
-
-
-????????????????????????????????????????
-
-
-
-IMPORTANT REMINDERS:
-
- Bring 2 valid government-issued IDs upon pickup
-
- Mileage limit: 250 km/day (excess charged at ?10/km)
-
- Return vehicle with same fuel level as pickup
-
- Late return penalty: ?500/hour
-
-
-
-You can view your booking and track your vehicle in the Autoride app.
-
-Safe travels!
-
-
-
-The Autoride Team
-
-autoride-booking-system.vercel.app
-
-    """
-
-    
-
-    # LOG TO TERMINAL
-
-    print("\n" + "="*50)
-
-    print(f"RECEIPT EMAIL LOG")
-
-    print(f"TO: {email}")
-
-    print(body)
-
-    print("="*50 + "\n")
-
-
+    print('RECEIPT EMAIL LOG - TO: ' + email + ' BOOKING: #' + booking_id)
 
     try:
-
-        msg = MIMEText(body, 'plain', 'utf-8')
-
+        msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
-
         msg['From'] = EMAIL_USER
-
         msg['To'] = email
-
-
-
+        msg.attach(MIMETextPart(html, 'html', 'utf-8'))
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-
             server.starttls()
-
             server.login(EMAIL_USER, EMAIL_PASS)
-
             server.send_message(msg)
-
-        print(f"DEBUG: Receipt email sent to {email}")
-
+        print('DEBUG: HTML receipt email sent to ' + email)
     except Exception as e:
-
-        print(f"DEBUG: Receipt SMTP Failed. Error: {str(e)}")
-
-
+        print('DEBUG: Receipt SMTP Failed. Error: ' + str(e))
 
 @app.route("/")
 
