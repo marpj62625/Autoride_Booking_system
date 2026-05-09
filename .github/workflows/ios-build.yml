@@ -21,7 +21,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: customer_mobile
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Add iOS platform
         working-directory: customer_mobile
