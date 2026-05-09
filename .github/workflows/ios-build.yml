@@ -3,11 +3,7 @@ name: Build iOS IPA
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'customer_mobile/www/**'
-      - 'customer_mobile/capacitor.config.json'
-      - '.github/workflows/ios-build.yml'
-  workflow_dispatch:  # allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   build-ios:
@@ -15,73 +11,61 @@ jobs:
     timeout-minutes: 60
 
     steps:
-      # 1. Checkout code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: customer_mobile/package-lock.json
 
-      # 3. Install Capacitor dependencies
       - name: Install npm dependencies
         working-directory: customer_mobile
         run: npm ci
 
-      # 4. Add iOS platform if not already present
       - name: Add iOS platform
         working-directory: customer_mobile
         run: |
           if [ ! -d "ios" ]; then
             npx cap add ios
           else
-            echo "iOS platform already exists, skipping add"
+            echo "iOS platform already exists"
           fi
 
-      # 5. Sync web assets into iOS project
       - name: Sync Capacitor iOS
         working-directory: customer_mobile
         run: npx cap sync ios
 
-      # 6. Install CocoaPods dependencies
       - name: Install CocoaPods
         working-directory: customer_mobile/ios/App
         run: pod install
 
-      # 7. Build unsigned IPA using xcodebuild
-      - name: Build iOS (unsigned)
+      - name: Build iOS archive (unsigned)
         working-directory: customer_mobile/ios/App
         run: |
           xcodebuild \
             -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
-            -destination generic/platform=iOS \
-            -archivePath $RUNNER_TEMP/Autoride.xcarchive \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/Autoride.xcarchive" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             archive
 
-      # 8. Export IPA (unsigned, for sideloading)
-      - name: Export IPA
+      - name: Package IPA from archive
         run: |
-          mkdir -p $RUNNER_TEMP/ipa-output
-          xcodebuild \
-            -exportArchive \
-            -archivePath $RUNNER_TEMP/Autoride.xcarchive \
-            -exportPath $RUNNER_TEMP/ipa-output \
-            -exportOptionsPlist $GITHUB_WORKSPACE/.github/workflows/ExportOptions.plist
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -r "$RUNNER_TEMP/Autoride.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -r Autoride.ipa Payload
+          echo "IPA created at $RUNNER_TEMP/Autoride.ipa"
 
-      # 9. Upload IPA as artifact (downloadable from GitHub Actions)
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: Autoride-iOS-${{ github.run_number }}
-          path: ${{ runner.temp }}/ipa-output/*.ipa
+          path: ${{ runner.temp }}/Autoride.ipa
           retention-days: 30
           if-no-files-found: error
