@@ -37,14 +37,15 @@ jobs:
         run: npx cap sync ios
 
       - name: Install CocoaPods
-        working-directory: customer_mobile/ios/App
-        run: pod install
+        working-directory: customer_mobile
+        run: |
+          cd ios/App
+          pod install --repo-update
 
       - name: Build iOS archive (unsigned)
-        working-directory: customer_mobile/ios/App
         run: |
           xcodebuild \
-            -workspace App.xcworkspace \
+            -workspace "$GITHUB_WORKSPACE/customer_mobile/ios/App/App.xcworkspace" \
             -scheme App \
             -configuration Release \
             -destination "generic/platform=iOS" \
