@@ -1436,7 +1436,10 @@
         data: [],
         async refresh() {
             const listContainer = document.getElementById('vehiclesList');
-            listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching from server...</div>';
+            // Only show loading state if list is empty (first load)
+            if (!listContainer.innerHTML.trim() || listContainer.innerHTML.includes('Loading vehicles')) {
+                listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>';
+            }
             try {
                 const res = await fetch(`${API_URL}/vehicles`);
                 if (!res.ok) throw new Error('Server not reachable');
@@ -1747,7 +1750,6 @@
     let currentTab = 'dashboard';
     function switchTab(tabId) {
         currentTab = tabId;
-        console.log('Switching to tab:', tabId);
         try {
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.querySelectorAll('.nav-item, .drawer-item').forEach(l => l.classList.remove('active'));
@@ -1755,21 +1757,21 @@
             const target = document.getElementById(tabId);
             if (target) target.style.display = 'block';
             
-            // Sync both bottom nav and side drawer
             document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
             
-            if (tabId === 'vehicles') if(typeof Vehicles !== 'undefined') Vehicles.refresh();
-            if (tabId === 'bookings') if(typeof Bookings !== 'undefined') Bookings.refresh();
-            if (tabId === 'drivers') if(typeof Drivers !== 'undefined') Drivers.refresh();
-            if (tabId === 'gps') if(typeof GPS !== 'undefined') GPS.startLive();
-            else if(typeof GPS !== 'undefined') GPS.stopLive();
+            // Only load data if not already loaded (prevents "Fetching..." flash on every tab switch)
+            if (tabId === 'vehicles' && typeof Vehicles !== 'undefined' && Vehicles.data.length === 0) Vehicles.refresh();
+            if (tabId === 'bookings' && typeof Bookings !== 'undefined' && Bookings.data.length === 0) Bookings.refresh();
+            if (tabId === 'drivers' && typeof Drivers !== 'undefined' && Drivers.data.length === 0) Drivers.refresh();
+            if (tabId === 'verifications' && typeof Verifications !== 'undefined' && Verifications.data.length === 0) Verifications.refresh();
+            if (tabId === 'tickets' && typeof Tickets !== 'undefined' && Tickets.data.length === 0) Tickets.refresh();
+            if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
+            if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
+            if (tabId === 'reports' && typeof Reports !== 'undefined') Reports.refresh();
+            if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
 
-            if (tabId === 'verifications') if(typeof Verifications !== 'undefined') Verifications.refresh();
-            if (tabId === 'tickets') if(typeof Tickets !== 'undefined') Tickets.refresh();
-            if (tabId === 'instructions') if(typeof Instructions !== 'undefined') Instructions.refresh();
-            if (tabId === 'staff') if(typeof Staff !== 'undefined') Staff.refresh();
-            if (tabId === 'reports') if(typeof Reports !== 'undefined') Reports.refresh();
-            if (tabId === 'activity') if(typeof Activity !== 'undefined') Activity.refresh();
+            if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
+            else if (typeof GPS !== 'undefined') GPS.stopLive();
             
             if (tabId === 'settings') {
                 const user = adminAuth.getUser();
@@ -1778,11 +1780,7 @@
                     if(document.getElementById('settingsName')) document.getElementById('settingsName').textContent = user.full_name;
                     if(document.getElementById('settingsRole')) document.getElementById('settingsRole').textContent = user.role.replace('_', ' ').toUpperCase();
                     if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
-                    
-                    // Settings fetch (Always fetch if the tab is settings now)
-                    if (typeof Settings !== 'undefined') {
-                        Settings.fetch();
-                    }
+                    if (typeof Settings !== 'undefined') Settings.fetch();
                 }
             }
         } catch (err) {
@@ -1794,7 +1792,9 @@
         data: [],
         async refresh() {
             const list = document.getElementById('bookingsList');
-            list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+            }
             try {
                 // Fetch Stats and List in parallel
                 const user = adminAuth.getUser();
@@ -2382,7 +2382,9 @@
         async refresh() {
             const list = document.getElementById('verificationsList');
             if (!list) return;
-            list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Fetching...</div>';
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>';
+            }
             
             try {
                 const url = `${API_URL}/admin/pending-verifications`;
@@ -2776,14 +2778,18 @@
 
     // --- ACTIVITY MODULE ---
     const Activity = {
+        data: [],
         async refresh() {
             const list = document.getElementById('activityList');
             if (!list) return;
-            list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching logs...</div>';
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
+                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading activity logs...</div>';
+            }
 
             try {
                 const res = await apiFetch(`admin/activity-logs`);
                 const logs = await res.json();
+                this.data = logs || [];
                 
                 if (!logs || logs.length === 0) {
                     list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">No activity logs found.</div>';
@@ -3234,14 +3240,12 @@
             }
         }, 1000);
 
-        // Auto-refresh current tab every 30 seconds
+        // Auto-refresh dashboard stats every 60 seconds (silent, no loading flash)
         setInterval(() => {
-            if (typeof currentTab !== 'undefined') {
-                console.log('Auto-refreshing current tab:', currentTab);
-                if (currentTab === 'dashboard') refreshDashboard();
-                else switchTab(currentTab); 
+            if (typeof currentTab !== 'undefined' && currentTab === 'dashboard') {
+                refreshDashboard();
             }
-        }, 30000);
+        }, 60000);
 
         // ---- Android Back Button Handler ----
         // Uses custom modal instead of window.confirm() (which is blocked on Android WebView)
