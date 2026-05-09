@@ -94,6 +94,8 @@ from routers.payment_routes import payment_bp
 
 from routers.report_routes import report_bp
 
+from routers.paymongo_routes import paymongo_bp
+
 from utils.pdf_generator import generate_booking_pdf
 
 import io
@@ -107,6 +109,8 @@ app.register_blueprint(booking_bp)
 app.register_blueprint(payment_bp)
 
 app.register_blueprint(report_bp)
+
+app.register_blueprint(paymongo_bp)
 
 
 

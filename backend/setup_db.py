@@ -217,6 +217,7 @@ def create_tables_and_data():
         cursor.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS return_province VARCHAR(100)")
         cursor.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS return_municipality VARCHAR(100)")
         cursor.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS return_barangay VARCHAR(100)")
+        cursor.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS paymongo_link_id VARCHAR(100)")
 
         # Create vehicle_images
         cursor.execute("""

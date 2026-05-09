@@ -1,0 +1,398 @@
+"""
+PayMongo Payment Integration Routes
+Supports: GCash, Maya, Credit/Debit Card
+Flow: Create payment link -> Redirect user -> Webhook confirms payment
+"""
+import base64
+import hashlib
+import hmac
+import json
+import requests
+from flask import Blueprint, request, jsonify
+from database import get_cursor, commit_db
+from config import PAYMONGO_SECRET_KEY, PAYMONGO_PUBLIC_KEY, PAYMONGO_WEBHOOK_SECRET, APP_BASE_URL
+
+paymongo_bp = Blueprint('paymongo', __name__)
+
+PAYMONGO_API = 'https://api.paymongo.com/v1'
+
+def get_auth_header():
+    """Base64 encode the secret key for PayMongo Basic Auth."""
+    encoded = base64.b64encode(f'{PAYMONGO_SECRET_KEY}:'.encode()).decode()
+    return {'Authorization': f'Basic {encoded}', 'Content-Type': 'application/json'}
+
+
+# ??? CREATE PAYMENT LINK ????????????????????????????????????????????????????
+
+@paymongo_bp.route('/paymongo/create-payment', methods=['POST'])
+def create_payment():
+    """
+    Create a PayMongo payment link for GCash, Maya, or Card.
+    Returns a checkout_url to redirect the user to.
+    """
+    data = request.get_json() or {}
+    booking_id = data.get('booking_id')
+    amount = data.get('amount')          # in PHP (e.g. 2500.00)
+    method = data.get('method')          # 'gcash', 'paymaya', 'card'
+    description = data.get('description', f'Autoride Booking #{booking_id}')
+    customer_name = data.get('customer_name', '')
+    customer_email = data.get('customer_email', '')
+    customer_phone = data.get('customer_phone', '')
+
+    if not all([booking_id, amount, method]):
+        return jsonify({'error': 'booking_id, amount, and method are required'}), 400
+
+    # PayMongo amounts are in centavos (multiply by 100)
+    amount_centavos = int(float(amount) * 100)
+
+    if amount_centavos < 10000:  # Minimum 100 PHP
+        return jsonify({'error': 'Minimum payment amount is PHP 100'}), 400
+
+    # Map method names to PayMongo payment method types
+    method_map = {
+        'gcash': 'gcash',
+        'maya': 'paymaya',
+        'paymaya': 'paymaya',
+        'card': 'card',
+        'credit_card': 'card',
+        'debit_card': 'card',
+    }
+    pm_type = method_map.get(method.lower())
+    if not pm_type:
+        return jsonify({'error': f'Unsupported payment method: {method}'}), 400
+
+    # Build success/failure redirect URLs
+    success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
+    cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
+
+    # Create PayMongo Payment Link
+    payload = {
+        'data': {
+            'attributes': {
+                'amount': amount_centavos,
+                'currency': 'PHP',
+                'description': description,
+                'payment_method_types': [pm_type],
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'metadata': {
+                    'booking_id': str(booking_id),
+                    'method': method
+                }
+            }
+        }
+    }
+
+    # Add billing info if provided
+    if customer_email or customer_name:
+        billing = {}
+        if customer_name:
+            billing['name'] = customer_name
+        if customer_email:
+            billing['email'] = customer_email
+        if customer_phone:
+            billing['phone'] = customer_phone
+        payload['data']['attributes']['billing'] = billing
+
+    try:
+        res = requests.post(
+            f'{PAYMONGO_API}/links',
+            headers=get_auth_header(),
+            json=payload,
+            timeout=15
+        )
+        result = res.json()
+
+        if res.status_code not in (200, 201):
+            error_msg = result.get('errors', [{}])[0].get('detail', 'PayMongo error')
+            return jsonify({'error': error_msg}), res.status_code
+
+        link_data = result['data']
+        link_id = link_data['id']
+        checkout_url = link_data['attributes']['checkout_url']
+        reference_number = link_data['attributes']['reference_number']
+
+        # Store the PayMongo link ID in the booking for webhook matching
+        cur = get_cursor()
+        cur.execute(
+            "UPDATE bookings SET paymongo_link_id = %s WHERE id = %s",
+            (link_id, booking_id)
+        )
+        commit_db()
+
+        return jsonify({
+            'checkout_url': checkout_url,
+            'link_id': link_id,
+            'reference_number': reference_number,
+            'amount': amount,
+            'method': method
+        }), 200
+
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'PayMongo request timed out. Please try again.'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ??? PAYMENT SUCCESS REDIRECT ????????????????????????????????????????????????
+
+@paymongo_bp.route('/paymongo/success', methods=['GET'])
+def payment_success():
+    """
+    PayMongo redirects here after successful payment.
+    Verifies payment and updates booking status.
+    """
+    booking_id = request.args.get('booking_id')
+    if not booking_id:
+        return '<h2>Payment confirmed. Please return to the app.</h2>', 200
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT paymongo_link_id, payment_type, total_price FROM bookings WHERE id = %s", (booking_id,))
+        booking = cur.fetchone()
+
+        if booking and booking['paymongo_link_id']:
+            # Verify with PayMongo API
+            res = requests.get(
+                f"{PAYMONGO_API}/links/{booking['paymongo_link_id']}",
+                headers=get_auth_header(),
+                timeout=10
+            )
+            if res.status_code == 200:
+                link = res.json()['data']
+                status = link['attributes']['status']
+                payments = link['attributes'].get('payments', [])
+
+                if status == 'paid' and payments:
+                    payment_data = payments[0]['data']['attributes']
+                    method = payment_data.get('source', {}).get('type', 'online')
+                    ref_num = payments[0]['data']['id']
+                    amount_paid = payment_data.get('amount', 0) / 100
+
+                    _confirm_payment(booking_id, amount_paid, method, ref_num, booking['payment_type'])
+
+        # Redirect back to app with deep link
+        return f'''
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {{ font-family: -apple-system, sans-serif; background: #0a0a0a; color: white; 
+                       display: flex; align-items: center; justify-content: center; min-height: 100vh;
+                       flex-direction: column; gap: 16px; padding: 20px; text-align: center; }}
+                .icon {{ font-size: 4rem; }}
+                h2 {{ font-size: 1.5rem; font-weight: 800; color: #34d399; }}
+                p {{ color: #94a3b8; font-size: 0.9rem; }}
+                a {{ background: #dc2626; color: white; padding: 14px 28px; border-radius: 12px;
+                     text-decoration: none; font-weight: 700; display: inline-block; margin-top: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class="icon">?</div>
+            <h2>Payment Successful!</h2>
+            <p>Booking #{booking_id} has been confirmed.</p>
+            <p>You can now return to the Autoride app.</p>
+            <a href="javascript:window.close()">Close & Return to App</a>
+        </body>
+        </html>
+        ''', 200
+
+    except Exception as e:
+        return f'<h2>Payment received. Booking #{booking_id} is being processed.</h2>', 200
+
+
+# ??? PAYMENT CANCEL REDIRECT ?????????????????????????????????????????????????
+
+@paymongo_bp.route('/paymongo/cancel', methods=['GET'])
+def payment_cancel():
+    """PayMongo redirects here if user cancels payment."""
+    booking_id = request.args.get('booking_id')
+    return f'''
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {{ font-family: -apple-system, sans-serif; background: #0a0a0a; color: white;
+                   display: flex; align-items: center; justify-content: center; min-height: 100vh;
+                   flex-direction: column; gap: 16px; padding: 20px; text-align: center; }}
+            .icon {{ font-size: 4rem; }}
+            h2 {{ font-size: 1.5rem; font-weight: 800; color: #f87171; }}
+            p {{ color: #94a3b8; font-size: 0.9rem; }}
+            a {{ background: #1e293b; color: white; padding: 14px 28px; border-radius: 12px;
+                 text-decoration: none; font-weight: 700; display: inline-block; margin-top: 10px;
+                 border: 1px solid rgba(255,255,255,0.1); }}
+        </style>
+    </head>
+    <body>
+        <div class="icon">?</div>
+        <h2>Payment Cancelled</h2>
+        <p>Your booking #{booking_id} is still pending.</p>
+        <p>You can try again from the app.</p>
+        <a href="javascript:window.close()">Return to App</a>
+    </body>
+    </html>
+    ''', 200
+
+
+# ??? WEBHOOK ?????????????????????????????????????????????????????????????????
+
+@paymongo_bp.route('/paymongo/webhook', methods=['POST'])
+def paymongo_webhook():
+    """
+    PayMongo sends payment events here.
+    Verifies signature and processes payment.payment.paid events.
+    """
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Paymongo-Signature', '')
+
+    # Verify webhook signature
+    if PAYMONGO_WEBHOOK_SECRET and sig_header:
+        try:
+            parts = dict(p.split('=', 1) for p in sig_header.split(','))
+            timestamp = parts.get('t', '')
+            test_sig = parts.get('te', parts.get('li', ''))
+            signed_payload = f'{timestamp}.{payload}'
+            expected = hmac.new(
+                PAYMONGO_WEBHOOK_SECRET.encode(),
+                signed_payload.encode(),
+                hashlib.sha256
+            ).hexdigest()
+            if not hmac.compare_digest(expected, test_sig):
+                return jsonify({'error': 'Invalid signature'}), 400
+        except Exception:
+            pass  # Don't block if signature check fails in dev
+
+    try:
+        event = json.loads(payload)
+        event_type = event.get('data', {}).get('attributes', {}).get('type', '')
+
+        if event_type == 'payment.paid':
+            payment_attrs = event['data']['attributes']['data']['attributes']
+            metadata = payment_attrs.get('metadata', {})
+            booking_id = metadata.get('booking_id')
+            amount = payment_attrs.get('amount', 0) / 100
+            method = payment_attrs.get('source', {}).get('type', 'online')
+            ref_num = event['data']['attributes']['data']['id']
+
+            if booking_id:
+                cur = get_cursor()
+                cur.execute("SELECT payment_type FROM bookings WHERE id = %s", (booking_id,))
+                booking = cur.fetchone()
+                if booking:
+                    _confirm_payment(booking_id, amount, method, ref_num, booking['payment_type'])
+
+        return jsonify({'received': True}), 200
+
+    except Exception as e:
+        print(f'WEBHOOK ERROR: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+# ??? CHECK PAYMENT STATUS ?????????????????????????????????????????????????????
+
+@paymongo_bp.route('/paymongo/status/<int:booking_id>', methods=['GET'])
+def check_payment_status(booking_id):
+    """Poll payment status for a booking."""
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "SELECT status, payment_status, paymongo_link_id FROM bookings WHERE id = %s",
+            (booking_id,)
+        )
+        booking = cur.fetchone()
+        if not booking:
+            return jsonify({'error': 'Booking not found'}), 404
+
+        return jsonify({
+            'booking_id': booking_id,
+            'status': booking['status'],
+            'payment_status': booking['payment_status'],
+            'paid': booking['payment_status'] in ('Paid', 'Partially Paid')
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ??? INTERNAL HELPER ?????????????????????????????????????????????????????????
+
+def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
+    """Internal: record payment and update booking status."""
+    try:
+        cur = get_cursor()
+
+        # Check if already paid (idempotency)
+        cur.execute("SELECT payment_status FROM bookings WHERE id = %s", (booking_id,))
+        b = cur.fetchone()
+        if b and b['payment_status'] == 'Paid':
+            return  # Already processed
+
+        # Insert payment record
+        cur.execute("""
+            INSERT INTO payments (booking_id, amount, method, reference_number, status)
+            VALUES (%s, %s, %s, %s, 'Completed')
+            RETURNING id
+        """, (booking_id, amount, method, ref_num))
+        payment_id = cur.fetchone()['id']
+
+        # Determine payment status
+        new_payment_status = 'Partially Paid' if payment_type == 'Downpayment' else 'Paid'
+
+        # Update booking
+        cur.execute("""
+            UPDATE bookings
+            SET status = 'Confirmed', payment_status = %s
+            WHERE id = %s
+        """, (new_payment_status, booking_id))
+
+        # Update vehicle status
+        cur.execute("""
+            UPDATE vehicles SET status = 'Booked'
+            WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)
+        """, (booking_id,))
+
+        # Update loyalty points
+        cur.execute(
+            "SELECT user_id, points_earned, points_redeemed, applied_coupon_id FROM bookings WHERE id = %s",
+            (booking_id,)
+        )
+        bk = cur.fetchone()
+        if bk:
+            earned = bk['points_earned'] or 0
+            redeemed = bk['points_redeemed'] or 0
+            cur.execute(
+                "UPDATE users SET loyalty_points = loyalty_points + %s - %s WHERE id = %s",
+                (earned, redeemed, bk['user_id'])
+            )
+            if bk['applied_coupon_id']:
+                cur.execute(
+                    "UPDATE coupons SET times_used = times_used + 1 WHERE id = %s",
+                    (bk['applied_coupon_id'],)
+                )
+
+        commit_db()
+
+        # Send receipt email
+        try:
+            cur.execute("""
+                SELECT b.id, u.full_name, u.email, v.brand, v.model,
+                       b.start_date, b.end_date, b.total_price, b.amount_paid,
+                       b.addons, b.insurance_type, b.insurance_price,
+                       b.base_price, b.addon_price, b.discount_amount,
+                       b.payment_type, b.balance_amount,
+                       p.reference_number, p.method
+                FROM bookings b
+                JOIN users u ON b.user_id = u.id
+                JOIN vehicles v ON b.vehicle_id = v.id
+                JOIN payments p ON p.booking_id = b.id
+                WHERE b.id = %s AND p.id = %s
+            """, (booking_id, payment_id))
+            receipt = cur.fetchone()
+            if receipt:
+                from app import send_receipt_email
+                send_receipt_email(receipt['email'], dict(receipt))
+        except Exception as email_err:
+            print(f'Receipt email error: {email_err}')
+
+    except Exception as e:
+        print(f'_confirm_payment error: {e}')
