@@ -23,6 +23,7 @@
             --border: rgba(255, 255, 255, 0.1);
             --radius-lg: 24px;
             --radius-md: 16px;
+            --radius: 16px;
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
@@ -401,6 +402,24 @@
         }
         .btn-premium:active { transform: scale(0.96); box-shadow: 0 5px 10px var(--primary-glow); }
 
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 16px var(--primary-glow);
+        }
+        .btn-primary:active { transform: scale(0.96); }
+
         .btn-outline {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
@@ -608,13 +627,13 @@
 
         <div class="stat-card">
             <h5>TOTAL REVENUE</h5>
-            <div class="value" id="dashTotalRevenue">â‚±413,000.00</div>
+            <div class="value" id="dashTotalRevenue">?ï¿½</div>
             <div class="stat-icon">ðŸ’°</div>
         </div>
 
         <div class="stat-card">
             <h5>FLEET UTILIZATION</h5>
-            <div class="value" id="dashTotalBookings">5</div>
+            <div class="value" id="dashTotalBookings">ï¿½</div>
             <div class="label">Total System Bookings</div>
             <div class="stat-icon">ðŸ“Š</div>
         </div>
@@ -694,7 +713,7 @@
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
 
-            <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+            <div class="stat-card" onclick="showNotification('Push notifications are managed through the device settings.', 'info')" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                 <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-bell" style="color: var(--text-muted);"></i>
                 </div>
@@ -796,10 +815,7 @@
         </div>
 
         <div id="verificationsList" style="display: grid; gap: 16px; margin-bottom: 40px;">
-            <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                <i class="fas fa-sync-alt fa-spin" style="font-size: 2rem; color: var(--primary); margin-bottom: 15px;"></i>
-                <p style="color: var(--text-muted); font-weight: 600;">Syncing with server...</p>
-            </div>
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>
         </div>
     </div>
 
@@ -1255,15 +1271,15 @@
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">—</div>
+            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ï¿½</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">—</div>
+            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ï¿½</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">—</div>
+            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ï¿½</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
         </div>
     </div>
@@ -1335,7 +1351,6 @@
 </div>
 
 <script>
-    console.log('Autoride Admin Mobile v2.2.3 loaded.');
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
     
@@ -1350,7 +1365,6 @@
 
     const adminAuth = {
         login: async function() {
-            console.log('Login attempt started');
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
             const btn = document.getElementById('loginBtn');
@@ -1365,14 +1379,12 @@
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
 
             try {
-                console.log('Fetching login...', `${API_BASE}/api/admin/login`);
                 const res = await fetch(`${API_URL}/admin/login`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
-                console.log('Login response:', res.status, data);
                 if (res.ok) {
                     localStorage.setItem('admin_user', JSON.stringify(data));
                     this.initSession();
@@ -1400,7 +1412,6 @@
             location.reload(); 
         },
         initSession: function() {
-            console.log('Initializing session...');
             const user = this.getUser();
             if (user) {
                 const overlay = document.getElementById('adminLoginOverlay');
@@ -1523,7 +1534,6 @@
                 if (specs.seats) document.getElementById('vSeats').value = specs.seats;
                 if (specs.type) document.getElementById('vType').value = specs.type;
                 if (specs.fuel) document.getElementById('vFuel').value = specs.fuel;
-                console.log(`Mobile: Auto-filled specs for ${model}`);
             }
         },
 
@@ -1638,7 +1648,6 @@
         },
 
         async deleteImage(id) {
-            console.log('Mobile: Vehicles.deleteImage called with ID:', id);
             if (!id) {
                 alert('Error: Image ID is missing.');
                 return;
@@ -1647,14 +1656,11 @@
             
             try {
                 const url = `${API_URL}/vehicles/images/${id}`;
-                console.log('Mobile: Sending DELETE request to:', url);
                 
                 const res = await fetch(url, { method: 'DELETE' });
-                console.log('Mobile: Delete response status:', res.status);
                 
                 if (res.ok) {
                     const data = await res.json();
-                    console.log('Mobile: Delete success:', data);
                     
                     this.galleryDetails = this.galleryDetails.filter(img => img.id !== id);
                     this.renderGalleryManager();
@@ -1767,8 +1773,9 @@
             if (tabId === 'tickets' && typeof Tickets !== 'undefined' && Tickets.data.length === 0) Tickets.refresh();
             if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
             if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
-            if (tabId === 'reports' && typeof Reports !== 'undefined') Reports.refresh();
+            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) Reports.refresh();
             if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
+            if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
 
             if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
             else if (typeof GPS !== 'undefined') GPS.stopLive();
@@ -1900,14 +1907,14 @@
             try {
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
                 if (res.ok) {
-                    alert('Booking marked as Fully Paid!');
+                    showNotification('Booking marked as Fully Paid!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to update payment');
+                    showNotification(data.error || 'Failed to update payment', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async cancel(id) {
@@ -1920,9 +1927,9 @@
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to cancel');
+                    showNotification(data.error || 'Failed to cancel', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async approve(id) {
@@ -1935,24 +1942,24 @@
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to approve');
+                    showNotification(data.error || 'Failed to approve', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async reject(id) {
             if (!confirm('Reject this booking?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/reject`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/reject`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Booking Rejected!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to reject');
+                    showNotification(data.error || 'Failed to reject', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async pickup(id) {
@@ -2210,17 +2217,17 @@
             if (!confirm('Mark this vehicle as picked up?')) return;
             try {
                 const res = await apiFetch(`bookings/${id}/pickup`, { method: 'PUT' });
-                if (res.ok) { alert('Successfully picked up!'); this.refresh(); }
-                else { alert('Failed: ' + res.status); }
-            } catch (err) { alert('Action failed: ' + err.message); }
+                if (res.ok) { showNotification('Vehicle picked up!', 'success'); this.refresh(); }
+                else { showNotification('Failed: ' + res.status, 'error'); }
+            } catch (err) { showNotification('Action failed: ' + err.message, 'error'); }
         },
         async complete(id) {
             if (!confirm('Mark this vehicle as returned?')) return;
             try {
                 const res = await apiFetch(`bookings/${id}/complete`, { method: 'PUT' });
-                if (res.ok) { alert('Vehicle returned successfully!'); this.refresh(); }
-                else { alert('Failed: ' + res.status); }
-            } catch (err) { alert('Action failed: ' + err.message); }
+                if (res.ok) { showNotification('Vehicle returned successfully!', 'success'); this.refresh(); }
+                else { showNotification('Failed: ' + res.status, 'error'); }
+            } catch (err) { showNotification('Action failed: ' + err.message, 'error'); }
         },
         /*
         async assign(id) {
@@ -2388,7 +2395,6 @@
             
             try {
                 const url = `${API_URL}/admin/pending-verifications`;
-                console.log('Fetching verifications from:', url);
                 const res = await fetch(url);
                 
                 if (!res.ok) {
@@ -2826,7 +2832,9 @@
     // --- REPORTS MODULE ---
     const Reports = {
         chart: null,
+        _loaded: false,
         async refresh() {
+            this._loaded = true;
             try {
                 const res = await fetch(`${API_BASE}/api/admin/detailed-stats`);
                 const data = await res.json();
@@ -3212,7 +3220,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('Mobile Admin JS Loaded');
         adminAuth.initSession();
 
         // Login Button Listener
@@ -3394,7 +3401,7 @@
                     ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : '—';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ï¿½';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
                     <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
@@ -3429,7 +3436,7 @@
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : '—';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ï¿½';
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `
@@ -3462,7 +3469,7 @@
 
             <!-- Info -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || '—'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ï¿½'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
