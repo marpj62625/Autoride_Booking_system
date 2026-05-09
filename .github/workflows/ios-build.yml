@@ -31,19 +31,15 @@ jobs:
         working-directory: customer_mobile
         run: npx cap sync ios
 
-      - name: Resolve Swift Package dependencies
+      - name: Install CocoaPods
         working-directory: customer_mobile/ios/App
-        run: |
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -resolvePackageDependencies
+        run: pod install --repo-update
 
       - name: Build iOS archive (unsigned)
         working-directory: customer_mobile/ios/App
         run: |
           xcodebuild \
-            -project App.xcodeproj \
+            -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -destination "generic/platform=iOS" \
