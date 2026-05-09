@@ -985,6 +985,188 @@ def admin_list_users():
         if 'cur' in locals(): cur.close()
 
 
+# ??? ADMIN USER MANAGEMENT ENDPOINTS ???????????????????????????????????????
+
+@app.route('/admin/users/list', methods=['GET'])
+def admin_users_list():
+    """Full user list with all fields for admin management."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, full_name, email, phone, is_verified, is_frozen,
+                   freeze_reason, loyalty_points, created_at,
+                   profile_picture, auth_provider
+            FROM users
+            ORDER BY created_at DESC
+        """)
+        users = cur.fetchall()
+        result = []
+        for u in users:
+            d = dict(u)
+            d['is_verified'] = int(d.get('is_verified') or 0)
+            d['is_frozen'] = bool(d.get('is_frozen'))
+            d['loyalty_points'] = int(d.get('loyalty_points') or 0)
+            if d.get('created_at'):
+                d['created_at'] = str(d['created_at'])
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>', methods=['GET'])
+def admin_user_detail(user_id):
+    """Get full user detail including booking count."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, full_name, email, phone, is_verified, is_frozen,
+                   freeze_reason, loyalty_points, created_at,
+                   profile_picture, auth_provider, province, municipality, barangay
+            FROM users WHERE id = %s
+        """, (user_id,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        d = dict(user)
+        d['is_verified'] = int(d.get('is_verified') or 0)
+        d['is_frozen'] = bool(d.get('is_frozen'))
+        d['loyalty_points'] = int(d.get('loyalty_points') or 0)
+        if d.get('created_at'):
+            d['created_at'] = str(d['created_at'])
+        # Booking stats
+        cur.execute("SELECT COUNT(*) as total FROM bookings WHERE user_id = %s", (user_id,))
+        d['total_bookings'] = (cur.fetchone() or {}).get('total', 0)
+        cur.execute("SELECT COUNT(*) as completed FROM bookings WHERE user_id = %s AND status = 'Completed'", (user_id,))
+        d['completed_bookings'] = (cur.fetchone() or {}).get('completed', 0)
+        cur.execute("SELECT COALESCE(SUM(total_price),0) as spent FROM bookings WHERE user_id = %s AND status = 'Completed'", (user_id,))
+        d['total_spent'] = float((cur.fetchone() or {}).get('spent', 0))
+        return jsonify(d), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>/freeze', methods=['POST'])
+def admin_freeze_user(user_id):
+    """Freeze or unfreeze a user account."""
+    data = request.get_json() or {}
+    freeze = data.get('freeze', True)
+    reason = data.get('reason', '')
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "UPDATE users SET is_frozen = %s, freeze_reason = %s WHERE id = %s",
+            (freeze, reason if freeze else None, user_id)
+        )
+        commit_db()
+        action = 'frozen' if freeze else 'unfrozen'
+        return jsonify({"message": f"User account {action} successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>/edit', methods=['PUT'])
+def admin_edit_user(user_id):
+    """Edit user basic info."""
+    data = request.get_json() or {}
+    full_name = data.get('full_name', '').strip()
+    phone = data.get('phone', '').strip()
+    if not full_name:
+        return jsonify({"error": "Full name is required"}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "UPDATE users SET full_name = %s, phone = %s WHERE id = %s",
+            (full_name, phone or None, user_id)
+        )
+        commit_db()
+        return jsonify({"message": "User updated successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>/loyalty', methods=['PUT'])
+def admin_set_loyalty(user_id):
+    """Set loyalty points for a user."""
+    data = request.get_json() or {}
+    points = data.get('points')
+    if points is None or not str(points).lstrip('-').isdigit():
+        return jsonify({"error": "Valid points value required"}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("UPDATE users SET loyalty_points = %s WHERE id = %s", (int(points), user_id))
+        commit_db()
+        return jsonify({"message": f"Loyalty points set to {points}."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+def admin_reset_password(user_id):
+    """Reset user password to a new value."""
+    data = request.get_json() or {}
+    new_password = data.get('new_password', '').strip()
+    if len(new_password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+    import hashlib
+    hashed = hashlib.sha256(new_password.encode()).hexdigest()
+    try:
+        cur = get_cursor()
+        cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, user_id))
+        commit_db()
+        return jsonify({"message": "Password reset successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>', methods=['DELETE'])
+def admin_delete_user(user_id):
+    """Permanently delete a user account."""
+    try:
+        cur = get_cursor()
+        cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        commit_db()
+        return jsonify({"message": "User deleted successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/export', methods=['GET'])
+def admin_export_users():
+    """Export users as CSV."""
+    import csv, io
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, full_name, email, phone, is_verified, is_frozen,
+                   loyalty_points, created_at
+            FROM users ORDER BY created_at DESC
+        """)
+        users = cur.fetchall()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['ID', 'Full Name', 'Email', 'Phone', 'Verified', 'Frozen', 'Loyalty Points', 'Joined'])
+        for u in users:
+            d = dict(u)
+            writer.writerow([
+                d['id'], d['full_name'], d['email'], d.get('phone', ''),
+                'Yes' if d.get('is_verified') else 'No',
+                'Yes' if d.get('is_frozen') else 'No',
+                d.get('loyalty_points', 0),
+                str(d.get('created_at', ''))
+            ])
+        from flask import Response
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=users_export.csv'}
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ??? END ADMIN USER MANAGEMENT ??????????????????????????????????????????????
+
+
 
 @app.route('/user/points', methods=['GET'])
 
