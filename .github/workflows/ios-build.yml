@@ -26,21 +26,24 @@ jobs:
       - name: Add iOS platform
         working-directory: customer_mobile
         run: |
-          if [ ! -d "ios" ]; then
-            npx cap add ios
-          else
-            echo "iOS platform already exists"
-          fi
+          npx cap add ios || true
+          echo "--- Listing customer_mobile directory ---"
+          ls -la
+          echo "--- Checking if ios/App exists ---"
+          ls -la ios/ || echo "ios/ directory NOT found"
+          ls -la ios/App/ || echo "ios/App/ directory NOT found"
 
       - name: Sync Capacitor iOS
         working-directory: customer_mobile
-        run: npx cap sync ios
+        run: |
+          npx cap sync ios
+          echo "--- After sync, checking ios/App ---"
+          ls -la ios/App/ || echo "ios/App/ still NOT found after sync"
+          ls -la ios/App/Podfile || echo "Podfile NOT found"
 
       - name: Install CocoaPods
-        working-directory: customer_mobile
-        run: |
-          cd ios/App
-          pod install --repo-update
+        working-directory: customer_mobile/ios/App
+        run: pod install --repo-update
 
       - name: Build iOS archive (unsigned)
         run: |
