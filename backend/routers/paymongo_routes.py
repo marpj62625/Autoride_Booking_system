@@ -316,6 +316,7 @@ def check_payment_status(booking_id):
 
         # Not yet confirmed — actively check PayMongo API
         link_id = booking['paymongo_link_id']
+        debug_info = {'link_id': link_id, 'has_key': bool(PAYMONGO_SECRET_KEY)}
         if link_id and PAYMONGO_SECRET_KEY:
             try:
                 res = requests.get(
@@ -323,10 +324,13 @@ def check_payment_status(booking_id):
                     headers=get_auth_header(),
                     timeout=10
                 )
+                debug_info['paymongo_http'] = res.status_code
                 if res.status_code == 200:
                     link_data = res.json()['data']
                     link_status = link_data['attributes']['status']
                     payments = link_data['attributes'].get('payments', [])
+                    debug_info['link_status'] = link_status
+                    debug_info['payments_count'] = len(payments)
 
                     if link_status == 'paid' and payments:
                         payment_data = payments[0]['data']['attributes']
@@ -342,14 +346,18 @@ def check_payment_status(booking_id):
                             'payment_status': new_status,
                             'paid': True
                         }), 200
+                else:
+                    debug_info['paymongo_error'] = res.json()
             except Exception as pm_err:
+                debug_info['exception'] = str(pm_err)
                 print(f'PayMongo API check error: {pm_err}')
 
         return jsonify({
             'booking_id': booking_id,
             'status': booking['status'],
             'payment_status': booking['payment_status'],
-            'paid': False
+            'paid': False,
+            'debug': debug_info
         }), 200
 
     except Exception as e:

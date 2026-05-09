@@ -1636,7 +1636,12 @@ function checkPaymentStatus(bookingId, amount, method) {
         showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
         showPage('page-bookings');
       } else {
-        showToast('Payment not yet confirmed. Please complete payment in ' + method + ' first.', 'info');
+        var debugMsg = '';
+        if (data.debug) {
+          var d = data.debug;
+          debugMsg = ' [key:' + d.has_key + ' link:' + (d.link_status || 'none') + ' pays:' + (d.payments_count || 0) + ']';
+        }
+        showToast('Payment not yet confirmed.' + debugMsg, 'info');
       }
     })
     .catch(function() {
