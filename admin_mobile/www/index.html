@@ -1297,6 +1297,7 @@
 </div>
 
 <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
         <i class="fas fa-th-large"></i>
         <span>Dashboard</span>
     </button>
@@ -3473,20 +3474,16 @@
 
             <!-- Loyalty Points -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">Loyalty Points</div>
-                <div style="display:flex;gap:10px;">
-                    <input id="umLoyaltyInput" type="number" value="${u.loyalty_points || 0}" placeholder="Points" style="flex:1;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;">
-                    <button onclick="UserMgmt.setLoyalty(${u.id})" style="padding:11px 18px;background:rgba(245,158,11,0.2);border:1px solid var(--amber);border-radius:10px;color:var(--amber);font-weight:700;font-size:0.8rem;">Set</button>
-                </div>
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-star" style="color:var(--amber);margin-right:6px;"></i>Loyalty Points</div>
+                <input id="umLoyaltyInput" type="number" value="${u.loyalty_points || 0}" placeholder="Points" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.9rem;margin-bottom:10px;">
+                <button onclick="UserMgmt.setLoyalty(${u.id})" style="width:100%;padding:12px;background:rgba(245,158,11,0.15);border:1px solid var(--amber);border-radius:10px;color:var(--amber);font-weight:700;font-size:0.85rem;">Update Points</button>
             </div>
 
             <!-- Reset Password -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">Reset Password</div>
-                <div style="display:flex;gap:10px;">
-                    <input id="umNewPass" type="password" placeholder="New password (min 8 chars)" style="flex:1;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;">
-                    <button onclick="UserMgmt.resetPassword(${u.id})" style="padding:11px 18px;background:rgba(99,102,241,0.2);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.8rem;">Reset</button>
-                </div>
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-key" style="color:var(--primary-light);margin-right:6px;"></i>Reset Password</div>
+                <input id="umNewPass" type="password" placeholder="New password (min 8 chars)" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.9rem;margin-bottom:10px;">
+                <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(99,102,241,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
             </div>
 
             <!-- Freeze / Unfreeze -->
