@@ -25,30 +25,25 @@ jobs:
 
       - name: Add iOS platform
         working-directory: customer_mobile
-        run: |
-          npx cap add ios || true
-          echo "--- Listing customer_mobile directory ---"
-          ls -la
-          echo "--- Checking if ios/App exists ---"
-          ls -la ios/ || echo "ios/ directory NOT found"
-          ls -la ios/App/ || echo "ios/App/ directory NOT found"
+        run: npx cap add ios || true
 
       - name: Sync Capacitor iOS
         working-directory: customer_mobile
-        run: |
-          npx cap sync ios
-          echo "--- After sync, checking ios/App ---"
-          ls -la ios/App/ || echo "ios/App/ still NOT found after sync"
-          ls -la ios/App/Podfile || echo "Podfile NOT found"
+        run: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: Resolve Swift Package dependencies
         working-directory: customer_mobile/ios/App
-        run: pod install --repo-update
-
-      - name: Build iOS archive (unsigned)
         run: |
           xcodebuild \
-            -workspace "$GITHUB_WORKSPACE/customer_mobile/ios/App/App.xcworkspace" \
+            -project App.xcodeproj \
+            -scheme App \
+            -resolvePackageDependencies
+
+      - name: Build iOS archive (unsigned)
+        working-directory: customer_mobile/ios/App
+        run: |
+          xcodebuild \
+            -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination "generic/platform=iOS" \
@@ -56,6 +51,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            SWIFT_SERIALIZE_DEBUGGING_OPTIONS=NO \
             archive
 
       - name: Package IPA from archive
@@ -64,7 +60,7 @@ jobs:
           cp -r "$RUNNER_TEMP/Autoride.xcarchive/Products/Applications/App.app" "$RUNNER_TEMP/Payload/"
           cd "$RUNNER_TEMP"
           zip -r Autoride.ipa Payload
-          echo "IPA created at $RUNNER_TEMP/Autoride.ipa"
+          ls -la Autoride.ipa
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
