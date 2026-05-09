@@ -292,22 +292,64 @@ def paymongo_webhook():
 
 @paymongo_bp.route('/paymongo/status/<int:booking_id>', methods=['GET'])
 def check_payment_status(booking_id):
-    """Poll payment status for a booking."""
+    """
+    Poll payment status. Actively checks PayMongo API if not yet confirmed in DB.
+    """
     try:
         cur = get_cursor()
         cur.execute(
-            "SELECT status, payment_status, paymongo_link_id FROM bookings WHERE id = %s",
+            "SELECT status, payment_status, paymongo_link_id, payment_type FROM bookings WHERE id = %s",
             (booking_id,)
         )
         booking = cur.fetchone()
         if not booking:
             return jsonify({'error': 'Booking not found'}), 404
 
+        # Already confirmed in DB
+        if booking['payment_status'] in ('Paid', 'Partially Paid'):
+            return jsonify({
+                'booking_id': booking_id,
+                'status': booking['status'],
+                'payment_status': booking['payment_status'],
+                'paid': True
+            }), 200
+
+        # Not yet confirmed — actively check PayMongo API
+        link_id = booking['paymongo_link_id']
+        if link_id and PAYMONGO_SECRET_KEY:
+            try:
+                res = requests.get(
+                    f'{PAYMONGO_API}/links/{link_id}',
+                    headers=get_auth_header(),
+                    timeout=10
+                )
+                if res.status_code == 200:
+                    link_data = res.json()['data']
+                    link_status = link_data['attributes']['status']
+                    payments = link_data['attributes'].get('payments', [])
+
+                    if link_status == 'paid' and payments:
+                        payment_data = payments[0]['data']['attributes']
+                        method = payment_data.get('source', {}).get('type', 'online')
+                        ref_num = payments[0]['data']['id']
+                        amount_paid = payment_data.get('amount', 0) / 100
+                        pay_type = booking['payment_type'] or 'Full'
+                        _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
+                        new_status = 'Partially Paid' if pay_type == 'Downpayment' else 'Paid'
+                        return jsonify({
+                            'booking_id': booking_id,
+                            'status': 'Confirmed',
+                            'payment_status': new_status,
+                            'paid': True
+                        }), 200
+            except Exception as pm_err:
+                print(f'PayMongo API check error: {pm_err}')
+
         return jsonify({
             'booking_id': booking_id,
             'status': booking['status'],
             'payment_status': booking['payment_status'],
-            'paid': booking['payment_status'] in ('Paid', 'Partially Paid')
+            'paid': False
         }), 200
 
     except Exception as e:
