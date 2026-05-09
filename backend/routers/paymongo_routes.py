@@ -163,12 +163,21 @@ def payment_success():
                 status = link['attributes']['status']
                 payments = link['attributes'].get('payments', [])
 
-                if status == 'paid' and payments:
-                    payment_data = payments[0]['data']['attributes']
-                    method = payment_data.get('source', {}).get('type', 'online')
-                    ref_num = payments[0]['data']['id']
-                    amount_paid = payment_data.get('amount', 0) / 100
-
+                if status == 'paid':
+                    method = 'online'
+                    ref_num = booking['paymongo_link_id']
+                    amount_paid = float(booking.get('total_price') or 0)
+                    if payments:
+                        try:
+                            p = payments[0]
+                            p_attrs = p.get('data', p).get('attributes', p)
+                            method = p_attrs.get('source', {}).get('type', 'online')
+                            ref_num = p.get('data', p).get('id', ref_num)
+                            raw_amount = p_attrs.get('amount', 0)
+                            if raw_amount > 0:
+                                amount_paid = raw_amount / 100
+                        except Exception:
+                            pass
                     _confirm_payment(booking_id, amount_paid, method, ref_num, booking['payment_type'])
 
         # Redirect back to app with deep link
@@ -332,11 +341,26 @@ def check_payment_status(booking_id):
                     debug_info['link_status'] = link_status
                     debug_info['payments_count'] = len(payments)
 
-                    if link_status == 'paid' and payments:
-                        payment_data = payments[0]['data']['attributes']
-                        method = payment_data.get('source', {}).get('type', 'online')
-                        ref_num = payments[0]['data']['id']
-                        amount_paid = payment_data.get('amount', 0) / 100
+                    # PayMongo paid link — process payment
+                    if link_status == 'paid':
+                        # Try to get payment details from payments array
+                        method = 'online'
+                        ref_num = link_id
+                        amount_paid = float(booking.get('total_price') or 0)
+
+                        if payments:
+                            try:
+                                p = payments[0]
+                                # Handle both nested and flat payment structures
+                                p_attrs = p.get('data', p).get('attributes', p)
+                                method = p_attrs.get('source', {}).get('type', 'online')
+                                ref_num = p.get('data', p).get('id', link_id)
+                                raw_amount = p_attrs.get('amount', 0)
+                                if raw_amount > 0:
+                                    amount_paid = raw_amount / 100
+                            except Exception as parse_err:
+                                debug_info['parse_error'] = str(parse_err)
+
                         pay_type = booking['payment_type'] or 'Full'
                         _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
                         new_status = 'Partially Paid' if pay_type == 'Downpayment' else 'Paid'
