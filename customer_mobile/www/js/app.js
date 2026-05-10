@@ -392,6 +392,74 @@ initApp();
 document.addEventListener('DOMContentLoaded', initApp);
 document.addEventListener('deviceready', initApp);
 
+// ---------------------------------------------------------------------------
+// PHYSICAL BACK BUTTON HANDLER
+// ---------------------------------------------------------------------------
+var _backPressedOnce = false;
+var _backPressTimer = null;
+
+function handleBackButton() {
+  // 1. Close any open rental agreement modal
+  var rentalModal = document.getElementById('rentalAgreementModal');
+  if (rentalModal && rentalModal.parentNode) {
+    rentalModal.remove();
+    return;
+  }
+
+  // 2. Close any active overlay page (in reverse open order)
+  var overlays = document.querySelectorAll('.overlay-page.active');
+  if (overlays.length > 0) {
+    // Close the last opened overlay
+    var last = overlays[overlays.length - 1];
+    closeOverlay(last.id);
+    return;
+  }
+
+  // 3. On auth pages — do nothing (can't go back from login/register)
+  var authPages = document.querySelectorAll('.auth-page.active');
+  if (authPages.length > 0) {
+    // On register/otp pages, go back to login
+    var activeAuth = authPages[0];
+    if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify' || activeAuth.id === 'page-phone-login') {
+      showPage('page-login');
+    }
+    // On login page itself — double-back to exit
+    else {
+      if (_backPressedOnce) {
+        clearTimeout(_backPressTimer);
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+          window.Capacitor.Plugins.App.exitApp();
+        }
+      } else {
+        _backPressedOnce = true;
+        showToast('Press back again to exit', 'info');
+        _backPressTimer = setTimeout(function() { _backPressedOnce = false; }, 2000);
+      }
+    }
+    return;
+  }
+
+  // 4. On main pages — double-back to exit
+  if (_backPressedOnce) {
+    clearTimeout(_backPressTimer);
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      window.Capacitor.Plugins.App.exitApp();
+    }
+  } else {
+    _backPressedOnce = true;
+    showToast('Press back again to exit', 'info');
+    _backPressTimer = setTimeout(function() { _backPressedOnce = false; }, 2000);
+  }
+}
+
+// Register back button — both Cordova and Capacitor
+document.addEventListener('backbutton', handleBackButton, false);
+document.addEventListener('deviceready', function() {
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener('backButton', handleBackButton);
+  }
+}, false);
+
 // AUTH: LOGIN
 function doLogin() {
   var email = sanitizeInput(document.getElementById('loginEmail').value.trim());
