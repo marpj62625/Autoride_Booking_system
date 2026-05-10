@@ -1,6 +1,12 @@
 from flask import Blueprint, request, jsonify
 from database import get_cursor, commit_db
 import json
+from notifications import (
+    sms_service,
+    compose_full_payment_sms,
+    compose_downpayment_sms,
+    compose_balance_payment_sms,
+)
 
 payment_bp = Blueprint('payment', __name__)
 
@@ -77,7 +83,36 @@ def process_payment():
 
         commit_db()
 
-        # 5. Send Email Receipt
+        # 5. Send SMS notification to customer
+        try:
+            cur.execute("""
+                SELECT b.user_id, b.payment_type, b.balance_amount,
+                       p.amount, p.method, p.reference_number
+                FROM bookings b
+                JOIN payments p ON p.booking_id = b.id
+                WHERE b.id = %s AND p.id = %s
+            """, (booking_id, payment_id))
+            sms_data = cur.fetchone()
+            if sms_data:
+                if sms_data['payment_type'] == 'Downpayment':
+                    msg = compose_downpayment_sms(
+                        booking_id,
+                        float(sms_data['amount']),
+                        float(sms_data['balance_amount'] or 0),
+                        sms_data['reference_number'],
+                    )
+                else:
+                    msg = compose_full_payment_sms(
+                        booking_id,
+                        float(sms_data['amount']),
+                        sms_data['method'],
+                        sms_data['reference_number'],
+                    )
+                sms_service.notify_customer(sms_data['user_id'], msg)
+        except Exception as sms_err:
+            print(f"ERROR SENDING PAYMENT SMS: {sms_err}")
+
+        # 6. Send Email Receipt
         try:
             cur.execute("""
                 SELECT b.id, u.full_name, u.email, v.brand, v.model,
@@ -149,7 +184,26 @@ def pay_balance(booking_id):
         
         commit_db()
         print(f"DEBUG: Balance Payment received for booking {booking_id}. Payment ID: {payment_id}")
-        
+
+        # Send SMS notification to customer
+        try:
+            cur.execute(
+                "SELECT user_id FROM bookings WHERE id = %s",
+                (booking_id,)
+            )
+            bk_row = cur.fetchone()
+            if bk_row:
+                sms_service.notify_customer(
+                    bk_row['user_id'],
+                    compose_balance_payment_sms(
+                        booking_id,
+                        float(amount),
+                        reference_number,
+                    )
+                )
+        except Exception as sms_err:
+            print(f"ERROR SENDING BALANCE PAYMENT SMS: {sms_err}")
+
         return jsonify({
             "message": "Balance paid successfully",
             "payment_id": payment_id,

@@ -270,6 +270,78 @@ with app.app_context():
 
 
 
+def migrate_sms_notification():
+
+    """Adds SMS notification columns and tables: sms_opt_out on users, phone/is_active on admins, sms_logs table with indexes."""
+
+    try:
+
+        cur = get_cursor()
+
+        # 1.1 users.sms_opt_out
+
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_opt_out BOOLEAN NOT NULL DEFAULT FALSE")
+
+        # 1.2 admins.phone and admins.is_active
+
+        cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS phone VARCHAR(20)")
+
+        cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE")
+
+        # 1.3 sms_logs table
+
+        cur.execute("""
+
+            CREATE TABLE IF NOT EXISTS sms_logs (
+
+                id                      SERIAL PRIMARY KEY,
+
+                recipient_phone         TEXT NOT NULL,
+
+                recipient_type          TEXT NOT NULL CHECK (recipient_type IN ('customer', 'driver', 'admin')),
+
+                recipient_id            INTEGER,
+
+                message_body            TEXT NOT NULL,
+
+                status                  TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'retried')),
+
+                semaphore_response_code INTEGER,
+
+                error_message           TEXT,
+
+                created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+            )
+
+        """)
+
+        # 1.4 indexes
+
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_sms_logs_created_at ON sms_logs (created_at DESC)")
+
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_sms_logs_recipient_type ON sms_logs (recipient_type)")
+
+        commit_db()
+
+        print("DEBUG: SMS Notification Migration Successful")
+
+    except Exception as e:
+
+        print(f"DEBUG: SMS Notification Migration Failed: {e}")
+
+    finally:
+
+        if 'cur' in locals(): cur.close()
+
+
+
+with app.app_context():
+
+    migrate_sms_notification()
+
+
+
 @app.before_request
 
 def log_request_info():
@@ -380,7 +452,7 @@ def is_gmail(email: str) -> bool:
 
 
 
-from notifications import send_notification
+from notifications import sms_service, compose_booking_approved_sms, compose_booking_rejected_sms, compose_admin_cancel_sms, compose_pickup_sms, compose_completed_sms, compose_driver_approved_sms, compose_driver_rejected_sms, compose_license_approved_sms, compose_license_rejected_sms, compose_customer_cancel_sms, compose_full_payment_sms, compose_downpayment_sms, compose_admin_payment_proof_sms, compose_modify_booking_sms, compose_split_request_sms, compose_split_paid_sms, compose_admin_driver_application_sms, compose_otp_sms
 
 
 
@@ -827,6 +899,20 @@ def admin_verify_user():
             
 
         commit_db()
+
+        
+
+        # Send SMS notification based on verification status
+
+        if status == 2:
+
+            sms_service.notify_customer(user_id, compose_license_approved_sms())
+
+        elif status == 0:
+
+            sms_service.notify_customer(user_id, compose_license_rejected_sms())
+
+        
 
         return jsonify({"message": f"User status updated to {status}"}), 200
 
@@ -1496,9 +1582,13 @@ def request_otp():
 
         cur.execute("SELECT id FROM users WHERE phone=%s", (phone,))
 
-        if not cur.fetchone():
+        user_row = cur.fetchone()
+
+        if not user_row:
 
             return jsonify({"error": "No account found with this phone number. Please register normally first."}), 404
+
+        user_id = user_row[0]
 
             
 
@@ -1510,81 +1600,33 @@ def request_otp():
 
         
 
-        # REAL SMS SENDING via Semaphore
+        # Ensure number is in 11-digit local format for Semaphore (09XXXXXXXXX)
 
-        try:
+        formatted_phone = phone
 
-            # Ensure number is in 11-digit local format for Semaphore (09XXXXXXXXX)
+        if phone.startswith('+63'):
 
-            formatted_phone = phone
+            formatted_phone = '0' + phone[3:]
 
-            if phone.startswith('+63'):
+        elif not phone.startswith('0'):
 
-                formatted_phone = '0' + phone[3:]
+            formatted_phone = '0' + phone
 
-            elif not phone.startswith('0'):
+        
 
-                formatted_phone = '0' + phone
+        # Send OTP via SMS_Service abstraction
 
+        sent = sms_service.notify_phone(formatted_phone, compose_otp_sms(otp), 'customer', user_id)
 
+        
 
-            print(f"DEBUG: Attempting to send SMS to {formatted_phone} via Semaphore...")
+        if not sent:
 
-            
+            return jsonify({"error": "Failed to send OTP. Please try again."}), 500
 
-            response = requests.post("https://api.semaphore.co/api/v4/messages", data={
+        
 
-                'apikey': SEMAPHORE_API_KEY,
-
-                'number': formatted_phone,
-
-                'message': f"Your Autoride login code is: {otp}",
-
-                'sendername': SEMAPHORE_SENDER_NAME
-
-            })
-
-            
-
-            if response.status_code == 200:
-
-                print(f"DEBUG: Semaphore SMS sent successfully!")
-
-                return jsonify({"message": "OTP sent successfully to your mobile phone"}), 200
-
-            else:
-
-                raise Exception(f"Semaphore API Error: {response.text}")
-
-
-
-        except Exception as sms_err:
-
-            error_msg = str(sms_err)
-
-            print(f"!!! SEMAPHORE SMS FAILED !!!")
-
-            print(f"Error: {error_msg}")
-
-            # FALLBACK FOR TESTING
-
-            print(f"--------------------------------------------------")
-
-            print(f"FALLBACK OTP for {phone}: {otp}")
-
-            print(f"--------------------------------------------------")
-
-            
-
-            return jsonify({
-
-                "error": "Failed to send SMS.",
-
-                "message": f"Semaphore Error: {error_msg}. Check terminal for fallback code.",
-
-                "debug_otp": otp
-
-            }), 500
+        return jsonify({"message": "OTP sent successfully to your mobile phone"}), 200
 
             
 
@@ -2576,6 +2618,37 @@ def legacy_payment():
 
             commit_db()
 
+            # Send SMS notifications after successful commit
+            try:
+                user_id_sms = details_dict.get('user_id') or (booking_row['user_id'] if booking_row else None)
+                if not user_id_sms:
+                    cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+                    bk_row = cur.fetchone()
+                    user_id_sms = bk_row['user_id'] if bk_row else None
+                if user_id_sms:
+                    payment_type = details_dict.get('payment_type', 'Full')
+                    if payment_type == 'Downpayment':
+                        sms_msg = compose_downpayment_sms(
+                            booking_id,
+                            float(details_dict.get('amount_paid') or amount or 0),
+                            float(details_dict.get('balance_amount') or 0),
+                            details_dict.get('reference_number', reference_number),
+                        )
+                    else:
+                        sms_msg = compose_full_payment_sms(
+                            booking_id,
+                            float(details_dict.get('amount_paid') or amount or 0),
+                            details_dict.get('method', method or ''),
+                            details_dict.get('reference_number', reference_number),
+                        )
+                    sms_service.notify_customer(user_id_sms, sms_msg)
+                customer_name = details_dict.get('full_name', 'Customer')
+                sms_service.notify_admins(
+                    compose_admin_payment_proof_sms(booking_id, customer_name, float(amount or 0))
+                )
+            except Exception as sms_err:
+                print(f"ERROR SENDING LEGACY PAYMENT SMS: {sms_err}")
+
             return jsonify({
 
                 "message": "Payment successful",
@@ -2609,7 +2682,20 @@ def legacy_payment():
         
 
         commit_db()
-
+        # Send admin payment proof alert when receipt details are unavailable
+        try:
+            cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+            bk_row = cur.fetchone()
+            if bk_row:
+                sms_service.notify_customer(
+                    bk_row['user_id'],
+                    compose_full_payment_sms(booking_id, float(amount or 0), method or '', reference_number)
+                )
+            sms_service.notify_admins(
+                compose_admin_payment_proof_sms(booking_id, 'Customer', float(amount or 0))
+            )
+        except Exception as sms_err:
+            print(f"ERROR SENDING LEGACY PAYMENT SMS: {sms_err}")
         return jsonify({"message": "Payment successful"}), 201
 
     except Exception as e:
@@ -2841,7 +2927,7 @@ def cancel_booking():
 
         # Only allow cancellation if pending
 
-        cur.execute("SELECT status FROM bookings WHERE id=%s", (booking_id,))
+        cur.execute("SELECT status, user_id FROM bookings WHERE id=%s", (booking_id,))
 
         bk = cur.fetchone()
 
@@ -2858,6 +2944,22 @@ def cancel_booking():
             
 
             commit_db()
+
+            
+
+            # Send SMS notification
+
+            reason = (data or {}).get('reason', 'No reason provided')
+
+            sms_service.notify_customer(
+
+                bk['user_id'],
+
+                compose_customer_cancel_sms(booking_id, reason)
+
+            )
+
+            
 
             return jsonify({"message": "Booking cancelled"}), 200
 
@@ -3257,6 +3359,18 @@ def modify_booking():
 
         commit_db()
 
+        # Send SMS notification to customer
+        try:
+            cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+            bk_row = cur.fetchone()
+            if bk_row:
+                sms_service.notify_customer(
+                    bk_row['user_id'],
+                    compose_modify_booking_sms(booking_id, new_start, new_end, round(new_total, 2))
+                )
+        except Exception as sms_err:
+            print(f"ERROR SENDING MODIFY BOOKING SMS: {sms_err}")
+
         return jsonify({"message": "Booking modified", "new_total": float(f"{new_total:.2f}")}), 200
 
     except Exception as e:
@@ -3323,7 +3437,25 @@ def request_split_bill():
 
         commit_db()
 
-        
+        # Send SMS to partner with split request details
+        try:
+            # Look up partner user_id by email
+            cur.execute("SELECT id FROM users WHERE email = %s", (partner_email,))
+            partner_row = cur.fetchone()
+            # Look up initiator name from the booking
+            cur.execute(
+                "SELECT u.full_name FROM bookings b JOIN users u ON b.user_id = u.id WHERE b.id = %s",
+                (booking_id,)
+            )
+            initiator_row = cur.fetchone()
+            initiator_name = initiator_row['full_name'] if initiator_row else 'A user'
+            if partner_row:
+                sms_service.notify_customer(
+                    partner_row['id'],
+                    compose_split_request_sms(booking_id, initiator_name, float(amount))
+                )
+        except Exception as sms_err:
+            print(f"ERROR SENDING SPLIT REQUEST SMS: {sms_err}")
 
         return jsonify({"message": "Split bill request sent successfully."}), 201
 
@@ -3436,6 +3568,28 @@ def pay_split_bill():
              
 
         commit_db()
+
+        # Send SMS to booking initiator about the split payment
+        try:
+            if b_id:
+                # Fetch amount paid and booking initiator user_id
+                cur.execute(
+                    "SELECT amount FROM split_payments WHERE id = %s",
+                    (split_id,)
+                )
+                sp_row = cur.fetchone()
+                cur.execute(
+                    "SELECT user_id FROM bookings WHERE id = %s",
+                    (b_id['booking_id'],)
+                )
+                bk_row = cur.fetchone()
+                if sp_row and bk_row:
+                    sms_service.notify_customer(
+                        bk_row['user_id'],
+                        compose_split_paid_sms(b_id['booking_id'], float(sp_row['amount']))
+                    )
+        except Exception as sms_err:
+            print(f"ERROR SENDING SPLIT PAID SMS: {sms_err}")
 
         return jsonify({"message": "Split bill paid successfully."}), 200
 
@@ -3635,22 +3789,19 @@ def approve_booking(booking_id):
 
         
 
-        # Send Notification
-
-        cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
-
+        # Send SMS notification
+        cur.execute(
+            """SELECT b.user_id, v.brand, v.model, b.start_date
+               FROM bookings b
+               JOIN vehicles v ON b.vehicle_id = v.id
+               WHERE b.id = %s""",
+            (booking_id,)
+        )
         b_data = cur.fetchone()
-
         if b_data:
-
-            send_notification(
-
-                user_id=b_data['user_id'],
-
-                subject="Booking Approved! - Autoride",
-
-                message=f"Good news! Your booking #{booking_id} has been approved. You can now prepare for your trip."
-
+            sms_service.notify_customer(
+                b_data['user_id'],
+                compose_booking_approved_sms(booking_id, b_data['brand'], b_data['model'], b_data['start_date'])
             )
 
             
@@ -3923,15 +4074,15 @@ def user_cancel_booking():
 
         
 
-        # Send Notification
+        # Send SMS notification
 
-        send_notification(
+        reason = (request.json or {}).get('reason', 'No reason provided')
 
-            user_id=booking['user_id'],
+        sms_service.notify_customer(
 
-            subject="Booking Cancelled",
+            booking['user_id'],
 
-            message=f"Your booking #{booking_id} has been successfully cancelled."
+            compose_customer_cancel_sms(booking_id, reason)
 
         )
 
@@ -3981,15 +4132,13 @@ def reject_booking(booking_id):
 
         
 
-        # Send Notification
+        # Send SMS notification
 
-        send_notification(
+        sms_service.notify_customer(
 
-            user_id=row['user_id'],
+            row['user_id'],
 
-            subject="Booking Rejected - Autoride",
-
-            message=f"Unfortunately, your booking #{booking_id} has been rejected. Please contact support for more information."
+            compose_booking_rejected_sms(booking_id)
 
         )
 
@@ -4067,15 +4216,15 @@ def admin_cancel_booking(booking_id):
 
 
 
-        # Send Notification
+        # Send SMS notification
 
-        send_notification(
+        reason = (request.json or {}).get('reason', 'No reason provided')
 
-            user_id=booking['user_id'],
+        sms_service.notify_customer(
 
-            subject="Booking Cancelled - Autoride",
+            booking['user_id'],
 
-            message=f"Your booking #{booking_id} has been cancelled. A refund has been initiated if applicable."
+            compose_admin_cancel_sms(booking_id, reason)
 
         )
 
@@ -4109,21 +4258,31 @@ def pickup_booking(booking_id):
 
         
 
-        # Send Notification
+        # Send SMS notification
 
-        cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute(
+
+            """SELECT b.user_id, v.brand, v.model, b.end_date
+
+               FROM bookings b
+
+               JOIN vehicles v ON b.vehicle_id = v.id
+
+               WHERE b.id = %s""",
+
+            (booking_id,)
+
+        )
 
         b_data = cur.fetchone()
 
         if b_data:
 
-            send_notification(
+            sms_service.notify_customer(
 
-                user_id=b_data['user_id'],
+                b_data['user_id'],
 
-                subject="Vehicle Picked Up - Autoride",
-
-                message=f"Drive safely! You have officially picked up the vehicle for booking #{booking_id}."
+                compose_pickup_sms(booking_id, b_data['brand'], b_data['model'], b_data['end_date'])
 
             )
 
@@ -4187,7 +4346,7 @@ def complete_booking(booking_id):
 
         
 
-        # Send Notification
+        # Send SMS notification
 
         cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
 
@@ -4195,13 +4354,11 @@ def complete_booking(booking_id):
 
         if b_data:
 
-            send_notification(
+            sms_service.notify_customer(
 
-                user_id=b_data['user_id'],
+                b_data['user_id'],
 
-                subject="Rental Completed - Autoride",
-
-                message=f"Thank you for choosing Autoride! Your booking #{booking_id} is now completed. We hope to see you again soon."
+                compose_completed_sms(booking_id)
 
             )
 
@@ -4365,21 +4522,31 @@ def approve_driver(driver_id):
 
         
 
-        # Send Notification
+        # Send SMS notification
 
-        cur.execute("SELECT user_id FROM drivers WHERE id = %s", (driver_id,))
+        cur.execute(
+
+            """SELECT d.user_id, u.full_name
+
+               FROM drivers d
+
+               JOIN users u ON d.user_id = u.id
+
+               WHERE d.id = %s""",
+
+            (driver_id,)
+
+        )
 
         d_data = cur.fetchone()
 
         if d_data:
 
-            send_notification(
+            sms_service.notify_customer(
 
-                user_id=d_data['user_id'],
+                d_data['user_id'],
 
-                subject="Driver Application Approved! - Autoride",
-
-                message="Congratulations! Your driver application has been approved. You can now start accepting bookings."
+                compose_driver_approved_sms(d_data['full_name'])
 
             )
 
@@ -4433,7 +4600,7 @@ def reject_driver(driver_id):
 
         
 
-        # Send Notification
+        # Send SMS notification
 
         cur.execute("SELECT user_id FROM drivers WHERE id = %s", (driver_id,))
 
@@ -4441,13 +4608,11 @@ def reject_driver(driver_id):
 
         if d_data:
 
-            send_notification(
+            sms_service.notify_customer(
 
-                user_id=d_data['user_id'],
+                d_data['user_id'],
 
-                subject="Driver Application Update - Autoride",
-
-                message=f"Your driver application has been rejected. Reason: {reason}. You can re-apply once the issues are resolved."
+                compose_driver_rejected_sms(reason)
 
             )
 
@@ -4556,6 +4721,14 @@ def apply_driver():
         """, (user_id, full_name, license_number, contact_info, filename))
 
         commit_db()
+
+        # Notify all active admins about the new driver application
+        try:
+            sms_service.notify_admins(
+                compose_admin_driver_application_sms(full_name)
+            )
+        except Exception as sms_err:
+            print(f"ERROR SENDING DRIVER APPLICATION SMS: {sms_err}")
 
         return jsonify({"message": "Application submitted"}), 201
 
@@ -7225,6 +7398,126 @@ def get_full_profile():
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
         return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/user/sms-preference', methods=['POST'])
+def update_sms_preference():
+    """Update a user's SMS opt-out preference.
+
+    Request body: { "user_id": int, "sms_opt_out": bool }
+    Returns 200 with { "user_id": int, "sms_opt_out": bool } on success.
+    Returns 400 on missing/invalid params, 404 if user not found.
+    """
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    sms_opt_out = data.get('sms_opt_out')
+
+    # Validate required parameters
+    if user_id is None or sms_opt_out is None:
+        return jsonify({'error': 'user_id and sms_opt_out are required'}), 400
+    if not isinstance(sms_opt_out, bool):
+        return jsonify({'error': 'sms_opt_out must be a boolean'}), 400
+
+    try:
+        cur = get_cursor()
+        # Check user exists
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if not cur.fetchone():
+            return jsonify({'error': 'User not found'}), 404
+        # Update preference
+        cur.execute(
+            "UPDATE users SET sms_opt_out = %s WHERE id = %s",
+            (sms_opt_out, user_id)
+        )
+        commit_db()
+        return jsonify({'user_id': user_id, 'sms_opt_out': sms_opt_out}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/sms-logs', methods=['GET'])
+def get_sms_logs():
+    """Return paginated SMS delivery logs ordered by created_at DESC.
+
+    Query params:
+      page          (int, default 1)
+      per_page      (int, default 50)
+      recipient_type (str, optional: 'customer' | 'driver' | 'admin')
+
+    Response 200:
+      { "logs": [...], "page": int, "per_page": int, "total": int }
+    """
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        recipient_type = request.args.get('recipient_type')
+
+        if page < 1:
+            page = 1
+        if per_page < 1:
+            per_page = 50
+
+        offset = (page - 1) * per_page
+
+        cur = get_cursor()
+
+        if recipient_type:
+            cur.execute(
+                "SELECT COUNT(*) AS total FROM sms_logs WHERE recipient_type = %s",
+                (recipient_type,)
+            )
+        else:
+            cur.execute("SELECT COUNT(*) AS total FROM sms_logs")
+
+        total = cur.fetchone()['total']
+
+        if recipient_type:
+            cur.execute(
+                """
+                SELECT id, recipient_phone, recipient_type, recipient_id,
+                       message_body, status, semaphore_response_code,
+                       error_message, created_at
+                FROM sms_logs
+                WHERE recipient_type = %s
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+                """,
+                (recipient_type, per_page, offset)
+            )
+        else:
+            cur.execute(
+                """
+                SELECT id, recipient_phone, recipient_type, recipient_id,
+                       message_body, status, semaphore_response_code,
+                       error_message, created_at
+                FROM sms_logs
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+                """,
+                (per_page, offset)
+            )
+
+        rows = cur.fetchall()
+        logs = []
+        for row in rows:
+            entry = dict(row)
+            # Serialize datetime to ISO string for JSON
+            if entry.get('created_at'):
+                entry['created_at'] = entry['created_at'].isoformat()
+            logs.append(entry)
+
+        return jsonify({
+            'logs': logs,
+            'page': page,
+            'per_page': per_page,
+            'total': total
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

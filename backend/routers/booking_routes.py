@@ -1,7 +1,13 @@
 from flask import Blueprint, request, jsonify
 from database import get_cursor, commit_db
 import json
-from notifications import send_notification
+from notifications import (
+    sms_service,
+    compose_booking_created_sms,
+    compose_admin_new_booking_sms,
+    compose_customer_cancel_sms,
+    compose_cash_paid_sms,
+)
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -86,11 +92,29 @@ def book_vehicle():
         booking_id = booking_data['id']
         commit_db()
         
-        # Send Notification
-        send_notification(
-            user_id=user_id,
-            subject="Booking Received! - Autoride",
-            message=f"We have received your booking #{booking_id}. Our team will review it shortly. Thank you!"
+        # Fetch vehicle brand/model and customer name for SMS
+        cur.execute(
+            "SELECT brand, model FROM vehicles WHERE id = %s",
+            (vehicle_id,)
+        )
+        vehicle_row = cur.fetchone()
+        brand = vehicle_row['brand'] if vehicle_row else 'Unknown'
+        model = vehicle_row['model'] if vehicle_row else 'Vehicle'
+
+        cur.execute(
+            "SELECT full_name FROM users WHERE id = %s",
+            (user_id,)
+        )
+        user_row = cur.fetchone()
+        customer_name = user_row['full_name'] if user_row else 'Customer'
+
+        # Send SMS notifications
+        sms_service.notify_customer(
+            user_id,
+            compose_booking_created_sms(booking_id, brand, model, start_date, end_date, total_price)
+        )
+        sms_service.notify_admins(
+            compose_admin_new_booking_sms(booking_id, customer_name, brand, model, start_date, end_date)
         )
         
         print(f"DEBUG: Created booking {booking_id} for user {user_id}")
@@ -151,11 +175,10 @@ def cancel_booking(booking_id):
         
         commit_db()
         
-        # Send Notification
-        send_notification(
-            user_id=user_id,
-            subject="Booking Cancelled",
-            message=f"Your booking #{booking_id} has been cancelled successfully. Reason: {reason}"
+        # Send SMS notification
+        sms_service.notify_customer(
+            user_id,
+            compose_customer_cancel_sms(booking_id, reason)
         )
         
         return jsonify({"message": "Booking cancelled successfully"}), 200
@@ -201,7 +224,19 @@ def admin_mark_paid(booking_id):
         
         commit_db()
         print(f"DEBUG: Admin marked booking {booking_id} as Paid.")
-        
+
+        # Send SMS notification to customer
+        try:
+            cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+            bk_row = cur.fetchone()
+            if bk_row:
+                sms_service.notify_customer(
+                    bk_row['user_id'],
+                    compose_cash_paid_sms(booking_id, total)
+                )
+        except Exception as sms_err:
+            print(f"ERROR SENDING CASH PAID SMS: {sms_err}")
+
         return jsonify({"message": "Booking marked as fully paid successfully."}), 200
 
     except Exception as e:

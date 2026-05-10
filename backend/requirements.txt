@@ -8,3 +8,5 @@ google-auth
 requests
 supabase
 gunicorn
+hypothesis==6.131.15
+pytest==8.3.5
