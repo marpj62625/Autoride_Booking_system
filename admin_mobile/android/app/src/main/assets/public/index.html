@@ -23,6 +23,7 @@
             --border: rgba(255, 255, 255, 0.1);
             --radius-lg: 24px;
             --radius-md: 16px;
+            --radius: 16px;
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
@@ -401,6 +402,24 @@
         }
         .btn-premium:active { transform: scale(0.96); box-shadow: 0 5px 10px var(--primary-glow); }
 
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 16px var(--primary-glow);
+        }
+        .btn-primary:active { transform: scale(0.96); }
+
         .btn-outline {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
@@ -563,6 +582,7 @@
         <a href="#" class="drawer-item" data-tab="bookings" onclick="navTo('bookings')"><i class="fas fa-calendar-alt"></i> Bookings</a>
         <a href="#" class="drawer-item" data-tab="gps" onclick="navTo('gps')"><i class="fas fa-map-marker-alt"></i> GPS Tracking</a>
         <a href="#" class="drawer-item" data-tab="verifications" onclick="navTo('verifications')"><i class="fas fa-user-check"></i> User Verifications</a>
+        <a href="#" class="drawer-item" data-tab="users" onclick="navTo('users')"><i class="fas fa-users"></i> User Management</a>
         <a href="#" class="drawer-item" data-tab="reports" onclick="navTo('reports')"><i class="fas fa-chart-pie"></i> Reports</a>
         <a href="#" class="drawer-item" data-tab="tickets" onclick="navTo('tickets')"><i class="fas fa-ticket-alt"></i> Support Tickets</a>
         <a href="#" class="drawer-item" data-tab="instructions" onclick="navTo('instructions')"><i class="fas fa-book"></i> Instructions</a>
@@ -607,13 +627,13 @@
 
         <div class="stat-card">
             <h5>TOTAL REVENUE</h5>
-            <div class="value" id="dashTotalRevenue">₱413,000.00</div>
+            <div class="value" id="dashTotalRevenue">?�</div>
             <div class="stat-icon">💰</div>
         </div>
 
         <div class="stat-card">
             <h5>FLEET UTILIZATION</h5>
-            <div class="value" id="dashTotalBookings">5</div>
+            <div class="value" id="dashTotalBookings">�</div>
             <div class="label">Total System Bookings</div>
             <div class="stat-icon">📊</div>
         </div>
@@ -693,7 +713,7 @@
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
 
-            <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+            <div class="stat-card" onclick="showNotification('Push notifications are managed through the device settings.', 'info')" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                 <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-bell" style="color: var(--text-muted);"></i>
                 </div>
@@ -795,10 +815,7 @@
         </div>
 
         <div id="verificationsList" style="display: grid; gap: 16px; margin-bottom: 40px;">
-            <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                <i class="fas fa-sync-alt fa-spin" style="font-size: 2rem; color: var(--primary); margin-bottom: 15px;"></i>
-                <p style="color: var(--text-muted); font-weight: 600;">Syncing with server...</p>
-            </div>
+            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>
         </div>
     </div>
 
@@ -1246,6 +1263,55 @@
     </div>
 </main>
 
+<!-- ===================== USER MANAGEMENT TAB ===================== -->
+<div id="users" class="tab-content" style="display:none; padding: 20px; padding-bottom: 100px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h1 class="page-title" style="margin:0;">User Management</h1>
+        <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
+            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">�</div>
+            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
+            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">�</div>
+            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
+            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">�</div>
+            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
+        </div>
+    </div>
+    <div style="display:flex; gap:10px; margin-bottom:12px;">
+        <div style="flex:1; position:relative;">
+            <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
+            <input type="text" id="umSearch" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 12px 12px 38px; background:var(--surface); border:1px solid var(--border); border-radius:50px; color:white; font-size:0.85rem;">
+        </div>
+        <button onclick="UserMgmt.exportCSV()" style="background:rgba(16,185,129,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
+        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Verified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Unverified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Frozen</button>
+    </div>
+    <div id="umList"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading users...</div></div>
+</div>
+
+<!-- User Detail Modal -->
+<div id="umModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); overflow-y:auto;">
+    <div style="min-height:100vh; display:flex; align-items:flex-end;">
+        <div style="width:100%; background:#1e293b; border-radius:28px 28px 0 0; padding:24px; max-height:92vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="font-size:1.1rem; font-weight:800;">User Details</h2>
+                <button onclick="UserMgmt.closeModal()" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; width:36px; height:36px; border-radius:10px; font-size:1rem;"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="umModalContent"></div>
+        </div>
+    </div>
+</div>
+
 <nav class="bottom-nav">
     <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
         <i class="fas fa-th-large"></i>
@@ -1285,7 +1351,6 @@
 </div>
 
 <script>
-    console.log('Autoride Admin Mobile v2.2.3 loaded.');
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
     
@@ -1300,7 +1365,6 @@
 
     const adminAuth = {
         login: async function() {
-            console.log('Login attempt started');
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
             const btn = document.getElementById('loginBtn');
@@ -1315,14 +1379,12 @@
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
 
             try {
-                console.log('Fetching login...', `${API_BASE}/api/admin/login`);
                 const res = await fetch(`${API_URL}/admin/login`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
-                console.log('Login response:', res.status, data);
                 if (res.ok) {
                     localStorage.setItem('admin_user', JSON.stringify(data));
                     this.initSession();
@@ -1350,7 +1412,6 @@
             location.reload(); 
         },
         initSession: function() {
-            console.log('Initializing session...');
             const user = this.getUser();
             if (user) {
                 const overlay = document.getElementById('adminLoginOverlay');
@@ -1386,7 +1447,10 @@
         data: [],
         async refresh() {
             const listContainer = document.getElementById('vehiclesList');
-            listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching from server...</div>';
+            // Only show loading state if list is empty (first load)
+            if (!listContainer.innerHTML.trim() || listContainer.innerHTML.includes('Loading vehicles')) {
+                listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>';
+            }
             try {
                 const res = await fetch(`${API_URL}/vehicles`);
                 if (!res.ok) throw new Error('Server not reachable');
@@ -1470,7 +1534,6 @@
                 if (specs.seats) document.getElementById('vSeats').value = specs.seats;
                 if (specs.type) document.getElementById('vType').value = specs.type;
                 if (specs.fuel) document.getElementById('vFuel').value = specs.fuel;
-                console.log(`Mobile: Auto-filled specs for ${model}`);
             }
         },
 
@@ -1585,7 +1648,6 @@
         },
 
         async deleteImage(id) {
-            console.log('Mobile: Vehicles.deleteImage called with ID:', id);
             if (!id) {
                 alert('Error: Image ID is missing.');
                 return;
@@ -1594,14 +1656,11 @@
             
             try {
                 const url = `${API_URL}/vehicles/images/${id}`;
-                console.log('Mobile: Sending DELETE request to:', url);
                 
                 const res = await fetch(url, { method: 'DELETE' });
-                console.log('Mobile: Delete response status:', res.status);
                 
                 if (res.ok) {
                     const data = await res.json();
-                    console.log('Mobile: Delete success:', data);
                     
                     this.galleryDetails = this.galleryDetails.filter(img => img.id !== id);
                     this.renderGalleryManager();
@@ -1697,7 +1756,6 @@
     let currentTab = 'dashboard';
     function switchTab(tabId) {
         currentTab = tabId;
-        console.log('Switching to tab:', tabId);
         try {
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.querySelectorAll('.nav-item, .drawer-item').forEach(l => l.classList.remove('active'));
@@ -1705,21 +1763,22 @@
             const target = document.getElementById(tabId);
             if (target) target.style.display = 'block';
             
-            // Sync both bottom nav and side drawer
             document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
             
-            if (tabId === 'vehicles') if(typeof Vehicles !== 'undefined') Vehicles.refresh();
-            if (tabId === 'bookings') if(typeof Bookings !== 'undefined') Bookings.refresh();
-            if (tabId === 'drivers') if(typeof Drivers !== 'undefined') Drivers.refresh();
-            if (tabId === 'gps') if(typeof GPS !== 'undefined') GPS.startLive();
-            else if(typeof GPS !== 'undefined') GPS.stopLive();
+            // Only load data if not already loaded (prevents "Fetching..." flash on every tab switch)
+            if (tabId === 'vehicles' && typeof Vehicles !== 'undefined' && Vehicles.data.length === 0) Vehicles.refresh();
+            if (tabId === 'bookings' && typeof Bookings !== 'undefined' && Bookings.data.length === 0) Bookings.refresh();
+            if (tabId === 'drivers' && typeof Drivers !== 'undefined' && Drivers.data.length === 0) Drivers.refresh();
+            if (tabId === 'verifications' && typeof Verifications !== 'undefined' && Verifications.data.length === 0) Verifications.refresh();
+            if (tabId === 'tickets' && typeof Tickets !== 'undefined' && Tickets.data.length === 0) Tickets.refresh();
+            if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
+            if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
+            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) Reports.refresh();
+            if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
+            if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
 
-            if (tabId === 'verifications') if(typeof Verifications !== 'undefined') Verifications.refresh();
-            if (tabId === 'tickets') if(typeof Tickets !== 'undefined') Tickets.refresh();
-            if (tabId === 'instructions') if(typeof Instructions !== 'undefined') Instructions.refresh();
-            if (tabId === 'staff') if(typeof Staff !== 'undefined') Staff.refresh();
-            if (tabId === 'reports') if(typeof Reports !== 'undefined') Reports.refresh();
-            if (tabId === 'activity') if(typeof Activity !== 'undefined') Activity.refresh();
+            if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
+            else if (typeof GPS !== 'undefined') GPS.stopLive();
             
             if (tabId === 'settings') {
                 const user = adminAuth.getUser();
@@ -1728,11 +1787,7 @@
                     if(document.getElementById('settingsName')) document.getElementById('settingsName').textContent = user.full_name;
                     if(document.getElementById('settingsRole')) document.getElementById('settingsRole').textContent = user.role.replace('_', ' ').toUpperCase();
                     if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
-                    
-                    // Settings fetch (Always fetch if the tab is settings now)
-                    if (typeof Settings !== 'undefined') {
-                        Settings.fetch();
-                    }
+                    if (typeof Settings !== 'undefined') Settings.fetch();
                 }
             }
         } catch (err) {
@@ -1744,7 +1799,9 @@
         data: [],
         async refresh() {
             const list = document.getElementById('bookingsList');
-            list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+            }
             try {
                 // Fetch Stats and List in parallel
                 const user = adminAuth.getUser();
@@ -1850,14 +1907,14 @@
             try {
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
                 if (res.ok) {
-                    alert('Booking marked as Fully Paid!');
+                    showNotification('Booking marked as Fully Paid!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to update payment');
+                    showNotification(data.error || 'Failed to update payment', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async cancel(id) {
@@ -1870,9 +1927,9 @@
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to cancel');
+                    showNotification(data.error || 'Failed to cancel', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async approve(id) {
@@ -1885,24 +1942,24 @@
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to approve');
+                    showNotification(data.error || 'Failed to approve', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async reject(id) {
             if (!confirm('Reject this booking?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/reject`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/reject`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Booking Rejected!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
                 } else {
                     const data = await res.json();
-                    alert(data.error || 'Failed to reject');
+                    showNotification(data.error || 'Failed to reject', 'error');
                 }
-            } catch (err) { alert('Network error'); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async pickup(id) {
@@ -2160,17 +2217,17 @@
             if (!confirm('Mark this vehicle as picked up?')) return;
             try {
                 const res = await apiFetch(`bookings/${id}/pickup`, { method: 'PUT' });
-                if (res.ok) { alert('Successfully picked up!'); this.refresh(); }
-                else { alert('Failed: ' + res.status); }
-            } catch (err) { alert('Action failed: ' + err.message); }
+                if (res.ok) { showNotification('Vehicle picked up!', 'success'); this.refresh(); }
+                else { showNotification('Failed: ' + res.status, 'error'); }
+            } catch (err) { showNotification('Action failed: ' + err.message, 'error'); }
         },
         async complete(id) {
             if (!confirm('Mark this vehicle as returned?')) return;
             try {
                 const res = await apiFetch(`bookings/${id}/complete`, { method: 'PUT' });
-                if (res.ok) { alert('Vehicle returned successfully!'); this.refresh(); }
-                else { alert('Failed: ' + res.status); }
-            } catch (err) { alert('Action failed: ' + err.message); }
+                if (res.ok) { showNotification('Vehicle returned successfully!', 'success'); this.refresh(); }
+                else { showNotification('Failed: ' + res.status, 'error'); }
+            } catch (err) { showNotification('Action failed: ' + err.message, 'error'); }
         },
         /*
         async assign(id) {
@@ -2332,11 +2389,12 @@
         async refresh() {
             const list = document.getElementById('verificationsList');
             if (!list) return;
-            list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Fetching...</div>';
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>';
+            }
             
             try {
                 const url = `${API_URL}/admin/pending-verifications`;
-                console.log('Fetching verifications from:', url);
                 const res = await fetch(url);
                 
                 if (!res.ok) {
@@ -2726,14 +2784,18 @@
 
     // --- ACTIVITY MODULE ---
     const Activity = {
+        data: [],
         async refresh() {
             const list = document.getElementById('activityList');
             if (!list) return;
-            list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Fetching logs...</div>';
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
+                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading activity logs...</div>';
+            }
 
             try {
                 const res = await apiFetch(`admin/activity-logs`);
                 const logs = await res.json();
+                this.data = logs || [];
                 
                 if (!logs || logs.length === 0) {
                     list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">No activity logs found.</div>';
@@ -2770,7 +2832,9 @@
     // --- REPORTS MODULE ---
     const Reports = {
         chart: null,
+        _loaded: false,
         async refresh() {
+            this._loaded = true;
             try {
                 const res = await fetch(`${API_BASE}/api/admin/detailed-stats`);
                 const data = await res.json();
@@ -3156,7 +3220,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('Mobile Admin JS Loaded');
         adminAuth.initSession();
 
         // Login Button Listener
@@ -3184,14 +3247,12 @@
             }
         }, 1000);
 
-        // Auto-refresh current tab every 30 seconds
+        // Auto-refresh dashboard stats every 60 seconds (silent, no loading flash)
         setInterval(() => {
-            if (typeof currentTab !== 'undefined') {
-                console.log('Auto-refreshing current tab:', currentTab);
-                if (currentTab === 'dashboard') refreshDashboard();
-                else switchTab(currentTab); 
+            if (typeof currentTab !== 'undefined' && currentTab === 'dashboard') {
+                refreshDashboard();
             }
-        }, 30000);
+        }, 60000);
 
         // ---- Android Back Button Handler ----
         // Uses custom modal instead of window.confirm() (which is blocked on Android WebView)
@@ -3268,6 +3329,303 @@
     window.openChangePasswordModal = openChangePasswordModal;
     window.submitChangePassword = submitChangePassword;
     window.navTo = navTo;
+
+    // ??? USER MANAGEMENT MODULE ???????????????????????????????????????????
+    const UserMgmt = {
+        _all: [],
+        _filter: 'all',
+
+        async refresh() {
+            document.getElementById('umList').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i></div>';
+            try {
+                const res = await apiFetch('admin/users/list');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load users');
+                this._all = data;
+                this._updateStats();
+                this.applyFilters();
+            } catch (e) {
+                document.getElementById('umList').innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${e.message}</div>`;
+            }
+        },
+
+        _updateStats() {
+            const total = this._all.length;
+            const verified = this._all.filter(u => u.is_verified === 2).length;
+            const frozen = this._all.filter(u => u.is_frozen).length;
+            document.getElementById('umTotalCount').textContent = total;
+            document.getElementById('umVerifiedCount').textContent = verified;
+            document.getElementById('umFrozenCount').textContent = frozen;
+        },
+
+        setFilter(f, btn) {
+            this._filter = f;
+            document.querySelectorAll('.um-filter-btn').forEach(b => {
+                b.style.background = 'transparent';
+                b.style.color = 'var(--text-muted)';
+                b.style.borderColor = 'var(--border)';
+            });
+            btn.style.background = 'var(--primary)';
+            btn.style.color = 'white';
+            btn.style.borderColor = 'var(--primary)';
+            this.applyFilters();
+        },
+
+        applyFilters() {
+            const q = (document.getElementById('umSearch').value || '').toLowerCase();
+            let list = this._all;
+            if (this._filter === 'verified') list = list.filter(u => u.is_verified === 2);
+            else if (this._filter === 'unverified') list = list.filter(u => u.is_verified !== 2);
+            else if (this._filter === 'frozen') list = list.filter(u => u.is_frozen);
+            if (q) list = list.filter(u =>
+                (u.full_name || '').toLowerCase().includes(q) ||
+                (u.email || '').toLowerCase().includes(q) ||
+                (u.phone || '').toLowerCase().includes(q)
+            );
+            this._render(list);
+        },
+
+        _render(list) {
+            const el = document.getElementById('umList');
+            if (!list.length) {
+                el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No users found</div>';
+                return;
+            }
+            el.innerHTML = list.map(u => {
+                const verifiedBadge = u.is_verified === 2
+                    ? `<span style="background:rgba(16,185,129,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
+                    : u.is_verified === 1
+                    ? `<span style="background:rgba(245,158,11,0.15);color:var(--amber);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
+                    : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
+                const frozenBadge = u.is_frozen
+                    ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
+                    : '';
+                const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : '�';
+                return `
+                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
+                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:800;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
+                        <div style="margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;">
+                        <div style="font-size:0.65rem;color:var(--text-muted);">${joined}</div>
+                        <div style="font-size:0.7rem;color:var(--amber);margin-top:4px;font-weight:700;"><i class="fas fa-star" style="font-size:0.6rem;"></i> ${u.loyalty_points || 0} pts</div>
+                    </div>
+                </div>`;
+            }).join('');
+        },
+
+        async openModal(userId) {
+            document.getElementById('umModal').style.display = 'block';
+            document.getElementById('umModalContent').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i></div>';
+            try {
+                const res = await apiFetch(`admin/users/${userId}`);
+                const u = await res.json();
+                if (!res.ok) throw new Error(u.error || 'Failed to load user');
+                this._renderModal(u);
+            } catch (e) {
+                document.getElementById('umModalContent').innerHTML = `<div style="color:var(--danger);text-align:center;padding:20px;">${e.message}</div>`;
+            }
+        },
+
+        _renderModal(u) {
+            const verifiedLabel = u.is_verified === 2 ? 'Verified' : u.is_verified === 1 ? 'Pending' : 'Unverified';
+            const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
+            const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
+            const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : '�';
+            const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
+
+            document.getElementById('umModalContent').innerHTML = `
+            <!-- Avatar & Name -->
+            <div style="text-align:center;margin-bottom:20px;">
+                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;">${avatar}</div>
+                <div style="font-size:1.1rem;font-weight:900;">${u.full_name || 'No Name'}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);">${u.email}</div>
+                <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
+                    <span style="color:${verifiedColor};font-size:0.7rem;font-weight:800;background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:20px;">${verifiedLabel}</span>
+                    <span style="color:${frozenColor};font-size:0.7rem;font-weight:800;background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:20px;">${frozenLabel}</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+                <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:12px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:900;color:var(--primary-light);">${u.total_bookings || 0}</div>
+                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Bookings</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:12px;text-align:center;">
+                    <div style="font-size:1.2rem;font-weight:900;color:var(--success);">${u.completed_bookings || 0}</div>
+                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Completed</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:12px;text-align:center;">
+                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">?${(u.total_spent||0).toLocaleString()}</div>
+                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Spent</div>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || '�'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
+            </div>
+
+            <!-- Edit Form -->
+            <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">Edit Info</div>
+                <input id="umEditName" type="text" value="${u.full_name || ''}" placeholder="Full Name" style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;margin-bottom:10px;">
+                <input id="umEditPhone" type="text" value="${u.phone || ''}" placeholder="Phone Number" style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;margin-bottom:10px;">
+                <button onclick="UserMgmt.saveEdit(${u.id})" style="width:100%;padding:12px;background:var(--primary);border:none;border-radius:10px;color:white;font-weight:700;font-size:0.85rem;">Save Changes</button>
+            </div>
+
+            <!-- Loyalty Points -->
+            <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-star" style="color:var(--amber);margin-right:6px;"></i>Loyalty Points</div>
+                <input id="umLoyaltyInput" type="number" value="${u.loyalty_points || 0}" placeholder="Points" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.9rem;margin-bottom:10px;">
+                <button onclick="UserMgmt.setLoyalty(${u.id})" style="width:100%;padding:12px;background:rgba(245,158,11,0.15);border:1px solid var(--amber);border-radius:10px;color:var(--amber);font-weight:700;font-size:0.85rem;">Update Points</button>
+            </div>
+
+            <!-- Reset Password -->
+            <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-key" style="color:var(--primary-light);margin-right:6px;"></i>Reset Password</div>
+                <input id="umNewPass" type="password" placeholder="New password (min 8 chars)" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.9rem;margin-bottom:10px;">
+                <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(99,102,241,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
+            </div>
+
+            <!-- Freeze / Unfreeze -->
+            <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}</div>
+                ${!u.is_frozen ? `<input id="umFreezeReason" type="text" placeholder="Reason for freezing..." style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;margin-bottom:10px;">` : `<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Reason: ${u.freeze_reason || 'No reason provided'}</p>`}
+                <button onclick="UserMgmt.toggleFreeze(${u.id}, ${u.is_frozen})" style="width:100%;padding:12px;background:${u.is_frozen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};border:1px solid ${u.is_frozen ? 'var(--success)' : 'var(--danger)'};border-radius:10px;color:${u.is_frozen ? 'var(--success)' : 'var(--danger)'};font-weight:700;font-size:0.85rem;">
+                    <i class="fas fa-${u.is_frozen ? 'unlock' : 'lock'}"></i> ${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}
+                </button>
+            </div>
+
+            <!-- Delete -->
+            <button onclick="UserMgmt.deleteUser(${u.id}, '${(u.full_name||'').replace(/'/g,"\\'")}' )" style="width:100%;padding:14px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:14px;color:var(--danger);font-weight:800;font-size:0.9rem;margin-bottom:10px;">
+                <i class="fas fa-trash-alt"></i> Delete Account Permanently
+            </button>`;
+        },
+
+        closeModal() {
+            document.getElementById('umModal').style.display = 'none';
+        },
+
+        async saveEdit(userId) {
+            const name = document.getElementById('umEditName').value.trim();
+            const phone = document.getElementById('umEditPhone').value.trim();
+            if (!name) { alert('Full name is required'); return; }
+            try {
+                const res = await apiFetch(`admin/users/${userId}/edit`, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({full_name: name, phone})
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error);
+                showNotification(d.message || 'User updated', 'success');
+                this.refresh();
+                this.openModal(userId);
+            } catch (e) { alert(e.message); }
+        },
+
+        async setLoyalty(userId) {
+            const pts = document.getElementById('umLoyaltyInput').value;
+            if (pts === '' || isNaN(pts)) { alert('Enter a valid number'); return; }
+            try {
+                const res = await apiFetch(`admin/users/${userId}/loyalty`, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({points: parseInt(pts)})
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error);
+                showNotification(d.message || 'Points updated', 'success');
+                this.refresh();
+                this.openModal(userId);
+            } catch (e) { alert(e.message); }
+        },
+
+        async resetPassword(userId) {
+            const pass = document.getElementById('umNewPass').value;
+            if (pass.length < 8) { alert('Password must be at least 8 characters'); return; }
+            if (!confirm('Reset this user\'s password?')) return;
+            try {
+                const res = await apiFetch(`admin/users/${userId}/reset-password`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({new_password: pass})
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error);
+                showNotification(d.message || 'Password reset', 'success');
+                document.getElementById('umNewPass').value = '';
+            } catch (e) { alert(e.message); }
+        },
+
+        async toggleFreeze(userId, currentlyFrozen) {
+            const freeze = !currentlyFrozen;
+            let reason = '';
+            if (freeze) {
+                reason = (document.getElementById('umFreezeReason') || {}).value || '';
+                if (!reason.trim()) { alert('Please enter a reason for freezing'); return; }
+            }
+            if (!confirm(freeze ? 'Freeze this account?' : 'Unfreeze this account?')) return;
+            try {
+                const res = await apiFetch(`admin/users/${userId}/freeze`, {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({freeze, reason})
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error);
+                showNotification(d.message || 'Account updated', 'success');
+                this.refresh();
+                this.openModal(userId);
+            } catch (e) { alert(e.message); }
+        },
+
+        async deleteUser(userId, name) {
+            if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
+            if (!confirm('Are you absolutely sure? All bookings and data will be removed.')) return;
+            try {
+                const res = await apiFetch(`admin/users/${userId}`, {method: 'DELETE'});
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error);
+                showNotification(d.message || 'User deleted', 'success');
+                this.closeModal();
+                this.refresh();
+            } catch (e) { alert(e.message); }
+        },
+
+        async exportCSV() {
+            try {
+                const url = `${API_URL}/admin/users/export`;
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'users_export.csv';
+                a.click();
+            } catch (e) { alert('Export failed: ' + e.message); }
+        }
+    };
+
+    window.UserMgmt = UserMgmt;
+
+    // Auto-load when users tab is opened
+    const _origSwitchTab = window.switchTab;
+    window.switchTab = function(tabId) {
+        _origSwitchTab(tabId);
+        if (tabId === 'users' && UserMgmt._all.length === 0) {
+            UserMgmt.refresh();
+        }
+    };
+    // ??? END USER MANAGEMENT MODULE ???????????????????????????????????????
+
 </script>
 </body>
 </html>

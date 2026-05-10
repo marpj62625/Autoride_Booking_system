@@ -554,6 +554,16 @@ function buildImgUrl(path) {
   return API_BASE.replace('/api', '') + '/' + path;
 }
 
+function searchVehicles(query) {
+  var q = (query || '').toLowerCase();
+  var filtered = q ? allVehicles.filter(function(v) {
+    return (v.brand + ' ' + v.model + ' ' + (v.vehicle_type || '') + ' ' + (v.location || '')).toLowerCase().indexOf(q) >= 0;
+  }) : allVehicles;
+  var countEl = document.getElementById('vehicleCount');
+  if (countEl) countEl.textContent = filtered.length + ' vehicle' + (filtered.length !== 1 ? 's' : '') + ' found';
+  renderVehicles(filtered);
+}
+
 // VEHICLES - Step 1: Browse models
 function loadVehicles() {
   showLoading(true);
@@ -573,26 +583,42 @@ function renderVehicles(list) {
   var grid = document.getElementById('vehicleGrid');
   if (!grid) return;
   if (!list.length) {
-    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles available</p></div>';
+    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles found</p></div>';
     return;
   }
+  var countEl = document.getElementById('vehicleCount');
+  if (countEl) countEl.textContent = list.length + ' vehicle' + (list.length !== 1 ? 's' : '') + ' found';
   grid.innerHTML = list.map(function(v) {
-    var vid = v.id || v.representative_id;
-    var availBadge = (v.available_units > 0)
-      ? '<span class="badge-available">' + v.available_units + ' available</span>'
-      : '<span class="badge-available" style="background:rgba(230,57,70,0.8);">Unavailable</span>';
-    return '<div class="vehicle-card" onclick="openColorSelection(\'' + v.brand + '\',\'' + v.model + '\')">' +
+    var avail = parseInt(v.available_units) || 0;
+    var badgeClass = avail > 0 ? 'badge-avail-yes' : 'badge-avail-no';
+    var badgeText = avail > 0 ? ('<span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available') : 'Unavailable';
+    var bEnc = encodeURIComponent(v.brand);
+    var mEnc = encodeURIComponent(v.model);
+    return '<div class="vehicle-card" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')">' +
       '<div class="vehicle-img-wrap">' +
       '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
-      availBadge +
+      '<span class="badge-available ' + badgeClass + '">' + badgeText + '</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
+      '<div>' +
       '<h3>' + v.brand + ' ' + v.model + '</h3>' +
-      '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + '</div>' +
-      '<div class="vehicle-meta"><i class="fas fa-users"></i> ' + (v.seats || '-') + ' seats</div>' +
-      '<div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
-      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
-      '</div></div>';
+      '<div style="display:flex;gap:6px;margin-top:4px;">' +
+      '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
+      '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.transmission || '-') + '</span>' +
+      '</div></div>' +
+      '<div style="text-align:right;">' +
+      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + '</div>' +
+      '<div style="font-size:0.65rem;color:#52525b;margin-top:1px;">per day</div>' +
+      '</div></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
+      '<div style="display:flex;align-items:center;gap:6px;">' +
+      '<i class="fas fa-map-marker-alt" style="color:#3f3f46;font-size:0.75rem;"></i>' +
+      '<span style="font-size:0.75rem;color:#52525b;">' + (v.location || '-') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:4px;background:rgba(220,38,38,0.1);color:#f87171;padding:5px 12px;border-radius:12px;font-size:0.75rem;font-weight:700;">' +
+      'View <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i></div>' +
+      '</div></div></div>';
   }).join('');
 }
 
@@ -1378,15 +1404,14 @@ function confirmAndBook() {
     .finally(function() { showLoading(false); });
 }
 
-// PAYMENT
+// PAYMENT — PayMongo Integration
 function openPaymentScreen(bookingId, priceResult, payType) {
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
   if (!el) return;
 
-  // Build detailed breakdown
   var breakdownHtml =
-    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days ï¿½ ' + formatPHP(bookingFormVehicle ? bookingFormVehicle.daily_rate : 0) + ')</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
+    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
       return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);"></i> ' + a.name + '</span><span>' + formatPHP(a.price) + '</span></div>';
     }).join('') : '') +
@@ -1404,7 +1429,7 @@ function openPaymentScreen(bookingId, priceResult, payType) {
     '<h2>Payment</h2></div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
 
-    // Booking summary
+    // Summary
     '<div class="card">' +
     '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:8px;"></i>Booking #' + bookingId + ' Summary</h4>' +
     breakdownHtml +
@@ -1413,50 +1438,53 @@ function openPaymentScreen(bookingId, priceResult, payType) {
     '<div style="color:#fff;font-size:1.4rem;font-weight:800;">' + formatPHP(nowDue) + '</div>' +
     '</div></div>' +
 
-    // Payment method
+    // PayMongo payment methods
     '<div class="card">' +
-    '<h4 style="font-weight:700;margin-bottom:14px;">Select Payment Method</h4>' +
+    '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
+    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Secure payments powered by PayMongo</p>' +
 
     // GCash
-    '<div class="option-card" id="pmGcash" onclick="selectPayMethod(\'GCash\',this)" style="margin-bottom:8px;">' +
+    '<div class="option-card" id="pmGcash" onclick="selectPayMethod(\'gcash\',this)" style="margin-bottom:8px;">' +
     '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
-    '<span style="color:#fff;font-weight:800;font-size:0.7rem;">G</span></div>' +
-    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Send to: 09XX-XXX-XXXX (Autoride)</small></div>' +
+    '<span style="color:#fff;font-weight:900;font-size:0.85rem;">G</span></div>' +
+    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Pay via GCash e-wallet</small></div>' +
+    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    // Credit/Debit Card (placeholder)
-    '<div class="option-card" id="pmCard" onclick="selectPayMethod(\'Credit Card\',this)" style="margin-bottom:8px;">' +
+    // Maya
+    '<div class="option-card" id="pmMaya" onclick="selectPayMethod(\'maya\',this)" style="margin-bottom:8px;">' +
+    '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:900;font-size:0.85rem;">M</span></div>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Pay via Maya e-wallet</small></div>' +
+    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '</div>' +
+
+    // Credit/Debit Card
+    '<div class="option-card" id="pmCard" onclick="selectPayMethod(\'card\',this)" style="margin-bottom:8px;">' +
     '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
-    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--warning);">Coming soon ï¿½ integration in progress</small></div>' +
-    '</div>' +
-
-    // Maya (placeholder)
-    '<div class="option-card" id="pmMaya" onclick="selectPayMethod(\'Maya\',this)" style="margin-bottom:8px;">' +
-    '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
-    '<span style="color:#fff;font-weight:800;font-size:0.7rem;">M</span></div>' +
-    '<div><strong>Maya</strong><br><small style="color:var(--warning);">Coming soon ï¿½ integration in progress</small></div>' +
+    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--text-secondary);">Visa, Mastercard, JCB</small></div>' +
+    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
     // Cash
-    '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'Cash (Over the counter)\',this)">' +
+    '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'cash\',this)">' +
     '<div style="width:40px;height:40px;background:#2dc653;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-money-bill-wave" style="color:#fff;font-size:1rem;"></i></div>' +
     '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay at our office upon pickup</small></div>' +
     '</div>' +
 
-    '<input type="hidden" id="payMethod" value="GCash">' +
+    '<input type="hidden" id="payMethod" value="gcash">' +
     '</div>' +
 
-    // Reference number & proof (shown for GCash/online)
-    '<div class="card" id="onlinePayFields">' +
-    '<div class="form-group"><label>Reference / Transaction Number</label>' +
+    // Cash reference fields (only for cash)
+    '<div class="card" id="cashPayFields" style="display:none;">' +
+    '<div class="form-group"><label>Reference / Transaction Number (optional)</label>' +
     '<input type="text" id="payRef" placeholder="e.g. 1234567890"></div>' +
-    '<div class="form-group"><label>Payment Screenshot / Proof</label>' +
+    '<div class="form-group"><label>Payment Screenshot / Proof (optional)</label>' +
     '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>' +
     '<img id="payProofPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;display:none;">' +
-    '<span class="field-error" id="payProofErr"></span></div>' +
-    '</div>' +
+    '</div></div>' +
 
     // Split payment
     '<div class="card" style="border:1.5px dashed var(--primary);">' +
@@ -1481,10 +1509,10 @@ function selectPayMethod(method, el) {
   var cards = document.querySelectorAll('#paymentContent .option-card');
   for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
   if (el) el.classList.add('selected');
-  // Show/hide reference fields
-  var onlineFields = document.getElementById('onlinePayFields');
-  if (onlineFields) {
-    onlineFields.style.display = (method === 'Cash (Over the counter)') ? 'none' : 'block';
+  // Show cash fields only for cash method
+  var cashFields = document.getElementById('cashPayFields');
+  if (cashFields) {
+    cashFields.style.display = (method === 'cash') ? 'block' : 'none';
   }
 }
 
@@ -1506,41 +1534,120 @@ function pickPaymentProof() {
 
 function submitPayment(bookingId, amount) {
   var methodEl = document.getElementById('payMethod');
-  var refEl = document.getElementById('payRef');
-  var method = methodEl ? methodEl.value : 'GCash';
-  var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
+  var method = methodEl ? methodEl.value : 'gcash';
   var errEl = document.getElementById('payErr');
   if (errEl) errEl.textContent = '';
 
-  // Validate reference for online payments
-  if (method !== 'Cash (Over the counter)' && !ref) {
-    if (errEl) errEl.textContent = 'Please enter your reference/transaction number.';
+  // Cash payment — use existing manual flow
+  if (method === 'cash') {
+    var refEl = document.getElementById('payRef');
+    var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
+    showLoading(true);
+    var promise;
+    if (paymentProofBlob) {
+      var fd = new FormData();
+      fd.append('booking_id', bookingId);
+      fd.append('amount', amount);
+      fd.append('method', 'Cash (Over the counter)');
+      fd.append('reference_number', ref);
+      fd.append('payment_proof', paymentProofBlob, 'proof.jpg');
+      promise = uploadFile('/legacy-payment', fd);
+    } else {
+      promise = apiCall('/payment', { method: 'POST', body: JSON.stringify({ booking_id: bookingId, amount: amount, method: 'Cash (Over the counter)', reference_number: ref }) });
+    }
+    promise
+      .then(function(data) {
+        closeOverlay('page-payment');
+        NotifStore.add('Booking #' + bookingId + ' received! Pay at our office upon pickup.');
+        showReceipt(bookingId, data, amount, 'Cash (Over the counter)', ref);
+      })
+      .catch(function(err) {
+        if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+      })
+      .finally(function() { showLoading(false); });
     return;
   }
 
+  // Online payment — redirect to PayMongo
   showLoading(true);
-  var promise;
-  if (paymentProofBlob) {
-    var fd = new FormData();
-    fd.append('booking_id', bookingId);
-    fd.append('amount', amount);
-    fd.append('method', method);
-    fd.append('reference_number', ref);
-    fd.append('payment_proof', paymentProofBlob, 'proof.jpg');
-    promise = uploadFile('/legacy-payment', fd);
-  } else {
-    promise = apiCall('/payment', { method: 'POST', body: JSON.stringify({ booking_id: bookingId, amount: amount, method: method, reference_number: ref }) });
-  }
-  promise
+  apiCall('/paymongo/create-payment', {
+    method: 'POST',
+    body: JSON.stringify({
+      booking_id: bookingId,
+      amount: amount,
+      method: method,
+      description: 'Autoride Booking #' + bookingId,
+      customer_name: currentUser.fullName || '',
+      customer_email: currentUser.email || ''
+    })
+  })
     .then(function(data) {
-      closeOverlay('page-payment');
-      NotifStore.add('Payment confirmed for Booking #' + bookingId + '! A receipt has been sent to your email.');
-      showReceipt(bookingId, data, amount, method, ref);
+      showLoading(false);
+      if (data.checkout_url) {
+        // Open PayMongo checkout in browser
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
+        } else {
+          window.open(data.checkout_url, '_blank');
+        }
+        // Show waiting screen and poll for payment confirmation
+        showPaymentWaiting(bookingId, amount, method);
+      } else {
+        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+      }
     })
     .catch(function(err) {
+      showLoading(false);
       if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+    });
+}
+
+function showPaymentWaiting(bookingId, amount, method) {
+  var el = document.getElementById('paymentContent');
+  if (!el) return;
+  var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
+  el.innerHTML =
+    '<div class="page-header">' +
+    '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<h2>Waiting for Payment</h2></div>' +
+    '<div class="scroll-content" style="padding-bottom:100px;text-align:center;padding-top:40px;">' +
+    '<div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">' +
+    '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>' +
+    '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">Complete Payment in ' + methodLabel + '</h3>' +
+    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there, then return here.</p>' +
+    '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
+    '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
+    '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
+    '</div>' +
+    '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\')">' +
+    '<i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>' +
+    '<button class="btn-secondary" onclick="closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
+    '</div>';
+}
+
+function checkPaymentStatus(bookingId, amount, method) {
+  showLoading(true);
+  apiCall('/paymongo/status/' + bookingId)
+    .then(function(data) {
+      showLoading(false);
+      if (data.paid) {
+        closeOverlay('page-payment');
+        NotifStore.add('Payment confirmed for Booking #' + bookingId + '! A receipt has been sent to your email.');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
+        showPage('page-bookings');
+      } else {
+        var debugMsg = '';
+        if (data.debug) {
+          var d = data.debug;
+          debugMsg = ' [key:' + d.has_key + ' link:' + (d.link_status || 'none') + ' pays:' + (d.payments_count || 0) + ']';
+        }
+        showToast('Payment not yet confirmed.' + debugMsg, 'info');
+      }
     })
-    .finally(function() { showLoading(false); });
+    .catch(function() {
+      showLoading(false);
+      showToast('Could not verify payment. Please check your bookings.', 'error');
+    });
 }
 
 function showReceipt(bookingId, data, amountPaid, method, refNum) {

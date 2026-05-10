@@ -7,20 +7,14 @@
 		"allowNavigation": [
 			"autoride-booking-system.vercel.app"
 		],
-		"androidScheme": "https"
+		"androidScheme": "https",
+		"iosScheme": "https"
 	},
 	"plugins": {
 		"Camera": {
 			"permissions": [
 				"camera",
 				"photos"
-			]
-		},
-		"PushNotifications": {
-			"presentationOptions": [
-				"badge",
-				"sound",
-				"alert"
 			]
 		}
 	}

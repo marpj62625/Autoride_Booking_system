@@ -120,24 +120,27 @@
         .section-header h3 { font-size:1rem; font-weight:700; }
         .section-header a { font-size:0.8rem; color:var(--primary); font-weight:600; text-decoration:none; }
         /* Vehicle Cards */
-        .vehicle-grid { display:grid; grid-template-columns:1fr; gap:12px; padding:16px; }
-        .vehicle-card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); overflow:hidden; cursor:pointer; transition:transform 0.15s; }
+        .vehicle-grid { display:grid; grid-template-columns:1fr; gap:16px; padding:16px; }
+        .vehicle-card { background:#141414; border-radius:28px; border:1px solid rgba(255,255,255,0.06); overflow:hidden; cursor:pointer; transition:transform 0.15s; }
         .vehicle-card:active { transform:scale(0.98); }
-        .vehicle-img-wrap { position:relative; height:160px; overflow:hidden; }
+        .vehicle-img-wrap { position:relative; height:180px; overflow:hidden; background:#1a1a1a; }
         .vehicle-img-wrap img { width:100%; height:100%; object-fit:cover; }
-        .badge-available { position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.6); color:#fff; font-size:0.7rem; font-weight:700; padding:4px 8px; border-radius:20px; }
+        .vehicle-img-wrap::after { content:""; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 35%, rgba(10,10,10,0.9) 100%); }
+        .badge-available { position:absolute; top:12px; right:12px; z-index:1; font-size:0.65rem; font-weight:800; padding:5px 10px; border-radius:20px; backdrop-filter:blur(8px); }
+        .badge-avail-yes { background:rgba(5,150,105,0.85); color:#fff; }
+        .badge-avail-no { background:rgba(30,30,30,0.85); color:#71717a; }
         .vehicle-info { padding:14px; }
-        .vehicle-info h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
-        .vehicle-meta { font-size:0.78rem; color:var(--text-secondary); margin-bottom:4px; }
-        .vehicle-meta i { width:14px; color:var(--text-muted); }
-        .vehicle-location { font-size:0.78rem; color:var(--text-secondary); margin-bottom:8px; }
-        .vehicle-rate { font-size:1.1rem; font-weight:800; color:var(--primary); }
-        .vehicle-rate span { font-size:0.75rem; font-weight:500; color:var(--text-muted); }
+        .vehicle-info h3 { font-size:1rem; font-weight:900; margin-bottom:6px; color:#fff; }
+        .vehicle-meta { font-size:0.75rem; color:#52525b; margin-bottom:4px; }
+        .vehicle-meta i { width:14px; color:#3f3f46; }
+        .vehicle-location { font-size:0.75rem; color:#52525b; margin-bottom:8px; }
+        .vehicle-rate { font-size:1.1rem; font-weight:900; color:#dc2626; }
+        .vehicle-rate span { font-size:0.7rem; font-weight:500; color:#52525b; }
         /* Filter chips */
         .filter-chips { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
         .filter-chips::-webkit-scrollbar { display:none; }
-        .chip { background:var(--bg-input); border:1.5px solid transparent; border-radius:20px; padding:6px 14px; font-size:0.8rem; font-weight:600; color:var(--text-secondary); cursor:pointer; white-space:nowrap; transition:all 0.2s; }
-        .chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        .chip { background:#1a1a1a; border:1px solid rgba(255,255,255,0.06); border-radius:20px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:#71717a; cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+        .chip.active { background:linear-gradient(135deg,#dc2626,#9b1a1a); color:#fff; border-color:transparent; }
         /* Booking list */
         .booking-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform 0.15s; }
         .booking-item:active { transform:scale(0.98); }
@@ -500,10 +503,20 @@
 <!-- ???????????????????????????????????????????????????????????
      VEHICLES BROWSE
 ??????????????????????????????????????????????????????????? -->
-<div id="page-vehicles" class="page">
-  <div class="page-header">
-    <h2>Browse Vehicles</h2>
-    <button onclick="showOverlay('page-favorites')" style="background:none;border:none;color:var(--primary);font-size:1.1rem;cursor:pointer;"><i class="fas fa-heart"></i></button>
+<div id="page-vehicles" class="page" style="background:#0a0a0a;">
+  <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <p style="font-size:0.75rem;color:#52525b;font-weight:500;">Explore</p>
+      <h1 style="font-size:1.6rem;font-weight:900;color:#fff;letter-spacing:-0.5px;">Vehicles</h1>
+    </div>
+    <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.06);color:#dc2626;font-size:1rem;cursor:pointer;position:relative;">
+      <i class="fas fa-heart"></i>
+    </button>
+  </div>
+  <div style="padding:0 16px 12px;position:relative;">
+    <i class="fas fa-search" style="position:absolute;left:28px;top:50%;transform:translateY(-50%);color:#52525b;font-size:0.875rem;"></i>
+    <input type="text" id="vehicleSearch" placeholder="Search cars, brands, types..." oninput="searchVehicles(this.value)"
+      style="width:100%;padding:12px 44px 12px 40px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:16px;color:#fff;font-size:0.875rem;outline:none;">
   </div>
   <div class="filter-chips" id="vehicleFilters">
     <span class="chip active" onclick="filterVehicles('all',this)">All</span>
@@ -514,14 +527,12 @@
     <span class="chip" onclick="filterVehicles('Automatic',this)">Automatic</span>
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
+  <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:#52525b;"></div>
   <div id="vehicleGrid" class="vehicle-grid">
     <div class="empty-state"><i class="fas fa-car"></i><p>Loading vehicles...</p></div>
   </div>
 </div>
 
-<!-- ???????????????????????????????????????????????????????????
-     BOOKINGS HISTORY
-??????????????????????????????????????????????????????????? -->
 <div id="page-bookings" class="page" style="background:#0a0a0a;">
   <div style="padding:16px 20px 8px;">
     <p style="font-size:0.75rem;color:#52525b;font-weight:500;">Your</p>
