@@ -3,6 +3,7 @@ from database import get_cursor, commit_db
 import json
 from notifications import (
     sms_service,
+    notification_service,
     compose_booking_created_sms,
     compose_admin_new_booking_sms,
     compose_customer_cancel_sms,
@@ -116,6 +117,17 @@ def book_vehicle():
         sms_service.notify_admins(
             compose_admin_new_booking_sms(booking_id, customer_name, brand, model, start_date, end_date)
         )
+        notification_service.notify_user(
+            user_id,
+            "Booking Received",
+            f"Your booking #{booking_id} for {brand} {model} from {start_date} to {end_date} has been received. Total: PHP {total_price}.",
+            'booking_created'
+        )
+        notification_service.notify_admins_inapp(
+            "New Booking",
+            f"New booking #{booking_id} from {customer_name} for {brand} {model}, {start_date} to {end_date}.",
+            'admin_new_booking'
+        )
         
         print(f"DEBUG: Created booking {booking_id} for user {user_id}")
         return jsonify({
@@ -180,6 +192,12 @@ def cancel_booking(booking_id):
             user_id,
             compose_customer_cancel_sms(booking_id, reason)
         )
+        notification_service.notify_user(
+            booking['user_id'],
+            "Booking Cancelled",
+            f"Your booking #{booking_id} has been cancelled. Reason: {reason}.",
+            'booking_cancelled'
+        )
         
         return jsonify({"message": "Booking cancelled successfully"}), 200
         
@@ -233,6 +251,12 @@ def admin_mark_paid(booking_id):
                 sms_service.notify_customer(
                     bk_row['user_id'],
                     compose_cash_paid_sms(booking_id, total)
+                )
+                notification_service.notify_user(
+                    bk_row['user_id'],
+                    "Payment Confirmed",
+                    f"Your booking #{booking_id} has been marked as fully paid. Total: PHP {total}.",
+                    'payment_cash'
                 )
         except Exception as sms_err:
             print(f"ERROR SENDING CASH PAID SMS: {sms_err}")

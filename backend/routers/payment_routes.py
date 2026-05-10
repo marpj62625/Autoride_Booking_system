@@ -3,6 +3,7 @@ from database import get_cursor, commit_db
 import json
 from notifications import (
     sms_service,
+    notification_service,
     compose_full_payment_sms,
     compose_downpayment_sms,
     compose_balance_payment_sms,
@@ -109,6 +110,26 @@ def process_payment():
                         sms_data['reference_number'],
                     )
                 sms_service.notify_customer(sms_data['user_id'], msg)
+                user_id = sms_data['user_id']
+                payment_type = sms_data['payment_type']
+                amount = float(sms_data['amount'])
+                method = sms_data['method']
+                reference_number = sms_data['reference_number']
+                balance_amount = float(sms_data['balance_amount'] or 0)
+                if payment_type == 'Full':
+                    notification_service.notify_user(
+                        user_id,
+                        "Payment Confirmed",
+                        f"Payment confirmed for booking #{booking_id}. Amount: PHP {amount} via {method}. Ref: {reference_number}.",
+                        'payment_confirmed'
+                    )
+                else:
+                    notification_service.notify_user(
+                        user_id,
+                        "Downpayment Received",
+                        f"Downpayment of PHP {amount} received for booking #{booking_id}. Ref: {reference_number}. Remaining balance: PHP {balance_amount}.",
+                        'payment_downpayment'
+                    )
         except Exception as sms_err:
             print(f"ERROR SENDING PAYMENT SMS: {sms_err}")
 
@@ -200,6 +221,12 @@ def pay_balance(booking_id):
                         float(amount),
                         reference_number,
                     )
+                )
+                notification_service.notify_user(
+                    bk_row['user_id'],
+                    "Balance Payment Received",
+                    f"Balance payment of PHP {float(amount)} received for booking #{booking_id}. Ref: {reference_number}. Your booking is now fully paid.",
+                    'payment_balance'
                 )
         except Exception as sms_err:
             print(f"ERROR SENDING BALANCE PAYMENT SMS: {sms_err}")

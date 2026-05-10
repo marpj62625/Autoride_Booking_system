@@ -472,6 +472,92 @@ class SMS_Service:
         return self.send_sms(phone, message, recipient_type, recipient_id)
 
 
-# Module-level singleton — route handlers can do:
+# Module-level singleton - route handlers can do:
 #   from notifications import sms_service
 sms_service = SMS_Service()
+
+
+class Notification_Service:
+    """
+    Handles in-app notification delivery for the AutorideSystem.
+    Inserts rows into the notifications table. Runs alongside SMS_Service.
+    Failures are logged but never raised - route handlers are not affected.
+    """
+
+    def notify_user(self, user_id: int, title: str, message: str, notif_type: str) -> bool:
+        """
+        Inserts one notification row for a customer (user_id set, admin_id NULL).
+        Returns True on success, False on failure.
+        """
+        try:
+            cur = get_cursor()
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO notifications (user_id, admin_id, title, message, type)
+                    VALUES (%s, NULL, %s, %s, %s)
+                    """,
+                    (user_id, title, message, notif_type)
+                )
+                commit_db()
+            finally:
+                cur.close()
+            return True
+        except Exception as exc:
+            print(
+                f"Notification_Service.notify_user: failed for user {user_id}: {exc}",
+                file=sys.stderr
+            )
+            return False
+
+    def notify_admins_inapp(self, title: str, message: str, notif_type: str) -> list:
+        """
+        Queries all active admins and inserts one notification row per admin
+        (admin_id set, user_id NULL). Returns list of booleans (one per admin).
+        """
+        try:
+            cur = get_cursor()
+            try:
+                cur.execute(
+                    "SELECT id FROM admins WHERE is_active = TRUE"
+                )
+                admins = cur.fetchall()
+            finally:
+                cur.close()
+
+            if not admins:
+                return []
+
+            results = []
+            for admin in admins:
+                try:
+                    cur2 = get_cursor()
+                    try:
+                        cur2.execute(
+                            """
+                            INSERT INTO notifications (user_id, admin_id, title, message, type)
+                            VALUES (NULL, %s, %s, %s, %s)
+                            """,
+                            (admin['id'], title, message, notif_type)
+                        )
+                        commit_db()
+                    finally:
+                        cur2.close()
+                    results.append(True)
+                except Exception as exc:
+                    print(
+                        f"Notification_Service.notify_admins_inapp: failed for admin {admin['id']}: {exc}",
+                        file=sys.stderr
+                    )
+                    results.append(False)
+            return results
+
+        except Exception as exc:
+            print(
+                f"Notification_Service.notify_admins_inapp: DB error: {exc}",
+                file=sys.stderr
+            )
+            return []
+
+
+notification_service = Notification_Service()

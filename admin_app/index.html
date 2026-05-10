@@ -1171,7 +1171,24 @@
         <div class="header">
             <button class="burger-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
             <h1>Admin Dashboard</h1>
-            <div class="header-time" id="headerTime"></div>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <div style="position:relative;display:inline-block;">
+                    <button onclick="toggleAdminNotifPanel()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;width:40px;height:40px;border-radius:10px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <span id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 4px;">0</span>
+                </div>
+                <div class="header-time" id="headerTime"></div>
+            </div>
+        </div>
+
+        <!-- Admin Notification Panel -->
+        <div id="adminNotifPanel" style="display:none;position:fixed;top:70px;right:20px;width:360px;max-height:500px;overflow-y:auto;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <h4 style="font-weight:700;font-size:1rem;color:#f1f5f9;">Notifications</h4>
+                <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="adminNotifList"><p style="color:#64748b;text-align:center;padding:20px 0;">Loading...</p></div>
         </div>
 
         <!-- ========== TAB: DASHBOARD ========== -->
@@ -1994,13 +2011,95 @@ void loop() {
 
         // Subscribe to System-Wide Realtime Changes
         function subscribeToSystemWideUpdates() {
-            supabaseClient
+            const admin = adminAuth.getUser();
+            const adminId = admin ? admin.id : null;
+
+            const channel = supabaseClient
                 .channel('admin-realtime')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, () => window.Vehicles?.refresh())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => window.Bookings?.refresh())
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, () => window.Drivers?.refresh())
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_queries' }, () => window.fetchTickets())
-                .subscribe();
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_queries' }, () => window.fetchTickets());
+
+            if (adminId) {
+                channel.on('postgres_changes', {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                    filter: 'admin_id=eq.' + adminId
+                }, function(payload) {
+                    if (payload && payload.new) {
+                        adminNotifList.unshift(payload.new);
+                        updateAdminNotifBadge();
+                    }
+                });
+            }
+
+            channel.subscribe();
+        }
+
+        // ==================== ADMIN NOTIFICATIONS ====================
+        var adminNotifList = [];
+
+        function loadAdminNotifications(adminId) {
+            fetch(API_BASE + '/admin/notifications?admin_id=' + adminId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    adminNotifList = Array.isArray(data) ? data : [];
+                    updateAdminNotifBadge();
+                })
+                .catch(function() {});
+        }
+
+        function updateAdminNotifBadge() {
+            var unread = adminNotifList.filter(function(n) { return !n.is_read; }).length;
+            var badge = document.getElementById('adminNotifBadge');
+            if (!badge) return;
+            if (unread > 0) {
+                badge.textContent = unread > 99 ? '99+' : String(unread);
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function toggleAdminNotifPanel() {
+            var panel = document.getElementById('adminNotifPanel');
+            var list = document.getElementById('adminNotifList');
+            if (!panel) return;
+
+            var isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+
+            if (!isVisible) {
+                // Mark all as read
+                var admin = adminAuth.getUser();
+                if (admin && admin.id) {
+                    fetch(API_BASE + '/admin/notifications/read-all', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ admin_id: admin.id })
+                    }).then(function() {
+                        adminNotifList.forEach(function(n) { n.is_read = true; });
+                        updateAdminNotifBadge();
+                    }).catch(function() {});
+                }
+
+                // Render notifications
+                if (!adminNotifList.length) {
+                    list.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px 0;">No notifications yet</p>';
+                } else {
+                    list.innerHTML = adminNotifList.map(function(n) {
+                        var ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+                        var unreadStyle = n.is_read ? '' : 'border-left:3px solid #6366f1;background:rgba(99,102,241,0.08);';
+                        return '<div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);' + unreadStyle + '">' +
+                            '<strong style="font-size:0.875rem;color:#f1f5f9;">' + (n.title || '') + '</strong>' +
+                            '<p style="font-size:0.8rem;color:#94a3b8;margin-top:4px;">' + (n.message || '') + '</p>' +
+                            '<small style="color:#64748b;">' + ts + '</small>' +
+                            '</div>';
+                    }).join('');
+                }
+            }
         }
 
         // ==================== UTILITIES ====================
@@ -3507,6 +3606,8 @@ void loop() {
                 const user = this.getUser();
                 if (user) {
                     document.getElementById('adminLoginOverlay').style.display = 'none';
+                    // Load admin notifications
+                    loadAdminNotifications(user.id);
                     document.getElementById('adminName').textContent = user.full_name;
                     document.getElementById('adminAvatar').textContent = user.full_name[0].toUpperCase();
                     document.getElementById('adminRole').textContent = user.role.replace('_', ' ').toUpperCase();

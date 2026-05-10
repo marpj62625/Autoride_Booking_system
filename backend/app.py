@@ -342,6 +342,70 @@ with app.app_context():
 
 
 
+def migrate_notifications():
+
+    """Creates the notifications table for in-app notifications."""
+
+    try:
+
+        cur = get_cursor()
+
+        cur.execute("""
+
+            CREATE TABLE IF NOT EXISTS notifications (
+
+                id         BIGSERIAL PRIMARY KEY,
+
+                user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
+
+                admin_id   INTEGER REFERENCES admins(id) ON DELETE CASCADE,
+
+                title      TEXT NOT NULL,
+
+                message    TEXT NOT NULL,
+
+                type       TEXT NOT NULL,
+
+                is_read    BOOLEAN NOT NULL DEFAULT FALSE,
+
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+                CONSTRAINT chk_one_recipient CHECK (
+
+                    (user_id IS NOT NULL AND admin_id IS NULL) OR
+
+                    (user_id IS NULL AND admin_id IS NOT NULL)
+
+                )
+
+            )
+
+        """)
+
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id, created_at DESC)")
+
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_notifications_admin_id ON notifications (admin_id, created_at DESC)")
+
+        commit_db()
+
+        print("DEBUG: Notifications Migration Successful")
+
+    except Exception as e:
+
+        print(f"DEBUG: Notifications Migration Failed: {e}")
+
+    finally:
+
+        if 'cur' in locals(): cur.close()
+
+
+
+with app.app_context():
+
+    migrate_notifications()
+
+
+
 @app.before_request
 
 def log_request_info():
@@ -452,7 +516,7 @@ def is_gmail(email: str) -> bool:
 
 
 
-from notifications import sms_service, compose_booking_approved_sms, compose_booking_rejected_sms, compose_admin_cancel_sms, compose_pickup_sms, compose_completed_sms, compose_driver_approved_sms, compose_driver_rejected_sms, compose_license_approved_sms, compose_license_rejected_sms, compose_customer_cancel_sms, compose_full_payment_sms, compose_downpayment_sms, compose_admin_payment_proof_sms, compose_modify_booking_sms, compose_split_request_sms, compose_split_paid_sms, compose_admin_driver_application_sms, compose_otp_sms
+from notifications import sms_service, notification_service, compose_booking_approved_sms, compose_booking_rejected_sms, compose_admin_cancel_sms, compose_pickup_sms, compose_completed_sms, compose_driver_approved_sms, compose_driver_rejected_sms, compose_license_approved_sms, compose_license_rejected_sms, compose_customer_cancel_sms, compose_full_payment_sms, compose_downpayment_sms, compose_admin_payment_proof_sms, compose_modify_booking_sms, compose_split_request_sms, compose_split_paid_sms, compose_admin_driver_application_sms, compose_otp_sms
 
 
 
@@ -908,9 +972,33 @@ def admin_verify_user():
 
             sms_service.notify_customer(user_id, compose_license_approved_sms())
 
+            notification_service.notify_user(
+
+                user_id,
+
+                "License Approved",
+
+                "Your driver's license has been verified! You can now book vehicles on Autoride.",
+
+                'license_approved'
+
+            )
+
         elif status == 0:
 
             sms_service.notify_customer(user_id, compose_license_rejected_sms())
+
+            notification_service.notify_user(
+
+                user_id,
+
+                "License Rejected",
+
+                "Your driver's license was not approved. Please re-upload a valid document through the app.",
+
+                'license_rejected'
+
+            )
 
         
 
@@ -2642,9 +2730,20 @@ def legacy_payment():
                             details_dict.get('reference_number', reference_number),
                         )
                     sms_service.notify_customer(user_id_sms, sms_msg)
+                    notification_service.notify_user(
+                        user_id_sms,
+                        "Payment Confirmed",
+                        f"Payment proof received for booking #{booking_id}. Amount: PHP {float(amount or 0)}.",
+                        'payment_confirmed'
+                    )
                 customer_name = details_dict.get('full_name', 'Customer')
                 sms_service.notify_admins(
                     compose_admin_payment_proof_sms(booking_id, customer_name, float(amount or 0))
+                )
+                notification_service.notify_admins_inapp(
+                    "Payment Proof Uploaded",
+                    f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
+                    'admin_payment_proof'
                 )
             except Exception as sms_err:
                 print(f"ERROR SENDING LEGACY PAYMENT SMS: {sms_err}")
@@ -2691,8 +2790,19 @@ def legacy_payment():
                     bk_row['user_id'],
                     compose_full_payment_sms(booking_id, float(amount or 0), method or '', reference_number)
                 )
+                notification_service.notify_user(
+                    bk_row['user_id'],
+                    "Payment Confirmed",
+                    f"Payment proof received for booking #{booking_id}. Amount: PHP {float(amount or 0)}.",
+                    'payment_confirmed'
+                )
             sms_service.notify_admins(
                 compose_admin_payment_proof_sms(booking_id, 'Customer', float(amount or 0))
+            )
+            notification_service.notify_admins_inapp(
+                "Payment Proof Uploaded",
+                f"Payment proof uploaded for booking #{booking_id} by Customer. Amount: PHP {float(amount or 0)}.",
+                'admin_payment_proof'
             )
         except Exception as sms_err:
             print(f"ERROR SENDING LEGACY PAYMENT SMS: {sms_err}")
@@ -2956,6 +3066,18 @@ def cancel_booking():
                 bk['user_id'],
 
                 compose_customer_cancel_sms(booking_id, reason)
+
+            )
+
+            notification_service.notify_user(
+
+                bk['user_id'],
+
+                "Booking Cancelled",
+
+                f"Your booking #{booking_id} has been cancelled. Reason: {reason}.",
+
+                'booking_cancelled'
 
             )
 
@@ -3368,6 +3490,12 @@ def modify_booking():
                     bk_row['user_id'],
                     compose_modify_booking_sms(booking_id, new_start, new_end, round(new_total, 2))
                 )
+                notification_service.notify_user(
+                    bk_row['user_id'],
+                    "Booking Updated",
+                    f"Your booking #{booking_id} dates have been updated: {new_start} to {new_end}. New total: PHP {round(new_total, 2)}.",
+                    'booking_modified'
+                )
         except Exception as sms_err:
             print(f"ERROR SENDING MODIFY BOOKING SMS: {sms_err}")
 
@@ -3453,6 +3581,12 @@ def request_split_bill():
                 sms_service.notify_customer(
                     partner_row['id'],
                     compose_split_request_sms(booking_id, initiator_name, float(amount))
+                )
+                notification_service.notify_user(
+                    partner_row['id'],
+                    "Split Payment Request",
+                    f"{initiator_name} has requested a split payment for booking #{booking_id}. Your share: PHP {float(amount)}.",
+                    'split_request'
                 )
         except Exception as sms_err:
             print(f"ERROR SENDING SPLIT REQUEST SMS: {sms_err}")
@@ -3587,6 +3721,12 @@ def pay_split_bill():
                     sms_service.notify_customer(
                         bk_row['user_id'],
                         compose_split_paid_sms(b_id['booking_id'], float(sp_row['amount']))
+                    )
+                    notification_service.notify_user(
+                        bk_row['user_id'],
+                        "Split Payment Received",
+                        f"Your split payment partner has paid PHP {float(sp_row['amount'])} for booking #{b_id['booking_id']}.",
+                        'split_paid'
                     )
         except Exception as sms_err:
             print(f"ERROR SENDING SPLIT PAID SMS: {sms_err}")
@@ -3802,6 +3942,12 @@ def approve_booking(booking_id):
             sms_service.notify_customer(
                 b_data['user_id'],
                 compose_booking_approved_sms(booking_id, b_data['brand'], b_data['model'], b_data['start_date'])
+            )
+            notification_service.notify_user(
+                b_data['user_id'],
+                "Booking Approved",
+                f"Good news! Booking #{booking_id} for {b_data['brand']} {b_data['model']} starting {b_data['start_date']} has been approved.",
+                'booking_approved'
             )
 
             
@@ -4142,6 +4288,18 @@ def reject_booking(booking_id):
 
         )
 
+        notification_service.notify_user(
+
+            row['user_id'],
+
+            "Booking Rejected",
+
+            f"Booking #{booking_id} has been rejected. Please contact our support team for assistance.",
+
+            'booking_rejected'
+
+        )
+
             
 
         return jsonify({"message": "Booking rejected", "booking_id": booking_id}), 200
@@ -4228,6 +4386,18 @@ def admin_cancel_booking(booking_id):
 
         )
 
+        notification_service.notify_user(
+
+            booking['user_id'],
+
+            "Booking Cancelled",
+
+            f"Your booking #{booking_id} has been cancelled by our team. Reason: {reason}. A refund will be initiated if applicable.",
+
+            'booking_cancelled_by_admin'
+
+        )
+
 
 
         return jsonify({"message": f"Booking #{booking_id} cancelled. Payment status: {new_payment_status}"}), 200
@@ -4283,6 +4453,18 @@ def pickup_booking(booking_id):
                 b_data['user_id'],
 
                 compose_pickup_sms(booking_id, b_data['brand'], b_data['model'], b_data['end_date'])
+
+            )
+
+            notification_service.notify_user(
+
+                b_data['user_id'],
+
+                "Vehicle Picked Up",
+
+                f"Drive safely! Booking #{booking_id} for {b_data['brand']} {b_data['model']} is now active. Return by {b_data['end_date']}.",
+
+                'booking_picked_up'
 
             )
 
@@ -4359,6 +4541,18 @@ def complete_booking(booking_id):
                 b_data['user_id'],
 
                 compose_completed_sms(booking_id)
+
+            )
+
+            notification_service.notify_user(
+
+                b_data['user_id'],
+
+                "Booking Completed",
+
+                f"Thank you for choosing Autoride! Booking #{booking_id} is now completed. We hope to see you again.",
+
+                'booking_completed'
 
             )
 
@@ -4550,6 +4744,18 @@ def approve_driver(driver_id):
 
             )
 
+            notification_service.notify_user(
+
+                d_data['user_id'],
+
+                "Driver Application Approved",
+
+                f"Congratulations, {d_data['full_name']}! Your driver application has been approved. You can now start accepting bookings.",
+
+                'driver_approved'
+
+            )
+
             
 
         return jsonify({"message": "Driver approved", "driver_id": driver_id}), 200
@@ -4613,6 +4819,18 @@ def reject_driver(driver_id):
                 d_data['user_id'],
 
                 compose_driver_rejected_sms(reason)
+
+            )
+
+            notification_service.notify_user(
+
+                d_data['user_id'],
+
+                "Driver Application Rejected",
+
+                f"Your driver application was not approved. Reason: {reason}. You may re-apply once the issues are resolved.",
+
+                'driver_rejected'
 
             )
 
@@ -4726,6 +4944,11 @@ def apply_driver():
         try:
             sms_service.notify_admins(
                 compose_admin_driver_application_sms(full_name)
+            )
+            notification_service.notify_admins_inapp(
+                "New Driver Application",
+                f"New driver application from {full_name}. Please review in the admin panel.",
+                'admin_driver_application'
             )
         except Exception as sms_err:
             print(f"ERROR SENDING DRIVER APPLICATION SMS: {sms_err}")
@@ -7518,6 +7741,220 @@ def get_sms_logs():
             'per_page': per_page,
             'total': total
         }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+# ---------------------------------------------------------------------------
+# In-App Notification Endpoints
+# ---------------------------------------------------------------------------
+
+@app.route('/notifications', methods=['GET'])
+def get_notifications():
+    """Return all notifications for a customer ordered by created_at DESC.
+    Query param: user_id (int, required)
+    """
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id is required'}), 400
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'user_id must be an integer'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            """
+            SELECT id, title, message, type, is_read, created_at
+            FROM notifications
+            WHERE user_id = %s
+            ORDER BY created_at DESC
+            """,
+            (user_id,)
+        )
+        rows = cur.fetchall()
+        result = []
+        for row in rows:
+            entry = dict(row)
+            if entry.get('created_at'):
+                entry['created_at'] = entry['created_at'].isoformat()
+            result.append(entry)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/notifications/read-all', methods=['POST'])
+def mark_all_notifications_read():
+    """Mark all notifications as read for a customer.
+    Request body: { "user_id": int }
+    """
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    if user_id is None:
+        return jsonify({'error': 'user_id is required'}), 400
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'user_id must be an integer'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND is_read = FALSE",
+            (user_id,)
+        )
+        updated = cur.rowcount
+        commit_db()
+        return jsonify({'updated': updated}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/notifications/<int:notif_id>/read', methods=['POST'])
+def mark_notification_read(notif_id):
+    """Mark a single notification as read.
+    Request body: { "user_id": int }
+    """
+    data = request.get_json() or {}
+    user_id = data.get('user_id')
+    if user_id is None:
+        return jsonify({'error': 'user_id is required'}), 400
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'user_id must be an integer'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "SELECT id, user_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
+            (notif_id,)
+        )
+        notif = cur.fetchone()
+        if not notif:
+            return jsonify({'error': 'Notification not found'}), 404
+        if notif['user_id'] != user_id:
+            return jsonify({'error': 'Forbidden'}), 403
+        cur.execute(
+            "UPDATE notifications SET is_read = TRUE WHERE id = %s",
+            (notif_id,)
+        )
+        commit_db()
+        entry = dict(notif)
+        entry['is_read'] = True
+        if entry.get('created_at'):
+            entry['created_at'] = entry['created_at'].isoformat()
+        return jsonify(entry), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/notifications', methods=['GET'])
+def get_admin_notifications():
+    """Return all notifications for an admin ordered by created_at DESC.
+    Query param: admin_id (int, required)
+    """
+    admin_id = request.args.get('admin_id')
+    if not admin_id:
+        return jsonify({'error': 'admin_id is required'}), 400
+    try:
+        admin_id = int(admin_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'admin_id must be an integer'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            """
+            SELECT id, title, message, type, is_read, created_at
+            FROM notifications
+            WHERE admin_id = %s
+            ORDER BY created_at DESC
+            """,
+            (admin_id,)
+        )
+        rows = cur.fetchall()
+        result = []
+        for row in rows:
+            entry = dict(row)
+            if entry.get('created_at'):
+                entry['created_at'] = entry['created_at'].isoformat()
+            result.append(entry)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/notifications/read-all', methods=['POST'])
+def mark_all_admin_notifications_read():
+    """Mark all notifications as read for an admin.
+    Request body: { "admin_id": int }
+    """
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if admin_id is None:
+        return jsonify({'error': 'admin_id is required'}), 400
+    try:
+        admin_id = int(admin_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'admin_id must be an integer'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "UPDATE notifications SET is_read = TRUE WHERE admin_id = %s AND is_read = FALSE",
+            (admin_id,)
+        )
+        updated = cur.rowcount
+        commit_db()
+        return jsonify({'updated': updated}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/notifications/<int:notif_id>/read', methods=['POST'])
+def mark_admin_notification_read(notif_id):
+    """Mark a single admin notification as read.
+    Request body: { "admin_id": int }
+    """
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if admin_id is None:
+        return jsonify({'error': 'admin_id is required'}), 400
+    try:
+        admin_id = int(admin_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'admin_id must be an integer'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "SELECT id, admin_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
+            (notif_id,)
+        )
+        notif = cur.fetchone()
+        if not notif:
+            return jsonify({'error': 'Notification not found'}), 404
+        if notif['admin_id'] != admin_id:
+            return jsonify({'error': 'Forbidden'}), 403
+        cur.execute(
+            "UPDATE notifications SET is_read = TRUE WHERE id = %s",
+            (notif_id,)
+        )
+        commit_db()
+        entry = dict(notif)
+        entry['is_read'] = True
+        if entry.get('created_at'):
+            entry['created_at'] = entry['created_at'].isoformat()
+        return jsonify(entry), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
