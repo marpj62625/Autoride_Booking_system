@@ -3263,49 +3263,91 @@
             document.getElementById('exitConfirmModal').style.display = 'none';
         };
         window.confirmExit = function() {
-            localStorage.removeItem('admin_user');
+            // Just exit — do NOT log out the admin
             document.getElementById('exitConfirmModal').style.display = 'none';
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
                 window.Capacitor.Plugins.App.exitApp();
             } else {
-                location.reload();
+                window.history.back();
             }
+        };
+
+        // Tab history stack for back navigation
+        var _tabHistory = [];
+        var _origSwitchTabForBack = window.switchTab;
+        window.switchTab = function(tabId) {
+            var current = typeof currentTab !== 'undefined' ? currentTab : null;
+            if (current && current !== tabId) {
+                _tabHistory.push(current);
+                if (_tabHistory.length > 10) _tabHistory.shift();
+            }
+            _origSwitchTabForBack(tabId);
         };
 
         const handleBackButton = (e) => {
             if (e && e.preventDefault) e.preventDefault();
 
-            // If exit modal is open, close it
+            // 1. If exit modal is open, close it
             const exitModal = document.getElementById('exitConfirmModal');
             if (exitModal && exitModal.style.display === 'flex') {
                 hideExitConfirm();
                 return;
             }
 
-            // 1. Close any open modal first
-            const modals = document.querySelectorAll('.premium-modal, #inspectionModal, #licensePreviewModal, #changePasswordModal');
+            // 2. Close any open modal/overlay
+            const modals = document.querySelectorAll('.premium-modal, #inspectionModal, #licensePreviewModal, #changePasswordModal, #bookingDetailsModal, #vehicleModal, #driverModal');
             for (const m of modals) {
-                if (m.style.display === 'flex' || m.style.display === 'block') {
+                if (m && (m.style.display === 'flex' || m.style.display === 'block')) {
                     m.style.display = 'none';
                     return;
                 }
             }
-            // 2. Close side drawer if open
+
+            // 3. Close notification panel if open
+            const notifPanel = document.getElementById('adminNotifPanel');
+            if (notifPanel && notifPanel.style.display !== 'none') {
+                notifPanel.style.display = 'none';
+                return;
+            }
+
+            // 4. Close side drawer if open
             const drawer = document.getElementById('sideDrawer');
-            if (drawer && drawer.style.left === '0px') {
+            if (drawer && (drawer.style.left === '0px' || drawer.classList.contains('open'))) {
                 toggleDrawer(false);
                 return;
             }
-            // 3. Show custom exit confirmation modal
+
+            // 5. If on login screen, exit app
+            const loginOverlay = document.getElementById('adminLoginOverlay');
+            if (loginOverlay && loginOverlay.style.display !== 'none') {
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.exitApp();
+                }
+                return;
+            }
+
+            // 6. Navigate back through tab history
+            if (_tabHistory.length > 0) {
+                var prevTab = _tabHistory.pop();
+                _origSwitchTabForBack(prevTab);
+                return;
+            }
+
+            // 7. On root tab — show exit confirmation
             showExitConfirm();
         };
 
         // Register for both Capacitor and Cordova back button events
-        document.addEventListener('backbutton', handleBackButton, false);
+        document.addEventListener('backbutton', function(e) {
+            e.preventDefault();
+            handleBackButton(e);
+        }, false);
 
         // Capacitor App plugin listener (most reliable for Capacitor 3+)
         if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-            window.Capacitor.Plugins.App.addListener('backButton', handleBackButton);
+            window.Capacitor.Plugins.App.addListener('backButton', function(info) {
+                handleBackButton(info);
+            });
         }
     });
 

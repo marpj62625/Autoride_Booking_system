@@ -3338,11 +3338,16 @@
         };
 
         // Register for both Capacitor and Cordova back button events
-        document.addEventListener('backbutton', handleBackButton, false);
+        document.addEventListener('backbutton', function(e) {
+            e.preventDefault();
+            handleBackButton(e);
+        }, false);
 
         // Capacitor App plugin listener (most reliable for Capacitor 3+)
         if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-            window.Capacitor.Plugins.App.addListener('backButton', handleBackButton);
+            window.Capacitor.Plugins.App.addListener('backButton', function(info) {
+                handleBackButton(info);
+            });
         }
     });
 

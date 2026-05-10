@@ -452,13 +452,32 @@ function handleBackButton() {
   }
 }
 
-// Register back button — both Cordova and Capacitor
-document.addEventListener('backbutton', handleBackButton, false);
+// Register back button — Cordova event (fires on deviceready)
+// Using { canGoBack } param from Capacitor — we always handle it ourselves
 document.addEventListener('deviceready', function() {
+  // Cordova-style backbutton (works in older Capacitor / Cordova)
+  document.addEventListener('backbutton', function(e) {
+    e.preventDefault();
+    handleBackButton();
+  }, false);
+
+  // Capacitor 3+ App plugin listener
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-    window.Capacitor.Plugins.App.addListener('backButton', handleBackButton);
+    window.Capacitor.Plugins.App.addListener('backButton', function(info) {
+      // info.canGoBack is true if WebView has browser history — we ignore it
+      // and always use our own navigation logic
+      handleBackButton();
+    });
   }
 }, false);
+
+// Also register immediately in case deviceready already fired
+if (document.readyState !== 'loading') {
+  document.addEventListener('backbutton', function(e) {
+    e.preventDefault();
+    handleBackButton();
+  }, false);
+}
 
 // AUTH: LOGIN
 function doLogin() {

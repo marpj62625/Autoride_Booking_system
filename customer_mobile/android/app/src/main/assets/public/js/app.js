@@ -33,6 +33,13 @@ var selectedRating = 0;
 var gpsMap = null;
 var gpsMarker = null;
 
+// SUPABASE REALTIME (in-app notifications)
+var SUPABASE_URL = 'https://fydfsgjrlowrrtlmefwq.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
+var supabaseClient = null;
+var notifChannel = null;
+var notifList = [];
+
 // CAPACITOR PLUGINS (safe access)
 function getPreferences() {
   return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) || null;
@@ -122,6 +129,46 @@ var NotifStore = {
     });
   }
 };
+
+// SERVER-BACKED NOTIFICATIONS
+function loadNotifications(userId) {
+    return apiCall('/notifications?user_id=' + userId)
+        .then(function(data) {
+            notifList = Array.isArray(data) ? data : [];
+            updateNotifBadge();
+            return notifList;
+        })
+        .catch(function() {
+            notifList = [];
+            return [];
+        });
+}
+
+function subscribeToNotifications(userId) {
+    if (!supabaseClient) return;
+    if (notifChannel) supabaseClient.removeChannel(notifChannel);
+    notifChannel = supabaseClient
+        .channel('user-notifications-' + userId)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: 'user_id=eq.' + userId
+        }, function(payload) {
+            if (payload && payload.new) {
+                notifList.unshift(payload.new);
+                updateNotifBadge();
+            }
+        })
+        .subscribe();
+}
+
+function unsubscribeFromNotifications() {
+    if (supabaseClient && notifChannel) {
+        supabaseClient.removeChannel(notifChannel);
+        notifChannel = null;
+    }
+}
 
 // API HELPERS
 function apiCall(endpoint, options) {
@@ -265,7 +312,7 @@ function showOverlay(id) {
   if (!el) return;
   el.classList.add('active');
   el.style.display = 'block';
-  if (id === 'page-notifications') loadNotifications();
+  if (id === 'page-notifications') openNotificationsPage();
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
   if (id === 'page-license-upload') openLicenseUpload();
@@ -294,15 +341,15 @@ function statusPill(status) {
 }
 
 function updateNotifBadge() {
-  NotifStore.getAll().then(function(all) {
-    var unread = all.filter(function(n) { return !n.read; }).length;
+    var unread = notifList.filter(function(n) { return !n.is_read; }).length;
     var badge = document.getElementById('notifBadge');
-    if (badge) {
-      badge.textContent = unread;
-      if (unread === 0) badge.classList.add('hidden');
-      else badge.classList.remove('hidden');
+    if (!badge) return;
+    if (unread > 0) {
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
     }
-  });
 }
 
 // STARTUP - run immediately when script loads, also on events as fallback
@@ -322,6 +369,12 @@ function initApp() {
       apiCall('/public/settings').then(function(s) {
         Object.assign(appSettings, s);
       }).catch(function() {});
+      // Initialise Supabase client and load notifications
+      if (typeof supabase !== 'undefined') {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      loadNotifications(user.id);
+      subscribeToNotifications(user.id);
       showPage('page-home');
     } else {
       showPage('page-login');
@@ -338,6 +391,93 @@ initApp();
 // Also listen for events as fallback
 document.addEventListener('DOMContentLoaded', initApp);
 document.addEventListener('deviceready', initApp);
+
+// ---------------------------------------------------------------------------
+// PHYSICAL BACK BUTTON HANDLER
+// ---------------------------------------------------------------------------
+var _backPressedOnce = false;
+var _backPressTimer = null;
+
+function handleBackButton() {
+  // 1. Close any open rental agreement modal
+  var rentalModal = document.getElementById('rentalAgreementModal');
+  if (rentalModal && rentalModal.parentNode) {
+    rentalModal.remove();
+    return;
+  }
+
+  // 2. Close any active overlay page (in reverse open order)
+  var overlays = document.querySelectorAll('.overlay-page.active');
+  if (overlays.length > 0) {
+    // Close the last opened overlay
+    var last = overlays[overlays.length - 1];
+    closeOverlay(last.id);
+    return;
+  }
+
+  // 3. On auth pages — do nothing (can't go back from login/register)
+  var authPages = document.querySelectorAll('.auth-page.active');
+  if (authPages.length > 0) {
+    // On register/otp pages, go back to login
+    var activeAuth = authPages[0];
+    if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify' || activeAuth.id === 'page-phone-login') {
+      showPage('page-login');
+    }
+    // On login page itself — double-back to exit
+    else {
+      if (_backPressedOnce) {
+        clearTimeout(_backPressTimer);
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+          window.Capacitor.Plugins.App.exitApp();
+        }
+      } else {
+        _backPressedOnce = true;
+        showToast('Press back again to exit', 'info');
+        _backPressTimer = setTimeout(function() { _backPressedOnce = false; }, 2000);
+      }
+    }
+    return;
+  }
+
+  // 4. On main pages — double-back to exit
+  if (_backPressedOnce) {
+    clearTimeout(_backPressTimer);
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      window.Capacitor.Plugins.App.exitApp();
+    }
+  } else {
+    _backPressedOnce = true;
+    showToast('Press back again to exit', 'info');
+    _backPressTimer = setTimeout(function() { _backPressedOnce = false; }, 2000);
+  }
+}
+
+// Register back button — Cordova event (fires on deviceready)
+// Using { canGoBack } param from Capacitor — we always handle it ourselves
+document.addEventListener('deviceready', function() {
+  // Cordova-style backbutton (works in older Capacitor / Cordova)
+  document.addEventListener('backbutton', function(e) {
+    e.preventDefault();
+    handleBackButton();
+  }, false);
+
+  // Capacitor 3+ App plugin listener
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.addListener('backButton', function(info) {
+      // info.canGoBack is true if WebView has browser history — we ignore it
+      // and always use our own navigation logic
+      handleBackButton();
+    });
+  }
+}, false);
+
+// Also register immediately in case deviceready already fired
+if (document.readyState !== 'loading') {
+  document.addEventListener('backbutton', function(e) {
+    e.preventDefault();
+    handleBackButton();
+  }, false);
+}
 
 // AUTH: LOGIN
 function doLogin() {
@@ -361,6 +501,12 @@ function doLogin() {
           Session.save(currentUser);
         }).catch(function() {});
       apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
+      // Initialise Supabase client and load notifications
+      if (typeof supabase !== 'undefined') {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      loadNotifications(data.user_id);
+      subscribeToNotifications(data.user_id);
       showPage('page-home');
     })
     .catch(function(err) {
@@ -382,6 +528,8 @@ function doGoogleLogin() {
 }
 
 function doLogout() {
+  unsubscribeFromNotifications();
+  notifList = [];
   Session.clear();
   currentUser = { id: null, fullName: '', isVerified: 0 };
   showPage('page-login');
@@ -489,6 +637,12 @@ function doVerifyPhone() {
     .then(function(data) {
       currentUser = { id: data.user_id, fullName: data.full_name, isVerified: 0 };
       Session.save(currentUser);
+      // Initialise Supabase client and load notifications
+      if (typeof supabase !== 'undefined') {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      loadNotifications(data.user_id);
+      subscribeToNotifications(data.user_id);
       showPage('page-home');
     })
     .catch(function(err) {
@@ -2114,6 +2268,8 @@ function loadProfile() {
       if (emailEl) emailEl.textContent = profile.email || '';
       if (editNameEl) editNameEl.value = profile.full_name || '';
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
+      var editEmailEl = document.getElementById('editEmail');
+      if (editEmailEl) editEmailEl.value = profile.email || '';
       if (pointsEl) pointsEl.textContent = profile.loyalty_points || 0;
       currentUser.loyaltyPoints = profile.loyalty_points || 0;
       currentUser.isVerified = profile.is_verified !== undefined ? profile.is_verified : 0;
@@ -2189,22 +2345,31 @@ function pickProfilePicture() {
 function doUpdateProfile() {
   var nameEl = document.getElementById('editName');
   var phoneEl = document.getElementById('editPhone');
+  var emailEl = document.getElementById('editEmail');
   var phoneErrEl = document.getElementById('editPhoneErr');
+  var emailErrEl = document.getElementById('editEmailErr');
   var name = nameEl ? sanitizeInput(nameEl.value.trim()) : '';
   var phone = phoneEl ? phoneEl.value.trim() : '';
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
   if (phoneErrEl) phoneErrEl.textContent = '';
+  if (emailErrEl) emailErrEl.textContent = '';
   if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11)) {
     if (phoneErrEl) phoneErrEl.textContent = 'Phone must be 10-11 digits.'; return;
+  }
+  if (email && !isGmailAddress(email)) {
+    if (emailErrEl) emailErrEl.textContent = 'Only @gmail.com emails are allowed.'; return;
   }
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
   fd.append('full_name', name);
   fd.append('phone', phone);
+  if (email) fd.append('email', email);
   if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');
   showLoading(true);
   uploadFile('/update-profile', fd)
     .then(function() {
       currentUser.fullName = name;
+      if (email) currentUser.email = email;
       Session.save(currentUser);
       showToast('Profile updated successfully!', 'success');
       loadProfile();
@@ -2470,23 +2635,49 @@ function sendChat() {
 }
 
 // NOTIFICATIONS
-function loadNotifications() {
-  NotifStore.getAll().then(function(all) {
-    NotifStore.markAllRead();
-    var el = document.getElementById('notificationsContent');
-    if (!el) return;
-    el.innerHTML = '<div class="page-header">' +
-      '<button class="back-btn" onclick="closeOverlay(\'page-notifications\')"><i class="fas fa-arrow-left"></i></button>' +
-      '<h2>Notifications</h2></div>' +
-      '<div class="scroll-content">' +
-      (all.length ? all.map(function(n) {
-        return '<div class="notif-item ' + (n.read ? '' : 'unread') + '">' +
-          '<p>' + n.msg + '</p>' +
-          '<small>' + new Date(n.ts).toLocaleString() + '</small>' +
-          '</div>';
-      }).join('') : '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>') +
-      '</div>';
-  });
+function openNotificationsPage() {
+    showPage('page-notifications');
+    var container = document.getElementById('notificationsContent');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';
+
+    var userId = currentUser.id;
+    if (!userId) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>Please log in to view notifications</p></div>';
+        return;
+    }
+
+    // Mark all as read
+    apiCall('/notifications/read-all', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId })
+    }).then(function() {
+        notifList.forEach(function(n) { n.is_read = true; });
+        updateNotifBadge();
+    }).catch(function() {});
+
+    // Load and render
+    apiCall('/notifications?user_id=' + userId)
+        .then(function(data) {
+            notifList = Array.isArray(data) ? data : [];
+            updateNotifBadge();
+            if (!notifList.length) {
+                container.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>';
+                return;
+            }
+            container.innerHTML = notifList.map(function(n) {
+                var unreadClass = n.is_read ? '' : ' unread';
+                var ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+                return '<div class="notif-item' + unreadClass + '">' +
+                    '<p><strong>' + (n.title || '') + '</strong></p>' +
+                    '<p style="margin-top:4px;">' + (n.message || '') + '</p>' +
+                    '<small>' + ts + '</small>' +
+                    '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load notifications</p></div>';
+        });
 }
 
 // NEWSLETTER
