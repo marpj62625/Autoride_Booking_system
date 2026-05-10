@@ -2798,6 +2798,15 @@ def update_profile():
 
         cur.execute("UPDATE users SET full_name=%s, phone=%s WHERE id=%s", (full_name, phone, user_id))
 
+        # Update email if provided and not taken by another user
+        new_email = request.form.get('email', '').strip().lower()
+        if new_email and '@gmail.com' in new_email:
+            cur.execute("SELECT id FROM users WHERE email=%s AND id != %s", (new_email, user_id))
+            existing = cur.fetchone()
+            if existing:
+                return jsonify({"error": "This email is already used by another account."}), 409
+            cur.execute("UPDATE users SET email=%s WHERE id=%s", (new_email, user_id))
+
         commit_db()
 
         

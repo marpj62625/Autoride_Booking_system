@@ -2114,6 +2114,8 @@ function loadProfile() {
       if (emailEl) emailEl.textContent = profile.email || '';
       if (editNameEl) editNameEl.value = profile.full_name || '';
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
+      var editEmailEl = document.getElementById('editEmail');
+      if (editEmailEl) editEmailEl.value = profile.email || '';
       if (pointsEl) pointsEl.textContent = profile.loyalty_points || 0;
       currentUser.loyaltyPoints = profile.loyalty_points || 0;
       currentUser.isVerified = profile.is_verified !== undefined ? profile.is_verified : 0;
@@ -2189,22 +2191,31 @@ function pickProfilePicture() {
 function doUpdateProfile() {
   var nameEl = document.getElementById('editName');
   var phoneEl = document.getElementById('editPhone');
+  var emailEl = document.getElementById('editEmail');
   var phoneErrEl = document.getElementById('editPhoneErr');
+  var emailErrEl = document.getElementById('editEmailErr');
   var name = nameEl ? sanitizeInput(nameEl.value.trim()) : '';
   var phone = phoneEl ? phoneEl.value.trim() : '';
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
   if (phoneErrEl) phoneErrEl.textContent = '';
+  if (emailErrEl) emailErrEl.textContent = '';
   if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11)) {
     if (phoneErrEl) phoneErrEl.textContent = 'Phone must be 10-11 digits.'; return;
+  }
+  if (email && !isGmailAddress(email)) {
+    if (emailErrEl) emailErrEl.textContent = 'Only @gmail.com emails are allowed.'; return;
   }
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
   fd.append('full_name', name);
   fd.append('phone', phone);
+  if (email) fd.append('email', email);
   if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');
   showLoading(true);
   uploadFile('/update-profile', fd)
     .then(function() {
       currentUser.fullName = name;
+      if (email) currentUser.email = email;
       Session.save(currentUser);
       showToast('Profile updated successfully!', 'success');
       loadProfile();
