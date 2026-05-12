@@ -7821,6 +7821,26 @@ def debug_notifications_check():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/debug/test-notification', methods=['POST'])
+def debug_test_notification():
+    """Debug endpoint to directly test inserting a notification row."""
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id', 1)
+        cur = get_cursor()
+        cur.execute(
+            "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (%s, NULL, %s, %s, %s) RETURNING id",
+            (user_id, 'Test Notification', 'This is a test notification', 'test')
+        )
+        new_id = cur.fetchone()['id']
+        commit_db()
+        return jsonify({'success': True, 'notification_id': new_id}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/notifications', methods=['GET'])
 def get_notifications():
     """Return all notifications for a customer ordered by created_at DESC.
