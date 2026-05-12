@@ -1,16 +1,38 @@
 package com.autoride.customer;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends BridgeActivity {
 
     private boolean backPressedOnce = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable resetBackFlag = () -> backPressedOnce = false;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Get FCM token and pass it to JS so it can be saved to the backend
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+            if (task.isSuccessful() && task.getResult() != null) {
+                String token = task.getResult();
+                // Store locally
+                getSharedPreferences("autoride_prefs", Context.MODE_PRIVATE)
+                    .edit().putString("fcm_token", token).apply();
+                // Pass to JS
+                String js = "window._fcmToken = '" + token + "'; " +
+                            "if (typeof saveFcmToken === 'function') saveFcmToken('" + token + "');";
+                getBridge().getWebView().post(() ->
+                    getBridge().getWebView().evaluateJavascript(js, null)
+                );
+            }
+        });
+    }
 
     @Override
     public void onBackPressed() {

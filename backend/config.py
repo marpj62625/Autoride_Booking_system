@@ -1,10 +1,8 @@
 import os
 
 # Supabase PostgreSQL Configuration
-# [x] Update config.py with Supabase credentials
-# Remember to set this environment variable or replace YOUR_PASSWORD with your actual database password
 SUPABASE_DB_URL = os.getenv(
-    'SUPABASE_DB_URL', 
+    'SUPABASE_DB_URL',
     'postgresql://postgres.fydfsgjrlowrrtlmefwq:Autoride777%25*@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres'
 )
 
@@ -23,10 +21,13 @@ SEMAPHORE_SENDER_NAME = os.getenv('SEMAPHORE_SENDER_NAME', 'SEMAPHORE')
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://fydfsgjrlowrrtlmefwq.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4')
 
+# Firebase Cloud Messaging (FCM) — for push notifications
+FCM_SERVER_KEY = os.getenv('FCM_SERVER_KEY', 'BIb5YffHFeCD1_TYpNHpC5TOeZgML5MW8CIsaD-jExr1a5soJ598H7PPrdppR2JX2EvJhZc1CFBp7oF7BEwk-sU')
+
 # PayMongo Configuration
-PAYMONGO_SECRET_KEY = os.getenv('PAYMONGO_SECRET_KEY', '')  # Set in Vercel env vars
-PAYMONGO_PUBLIC_KEY = os.getenv('PAYMONGO_PUBLIC_KEY', '')  # Set in Vercel env vars
-PAYMONGO_WEBHOOK_SECRET = os.getenv('PAYMONGO_WEBHOOK_SECRET', '')  # Set in Vercel env vars
+PAYMONGO_SECRET_KEY = os.getenv('PAYMONGO_SECRET_KEY', '')
+PAYMONGO_PUBLIC_KEY = os.getenv('PAYMONGO_PUBLIC_KEY', '')
+PAYMONGO_WEBHOOK_SECRET = os.getenv('PAYMONGO_WEBHOOK_SECRET', '')
 APP_BASE_URL = os.getenv('APP_BASE_URL', 'https://autoride-booking-system.vercel.app')
 
 # Email Configuration (SMTP)

@@ -146,9 +146,17 @@ var NotifStore = {
   }
 };
 
+// FCM TOKEN REGISTRATION
+function saveFcmToken(token) {
+  if (!token || !currentUser.id) return;
+  apiCall('/user/fcm-token', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: currentUser.id, fcm_token: token })
+  }).catch(function() {});
+}
+
 // SERVER-BACKED NOTIFICATIONS
-function loadNotifications(userId) {
-    return apiCall('/notifications?user_id=' + userId)
+function loadNotifications(userId) {    return apiCall('/notifications?user_id=' + userId)
         .then(function(data) {
             notifList = Array.isArray(data) ? data : [];
             updateNotifBadge();
@@ -391,6 +399,8 @@ function initApp() {
       }
       loadNotifications(user.id);
       subscribeToNotifications(user.id);
+      // Register FCM token if already available from native layer
+      if (window._fcmToken) saveFcmToken(window._fcmToken);
       showPage('page-home');
     } else {
       showPage('page-login');

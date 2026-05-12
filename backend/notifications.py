@@ -487,6 +487,7 @@ class Notification_Service:
     def notify_user(self, user_id: int, title: str, message: str, notif_type: str) -> bool:
         """
         Inserts one notification row for a customer (user_id set, admin_id NULL).
+        Also sends an FCM push notification if the user has a registered token.
         Returns True on success, False on failure.
         """
         try:
@@ -502,6 +503,11 @@ class Notification_Service:
                 commit_db()
             finally:
                 cur.close()
+            # Also send FCM push
+            try:
+                fcm_service.notify_user_push(user_id, title, message)
+            except Exception:
+                pass  # FCM failure never blocks the in-app notification
             return True
         except Exception as exc:
             print(
@@ -561,3 +567,75 @@ class Notification_Service:
 
 
 notification_service = Notification_Service()
+
+
+# ---------------------------------------------------------------------------
+# FCM Push Notification Service
+# ---------------------------------------------------------------------------
+
+class FCM_Service:
+    """
+    Sends native push notifications via Firebase Cloud Messaging (FCM).
+    Works alongside SMS_Service and Notification_Service.
+    """
+
+    def send_push(self, fcm_token: str, title: str, body: str) -> bool:
+        """
+        Sends a push notification to a single device via FCM legacy HTTP API.
+        Returns True on success, False on failure.
+        """
+        try:
+            from config import FCM_SERVER_KEY
+            resp = requests.post(
+                'https://fcm.googleapis.com/fcm/send',
+                headers={
+                    'Authorization': f'key={FCM_SERVER_KEY}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'to': fcm_token,
+                    'notification': {
+                        'title': title,
+                        'body': body,
+                        'sound': 'default',
+                    },
+                    'data': {
+                        'title': title,
+                        'body': body,
+                    },
+                    'priority': 'high',
+                },
+                timeout=10
+            )
+            return resp.ok
+        except Exception as exc:
+            print(f"FCM_Service.send_push: failed: {exc}", file=sys.stderr)
+            return False
+
+    def notify_user_push(self, user_id: int, title: str, body: str) -> bool:
+        """
+        Looks up the user's FCM token from the users table and sends a push.
+        Returns True on success, False if no token or send failed.
+        """
+        try:
+            cur = get_cursor()
+            try:
+                cur.execute(
+                    "SELECT fcm_token FROM users WHERE id = %s",
+                    (user_id,)
+                )
+                row = cur.fetchone()
+            finally:
+                cur.close()
+
+            if not row or not row.get('fcm_token'):
+                return False
+
+            return self.send_push(row['fcm_token'], title, body)
+        except Exception as exc:
+            print(f"FCM_Service.notify_user_push: DB error: {exc}", file=sys.stderr)
+            return False
+
+
+# Module-level singleton
+fcm_service = FCM_Service()
