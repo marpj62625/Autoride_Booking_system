@@ -2,33 +2,32 @@ package com.autoride.customer;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends BridgeActivity {
 
-    private boolean backPressedOnce = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Runnable resetBackFlag = () -> backPressedOnce = false;
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        // Get FCM token and pass it to JS so it can be saved to the backend
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Get FCM token and pass it to JS after the bridge is ready
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null) {
                 String token = task.getResult();
-                // Store locally
                 getSharedPreferences("autoride_prefs", Context.MODE_PRIVATE)
                     .edit().putString("fcm_token", token).apply();
-                // Pass to JS
-                String js = "window._fcmToken = '" + token + "'; " +
-                            "if (typeof saveFcmToken === 'function') saveFcmToken('" + token + "');";
+                // Pass token to JS once WebView is ready
                 getBridge().getWebView().post(() ->
-                    getBridge().getWebView().evaluateJavascript(js, null)
+                    getBridge().getWebView().evaluateJavascript(
+                        "window._fcmToken = '" + token + "'; " +
+                        "if (typeof saveFcmToken === 'function') saveFcmToken('" + token + "');",
+                        null
+                    )
                 );
             }
         });
@@ -40,13 +39,11 @@ public class MainActivity extends BridgeActivity {
             getBridge().getWebView().evaluateJavascript(
                 "(function() {" +
                 "  try {" +
-                // Check for open rental agreement modal
                 "    var rentalModal = document.getElementById('rentalAgreementModal');" +
                 "    if (rentalModal && rentalModal.parentNode) {" +
                 "      rentalModal.remove();" +
                 "      return 'closed_modal';" +
                 "    }" +
-                // Check for active overlays
                 "    var overlays = document.querySelectorAll('.overlay-page.active');" +
                 "    if (overlays.length > 0) {" +
                 "      var last = overlays[overlays.length - 1];" +
@@ -54,7 +51,6 @@ public class MainActivity extends BridgeActivity {
                 "      last.style.display = 'none';" +
                 "      return 'closed_overlay';" +
                 "    }" +
-                // Check for active auth pages
                 "    var authPages = document.querySelectorAll('.auth-page.active');" +
                 "    if (authPages.length > 0) {" +
                 "      var id = authPages[0].id;" +
@@ -74,12 +70,11 @@ public class MainActivity extends BridgeActivity {
                             case "closed_modal":
                             case "closed_overlay":
                             case "went_to_login":
-                                // Navigation handled — nothing more to do
+                                // Navigation handled in JS
                                 break;
                             case "on_login":
                             case "on_main":
                             default:
-                                // Show native confirmation dialog
                                 showExitConfirmDialog();
                                 break;
                         }
@@ -94,7 +89,6 @@ public class MainActivity extends BridgeActivity {
             .setTitle("Logout & Exit")
             .setMessage("Are you sure you want to logout and exit the app?")
             .setPositiveButton("Logout & Exit", (dialog, which) -> {
-                // Clear session in JS then exit
                 getBridge().getWebView().post(() ->
                     getBridge().getWebView().evaluateJavascript(
                         "(function(){" +
