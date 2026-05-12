@@ -7815,6 +7815,30 @@ def get_sms_logs():
 # In-App Notification Endpoints
 # ---------------------------------------------------------------------------
 
+@app.route('/debug/booking-info/<int:booking_id>', methods=['GET'])
+def debug_booking_info(booking_id):
+    """Debug: show booking user_id and whether that user exists."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, user_id, status FROM bookings WHERE id = %s", (booking_id,))
+        booking = cur.fetchone()
+        if not booking:
+            return jsonify({'error': 'Booking not found'}), 404
+        cur.execute("SELECT id, full_name FROM users WHERE id = %s", (booking['user_id'],))
+        user = cur.fetchone()
+        return jsonify({
+            'booking_id': booking_id,
+            'booking_user_id': booking['user_id'],
+            'booking_status': booking['status'],
+            'user_exists': user is not None,
+            'user_name': user['full_name'] if user else None
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/debug/notifications-check', methods=['GET'])
 def debug_notifications_check():
     """Debug endpoint to check if notifications table exists and has rows."""
