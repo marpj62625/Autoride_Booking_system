@@ -4401,6 +4401,23 @@ def admin_cancel_booking(booking_id):
 
         )
 
+        # Insert notification directly (bypass notify_user wrapper for reliability)
+        try:
+            notif_cur = get_cursor()
+            notif_cur.execute(
+                "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (%s, NULL, %s, %s, %s)",
+                (
+                    booking['user_id'],
+                    "Booking Cancelled",
+                    f"Your booking #{booking_id} has been cancelled by our team. Reason: {reason}. A refund will be initiated if applicable.",
+                    'booking_cancelled_by_admin'
+                )
+            )
+            commit_db()
+            notif_cur.close()
+        except Exception as notif_err:
+            print(f"DEBUG: notification insert failed: {notif_err}")
+
         notification_service.notify_user(
 
             booking['user_id'],
