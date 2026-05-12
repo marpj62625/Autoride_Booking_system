@@ -1940,9 +1940,13 @@
         },
 
         async cancel(id) {
-            if (!confirm('Cancel this booking?')) return;
+            const reason = prompt('Enter cancellation reason (optional):') || 'Cancelled by admin';
             try {
-                const res = await fetch(`${API_URL}/bookings/${id}/cancel`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/cancel`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
                 if (res.ok) {
                     showNotification('Booking Cancelled!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
