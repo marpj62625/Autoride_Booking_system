@@ -1364,6 +1364,75 @@
 <script>
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
+
+    // Admin notification globals — defined early so initSession can call them
+    window.adminNotifList = [];
+
+    window.loadAdminNotifications = function(adminId) {
+        fetch(API_URL + '/admin/notifications?admin_id=' + adminId)
+            .then(r => r.json())
+            .then(data => {
+                window.adminNotifList = Array.isArray(data) ? data : [];
+                if (typeof window.updateAdminNotifBadge === 'function') window.updateAdminNotifBadge();
+            }).catch(() => {});
+    };
+
+    window.updateAdminNotifBadge = function() {
+        const unread = (window.adminNotifList || []).filter(n => !n.is_read).length;
+        const badge = document.getElementById('adminNotifBadge');
+        if (!badge) return;
+        if (unread > 0) {
+            badge.textContent = unread > 99 ? '99+' : String(unread);
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    };
+
+    window.toggleAdminNotifPanel = function() {
+        const panel = document.getElementById('adminNotifPanel');
+        const list = document.getElementById('adminNotifList');
+        if (!panel) return;
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) {
+            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+            if (user && user.id) {
+                fetch(API_URL + '/admin/notifications/read-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_id: user.id })
+                }).then(() => {
+                    (window.adminNotifList || []).forEach(n => n.is_read = true);
+                    window.updateAdminNotifBadge();
+                }).catch(() => {});
+            }
+            const notifs = window.adminNotifList || [];
+            if (!notifs.length) {
+                list.innerHTML = '<p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
+            } else {
+                list.innerHTML = notifs.map(n => {
+                    const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #6366f1;padding-left:8px;background:rgba(99,102,241,0.08);';
+                    return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
+                        <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
+                        <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
+                        <small style="color:#64748b;">${ts}</small>
+                    </div>`;
+                }).join('');
+            }
+        }
+    };
+
+    window.saveAdminFcmToken = function(token) {
+        const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+        if (!token || !user || !user.id) return;
+        fetch(API_URL + '/admin/fcm-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id, fcm_token: token })
+        }).catch(() => {});
+    };
     
     // Global API fetcher for production
     window.apiFetch = async function(path, options = {}) {
@@ -3265,75 +3334,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         adminAuth.initSession();
 
-        // FCM token save function for admin
-        window.saveAdminFcmToken = function(token) {
-            const user = adminAuth.getUser();
-            if (!token || !user || !user.id) return;
-            fetch(API_URL + '/admin/fcm-token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ admin_id: user.id, fcm_token: token })
-            }).catch(function() {});
-        };
-
-        // Admin notification panel functions
-        window.adminNotifList = window.adminNotifList || [];
-
-        window.loadAdminNotifications = function(adminId) {
-            fetch(API_URL + '/admin/notifications?admin_id=' + adminId)
-                .then(r => r.json())
-                .then(data => {
-                    window.adminNotifList = Array.isArray(data) ? data : [];
-                    updateAdminNotifBadge();
-                }).catch(() => {});
-        };
-
-        window.updateAdminNotifBadge = function() {
-            const unread = (window.adminNotifList || []).filter(n => !n.is_read).length;
-            const badge = document.getElementById('adminNotifBadge');
-            if (!badge) return;
-            if (unread > 0) {
-                badge.textContent = unread > 99 ? '99+' : String(unread);
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        };
-
-        window.toggleAdminNotifPanel = function() {
-            const panel = document.getElementById('adminNotifPanel');
-            const list = document.getElementById('adminNotifList');
-            if (!panel) return;
-            const isVisible = panel.style.display !== 'none';
-            panel.style.display = isVisible ? 'none' : 'block';
-            if (!isVisible) {
-                const user = adminAuth.getUser();
-                if (user && user.id) {
-                    fetch(API_URL + '/admin/notifications/read-all', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ admin_id: user.id })
-                    }).then(() => {
-                        (window.adminNotifList || []).forEach(n => n.is_read = true);
-                        updateAdminNotifBadge();
-                    }).catch(() => {});
-                }
-                const notifs = window.adminNotifList || [];
-                if (!notifs.length) {
-                    list.innerHTML = '<p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
-                } else {
-                    list.innerHTML = notifs.map(n => {
-                        const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-                        const unreadStyle = n.is_read ? '' : 'border-left:3px solid #6366f1;padding-left:8px;background:rgba(99,102,241,0.08);';
-                        return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
-                            <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
-                            <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-                            <small style="color:#64748b;">${ts}</small>
-                        </div>`;
-                    }).join('');
-                }
-            }
-        };
+        // FCM token save function for admin (defined early in script, referenced here for completeness)
+        // saveAdminFcmToken is defined at top of script block
 
         // Login Button Listener
         const loginBtn = document.getElementById('loginBtn');
