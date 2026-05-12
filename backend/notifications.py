@@ -570,43 +570,136 @@ notification_service = Notification_Service()
 
 
 # ---------------------------------------------------------------------------
-# FCM Push Notification Service
+# FCM Push Notification Service (V1 API with Service Account)
 # ---------------------------------------------------------------------------
 
 class FCM_Service:
     """
-    Sends native push notifications via Firebase Cloud Messaging (FCM).
-    Works alongside SMS_Service and Notification_Service.
+    Sends native push notifications via Firebase Cloud Messaging V1 API.
+    Uses a service account for OAuth2 authentication.
     """
 
-    def send_push(self, fcm_token: str, title: str, body: str) -> bool:
-        """
-        Sends a push notification to a single device via FCM legacy HTTP API.
-        Returns True on success, False on failure.
-        """
+    _access_token = None
+    _token_expiry = 0
+
+    def _get_access_token(self) -> str:
+        """Get a valid OAuth2 access token, refreshing if expired."""
+        import json
+        import time
+
+        now = time.time()
+        if self._access_token and now < self._token_expiry - 60:
+            return self._access_token
+
         try:
-            from config import FCM_SERVER_KEY
+            import os
+
+            # Load service account from environment variable (JSON string)
+            sa_json = os.environ.get('FIREBASE_SERVICE_ACCOUNT')
+            if not sa_json:
+                # Fallback: try local file (for local dev only, not committed to git)
+                sa_path = os.path.join(os.path.dirname(__file__), 'firebase-service-account.json')
+                if os.path.exists(sa_path):
+                    with open(sa_path, 'r') as f:
+                        sa = json.load(f)
+                else:
+                    print("FCM_Service: FIREBASE_SERVICE_ACCOUNT env var not set", file=sys.stderr)
+                    return None
+            else:
+                sa = json.loads(sa_json)
+
+            # Build JWT for service account
+            import base64
+
+            header = base64.urlsafe_b64encode(
+                json.dumps({"alg": "RS256", "typ": "JWT"}).encode()
+            ).rstrip(b'=').decode()
+
+            iat = int(now)
+            exp = iat + 3600
+            payload = base64.urlsafe_b64encode(
+                json.dumps({
+                    "iss": sa['client_email'],
+                    "scope": "https://www.googleapis.com/auth/firebase.messaging",
+                    "aud": "https://oauth2.googleapis.com/token",
+                    "iat": iat,
+                    "exp": exp
+                }).encode()
+            ).rstrip(b'=').decode()
+
+            signing_input = f"{header}.{payload}".encode()
+
+            # Sign with private key
+            from cryptography.hazmat.primitives import hashes, serialization
+            from cryptography.hazmat.primitives.asymmetric import padding
+
+            private_key = serialization.load_pem_private_key(
+                sa['private_key'].encode(), password=None
+            )
+            signature = private_key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
+            sig_b64 = base64.urlsafe_b64encode(signature).rstrip(b'=').decode()
+
+            jwt_token = f"{header}.{payload}.{sig_b64}"
+
+            # Exchange JWT for access token
             resp = requests.post(
-                'https://fcm.googleapis.com/fcm/send',
-                headers={
-                    'Authorization': f'key={FCM_SERVER_KEY}',
-                    'Content-Type': 'application/json',
-                },
-                json={
-                    'to': fcm_token,
-                    'notification': {
-                        'title': title,
-                        'body': body,
-                        'sound': 'default',
-                    },
-                    'data': {
-                        'title': title,
-                        'body': body,
-                    },
-                    'priority': 'high',
+                'https://oauth2.googleapis.com/token',
+                data={
+                    'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                    'assertion': jwt_token
                 },
                 timeout=10
             )
+            token_data = resp.json()
+            self._access_token = token_data['access_token']
+            self._token_expiry = now + token_data.get('expires_in', 3600)
+            return self._access_token
+
+        except Exception as exc:
+            print(f"FCM_Service._get_access_token: failed: {exc}", file=sys.stderr)
+            return None
+
+    def send_push(self, fcm_token: str, title: str, body: str) -> bool:
+        """
+        Sends a push notification to a single device via FCM V1 API.
+        Returns True on success, False on failure.
+        """
+        try:
+            access_token = self._get_access_token()
+            if not access_token:
+                return False
+
+            project_id = 'autoride-a1a32'
+            resp = requests.post(
+                f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send',
+                headers={
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'message': {
+                        'token': fcm_token,
+                        'notification': {
+                            'title': title,
+                            'body': body,
+                        },
+                        'android': {
+                            'priority': 'high',
+                            'notification': {
+                                'sound': 'default',
+                                'channel_id': 'autoride_notifications',
+                            }
+                        },
+                        'data': {
+                            'title': title,
+                            'body': body,
+                        }
+                    }
+                },
+                timeout=10
+            )
+            if not resp.ok:
+                print(f"FCM_Service.send_push: FCM error {resp.status_code}: {resp.text}", file=sys.stderr)
             return resp.ok
         except Exception as exc:
             print(f"FCM_Service.send_push: failed: {exc}", file=sys.stderr)
