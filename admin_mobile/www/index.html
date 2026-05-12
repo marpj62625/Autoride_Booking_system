@@ -1454,6 +1454,9 @@
                     el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
                 });
 
+                // Register FCM token if available from native layer
+                if (window._adminFcmToken) saveAdminFcmToken(window._adminFcmToken);
+
                 if (isSuper) { switchTab('dashboard'); refreshDashboard(); }
                 else switchTab('vehicles');
             } else {
@@ -3247,6 +3250,17 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         adminAuth.initSession();
+
+        // FCM token save function for admin
+        window.saveAdminFcmToken = function(token) {
+            const user = adminAuth.getUser();
+            if (!token || !user || !user.id) return;
+            fetch(API_URL + '/admin/fcm-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_id: user.id, fcm_token: token })
+            }).catch(function() {});
+        };
 
         // Login Button Listener
         const loginBtn = document.getElementById('loginBtn');

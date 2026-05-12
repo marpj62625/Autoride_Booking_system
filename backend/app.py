@@ -405,10 +405,11 @@ with app.app_context():
     migrate_notifications()
 
 def migrate_fcm_tokens():
-    """Adds fcm_token column to users table for push notifications."""
+    """Adds fcm_token column to users and admins tables for push notifications."""
     try:
         cur = get_cursor()
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT")
+        cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS fcm_token TEXT")
         commit_db()
         print("DEBUG: FCM Token Migration Successful")
     except Exception as e:
@@ -7661,6 +7662,25 @@ def get_full_profile():
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
         return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/fcm-token', methods=['POST'])
+def register_admin_fcm_token():
+    """Register or update an admin's FCM device token for push notifications."""
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    fcm_token = data.get('fcm_token')
+    if not admin_id or not fcm_token:
+        return jsonify({'error': 'admin_id and fcm_token are required'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("UPDATE admins SET fcm_token = %s WHERE id = %s", (fcm_token, admin_id))
+        commit_db()
+        return jsonify({'message': 'Admin FCM token registered'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

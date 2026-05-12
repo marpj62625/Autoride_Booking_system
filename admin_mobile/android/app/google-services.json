@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "857792394948",
+    "project_id": "autoride-a1a32",
+    "storage_bucket": "autoride-a1a32.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857792394948:android:ccd0b0d873d21cd2e5fb91",
+        "android_client_info": {
+          "package_name": "com.autoride.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRjdtawFp1X3_TuRM1fLGtoizF0r2yZe8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857792394948:android:b4c3569aab6d6844e5fb91",
+        "android_client_info": {
+          "package_name": "com.autoride.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRjdtawFp1X3_TuRM1fLGtoizF0r2yZe8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
