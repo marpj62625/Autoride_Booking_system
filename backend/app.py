@@ -7825,9 +7825,22 @@ def debug_notifications_check():
 def debug_test_notification():
     """Debug endpoint to directly test inserting a notification row."""
     try:
-        data = request.get_json() or {}
-        user_id = int(request.args.get('user_id', data.get('user_id', 1)))
+        # Get user_id from query param, body, or auto-detect from DB
+        user_id = request.args.get('user_id') or (request.get_json() or {}).get('user_id')
         cur = get_cursor()
+        if not user_id:
+            # Auto-detect: use the first user in the DB
+            cur.execute("SELECT id FROM users ORDER BY id LIMIT 1")
+            row = cur.fetchone()
+            if not row:
+                return jsonify({'success': False, 'error': 'No users found in database'}), 500
+            user_id = row['id']
+        else:
+            try:
+                user_id = int(user_id)
+            except (ValueError, TypeError):
+                return jsonify({'success': False, 'error': f'Invalid user_id: {user_id}'}), 400
+
         cur.execute(
             "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (%s, NULL, %s, %s, %s) RETURNING id",
             (user_id, 'Test Notification', 'This is a test notification', 'test')
