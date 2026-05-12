@@ -486,30 +486,34 @@ class Notification_Service:
 
     def notify_user(self, user_id: int, title: str, message: str, notif_type: str) -> bool:
         """
-        Inserts one notification row for a customer (user_id set, admin_id NULL).
+        Inserts one notification row for a customer using a fresh DB connection.
         Also sends an FCM push notification if the user has a registered token.
         Returns True on success, False on failure.
         """
         try:
-            cur = get_cursor()
-            try:
-                cur.execute(
-                    """
-                    INSERT INTO notifications (user_id, admin_id, title, message, type)
-                    VALUES (%s, NULL, %s, %s, %s)
-                    """,
-                    (user_id, title, message, notif_type)
-                )
-                commit_db()
-            finally:
-                cur.close()
-            # Also send FCM push (fcm_service defined later in this module)
+            import psycopg
+            import os
+            from config import SUPABASE_DB_URL
+            from psycopg.rows import dict_row
+            conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            cur = conn.cursor(row_factory=dict_row)
+            cur.execute(
+                """
+                INSERT INTO notifications (user_id, admin_id, title, message, type)
+                VALUES (%s, NULL, %s, %s, %s)
+                """,
+                (user_id, title, message, notif_type)
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+            # Also send FCM push
             try:
                 global fcm_service
                 if 'fcm_service' in globals():
                     fcm_service.notify_user_push(user_id, title, message)
             except Exception:
-                pass  # FCM failure never blocks the in-app notification
+                pass
             return True
         except Exception as exc:
             print(

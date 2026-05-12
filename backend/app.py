@@ -4401,10 +4401,14 @@ def admin_cancel_booking(booking_id):
 
         )
 
-        # Insert notification directly (bypass notify_user wrapper for reliability)
+        # Insert notification using a fresh connection to avoid transaction conflicts
         notif_error = None
         try:
-            notif_cur = get_cursor()
+            import psycopg
+            from config import SUPABASE_DB_URL
+            from psycopg.rows import dict_row
+            notif_conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            notif_cur = notif_conn.cursor(row_factory=dict_row)
             notif_cur.execute(
                 "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (%s, NULL, %s, %s, %s)",
                 (
@@ -4414,8 +4418,9 @@ def admin_cancel_booking(booking_id):
                     'booking_cancelled_by_admin'
                 )
             )
-            commit_db()
+            notif_conn.commit()
             notif_cur.close()
+            notif_conn.close()
             print(f"DEBUG: notification inserted for user_id={booking['user_id']}, booking_id={booking_id}")
         except Exception as notif_err:
             notif_error = str(notif_err)
