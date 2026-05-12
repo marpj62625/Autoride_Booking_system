@@ -503,9 +503,11 @@ class Notification_Service:
                 commit_db()
             finally:
                 cur.close()
-            # Also send FCM push
+            # Also send FCM push (fcm_service defined later in this module)
             try:
-                fcm_service.notify_user_push(user_id, title, message)
+                global fcm_service
+                if 'fcm_service' in globals():
+                    fcm_service.notify_user_push(user_id, title, message)
             except Exception:
                 pass  # FCM failure never blocks the in-app notification
             return True
