@@ -1,5 +1,6 @@
 package com.autoride.customer;
 
+import android.app.AlertDialog;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.Toast;
@@ -13,7 +14,6 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onBackPressed() {
-        // Ask JS what the current navigation state is, then act accordingly
         getBridge().getWebView().post(() ->
             getBridge().getWebView().evaluateJavascript(
                 "(function() {" +
@@ -32,7 +32,7 @@ public class MainActivity extends BridgeActivity {
                 "      last.style.display = 'none';" +
                 "      return 'closed_overlay';" +
                 "    }" +
-                // Check for active auth pages (register/otp ? go to login)
+                // Check for active auth pages
                 "    var authPages = document.querySelectorAll('.auth-page.active');" +
                 "    if (authPages.length > 0) {" +
                 "      var id = authPages[0].id;" +
@@ -42,58 +42,52 @@ public class MainActivity extends BridgeActivity {
                 "      }" +
                 "      return 'on_login';" +
                 "    }" +
-                // On main pages
                 "    return 'on_main';" +
                 "  } catch(e) { return 'error'; }" +
                 "})()",
                 result -> {
-                    // result comes back as a JSON string with quotes, e.g. "\"on_main\""
                     String state = result != null ? result.replace("\"", "") : "on_main";
                     handler.post(() -> {
                         switch (state) {
                             case "closed_modal":
                             case "closed_overlay":
                             case "went_to_login":
-                                // Navigation handled in JS — do nothing more
+                                // Navigation handled — nothing more to do
                                 break;
                             case "on_login":
                             case "on_main":
-                                // Double-back to logout and exit
-                                if (backPressedOnce) {
-                                    handler.removeCallbacks(resetBackFlag);
-                                    // Clear session and exit
-                                    getBridge().getWebView().post(() ->
-                                        getBridge().getWebView().evaluateJavascript(
-                                            "(function(){" +
-                                            "  try {" +
-                                            "    if (typeof unsubscribeFromNotifications === 'function') unsubscribeFromNotifications();" +
-                                            "    if (typeof Session !== 'undefined') Session.clear();" +
-                                            "  } catch(e) {}" +
-                                            "})()",
-                                            null
-                                        )
-                                    );
-                                    finishAffinity();
-                                } else {
-                                    backPressedOnce = true;
-                                    Toast.makeText(this, "Press back again to logout and exit", Toast.LENGTH_SHORT).show();
-                                    handler.postDelayed(resetBackFlag, 2000);
-                                }
-                                break;
                             default:
-                                // Fallback — just show toast
-                                if (backPressedOnce) {
-                                    finishAffinity();
-                                } else {
-                                    backPressedOnce = true;
-                                    Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show();
-                                    handler.postDelayed(resetBackFlag, 2000);
-                                }
+                                // Show native confirmation dialog
+                                showExitConfirmDialog();
                                 break;
                         }
                     });
                 }
             )
         );
+    }
+
+    private void showExitConfirmDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Logout & Exit")
+            .setMessage("Are you sure you want to logout and exit the app?")
+            .setPositiveButton("Logout & Exit", (dialog, which) -> {
+                // Clear session in JS then exit
+                getBridge().getWebView().post(() ->
+                    getBridge().getWebView().evaluateJavascript(
+                        "(function(){" +
+                        "  try {" +
+                        "    if (typeof unsubscribeFromNotifications === 'function') unsubscribeFromNotifications();" +
+                        "    if (typeof Session !== 'undefined') Session.clear();" +
+                        "  } catch(e) {}" +
+                        "})()",
+                        null
+                    )
+                );
+                finishAffinity();
+            })
+            .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
+            .setCancelable(true)
+            .show();
     }
 }
