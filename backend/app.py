@@ -7840,9 +7840,17 @@ def debug_admin_fcm_check():
     """Debug: check admin FCM tokens."""
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, full_name, fcm_token, is_active FROM admins ORDER BY id")
+        # Check what columns admins table has
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'admins' ORDER BY ordinal_position")
+        columns = [r['column_name'] for r in cur.fetchall()]
+        # Try to get admin data with available columns
+        cur.execute("SELECT * FROM admins LIMIT 5")
         admins = [dict(r) for r in cur.fetchall()]
-        return jsonify({'admins': admins}), 200
+        # Remove sensitive fields
+        for a in admins:
+            a.pop('password', None)
+            a.pop('password_hash', None)
+        return jsonify({'columns': columns, 'admins': admins}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
