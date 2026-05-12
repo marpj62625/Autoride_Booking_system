@@ -2,32 +2,47 @@ package com.autoride.customer;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends BridgeActivity {
 
+    private static final int NOTIF_PERMISSION_CODE = 1001;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Get FCM token and pass it to JS after the bridge is ready
+
+        // Request notification permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                    NOTIF_PERMISSION_CODE
+                );
+            }
+        }
+
+        // Get FCM token and pass it to JS
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
             if (task.isSuccessful() && task.getResult() != null) {
                 String token = task.getResult();
                 getSharedPreferences("autoride_prefs", Context.MODE_PRIVATE)
                     .edit().putString("fcm_token", token).apply();
-                // Pass token to JS once WebView is ready
+                String js = "window._fcmToken = '" + token + "'; " +
+                            "if (typeof saveFcmToken === 'function') saveFcmToken('" + token + "');";
                 getBridge().getWebView().post(() ->
-                    getBridge().getWebView().evaluateJavascript(
-                        "window._fcmToken = '" + token + "'; " +
-                        "if (typeof saveFcmToken === 'function') saveFcmToken('" + token + "');",
-                        null
-                    )
+                    getBridge().getWebView().evaluateJavascript(js, null)
                 );
             }
         });
@@ -70,7 +85,6 @@ public class MainActivity extends BridgeActivity {
                             case "closed_modal":
                             case "closed_overlay":
                             case "went_to_login":
-                                // Navigation handled in JS
                                 break;
                             case "on_login":
                             case "on_main":
