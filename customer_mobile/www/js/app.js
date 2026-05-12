@@ -473,32 +473,27 @@ function handleBackButton() {
   }
 }
 
-// Register back button — Cordova event (fires on deviceready)
-// Using { canGoBack } param from Capacitor — we always handle it ourselves
-document.addEventListener('deviceready', function() {
-  // Cordova-style backbutton (works in older Capacitor / Cordova)
-  document.addEventListener('backbutton', function(e) {
-    e.preventDefault();
+// Register back button — always register immediately, also re-register on deviceready
+(function() {
+  function _backListener(e) {
+    if (e && e.preventDefault) e.preventDefault();
     handleBackButton();
-  }, false);
-
-  // Capacitor 3+ App plugin listener
-  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-    window.Capacitor.Plugins.App.addListener('backButton', function(info) {
-      // info.canGoBack is true if WebView has browser history — we ignore it
-      // and always use our own navigation logic
-      handleBackButton();
-    });
   }
-}, false);
-
-// Also register immediately in case deviceready already fired
-if (document.readyState !== 'loading') {
-  document.addEventListener('backbutton', function(e) {
-    e.preventDefault();
-    handleBackButton();
+  // Register now (for when script loads after deviceready)
+  document.addEventListener('backbutton', _backListener, false);
+  // Also register on deviceready (for Capacitor App plugin)
+  document.addEventListener('deviceready', function() {
+    // Re-add in case it wasn't registered yet
+    document.removeEventListener('backbutton', _backListener, false);
+    document.addEventListener('backbutton', _backListener, false);
+    // Capacitor 3+ App plugin
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+      window.Capacitor.Plugins.App.addListener('backButton', function() {
+        handleBackButton();
+      });
+    }
   }, false);
-}
+})();
 
 // AUTH: LOGIN
 function doLogin() {
@@ -2657,7 +2652,12 @@ function sendChat() {
 
 // NOTIFICATIONS
 function openNotificationsPage() {
-    showPage('page-notifications');
+    // page-notifications is an overlay, not a main page — use overlay display
+    var overlay = document.getElementById('page-notifications');
+    if (overlay) {
+        overlay.classList.add('active');
+        overlay.style.display = 'block';
+    }
     var container = document.getElementById('notificationsContent');
     if (!container) return;
     container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';

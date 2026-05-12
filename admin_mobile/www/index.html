@@ -3355,17 +3355,22 @@
         };
 
         // Register for both Capacitor and Cordova back button events
-        document.addEventListener('backbutton', function(e) {
-            e.preventDefault();
-            handleBackButton(e);
-        }, false);
-
-        // Capacitor App plugin listener (most reliable for Capacitor 3+)
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-            window.Capacitor.Plugins.App.addListener('backButton', function(info) {
-                handleBackButton(info);
-            });
-        }
+        (function() {
+            function _adminBackListener(e) {
+                if (e && e.preventDefault) e.preventDefault();
+                handleBackButton(e);
+            }
+            document.addEventListener('backbutton', _adminBackListener, false);
+            document.addEventListener('deviceready', function() {
+                document.removeEventListener('backbutton', _adminBackListener, false);
+                document.addEventListener('backbutton', _adminBackListener, false);
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.addListener('backButton', function() {
+                        handleBackButton();
+                    });
+                }
+            }, false);
+        })();
     });
 
     // Global Bindings for HTML Access
