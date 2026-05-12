@@ -4415,8 +4415,9 @@ def admin_cancel_booking(booking_id):
             )
             commit_db()
             notif_cur.close()
+            print(f"DEBUG: notification inserted for user_id={booking['user_id']}, booking_id={booking_id}")
         except Exception as notif_err:
-            print(f"DEBUG: notification insert failed: {notif_err}")
+            print(f"DEBUG: notification insert failed for user_id={booking['user_id']}: {notif_err}")
 
         notification_service.notify_user(
 
@@ -7812,7 +7813,6 @@ def debug_notifications_check():
     """Debug endpoint to check if notifications table exists and has rows."""
     try:
         cur = get_cursor()
-        # Check if table exists
         cur.execute("""
             SELECT EXISTS (
                 SELECT FROM information_schema.tables
@@ -7822,16 +7822,14 @@ def debug_notifications_check():
         table_exists = cur.fetchone()['table_exists']
         if not table_exists:
             return jsonify({'table_exists': False, 'message': 'notifications table does not exist'}), 200
-        # Count rows
         cur.execute("SELECT COUNT(*) as total FROM notifications")
         total = cur.fetchone()['total']
-        # Get last 5 rows
-        cur.execute("SELECT id, user_id, admin_id, title, type, created_at FROM notifications ORDER BY created_at DESC LIMIT 5")
+        cur.execute("SELECT id, user_id, admin_id, title, type, created_at FROM notifications ORDER BY created_at DESC LIMIT 10")
         rows = [dict(r) for r in cur.fetchall()]
         for r in rows:
             if r.get('created_at'):
                 r['created_at'] = r['created_at'].isoformat()
-        return jsonify({'table_exists': True, 'total': total, 'last_5': rows}), 200
+        return jsonify({'table_exists': True, 'total': total, 'last_10': rows}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
