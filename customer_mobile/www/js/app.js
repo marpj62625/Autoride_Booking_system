@@ -48,27 +48,43 @@ function getCamera() {
   return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) || null;
 }
 
-// SESSION
+// SESSION — expires after 8 hours of inactivity
+var SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
 var Session = {
   save: function(user) {
+    var data = JSON.stringify({ user: user, savedAt: Date.now() });
     var prefs = getPreferences();
     if (prefs) {
-      prefs.set({ key: 'user', value: JSON.stringify(user) });
+      prefs.set({ key: 'user', value: data });
     } else {
-      try { localStorage.setItem('user', JSON.stringify(user)); } catch(e) {}
+      try { localStorage.setItem('user', data); } catch(e) {}
     }
   },
   load: function() {
     return new Promise(function(resolve) {
       var prefs = getPreferences();
+      var parse = function(raw) {
+        if (!raw) return null;
+        try {
+          var parsed = JSON.parse(raw);
+          // Support old format (plain user object without savedAt)
+          if (parsed && parsed.id) return parsed; // old format — no expiry check
+          if (parsed && parsed.user && parsed.savedAt) {
+            var age = Date.now() - parsed.savedAt;
+            if (age > SESSION_TTL_MS) return null; // expired
+            return parsed.user;
+          }
+          return null;
+        } catch(e) { return null; }
+      };
       if (prefs) {
         prefs.get({ key: 'user' }).then(function(result) {
-          try { resolve(result.value ? JSON.parse(result.value) : null); } catch(e) { resolve(null); }
+          resolve(parse(result.value));
         }).catch(function() { resolve(null); });
       } else {
         try {
-          var v = localStorage.getItem('user');
-          resolve(v ? JSON.parse(v) : null);
+          resolve(parse(localStorage.getItem('user')));
         } catch(e) { resolve(null); }
       }
     });
@@ -439,15 +455,20 @@ function handleBackButton() {
     return;
   }
 
-  // 4. On main pages — double-back to exit
+  // 4. On main pages — double-back to exit (with logout)
   if (_backPressedOnce) {
     clearTimeout(_backPressTimer);
+    // Logout then exit
+    unsubscribeFromNotifications();
+    notifList = [];
+    Session.clear();
+    currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
       window.Capacitor.Plugins.App.exitApp();
     }
   } else {
     _backPressedOnce = true;
-    showToast('Press back again to exit', 'info');
+    showToast('Press back again to exit and logout', 'info');
     _backPressTimer = setTimeout(function() { _backPressedOnce = false; }, 2000);
   }
 }

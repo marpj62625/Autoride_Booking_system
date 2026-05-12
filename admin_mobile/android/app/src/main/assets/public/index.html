@@ -1363,6 +1363,8 @@
     const apiFetch = window.apiFetch;
 
 
+    const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+
     const adminAuth = {
         login: async function() {
             const email = document.getElementById('loginEmail').value;
@@ -1386,7 +1388,8 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    localStorage.setItem('admin_user', JSON.stringify(data));
+                    // Store with timestamp for expiry check
+                    localStorage.setItem('admin_user', JSON.stringify({ user: data, savedAt: Date.now() }));
                     this.initSession();
                 } else {
                     document.getElementById('loginError').textContent = data.error || 'Invalid credentials';
@@ -1402,14 +1405,33 @@
         },
         getUser: () => {
             try {
-                const u = localStorage.getItem('admin_user');
-                return u ? JSON.parse(u) : null;
+                const raw = localStorage.getItem('admin_user');
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                // Support old format (plain user object)
+                if (parsed && parsed.id) return parsed;
+                // New format with expiry
+                if (parsed && parsed.user && parsed.savedAt) {
+                    if (Date.now() - parsed.savedAt > SESSION_TTL_MS) {
+                        localStorage.removeItem('admin_user');
+                        return null; // expired
+                    }
+                    return parsed.user;
+                }
+                return null;
             } catch(e) { return null; }
         },
         logout: function() {
-            if (!confirm('Are you sure you want to logout?')) return;
             localStorage.removeItem('admin_user');
             location.reload(); 
+        },
+        logoutAndExit: function() {
+            localStorage.removeItem('admin_user');
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.exitApp();
+            } else {
+                location.reload();
+            }
         },
         initSession: function() {
             const user = this.getUser();
@@ -3263,13 +3285,8 @@
             document.getElementById('exitConfirmModal').style.display = 'none';
         };
         window.confirmExit = function() {
-            // Just exit — do NOT log out the admin
-            document.getElementById('exitConfirmModal').style.display = 'none';
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-                window.Capacitor.Plugins.App.exitApp();
-            } else {
-                window.history.back();
-            }
+            // Logout then exit
+            adminAuth.logoutAndExit();
         };
 
         // Tab history stack for back navigation
