@@ -7835,6 +7835,20 @@ def get_sms_logs():
 # In-App Notification Endpoints
 # ---------------------------------------------------------------------------
 
+@app.route('/debug/admin-fcm-check', methods=['GET'])
+def debug_admin_fcm_check():
+    """Debug: check admin FCM tokens."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, fcm_token, is_active FROM admins ORDER BY id")
+        admins = [dict(r) for r in cur.fetchall()]
+        return jsonify({'admins': admins}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/debug/booking-info/<int:booking_id>', methods=['GET'])
 def debug_booking_info(booking_id):
     """Debug: show booking user_id and whether that user exists."""
