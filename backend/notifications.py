@@ -717,15 +717,15 @@ class FCM_Service:
         Returns True on success, False if no token or send failed.
         """
         try:
-            cur = get_cursor()
-            try:
-                cur.execute(
-                    "SELECT fcm_token FROM users WHERE id = %s",
-                    (user_id,)
-                )
-                row = cur.fetchone()
-            finally:
-                cur.close()
+            import psycopg
+            from config import SUPABASE_DB_URL
+            from psycopg.rows import dict_row
+            conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            cur = conn.cursor(row_factory=dict_row)
+            cur.execute("SELECT fcm_token FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
 
             if not row or not row.get('fcm_token'):
                 return False
