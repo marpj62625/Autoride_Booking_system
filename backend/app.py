@@ -7790,6 +7790,37 @@ def get_sms_logs():
 # In-App Notification Endpoints
 # ---------------------------------------------------------------------------
 
+@app.route('/debug/notifications-check', methods=['GET'])
+def debug_notifications_check():
+    """Debug endpoint to check if notifications table exists and has rows."""
+    try:
+        cur = get_cursor()
+        # Check if table exists
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = 'notifications'
+            ) as table_exists
+        """)
+        table_exists = cur.fetchone()['table_exists']
+        if not table_exists:
+            return jsonify({'table_exists': False, 'message': 'notifications table does not exist'}), 200
+        # Count rows
+        cur.execute("SELECT COUNT(*) as total FROM notifications")
+        total = cur.fetchone()['total']
+        # Get last 5 rows
+        cur.execute("SELECT id, user_id, admin_id, title, type, created_at FROM notifications ORDER BY created_at DESC LIMIT 5")
+        rows = [dict(r) for r in cur.fetchall()]
+        for r in rows:
+            if r.get('created_at'):
+                r['created_at'] = r['created_at'].isoformat()
+        return jsonify({'table_exists': True, 'total': total, 'last_5': rows}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/notifications', methods=['GET'])
 def get_notifications():
     """Return all notifications for a customer ordered by created_at DESC.
