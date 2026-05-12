@@ -606,12 +606,23 @@
     </div>
     <div class="header-right">
         <div class="user-avatar" id="adminAvatar">S</div>
-        <button class="notif-btn">
-            <i class="fas fa-bell"></i>
-            <span class="notif-dot"></span>
-        </button>
+        <div style="position:relative;display:inline-block;">
+            <button class="notif-btn" onclick="toggleAdminNotifPanel()" id="adminNotifBtn">
+                <i class="fas fa-bell"></i>
+            </button>
+            <span id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:800;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 3px;">0</span>
+        </div>
     </div>
 </header>
+
+<!-- Admin Notification Panel -->
+<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h4 style="font-weight:700;font-size:0.95rem;color:#f1f5f9;">Notifications</h4>
+        <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="adminNotifList"><p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
+</div>
 
 <main class="main-content">
     
@@ -1456,6 +1467,9 @@
 
                 // Register FCM token if available from native layer
                 if (window._adminFcmToken) saveAdminFcmToken(window._adminFcmToken);
+
+                // Load admin notifications
+                loadAdminNotifications(user.id);
 
                 if (isSuper) { switchTab('dashboard'); refreshDashboard(); }
                 else switchTab('vehicles');
@@ -3260,6 +3274,65 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ admin_id: user.id, fcm_token: token })
             }).catch(function() {});
+        };
+
+        // Admin notification panel functions
+        window.adminNotifList = window.adminNotifList || [];
+
+        window.loadAdminNotifications = function(adminId) {
+            fetch(API_URL + '/admin/notifications?admin_id=' + adminId)
+                .then(r => r.json())
+                .then(data => {
+                    window.adminNotifList = Array.isArray(data) ? data : [];
+                    updateAdminNotifBadge();
+                }).catch(() => {});
+        };
+
+        window.updateAdminNotifBadge = function() {
+            const unread = (window.adminNotifList || []).filter(n => !n.is_read).length;
+            const badge = document.getElementById('adminNotifBadge');
+            if (!badge) return;
+            if (unread > 0) {
+                badge.textContent = unread > 99 ? '99+' : String(unread);
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        };
+
+        window.toggleAdminNotifPanel = function() {
+            const panel = document.getElementById('adminNotifPanel');
+            const list = document.getElementById('adminNotifList');
+            if (!panel) return;
+            const isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                const user = adminAuth.getUser();
+                if (user && user.id) {
+                    fetch(API_URL + '/admin/notifications/read-all', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ admin_id: user.id })
+                    }).then(() => {
+                        (window.adminNotifList || []).forEach(n => n.is_read = true);
+                        updateAdminNotifBadge();
+                    }).catch(() => {});
+                }
+                const notifs = window.adminNotifList || [];
+                if (!notifs.length) {
+                    list.innerHTML = '<p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
+                } else {
+                    list.innerHTML = notifs.map(n => {
+                        const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
+                        const unreadStyle = n.is_read ? '' : 'border-left:3px solid #6366f1;padding-left:8px;background:rgba(99,102,241,0.08);';
+                        return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
+                            <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
+                            <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
+                            <small style="color:#64748b;">${ts}</small>
+                        </div>`;
+                    }).join('');
+                }
+            }
         };
 
         // Login Button Listener
