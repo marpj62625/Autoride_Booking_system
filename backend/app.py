@@ -4402,6 +4402,7 @@ def admin_cancel_booking(booking_id):
         )
 
         # Insert notification directly (bypass notify_user wrapper for reliability)
+        notif_error = None
         try:
             notif_cur = get_cursor()
             notif_cur.execute(
@@ -4417,6 +4418,7 @@ def admin_cancel_booking(booking_id):
             notif_cur.close()
             print(f"DEBUG: notification inserted for user_id={booking['user_id']}, booking_id={booking_id}")
         except Exception as notif_err:
+            notif_error = str(notif_err)
             print(f"DEBUG: notification insert failed for user_id={booking['user_id']}: {notif_err}")
 
         notification_service.notify_user(
@@ -4433,7 +4435,7 @@ def admin_cancel_booking(booking_id):
 
 
 
-        return jsonify({"message": f"Booking #{booking_id} cancelled. Payment status: {new_payment_status}"}), 200
+        return jsonify({"message": f"Booking #{booking_id} cancelled. Payment status: {new_payment_status}", "notif_debug": notif_error or "ok", "user_id_used": booking['user_id']}), 200
 
     except Exception as e:
 
