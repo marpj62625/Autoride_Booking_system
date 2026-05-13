@@ -381,14 +381,17 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
-  // Load saved theme preference
-  var savedTheme = localStorage.getItem('theme');
+  // Load theme — default to LIGHT
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
   if (savedTheme === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     var icon = document.getElementById('darkModeIcon');
     var label = document.getElementById('darkModeLabel');
     if (icon) icon.className = 'fas fa-sun';
     if (label) label.textContent = 'Light Mode';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
   }
   Session.load().then(function(user) {
     if (user && user.id) {

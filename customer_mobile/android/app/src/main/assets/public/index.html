@@ -10,36 +10,54 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <style>
         :root {
-            --primary: #0052FF;
+            /* Brand & Primary Actions */
+            --primary: #0052ff;
+            --on-primary: #ffffff;
             --primary-dark: #0040CC;
             --primary-light: #4D8FFF;
-            --bg-page: #F9F9FF;
-            --bg-card: #F0F3FF;
-            --bg-card2: #FFFFFF;
-            --bg-input: #FFFFFF;
-            --text-primary: #1A1C1E;
-            --text-secondary: #4A4C50;
+            /* Backgrounds & Surfaces */
+            --surface: #f9f9ff;
+            --surface-container: #f0f3ff;
+            --surface-bright: #ffffff;
+            /* Typography & Outlines */
+            --on-surface: #1a1c1e;
+            --on-surface-variant: #44474e;
+            --outline: #d3daea;
+            /* Aliases */
+            --bg-page: #f9f9ff;
+            --bg-card: #f0f3ff;
+            --bg-card2: #ffffff;
+            --bg-input: #ffffff;
+            --text-primary: #1a1c1e;
+            --text-secondary: #44474e;
             --text-muted: #6B6E75;
+            --border: #d3daea;
+            --border-light: #E0E5F0;
+            --shadow-card: 0 4px 24px rgba(0,82,255,0.06);
+            --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
             --success: #34d399;
             --warning: #fbbf24;
             --danger: #f87171;
             --info: #60a5fa;
-            --border: #D3DAEA;
-            --border-light: #E0E5F0;
             --radius-sm: 12px;
             --radius-md: 20px;
             --radius-lg: 28px;
-            --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
-            --shadow-modal: 0 8px 40px rgba(0,0,0,0.15);
         }
         [data-theme="dark"] {
             --primary: #4D8FFF;
+            --on-primary: #ffffff;
             --primary-dark: #0052FF;
             --primary-light: #80AFFF;
+            --surface: #0A0A0A;
+            --surface-container: #141414;
+            --surface-bright: #1a1a1a;
             --bg-page: #0A0A0A;
             --bg-card: #141414;
             --bg-card2: #1a1a1a;
             --bg-input: #1a1a1a;
+            --on-surface: #FFFFFF;
+            --on-surface-variant: #a1a1aa;
+            --outline: rgba(255,255,255,0.08);
             --text-primary: #FFFFFF;
             --text-secondary: #a1a1aa;
             --text-muted: #52525b;
@@ -104,7 +122,7 @@
         .pill-refund-pending { background:#fff3cd; color:#856404; }
         .pill-refunded { background:#cfe2ff; color:#084298; }
         /* Auth screens */
-        .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; background:#0a0a0a; }
+        .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; background:var(--bg-page); }
         .auth-logo { text-align:center; margin-bottom:28px; }
         .auth-logo i { font-size:2.5rem; color:var(--primary); }
         .auth-logo h1 { font-size:2rem; font-weight:900; color:#fff; letter-spacing:-1.5px; margin-top:8px; }
@@ -266,7 +284,7 @@
         .receipt-row strong { font-weight:700; }
     </style>
 </head>
-<body style="background:#0a0a0a;">
+<body>
 <noscript><div style="color:white;padding:20px;font-size:1.2rem;">JavaScript is disabled or failed to load.</div></noscript>
 
 <!-- ???????????????????????????????????????????????????????????
@@ -280,7 +298,7 @@
 <!-- ???????????????????????????????????????????????????????????
      SPLASH SCREEN
 ??????????????????????????????????????????????????????????? -->
-<div id="page-splash" style="display:flex;background:linear-gradient(160deg,#c41e1e 0%,#8b0000 50%,#0a0a0a 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
+<div id="page-splash" style="display:flex;background:linear-gradient(160deg,#0052ff 0%,#0040CC 50%,#001a66 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
   <div style="width:80px;height:80px;border-radius:24px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.2);">
     <i class="fas fa-car" style="font-size:2.5rem;color:#fff;"></i>
   </div>
@@ -436,8 +454,8 @@
 <!-- ???????????????????????????????????????????????????????????
      HOME
 ??????????????????????????????????????????????????????????? -->
-<div id="page-home" class="page" style="background:#0a0a0a;">
-  <div id="homeBanner" style="background:linear-gradient(160deg,#c41e1e 0%,#8b0000 60%,#0a0a0a 100%);padding:20px 20px 32px;position:relative;overflow:hidden;">
+<div id="page-home" class="page" style="background:var(--bg-page);">
+  <div id="homeBanner" style="background:linear-gradient(160deg,#0052ff 0%,#0040CC 60%,#001a66 100%);padding:20px 20px 32px;position:relative;overflow:hidden;">
     <div style="position:absolute;top:0;right:0;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,107,0.15),transparent);transform:translate(30%,-30%);"></div>
     <div style="position:relative;z-index:1;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
@@ -519,7 +537,7 @@
 <!-- ???????????????????????????????????????????????????????????
      VEHICLES BROWSE
 ??????????????????????????????????????????????????????????? -->
-<div id="page-vehicles" class="page" style="background:#0a0a0a;">
+<div id="page-vehicles" class="page" style="background:var(--bg-page);">
   <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;">
     <div>
       <p style="font-size:0.75rem;color:#52525b;font-weight:500;">Explore</p>
@@ -549,7 +567,7 @@
   </div>
 </div>
 
-<div id="page-bookings" class="page" style="background:#0a0a0a;">
+<div id="page-bookings" class="page" style="background:var(--bg-page);">
   <div style="padding:16px 20px 8px;">
     <p style="font-size:0.75rem;color:#52525b;font-weight:500;">Your</p>
     <h1 style="font-size:1.6rem;font-weight:900;color:#fff;letter-spacing:-0.5px;">Bookings</h1>

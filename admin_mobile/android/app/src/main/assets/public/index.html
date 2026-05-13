@@ -9,38 +9,70 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-dark: #F9F9FF;
-            --surface: rgba(240, 243, 255, 0.9);
-            --surface-solid: #F0F3FF;
-            --surface-container: #F0F3FF;
-            --primary: #0052FF;
+            /* Brand & Primary Actions */
+            --primary: #0052ff;
+            --on-primary: #ffffff;
+            --primary-dark: #0040CC;
             --primary-light: #4D8FFF;
             --primary-glow: rgba(0, 82, 255, 0.25);
+            /* Backgrounds & Surfaces */
+            --surface: #f9f9ff;
+            --surface-container: #f0f3ff;
+            --surface-bright: #ffffff;
+            /* Typography & Outlines */
+            --on-surface: #1a1c1e;
+            --on-surface-variant: #44474e;
+            --outline: #d3daea;
+            /* Aliases */
+            --bg-dark: #f9f9ff;
+            --bg-page: #f9f9ff;
+            --bg-card: #f0f3ff;
+            --bg-card2: #ffffff;
+            --bg-input: #ffffff;
+            --text-main: #1a1c1e;
+            --text-on-surface: #1a1c1e;
+            --text-primary: #1a1c1e;
+            --text-secondary: #44474e;
+            --text-muted: #6B6E75;
+            --border: #d3daea;
+            --border-light: #E0E5F0;
+            --shadow-card: 0 4px 24px rgba(0,82,255,0.06);
+            --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
+            --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
             --success: #10b981;
             --danger: #ef4444;
             --amber: #f59e0b;
-            --text-main: #1A1C1E;
-            --text-on-surface: #1A1C1E;
-            --text-muted: #6B6E75;
-            --border: #D3DAEA;
             --radius-lg: 24px;
             --radius-md: 16px;
             --radius: 16px;
-            --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
         }
 
         [data-theme="dark"] {
-            --bg-dark: #0A0A0A;
-            --surface: rgba(20, 20, 20, 0.9);
-            --surface-solid: #141414;
-            --surface-container: #141414;
             --primary: #4D8FFF;
+            --on-primary: #ffffff;
+            --primary-dark: #0052FF;
             --primary-light: #80AFFF;
             --primary-glow: rgba(77, 143, 255, 0.4);
+            --surface: #0A0A0A;
+            --surface-container: #141414;
+            --surface-bright: #1a1a1a;
+            --bg-dark: #0A0A0A;
+            --bg-page: #0A0A0A;
+            --bg-card: #141414;
+            --bg-card2: #1a1a1a;
+            --bg-input: #1a1a1a;
+            --on-surface: #FFFFFF;
+            --on-surface-variant: #a1a1aa;
+            --outline: rgba(255,255,255,0.08);
             --text-main: #FFFFFF;
             --text-on-surface: #FFFFFF;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
+            --text-primary: #FFFFFF;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --border: rgba(255,255,255,0.08);
+            --border-light: rgba(255,255,255,0.12);
+            --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+            --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
@@ -1544,14 +1576,16 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
-                // Load saved theme preference
-                const savedTheme = localStorage.getItem('adminTheme');
-                if (savedTheme === 'dark') {
+                // Load saved theme preference — default to LIGHT
+                var savedAdminTheme = localStorage.getItem('adminTheme');
+                if (savedAdminTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
                     const icon = document.getElementById('adminDarkModeIcon');
                     const label = document.getElementById('adminDarkModeLabel');
                     if (icon) icon.className = 'fas fa-sun';
                     if (label) label.textContent = 'Light Mode';
+                } else {
+                    document.documentElement.removeAttribute('data-theme');
                 }
 
                 const overlay = document.getElementById('adminLoginOverlay');
