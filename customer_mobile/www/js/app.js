@@ -1988,37 +1988,37 @@ function renderBookingsList(data) {
     var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' · ');
     var startFmt = formatBookingDate(b.start_date);
     var endFmt = formatBookingDate(b.end_date);
-    return '<div style="background:#1c1c1e;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:14px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.35);" onclick="openBookingDetail(' + b.id + ')">' +
-      '<div style="height:3px;background:' + color + ';"></div>' +
+    return '<div style="background:#2a2a2a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;overflow:hidden;margin-bottom:14px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);" onclick="openBookingDetail(' + b.id + ')">' +
+      '<div style="height:4px;background:' + color + ';"></div>' +
       '<div style="padding:16px;">' +
 
       /* Header row: icon + name + status badge */
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
-      '<div style="width:48px;height:48px;border-radius:14px;background:#2c2c2e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-      '<i class="fas fa-car" style="color:#6b6b6e;font-size:1.2rem;"></i></div>' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:#3a3a3a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+      '<i class="fas fa-car" style="color:#888;font-size:1.2rem;"></i></div>' +
       '<div style="flex:1;min-width:0;">' +
       '<div style="font-weight:700;font-size:0.95rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + vehicleName + '</div>' +
-      (vehicleSub ? '<div style="font-size:0.72rem;color:#6b6b6e;margin-top:2px;">' + vehicleSub + '</div>' : '') +
+      (vehicleSub ? '<div style="font-size:0.72rem;color:#999;margin-top:2px;">' + vehicleSub + '</div>' : '') +
       '</div>' +
-      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;letter-spacing:0.3px;background:' + color + '22;color:' + color + ';flex-shrink:0;border:1px solid ' + color + '44;">' + b.status + '</span>' +
+      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;letter-spacing:0.3px;background:' + color + '33;color:' + color + ';flex-shrink:0;border:1px solid ' + color + '66;">' + b.status + '</span>' +
       '</div>' +
 
       /* Date row */
       '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:14px;">' +
-      '<div style="background:#2c2c2e;border-radius:12px;padding:10px 12px;">' +
-      '<div style="font-size:0.58rem;color:#6b6b6e;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Pick-up</div>' +
+      '<div style="background:#3a3a3a;border-radius:12px;padding:10px 12px;">' +
+      '<div style="font-size:0.58rem;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Pick-up</div>' +
       '<div style="font-size:0.8rem;font-weight:700;color:#fff;">' + startFmt + '</div>' +
       '</div>' +
-      '<div style="color:#3f3f46;font-size:0.75rem;">?</div>' +
-      '<div style="background:#2c2c2e;border-radius:12px;padding:10px 12px;text-align:right;">' +
-      '<div style="font-size:0.58rem;color:#6b6b6e;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Return</div>' +
+      '<div style="color:#666;font-size:0.8rem;font-weight:700;">-&gt;</div>' +
+      '<div style="background:#3a3a3a;border-radius:12px;padding:10px 12px;text-align:right;">' +
+      '<div style="font-size:0.58rem;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Return</div>' +
       '<div style="font-size:0.8rem;font-weight:700;color:#fff;">' + endFmt + '</div>' +
       '</div>' +
       '</div>' +
 
       /* Footer row: payment badge + price */
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">' +
-      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;background:' + payColor + '1a;color:' + payColor + ';border:1px solid ' + payColor + '44;">' + (b.payment_status || 'Unpaid') + '</span>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">' +
+      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;background:' + payColor + '33;color:' + payColor + ';border:1px solid ' + payColor + '66;">' + (b.payment_status || 'Unpaid') + '</span>' +
       '<div style="font-weight:800;font-size:1rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
       '</div>' +
 
