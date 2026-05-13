@@ -223,6 +223,25 @@ function calculateBookingPrice(
 }
 
 /**
+ * Formats a booking date string into a clean, human-readable format.
+ * Handles ISO strings, RFC strings (e.g. "Tue, 12 May 2026 00:00:00 GMT"),
+ * and YYYY-MM-DD strings.
+ * Example: "2026-05-12" ? "May 12, 2026"
+ * @param {string} dateStr
+ * @returns {string}
+ */
+function formatBookingDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+/**
  * Sanitizes a string by stripping characters that could be used for
  * HTML/script injection: < > " ' ` and backslash.
  * @param {string} str

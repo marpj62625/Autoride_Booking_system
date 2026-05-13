@@ -1983,35 +1983,46 @@ function renderBookingsList(data) {
   };
   el.innerHTML = data.map(function(b) {
     var color = statusColors[b.status] || '#a1a1aa';
-    var payColor = b.payment_status === 'Paid' ? '#60a5fa' : '#f87171';
-    return '<div style="background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:24px;overflow:hidden;margin-bottom:12px;cursor:pointer;" onclick="openBookingDetail(' + b.id + ')">' +
-      '<div style="height:3px;background:' + color + ';opacity:0.5;"></div>' +
-      '<div style="padding:14px;">' +
-      '<div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;">' +
-      '<div style="width:56px;height:56px;border-radius:16px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-      '<i class="fas fa-car" style="color:#3f3f46;font-size:1.3rem;"></i></div>' +
+    var payColor = b.payment_status === 'Paid' ? '#34d399' : '#f87171';
+    var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
+    var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' · ');
+    var startFmt = formatBookingDate(b.start_date);
+    var endFmt = formatBookingDate(b.end_date);
+    return '<div style="background:#1c1c1e;border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:14px;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.35);" onclick="openBookingDetail(' + b.id + ')">' +
+      '<div style="height:3px;background:' + color + ';"></div>' +
+      '<div style="padding:16px;">' +
+
+      /* Header row: icon + name + status badge */
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+      '<div style="width:48px;height:48px;border-radius:14px;background:#2c2c2e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+      '<i class="fas fa-car" style="color:#6b6b6e;font-size:1.2rem;"></i></div>' +
       '<div style="flex:1;min-width:0;">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
-      '<h3 style="font-weight:900;font-size:0.875rem;color:#fff;line-height:1.2;">' + (b.brand || '') + ' ' + (b.model || '') + '</h3>' +
-      '<span style="padding:3px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;background:' + color + '22;color:' + color + ';flex-shrink:0;">' + b.status + '</span>' +
+      '<div style="font-weight:700;font-size:0.95rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + vehicleName + '</div>' +
+      (vehicleSub ? '<div style="font-size:0.72rem;color:#6b6b6e;margin-top:2px;">' + vehicleSub + '</div>' : '') +
       '</div>' +
-      '<div style="font-size:0.7rem;color:#52525b;margin-top:4px;">' + (b.color || '') + (b.color && b.plate_number ? ' · ' : '') + (b.plate_number || '') + '</div>' +
-      '</div></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">' +
-      '<div style="background:#1a1a1a;border-radius:12px;padding:10px;">' +
-      '<div style="font-size:0.6rem;color:#52525b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Pick-up</div>' +
-      '<div style="font-size:0.75rem;font-weight:800;color:#fff;">' + b.start_date + '</div>' +
+      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;letter-spacing:0.3px;background:' + color + '22;color:' + color + ';flex-shrink:0;border:1px solid ' + color + '44;">' + b.status + '</span>' +
       '</div>' +
-      '<div style="background:#1a1a1a;border-radius:12px;padding:10px;">' +
-      '<div style="font-size:0.6rem;color:#52525b;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Return</div>' +
-      '<div style="font-size:0.75rem;font-weight:800;color:#fff;">' + b.end_date + '</div>' +
-      '</div></div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
-      '<div style="display:flex;align-items:center;gap:8px;">' +
-      '<span style="padding:3px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;background:' + payColor + '22;color:' + payColor + ';">' + (b.payment_status || 'Unpaid') + '</span>' +
+
+      /* Date row */
+      '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:14px;">' +
+      '<div style="background:#2c2c2e;border-radius:12px;padding:10px 12px;">' +
+      '<div style="font-size:0.58rem;color:#6b6b6e;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Pick-up</div>' +
+      '<div style="font-size:0.8rem;font-weight:700;color:#fff;">' + startFmt + '</div>' +
       '</div>' +
-      '<div style="font-weight:900;font-size:0.95rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
-      '</div></div></div>';
+      '<div style="color:#3f3f46;font-size:0.75rem;">?</div>' +
+      '<div style="background:#2c2c2e;border-radius:12px;padding:10px 12px;text-align:right;">' +
+      '<div style="font-size:0.58rem;color:#6b6b6e;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Return</div>' +
+      '<div style="font-size:0.8rem;font-weight:700;color:#fff;">' + endFmt + '</div>' +
+      '</div>' +
+      '</div>' +
+
+      /* Footer row: payment badge + price */
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">' +
+      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;background:' + payColor + '1a;color:' + payColor + ';border:1px solid ' + payColor + '44;">' + (b.payment_status || 'Unpaid') + '</span>' +
+      '<div style="font-weight:800;font-size:1rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
+      '</div>' +
+
+      '</div></div>';
   }).join('');
 }
 
