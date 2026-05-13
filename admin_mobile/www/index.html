@@ -76,38 +76,6 @@
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
-        /* Auto dark mode via system preference (mirrors [data-theme="dark"]) */
-        @media (prefers-color-scheme: dark) {
-            :root:not([data-theme="light"]) {
-                --primary: #4D8FFF;
-                --on-primary: #ffffff;
-                --primary-dark: #0052FF;
-                --primary-light: #80AFFF;
-                --primary-glow: rgba(77, 143, 255, 0.4);
-                --surface: #111113;
-                --surface-container: #1a1a1c;
-                --surface-bright: #222224;
-                --bg-dark: #0d0d0f;
-                --bg-page: #0d0d0f;
-                --bg-card: #1a1a1c;
-                --bg-card2: #222224;
-                --bg-input: #1a1a1c;
-                --on-surface: #f4f4f5;
-                --on-surface-variant: #a1a1aa;
-                --outline: rgba(255,255,255,0.08);
-                --text-main: #f4f4f5;
-                --text-on-surface: #f4f4f5;
-                --text-primary: #f4f4f5;
-                --text-secondary: #a1a1aa;
-                --text-muted: #71717a;
-                --border: rgba(255,255,255,0.09);
-                --border-light: rgba(255,255,255,0.13);
-                --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
-                --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
-                --shadow-premium: 0 20px 40px -10px rgba(0,0,0,0.5);
-            }
-        }
-
         .hidden { display: none !important; }
         .revenue-restricted { display: none; }
 
@@ -127,42 +95,7 @@
             flex-direction: column;
             overflow-x: hidden;
             line-height: 1.5;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
-
-        /* -------------------------------------------------------
-           CONTRAST FIX: inline "color: white" on surface elements
-           becomes invisible in light mode. Override headings,
-           labels, and paragraphs inside cards/tabs to use the
-           theme-aware text variable instead.
-           Buttons, badges, and icon boxes that sit on a colored
-           background are excluded via :not() selectors.
-        ------------------------------------------------------- */
-        .stat-card h1, .stat-card h2, .stat-card h3,
-        .stat-card h4, .stat-card h5, .stat-card h6,
-        .stat-card p, .stat-card label, .stat-card span:not(.pill),
-        .tab-content > h1, .tab-content > h2, .tab-content > h3,
-        .tab-content > h4,
-        .tab-content .stat-card h1, .tab-content .stat-card h2,
-        .tab-content .stat-card h3, .tab-content .stat-card h4,
-        .modal-content h1, .modal-content h2, .modal-content h3,
-        .modal-content h4, .modal-content p, .modal-content label {
-            color: var(--text-main);
-        }
-
-        /* Inputs inside cards/modals */
-        .stat-card input, .stat-card select,
-        .modal-content input, .modal-content select,
-        .tab-content input:not([type="submit"]):not([type="button"]),
-        .tab-content select {
-            color: var(--text-main);
-            background: var(--bg-input);
-            border-color: var(--border);
-        }
-
-        /* Drawer text */
-        .drawer-header p, .drawer-header span { color: var(--text-muted); }
-        .drawer-header .logo-wrap span { color: var(--text-main); }
 
         /* ---------- PREMIUM HEADER ---------- */
         .mobile-header {
@@ -593,14 +526,12 @@
         }
 
         .login-card {
-            background: var(--surface);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: #1e293b;
             width: 100%;
             max-width: 400px;
             padding: 40px 30px;
             border-radius: 32px;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255,255,255,0.1);
             text-align: center;
             box-shadow: var(--shadow-premium);
         }
@@ -610,16 +541,14 @@
             font-weight: 800;
             letter-spacing: -1px;
             margin-bottom: 30px;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: white;
         }
 
         .login-card input {
             width: 100%;
             padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255,255,255,0.12);
             border-radius: 16px;
             color: white;
             font-size: 1rem;
@@ -650,6 +579,45 @@
         }
 
         .login-card button:active { transform: scale(0.97); }
+
+        /* ---- LIGHT MODE: prevent white-on-white text ---- */
+        /* Any element with color:white that sits inside a light surface
+           gets overridden unless it's on a colored/dark background */
+        .stat-card h2, .stat-card h3, .stat-card h4,
+        .stat-card p, .stat-card span:not(.pill):not(.admin-badge),
+        .stat-card label {
+            color: var(--text-main);
+        }
+        .stat-card .value { color: var(--text-main); }
+        .stat-card h5 { color: var(--text-muted); }
+
+        /* Section headings that were hardcoded white */
+        .tab-content h3 { color: var(--text-main); }
+        .tab-content h4 { color: var(--text-main); }
+
+        /* Inputs inside light surfaces */
+        .stat-card input, .stat-card select, .stat-card textarea {
+            color: var(--text-main);
+            background: var(--surface-container);
+            border-color: var(--border);
+        }
+        .stat-card input::placeholder { color: var(--text-muted); }
+
+        /* Modal content (dark background ó keep white) */
+        .modal-content, .premium-modal .modal-content {
+            background: #1e293b;
+            color: white;
+        }
+        .modal-content h2, .modal-content h3, .modal-content h4,
+        .modal-content label, .modal-content p {
+            color: white;
+        }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            color: white;
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.12);
+        }
+        .modal-content input::placeholder { color: rgba(255,255,255,0.4); }
     </style>
 </head>
 <body>
@@ -746,15 +714,15 @@
 
         <div class="stat-card">
             <h5>TOTAL REVENUE</h5>
-            <div class="value" id="dashTotalRevenue">‚Äî</div>
-            <div class="stat-icon">üí∞</div>
+            <div class="value" id="dashTotalRevenue">ó</div>
+            <div class="stat-icon">??</div>
         </div>
 
         <div class="stat-card">
             <h5>FLEET UTILIZATION</h5>
-            <div class="value" id="dashTotalBookings">‚Äî</div>
+            <div class="value" id="dashTotalBookings">ó</div>
             <div class="label">Total System Bookings</div>
-            <div class="stat-icon">üìä</div>
+            <div class="stat-icon">??</div>
         </div>
 
         <div class="chart-card">
@@ -938,7 +906,7 @@
                     <i class="fas fa-user-shield"></i>
                 </div>
                 <div>
-                    <h4 style="font-size: 1rem; color: var(--text-main); margin-bottom: 2px;">Identity Audit</h4>
+                    <h4 style="font-size: 1rem; color: var(--on-primary); margin-bottom: 2px;">Identity Audit</h4>
                     <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Review pending driver's licenses</p>
                 </div>
             </div>
@@ -953,7 +921,7 @@
     <div id="bookingDetailsModal" class="premium-modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: -1px;">Booking Details</h2>
+                <h2 style="font-size: 1.5rem; font-weight: 900; color: white; margin: 0; letter-spacing: -1px;">Booking Details</h2>
                 <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="menu-btn"><i class="fas fa-times"></i></button>
             </div>
             <div id="bookingDetailContent">
@@ -1006,7 +974,7 @@
         <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; display: grid;">
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.6rem; color: var(--text-muted);">AVG REVENUE</h5>
-                <div class="value" id="repAvgRev" style="font-size: 1.2rem; font-weight: 700; color: var(--success);">‚Ç±0</div>
+                <div class="value" id="repAvgRev" style="font-size: 1.2rem; font-weight: 700; color: var(--success);">?0</div>
             </div>
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.6rem; color: var(--text-muted);">ACTIVE FLEET</h5>
@@ -1176,7 +1144,7 @@
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Password</label>
-                    <input id="staffPass" type="password" placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                    <input id="staffPass" type="password" placeholder="ïïïïïïïï" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
                     <small id="staffPassHint" style="font-size: 0.65rem; color: var(--text-muted); display: none;">Leave blank to keep current password</small>
                 </div>
                 <div style="margin-bottom: 25px;">
@@ -1278,7 +1246,7 @@
                         </select>
                     </div>
                     <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Daily Rate (‚Ç±)</label>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Daily Rate (?)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
                     </div>
                     <div style="grid-column: span 2;">
@@ -1326,11 +1294,11 @@
             <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
-                <input id="newMobilePassword" type="password" placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="newMobilePassword" type="password" placeholder="ïïïïïïïï" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Confirm New Password</label>
-                <input id="confirmMobilePassword" type="password" placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="confirmMobilePassword" type="password" placeholder="ïïïïïïïï" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
@@ -1401,15 +1369,15 @@
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ÔøΩ</div>
+            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ù</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ÔøΩ</div>
+            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ù</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ÔøΩ</div>
+            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ù</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
         </div>
     </div>
@@ -1484,7 +1452,7 @@
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
-    // Admin notification globals ó defined early so initSession can call them
+    // Admin notification globals ù defined early so initSession can call them
     window.adminNotifList = [];
 
     window.loadAdminNotifications = function(adminId) {
@@ -1635,7 +1603,7 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
-                // Load saved theme preference ó default to LIGHT
+                // Load saved theme preference ù default to LIGHT
                 var savedAdminTheme = localStorage.getItem('adminTheme');
                 if (savedAdminTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
@@ -1815,7 +1783,7 @@
                                 <h4 style="font-size: 1rem; font-weight: 800; color: white;">${v.brand || ''} ${v.model || ''}</h4>
                                 <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">${v.plate_number || 'NO PLATE'}</p>
                             </div>
-                            <span style="font-size: 1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px;">‚Ç±${v.daily_rate || 0}</span>
+                            <span style="font-size: 1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px;">?${v.daily_rate || 0}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                             <span class="pill ${(v.status || '').toLowerCase() === 'available' ? 'success' : 'danger'}" style="font-size: 0.6rem; padding: 3px 10px;">
@@ -2129,7 +2097,7 @@
                     </div>
  
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">‚Ç±${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
+                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">?${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
                         <div style="display: flex; gap: 8px;">
                             <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 12px; min-width: 70px;">Details</button>
                             
@@ -2281,7 +2249,7 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Total Price</label>
-                            <p style="font-weight: 800; color: #10b981; font-size: 1.2rem; margin-top: 2px;">‚Ç±${b.total_price ? b.total_price.toLocaleString() : '0.00'}</p>
+                            <p style="font-weight: 800; color: #10b981; font-size: 1.2rem; margin-top: 2px;">?${b.total_price ? b.total_price.toLocaleString() : '0.00'}</p>
                         </div>
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Booking Status</label>
@@ -3100,7 +3068,7 @@
                 const res = await fetch(`${API_BASE}/api/admin/detailed-stats`);
                 const data = await res.json();
                 
-                document.getElementById('repAvgRev').textContent = '‚Ç±' + Math.floor(data.summary.total_revenue / (data.summary.total_bookings || 1)).toLocaleString();
+                document.getElementById('repAvgRev').textContent = '?' + Math.floor(data.summary.total_revenue / (data.summary.total_bookings || 1)).toLocaleString();
                 document.getElementById('repActive').textContent = data.summary.total_bookings;
 
                 this.renderChart(data.revenueTrend);
@@ -3142,7 +3110,7 @@
                         <span style="font-size: 0.85rem; font-weight: 700; color: white;">${c.brand} ${c.model}</span>
                         <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">${c.booking_count} bookings</span>
                     </div>
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">‚Ç±${c.revenue.toLocaleString()}</span>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">?${c.revenue.toLocaleString()}</span>
                 </div>
             `).join('');
         }
@@ -3206,7 +3174,7 @@
             const data = await res.json();
             
             // Update stat cards
-            document.getElementById('dashTotalRevenue').textContent = '‚Ç±' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
+            document.getElementById('dashTotalRevenue').textContent = '?' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
             document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
             
             // Render top grossing vehicles
@@ -3216,8 +3184,8 @@
             if (typeof Chart !== 'undefined') initCharts(data);
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
-            document.getElementById('dashTotalRevenue').textContent = '‚Ç±‚Äî';
-            document.getElementById('dashTotalBookings').textContent = '‚Äî';
+            document.getElementById('dashTotalRevenue').textContent = '?ó';
+            document.getElementById('dashTotalBookings').textContent = 'ó';
         }
     }
 
@@ -3237,7 +3205,7 @@
                     <span style="font-size: 0.85rem; font-weight: 700; color: #cbd5e1;">${c.booking_count}</span>
                 </td>
                 <td style="padding: 16px 8px; text-align: right;">
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">‚Ç±${c.revenue.toLocaleString()}</span>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">?${c.revenue.toLocaleString()}</span>
                 </td>
             </tr>
         `).join('');
@@ -3598,7 +3566,7 @@
                 return;
             }
 
-            // 7. On root tab ó show exit confirmation
+            // 7. On root tab ù show exit confirmation
             showExitConfirm();
         };
 
@@ -3714,7 +3682,7 @@
                     ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ÔøΩ';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ù';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
                     <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
@@ -3749,7 +3717,7 @@
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ÔøΩ';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ù';
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `
@@ -3782,7 +3750,7 @@
 
             <!-- Info -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ÔøΩ'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ù'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
