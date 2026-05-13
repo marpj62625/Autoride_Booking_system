@@ -581,43 +581,105 @@
         .login-card button:active { transform: scale(0.97); }
 
         /* ---- LIGHT MODE: prevent white-on-white text ---- */
-        /* Any element with color:white that sits inside a light surface
-           gets overridden unless it's on a colored/dark background */
-        .stat-card h2, .stat-card h3, .stat-card h4,
-        .stat-card p, .stat-card span:not(.pill):not(.admin-badge),
-        .stat-card label {
+        /*
+         * Broad reset: everything inside the main content area uses
+         * the theme text color by default. Exceptions are carved out
+         * below for elements that intentionally sit on dark/colored
+         * backgrounds (buttons, badges, pills, icon boxes, modals).
+         */
+
+        /* Reset all text in the main content area */
+        .main-content, .main-content * {
             color: var(--text-main);
         }
-        .stat-card .value { color: var(--text-main); }
-        .stat-card h5 { color: var(--text-muted); }
 
-        /* Section headings that were hardcoded white */
-        .tab-content h3 { color: var(--text-main); }
-        .tab-content h4 { color: var(--text-main); }
+        /* Muted / secondary text */
+        .main-content h5,
+        .main-content .label,
+        .main-content .page-subtitle,
+        .main-content small,
+        .main-content .text-muted {
+            color: var(--text-muted);
+        }
 
-        /* Inputs inside light surfaces */
-        .stat-card input, .stat-card select, .stat-card textarea {
+        /* Inputs & selects inside light surfaces */
+        .main-content input:not([type="submit"]):not([type="button"]),
+        .main-content select,
+        .main-content textarea {
             color: var(--text-main);
             background: var(--surface-container);
             border-color: var(--border);
         }
-        .stat-card input::placeholder { color: var(--text-muted); }
+        .main-content input::placeholder,
+        .main-content textarea::placeholder { color: var(--text-muted); }
 
-        /* Modal content (dark background — keep white) */
-        .modal-content, .premium-modal .modal-content {
-            background: #1e293b;
+        /* Buttons with colored backgrounds — keep white text */
+        .main-content .btn-primary,
+        .main-content .btn-premium,
+        .main-content button[style*="background: var(--primary)"],
+        .main-content button[style*="background: linear-gradient"],
+        .main-content button[style*="background:#"],
+        .main-content button[style*="background: #"] {
             color: white;
         }
-        .modal-content h2, .modal-content h3, .modal-content h4,
-        .modal-content label, .modal-content p {
+
+        /* Badges / pills / colored icon containers — keep white */
+        .main-content .admin-badge,
+        .main-content .user-avatar,
+        .main-content [style*="background: var(--primary)"] > i,
+        .main-content [style*="background: var(--primary)"] > span {
             color: white;
         }
-        .modal-content input, .modal-content select, .modal-content textarea {
+
+        /* Status pills keep their own colors */
+        .main-content .pill { color: inherit; }
+
+        /* Danger/logout link */
+        .main-content a[style*="color: #ef4444"] { color: #ef4444 !important; }
+
+        /* Stat card values that have explicit color overrides (confirmed, pending, etc.) */
+        .main-content .value[style*="color:"],
+        .main-content .value[style*="color: "] { color: inherit; }
+
+        /* ---- DARK OVERLAY PANELS — keep white text ---- */
+        /* These elements have dark backgrounds and must stay white */
+        #exitConfirmModal *,
+        #adminNotifPanel *,
+        .premium-modal .modal-content,
+        .premium-modal .modal-content * {
+            color: white;
+        }
+        .premium-modal .modal-content input,
+        .premium-modal .modal-content select,
+        .premium-modal .modal-content textarea {
             color: white;
             background: rgba(255,255,255,0.06);
             border-color: rgba(255,255,255,0.12);
         }
-        .modal-content input::placeholder { color: rgba(255,255,255,0.4); }
+        .premium-modal .modal-content input::placeholder { color: rgba(255,255,255,0.4); }
+
+        /* Modal content (dark background) */
+        .modal-content {
+            background: #1e293b;
+            color: white;
+        }
+
+        /* Settings tab — stat-card items that are on white bg need dark text */
+        #settings .stat-card h4 { color: var(--text-main); }
+        #settings .stat-card p  { color: var(--text-muted); }
+
+        /* Dark theme overrides — restore white text everywhere */
+        [data-theme="dark"] .main-content,
+        [data-theme="dark"] .main-content * {
+            color: var(--text-main); /* resolves to #FFFFFF in dark theme */
+        }
+        [data-theme="dark"] .main-content input:not([type="submit"]):not([type="button"]),
+        [data-theme="dark"] .main-content select,
+        [data-theme="dark"] .main-content textarea {
+            color: var(--text-main);
+            background: var(--bg-input);
+            border-color: var(--border);
+        }
     </style>
 </head>
 <body>
