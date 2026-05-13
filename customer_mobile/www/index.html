@@ -10,25 +10,41 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <style>
         :root {
-            --primary: #dc2626;
-            --primary-dark: #9b1a1a;
-            --primary-light: #f87171;
-            --bg-page: #0a0a0a;
-            --bg-card: #141414;
-            --bg-card2: #1a1a1a;
-            --bg-input: #1a1a1a;
-            --text-primary: #ffffff;
-            --text-secondary: #a1a1aa;
-            --text-muted: #52525b;
+            --primary: #0052FF;
+            --primary-dark: #0040CC;
+            --primary-light: #4D8FFF;
+            --bg-page: #F9F9FF;
+            --bg-card: #F0F3FF;
+            --bg-card2: #FFFFFF;
+            --bg-input: #FFFFFF;
+            --text-primary: #1A1C1E;
+            --text-secondary: #4A4C50;
+            --text-muted: #6B6E75;
             --success: #34d399;
             --warning: #fbbf24;
             --danger: #f87171;
             --info: #60a5fa;
-            --border: rgba(255,255,255,0.06);
-            --border-light: rgba(255,255,255,0.1);
+            --border: #D3DAEA;
+            --border-light: #E0E5F0;
             --radius-sm: 12px;
             --radius-md: 20px;
             --radius-lg: 28px;
+            --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
+            --shadow-modal: 0 8px 40px rgba(0,0,0,0.15);
+        }
+        [data-theme="dark"] {
+            --primary: #4D8FFF;
+            --primary-dark: #0052FF;
+            --primary-light: #80AFFF;
+            --bg-page: #0A0A0A;
+            --bg-card: #141414;
+            --bg-card2: #1a1a1a;
+            --bg-input: #1a1a1a;
+            --text-primary: #FFFFFF;
+            --text-secondary: #a1a1aa;
+            --text-muted: #52525b;
+            --border: rgba(255,255,255,0.08);
+            --border-light: rgba(255,255,255,0.12);
             --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
             --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
         }
@@ -647,6 +663,11 @@
     <div class="more-item" onclick="showOverlay('page-newsletter')">
       <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
       <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
+      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" onclick="toggleDarkMode()" id="darkModeToggleItem">
+      <div class="more-item-icon"><i class="fas fa-moon" id="darkModeIcon"></i></div>
+      <div class="more-item-text"><h4 id="darkModeLabel">Dark Mode</h4><p>Switch appearance</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
     </div>
     <div class="more-item" onclick="doLogout()" style="margin-top:20px;">

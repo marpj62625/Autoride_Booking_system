@@ -9,21 +9,38 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --surface: rgba(30, 41, 59, 0.7);
-            --surface-solid: #1e293b;
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --primary-glow: rgba(99, 102, 241, 0.5);
+            --bg-dark: #F9F9FF;
+            --surface: rgba(240, 243, 255, 0.9);
+            --surface-solid: #F0F3FF;
+            --surface-container: #F0F3FF;
+            --primary: #0052FF;
+            --primary-light: #4D8FFF;
+            --primary-glow: rgba(0, 82, 255, 0.25);
             --success: #10b981;
             --danger: #ef4444;
             --amber: #f59e0b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #1A1C1E;
+            --text-on-surface: #1A1C1E;
+            --text-muted: #6B6E75;
+            --border: #D3DAEA;
             --radius-lg: 24px;
             --radius-md: 16px;
             --radius: 16px;
+            --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+        }
+
+        [data-theme="dark"] {
+            --bg-dark: #0A0A0A;
+            --surface: rgba(20, 20, 20, 0.9);
+            --surface-solid: #141414;
+            --surface-container: #141414;
+            --primary: #4D8FFF;
+            --primary-light: #80AFFF;
+            --primary-glow: rgba(77, 143, 255, 0.4);
+            --text-main: #FFFFFF;
+            --text-on-surface: #FFFFFF;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
@@ -638,13 +655,13 @@
 
         <div class="stat-card">
             <h5>TOTAL REVENUE</h5>
-            <div class="value" id="dashTotalRevenue">?�</div>
+            <div class="value" id="dashTotalRevenue">—</div>
             <div class="stat-icon">💰</div>
         </div>
 
         <div class="stat-card">
             <h5>FLEET UTILIZATION</h5>
-            <div class="value" id="dashTotalBookings">�</div>
+            <div class="value" id="dashTotalBookings">—</div>
             <div class="label">Total System Bookings</div>
             <div class="stat-icon">📊</div>
         </div>
@@ -731,6 +748,17 @@
                 <div style="flex: 1;">
                     <h4 style="font-size: 0.95rem;">Push Notifications</h4>
                     <p style="font-size: 0.7rem; color: var(--text-muted);">Manage app alerts</p>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+            </div>
+
+            <div class="stat-card" onclick="toggleDarkMode()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i id="adminDarkModeIcon" class="fas fa-moon" style="color: var(--text-muted);"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h4 id="adminDarkModeLabel" style="font-size: 0.95rem;">Dark Mode</h4>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Switch appearance</p>
                 </div>
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
@@ -1516,6 +1544,16 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
+                // Load saved theme preference
+                const savedTheme = localStorage.getItem('adminTheme');
+                if (savedTheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    const icon = document.getElementById('adminDarkModeIcon');
+                    const label = document.getElementById('adminDarkModeLabel');
+                    if (icon) icon.className = 'fas fa-sun';
+                    if (label) label.textContent = 'Light Mode';
+                }
+
                 const overlay = document.getElementById('adminLoginOverlay');
                 if (overlay) overlay.style.display = 'none';
                 
@@ -1549,6 +1587,24 @@
         }
     };
     window.adminAuth = adminAuth;
+
+    // --- DARK MODE TOGGLE ---
+    function toggleDarkMode() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const icon = document.getElementById('adminDarkModeIcon');
+        const label = document.getElementById('adminDarkModeLabel');
+        if (isDark) {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('adminTheme', 'light');
+            if (icon) icon.className = 'fas fa-moon';
+            if (label) label.textContent = 'Dark Mode';
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('adminTheme', 'dark');
+            if (icon) icon.className = 'fas fa-sun';
+            if (label) label.textContent = 'Light Mode';
+        }
+    }
 
     // --- VEHICLES MODULE (REFINED) ---
     const Vehicles = {
@@ -3042,10 +3098,16 @@
         }
     };
 
-    async function refreshDashboard() {
+    async function refreshDashboard(_retryCount) {
+        _retryCount = _retryCount || 0;
+        const user = adminAuth.getUser();
+        if (!user) {
+            if (_retryCount < 3) {
+                setTimeout(function() { refreshDashboard(_retryCount + 1); }, 500);
+            }
+            return;
+        }
         try {
-            const user = adminAuth.getUser();
-            if (!user) return;
             const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
@@ -3468,6 +3530,7 @@
 
     // Global Bindings for HTML Access
     window.adminAuth = adminAuth;
+    window.toggleDarkMode = toggleDarkMode;
     window.Vehicles = Vehicles;
     window.Bookings = Bookings;
     window.Drivers = Drivers;

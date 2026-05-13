@@ -381,6 +381,15 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
+  // Load saved theme preference
+  var savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    var icon = document.getElementById('darkModeIcon');
+    var label = document.getElementById('darkModeLabel');
+    if (icon) icon.className = 'fas fa-sun';
+    if (label) label.textContent = 'Light Mode';
+  }
   Session.load().then(function(user) {
     if (user && user.id) {
       currentUser = user;
@@ -417,6 +426,26 @@ initApp();
 // Also listen for events as fallback
 document.addEventListener('DOMContentLoaded', initApp);
 document.addEventListener('deviceready', initApp);
+
+// ---------------------------------------------------------------------------
+// DARK MODE TOGGLE
+// ---------------------------------------------------------------------------
+function toggleDarkMode() {
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var icon = document.getElementById('darkModeIcon');
+  var label = document.getElementById('darkModeLabel');
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
+    if (icon) icon.className = 'fas fa-moon';
+    if (label) label.textContent = 'Dark Mode';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+    if (icon) icon.className = 'fas fa-sun';
+    if (label) label.textContent = 'Light Mode';
+  }
+}
 
 // ---------------------------------------------------------------------------
 // PHYSICAL BACK BUTTON HANDLER
