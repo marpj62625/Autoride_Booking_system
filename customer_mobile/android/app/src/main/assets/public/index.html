@@ -77,7 +77,7 @@
         .spinner { width:40px; height:40px; border:4px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
         /* Toast */
-        .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:#fff; padding:12px 20px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; white-space:nowrap; max-width:90vw; text-align:center; }
+        .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:var(--text-primary); padding:12px 20px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; white-space:nowrap; max-width:90vw; text-align:center; }
         .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
         .toast.toast-success { background:var(--success); }
         .toast.toast-error { background:var(--danger); }
@@ -94,11 +94,11 @@
         /* Cards */
         .card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:12px; }
         /* Buttons */
-        .btn-primary { background:var(--primary); color:#fff; border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .btn-primary { background:var(--primary); color:var(--text-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
         .btn-primary:active { background:var(--primary-dark); }
         .btn-secondary { background:var(--bg-input); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; transition:background 0.2s; }
         .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
-        .btn-danger { background:var(--danger); color:#fff; border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
+        .btn-danger { background:var(--danger); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
         .btn-sm { padding:8px 14px; font-size:0.8rem; border-radius:var(--radius-sm); }
         /* Forms */
         .form-group { margin-bottom:16px; }
@@ -125,23 +125,23 @@
         .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; background:var(--bg-page); }
         .auth-logo { text-align:center; margin-bottom:28px; }
         .auth-logo i { font-size:2.5rem; color:var(--primary); }
-        .auth-logo h1 { font-size:2rem; font-weight:900; color:#fff; letter-spacing:-1.5px; margin-top:8px; }
-        .auth-logo p { color:#52525b; font-size:0.875rem; margin-top:4px; }
-        .auth-card { background:#141414; border:1px solid rgba(255,255,255,0.06); border-radius:28px; padding:28px 24px; width:100%; max-width:420px; }
-        .auth-card h2 { font-size:1.4rem; font-weight:900; margin-bottom:4px; color:#fff; }
-        .auth-card p.subtitle { color:#52525b; font-size:0.875rem; margin-bottom:24px; }
-        .auth-link { text-align:center; margin-top:16px; font-size:0.875rem; color:#52525b; }
+        .auth-logo h1 { font-size:2rem; font-weight:900; color:var(--text-primary); letter-spacing:-1.5px; margin-top:8px; }
+        .auth-logo p { color:var(--text-muted); font-size:0.875rem; margin-top:4px; }
+        .auth-card { background:var(--bg-card); border:1px solid var(--border); border-radius:28px; padding:28px 24px; width:100%; max-width:420px; }
+        .auth-card h2 { font-size:1.4rem; font-weight:900; margin-bottom:4px; color:var(--text-primary); }
+        .auth-card p.subtitle { color:var(--text-muted); font-size:0.875rem; margin-bottom:24px; }
+        .auth-link { text-align:center; margin-top:16px; font-size:0.875rem; color:var(--text-muted); }
         .auth-link a { color:var(--primary); font-weight:700; text-decoration:none; }
         .divider { display:flex; align-items:center; gap:12px; margin:16px 0; color:#3f3f46; font-size:0.8rem; }
-        .divider::before, .divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
-        .btn-google { background:#1a1a1a; color:#fff; border:1px solid rgba(255,255,255,0.08); padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
+        .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+        .btn-google { background:var(--bg-card2); color:var(--text-primary); border:1px solid var(--border); padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
         .btn-google img { width:20px; height:20px; }
         /* OTP Input */
         .otp-inputs { display:flex; gap:10px; justify-content:center; margin:20px 0; }
         .otp-inputs input { width:44px; height:52px; text-align:center; font-size:1.4rem; font-weight:700; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); outline:none; }
         .otp-inputs input:focus { border-color:var(--primary); background:#fff; }
         /* Home screen */
-        .home-banner { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:#fff; padding:24px 20px; margin-bottom:0; }
+        .home-banner { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:var(--text-primary); padding:24px 20px; margin-bottom:0; }
         .home-banner h2 { font-size:1.3rem; font-weight:800; }
         .home-banner p { font-size:0.875rem; opacity:0.85; margin-top:4px; }
         .points-badge { background:rgba(255,255,255,0.2); border-radius:var(--radius-sm); padding:8px 14px; display:inline-flex; align-items:center; gap:8px; margin-top:12px; font-size:0.85rem; font-weight:600; }
@@ -155,26 +155,26 @@
         .section-header a { font-size:0.8rem; color:var(--primary); font-weight:600; text-decoration:none; }
         /* Vehicle Cards */
         .vehicle-grid { display:grid; grid-template-columns:1fr; gap:16px; padding:16px; }
-        .vehicle-card { background:#141414; border-radius:28px; border:1px solid rgba(255,255,255,0.06); overflow:hidden; cursor:pointer; transition:transform 0.15s; }
+        .vehicle-card { background:var(--bg-card); border-radius:28px; border:1px solid var(--border); overflow:hidden; cursor:pointer; transition:transform 0.15s; }
         .vehicle-card:active { transform:scale(0.98); }
-        .vehicle-img-wrap { position:relative; height:180px; overflow:hidden; background:#1a1a1a; }
+        .vehicle-img-wrap { position:relative; height:180px; overflow:hidden; background:var(--bg-card2); }
         .vehicle-img-wrap img { width:100%; height:100%; object-fit:cover; }
-        .vehicle-img-wrap::after { content:""; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 35%, rgba(10,10,10,0.9) 100%); }
+        .vehicle-img-wrap::after { content:""; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 35%, rgba(249,249,255,0.9) 100%); }
         .badge-available { position:absolute; top:12px; right:12px; z-index:1; font-size:0.65rem; font-weight:800; padding:5px 10px; border-radius:20px; backdrop-filter:blur(8px); }
-        .badge-avail-yes { background:rgba(5,150,105,0.85); color:#fff; }
-        .badge-avail-no { background:rgba(30,30,30,0.85); color:#71717a; }
+        .badge-avail-yes { background:rgba(5,150,105,0.85); color:var(--text-primary); }
+        .badge-avail-no { background:rgba(30,30,30,0.85); color:var(--text-muted); }
         .vehicle-info { padding:14px; }
-        .vehicle-info h3 { font-size:1rem; font-weight:900; margin-bottom:6px; color:#fff; }
-        .vehicle-meta { font-size:0.75rem; color:#52525b; margin-bottom:4px; }
+        .vehicle-info h3 { font-size:1rem; font-weight:900; margin-bottom:6px; color:var(--text-primary); }
+        .vehicle-meta { font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; }
         .vehicle-meta i { width:14px; color:#3f3f46; }
-        .vehicle-location { font-size:0.75rem; color:#52525b; margin-bottom:8px; }
+        .vehicle-location { font-size:0.75rem; color:var(--text-muted); margin-bottom:8px; }
         .vehicle-rate { font-size:1.1rem; font-weight:900; color:#dc2626; }
-        .vehicle-rate span { font-size:0.7rem; font-weight:500; color:#52525b; }
+        .vehicle-rate span { font-size:0.7rem; font-weight:500; color:var(--text-muted); }
         /* Filter chips */
         .filter-chips { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
         .filter-chips::-webkit-scrollbar { display:none; }
-        .chip { background:#1a1a1a; border:1px solid rgba(255,255,255,0.06); border-radius:20px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:#71717a; cursor:pointer; white-space:nowrap; transition:all 0.2s; }
-        .chip.active { background:linear-gradient(135deg,#dc2626,#9b1a1a); color:#fff; border-color:transparent; }
+        .chip { background:var(--bg-card2); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:var(--text-muted); cursor:pointer; white-space:nowrap; transition:all 0.2s; }
+        .chip.active { background:linear-gradient(135deg,#dc2626,#9b1a1a); color:var(--text-primary); border-color:transparent; }
         /* Booking list */
         .booking-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform 0.15s; }
         .booking-item:active { transform:scale(0.98); }
@@ -183,7 +183,7 @@
         .booking-item .booking-footer { display:flex; align-items:center; justify-content:space-between; }
         /* Profile */
         .profile-avatar { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primary); }
-        .profile-avatar-placeholder { width:80px; height:80px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:#fff; border:3px solid var(--primary-dark); }
+        .profile-avatar-placeholder { width:80px; height:80px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:var(--text-primary); border:3px solid var(--primary-dark); }
         .verify-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:0.78rem; font-weight:700; }
         .verify-0 { background:#f8d7da; color:#842029; }
         .verify-1 { background:#fff3cd; color:#856404; }
@@ -201,11 +201,11 @@
         /* Chat */
         .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
         .chat-msg { max-width:80%; padding:10px 14px; border-radius:var(--radius-md); font-size:0.875rem; line-height:1.4; }
-        .chat-msg.user { background:var(--primary); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+        .chat-msg.user { background:var(--primary); color:var(--text-primary); align-self:flex-end; border-bottom-right-radius:4px; }
         .chat-msg.bot { background:var(--bg-card); color:var(--text-primary); align-self:flex-start; border-bottom-left-radius:4px; box-shadow:var(--shadow-card); }
         .chat-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--bg-card); border-top:1px solid var(--border); }
         .chat-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:none; border-radius:var(--radius-sm); font-size:0.9rem; outline:none; }
-        .chat-input-row button { background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); padding:10px 16px; cursor:pointer; }
+        .chat-input-row button { background:var(--primary); color:var(--text-primary); border:none; border-radius:var(--radius-sm); padding:10px 16px; cursor:pointer; }
         /* Notification item */
         .notif-item { background:var(--bg-card); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; border-left:4px solid var(--primary); }
         .notif-item.unread { background:#fff5f5; }
@@ -225,7 +225,7 @@
         .review-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:14px; margin-bottom:10px; }
         .review-item .reviewer { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
         .review-item .reviewer img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
-        .review-item .reviewer .avatar-placeholder { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:0.9rem; }
+        .review-item .reviewer .avatar-placeholder { width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; color:var(--text-primary); font-weight:700; font-size:0.9rem; }
         .review-stars { color:#ffc107; font-size:0.85rem; }
         /* More screen */
         .more-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:transform 0.15s; }
@@ -236,9 +236,9 @@
         /* Splash */
         #page-splash { display:none; background:var(--primary); min-height:100vh; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
         #page-splash.active { display:flex; }
-        #page-splash h1 { color:#fff; font-size:2.5rem; font-weight:800; letter-spacing:-1px; }
+        #page-splash h1 { color:var(--text-primary); font-size:2.5rem; font-weight:800; letter-spacing:-1px; }
         #page-splash p { color:rgba(255,255,255,0.8); font-size:1rem; }
-        .splash-spinner { width:36px; height:36px; border:4px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; margin-top:8px; }
+        .splash-spinner { width:36px; height:36px; border:4px solid rgba(255,255,255,0.3); border-top-color:var(--text-primary); border-radius:50%; animation:spin 0.8s linear infinite; margin-top:8px; }
         /* Overlay pages */
         .overlay-page { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-page); z-index:500; overflow-y:auto; }
         .overlay-page.active { display:block; }
@@ -251,7 +251,7 @@
         .option-card input[type=radio], .option-card input[type=checkbox] { margin-top:2px; accent-color:var(--primary); }
         .option-card.selected { border-color:var(--primary); background:#fff5f5; }
         /* Notification badge */
-        .notif-badge { position:absolute; top:-4px; right:-4px; background:var(--primary); color:#fff; font-size:0.6rem; font-weight:800; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        .notif-badge { position:absolute; top:-4px; right:-4px; background:var(--primary); color:var(--text-primary); font-size:0.6rem; font-weight:800; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
         .notif-btn-wrap { position:relative; display:inline-block; }
         /* Booking detail actions */
         .action-btn-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
@@ -269,11 +269,11 @@
         /* Coupon row */
         .coupon-row { display:flex; gap:8px; }
         .coupon-row input { flex:1; }
-        .coupon-row button { padding:12px 16px; background:var(--primary); color:#fff; border:none; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; white-space:nowrap; }
+        .coupon-row button { padding:12px 16px; background:var(--primary); color:var(--text-primary); border:none; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; white-space:nowrap; }
         /* Rental type toggle */
         .toggle-group { display:flex; background:var(--bg-input); border-radius:var(--radius-sm); padding:4px; gap:4px; }
         .toggle-group button { flex:1; padding:10px; border:none; border-radius:6px; font-weight:600; font-size:0.875rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
-        .toggle-group button.active { background:var(--primary); color:#fff; }
+        .toggle-group button.active { background:var(--primary); color:var(--text-primary); }
         /* Receipt */
         .receipt-card { background:var(--bg-card); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal); padding:24px; margin:16px; }
         .receipt-card .receipt-header { text-align:center; margin-bottom:20px; }
@@ -300,9 +300,9 @@
 ??????????????????????????????????????????????????????????? -->
 <div id="page-splash" style="display:flex;background:linear-gradient(160deg,#0052ff 0%,#0040CC 50%,#001a66 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
   <div style="width:80px;height:80px;border-radius:24px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.2);">
-    <i class="fas fa-car" style="font-size:2.5rem;color:#fff;"></i>
+    <i class="fas fa-car" style="font-size:2.5rem;color:var(--text-primary);"></i>
   </div>
-  <h1 style="color:#fff;font-size:2.8rem;font-weight:900;letter-spacing:-2px;">Autoride</h1>
+  <h1 style="color:var(--text-primary);font-size:2.8rem;font-weight:900;letter-spacing:-2px;">Autoride</h1>
   <p style="color:rgba(255,255,255,0.6);font-size:0.875rem;font-weight:500;">Your ride, your way</p>
   <div class="splash-spinner"></div>
 </div>
@@ -461,10 +461,10 @@
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
         <div>
           <p style="color:rgba(255,200,200,0.8);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Good day</p>
-          <h2 id="homeUserName" style="font-size:1.5rem;font-weight:900;color:#fff;margin-top:2px;letter-spacing:-0.5px;">there</h2>
+          <h2 id="homeUserName" style="font-size:1.5rem;font-weight:900;color:var(--text-primary);margin-top:2px;letter-spacing:-0.5px;">there</h2>
         </div>
         <div class="notif-btn-wrap">
-          <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:40px;height:40px;border-radius:14px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);">
+          <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.15);border:none;color:var(--text-primary);width:40px;height:40px;border-radius:14px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);">
             <i class="fas fa-bell"></i>
           </button>
           <span class="notif-badge hidden" id="notifBadge">0</span>
@@ -474,11 +474,11 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-award" style="color:#fff;font-size:1rem;"></i>
+              <i class="fas fa-award" style="color:var(--text-primary);font-size:1rem;"></i>
             </div>
             <div>
               <div style="font-size:0.6rem;color:rgba(255,200,200,0.8);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Loyalty Points</div>
-              <div id="homePoints" style="font-size:1.6rem;font-weight:900;color:#fff;line-height:1;">0</div>
+              <div id="homePoints" style="font-size:1.6rem;font-weight:900;color:var(--text-primary);line-height:1;">0</div>
             </div>
           </div>
           <div style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:4px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;">SILVER</div>
@@ -494,38 +494,38 @@
       </div>
     </div>
   </div>
-  <div style="margin:-16px 16px 0;position:relative;z-index:10;background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:24px;padding:18px;margin-bottom:16px;">
-    <p style="font-size:0.6rem;font-weight:700;color:#52525b;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">Quick Actions</p>
+  <div style="margin:-16px 16px 0;position:relative;z-index:10;background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:18px;margin-bottom:16px;">
+    <p style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">Quick Actions</p>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
       <button onclick="showPage('page-vehicles')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="width:52px;height:52px;border-radius:18px;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#dc2626,#9b1a1a);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="color:#fff;font-size:0.875rem;"></i></div>
+          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#dc2626,#9b1a1a);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
         </div>
-        <span style="font-size:0.6rem;font-weight:600;color:#a1a1aa;text-align:center;line-height:1.2;">Browse Cars</span>
+        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Browse Cars</span>
       </button>
       <button onclick="showPage('page-bookings')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="width:52px;height:52px;border-radius:18px;background:rgba(37,99,235,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;"><i class="fas fa-calendar-check" style="color:#fff;font-size:0.875rem;"></i></div>
+          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;"><i class="fas fa-calendar-check" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
         </div>
-        <span style="font-size:0.6rem;font-weight:600;color:#a1a1aa;text-align:center;line-height:1.2;">My Bookings</span>
+        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">My Bookings</span>
       </button>
       <button onclick="showOverlay('page-support')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="width:52px;height:52px;border-radius:18px;background:rgba(5,150,105,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;"><i class="fas fa-headset" style="color:#fff;font-size:0.875rem;"></i></div>
+          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;"><i class="fas fa-headset" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
         </div>
-        <span style="font-size:0.6rem;font-weight:600;color:#a1a1aa;text-align:center;line-height:1.2;">Support</span>
+        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Support</span>
       </button>
       <button onclick="showOverlay('page-chatbot')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="width:52px;height:52px;border-radius:18px;background:rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;"><i class="fas fa-robot" style="color:#fff;font-size:0.875rem;"></i></div>
+          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;"><i class="fas fa-robot" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
         </div>
-        <span style="font-size:0.6rem;font-weight:600;color:#a1a1aa;text-align:center;line-height:1.2;">Chat</span>
+        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Chat</span>
       </button>
     </div>
   </div>
   <div style="padding:0 16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <h3 style="font-size:1rem;font-weight:900;color:#fff;">Recent Bookings</h3>
+      <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Recent Bookings</h3>
       <a href="#" onclick="showPage('page-bookings')" style="color:var(--primary);font-size:0.75rem;font-weight:700;text-decoration:none;">View all</a>
     </div>
     <div id="recentBookings">
@@ -540,17 +540,17 @@
 <div id="page-vehicles" class="page" style="background:var(--bg-page);">
   <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;">
     <div>
-      <p style="font-size:0.75rem;color:#52525b;font-weight:500;">Explore</p>
-      <h1 style="font-size:1.6rem;font-weight:900;color:#fff;letter-spacing:-0.5px;">Vehicles</h1>
+      <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">Explore</p>
+      <h1 style="font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;">Vehicles</h1>
     </div>
-    <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.06);color:#dc2626;font-size:1rem;cursor:pointer;position:relative;">
+    <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:var(--bg-card2);border:1px solid var(--border);color:#dc2626;font-size:1rem;cursor:pointer;position:relative;">
       <i class="fas fa-heart"></i>
     </button>
   </div>
   <div style="padding:0 16px 12px;position:relative;">
-    <i class="fas fa-search" style="position:absolute;left:28px;top:50%;transform:translateY(-50%);color:#52525b;font-size:0.875rem;"></i>
+    <i class="fas fa-search" style="position:absolute;left:28px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.875rem;"></i>
     <input type="text" id="vehicleSearch" placeholder="Search cars, brands, types..." oninput="searchVehicles(this.value)"
-      style="width:100%;padding:12px 44px 12px 40px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:16px;color:#fff;font-size:0.875rem;outline:none;">
+      style="width:100%;padding:12px 44px 12px 40px;background:var(--bg-card2);border:1px solid var(--border);border-radius:16px;color:var(--text-primary);font-size:0.875rem;outline:none;">
   </div>
   <div class="filter-chips" id="vehicleFilters">
     <span class="chip active" onclick="filterVehicles('all',this)">All</span>
@@ -561,7 +561,7 @@
     <span class="chip" onclick="filterVehicles('Automatic',this)">Automatic</span>
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
-  <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:#52525b;"></div>
+  <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
   <div id="vehicleGrid" class="vehicle-grid">
     <div class="empty-state"><i class="fas fa-car"></i><p>Loading vehicles...</p></div>
   </div>
@@ -569,29 +569,29 @@
 
 <div id="page-bookings" class="page" style="background:var(--bg-page);">
   <div style="padding:16px 20px 8px;">
-    <p style="font-size:0.75rem;color:#52525b;font-weight:500;">Your</p>
-    <h1 style="font-size:1.6rem;font-weight:900;color:#fff;letter-spacing:-0.5px;">Bookings</h1>
+    <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">Your</p>
+    <h1 style="font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;">Bookings</h1>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px 12px;">
-    <div id="bkStatTotal" style="background:#141414;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:#a1a1aa;">0</div>
-      <div style="font-size:0.65rem;color:#52525b;font-weight:600;margin-top:2px;">Total</div>
+    <div id="bkStatTotal" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
+      <div style="font-size:1.3rem;font-weight:900;color:var(--text-secondary);">0</div>
+      <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Total</div>
     </div>
-    <div id="bkStatDone" style="background:#141414;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:12px;text-align:center;">
+    <div id="bkStatDone" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
       <div style="font-size:1.3rem;font-weight:900;color:#a78bfa;">0</div>
-      <div style="font-size:0.65rem;color:#52525b;font-weight:600;margin-top:2px;">Completed</div>
+      <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Completed</div>
     </div>
-    <div id="bkStatSpent" style="background:#141414;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:12px;text-align:center;">
+    <div id="bkStatSpent" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
       <div style="font-size:1.3rem;font-weight:900;color:#34d399;">-</div>
-      <div style="font-size:0.65rem;color:#52525b;font-weight:600;margin-top:2px;">Total Spent</div>
+      <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Total Spent</div>
     </div>
   </div>
   <div style="padding:0 16px 12px;">
-    <div style="display:flex;gap:6px;background:#141414;border:1px solid rgba(255,255,255,0.05);border-radius:16px;padding:4px;" id="bookingFilterTabs">
-      <button onclick="filterBookingsList('all',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#9b1a1a);color:#fff;cursor:pointer;">All</button>
-      <button onclick="filterBookingsList('Confirmed',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:#52525b;cursor:pointer;">Active</button>
-      <button onclick="filterBookingsList('Completed',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:#52525b;cursor:pointer;">Done</button>
-      <button onclick="filterBookingsList('Cancelled',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:#52525b;cursor:pointer;">Cancelled</button>
+    <div style="display:flex;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:4px;" id="bookingFilterTabs">
+      <button onclick="filterBookingsList('all',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#9b1a1a);color:var(--text-primary);cursor:pointer;">All</button>
+      <button onclick="filterBookingsList('Confirmed',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:var(--text-muted);cursor:pointer;">Active</button>
+      <button onclick="filterBookingsList('Completed',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:var(--text-muted);cursor:pointer;">Done</button>
+      <button onclick="filterBookingsList('Cancelled',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:var(--text-muted);cursor:pointer;">Cancelled</button>
     </div>
   </div>
   <div id="bookingsList" class="scroll-content" style="padding-top:0;">
@@ -725,14 +725,14 @@
   <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#111;border-top:2px solid #e63946;">
     <span style="color:#e63946;font-weight:bold;font-size:12px;">&#x1F41E; DEBUG LOG</span>
     <div style="display:flex;gap:8px;">
-      <button onclick="document.getElementById('__dbgList').innerHTML=''" style="background:#333;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Clear</button>
-      <button onclick="document.getElementById('__debug').style.display='none'" style="background:#e63946;color:#fff;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Close</button>
+      <button onclick="document.getElementById('__dbgList').innerHTML=''" style="background:#333;color:var(--text-primary);border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Clear</button>
+      <button onclick="document.getElementById('__debug').style.display='none'" style="background:#e63946;color:var(--text-primary);border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Close</button>
     </div>
   </div>
   <div id="__dbgList" style="flex:1;overflow-y:auto;padding:6px 10px;font-size:11px;line-height:1.6;"></div>
 </div>
 <button id="__debugBtn" onclick="var d=document.getElementById('__debug');d.style.display=d.style.display==='none'?'flex':'none';"
-  style="position:fixed;bottom:70px;right:10px;width:36px;height:36px;background:#e63946;color:#fff;border:none;border-radius:50%;font-size:16px;z-index:99998;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);">&#x1F41E;</button>
+  style="position:fixed;bottom:70px;right:10px;width:36px;height:36px;background:#e63946;color:var(--text-primary);border:none;border-radius:50%;font-size:16px;z-index:99998;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);">&#x1F41E;</button>
 
 <script>
 (function() {
