@@ -1230,6 +1230,36 @@
             <h2 id="modalTitle" style="margin-bottom: 25px; font-size: 1.5rem; font-weight: 700; color: white;">Add New Vehicle</h2>
             <form id="vehicleForm">
                 <input type="hidden" id="editId">
+
+                <!-- ?? PHOTO UPLOAD SECTION ?? -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Vehicle Photos <span style="color: #ef4444;">*</span>
+                        <span style="color: var(--text-muted); font-weight: 500; text-transform: none; letter-spacing: 0;">(max 4 — first photo is Main)</span>
+                    </label>
+
+                    <!-- Thumbnail strip -->
+                    <div id="vPhotoStrip" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; min-height: 0;"></div>
+
+                    <!-- Picker buttons -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button type="button" onclick="VehiclePhotos.takePhoto()"
+                            style="padding: 12px 8px; background: rgba(99,102,241,0.12); border: 1px dashed rgba(99,102,241,0.5); border-radius: 12px; color: #818cf8; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                            <i class="fas fa-camera"></i> Take Photo
+                        </button>
+                        <label style="padding: 12px 8px; background: rgba(99,102,241,0.12); border: 1px dashed rgba(99,102,241,0.5); border-radius: 12px; color: #818cf8; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                            <i class="fas fa-images"></i> Upload from Gallery
+                            <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ?? EXISTING GALLERY (edit mode) ?? -->
+                <div id="vExistingGallery" style="display: none; margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Manage Existing Images (Arrows to reorder)</label>
+                    <div id="vGalleryManager" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid var(--border); border-radius: 10px; min-height: 100px;"></div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div style="grid-column: span 1;">
                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Brand</label>
@@ -1327,23 +1357,13 @@
                             <option value="Repair">Repair</option>
                         </select>
                     </div>
-                    <div id="vExistingGallery" style="grid-column: span 2; display: none; margin-bottom: 15px;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Manage Existing Images (Arrows to reorder)</label>
-                        <div id="vGalleryManager" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid var(--border); border-radius: 10px; min-height: 100px;">
-                            <!-- Images -->
-                        </div>
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Vehicle Images (Select multiple)</label>
-                        <input type="file" id="vGallery" accept="image/*" multiple style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Image URL Fallback (optional)</label>
-                        <input type="text" id="vImage" placeholder="https://example.com/car.jpg" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                    </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
-                    <button type="button" onclick="Vehicles.closeModal()" style="padding: 12px 25px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; flex-wrap: wrap;">
+                    <button type="button" onclick="Vehicles.closeModal()" style="padding: 12px 20px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                    <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)"
+                        style="padding: 12px 20px; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 10px; color: #818cf8; font-weight: 600; display: none;">
+                        Save &amp; Add Another
+                    </button>
                     <button type="submit" id="submitBtnText" style="padding: 12px 25px; background: #6366f1; border: none; border-radius: 10px; color: white; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">Add Vehicle</button>
                 </div>
             </form>
@@ -1864,6 +1884,10 @@
             document.getElementById('editId').value = id || '';
             document.getElementById('modalTitle').textContent = id ? 'Edit Vehicle' : 'Add New Vehicle';
             document.getElementById('submitBtnText').textContent = id ? 'Update Vehicle' : 'Add Vehicle';
+            // Show "Save & Add Another" only for new vehicles
+            const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
+            if (addAnotherBtn) addAnotherBtn.style.display = id ? 'none' : 'inline-flex';
+
             if (id) {
                 const v = this.data.find(x => x.id === id);
                 if (!v) return;
@@ -1878,8 +1902,6 @@
                 document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
                 document.getElementById('vStatus').value = v.status;
                 document.getElementById('vRate').value = v.daily_rate;
-                document.getElementById('vImage').value = v.vehicle_image || '';
-                document.getElementById('vGallery').value = ''; // Reset file input
                 
                 // Gallery Details
                 this.galleryDetails = v.gallery_details || [];
@@ -1890,6 +1912,8 @@
                 document.getElementById('vExistingGallery').style.display = 'none';
                 this.galleryDetails = [];
             }
+            // Always clear new-photo selections when opening the modal
+            VehiclePhotos.clear();
             document.getElementById('vehicleModal').style.display = 'block';
         },
 
@@ -1964,6 +1988,73 @@
                 alert('Network error: Could not reach the server at ' + API_BASE);
             }
         },
+        async submitForm(addAnother = false) {
+            const id = document.getElementById('editId').value;
+            const isEdit = !!id;
+
+            // Validate photos for new vehicles
+            if (!VehiclePhotos.validate(isEdit)) return;
+
+            const brand = document.getElementById('vBrand').value;
+            const model = document.getElementById('vModel').value;
+
+            const formData = new FormData();
+            formData.append('brand', brand);
+            formData.append('model', model);
+            formData.append('name', `${brand} ${model}`);
+            formData.append('plate_number', document.getElementById('vPlate').value);
+            formData.append('color', document.getElementById('vColor').value || '');
+            formData.append('vehicle_type', document.getElementById('vType').value);
+            formData.append('transmission', document.getElementById('vTrans').value);
+            formData.append('fuel_type', document.getElementById('vFuel').value);
+            formData.append('seats', document.getElementById('vSeats').value);
+            formData.append('location', document.getElementById('vLocation').value);
+            formData.append('status', document.getElementById('vStatus').value);
+            formData.append('daily_rate', document.getElementById('vRate').value);
+
+            // Append new photos
+            VehiclePhotos.appendTo(formData);
+
+            const method = isEdit ? 'PUT' : 'POST';
+            const url = isEdit ? `${API_URL}/vehicles/${id}/` : `${API_URL}/vehicles/`;
+
+            // Disable submit buttons during upload
+            const submitBtn = document.getElementById('submitBtnText');
+            const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
+            const origText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+            if (addAnotherBtn) addAnotherBtn.disabled = true;
+
+            try {
+                const res = await fetch(url, { method, body: formData });
+                if (res.ok) {
+                    showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
+                    this.refresh();
+                    if (addAnother) {
+                        // Reset form but keep modal open — clear photos completely
+                        document.getElementById('vehicleForm').reset();
+                        this.updateModels();
+                        document.getElementById('vExistingGallery').style.display = 'none';
+                        this.galleryDetails = [];
+                        VehiclePhotos.clear();  // mandatory clear for "Save & Add Another"
+                        document.getElementById('vehicleModal').scrollTop = 0;
+                    } else {
+                        this.closeModal();
+                    }
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    showNotification(err.error || 'Error saving vehicle', 'error');
+                }
+            } catch (err) {
+                showNotification('Connection failed', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = origText;
+                if (addAnotherBtn) addAnotherBtn.disabled = false;
+            }
+        },
+
         closeModal() { document.getElementById('vehicleModal').style.display = 'none'; },
         async delete(id) {
             if (!confirm('Delete this vehicle?')) return;
@@ -1975,48 +2066,141 @@
         async edit(id) { this.openModal(id); }
     };
 
+    // ?? VEHICLE PHOTOS MODULE ??????????????????????????????????????????????????
+    // Manages up to 4 new photos selected for a vehicle add/edit operation.
+    // Each entry: { file: File, dataUrl: string, label: string }
+    const VehiclePhotos = {
+        MAX: 4,
+        LABELS: ['Main', 'Front', 'Side', 'Rear'],
+        _items: [],   // { file, dataUrl, label }
+
+        clear() {
+            this._items = [];
+            this._render();
+            // Reset the hidden file input so the same file can be re-selected
+            const inp = document.getElementById('vGalleryPicker');
+            if (inp) inp.value = '';
+        },
+
+        // Called when user picks files from gallery input
+        onFilePick(input) {
+            const files = Array.from(input.files);
+            files.forEach(f => this._addFile(f));
+            input.value = ''; // allow re-picking same file
+        },
+
+        // Called by "Take Photo" button — uses Capacitor Camera if available,
+        // falls back to a hidden file input with capture="environment"
+        async takePhoto() {
+            const Camera = window.Capacitor?.Plugins?.Camera;
+            if (Camera) {
+                try {
+                    const photo = await Camera.getPhoto({
+                        quality: 85,
+                        allowEditing: false,
+                        resultType: 'base64',
+                        source: 'CAMERA'
+                    });
+                    // Convert base64 to File
+                    const byteStr = atob(photo.base64String);
+                    const arr = new Uint8Array(byteStr.length);
+                    for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+                    const blob = new Blob([arr], { type: 'image/jpeg' });
+                    const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    this._addFile(file);
+                } catch (err) {
+                    if (err.message !== 'User cancelled photos app') {
+                        showNotification('Camera error: ' + err.message, 'error');
+                    }
+                }
+            } else {
+                // Fallback: trigger a file input with camera capture
+                let cap = document.getElementById('vCameraCapture');
+                if (!cap) {
+                    cap = document.createElement('input');
+                    cap.type = 'file';
+                    cap.accept = 'image/*';
+                    cap.capture = 'environment';
+                    cap.id = 'vCameraCapture';
+                    cap.style.display = 'none';
+                    cap.addEventListener('change', () => {
+                        Array.from(cap.files).forEach(f => this._addFile(f));
+                        cap.value = '';
+                    });
+                    document.body.appendChild(cap);
+                }
+                cap.click();
+            }
+        },
+
+        _addFile(file) {
+            if (this._items.length >= this.MAX) {
+                showNotification(`Maximum ${this.MAX} photos allowed.`, 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const label = this.LABELS[this._items.length] || `Photo ${this._items.length + 1}`;
+                this._items.push({ file, dataUrl: e.target.result, label });
+                this._render();
+            };
+            reader.readAsDataURL(file);
+        },
+
+        remove(index) {
+            this._items.splice(index, 1);
+            // Re-assign labels after removal
+            this._items.forEach((item, i) => { item.label = this.LABELS[i] || `Photo ${i + 1}`; });
+            this._render();
+        },
+
+        _render() {
+            const strip = document.getElementById('vPhotoStrip');
+            if (!strip) return;
+            if (this._items.length === 0) {
+                strip.innerHTML = '';
+                return;
+            }
+            strip.innerHTML = this._items.map((item, i) => `
+                <div style="position: relative; flex-shrink: 0;">
+                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#6366f1' : 'rgba(255,255,255,0.1)'};">
+                        <img src="${item.dataUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#818cf8' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
+                        ${item.label}
+                    </div>
+                    <button type="button" onclick="VehiclePhotos.remove(${i})"
+                        style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #ef4444; border: none; border-radius: 50%; color: white; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        },
+
+        // Returns true if valid, false + shows toast if not
+        validate(isEdit) {
+            if (isEdit) return true; // editing: photos optional (existing gallery handles it)
+            if (this._items.length === 0) {
+                showNotification('Please add at least one vehicle photo (Main photo is required).', 'error');
+                return false;
+            }
+            return true;
+        },
+
+        // Appends files to a FormData object
+        appendTo(formData) {
+            this._items.forEach(item => {
+                formData.append('gallery', item.file);
+            });
+            // Set first photo as the main vehicle_image via URL after upload
+            // (server will handle gallery[0] as primary)
+        }
+    };
+
     // Form Handler
     document.getElementById('vehicleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const id = document.getElementById('editId').value;
-        const brand = document.getElementById('vBrand').value;
-        const model = document.getElementById('vModel').value;
-        
-        const formData = new FormData();
-        formData.append('brand', brand);
-        formData.append('model', model);
-        formData.append('name', `${brand} ${model}`);
-        formData.append('plate_number', document.getElementById('vPlate').value);
-        formData.append('color', document.getElementById('vColor').value || '');
-        formData.append('vehicle_type', document.getElementById('vType').value);
-        formData.append('transmission', document.getElementById('vTrans').value);
-        formData.append('fuel_type', document.getElementById('vFuel').value);
-        formData.append('seats', document.getElementById('vSeats').value);
-        formData.append('location', document.getElementById('vLocation').value);
-        formData.append('status', document.getElementById('vStatus').value);
-        formData.append('daily_rate', document.getElementById('vRate').value);
-        formData.append('vehicle_image', document.getElementById('vImage').value);
-
-        // Add gallery files
-        const galleryInput = document.getElementById('vGallery');
-        if (galleryInput.files.length > 0) {
-            for (let i = 0; i < galleryInput.files.length; i++) {
-                formData.append('gallery', galleryInput.files[i]);
-            }
-        }
-
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? `${API_URL}/vehicles/${id}/` : `${API_URL}/vehicles/`;
-        try {
-            const res = await fetch(url, {
-                method,
-                body: formData
-            });
-            if (res.ok) {
-                Vehicles.closeModal();
-                Vehicles.refresh();
-            } else { showNotification('Error saving vehicle', 'error'); }
-        } catch (err) { showNotification('Connection failed', 'error'); }
+        await Vehicles.submitForm(false);
     });
 
     function toggleDrawer(show) {
