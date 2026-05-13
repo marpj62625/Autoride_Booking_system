@@ -76,6 +76,38 @@
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
         }
 
+        /* Auto dark mode via system preference (mirrors [data-theme="dark"]) */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --primary: #4D8FFF;
+                --on-primary: #ffffff;
+                --primary-dark: #0052FF;
+                --primary-light: #80AFFF;
+                --primary-glow: rgba(77, 143, 255, 0.4);
+                --surface: #111113;
+                --surface-container: #1a1a1c;
+                --surface-bright: #222224;
+                --bg-dark: #0d0d0f;
+                --bg-page: #0d0d0f;
+                --bg-card: #1a1a1c;
+                --bg-card2: #222224;
+                --bg-input: #1a1a1c;
+                --on-surface: #f4f4f5;
+                --on-surface-variant: #a1a1aa;
+                --outline: rgba(255,255,255,0.08);
+                --text-main: #f4f4f5;
+                --text-on-surface: #f4f4f5;
+                --text-primary: #f4f4f5;
+                --text-secondary: #a1a1aa;
+                --text-muted: #71717a;
+                --border: rgba(255,255,255,0.09);
+                --border-light: rgba(255,255,255,0.13);
+                --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+                --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
+                --shadow-premium: 0 20px 40px -10px rgba(0,0,0,0.5);
+            }
+        }
+
         .hidden { display: none !important; }
         .revenue-restricted { display: none; }
 
@@ -95,7 +127,42 @@
             flex-direction: column;
             overflow-x: hidden;
             line-height: 1.5;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
+        /* -------------------------------------------------------
+           CONTRAST FIX: inline "color: white" on surface elements
+           becomes invisible in light mode. Override headings,
+           labels, and paragraphs inside cards/tabs to use the
+           theme-aware text variable instead.
+           Buttons, badges, and icon boxes that sit on a colored
+           background are excluded via :not() selectors.
+        ------------------------------------------------------- */
+        .stat-card h1, .stat-card h2, .stat-card h3,
+        .stat-card h4, .stat-card h5, .stat-card h6,
+        .stat-card p, .stat-card label, .stat-card span:not(.pill),
+        .tab-content > h1, .tab-content > h2, .tab-content > h3,
+        .tab-content > h4,
+        .tab-content .stat-card h1, .tab-content .stat-card h2,
+        .tab-content .stat-card h3, .tab-content .stat-card h4,
+        .modal-content h1, .modal-content h2, .modal-content h3,
+        .modal-content h4, .modal-content p, .modal-content label {
+            color: var(--text-main);
+        }
+
+        /* Inputs inside cards/modals */
+        .stat-card input, .stat-card select,
+        .modal-content input, .modal-content select,
+        .tab-content input:not([type="submit"]):not([type="button"]),
+        .tab-content select {
+            color: var(--text-main);
+            background: var(--bg-input);
+            border-color: var(--border);
+        }
+
+        /* Drawer text */
+        .drawer-header p, .drawer-header span { color: var(--text-muted); }
+        .drawer-header .logo-wrap span { color: var(--text-main); }
 
         /* ---------- PREMIUM HEADER ---------- */
         .mobile-header {
@@ -848,9 +915,9 @@
             </div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700; color: white;">Bookings List</h3>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Bookings List</h3>
             <div style="display: flex; gap: 10px;">
-                <button onclick="Bookings.refresh()" style="background: #334155; border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem;">Refresh</button>
+                <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
             </div>
         </div>
         <div id="bookingsList">
@@ -871,7 +938,7 @@
                     <i class="fas fa-user-shield"></i>
                 </div>
                 <div>
-                    <h4 style="font-size: 1rem; color: white; margin-bottom: 2px;">Identity Audit</h4>
+                    <h4 style="font-size: 1rem; color: var(--text-main); margin-bottom: 2px;">Identity Audit</h4>
                     <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Review pending driver's licenses</p>
                 </div>
             </div>
@@ -886,7 +953,7 @@
     <div id="bookingDetailsModal" class="premium-modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="font-size: 1.5rem; font-weight: 900; color: white; margin: 0; letter-spacing: -1px;">Booking Details</h2>
+                <h2 style="font-size: 1.5rem; font-weight: 900; color: var(--text-main); margin: 0; letter-spacing: -1px;">Booking Details</h2>
                 <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="menu-btn"><i class="fas fa-times"></i></button>
             </div>
             <div id="bookingDetailContent">
