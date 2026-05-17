@@ -958,7 +958,12 @@ def admin_verify_user():
 
         return jsonify({"error": "Missing parameters"}), 400
 
-        
+    # Ensure correct types
+    try:
+        user_id = int(user_id)
+        status  = int(status)
+    except (ValueError, TypeError) as e:
+        return jsonify({"error": f"Invalid parameter types: {e}"}), 400
 
     try:
 
@@ -966,7 +971,9 @@ def admin_verify_user():
 
         cur.execute("UPDATE users SET is_verified = %s WHERE id = %s", (status, user_id))
 
-        
+        rows_updated = cur.rowcount
+
+        print(f"DEBUG verify-action: user_id={user_id} status={status} rows_updated={rows_updated}")
 
         # Log activity if admin_id is provided
 
@@ -1024,9 +1031,16 @@ def admin_verify_user():
 
         
 
-        return jsonify({"message": f"User status updated to {status}"}), 200
+        return jsonify({"message": f"User status updated to {status}", "rows_updated": rows_updated}), 200
 
     except Exception as e:
+
+        print(f"ERROR verify-action: {e}")
+
+        try:
+            get_db().rollback()
+        except Exception:
+            pass
 
         return jsonify({"error": str(e)}), 500
 
@@ -1203,6 +1217,13 @@ def admin_list_users():
         return jsonify(result), 200
 
     except Exception as e:
+
+        print(f"ERROR pending-verifications: {e}")
+
+        try:
+            get_db().rollback()
+        except Exception:
+            pass
 
         return jsonify({"error": str(e)}), 500
 

@@ -182,6 +182,31 @@ function subscribeToNotifications(userId) {
             if (payload && payload.new) {
                 notifList.unshift(payload.new);
                 updateNotifBadge();
+                // If license was approved or rejected, refresh verify status immediately
+                var type = payload.new.type || '';
+                if (type === 'license_approved' || type === 'license_rejected') {
+                    apiCall('/user/verify-status?user_id=' + userId)
+                        .then(function(v) {
+                            currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
+                            Session.save(currentUser);
+                            // Update badge if profile page is visible
+                            var badge = document.getElementById('profileVerifyBadge');
+                            if (badge) {
+                                var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+                                badge.className = 'verify-badge verify-' + currentUser.isVerified;
+                            }
+                            // Update license status field in view mode
+                            var statusEl = document.getElementById('viewLicenseStatus');
+                            if (statusEl) {
+                                var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+                                var v2 = currentUser.isVerified;
+                                statusEl.textContent = statusMap[v2] || '—';
+                                statusEl.style.color = statusColor[v2] || 'var(--text-main)';
+                            }
+                        }).catch(function() {});
+                }
             }
         })
         .subscribe();
