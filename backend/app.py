@@ -975,6 +975,11 @@ def admin_verify_user():
 
         print(f"DEBUG verify-action: user_id={user_id} status={status} rows_updated={rows_updated}")
 
+        # Verify the update actually took effect
+        cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        print(f"DEBUG verify-action: after UPDATE, is_verified in DB = {row}")
+
         # Log activity if admin_id is provided
 
         if admin_id:
@@ -992,6 +997,8 @@ def admin_verify_user():
             
 
         commit_db()
+
+        print(f"DEBUG verify-action: commit_db() completed successfully")
 
         
 
@@ -1169,12 +1176,6 @@ def admin_list_users():
     try:
 
         cur = get_cursor()
-
-        # Ensure license detail columns exist
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
-        commit_db()
 
         if status == 'pending':
 
@@ -7724,11 +7725,6 @@ def get_full_profile():
         return jsonify({'error': 'user_id is required'}), 400
     try:
         cur = get_cursor()
-        # Ensure license columns exist (safe no-op if already present)
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
-        commit_db()
         cur.execute(
             """SELECT id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points,
@@ -7759,12 +7755,6 @@ def update_license_info():
         return jsonify({'error': 'user_id is required'}), 400
     try:
         cur = get_cursor()
-        # Ensure license columns exist (safe no-op if already present)
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
-        commit_db()
-
         license_number = request.form.get('license_number', '').strip() or None
         license_expiry  = request.form.get('license_expiry', '').strip() or None
         license_type    = request.form.get('license_type', '').strip() or None
