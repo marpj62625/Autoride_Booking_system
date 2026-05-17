@@ -524,6 +524,17 @@
     </div>
   </div>
   <div style="padding:0 16px;">
+    <!-- Active Booking Monitor -->
+    <div id="activeBookingMonitor" style="display:none;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Active Rental</h3>
+        <span style="font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(16,185,129,0.2);">LIVE</span>
+      </div>
+      <div id="activeBookingCard" style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;" onclick="openBookingDetail(window._activeBookingId)">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Recent Bookings</h3>
       <a href="#" onclick="showPage('page-bookings')" style="color:var(--primary);font-size:0.75rem;font-weight:700;text-decoration:none;">View all</a>

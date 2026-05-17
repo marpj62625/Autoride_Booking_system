@@ -307,6 +307,11 @@ function showPage(id) {
     overlays[i].style.display = 'none';
   }
   stopGpsPolling();
+  // Stop active booking countdown when leaving home
+  if (id !== 'page-home' && _activeBookingTimer) {
+    clearInterval(_activeBookingTimer);
+    _activeBookingTimer = null;
+  }
 
   // Hide splash
   var splash = document.getElementById('page-splash');
@@ -735,6 +740,43 @@ function doVerifyPhone() {
 }
 
 // HOME
+// Active booking countdown timer handle
+var _activeBookingTimer = null;
+var _activeBookingNotified = false; // fire warning toast once per session
+
+function _formatCountdown(msLeft) {
+  if (msLeft <= 0) return { text: 'Ended', urgent: true };
+  var totalSec = Math.floor(msLeft / 1000);
+  var days  = Math.floor(totalSec / 86400);
+  var hours = Math.floor((totalSec % 86400) / 3600);
+  var mins  = Math.floor((totalSec % 3600) / 60);
+  var secs  = totalSec % 60;
+  var text = days > 0
+    ? days + 'd ' + hours + 'h ' + mins + 'm'
+    : hours + 'h ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's';
+  return { text: text, urgent: msLeft < 24 * 3600 * 1000 };
+}
+
+function _startActiveBookingCountdown(endDateStr) {
+  if (_activeBookingTimer) clearInterval(_activeBookingTimer);
+  function tick() {
+    var el = document.getElementById('activeBookingCountdown');
+    if (!el) { clearInterval(_activeBookingTimer); return; }
+    var msLeft = new Date(endDateStr + 'T23:59:59') - new Date();
+    var result = _formatCountdown(msLeft);
+    el.textContent = result.text;
+    el.style.color = result.urgent ? '#ef4444' : '#10b981';
+    // Notify once when under 24h
+    if (result.urgent && !_activeBookingNotified) {
+      _activeBookingNotified = true;
+      showToast('?? Your rental ends in less than 24 hours!', 'error');
+      NotifStore.add('Your rental is ending soon — less than 24 hours remaining.');
+    }
+  }
+  tick();
+  _activeBookingTimer = setInterval(tick, 1000);
+}
+
 function loadHome() {
   var nameEl = document.getElementById('homeUserName');
   if (nameEl) nameEl.textContent = currentUser.fullName || 'there';
@@ -754,6 +796,54 @@ function loadHome() {
     }).catch(function() {});
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(bookings) {
+      // --- Active booking monitor ---
+      var active = null;
+      for (var i = 0; i < bookings.length; i++) {
+        if (bookings[i].status === 'Picked Up' || bookings[i].status === 'Ongoing') {
+          active = bookings[i]; break;
+        }
+      }
+      var monitor = document.getElementById('activeBookingMonitor');
+      var card    = document.getElementById('activeBookingCard');
+      if (active && monitor && card) {
+        window._activeBookingId = active.id;
+        var imgHtml = active.vehicle_image
+          ? '<img src="' + active.vehicle_image + '" style="width:100%;height:140px;object-fit:cover;">'
+          : '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+        card.innerHTML =
+          imgHtml +
+          '<div style="padding:14px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
+              '<div>' +
+                '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + (active.plate_number||'') + '</div>' +
+              '</div>' +
+              '<span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
+            '</div>' +
+            '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
+              '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
+              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:#10b981;">—</div>' +
+              '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + active.end_date + '</strong></div>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+              '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Start Date</div>' +
+                '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.start_date + '</div>' +
+              '</div>' +
+              '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Booking #</div>' +
+                '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        monitor.style.display = '';
+        _startActiveBookingCountdown(active.end_date);
+      } else {
+        if (monitor) monitor.style.display = 'none';
+        if (_activeBookingTimer) { clearInterval(_activeBookingTimer); _activeBookingTimer = null; }
+      }
+
+      // --- Recent bookings list ---
       var recent = bookings.slice(0, 3);
       var el = document.getElementById('recentBookings');
       if (!el) return;
