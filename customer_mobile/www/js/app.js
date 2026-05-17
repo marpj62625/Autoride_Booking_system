@@ -794,43 +794,70 @@ function loadVehicles() {
 function renderVehicles(list) {
   var grid = document.getElementById('vehicleGrid');
   if (!grid) return;
-  if (!list.length) {
-    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles found</p></div>';
+  // Filter out vehicles with no available units
+  var available = list.filter(function(v) { return (parseInt(v.available_units) || 0) > 0; });
+  if (!available.length) {
+    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles available</p></div>';
     return;
   }
   var countEl = document.getElementById('vehicleCount');
-  if (countEl) countEl.textContent = list.length + ' vehicle' + (list.length !== 1 ? 's' : '') + ' found';
-  grid.innerHTML = list.map(function(v) {
-    var avail = parseInt(v.available_units) || 0;
-    var badgeClass = avail > 0 ? 'badge-avail-yes' : 'badge-avail-no';
-    var badgeText = avail > 0 ? ('<span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available') : 'Unavailable';
-    var bEnc = encodeURIComponent(v.brand);
-    var mEnc = encodeURIComponent(v.model);
-    return '<div class="vehicle-card" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')">' +
-      '<div class="vehicle-img-wrap">' +
+  if (countEl) countEl.textContent = available.length + ' vehicle' + (available.length !== 1 ? 's' : '') + ' found';
+
+  grid.innerHTML = available.map(function(v) {
+    var cardId = 'vcard-' + encodeURIComponent(v.brand) + '-' + encodeURIComponent(v.model);
+    // Build transmission options from the units data if available, else use the category value
+    var transOpts = '<option value="">Select transmission</option>' +
+      ['Manual', 'Automatic'].map(function(t) {
+        return '<option value="' + t + '">' + t + '</option>';
+      }).join('');
+
+    return '<div class="vehicle-card" id="' + cardId + '" style="cursor:default;">' +
+      // Image — will be replaced once unit is selected
+      '<div class="vehicle-img-wrap" id="vimg-' + cardId + '">' +
       '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
-      '<span class="badge-available ' + badgeClass + '">' + badgeText + '</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
+      // Header row
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">' +
       '<div>' +
       '<h3>' + v.brand + ' ' + v.model + '</h3>' +
-      '<div style="display:flex;gap:6px;margin-top:4px;">' +
       '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
-      '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.transmission || '-') + '</span>' +
-      '</div></div>' +
+      '</div>' +
       '<div style="text-align:right;">' +
       '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + '</div>' +
       '<div style="font-size:0.65rem;color:#52525b;margin-top:1px;">per day</div>' +
       '</div></div>' +
+
+      // Transmission dropdown
+      '<div style="margin-bottom:8px;">' +
+      '<label style="font-size:0.7rem;color:#71717a;font-weight:600;display:block;margin-bottom:4px;">Transmission</label>' +
+      '<select id="vtrans-' + cardId + '" onchange="onVehicleTransmissionChange(\'' + encodeURIComponent(v.brand) + '\',\'' + encodeURIComponent(v.model) + '\',\'' + cardId + '\')" ' +
+      'style="width:100%;padding:9px 12px;background:#1a1a1a;border:1px solid #3f3f46;border-radius:10px;color:#fff;font-size:0.82rem;">' +
+      transOpts + '</select></div>' +
+
+      // Color dropdown (hidden until transmission selected)
+      '<div id="vcolor-wrap-' + cardId + '" style="display:none;margin-bottom:8px;">' +
+      '<label style="font-size:0.7rem;color:#71717a;font-weight:600;display:block;margin-bottom:4px;">Color</label>' +
+      '<select id="vcolor-' + cardId + '" onchange="onVehicleColorChange(\'' + encodeURIComponent(v.brand) + '\',\'' + encodeURIComponent(v.model) + '\',\'' + cardId + '\')" ' +
+      'style="width:100%;padding:9px 12px;background:#1a1a1a;border:1px solid #3f3f46;border-radius:10px;color:#fff;font-size:0.82rem;">' +
+      '<option value="">Select color</option></select></div>' +
+
+      // Unit info (hidden until color selected)
+      '<div id="vunit-' + cardId + '" style="display:none;">' +
+      '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#1a1a1a;border-radius:10px;margin-bottom:10px;">' +
+      '<i class="fas fa-id-card" style="color:#dc2626;font-size:0.85rem;"></i>' +
+      '<span id="vplate-' + cardId + '" style="font-size:0.85rem;font-weight:700;color:#fff;"></span>' +
+      '</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
       '<div style="display:flex;align-items:center;gap:6px;">' +
       '<i class="fas fa-map-marker-alt" style="color:#3f3f46;font-size:0.75rem;"></i>' +
       '<span style="font-size:0.75rem;color:#52525b;">' + (v.location || '-') + '</span>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:4px;background:rgba(220,38,38,0.1);color:#f87171;padding:5px 12px;border-radius:12px;font-size:0.75rem;font-weight:700;">' +
-      'View <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i></div>' +
-      '</div></div></div>';
+      '<button id="vbook-' + cardId + '" class="btn-primary" style="width:auto;padding:10px 20px;" onclick="">' +
+      '<i class="fas fa-calendar-plus"></i> Book</button>' +
+      '</div></div>' +
+
+      '</div></div>';
   }).join('');
 }
 
@@ -843,6 +870,92 @@ function filterVehicles(filter, chipEl) {
     return v.vehicle_type === filter || v.transmission === filter || v.fuel_type === filter;
   });
   renderVehicles(filtered);
+}
+
+// ?? INLINE BROWSE: Transmission selected ? populate Color dropdown ??????????
+function onVehicleTransmissionChange(brandEnc, modelEnc, cardId) {
+  var transEl = document.getElementById('vtrans-' + cardId);
+  var colorWrap = document.getElementById('vcolor-wrap-' + cardId);
+  var unitWrap = document.getElementById('vunit-' + cardId);
+  if (!transEl || !colorWrap) return;
+  var trans = transEl.value;
+  colorWrap.style.display = 'none';
+  if (unitWrap) unitWrap.style.display = 'none';
+  if (!trans) return;
+
+  apiCall('/vehicles/units?brand=' + brandEnc + '&model=' + modelEnc + '&color=all&user_id=' + (currentUser.id || ''))
+    .then(function(units) {
+      var filtered = units.filter(function(u) {
+        return u.transmission === trans && u.status === 'Available';
+      });
+      var seen = {};
+      var colors = [];
+      filtered.forEach(function(u) {
+        var c = u.color_display || u.color || 'Not Specified';
+        if (!seen[c]) { seen[c] = true; colors.push(c); }
+      });
+      if (!colors.length) {
+        showToast('No available units for ' + trans + ' transmission.', 'error');
+        return;
+      }
+      var colorSel = document.getElementById('vcolor-' + cardId);
+      if (!colorSel) return;
+      colorSel.innerHTML = '<option value="">Select color</option>' +
+        colors.map(function(c) { return '<option value="' + c + '">' + c + '</option>'; }).join('');
+      colorWrap.style.display = 'block';
+    })
+    .catch(function(err) { showToast(err.message, 'error'); });
+}
+
+// ?? INLINE BROWSE: Color selected ? show plate + image + Book button ?????????
+function onVehicleColorChange(brandEnc, modelEnc, cardId) {
+  var transEl = document.getElementById('vtrans-' + cardId);
+  var colorEl = document.getElementById('vcolor-' + cardId);
+  var unitWrap = document.getElementById('vunit-' + cardId);
+  var plateEl = document.getElementById('vplate-' + cardId);
+  var bookBtn = document.getElementById('vbook-' + cardId);
+  var imgWrap = document.getElementById('vimg-' + cardId);
+  if (!colorEl || !unitWrap) return;
+  var color = colorEl.value;
+  var trans = transEl ? transEl.value : '';
+  unitWrap.style.display = 'none';
+  if (!color) return;
+
+  apiCall('/vehicles/units?brand=' + brandEnc + '&model=' + modelEnc + '&color=' + encodeURIComponent(color) + '&user_id=' + (currentUser.id || ''))
+    .then(function(units) {
+      var unit = null;
+      for (var i = 0; i < units.length; i++) {
+        var u = units[i];
+        var uColor = u.color_display || u.color || 'Not Specified';
+        if (u.status === 'Available' && uColor === color && (!trans || u.transmission === trans)) {
+          unit = u; break;
+        }
+      }
+      if (!unit) {
+        showToast('No available unit for this combination.', 'error');
+        return;
+      }
+      if (plateEl) plateEl.textContent = unit.plate_number || 'N/A';
+      if (imgWrap) {
+        var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
+        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'" style="width:100%;height:100%;object-fit:cover;">';
+      }
+      if (bookBtn) {
+        var canBook = parseInt(currentUser.isVerified) === 2;
+        if (canBook) {
+          bookBtn.removeAttribute('disabled');
+          bookBtn.style.opacity = '1';
+          bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Book';
+          (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
+        } else {
+          bookBtn.setAttribute('disabled', 'true');
+          bookBtn.style.opacity = '0.5';
+          bookBtn.innerHTML = '<i class="fas fa-lock"></i> Verify License';
+        }
+      }
+      unitWrap.style.display = 'block';
+    })
+    .catch(function(err) { showToast(err.message, 'error'); });
 }
 
 // VEHICLES - Step 2: Color selection
