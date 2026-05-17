@@ -5856,13 +5856,33 @@ def get_pending_verifications():
 
         cur = get_cursor()
 
-        # is_verified = 0 means uploaded but pending, 2 means rejected, 1 means verified
+        # Ensure license detail columns exist
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
+        commit_db()
 
-        cur.execute("SELECT id, full_name, email, license_image, is_verified FROM users WHERE license_image IS NOT NULL AND is_verified IN (0, 2)")
+        # is_verified = 1 means pending review
+        cur.execute("""
+            SELECT id, full_name, email, phone,
+                   license_image_url AS license_image,
+                   license_number, license_expiry, license_type,
+                   is_verified
+            FROM users
+            WHERE license_image_url IS NOT NULL AND is_verified = 1
+            ORDER BY id DESC
+        """)
 
         users = cur.fetchall()
 
-        return jsonify([dict(u) for u in users]), 200
+        result = []
+        for u in users:
+            d = dict(u)
+            if d.get('license_expiry'):
+                d['license_expiry'] = str(d['license_expiry'])
+            result.append(d)
+
+        return jsonify(result), 200
 
     except Exception as e:
 

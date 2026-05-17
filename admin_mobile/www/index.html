@@ -3080,8 +3080,33 @@
                 const name = v.full_name || 'Unnamed User';
                 const initial = name[0] ? name[0].toUpperCase() : '?';
                 const licenseUrl = v.license_image || v.license_image_url || '';
-                
-                const actionButtons = licenseUrl 
+
+                // License detail rows
+                const hasDetails = v.license_number || v.license_type || v.license_expiry;
+                const detailsHtml = `
+                    <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+                        <div style="font-size:0.65rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;"><i class="fas fa-id-card" style="margin-right:5px;"></i>Declared License Details</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">License No.</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_number || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Type</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_type || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Expiry Date</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_expiry || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Phone</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.phone || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not set</span>'}</div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                const actionButtons = licenseUrl
                     ? `<button onclick="Verifications.viewLicense('${licenseUrl}')" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px;">
                             <i class="fas fa-id-card" style="margin-right: 6px;"></i> License
                        </button>
@@ -3093,15 +3118,16 @@
 
                 return `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
-                    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
-                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow);">
+                    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
+                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
                             ${initial}
                         </div>
-                        <div style="flex: 1;">
-                            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${name}</h4>
-                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">${v.email || 'No Email'}</p>
+                        <div style="flex: 1; min-width:0;">
+                            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.email || 'No Email'}</p>
                         </div>
                     </div>
+                    ${detailsHtml}
                     <div style="display: flex; gap: 12px;">
                         ${actionButtons}
                     </div>
