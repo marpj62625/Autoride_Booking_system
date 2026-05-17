@@ -785,19 +785,19 @@
         </div>
 
         <!-- Row 2: Revenue Trend + Bookings/Day side by side -->
-        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">REVENUE TREND</div>
-                <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Last 30 days</div>
-                <div style="height:120px;position:relative;">
-                    <canvas id="revenueChart"></canvas>
+        <div style="display:-webkit-flex;display:flex;gap:10px;margin-bottom:12px;">
+            <div class="stat-card" style="-webkit-flex:1;flex:1;min-width:0;padding:12px;margin-bottom:0;overflow:hidden;">
+                <div style="font-size:0.65rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">REVENUE TREND</div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Last 30 days</div>
+                <div style="height:110px;position:relative;width:100%;">
+                    <canvas id="revenueChart" style="max-width:100%;"></canvas>
                 </div>
             </div>
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">BOOKINGS/DAY</div>
-                <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Volume daily</div>
-                <div style="height:120px;position:relative;">
-                    <canvas id="bookingsChart"></canvas>
+            <div class="stat-card" style="-webkit-flex:1;flex:1;min-width:0;padding:12px;margin-bottom:0;overflow:hidden;">
+                <div style="font-size:0.65rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">BOOKINGS/DAY</div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Volume daily</div>
+                <div style="height:110px;position:relative;width:100%;">
+                    <canvas id="bookingsChart" style="max-width:100%;"></canvas>
                 </div>
             </div>
         </div>
@@ -3760,60 +3760,70 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Bookings Bar Chart
-        const bookCtx = document.getElementById('bookingsChart').getContext('2d');
-        charts.bookings = new Chart(bookCtx, {
-            type: 'bar',
-            data: {
-                labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
-                datasets: [{
-                    label: 'Bookings',
-                    data: revTrend.length > 0 ? revTrend.map(t => t.count || 0) : [0],
-                    backgroundColor: 'rgba(0,82,255,0.6)',
-                    borderRadius: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
-        });
+        // Bookings Bar Chart — use booking status breakdown
+        const bookCtx = document.getElementById('bookingsChart');
+        if (bookCtx) {
+            const bStatus = data.bookingsByStatus || {};
+            const bLabels = Object.keys(bStatus).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+            const bData = Object.values(bStatus);
+            charts.bookings = new Chart(bookCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: bLabels.length ? bLabels : revTrend.map(t => t.day.split('-').slice(1).join('/')),
+                    datasets: [{
+                        label: 'Bookings',
+                        data: bData.length ? bData : revTrend.map(() => 0),
+                        backgroundColor: 'rgba(0,82,255,0.6)',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+            });
+        }
 
-        // Fleet Health Doughnut
-        const dist = data.fleetDistribution || [];
-        const fleetCtx = document.getElementById('fleetHealthChart').getContext('2d');
-        charts.health = new Chart(fleetCtx, {
-            type: 'doughnut',
-            data: {
-                labels: dist.map(d => d.status),
-                datasets: [{
-                    data: dist.map(d => d.count),
-                    backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ef4444'],
-                    hoverOffset: 10,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '75%',
-                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
-            }
-        });
+        // Fleet Health doughnut (only if canvas exists)
+        const fleetCtxEl = document.getElementById('fleetHealthChart');
+        if (fleetCtxEl) {
+            const fleetDist = data.fleetDistribution || [];
+            if (charts.health) charts.health.destroy();
+            charts.health = new Chart(fleetCtxEl.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: fleetDist.map(f => f.status),
+                    datasets: [{
+                        data: fleetDist.map(f => f.count),
+                        backgroundColor: ['#10b981','#f59e0b','#ef4444','#6366f1','#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '75%',
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
+                }
+            });
+        }
 
         // Top Vehicles Pie Chart
-        const topVeh = (data.topVehicles || []).slice(0, 6);
-        const pieCtx = document.getElementById('topVehiclesPieChart').getContext('2d');
-        charts.topPie = new Chart(pieCtx, {
-            type: 'pie',
-            data: {
-                labels: topVeh.map(c => `${c.brand} ${c.model}`),
-                datasets: [{
-                    data: topVeh.map(c => c.booking_count || 0),
-                    backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
-            }
-        });
+        const topVehEl = document.getElementById('topVehiclesPieChart');
+        if (topVehEl) {
+            const topVeh = (data.topVehicles || []).slice(0, 6);
+            if (charts.topPie) charts.topPie.destroy();
+            charts.topPie = new Chart(topVehEl.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: topVeh.map(c => `${c.brand} ${c.model}`),
+                    datasets: [{
+                        data: topVeh.map(c => c.booking_count || 0),
+                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
+                }
+            });
+        }
     }
 
     // --- INSPECTIONS LOGIC ---
