@@ -783,54 +783,46 @@
             <div class="label">System-wide bookings</div>
         </div>
 
-        <!-- Collapsible: Revenue Line Chart -->
+        <!-- Collapsible: Revenue Line Chart (collapsed by default) -->
         <div class="chart-card" id="cc-revenue">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('revenue')">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('revenue')">
                 <span>Revenue Trend (Last 30 Days)</span>
-                <i id="cc-icon-revenue" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+                <i id="cc-icon-revenue" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
             </h3>
-            <div id="cc-body-revenue" class="chart-container">
+            <div id="cc-body-revenue" class="chart-container" style="display:none;margin-top:16px;">
                 <canvas id="revenueChart"></canvas>
             </div>
         </div>
 
-        <!-- Collapsible: Total Bookings Bar Chart -->
+        <!-- Collapsible: Total Bookings Bar Chart (collapsed by default) -->
         <div class="chart-card" id="cc-bookings">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('bookings')">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('bookings')">
                 <span>Bookings per Day</span>
-                <i id="cc-icon-bookings" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+                <i id="cc-icon-bookings" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
             </h3>
-            <div id="cc-body-bookings" class="chart-container">
+            <div id="cc-body-bookings" class="chart-container" style="display:none;margin-top:16px;">
                 <canvas id="bookingsChart"></canvas>
             </div>
         </div>
 
-        <!-- Collapsible: Fleet Health Doughnut -->
-        <div class="chart-card" id="cc-fleet">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('fleet')">
-                <span>Fleet Health</span>
-                <i id="cc-icon-fleet" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
-            </h3>
-            <div id="cc-body-fleet" class="chart-container">
-                <canvas id="fleetHealthChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Collapsible: Top Vehicles Pie Chart -->
+        <!-- Collapsible: Top Vehicles Pie Chart (collapsed by default) -->
         <div class="chart-card" id="cc-topveh">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('topveh')">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('topveh')">
                 <span>Top Performing Vehicles</span>
-                <i id="cc-icon-topveh" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+                <i id="cc-icon-topveh" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
             </h3>
-            <div id="cc-body-topveh" class="chart-container">
+            <div id="cc-body-topveh" class="chart-container" style="display:none;margin-top:16px;">
                 <canvas id="topVehiclesPieChart"></canvas>
             </div>
         </div>
 
-        <!-- Top Grossing Table -->
-        <div class="chart-card" style="height: auto;">
-            <h3>Top Grossing Vehicles</h3>
-            <div style="overflow-x: auto;">
+        <!-- Top Grossing Table (collapsed by default) -->
+        <div class="chart-card" style="height:auto;" id="cc-table">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('table')">
+                <span>Top Grossing Vehicles</span>
+                <i id="cc-icon-table" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-table" style="display:none;margin-top:16px;overflow-x:auto;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                     <thead>
                         <tr style="text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border);">
@@ -3709,6 +3701,10 @@
         const collapsed = body.style.display === 'none';
         body.style.display = collapsed ? '' : 'none';
         if (icon) icon.className = collapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+        // If expanding a chart canvas, trigger resize so Chart.js renders correctly
+        if (collapsed) {
+            setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 50);
+        }
     }
 
     let charts = {};
