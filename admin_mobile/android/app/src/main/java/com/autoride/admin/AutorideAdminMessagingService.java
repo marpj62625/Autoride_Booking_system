@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class AutorideAdminMessagingService extends FirebaseMessagingService {
 
     private static final String CHANNEL_ID   = "autoride_admin_notifications";
@@ -26,56 +27,52 @@ public class AutorideAdminMessagingService extends FirebaseMessagingService {
     }
 
     @Override
-    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
-        super.onMessageReceived(remoteMessage);
+    public void onMessageReceived(@NonNull RemoteMessage message) {
+        super.onMessageReceived(message);
 
         String title = "Autoride Admin";
         String body  = "";
 
-        if (remoteMessage.getNotification() != null) {
-            RemoteMessage.Notification n = remoteMessage.getNotification();
+        if (message.getNotification() != null) {
+            RemoteMessage.Notification n = message.getNotification();
             if (n.getTitle() != null) title = n.getTitle();
             if (n.getBody()  != null) body  = n.getBody();
         }
-
-        if (body.isEmpty() && remoteMessage.getData().containsKey("body")) {
-            body = remoteMessage.getData().get("body");
-        }
-        if (remoteMessage.getData().containsKey("title")) {
-            title = remoteMessage.getData().get("title");
-        }
+        if (body.isEmpty() && message.getData().containsKey("body"))
+            body = message.getData().get("body");
+        if (message.getData().containsKey("title"))
+            title = message.getData().get("title");
 
         showNotification(title, body);
     }
 
     private void showNotification(String title, String body) {
-        NotificationManager manager =
+        NotificationManager mgr =
             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Autoride admin operational alerts");
-            channel.enableVibration(true);
-            manager.createNotificationChannel(channel);
+            NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
+            ch.setDescription("Autoride admin operational alerts");
+            ch.enableVibration(true);
+            mgr.createNotificationChannel(ch);
         }
 
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        int flags = PendingIntent.FLAG_ONE_SHOT |
-                    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, flags);
+        Intent intent = new Intent(this, MainActivity.class)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        int piFlags = PendingIntent.FLAG_ONE_SHOT |
+            (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
+        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, piFlags);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(pendingIntent);
-
-        manager.notify((int) System.currentTimeMillis(), builder.build());
+        mgr.notify((int) System.currentTimeMillis(),
+            new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pi)
+                .build());
     }
 }
