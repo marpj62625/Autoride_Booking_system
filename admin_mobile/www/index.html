@@ -4826,9 +4826,17 @@
             el.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                     <h1 class="page-title" style="margin:0;">Live Chat</h1>
-                    <button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:white;width:40px;height:40px;border-radius:12px;"><i class="fas fa-sync-alt"></i></button>
+                    <button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-main);width:40px;height:40px;border-radius:12px;cursor:pointer;"><i class="fas fa-sync-alt"></i></button>
                 </div>
-                <div id="acInboxList"><div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div></div>`;
+                <div id="acInboxList"><div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div></div>
+                <div style="margin-top:16px;">
+                    <button onclick="AdminChat.showUserSearch()" style="width:100%;padding:12px;background:var(--primary);border:none;border-radius:12px;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><i class="fas fa-plus"></i> Start New Conversation</button>
+                </div>
+                <div id="acUserSearch" style="display:none;margin-top:12px;">
+                    <input type="text" id="acUserSearchInput" placeholder="Search user by name or email…" oninput="AdminChat.searchUsers(this.value)"
+                        style="width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+                    <div id="acUserSearchResults" style="margin-top:8px;"></div>
+                </div>`;
 
             fetch(`${API_URL}/chat/inbox?viewer_type=admin&viewer_id=${aid}`)
                 .then(r => r.json())
@@ -4836,7 +4844,7 @@
                     const list = document.getElementById('acInboxList');
                     if (!list) return;
                     if (!Array.isArray(data) || !data.length) {
-                        list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-comments" style="font-size:2rem;margin-bottom:12px;display:block;"></i>No conversations yet.</div>';
+                        list.innerHTML = '<div style="text-align:center;padding:30px 20px;color:var(--text-muted);"><i class="fas fa-comments" style="font-size:2rem;margin-bottom:12px;display:block;opacity:0.4;"></i><p style="font-size:0.85rem;">No conversations yet.<br>Start one below.</p></div>';
                         return;
                     }
                     list.innerHTML = data.map(c => {
@@ -4863,7 +4871,42 @@
                 });
         }
 
-        // ?? Conversation ???????????????????????????????????????
+        function showUserSearch() {
+            const box = document.getElementById('acUserSearch');
+            if (!box) return;
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            if (box.style.display === 'block') {
+                const inp = document.getElementById('acUserSearchInput');
+                if (inp) { inp.focus(); inp.value = ''; }
+                document.getElementById('acUserSearchResults').innerHTML = '';
+            }
+        }
+
+        function searchUsers(q) {
+            const res = document.getElementById('acUserSearchResults');
+            if (!res) return;
+            if (!q || q.length < 2) { res.innerHTML = ''; return; }
+            fetch(`${API_URL}/users/search?q=${encodeURIComponent(q)}&limit=10`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!Array.isArray(data) || !data.length) {
+                        res.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);padding:8px;">No users found.</p>';
+                        return;
+                    }
+                    res.innerHTML = data.map(u =>
+                        `<div class="ac-inbox-item" style="margin-bottom:4px;" onclick="AdminChat.openConversation(${u.id},'${_esc(u.full_name || u.email)}')">
+                            <div class="ac-avatar" style="font-size:0.85rem;">${(u.full_name||'U').charAt(0).toUpperCase()}</div>
+                            <div class="ac-inbox-info">
+                                <div class="ac-inbox-name">${_esc(u.full_name || 'Unknown')}</div>
+                                <div class="ac-inbox-preview">${_esc(u.email || '')}</div>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>
+                        </div>`
+                    ).join('');
+                })
+                .catch(() => { res.innerHTML = '<p style="font-size:0.8rem;color:var(--danger);padding:8px;">Search failed.</p>'; });
+        }
+
         function openConversation(userId, userName) {
             stopPolling();
             _currentUserId = userId;
@@ -4961,7 +5004,7 @@
             if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
         }
 
-        return { loadInbox, openConversation, send, stopPolling };
+        return { loadInbox, openConversation, send, stopPolling, showUserSearch, searchUsers };
     })();
 
     window.AdminChat = AdminChat;

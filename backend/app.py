@@ -8345,6 +8345,29 @@ def mark_admin_notification_read(notif_id):
 # CHAT ENDPOINTS
 # ?????????????????????????????????????????????
 
+@app.route('/users/search', methods=['GET'])
+def users_search():
+    """Search users by name or email. Used by admin chat to start new conversations."""
+    q = (request.args.get('q') or '').strip()
+    limit = min(int(request.args.get('limit', 10)), 50)
+    if len(q) < 2:
+        return jsonify([]), 200
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, full_name, email FROM users
+            WHERE full_name ILIKE %s OR email ILIKE %s
+            ORDER BY full_name ASC
+            LIMIT %s
+        """, (f'%{q}%', f'%{q}%', limit))
+        rows = cur.fetchall()
+        return jsonify([dict(r) for r in rows]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/chat/send', methods=['POST'])
 def chat_send():
     """Send a chat message. Works for both user?admin and admin?user."""
@@ -8508,10 +8531,25 @@ def chat_mark_read():
 
 @app.route('/chat/admins', methods=['GET'])
 def chat_list_admins():
-    """Return list of active admins a customer can chat with."""
+    """Return list of active admins a customer can chat with.
+    Falls back to all admins if is_active column doesn't exist yet.
+    """
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, username FROM admins WHERE is_active=TRUE ORDER BY id ASC")
+        # Check if is_active column exists
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name='admins' AND column_name='is_active'
+        """)
+        has_col = cur.fetchone()
+        if has_col:
+            cur.execute("""
+                SELECT id, username FROM admins
+                WHERE is_active IS TRUE OR is_active IS NULL
+                ORDER BY id ASC
+            """)
+        else:
+            cur.execute("SELECT id, username FROM admins ORDER BY id ASC")
         rows = cur.fetchall()
         return jsonify([dict(r) for r in rows]), 200
     except Exception as e:

@@ -3317,24 +3317,34 @@ var LiveChat = (function () {
       .then(function (admins) {
         var body = document.getElementById('liveChatInboxBody');
         if (!body) return;
+
+        // If no admins returned, show a generic "Support Team" fallback
         if (!admins || !admins.length) {
-          body.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>No support agents available right now.</p></div>';
+          admins = [{ id: 1, username: 'Support Team' }];
+        }
+
+        // If only one admin, skip the inbox and go straight to conversation
+        if (admins.length === 1) {
+          openConversation(admins[0].id, admins[0].username);
           return;
         }
-        body.innerHTML = admins.map(function (a) {
-          return '<div class="chat-inbox-item" onclick="LiveChat.openConversation(' + a.id + ',\'' + escapeHtml(a.username) + '\')">' +
-            '<div class="chat-inbox-avatar"><i class="fas fa-headset"></i></div>' +
-            '<div class="chat-inbox-info">' +
-              '<div class="chat-inbox-name">' + escapeHtml(a.username) + '</div>' +
-              '<div class="chat-inbox-preview">Tap to start chatting</div>' +
-            '</div>' +
-            '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
-          '</div>';
-        }).join('');
+
+        body.innerHTML =
+          '<p style="font-size:0.8rem;color:var(--text-secondary);padding:0 4px 12px;">Choose a support agent to chat with:</p>' +
+          admins.map(function (a) {
+            return '<div class="chat-inbox-item" onclick="LiveChat.openConversation(' + a.id + ',\'' + escapeHtml(a.username) + '\')">' +
+              '<div class="chat-inbox-avatar"><i class="fas fa-headset"></i></div>' +
+              '<div class="chat-inbox-info">' +
+                '<div class="chat-inbox-name">' + escapeHtml(a.username) + '</div>' +
+                '<div class="chat-inbox-preview">Tap to start chatting</div>' +
+              '</div>' +
+              '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
+            '</div>';
+          }).join('');
       })
       .catch(function () {
-        var body = document.getElementById('liveChatInboxBody');
-        if (body) body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Could not load agents.</p></div>';
+        // On error, fall back to admin id=1 directly
+        openConversation(1, 'Support Team');
       });
   }
 
