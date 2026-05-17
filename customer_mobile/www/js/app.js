@@ -373,6 +373,7 @@ function showOverlay(id) {
   if (id === 'page-split-payment') loadSplitPayment();
   if (id === 'page-support') loadSupport();
   if (id === 'page-chatbot') loadChatbot();
+  if (id === 'page-livechat') loadLiveChat();
   if (id === 'page-newsletter') loadNewsletter();
 }
 
@@ -382,6 +383,7 @@ function closeOverlay(id) {
   el.classList.remove('active');
   el.style.display = 'none';
   if (id === 'page-gps-map') stopGpsPolling();
+  if (id === 'page-livechat') LiveChat.stopPolling();
 }
 
 function statusPill(status) {
@@ -3288,4 +3290,172 @@ function doSubscribeNewsletter() {
     .then(function() { showToast('Subscribed successfully!', 'success'); closeOverlay('page-newsletter'); })
     .catch(function(err) { if (errEl) errEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
+}
+
+// ============================================================
+// LIVE CHAT  (customer ? admin)
+// ============================================================
+var LiveChat = (function () {
+  var _pollTimer = null;
+  var _currentAdminId = null;
+  var _lastMsgId = 0;
+
+  // ?? Inbox: pick an admin to chat with ??????????????????????
+  function loadInbox() {
+    var el = document.getElementById('liveChatContent');
+    if (!el) return;
+    el.innerHTML =
+      '<div class="page-header">' +
+        '<button class="back-btn" onclick="closeOverlay(\'page-livechat\')"><i class="fas fa-arrow-left"></i></button>' +
+        '<h2>Live Chat</h2>' +
+      '</div>' +
+      '<div id="liveChatInboxBody" class="scroll-content">' +
+        '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>' +
+      '</div>';
+
+    apiCall('/chat/admins')
+      .then(function (admins) {
+        var body = document.getElementById('liveChatInboxBody');
+        if (!body) return;
+        if (!admins || !admins.length) {
+          body.innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><p>No support agents available right now.</p></div>';
+          return;
+        }
+        body.innerHTML = admins.map(function (a) {
+          return '<div class="chat-inbox-item" onclick="LiveChat.openConversation(' + a.id + ',\'' + escapeHtml(a.username) + '\')">' +
+            '<div class="chat-inbox-avatar"><i class="fas fa-headset"></i></div>' +
+            '<div class="chat-inbox-info">' +
+              '<div class="chat-inbox-name">' + escapeHtml(a.username) + '</div>' +
+              '<div class="chat-inbox-preview">Tap to start chatting</div>' +
+            '</div>' +
+            '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
+          '</div>';
+        }).join('');
+      })
+      .catch(function () {
+        var body = document.getElementById('liveChatInboxBody');
+        if (body) body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Could not load agents.</p></div>';
+      });
+  }
+
+  // ?? Conversation view ??????????????????????????????????????
+  function openConversation(adminId, adminName) {
+    _currentAdminId = adminId;
+    _lastMsgId = 0;
+    stopPolling();
+
+    var el = document.getElementById('liveChatContent');
+    if (!el) return;
+    el.innerHTML =
+      '<div class="page-header">' +
+        '<button class="back-btn" onclick="LiveChat.backToInbox()"><i class="fas fa-arrow-left"></i></button>' +
+        '<h2>' + escapeHtml(adminName) + '</h2>' +
+      '</div>' +
+      '<div class="chat-messages" id="lcMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0;height:calc(100% - 120px);"></div>' +
+      '<div class="chat-input-row">' +
+        '<input type="text" id="lcInput" placeholder="Type a message…" onkeydown="if(event.key===\'Enter\')LiveChat.send()">' +
+        '<button onclick="LiveChat.send()"><i class="fas fa-paper-plane"></i></button>' +
+      '</div>';
+
+    // Mark incoming as read
+    apiCall('/chat/mark-read', {
+      method: 'POST',
+      body: JSON.stringify({ receiver_type: 'user', receiver_id: currentUser.id, sender_type: 'admin', sender_id: adminId })
+    }).catch(function () {});
+
+    fetchMessages(true);
+    _pollTimer = setInterval(function () { fetchMessages(false); }, 4000);
+  }
+
+  function fetchMessages(initial) {
+    if (!_currentAdminId || !currentUser.id) return;
+    apiCall('/chat/messages?user_id=' + currentUser.id + '&admin_id=' + _currentAdminId + '&limit=100')
+      .then(function (msgs) {
+        var container = document.getElementById('lcMessages');
+        if (!container) return;
+        if (!msgs || !msgs.length) {
+          if (initial) container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:20px;">No messages yet. Say hello!</div>';
+          return;
+        }
+        // Only re-render if there are new messages
+        var latestId = msgs[msgs.length - 1].id;
+        if (latestId === _lastMsgId && !initial) return;
+        _lastMsgId = latestId;
+
+        var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+        container.innerHTML = msgs.map(function (m) {
+          var isMe = m.sender_type === 'user';
+          var cls = isMe ? 'user' : 'admin';
+          var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+          return '<div class="chat-msg ' + cls + '">' +
+            escapeHtml(m.message) +
+            '<span class="chat-ts">' + ts + '</span>' +
+          '</div>';
+        }).join('');
+
+        if (initial || atBottom) container.scrollTop = container.scrollHeight;
+
+        // Mark new admin messages as read
+        apiCall('/chat/mark-read', {
+          method: 'POST',
+          body: JSON.stringify({ receiver_type: 'user', receiver_id: currentUser.id, sender_type: 'admin', sender_id: _currentAdminId })
+        }).catch(function () {});
+      })
+      .catch(function () {});
+  }
+
+  function send() {
+    var inputEl = document.getElementById('lcInput');
+    if (!inputEl) return;
+    var msg = (inputEl.value || '').trim();
+    if (!msg || !_currentAdminId || !currentUser.id) return;
+    inputEl.value = '';
+    inputEl.disabled = true;
+
+    apiCall('/chat/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        sender_type: 'user',
+        sender_id: currentUser.id,
+        receiver_type: 'admin',
+        receiver_id: _currentAdminId,
+        message: msg
+      })
+    })
+      .then(function () { fetchMessages(false); })
+      .catch(function (err) { showToast(err.message || 'Failed to send', 'error'); })
+      .finally(function () { if (inputEl) inputEl.disabled = false; });
+  }
+
+  function backToInbox() {
+    stopPolling();
+    _currentAdminId = null;
+    loadInbox();
+  }
+
+  function stopPolling() {
+    if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+  }
+
+  return {
+    loadInbox: loadInbox,
+    openConversation: openConversation,
+    send: send,
+    backToInbox: backToInbox,
+    stopPolling: stopPolling
+  };
+})();
+
+function loadLiveChat() {
+  LiveChat.loadInbox();
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

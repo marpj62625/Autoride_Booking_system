@@ -410,6 +410,60 @@ with app.app_context():
 
     migrate_notifications()
 
+def migrate_chat():
+
+    """Creates the chat_messages table for in-app admin-customer chat."""
+
+    try:
+
+        cur = get_cursor()
+
+        cur.execute("""
+
+            CREATE TABLE IF NOT EXISTS chat_messages (
+
+                id           BIGSERIAL PRIMARY KEY,
+
+                sender_type  VARCHAR(10) NOT NULL CHECK (sender_type IN ('user','admin')),
+
+                sender_id    INTEGER NOT NULL,
+
+                receiver_type VARCHAR(10) NOT NULL CHECK (receiver_type IN ('user','admin')),
+
+                receiver_id  INTEGER NOT NULL,
+
+                message      TEXT NOT NULL,
+
+                is_read      BOOLEAN NOT NULL DEFAULT FALSE,
+
+                created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+
+            )
+
+        """)
+
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_chat_user ON chat_messages (sender_id, receiver_id, created_at DESC)")
+
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_chat_receiver ON chat_messages (receiver_type, receiver_id, is_read)")
+
+        commit_db()
+
+        print("DEBUG: Chat Migration Successful")
+
+    except Exception as e:
+
+        print(f"DEBUG: Chat Migration Failed: {e}")
+
+    finally:
+
+        if 'cur' in locals(): cur.close()
+
+
+
+with app.app_context():
+
+    migrate_chat()
+
 def migrate_fcm_tokens():
     """Adds fcm_token column to users and admins tables for push notifications."""
     try:
@@ -8281,6 +8335,185 @@ def mark_admin_notification_read(notif_id):
         if entry.get('created_at'):
             entry['created_at'] = entry['created_at'].isoformat()
         return jsonify(entry), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+# ?????????????????????????????????????????????
+# CHAT ENDPOINTS
+# ?????????????????????????????????????????????
+
+@app.route('/chat/send', methods=['POST'])
+def chat_send():
+    """Send a chat message. Works for both user?admin and admin?user."""
+    import psycopg as _psycopg
+    from config import SUPABASE_DB_URL as _DB_URL
+    from psycopg.rows import dict_row as _dict_row
+    data = request.get_json() or {}
+    sender_type   = data.get('sender_type')    # 'user' or 'admin'
+    sender_id     = data.get('sender_id')
+    receiver_type = data.get('receiver_type')  # 'user' or 'admin'
+    receiver_id   = data.get('receiver_id')
+    message       = (data.get('message') or '').strip()
+    if not all([sender_type, sender_id, receiver_type, receiver_id, message]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    conn = None
+    try:
+        conn = _psycopg.connect(conninfo=_DB_URL)
+        cur  = conn.cursor(row_factory=_dict_row)
+        cur.execute("""
+            INSERT INTO chat_messages (sender_type, sender_id, receiver_type, receiver_id, message)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id, created_at
+        """, (sender_type, int(sender_id), receiver_type, int(receiver_id), message))
+        row = cur.fetchone()
+        conn.commit()
+        cur.close(); conn.close(); conn = None
+        return jsonify({'id': row['id'], 'created_at': row['created_at'].isoformat()}), 201
+    except Exception as e:
+        if conn:
+            try: conn.rollback()
+            except: pass
+            try: conn.close()
+            except: pass
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/chat/messages', methods=['GET'])
+def chat_messages():
+    """Get conversation between a user and an admin (paginated, newest last)."""
+    user_id  = request.args.get('user_id')
+    admin_id = request.args.get('admin_id')
+    limit    = int(request.args.get('limit', 50))
+    if not user_id or not admin_id:
+        return jsonify({'error': 'user_id and admin_id required'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, sender_type, sender_id, receiver_type, receiver_id,
+                   message, is_read, created_at
+            FROM chat_messages
+            WHERE (sender_type='user'  AND sender_id=%s   AND receiver_type='admin' AND receiver_id=%s)
+               OR (sender_type='admin' AND sender_id=%s   AND receiver_type='user'  AND receiver_id=%s)
+            ORDER BY created_at ASC
+            LIMIT %s
+        """, (int(user_id), int(admin_id), int(admin_id), int(user_id), limit))
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            if d.get('created_at'): d['created_at'] = d['created_at'].isoformat()
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/chat/inbox', methods=['GET'])
+def chat_inbox():
+    """
+    Get inbox for an admin: list of users who have chatted, with last message and unread count.
+    Or for a user: list of admins they've chatted with.
+    """
+    viewer_type = request.args.get('viewer_type')  # 'admin' or 'user'
+    viewer_id   = request.args.get('viewer_id')
+    if not viewer_type or not viewer_id:
+        return jsonify({'error': 'viewer_type and viewer_id required'}), 400
+    try:
+        cur = get_cursor()
+        if viewer_type == 'admin':
+            cur.execute("""
+                SELECT DISTINCT ON (other_id)
+                    CASE WHEN sender_type='user' THEN sender_id ELSE receiver_id END AS other_id,
+                    message AS last_message,
+                    created_at AS last_at,
+                    (SELECT COUNT(*) FROM chat_messages
+                     WHERE receiver_type='admin' AND receiver_id=%s AND sender_type='user'
+                       AND sender_id = CASE WHEN cm.sender_type='user' THEN cm.sender_id ELSE cm.receiver_id END
+                       AND is_read=FALSE) AS unread_count
+                FROM chat_messages cm
+                WHERE (sender_type='admin' AND sender_id=%s)
+                   OR (receiver_type='admin' AND receiver_id=%s)
+                ORDER BY other_id, created_at DESC
+            """, (int(viewer_id), int(viewer_id), int(viewer_id)))
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                d = dict(r)
+                if d.get('last_at'): d['last_at'] = d['last_at'].isoformat()
+                # Get user name
+                cur.execute("SELECT full_name, email FROM users WHERE id=%s", (d['other_id'],))
+                u = cur.fetchone()
+                d['other_name'] = u['full_name'] if u else 'Unknown'
+                d['other_email'] = u['email'] if u else ''
+                result.append(d)
+        else:
+            cur.execute("""
+                SELECT DISTINCT ON (other_id)
+                    CASE WHEN sender_type='admin' THEN sender_id ELSE receiver_id END AS other_id,
+                    message AS last_message,
+                    created_at AS last_at,
+                    (SELECT COUNT(*) FROM chat_messages
+                     WHERE receiver_type='user' AND receiver_id=%s AND sender_type='admin'
+                       AND is_read=FALSE) AS unread_count
+                FROM chat_messages cm
+                WHERE (sender_type='user' AND sender_id=%s)
+                   OR (receiver_type='user' AND receiver_id=%s)
+                ORDER BY other_id, created_at DESC
+            """, (int(viewer_id), int(viewer_id), int(viewer_id)))
+            rows = cur.fetchall()
+            result = []
+            for r in rows:
+                d = dict(r)
+                if d.get('last_at'): d['last_at'] = d['last_at'].isoformat()
+                cur.execute("SELECT username FROM admins WHERE id=%s", (d['other_id'],))
+                a = cur.fetchone()
+                d['other_name'] = a['username'] if a else 'Admin'
+                result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/chat/mark-read', methods=['POST'])
+def chat_mark_read():
+    """Mark all messages in a conversation as read for the receiver."""
+    data          = request.get_json() or {}
+    receiver_type = data.get('receiver_type')
+    receiver_id   = data.get('receiver_id')
+    sender_type   = data.get('sender_type')
+    sender_id     = data.get('sender_id')
+    if not all([receiver_type, receiver_id, sender_type, sender_id]):
+        return jsonify({'error': 'Missing fields'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            UPDATE chat_messages SET is_read=TRUE
+            WHERE receiver_type=%s AND receiver_id=%s
+              AND sender_type=%s   AND sender_id=%s
+              AND is_read=FALSE
+        """, (receiver_type, int(receiver_id), sender_type, int(sender_id)))
+        commit_db()
+        return jsonify({'message': 'Marked as read'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/chat/admins', methods=['GET'])
+def chat_list_admins():
+    """Return list of active admins a customer can chat with."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, username FROM admins WHERE is_active=TRUE ORDER BY id ASC")
+        rows = cur.fetchall()
+        return jsonify([dict(r) for r in rows]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
