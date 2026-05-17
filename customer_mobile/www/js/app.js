@@ -2608,6 +2608,7 @@ function submitModifyBooking(bookingId) {
 }
 
 
+function openPayBalanceScreen(bookingId, balance) {
   var el = document.getElementById('paymentContent');
   if (!el) return;
   el.innerHTML = '<div class="page-header">' +
