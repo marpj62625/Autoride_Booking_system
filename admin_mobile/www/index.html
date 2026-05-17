@@ -772,42 +772,62 @@
             <span id="headerTime">Loading time...</span>
         </div>
 
-
-
         <div class="stat-card">
             <h5>TOTAL REVENUE</h5>
             <div class="value" id="dashTotalRevenue">—</div>
-            <div class="stat-icon">??</div>
         </div>
 
         <div class="stat-card">
-            <h5>FLEET UTILIZATION</h5>
+            <h5>TOTAL BOOKINGS</h5>
             <div class="value" id="dashTotalBookings">—</div>
-            <div class="label">Total System Bookings</div>
-            <div class="stat-icon">??</div>
+            <div class="label">System-wide bookings</div>
         </div>
 
-        <div class="chart-card">
-            <h3>Revenue Performance (Last 30 Days)</h3>
-            <div class="chart-container">
+        <!-- Collapsible: Revenue Line Chart -->
+        <div class="chart-card" id="cc-revenue">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('revenue')">
+                <span>Revenue Trend (Last 30 Days)</span>
+                <i id="cc-icon-revenue" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-revenue" class="chart-container">
                 <canvas id="revenueChart"></canvas>
             </div>
         </div>
 
-        <div class="chart-card">
-            <h3>Fleet Health</h3>
-            <div class="chart-container">
+        <!-- Collapsible: Total Bookings Bar Chart -->
+        <div class="chart-card" id="cc-bookings">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('bookings')">
+                <span>Bookings per Day</span>
+                <i id="cc-icon-bookings" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-bookings" class="chart-container">
+                <canvas id="bookingsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Collapsible: Fleet Health Doughnut -->
+        <div class="chart-card" id="cc-fleet">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('fleet')">
+                <span>Fleet Health</span>
+                <i id="cc-icon-fleet" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-fleet" class="chart-container">
                 <canvas id="fleetHealthChart"></canvas>
             </div>
         </div>
 
-        <div class="chart-card">
-            <h3>User Verifications</h3>
-            <div class="chart-container">
-                <canvas id="userStatsChart"></canvas>
+        <!-- Collapsible: Top Vehicles Pie Chart -->
+        <div class="chart-card" id="cc-topveh">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('topveh')">
+                <span>Top Performing Vehicles</span>
+                <i id="cc-icon-topveh" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-topveh" class="chart-container">
+                <canvas id="topVehiclesPieChart"></canvas>
             </div>
         </div>
 
+        <!-- Top Grossing Table -->
         <div class="chart-card" style="height: auto;">
             <h3>Top Grossing Vehicles</h3>
             <div style="overflow-x: auto;">
@@ -1032,28 +1052,81 @@
 
     <!-- REPORTS TAB -->
     <div id="reports" class="tab-content" style="display: none;">
-        <h1 class="page-title">Analytics & Reports</h1>
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; display: grid;">
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted);">AVG REVENUE</h5>
-                <div class="value" id="repAvgRev" style="font-size: 1.2rem; font-weight: 700; color: var(--success);">?0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted);">ACTIVE FLEET</h5>
-                <div class="value" id="repActive" style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">0</div>
+        <h1 class="page-title">Analytics &amp; Reports</h1>
+
+        <!-- Date range filter -->
+        <div class="stat-card" style="padding: 14px; margin-bottom: 16px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div style="display:flex;gap:6px;">
+                    <button onclick="Reports.setFilter('day',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Day</button>
+                    <button onclick="Reports.setFilter('month',this)" class="rpt-filter-btn active-filter" style="padding:6px 12px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:white;font-size:0.72rem;font-weight:700;cursor:pointer;">Month</button>
+                    <button onclick="Reports.setFilter('year',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Year</button>
+                </div>
+                <input type="date" id="rptDateFrom" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
+                <input type="date" id="rptDateTo" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
             </div>
         </div>
+
+        <!-- Summary stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">AVG REVENUE / BOOKING</h5>
+                <div class="value" id="repAvgRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL BOOKINGS</h5>
+                <div class="value" id="repActive" style="font-size:1.2rem;font-weight:700;color:var(--primary);">0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL REVENUE</h5>
+                <div class="value" id="repTotalRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">ACTIVE FLEET</h5>
+                <div class="value" id="repFleet" style="font-size:1.2rem;font-weight:700;color:var(--amber);">0</div>
+            </div>
+        </div>
+
+        <!-- Revenue Line Chart -->
         <div class="chart-card">
-            <h3 style="margin-bottom: 15px;">Revenue Growth</h3>
-            <div class="chart-container" style="height: 200px;">
+            <h3 style="margin-bottom:15px;">Revenue Trend</h3>
+            <div class="chart-container" style="height:200px;">
                 <canvas id="reportsRevenueChart"></canvas>
             </div>
         </div>
-        <div class="chart-card" style="height: auto;">
-            <h3 style="margin-bottom: 15px;">Top Performing Vehicles</h3>
-            <div id="reportsTopVehicles" style="padding-bottom: 10px;">
-                <div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading analytics...</div>
+
+        <!-- Bookings Bar Chart -->
+        <div class="chart-card">
+            <h3 style="margin-bottom:15px;">Bookings per Period</h3>
+            <div class="chart-container" style="height:200px;">
+                <canvas id="reportsBookingsChart"></canvas>
             </div>
+        </div>
+
+        <!-- Top Vehicles Pie Chart -->
+        <div class="chart-card">
+            <h3 style="margin-bottom:15px;">Top Vehicles by Bookings</h3>
+            <div class="chart-container" style="height:220px;">
+                <canvas id="reportsTopPieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Vehicles List -->
+        <div class="chart-card" style="height:auto;">
+            <h3 style="margin-bottom:15px;">Top Performing Vehicles</h3>
+            <div id="reportsTopVehicles" style="padding-bottom:10px;">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading analytics...</div>
+            </div>
+        </div>
+
+        <!-- Export buttons -->
+        <div style="display:flex;gap:10px;margin-bottom:30px;">
+            <button onclick="Reports.exportExcel()" class="btn-primary" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+            <button onclick="Reports.printReport()" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-print"></i> Print
+            </button>
         </div>
     </div>
 
@@ -2244,7 +2317,15 @@
             if (tabId === 'tickets' && typeof Tickets !== 'undefined' && Tickets.data.length === 0) Tickets.refresh();
             if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
             if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
-            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) Reports.refresh();
+            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) {
+                // Set default date range (current month) on first open
+                const now = new Date();
+                const to = now.toISOString().split('T')[0];
+                const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                document.getElementById('rptDateFrom').value = from;
+                document.getElementById('rptDateTo').value = to;
+                Reports.refresh();
+            }
             if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
             if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
 
@@ -3307,58 +3388,197 @@
     // --- REPORTS MODULE ---
     const Reports = {
         chart: null,
+        chartBookings: null,
+        chartPie: null,
         _loaded: false,
+        _filter: 'month',
+        _rawData: null,
+
+        setFilter(period, btn) {
+            this._filter = period;
+            document.querySelectorAll('.rpt-filter-btn').forEach(b => {
+                b.style.background = 'var(--surface-container)';
+                b.style.borderColor = 'var(--border)';
+                b.style.color = 'var(--text-secondary)';
+            });
+            btn.style.background = 'var(--primary)';
+            btn.style.borderColor = 'var(--primary)';
+            btn.style.color = 'white';
+            // Set default date range based on period
+            const now = new Date();
+            const to = now.toISOString().split('T')[0];
+            let from;
+            if (period === 'day') {
+                from = to;
+            } else if (period === 'month') {
+                const d = new Date(now); d.setDate(1);
+                from = d.toISOString().split('T')[0];
+            } else {
+                const d = new Date(now); d.setMonth(0); d.setDate(1);
+                from = d.toISOString().split('T')[0];
+            }
+            document.getElementById('rptDateFrom').value = from;
+            document.getElementById('rptDateTo').value = to;
+            this.refresh();
+        },
+
         async refresh() {
             this._loaded = true;
             try {
-                const res = await fetch(`${API_BASE}/api/admin/detailed-stats`);
+                const from = document.getElementById('rptDateFrom').value;
+                const to = document.getElementById('rptDateTo').value;
+                const params = from && to ? `&date_from=${from}&date_to=${to}` : '';
+                const res = await fetch(`${API_BASE}/api/admin/detailed-stats?filter=${this._filter}${params}`);
                 const data = await res.json();
-                
-                document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(data.summary.total_revenue / (data.summary.total_bookings || 1)).toLocaleString();
-                document.getElementById('repActive').textContent = data.summary.total_bookings;
+                this._rawData = data;
 
-                this.renderChart(data.revenueTrend);
-                this.renderTop(data.topVehicles);
+                const totalRev = data.summary?.total_revenue || 0;
+                const totalBook = data.summary?.total_bookings || 0;
+                document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
+                document.getElementById('repActive').textContent = totalBook;
+                document.getElementById('repTotalRev').textContent = '\u20B1' + totalRev.toLocaleString();
+                document.getElementById('repFleet').textContent = data.summary?.active_fleet || 0;
+
+                this.renderRevenueChart(data.revenueTrend || []);
+                this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
+                this.renderPieChart(data.topVehicles || []);
+                this.renderTop(data.topVehicles || []);
             } catch (err) { console.error(err); }
         },
-        renderChart(trend) {
+
+        renderRevenueChart(trend) {
             const ctx = document.getElementById('reportsRevenueChart').getContext('2d');
             if (this.chart) this.chart.destroy();
             this.chart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: trend.map(t => t.day.split('-')[2]),
+                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
                     datasets: [{
                         label: 'Revenue',
-                        data: trend.map(t => t.amount),
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderColor: '#818cf8',
-                        borderWidth: 1,
-                        borderRadius: 4
+                        data: trend.map(t => t.amount || t.revenue || 0),
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6366f1'
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
+                options: { responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
                     }
                 }
             });
         },
+
+        renderBookingsChart(trend) {
+            const ctx = document.getElementById('reportsBookingsChart').getContext('2d');
+            if (this.chartBookings) this.chartBookings.destroy();
+            this.chartBookings = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+                    datasets: [{
+                        label: 'Bookings',
+                        data: trend.map(t => t.count || t.bookings || 0),
+                        backgroundColor: 'rgba(0,82,255,0.6)',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    }
+                }
+            });
+        },
+
+        renderPieChart(cars) {
+            const ctx = document.getElementById('reportsTopPieChart').getContext('2d');
+            if (this.chartPie) this.chartPie.destroy();
+            const top = cars.slice(0, 6);
+            this.chartPie = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: top.map(c => `${c.brand} ${c.model}`),
+                    datasets: [{
+                        data: top.map(c => c.booking_count || 0),
+                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'var(--text-secondary)', font: { size: 10 }, padding: 10, usePointStyle: true } }
+                    }
+                }
+            });
+        },
+
         renderTop(cars) {
             const container = document.getElementById('reportsTopVehicles');
-            container.innerHTML = cars.slice(0, 3).map(c => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: var(--surface-container); border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--border);">
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">${c.brand} ${c.model}</span>
-                        <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">${c.booking_count} bookings</span>
+            if (!cars.length) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px;">No data</p>'; return; }
+            container.innerHTML = cars.slice(0, 5).map((c, i) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:var(--surface-container);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+                        <div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);">${c.brand} ${c.model}</div>
+                            <div style="font-size:0.65rem;color:var(--text-muted);">${c.booking_count} bookings</div>
+                        </div>
                     </div>
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${c.revenue.toLocaleString()}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">&#8369;${(c.revenue||0).toLocaleString()}</span>
                 </div>
             `).join('');
+        },
+
+        exportExcel() {
+            const data = this._rawData;
+            if (!data) { showNotification('No data to export', 'error'); return; }
+            // Build CSV (opens as Excel)
+            const rows = [['Vehicle', 'Bookings', 'Revenue (PHP)']];
+            (data.topVehicles || []).forEach(c => rows.push([`${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]));
+            rows.push([]);
+            rows.push(['Date', 'Revenue']);
+            (data.revenueTrend || []).forEach(t => rows.push([t.day || '', t.amount || 0]));
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Report exported!', 'success');
+        },
+
+        printReport() {
+            const data = this._rawData;
+            if (!data) { showNotification('No data to print', 'error'); return; }
+            const totalRev = data.summary?.total_revenue || 0;
+            const totalBook = data.summary?.total_bookings || 0;
+            const rows = (data.topVehicles || []).map((c, i) =>
+                `<tr><td>${i+1}</td><td>${c.brand} ${c.model}</td><td>${c.booking_count}</td><td>&#8369;${(c.revenue||0).toLocaleString()}</td></tr>`
+            ).join('');
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html><head><title>Autoride Report</title>
+                <style>body{font-family:Arial,sans-serif;padding:20px;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;}</style>
+                </head><body>
+                <h1>Autoride Sales Report</h1>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                <p><strong>Total Revenue:</strong> &#8369;${totalRev.toLocaleString()} &nbsp;&nbsp; <strong>Total Bookings:</strong> ${totalBook}</p>
+                <table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead><tbody>${rows}</tbody></table>
+                <script>window.print();window.close();<\/script>
+                </body></html>
+            `);
+            win.document.close();
         }
     };
 
@@ -3457,27 +3677,29 @@
         `).join('');
     }
 
+    // --- CHART COLLAPSE TOGGLE ---
+    function toggleChart(id) {
+        const body = document.getElementById('cc-body-' + id);
+        const icon = document.getElementById('cc-icon-' + id);
+        if (!body) return;
+        const collapsed = body.style.display === 'none';
+        body.style.display = collapsed ? '' : 'none';
+        if (icon) icon.className = collapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    }
+
     let charts = {};
     function initCharts(data) {
         if (charts.revenue) charts.revenue.destroy();
+        if (charts.bookings) charts.bookings.destroy();
         if (charts.health) charts.health.destroy();
-        if (charts.user) charts.user.destroy();
+        if (charts.topPie) charts.topPie.destroy();
 
-        const defaultOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-            }
+        const defaultScales = {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
         };
 
-        // Revenue Chart
+        // Revenue Line Chart
         const revTrend = data.revenueTrend || [];
         const revCtx = document.getElementById('revenueChart').getContext('2d');
         charts.revenue = new Chart(revCtx, {
@@ -3497,10 +3719,26 @@
                     pointBorderWidth: 2
                 }]
             },
-            options: defaultOptions
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Fleet Health
+        // Bookings Bar Chart
+        const bookCtx = document.getElementById('bookingsChart').getContext('2d');
+        charts.bookings = new Chart(bookCtx, {
+            type: 'bar',
+            data: {
+                labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
+                datasets: [{
+                    label: 'Bookings',
+                    data: revTrend.length > 0 ? revTrend.map(t => t.count || 0) : [0],
+                    backgroundColor: 'rgba(0,82,255,0.6)',
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+        });
+
+        // Fleet Health Doughnut
         const dist = data.fleetDistribution || [];
         const fleetCtx = document.getElementById('fleetHealthChart').getContext('2d');
         charts.health = new Chart(fleetCtx, {
@@ -3515,45 +3753,27 @@
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true }
-                    }
-                }
+                responsive: true, maintainAspectRatio: false, cutout: '75%',
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
             }
         });
 
-        // User Stats Chart
-        const userStats = data.userStats || { email: { verified: 0, unverified: 0 }, license: { approved: 0, pending: 0, rejected: 0 } };
-        const userCtx = document.getElementById('userStatsChart').getContext('2d');
-        charts.user = new Chart(userCtx, {
-            type: 'bar',
+        // Top Vehicles Pie Chart
+        const topVeh = (data.topVehicles || []).slice(0, 6);
+        const pieCtx = document.getElementById('topVehiclesPieChart').getContext('2d');
+        charts.topPie = new Chart(pieCtx, {
+            type: 'pie',
             data: {
-                labels: ['Email', 'License'],
-                datasets: [
-                    { label: 'Verified', data: [userStats.email.verified, userStats.license.approved], backgroundColor: '#10b981', borderRadius: 6 },
-                    { label: 'Pending', data: [userStats.email.unverified, userStats.license.pending], backgroundColor: '#6366f1', borderRadius: 6 },
-                    { label: 'Rejected', data: [0, userStats.license.rejected], backgroundColor: '#ef4444', borderRadius: 6 }
-                ]
+                labels: topVeh.map(c => `${c.brand} ${c.model}`),
+                datasets: [{
+                    data: topVeh.map(c => c.booking_count || 0),
+                    backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                    borderWidth: 0
+                }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#94a3b8', font: { weight: '600', size: 10 }, usePointStyle: true }
-                    }
-                },
-                scales: {
-                    x: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8' } },
-                    y: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8' } }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
             }
         });
     }
