@@ -908,10 +908,30 @@
 
     <!-- ACTIVITY LOG TAB -->
     <div id="activity" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Activity Log</h1>
             <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
         </div>
+
+        <!-- Search -->
+        <div style="position:relative; margin-bottom: 12px;">
+            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
+            <input id="activitySearch" type="text" placeholder="Search by name, action or details…"
+                oninput="Activity.applyFilters()"
+                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+        </div>
+
+        <!-- Filter chips -->
+        <div id="activityFilterChips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
+            <button class="act-chip act-chip-active" data-filter="all"    onclick="Activity.setFilter('all',this)"    style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+            <button class="act-chip" data-filter="login"   onclick="Activity.setFilter('login',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Login</button>
+            <button class="act-chip" data-filter="approve" onclick="Activity.setFilter('approve',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Approve</button>
+            <button class="act-chip" data-filter="reject"  onclick="Activity.setFilter('reject',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Reject</button>
+            <button class="act-chip" data-filter="create"  onclick="Activity.setFilter('create',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Create</button>
+            <button class="act-chip" data-filter="update"  onclick="Activity.setFilter('update',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Update</button>
+            <button class="act-chip" data-filter="delete"  onclick="Activity.setFilter('delete',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Delete</button>
+        </div>
+
         <div id="activityList" style="margin-bottom: 30px;">
             <div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading system logs...</div>
         </div>
@@ -3317,70 +3337,112 @@
     // --- ACTIVITY MODULE ---
     const Activity = {
         data: [],
+        _filter: 'all',
+
+        _colors: { login:'#6366f1', logout:'#94a3b8', approve:'#10b981', reject:'#ef4444', create:'#3b82f6', update:'#f59e0b', delete:'#ef4444', view:'#8b5cf6' },
+
+        _color(action) {
+            const k = Object.keys(this._colors).find(k => action.toLowerCase().includes(k));
+            return k ? this._colors[k] : '#6366f1';
+        },
+
+        _icon(action) {
+            const a = action.toLowerCase();
+            if (a.includes('login'))  return 'fa-sign-in-alt';
+            if (a.includes('logout')) return 'fa-sign-out-alt';
+            if (a.includes('approve')) return 'fa-check';
+            if (a.includes('reject')) return 'fa-times';
+            if (a.includes('delete')) return 'fa-trash';
+            if (a.includes('create') || a.includes('add')) return 'fa-plus';
+            if (a.includes('update') || a.includes('edit')) return 'fa-pen';
+            return 'fa-history';
+        },
+
+        setFilter(filter, btn) {
+            this._filter = filter;
+            document.querySelectorAll('.act-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background   = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor  = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color        = active ? '#fff' : 'var(--text-secondary)';
+            });
+            this.applyFilters();
+        },
+
+        applyFilters() {
+            const q = (document.getElementById('activitySearch')?.value || '').toLowerCase().trim();
+            const f = this._filter;
+            const filtered = this.data.filter(l => {
+                const matchF = f === 'all' || l.action.toLowerCase().includes(f);
+                const matchQ = !q ||
+                    (l.admin_name || '').toLowerCase().includes(q) ||
+                    (l.action     || '').toLowerCase().includes(q) ||
+                    (l.details    || '').toLowerCase().includes(q);
+                return matchF && matchQ;
+            });
+            this._render(filtered);
+        },
+
+        _render(logs) {
+            const list = document.getElementById('activityList');
+            if (!list) return;
+            if (!logs.length) {
+                list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No matching logs found.</div>';
+                return;
+            }
+            const now = new Date();
+            list.innerHTML = `<ul style="list-style:none;margin:0;padding:0;background:var(--surface-card,var(--surface));border-radius:16px;overflow:hidden;">` +
+                logs.map((l, i) => {
+                    const color = this._color(l.action);
+                    const icon  = this._icon(l.action);
+                    const dt    = new Date(l.created_at);
+                    const isToday = dt.toDateString() === now.toDateString();
+                    const dateStr = isToday
+                        ? dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                        : dt.toLocaleDateString([], {month:'numeric', day:'numeric', year:'2-digit'});
+                    return `
+                    <li style="display:flex;align-items:center;gap:14px;padding:13px 16px;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
+                        <div style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;color:${color};font-size:1rem;">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.admin_name || 'System'}</div>
+                            <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.action.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+                            <div style="font-size:0.73rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.details || '-'}</div>
+                        </div>
+                        <div style="flex-shrink:0;display:flex;align-items:center;gap:4px;">
+                            <span style="font-size:0.72rem;color:${color};font-weight:600;">${dateStr}</span>
+                            <i class="fas fa-chevron-right" style="font-size:0.6rem;color:var(--text-muted);"></i>
+                        </div>
+                    </li>`;
+                }).join('') + `</ul>`;
+        },
+
         async refresh() {
             const list = document.getElementById('activityList');
             if (!list) return;
-            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
-                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading activity logs...</div>';
-            }
-
+            list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
             try {
                 const res = await apiFetch(`admin/activity-logs`);
                 const logs = await res.json();
                 this.data = logs || [];
-                
-                if (!logs || logs.length === 0) {
-                    list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">No activity logs found.</div>';
+                // Reset search + chips
+                const s = document.getElementById('activitySearch');
+                if (s) s.value = '';
+                this._filter = 'all';
+                document.querySelectorAll('.act-chip').forEach(b => {
+                    const active = b.dataset.filter === 'all';
+                    b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                    b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                    b.style.color       = active ? '#fff' : 'var(--text-secondary)';
+                });
+                if (!this.data.length) {
+                    list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No activity logs found.</div>';
                     return;
                 }
-
-                const actionColors = {
-                    login: '#6366f1', logout: '#94a3b8', approve: '#10b981', reject: '#ef4444',
-                    create: '#3b82f6', update: '#f59e0b', delete: '#ef4444', view: '#8b5cf6'
-                };
-                function actColor(action) {
-                    const key = Object.keys(actionColors).find(k => action.toLowerCase().includes(k));
-                    return key ? actionColors[key] : '#6366f1';
-                }
-                function actIcon(action) {
-                    const a = action.toLowerCase();
-                    if (a.includes('login')) return 'fa-sign-in-alt';
-                    if (a.includes('logout')) return 'fa-sign-out-alt';
-                    if (a.includes('approve')) return 'fa-check';
-                    if (a.includes('reject')) return 'fa-times';
-                    if (a.includes('delete')) return 'fa-trash';
-                    if (a.includes('create') || a.includes('add')) return 'fa-plus';
-                    if (a.includes('update') || a.includes('edit')) return 'fa-pen';
-                    return 'fa-history';
-                }
-                list.innerHTML = `<ul style="list-style:none;margin:0;padding:0;background:var(--surface-card,var(--surface));border-radius:16px;overflow:hidden;">` +
-                    logs.map((l, i) => {
-                        const color = actColor(l.action);
-                        const icon  = actIcon(l.action);
-                        const dt    = new Date(l.created_at);
-                        const now   = new Date();
-                        const isToday = dt.toDateString() === now.toDateString();
-                        const dateStr = isToday
-                            ? dt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                            : dt.toLocaleDateString([], {month:'numeric', day:'numeric', year:'2-digit'});
-                        return `
-                        <li style="display:flex;align-items:center;gap:14px;padding:13px 16px;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
-                            <div style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;color:${color};font-size:1rem;">
-                                <i class="fas ${icon}"></i>
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.admin_name || 'System'}</div>
-                                <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.action.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
-                                <div style="font-size:0.73rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.details || '-'}</div>
-                            </div>
-                            <div style="flex-shrink:0;display:flex;align-items:center;gap:4px;">
-                                <span style="font-size:0.72rem;color:${color};font-weight:600;">${dateStr}</span>
-                                <i class="fas fa-chevron-right" style="font-size:0.6rem;color:var(--text-muted);"></i>
-                            </div>
-                        </li>`;
-                    }).join('') + `</ul>`;
+                this._render(this.data);
             } catch (err) {
-                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--danger);">Failed to load logs.</div>';
+                list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--danger);">Failed to load logs.</div>';
             }
         }
     };
