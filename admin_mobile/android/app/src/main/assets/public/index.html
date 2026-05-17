@@ -3504,20 +3504,42 @@
         renderPieChart(cars) {
             const ctx = document.getElementById('reportsTopPieChart').getContext('2d');
             if (this.chartPie) this.chartPie.destroy();
-            const top = cars.slice(0, 6);
+            // Deduplicate by vehicle name, summing booking counts
+            const seen = {};
+            cars.forEach(c => {
+                const key = `${c.brand} ${c.model}`;
+                if (seen[key]) {
+                    seen[key].booking_count += (c.booking_count || 0);
+                } else {
+                    seen[key] = { label: key, booking_count: c.booking_count || 0 };
+                }
+            });
+            const deduped = Object.values(seen).sort((a, b) => b.booking_count - a.booking_count).slice(0, 5);
             this.chartPie = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: top.map(c => `${c.brand} ${c.model}`),
+                    labels: deduped.map(c => c.label),
                     datasets: [{
-                        data: top.map(c => c.booking_count || 0),
-                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                        data: deduped.map(c => c.booking_count),
+                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6'],
                         borderWidth: 0
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom', labels: { color: 'var(--text-secondary)', font: { size: 10 }, padding: 10, usePointStyle: true } }
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#6b7080',
+                                font: { size: 9 },
+                                padding: 6,
+                                usePointStyle: true,
+                                pointStyleWidth: 8,
+                                boxHeight: 8
+                            }
+                        }
                     }
                 }
             });
