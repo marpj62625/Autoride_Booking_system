@@ -965,89 +965,75 @@ def admin_verify_user():
     except (ValueError, TypeError) as e:
         return jsonify({"error": f"Invalid parameter types: {e}"}), 400
 
+    # Use a fresh direct connection — bypasses g.db_conn / PgBouncer state issues
+    import psycopg as _psycopg
+    from config import SUPABASE_DB_URL as _DB_URL
+    from psycopg.rows import dict_row as _dict_row
+    conn = None
     try:
-
-        cur = get_cursor()
+        conn = _psycopg.connect(conninfo=_DB_URL)
+        cur = conn.cursor(row_factory=_dict_row)
 
         cur.execute("UPDATE users SET is_verified = %s WHERE id = %s", (status, user_id))
-
         rows_updated = cur.rowcount
-
         print(f"DEBUG verify-action: user_id={user_id} status={status} rows_updated={rows_updated}")
 
-        # Verify the update actually took effect
+        # Verify before commit
         cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
         row = cur.fetchone()
-        print(f"DEBUG verify-action: after UPDATE, is_verified in DB = {row}")
+        print(f"DEBUG verify-action: pre-commit is_verified = {row}")
 
-        # Log activity if admin_id is provided
+        conn.commit()
+        print(f"DEBUG verify-action: committed successfully")
 
+        # Verify after commit on same connection
+        cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
+        row2 = cur.fetchone()
+        print(f"DEBUG verify-action: post-commit is_verified = {row2}")
+
+        cur.close()
+        conn.close()
+        conn = None
+
+        # Log activity
         if admin_id:
+            try:
+                log_cur = get_cursor()
+                log_cur.execute("SELECT username FROM admins WHERE id = %s", (admin_id,))
+                admin_row = log_cur.fetchone()
+                admin_name = admin_row['username'] if admin_row else f"Admin {admin_id}"
+                action_text = "Approved User Verification" if status == 2 else "Rejected User Verification"
+                log_activity(admin_id, admin_name, action_text, "user", user_id)
+            except Exception as log_err:
+                print(f"WARN verify-action: activity log failed: {log_err}")
 
-            cur.execute("SELECT username FROM admins WHERE id = %s", (admin_id,))
-
-            admin = cur.fetchone()
-
-            admin_name = admin['username'] if admin else f"Admin {admin_id}"
-
-            action_text = "Approved User Verification" if status == 2 else "Rejected User Verification"
-
-            log_activity(admin_id, admin_name, action_text, "user", user_id)
-
-            
-
-        commit_db()
-
-        print(f"DEBUG verify-action: commit_db() completed successfully")
-
-        
-
-        # Send SMS notification based on verification status
-
+        # Send notifications
         if status == 2:
-
             sms_service.notify_customer(user_id, compose_license_approved_sms())
-
             notification_service.notify_user(
-
                 user_id,
-
                 "License Approved",
-
                 "Your driver's license has been verified! You can now book vehicles on Autoride.",
-
                 'license_approved'
-
             )
-
         elif status == 0:
-
             sms_service.notify_customer(user_id, compose_license_rejected_sms())
-
             notification_service.notify_user(
-
                 user_id,
-
                 "License Rejected",
-
                 "Your driver's license was not approved. Please re-upload a valid document through the app.",
-
                 'license_rejected'
-
             )
-
-        
 
         return jsonify({"message": f"User status updated to {status}", "rows_updated": rows_updated}), 200
 
     except Exception as e:
-
         print(f"ERROR verify-action: {e}")
-
-        try:
-            get_db().rollback()
-        except Exception:
-            pass
+        if conn:
+            try: conn.rollback()
+            except Exception: pass
+            try: conn.close()
+            except Exception: pass
 
         return jsonify({"error": str(e)}), 500
 
@@ -1069,13 +1055,16 @@ def check_verify_status():
 
         cur = get_cursor()
 
+        # Force read from primary (not replica) to avoid stale reads after admin approval
+        cur.execute("SET TRANSACTION READ WRITE")
+
         cur.execute("SELECT is_verified, license_image_url FROM users WHERE id = %s", (user_id,))
 
         user = cur.fetchone()
 
         if not user: return jsonify({"error": "User not found"}), 404
 
-        return jsonify(user), 200
+        return jsonify(dict(user)), 200
 
     except Exception as e: return jsonify({"error": str(e)}), 500
 
