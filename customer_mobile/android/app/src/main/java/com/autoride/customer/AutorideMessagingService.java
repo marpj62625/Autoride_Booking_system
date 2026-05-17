@@ -6,19 +6,20 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 public class AutorideMessagingService extends FirebaseMessagingService {
 
-    private static final String CHANNEL_ID = "autoride_notifications";
+    private static final String CHANNEL_ID   = "autoride_notifications";
     private static final String CHANNEL_NAME = "Autoride Notifications";
 
     @Override
-    public void onNewToken(String token) {
+    public void onNewToken(@NonNull String token) {
         super.onNewToken(token);
-        // Store token in SharedPreferences so the app can send it to the backend on next launch
+        // Persist token so MainActivity can forward it to JS on next launch
         getSharedPreferences("autoride_prefs", Context.MODE_PRIVATE)
             .edit()
             .putString("fcm_token", token)
@@ -26,23 +27,20 @@ public class AutorideMessagingService extends FirebaseMessagingService {
     }
 
     @Override
-    public void onMessageReceived(RemoteMessage remoteMessage) {
+    public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
         String title = "Autoride";
-        String body = "";
+        String body  = "";
 
-        // Get notification payload
+        // Prefer notification payload
         if (remoteMessage.getNotification() != null) {
-            if (remoteMessage.getNotification().getTitle() != null) {
-                title = remoteMessage.getNotification().getTitle();
-            }
-            if (remoteMessage.getNotification().getBody() != null) {
-                body = remoteMessage.getNotification().getBody();
-            }
+            RemoteMessage.Notification n = remoteMessage.getNotification();
+            if (n.getTitle() != null) title = n.getTitle();
+            if (n.getBody()  != null) body  = n.getBody();
         }
 
-        // Fallback to data payload
+        // Fall back to data payload
         if (body.isEmpty() && remoteMessage.getData().containsKey("body")) {
             body = remoteMessage.getData().get("body");
         }
@@ -54,27 +52,25 @@ public class AutorideMessagingService extends FirebaseMessagingService {
     }
 
     private void showNotification(String title, String body) {
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager manager =
+            (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // Create notification channel for Android 8+
+        // Create channel for Android 8+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID,
-                CHANNEL_NAME,
-                NotificationManager.IMPORTANCE_HIGH
+                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("Autoride booking and payment notifications");
             channel.enableVibration(true);
             manager.createNotificationChannel(channel);
         }
 
-        // Tap notification ? open app
+        // Tap ? open app
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
-            PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
-        );
+        int flags = PendingIntent.FLAG_ONE_SHOT |
+                    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, flags);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
