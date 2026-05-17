@@ -1678,7 +1678,8 @@
         <span>Reports</span>
     </button>
     <button class="nav-item" data-tab="chat" onclick="switchTab('chat')">
-        <i class="fas fa-comments"></i>
+        <i class="fas fa-comments" style="position:relative;"></i>
+        <span id="adminChatNavBadge" style="display:none;position:absolute;top:6px;right:calc(50% - 22px);background:#ef4444;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px;"></span>
         <span>Chat</span>
     </button>
     <button class="nav-item" data-tab="settings" onclick="switchTab('settings')">
@@ -1892,6 +1893,12 @@
 
                 // Load admin notifications
                 loadAdminNotifications(user.id);
+
+                // Start chat badge polling every 30s
+                if (typeof AdminChat !== 'undefined') {
+                    AdminChat.updateNavBadge();
+                    setInterval(function() { AdminChat.updateNavBadge(); }, 30000);
+                }
 
                 if (isSuper) { switchTab('dashboard'); refreshDashboard(); }
                 else switchTab('vehicles');
@@ -2478,7 +2485,12 @@
             }
             if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
             if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
-            if (tabId === 'chat' && typeof AdminChat !== 'undefined') AdminChat.loadInbox();
+            if (tabId === 'chat' && typeof AdminChat !== 'undefined') {
+                AdminChat.loadInbox();
+                // Clear nav badge when entering chat
+                const b = document.getElementById('adminChatNavBadge');
+                if (b) b.style.display = 'none';
+            }
 
             if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
             else if (typeof GPS !== 'undefined') GPS.stopLive();
@@ -5035,7 +5047,27 @@
             if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
         }
 
-        return { loadInbox: loadInbox, openConversation: openConversation, send: send, stopPolling: stopPolling, showUserSearch: showUserSearch, searchUsers: searchUsers };
+        function updateNavBadge() {
+            const aid = _adminId();
+            if (!aid) return;
+            fetch(API_URL + '/chat/inbox?viewer_type=admin&viewer_id=' + aid)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    const badge = document.getElementById('adminChatNavBadge');
+                    if (!badge) return;
+                    let total = 0;
+                    if (Array.isArray(data)) data.forEach(function(c) { total += parseInt(c.unread_count) || 0; });
+                    if (total > 0) {
+                        badge.textContent = total > 9 ? '9+' : String(total);
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(function() {});
+        }
+
+        return { loadInbox: loadInbox, openConversation: openConversation, send: send, stopPolling: stopPolling, showUserSearch: showUserSearch, searchUsers: searchUsers, updateNavBadge: updateNavBadge };
     })();
 
     window.AdminChat = AdminChat;

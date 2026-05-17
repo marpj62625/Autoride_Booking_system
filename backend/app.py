@@ -7793,7 +7793,8 @@ def get_full_profile():
         cur.execute(
             """SELECT id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points,
-                      license_number, license_expiry, license_type
+                      license_number, license_expiry, license_type,
+                      COALESCE(sms_opt_out, FALSE) AS sms_opt_out
                FROM users WHERE id = %s""",
             (user_id,)
         )
@@ -8448,44 +8449,76 @@ def chat_inbox():
     try:
         cur = get_cursor()
         if viewer_type == 'admin':
+            # Get all unique users this admin has chatted with, with latest message
             cur.execute("""
-                SELECT DISTINCT ON (other_id)
-                    CASE WHEN sender_type='user' THEN sender_id ELSE receiver_id END AS other_id,
-                    message AS last_message,
-                    created_at AS last_at,
+                SELECT
+                    other_id,
+                    last_message,
+                    last_at,
                     (SELECT COUNT(*) FROM chat_messages
-                     WHERE receiver_type='admin' AND receiver_id=%s AND sender_type='user'
-                       AND sender_id = CASE WHEN cm.sender_type='user' THEN cm.sender_id ELSE cm.receiver_id END
+                     WHERE receiver_type='admin' AND receiver_id=%s
+                       AND sender_type='user' AND sender_id=sub.other_id
                        AND is_read=FALSE) AS unread_count
-                FROM chat_messages cm
-                WHERE (sender_type='admin' AND sender_id=%s)
-                   OR (receiver_type='admin' AND receiver_id=%s)
-                ORDER BY other_id, created_at DESC
+                FROM (
+                    SELECT DISTINCT ON (other_id)
+                        CASE
+                            WHEN sender_type='user' THEN sender_id
+                            ELSE receiver_id
+                        END AS other_id,
+                        message AS last_message,
+                        created_at AS last_at
+                    FROM chat_messages
+                    WHERE (sender_type='admin' AND sender_id=%s)
+                       OR (receiver_type='admin' AND receiver_id=%s)
+                    ORDER BY other_id,
+                        CASE
+                            WHEN sender_type='user' THEN sender_id
+                            ELSE receiver_id
+                        END,
+                        created_at DESC
+                ) sub
+                ORDER BY last_at DESC
             """, (int(viewer_id), int(viewer_id), int(viewer_id)))
             rows = cur.fetchall()
             result = []
             for r in rows:
                 d = dict(r)
                 if d.get('last_at'): d['last_at'] = d['last_at'].isoformat()
-                # Get user name
                 cur.execute("SELECT full_name, email FROM users WHERE id=%s", (d['other_id'],))
                 u = cur.fetchone()
                 d['other_name'] = u['full_name'] if u else 'Unknown'
                 d['other_email'] = u['email'] if u else ''
                 result.append(d)
         else:
+            # Get all unique admins this user has chatted with, with latest message
             cur.execute("""
-                SELECT DISTINCT ON (other_id)
-                    CASE WHEN sender_type='admin' THEN sender_id ELSE receiver_id END AS other_id,
-                    message AS last_message,
-                    created_at AS last_at,
+                SELECT
+                    other_id,
+                    last_message,
+                    last_at,
                     (SELECT COUNT(*) FROM chat_messages
-                     WHERE receiver_type='user' AND receiver_id=%s AND sender_type='admin'
+                     WHERE receiver_type='user' AND receiver_id=%s
+                       AND sender_type='admin' AND sender_id=sub.other_id
                        AND is_read=FALSE) AS unread_count
-                FROM chat_messages cm
-                WHERE (sender_type='user' AND sender_id=%s)
-                   OR (receiver_type='user' AND receiver_id=%s)
-                ORDER BY other_id, created_at DESC
+                FROM (
+                    SELECT DISTINCT ON (other_id)
+                        CASE
+                            WHEN sender_type='admin' THEN sender_id
+                            ELSE receiver_id
+                        END AS other_id,
+                        message AS last_message,
+                        created_at AS last_at
+                    FROM chat_messages
+                    WHERE (sender_type='user' AND sender_id=%s)
+                       OR (receiver_type='user' AND receiver_id=%s)
+                    ORDER BY other_id,
+                        CASE
+                            WHEN sender_type='admin' THEN sender_id
+                            ELSE receiver_id
+                        END,
+                        created_at DESC
+                ) sub
+                ORDER BY last_at DESC
             """, (int(viewer_id), int(viewer_id), int(viewer_id)))
             rows = cur.fetchall()
             result = []
