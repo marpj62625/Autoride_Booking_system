@@ -2921,7 +2921,7 @@ def user_bookings():
 
         query = """
 
-            SELECT b.*, v.brand, v.model, v.plate_number 
+            SELECT b.*, v.brand, v.model, v.plate_number, v.vehicle_image
 
             FROM bookings b
 

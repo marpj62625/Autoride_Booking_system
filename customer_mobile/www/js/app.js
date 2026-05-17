@@ -836,8 +836,9 @@ function loadHome() {
         window._activeBookingId = active.id;
         var endNorm   = _normDateStr(active.end_date);
         var startNorm = _normDateStr(active.start_date);
-        var imgHtml = active.vehicle_image
-          ? '<img src="' + active.vehicle_image + '" style="width:100%;height:140px;object-fit:cover;">'
+        var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
+        var imgHtml = imgSrc
+          ? '<img src="' + imgSrc + '" style="width:100%;height:140px;object-fit:cover;" onerror="this.parentNode.innerHTML=\'<div style=\\\"width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;\\\"><i class=\\\"fas fa-car\\\" style=\\\"font-size:3rem;color:var(--text-muted);opacity:0.3;\\\"></i></div>\'">'
           : '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
         card.innerHTML =
           imgHtml +
