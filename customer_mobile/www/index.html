@@ -603,8 +603,15 @@
      PROFILE
 ??????????????????????????????????????????????????????????? -->
 <div id="page-profile" class="page">
-  <div class="page-header"><h2>My Profile</h2></div>
+  <div class="page-header">
+    <h2>My Profile</h2>
+    <button id="profileEditBtn" onclick="Profile.enterEdit()" style="margin-left:auto;background:none;border:none;color:var(--primary);font-size:0.9rem;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;">
+      <i class="fas fa-pen"></i> Edit
+    </button>
+  </div>
   <div class="scroll-content">
+
+    <!-- Avatar + summary card -->
     <div class="card" style="text-align:center;padding:24px;">
       <div id="profileAvatarWrap" style="display:flex;justify-content:center;margin-bottom:12px;">
         <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">?</div>
@@ -620,8 +627,13 @@
         <i class="fas fa-star"></i> <span id="profilePoints">0</span> Loyalty Points
       </div>
     </div>
-    <div class="card">
-      <h4 style="font-weight:700;margin-bottom:14px;">Edit Profile</h4>
+
+    <!-- ?? EDIT PROFILE (hidden by default) ?? -->
+    <div id="profileEditCard" class="card" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h4 style="font-weight:700;margin:0;">Edit Profile</h4>
+        <button onclick="Profile.cancelEdit()" style="background:none;border:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;"><i class="fas fa-times"></i> Cancel</button>
+      </div>
       <div class="form-group">
         <label>Full Name</label>
         <input type="text" id="editName" placeholder="Full Name">
@@ -644,16 +656,79 @@
       </div>
       <button class="btn-primary" onclick="doUpdateProfile()">Save Changes</button>
     </div>
+
+    <!-- ?? LICENSE / ID SECTION ?? -->
     <div class="card">
-      <h4 style="font-weight:700;margin-bottom:10px;"><i class="fas fa-id-card" style="color:var(--primary);margin-right:8px;"></i>Uploaded License / ID</h4>
-      <div id="profileLicenseThumb"><p style="font-size:0.8rem;color:var(--text-muted);">Loading...</p></div>
-      <button class="btn-secondary" style="margin-top:10px;" onclick="showOverlay('page-license-upload')"><i class="fas fa-upload"></i> Upload / Update License</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h4 style="font-weight:700;margin:0;"><i class="fas fa-id-card" style="color:var(--primary);margin-right:8px;"></i>Driver's License</h4>
+        <button id="licenseEditBtn" onclick="Profile.enterLicenseEdit()" style="background:none;border:none;color:var(--primary);font-size:0.85rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;display:flex;align-items:center;gap:5px;">
+          <i class="fas fa-pen"></i> Edit
+        </button>
+      </div>
+
+      <!-- VIEW MODE -->
+      <div id="licenseViewMode">
+        <div id="profileLicenseThumb" style="margin-bottom:12px;"><p style="font-size:0.8rem;color:var(--text-muted);">Loading...</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">License No.</div>
+            <div id="viewLicenseNumber" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Type</div>
+            <div id="viewLicenseType" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Expiry Date</div>
+            <div id="viewLicenseExpiry" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Status</div>
+            <div id="viewLicenseStatus" style="font-size:0.88rem;font-weight:600;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT MODE (hidden by default) -->
+      <div id="licenseEditMode" style="display:none;">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+          <button onclick="Profile.cancelLicenseEdit()" style="background:none;border:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;"><i class="fas fa-times"></i> Cancel</button>
+        </div>
+        <div class="form-group">
+          <label>License Number</label>
+          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>License Type</label>
+            <select id="editLicenseType" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;">
+              <option value="">Select type</option>
+              <option value="Non-Professional">Non-Professional</option>
+              <option value="Professional">Professional</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Expiry Date</label>
+            <input type="date" id="editLicenseExpiry" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>License Photo <span style="font-weight:400;color:var(--text-muted);">(optional — upload to re-submit for verification)</span></label>
+          <button class="btn-secondary" onclick="pickLicenseForProfile()"><i class="fas fa-id-card"></i> Choose License Photo</button>
+          <img id="licenseEditPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:10px;display:none;">
+          <span class="field-error" id="licenseEditErr" style="display:block;margin-top:6px;"></span>
+        </div>
+        <button class="btn-primary" onclick="Profile.saveLicenseInfo()"><i class="fas fa-save"></i> Save License Info</button>
+      </div>
     </div>
+
+    <!-- Account -->
     <div class="card">
       <h4 style="font-weight:700;margin-bottom:14px;">Account</h4>
       <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-saved-payments')"><i class="fas fa-credit-card"></i> Saved Payment Methods</button>
       <button class="btn-secondary" onclick="showOverlay('page-favorites')"><i class="fas fa-heart"></i> My Favorites</button>
     </div>
+
   </div>
 </div>
 

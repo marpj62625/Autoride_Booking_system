@@ -140,6 +140,12 @@ def migrate_settings_v2():
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_image_url TEXT")
 
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
+
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
+
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
+
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'Unpaid'")
 
         
@@ -7645,14 +7651,17 @@ def get_vehicle_units():
 
 @app.route('/user/profile-full', methods=['GET'])
 def get_full_profile():
-    """Get complete user profile including phone, email, license image."""
+    """Get complete user profile including phone, email, license image and license details."""
     user_id = request.args.get('user_id')
     if not user_id:
         return jsonify({'error': 'user_id is required'}), 400
     try:
         cur = get_cursor()
         cur.execute(
-            "SELECT id, full_name, email, phone, profile_picture, license_image_url, is_verified, loyalty_points FROM users WHERE id = %s",
+            """SELECT id, full_name, email, phone, profile_picture, license_image_url,
+                      is_verified, loyalty_points,
+                      license_number, license_expiry, license_type
+               FROM users WHERE id = %s""",
             (user_id,)
         )
         user = cur.fetchone()
@@ -7661,7 +7670,55 @@ def get_full_profile():
         d = dict(user)
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
+        # Serialize date to string
+        if d.get('license_expiry'):
+            d['license_expiry'] = str(d['license_expiry'])
         return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/user/update-license-info', methods=['POST'])
+def update_license_info():
+    """Update license details (number, expiry, type) and optionally upload a new license image."""
+    user_id = request.form.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id is required'}), 400
+    try:
+        cur = get_cursor()
+        license_number = request.form.get('license_number', '').strip() or None
+        license_expiry  = request.form.get('license_expiry', '').strip() or None
+        license_type    = request.form.get('license_type', '').strip() or None
+
+        license_url = None
+        if 'license' in request.files:
+            file = request.files['license']
+            if file.filename:
+                filename = f"license_{user_id}_{int(datetime.now().timestamp())}.jpg"
+                file_data = file.read()
+                try:
+                    supabase.storage.from_('uploads').upload(path=filename, file=file_data,
+                        file_options={"content-type": "image/jpeg", "upsert": "true"})
+                except Exception:
+                    supabase.storage.from_('uploads').update(path=filename, file=file_data,
+                        file_options={"content-type": "image/jpeg"})
+                license_url = supabase.storage.from_('uploads').get_public_url(filename)
+
+        if license_url:
+            cur.execute(
+                """UPDATE users SET license_number=%s, license_expiry=%s, license_type=%s,
+                          license_image_url=%s, is_verified=1 WHERE id=%s""",
+                (license_number, license_expiry, license_type, license_url, user_id)
+            )
+        else:
+            cur.execute(
+                "UPDATE users SET license_number=%s, license_expiry=%s, license_type=%s WHERE id=%s",
+                (license_number, license_expiry, license_type, user_id)
+            )
+        commit_db()
+        return jsonify({'message': 'License info updated'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

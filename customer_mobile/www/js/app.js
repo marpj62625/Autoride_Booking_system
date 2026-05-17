@@ -2522,6 +2522,72 @@ function submitReview(vehicleId) {
 }
 
 // PROFILE
+var _licenseBlob = null; // blob for license edit upload
+
+var Profile = {
+  enterEdit: function() {
+    var card = document.getElementById('profileEditCard');
+    if (card) card.style.display = '';
+    var btn = document.getElementById('profileEditBtn');
+    if (btn) btn.style.display = 'none';
+  },
+  cancelEdit: function() {
+    var card = document.getElementById('profileEditCard');
+    if (card) card.style.display = 'none';
+    var btn = document.getElementById('profileEditBtn');
+    if (btn) btn.style.display = '';
+  },
+  enterLicenseEdit: function() {
+    document.getElementById('licenseViewMode').style.display = 'none';
+    document.getElementById('licenseEditMode').style.display = '';
+    document.getElementById('licenseEditBtn').style.display = 'none';
+    _licenseBlob = null;
+    var prev = document.getElementById('licenseEditPreview');
+    if (prev) { prev.src = ''; prev.style.display = 'none'; }
+  },
+  cancelLicenseEdit: function() {
+    document.getElementById('licenseViewMode').style.display = '';
+    document.getElementById('licenseEditMode').style.display = 'none';
+    document.getElementById('licenseEditBtn').style.display = '';
+    _licenseBlob = null;
+  },
+  saveLicenseInfo: function() {
+    var errEl = document.getElementById('licenseEditErr');
+    if (errEl) errEl.textContent = '';
+    var fd = new FormData();
+    fd.append('user_id', currentUser.id);
+    fd.append('license_number', (document.getElementById('editLicenseNumber').value || '').trim());
+    fd.append('license_expiry',  (document.getElementById('editLicenseExpiry').value  || '').trim());
+    fd.append('license_type',    (document.getElementById('editLicenseType').value    || '').trim());
+    if (_licenseBlob) fd.append('license', _licenseBlob, 'license.jpg');
+    showLoading(true);
+    uploadFile('/user/update-license-info', fd)
+      .then(function() {
+        showToast('License info saved!', 'success');
+        Profile.cancelLicenseEdit();
+        loadProfile();
+      })
+      .catch(function(err) { if (errEl) errEl.textContent = err.message || 'Failed to save.'; })
+      .finally(function() { showLoading(false); });
+  }
+};
+
+function pickLicenseForProfile() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png';
+  input.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var err = validateUploadFile(file);
+    if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
+    _licenseBlob = file;
+    var preview = document.getElementById('licenseEditPreview');
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+  };
+  input.click();
+}
+
 function loadProfile() {
   if (!currentUser.id) return;
   showLoading(true);
@@ -2575,9 +2641,33 @@ function loadProfile() {
         if (profile.license_image_url) {
           licenseThumb.innerHTML = '<img src="' + profile.license_image_url + '" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;cursor:pointer;" onclick="viewLicenseImage(\'' + profile.license_image_url + '\')" alt="License ID">';
         } else {
-          licenseThumb.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license uploaded yet</p>';
+          licenseThumb.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photo uploaded yet.</p>';
         }
       }
+
+      // License detail fields — view mode
+      var el = document.getElementById('viewLicenseNumber');
+      if (el) el.textContent = profile.license_number || '—';
+      el = document.getElementById('viewLicenseType');
+      if (el) el.textContent = profile.license_type || '—';
+      el = document.getElementById('viewLicenseExpiry');
+      if (el) el.textContent = profile.license_expiry || '—';
+      el = document.getElementById('viewLicenseStatus');
+      if (el) {
+        var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+        var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+        var v = currentUser.isVerified;
+        el.textContent = statusMap[v] || '—';
+        el.style.color = statusColor[v] || 'var(--text-main)';
+      }
+
+      // Pre-fill license edit fields
+      var lnEl = document.getElementById('editLicenseNumber');
+      if (lnEl) lnEl.value = profile.license_number || '';
+      var ltEl = document.getElementById('editLicenseType');
+      if (ltEl) ltEl.value = profile.license_type || '';
+      var leEl = document.getElementById('editLicenseExpiry');
+      if (leEl) leEl.value = profile.license_expiry || '';
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
@@ -2640,6 +2730,7 @@ function doUpdateProfile() {
       if (email) currentUser.email = email;
       Session.save(currentUser);
       showToast('Profile updated successfully!', 'success');
+      Profile.cancelEdit();
       loadProfile();
     })
     .catch(function(err) { showToast(err.message, 'error'); })
