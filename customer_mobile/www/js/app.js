@@ -804,60 +804,33 @@ function renderVehicles(list) {
   if (countEl) countEl.textContent = available.length + ' vehicle' + (available.length !== 1 ? 's' : '') + ' found';
 
   grid.innerHTML = available.map(function(v) {
-    var cardId = 'vcard-' + encodeURIComponent(v.brand) + '-' + encodeURIComponent(v.model);
-    // Build transmission options from the units data if available, else use the category value
-    var transOpts = '<option value="">Select transmission</option>' +
-      ['Manual', 'Automatic'].map(function(t) {
-        return '<option value="' + t + '">' + t + '</option>';
-      }).join('');
-
-    return '<div class="vehicle-card" id="' + cardId + '" style="cursor:default;">' +
-      // Image — will be replaced once unit is selected
-      '<div class="vehicle-img-wrap" id="vimg-' + cardId + '">' +
+    var avail = parseInt(v.available_units) || 0;
+    var bEnc = encodeURIComponent(v.brand);
+    var mEnc = encodeURIComponent(v.model);
+    return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
+      '<div class="vehicle-img-wrap">' +
       '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+      '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
-      // Header row
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
       '<div>' +
       '<h3>' + v.brand + ' ' + v.model + '</h3>' +
+      '<div style="display:flex;gap:6px;margin-top:4px;">' +
       '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
-      '</div>' +
+      '</div></div>' +
       '<div style="text-align:right;">' +
       '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + '</div>' +
       '<div style="font-size:0.65rem;color:#52525b;margin-top:1px;">per day</div>' +
       '</div></div>' +
-
-      // Transmission dropdown
-      '<div style="margin-bottom:8px;">' +
-      '<label style="font-size:0.7rem;color:#71717a;font-weight:600;display:block;margin-bottom:4px;">Transmission</label>' +
-      '<select id="vtrans-' + cardId + '" onchange="onVehicleTransmissionChange(\'' + encodeURIComponent(v.brand) + '\',\'' + encodeURIComponent(v.model) + '\',\'' + cardId + '\')" ' +
-      'style="width:100%;padding:9px 12px;background:#1a1a1a;border:1px solid #3f3f46;border-radius:10px;color:#fff;font-size:0.82rem;">' +
-      transOpts + '</select></div>' +
-
-      // Color dropdown (hidden until transmission selected)
-      '<div id="vcolor-wrap-' + cardId + '" style="display:none;margin-bottom:8px;">' +
-      '<label style="font-size:0.7rem;color:#71717a;font-weight:600;display:block;margin-bottom:4px;">Color</label>' +
-      '<select id="vcolor-' + cardId + '" onchange="onVehicleColorChange(\'' + encodeURIComponent(v.brand) + '\',\'' + encodeURIComponent(v.model) + '\',\'' + cardId + '\')" ' +
-      'style="width:100%;padding:9px 12px;background:#1a1a1a;border:1px solid #3f3f46;border-radius:10px;color:#fff;font-size:0.82rem;">' +
-      '<option value="">Select color</option></select></div>' +
-
-      // Unit info (hidden until color selected)
-      '<div id="vunit-' + cardId + '" style="display:none;">' +
-      '<div style="display:flex;align-items:center;gap:8px;padding:10px;background:#1a1a1a;border-radius:10px;margin-bottom:10px;">' +
-      '<i class="fas fa-id-card" style="color:#dc2626;font-size:0.85rem;"></i>' +
-      '<span id="vplate-' + cardId + '" style="font-size:0.85rem;font-weight:700;color:#fff;"></span>' +
-      '</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
       '<div style="display:flex;align-items:center;gap:6px;">' +
       '<i class="fas fa-map-marker-alt" style="color:#3f3f46;font-size:0.75rem;"></i>' +
       '<span style="font-size:0.75rem;color:#52525b;">' + (v.location || '-') + '</span>' +
       '</div>' +
-      '<button id="vbook-' + cardId + '" class="btn-primary" style="width:auto;padding:10px 20px;" onclick="">' +
-      '<i class="fas fa-calendar-plus"></i> Book</button>' +
-      '</div></div>' +
-
-      '</div></div>';
+      '<div style="display:flex;align-items:center;gap:4px;background:rgba(220,38,38,0.1);color:#f87171;padding:5px 12px;border-radius:12px;font-size:0.75rem;font-weight:700;">' +
+      'View <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i></div>' +
+      '</div></div></div>';
   }).join('');
 }
 
@@ -1126,60 +1099,209 @@ function openColorSelection(brandEnc, modelEnc) {
     .finally(function() { showLoading(false); });
 }
 
-// STEP 2: Color selected - show individual units
+// STEP 2: Color selected - show individual units with inline dropdowns
 function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
   var brand = decodeURIComponent(brandEnc);
   var model = decodeURIComponent(modelEnc);
-  var color = decodeURIComponent(colorEnc);
   var bEnc = encodeURIComponent(brand);
   var mEnc = encodeURIComponent(model);
   var el = document.getElementById('vehicleDetailContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div><div class="scroll-content"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading units...</p></div></div>';
+  el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div><div class="scroll-content"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div></div>';
+  showOverlay('page-vehicle-detail');
   showLoading(true);
-  apiCall('/vehicles/units?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model) + '&color=' + encodeURIComponent(color) + '&user_id=' + (currentUser.id || ''))
-    .then(function(units) {
-      if (!units.length) {
-        el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
-          '<div class="scroll-content"><div class="empty-state"><i class="fas fa-car"></i><p>No units found</p></div></div>';
+
+  // Load ALL units for this brand/model so we can build the dropdowns
+  apiCall('/vehicles/units?brand=' + bEnc + '&model=' + mEnc + '&color=all&user_id=' + (currentUser.id || ''))
+    .then(function(allUnits) {
+      if (!allUnits.length) {
+        el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
+          '<div class="scroll-content"><div class="empty-state"><i class="fas fa-car"></i><p>No units available</p></div></div>';
         return;
       }
-      var unitsHtml = units.map(function(v) {
-        var isAvailable = v.status === 'Available';
-        var canBook = isAvailable && parseInt(currentUser.isVerified) === 2;
-        var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
-        var galleryHtml = galleryImgs.map(function(img) {
-          return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.src=\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
-        }).join('');
-        return '<div class="card" style="margin-bottom:16px;">' +
-          (galleryHtml ? '<div class="gallery-scroll" style="margin:-16px -16px 14px;">' + galleryHtml + '</div>' : '') +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-          '<h4 style="font-weight:800;">' + v.brand + ' ' + v.model + '</h4>' +
-          '<span style="padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + v.status + '</span>' +
-          '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">' +
-          '<div style="font-size:0.8rem;"><i class="fas fa-palette" style="color:var(--primary);width:16px;"></i> ' + (v.color_display || v.color || 'N/A') + '</div>' +
-          '<div style="font-size:0.8rem;"><i class="fas fa-id-card" style="color:var(--primary);width:16px;"></i> ' + (v.plate_number || 'N/A') + '</div>' +
-          '<div style="font-size:0.8rem;"><i class="fas fa-users" style="color:var(--primary);width:16px;"></i> ' + (v.seats || '-') + ' seats</div>' +
-          '<div style="font-size:0.8rem;"><i class="fas fa-gas-pump" style="color:var(--primary);width:16px;"></i> ' + (v.fuel_type || '-') + '</div>' +
-          '<div style="font-size:0.8rem;"><i class="fas fa-cog" style="color:var(--primary);width:16px;"></i> ' + (v.transmission || '-') + '</div>' +
-          '<div style="font-size:0.8rem;"><i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;"></i> ' + (v.location || '-') + '</div>' +
-          '</div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-          '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
-          (canBook
-            ? '<button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="selectVehicleUnit(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book</button>'
-            : '<button style="width:auto;padding:10px 16px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:var(--radius-sm);font-size:0.8rem;cursor:not-allowed;" disabled>' +
-              (isAvailable ? '<i class="fas fa-lock"></i> Verify License' : '<i class="fas fa-ban"></i> Not Available') + '</button>'
-          ) +
-          '</div></div>';
+
+      // Store units on window for cascade access
+      window._vdUnits = allUnits;
+      window._vdBrand = brand;
+      window._vdModel = model;
+
+      // Get unique transmissions from available units only
+      var availUnits = allUnits.filter(function(u) { return u.status === 'Available'; });
+      var seenTrans = {};
+      var transmissions = [];
+      availUnits.forEach(function(u) {
+        var t = u.transmission || 'N/A';
+        if (!seenTrans[t]) { seenTrans[t] = true; transmissions.push(t); }
+      });
+
+      // Pick a default unit to show initially
+      var defaultUnit = availUnits[0] || allUnits[0];
+      var isAvailable = defaultUnit.status === 'Available';
+      var canBook = isAvailable && parseInt(currentUser.isVerified) === 2;
+      var imgSrc = (defaultUnit.gallery && defaultUnit.gallery.length) ? buildImgUrl(defaultUnit.gallery[0]) : buildImgUrl(defaultUnit.vehicle_image);
+
+      // Build transmission options
+      var transOptions = transmissions.map(function(t) {
+        return '<option value="' + t + '"' + (t === defaultUnit.transmission ? ' selected' : '') + '>' + t + '</option>';
       }).join('');
-      el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="openColorSelection(\'' + bEnc + '\',\'' + mEnc + '\')">' +
-        '<i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + (color !== 'all' ? ' - ' + color : '') + '</h2></div>' +
-        '<div class="scroll-content" style="padding-bottom:80px;">' + unitsHtml + '</div>';
+
+      // Build color options for default transmission
+      var defaultTrans = defaultUnit.transmission || transmissions[0];
+      var seenColors = {};
+      var colors = [];
+      availUnits.filter(function(u) { return u.transmission === defaultTrans; }).forEach(function(u) {
+        var c = u.color_display || u.color || 'Not Specified';
+        if (!seenColors[c]) { seenColors[c] = true; colors.push(c); }
+      });
+      var colorOptions = colors.map(function(c) {
+        return '<option value="' + c + '"' + (c === (defaultUnit.color_display || defaultUnit.color) ? ' selected' : '') + '>' + c + '</option>';
+      }).join('');
+
+      var cardHtml =
+        '<div class="card" style="margin-bottom:16px;">' +
+        // Gallery image
+        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
+        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+        '</div>' +
+        // Title + status
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+        '<h4 style="font-weight:800;font-size:1rem;">' + brand + ' ' + model + '</h4>' +
+        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+        '</div>' +
+        // Specs grid — Transmission and Color are dropdowns
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+
+        // Transmission dropdown
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-cog" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
+        transOptions + '</select>' +
+        '</div>' +
+
+        // Plate
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-id-card" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-plate" style="font-weight:600;">' + (defaultUnit.plate_number || 'N/A') + '</span>' +
+        '</div>' +
+
+        // Seats
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-users" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-seats">' + (defaultUnit.seats || '-') + ' seats</span>' +
+        '</div>' +
+
+        // Fuel
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-gas-pump" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-fuel">' + (defaultUnit.fuel_type || '-') + '</span>' +
+        '</div>' +
+
+        // Color dropdown
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-globe" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
+        colorOptions + '</select>' +
+        '</div>' +
+
+        // Location
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
+        '</div>' +
+
+        '</div>' +
+        // Price + Book
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);">' +
+        '<div>' +
+        '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
+        '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
+        '</div>' +
+        '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;"' +
+        (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
+        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isAvailable ? 'Verify License' : 'Unavailable')) +
+        '</button>' +
+        '</div></div>';
+
+      el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
+        '<div class="scroll-content" style="padding-bottom:80px;">' + cardHtml + '</div>';
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
+}
+
+// Called when transmission dropdown changes — repopulate colors and update card
+function onVdTransChange() {
+  var trans = document.getElementById('vd-trans').value;
+  var availUnits = (window._vdUnits || []).filter(function(u) {
+    return u.status === 'Available' && u.transmission === trans;
+  });
+  var seenColors = {};
+  var colors = [];
+  availUnits.forEach(function(u) {
+    var c = u.color_display || u.color || 'Not Specified';
+    if (!seenColors[c]) { seenColors[c] = true; colors.push(c); }
+  });
+  var colorSel = document.getElementById('vd-color');
+  if (colorSel) {
+    colorSel.innerHTML = colors.map(function(c) {
+      return '<option value="' + c + '">' + c + '</option>';
+    }).join('');
+  }
+  onVdColorChange();
+}
+
+// Called when color dropdown changes — update plate, image, book button
+function onVdColorChange() {
+  var trans = document.getElementById('vd-trans') ? document.getElementById('vd-trans').value : '';
+  var color = document.getElementById('vd-color') ? document.getElementById('vd-color').value : '';
+  var unit = null;
+  var units = window._vdUnits || [];
+  for (var i = 0; i < units.length; i++) {
+    var u = units[i];
+    var uColor = u.color_display || u.color || 'Not Specified';
+    if (u.status === 'Available' && uColor === color && (!trans || u.transmission === trans)) {
+      unit = u; break;
+    }
+  }
+  if (!unit) return;
+
+  // Update image
+  var imgEl = document.getElementById('vd-img');
+  if (imgEl) {
+    var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
+    imgEl.src = imgSrc;
+  }
+  // Update specs
+  var plateEl = document.getElementById('vd-plate');
+  if (plateEl) plateEl.textContent = unit.plate_number || 'N/A';
+  var seatsEl = document.getElementById('vd-seats');
+  if (seatsEl) seatsEl.textContent = (unit.seats || '-') + ' seats';
+  var fuelEl = document.getElementById('vd-fuel');
+  if (fuelEl) fuelEl.textContent = unit.fuel_type || '-';
+  var locEl = document.getElementById('vd-location');
+  if (locEl) locEl.textContent = unit.location || '-';
+  var rateEl = document.getElementById('vd-rate');
+  if (rateEl) rateEl.textContent = formatPHP(unit.daily_rate);
+  // Update status badge
+  var statusEl = document.getElementById('vd-status');
+  if (statusEl) {
+    statusEl.textContent = unit.status;
+    statusEl.style.background = unit.status === 'Available' ? '#d1e7dd' : '#f8d7da';
+    statusEl.style.color = unit.status === 'Available' ? '#0a3622' : '#842029';
+  }
+  // Update book button
+  var bookBtn = document.getElementById('vd-book-btn');
+  if (bookBtn) {
+    var canBook = unit.status === 'Available' && parseInt(currentUser.isVerified) === 2;
+    bookBtn.disabled = !canBook;
+    bookBtn.style.cssText = canBook
+      ? 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;'
+      : 'width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;';
+    bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (unit.status === 'Available' ? 'Verify License' : 'Unavailable'));
+    if (canBook) {
+      (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
+    }
+  }
 }
 
 // STEP 3: Book button tapped on a specific unit
