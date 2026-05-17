@@ -838,7 +838,7 @@ function loadHome() {
         var startNorm = _normDateStr(active.start_date);
         var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
         var imgHtml = imgSrc
-          ? '<img src="' + imgSrc + '" style="width:100%;height:140px;object-fit:cover;" onerror="this.parentNode.innerHTML=\'<div style=\\\"width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;\\\"><i class=\\\"fas fa-car\\\" style=\\\"font-size:3rem;color:var(--text-muted);opacity:0.3;\\\"></i></div>\'">'
+          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:140px;object-fit:cover;">'
           : '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
         card.innerHTML =
           imgHtml +
@@ -867,6 +867,13 @@ function loadHome() {
             '</div>' +
           '</div>';
         monitor.style.display = '';
+        // Attach onerror after DOM insertion to avoid escaping issues
+        var imgEl = document.getElementById('activeRentalImg');
+        if (imgEl) {
+          imgEl.onerror = function() {
+            this.parentNode.innerHTML = '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+          };
+        }
         _startActiveBookingCountdown(endNorm);
       } else {
         if (monitor) monitor.style.display = 'none';
