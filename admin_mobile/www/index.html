@@ -1087,27 +1087,29 @@
             </div>
         </div>
 
-        <!-- Revenue Line Chart -->
-        <div class="chart-card">
-            <h3 style="margin-bottom:15px;">Revenue Trend</h3>
-            <div class="chart-container" style="height:200px;">
-                <canvas id="reportsRevenueChart"></canvas>
+        <!-- Charts grid: Revenue + Top Vehicles side by side, Bookings full width -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <!-- Revenue Trend -->
+            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;">
+                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Revenue Trend</div>
+                <div style="height:160px;position:relative;">
+                    <canvas id="reportsRevenueChart"></canvas>
+                </div>
+            </div>
+            <!-- Top Vehicles Pie -->
+            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;">
+                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Top Vehicles</div>
+                <div style="height:160px;position:relative;">
+                    <canvas id="reportsTopPieChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <!-- Bookings Bar Chart -->
-        <div class="chart-card">
-            <h3 style="margin-bottom:15px;">Bookings per Period</h3>
-            <div class="chart-container" style="height:200px;">
+        <!-- Bookings Period full width -->
+        <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:16px;">
+            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Bookings Period</div>
+            <div style="height:160px;position:relative;">
                 <canvas id="reportsBookingsChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Top Vehicles Pie Chart -->
-        <div class="chart-card">
-            <h3 style="margin-bottom:15px;">Top Vehicles by Bookings</h3>
-            <div class="chart-container" style="height:220px;">
-                <canvas id="reportsTopPieChart"></canvas>
             </div>
         </div>
 
