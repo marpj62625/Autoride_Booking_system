@@ -526,8 +526,9 @@
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Support</span>
       </button>
       <button onclick="showOverlay('page-livechat')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="width:52px;height:52px;border-radius:18px;background:rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:center;">
+        <div style="position:relative;width:52px;height:52px;border-radius:18px;background:rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:center;">
           <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;"><i class="fas fa-comments" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
+          <span id="chatUnreadBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;font-weight:700;align-items:center;justify-content:center;"></span>
         </div>
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Live Chat</span>
       </button>
@@ -783,6 +784,16 @@
       <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
       <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" style="cursor:default;">
+      <div class="more-item-icon"><i class="fas fa-sms"></i></div>
+      <div class="more-item-text"><h4>SMS Notifications</h4><p>Receive booking updates via SMS</p></div>
+      <label style="position:relative;display:inline-block;width:44px;height:24px;margin-left:auto;flex-shrink:0;">
+        <input type="checkbox" id="smsOptOutToggle" onchange="toggleSmsOptOut(this)" style="opacity:0;width:0;height:0;">
+        <span id="smsToggleSlider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;">
+          <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;display:block;" id="smsToggleKnob"></span>
+        </span>
+      </label>
     </div>
     <div class="more-item" onclick="toggleDarkMode()" id="darkModeToggleItem">
       <div class="more-item-icon"><i class="fas fa-moon" id="darkModeIcon"></i></div>

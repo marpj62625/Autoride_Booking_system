@@ -359,6 +359,7 @@ function showPage(id) {
   if (id === 'page-vehicles') loadVehicles();
   if (id === 'page-bookings') loadBookings();
   if (id === 'page-profile') loadProfile();
+  if (id === 'page-more') loadMorePage();
 }
 
 function showOverlay(id) {
@@ -406,6 +407,26 @@ function updateNotifBadge() {
     } else {
         badge.classList.add('hidden');
     }
+}
+
+function updateChatUnreadBadge() {
+    if (!currentUser.id) return;
+    apiCall('/chat/inbox?viewer_type=user&viewer_id=' + currentUser.id)
+        .then(function(data) {
+            var badge = document.getElementById('chatUnreadBadge');
+            if (!badge) return;
+            var total = 0;
+            if (Array.isArray(data)) {
+                data.forEach(function(c) { total += parseInt(c.unread_count) || 0; });
+            }
+            if (total > 0) {
+                badge.textContent = total > 9 ? '9+' : String(total);
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        })
+        .catch(function() {});
 }
 
 // STARTUP - run immediately when script loads, also on events as fallback
@@ -809,6 +830,8 @@ function _fmtDate(d) {
 function loadHome() {
   var nameEl = document.getElementById('homeUserName');
   if (nameEl) nameEl.textContent = currentUser.fullName || 'there';
+  // Update chat unread badge
+  updateChatUnreadBadge();
   apiCall('/user/points?user_id=' + currentUser.id)
     .then(function(pts) {
       var pts_val = parseInt(pts.points) || 0;
@@ -3215,7 +3238,6 @@ function sendChat() {
 
 // NOTIFICATIONS
 function openNotificationsPage() {
-    // page-notifications is an overlay, not a main page — use overlay display
     var overlay = document.getElementById('page-notifications');
     if (overlay) {
         overlay.classList.add('active');
@@ -3223,11 +3245,21 @@ function openNotificationsPage() {
     }
     var container = document.getElementById('notificationsContent');
     if (!container) return;
-    container.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>';
+
+    // Render header immediately
+    container.innerHTML =
+        '<div class="page-header">' +
+            '<button class="back-btn" onclick="closeOverlay(\'page-notifications\')"><i class="fas fa-arrow-left"></i></button>' +
+            '<h2>Notifications</h2>' +
+        '</div>' +
+        '<div id="notifListBody" class="scroll-content" style="padding:16px;">' +
+            '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>' +
+        '</div>';
 
     var userId = currentUser.id;
     if (!userId) {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>Please log in to view notifications</p></div>';
+        document.getElementById('notifListBody').innerHTML =
+            '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>Please log in to view notifications</p></div>';
         return;
     }
 
@@ -3245,22 +3277,42 @@ function openNotificationsPage() {
         .then(function(data) {
             notifList = Array.isArray(data) ? data : [];
             updateNotifBadge();
+            var body = document.getElementById('notifListBody');
+            if (!body) return;
             if (!notifList.length) {
-                container.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>';
+                body.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>';
                 return;
             }
-            container.innerHTML = notifList.map(function(n) {
+            body.innerHTML = notifList.map(function(n) {
                 var unreadClass = n.is_read ? '' : ' unread';
                 var ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-                return '<div class="notif-item' + unreadClass + '">' +
-                    '<p><strong>' + (n.title || '') + '</strong></p>' +
-                    '<p style="margin-top:4px;">' + (n.message || '') + '</p>' +
-                    '<small>' + ts + '</small>' +
-                    '</div>';
+                var iconMap = {
+                    booking_created: 'fa-calendar-check', booking_approved: 'fa-check-circle',
+                    booking_rejected: 'fa-times-circle', booking_cancelled: 'fa-ban',
+                    booking_cancelled_by_admin: 'fa-ban', booking_picked_up: 'fa-car',
+                    booking_completed: 'fa-flag-checkered', booking_modified: 'fa-edit',
+                    payment_confirmed: 'fa-credit-card', payment_downpayment: 'fa-credit-card',
+                    payment_balance: 'fa-credit-card', payment_cash: 'fa-money-bill',
+                    license_approved: 'fa-id-card', license_rejected: 'fa-id-card',
+                    split_request: 'fa-users', split_paid: 'fa-users',
+                    driver_approved: 'fa-car', driver_rejected: 'fa-car'
+                };
+                var icon = iconMap[n.type] || 'fa-bell';
+                return '<div class="notif-item' + unreadClass + '" style="display:flex;gap:12px;align-items:flex-start;">' +
+                    '<div style="width:36px;height:36px;border-radius:50%;background:rgba(230,57,70,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">' +
+                        '<i class="fas ' + icon + '" style="color:var(--primary);font-size:0.85rem;"></i>' +
+                    '</div>' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<p style="font-weight:700;font-size:0.875rem;margin:0;">' + (n.title || '') + '</p>' +
+                        '<p style="font-size:0.82rem;color:var(--text-secondary);margin:3px 0 0;">' + (n.message || '') + '</p>' +
+                        '<small style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;display:block;">' + ts + '</small>' +
+                    '</div>' +
+                '</div>';
             }).join('');
         })
         .catch(function() {
-            container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load notifications</p></div>';
+            var body = document.getElementById('notifListBody');
+            if (body) body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load notifications</p></div>';
         });
 }
 
@@ -3290,6 +3342,52 @@ function doSubscribeNewsletter() {
     .then(function() { showToast('Subscribed successfully!', 'success'); closeOverlay('page-newsletter'); })
     .catch(function(err) { if (errEl) errEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
+}
+
+// ============================================================
+// LIVE CHAT  (customer ? admin)
+// ============================================================
+// MORE PAGE
+// ============================================================
+function loadMorePage() {
+  if (!currentUser.id) return;
+  // Load SMS preference
+  apiCall('/user/profile-full?user_id=' + currentUser.id)
+    .then(function(profile) {
+      var toggle = document.getElementById('smsOptOutToggle');
+      var slider = document.getElementById('smsToggleSlider');
+      var knob = document.getElementById('smsToggleKnob');
+      if (!toggle) return;
+      var enabled = !profile.sms_opt_out; // sms_opt_out=false means SMS is ON
+      toggle.checked = enabled;
+      if (slider) slider.style.background = enabled ? 'var(--primary)' : '#ccc';
+      if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+    })
+    .catch(function() {});
+}
+
+function toggleSmsOptOut(checkbox) {
+  var enabled = checkbox.checked;
+  var slider = document.getElementById('smsToggleSlider');
+  var knob = document.getElementById('smsToggleKnob');
+  if (slider) slider.style.background = enabled ? 'var(--primary)' : '#ccc';
+  if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
+
+  if (!currentUser.id) return;
+  apiCall('/user/sms-preference', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: currentUser.id, sms_opt_out: !enabled })
+  })
+    .then(function() {
+      showToast(enabled ? 'SMS notifications enabled' : 'SMS notifications disabled', 'info');
+    })
+    .catch(function(err) {
+      showToast(err.message || 'Failed to update preference', 'error');
+      // Revert toggle on error
+      checkbox.checked = !enabled;
+      if (slider) slider.style.background = !enabled ? 'var(--primary)' : '#ccc';
+      if (knob) knob.style.transform = !enabled ? 'translateX(20px)' : 'translateX(0)';
+    });
 }
 
 // ============================================================
