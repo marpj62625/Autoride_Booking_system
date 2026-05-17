@@ -3536,6 +3536,8 @@ def modify_booking():
 
     new_end = data.get('end_date')
 
+    preview = data.get('preview', False)
+
     
 
     if not all([booking_id, new_start, new_end]):
@@ -3600,7 +3602,9 @@ def modify_booking():
 
             new_total *= 0.90
 
-            
+        # Preview mode — return new total without saving
+        if preview:
+            return jsonify({"new_total": float(f"{new_total:.2f}")}), 200
 
         cur.execute("""
 

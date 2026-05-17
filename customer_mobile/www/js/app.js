@@ -2486,6 +2486,7 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed';
+  var canModify = b.status === 'Pending' || b.status === 'Confirmed';
   var canPreInspect = b.status === 'Confirmed' || b.status === 'Approved';
   var canPostInspect = b.status === 'Picked Up';
   var canTrack = b.status === 'Picked Up';
@@ -2495,6 +2496,7 @@ function renderBookingDetail(b) {
   if (!el) return;
   var actions = '';
   if (canPayBalance) actions += '<button class="btn-primary btn-sm" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance</button>';
+  if (canModify) actions += '<button class="btn-secondary btn-sm" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
   if (canCancel) actions += '<button class="btn-danger btn-sm" onclick="promptCancelBooking(' + b.id + ')"><i class="fas fa-times"></i> Cancel</button>';
   if (canPreInspect) actions += '<button class="btn-secondary btn-sm" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-clipboard-check"></i> Pre-Rental Check</button>';
   if (canPostInspect) actions += '<button class="btn-secondary btn-sm" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-clipboard-check"></i> Post-Rental Check</button>';
@@ -2539,7 +2541,73 @@ function promptCancelBooking(bookingId) {
     .finally(function() { showLoading(false); });
 }
 
-function openPayBalanceScreen(bookingId, balance) {
+function openModifyBooking(bookingId, currentStart, currentEnd) {
+  var el = document.getElementById('bookingDetailContent');
+  if (!el) return;
+  // Inject a modify form at the top of the detail content
+  var formHtml =
+    '<div class="page-header">' +
+      '<button class="back-btn" onclick="openBookingDetail(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>' +
+      '<h2>Modify Dates</h2>' +
+    '</div>' +
+    '<div class="scroll-content">' +
+      '<div class="card">' +
+        '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Select new rental dates. The price will be recalculated.</p>' +
+        '<div class="form-group"><label>New Start Date</label><input type="date" id="modStart" value="' + currentStart + '"></div>' +
+        '<div class="form-group"><label>New End Date</label><input type="date" id="modEnd" value="' + currentEnd + '"></div>' +
+        '<span class="field-error" id="modErr" style="display:block;margin-bottom:12px;"></span>' +
+        '<div id="modNewTotal" style="margin-bottom:14px;"></div>' +
+        '<button class="btn-primary" onclick="submitModifyBooking(' + bookingId + ')"><i class="fas fa-check"></i> Confirm Changes</button>' +
+      '</div>' +
+    '</div>';
+  el.innerHTML = formHtml;
+  // Show new total preview when dates change
+  ['modStart','modEnd'].forEach(function(id) {
+    var inp = document.getElementById(id);
+    if (inp) inp.addEventListener('change', function() { previewModifyTotal(bookingId); });
+  });
+}
+
+function previewModifyTotal(bookingId) {
+  var start = document.getElementById('modStart') ? document.getElementById('modStart').value : '';
+  var end = document.getElementById('modEnd') ? document.getElementById('modEnd').value : '';
+  var el = document.getElementById('modNewTotal');
+  if (!el || !start || !end) return;
+  var v = validateDateRange(start, end);
+  if (!v.valid) { el.innerHTML = '<p style="color:var(--danger);font-size:0.82rem;">' + v.error + '</p>'; return; }
+  el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);">Calculating new total...</p>';
+  apiCall('/modify-booking', {
+    method: 'POST',
+    body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, start_date: start, end_date: end, preview: true })
+  }).then(function(data) {
+    if (data.new_total !== undefined) {
+      el.innerHTML = '<div class="price-row total"><span>New Total</span><span>' + formatPHP(data.new_total) + '</span></div>';
+    }
+  }).catch(function() { el.innerHTML = ''; });
+}
+
+function submitModifyBooking(bookingId) {
+  var start = document.getElementById('modStart') ? document.getElementById('modStart').value : '';
+  var end = document.getElementById('modEnd') ? document.getElementById('modEnd').value : '';
+  var errEl = document.getElementById('modErr');
+  if (errEl) errEl.textContent = '';
+  var v = validateDateRange(start, end);
+  if (!v.valid) { if (errEl) errEl.textContent = v.error; return; }
+  showLoading(true);
+  apiCall('/modify-booking', {
+    method: 'POST',
+    body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, start_date: start, end_date: end })
+  })
+    .then(function(data) {
+      showToast('Booking dates updated! New total: ' + formatPHP(data.new_total), 'success');
+      closeOverlay('page-booking-detail');
+      loadBookings();
+    })
+    .catch(function(err) { if (errEl) errEl.textContent = err.message; })
+    .finally(function() { showLoading(false); });
+}
+
+
   var el = document.getElementById('paymentContent');
   if (!el) return;
   el.innerHTML = '<div class="page-header">' +
