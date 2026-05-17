@@ -412,11 +412,26 @@ with app.app_context():
 
 def migrate_chat():
 
-    """Creates the chat_messages table for in-app admin-customer chat."""
+    """Creates or migrates the chat_messages table for in-app admin-customer chat.
+    If the old chatbot table exists (with user_message/bot_response columns), drops and recreates it.
+    """
 
     try:
 
         cur = get_cursor()
+
+        # Check if the table exists with the OLD schema (chatbot columns)
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name='chat_messages' AND column_name='user_message'
+        """)
+        has_old_schema = cur.fetchone()
+
+        if has_old_schema:
+            # Old chatbot table — drop and recreate with new live-chat schema
+            print("DEBUG: Dropping old chat_messages table (chatbot schema) and recreating...")
+            cur.execute("DROP TABLE IF EXISTS chat_messages CASCADE")
+            commit_db()
 
         cur.execute("""
 
