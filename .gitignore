@@ -34,3 +34,4 @@ build/
 *serviceAccount*.json
 firebase-adminsdk*.json
 firebase-credentials*.json
+firebase-service-account.json
