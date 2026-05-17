@@ -752,7 +752,7 @@ function _formatCountdown(msLeft) {
   var mins  = Math.floor((totalSec % 3600) / 60);
   var secs  = totalSec % 60;
   var text = days > 0
-    ? days + 'd ' + hours + 'h ' + mins + 'm'
+    ? days + 'd ' + hours + 'h ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's'
     : hours + 'h ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's';
   return { text: text, urgent: msLeft < 24 * 3600 * 1000 };
 }
