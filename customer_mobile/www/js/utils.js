@@ -78,6 +78,16 @@ function formatPHP(value) {
   });
 }
 
+function formatTime12h(time24) {
+  if (!time24) return '';
+  var parts = time24.split(':');
+  var h = parseInt(parts[0]);
+  var m = parts[1] || '00';
+  var ampm = h < 12 ? 'AM' : 'PM';
+  var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return String(h12).padStart(2, '0') + ':' + m + ' ' + ampm;
+}
+
 /**
  * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
  * Property 7: File validation — format and size.

@@ -1515,6 +1515,58 @@ var ADDON_OPTIONS = [
   { name: 'Roadside Assistance', pricePerDay: 100 }
 ];
 
+function generateTimeOptions(selectedTime) {
+  var times = [];
+  for (var h = 0; h < 24; h++) {
+    for (var m = 0; m < 60; m += 30) {
+      var hh = String(h).padStart(2, '0');
+      var mm = String(m).padStart(2, '0');
+      var val = hh + ':' + mm;
+      var ampm = h < 12 ? 'AM' : 'PM';
+      var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      var label = String(h12).padStart(2, '0') + ':' + mm + ' ' + ampm;
+      var sel = val === selectedTime ? ' selected' : '';
+      times.push('<option value="' + val + '"' + sel + '>' + label + '</option>');
+    }
+  }
+  return times.join('');
+}
+
+function autoSetReturnTime() {
+  var pickupTimeEl = document.getElementById('bfPickupTime');
+  var returnTimeEl = document.getElementById('bfReturnTime');
+  var startDateEl  = document.getElementById('bfStartDate');
+  var endDateEl    = document.getElementById('bfEndDate');
+  if (!pickupTimeEl || !returnTimeEl) return;
+
+  var pickupTime = pickupTimeEl.value || '06:00';
+  var parts = pickupTime.split(':');
+  var pickupHour = parseInt(parts[0]);
+  var pickupMin  = parseInt(parts[1]);
+
+  // Return time = pickup time + 24h (same time next day)
+  var returnHour = pickupHour;
+  var returnMin  = pickupMin;
+  var returnHH = String(returnHour).padStart(2, '0');
+  var returnMM = String(returnMin).padStart(2, '0');
+  var returnVal = returnHH + ':' + returnMM;
+
+  // Set return time select
+  if (returnTimeEl) returnTimeEl.value = returnVal;
+
+  // Auto-advance end date by 1 day from start date if not already set
+  if (startDateEl && startDateEl.value && endDateEl) {
+    var start = new Date(startDateEl.value + 'T00:00:00');
+    var minEnd = new Date(start);
+    minEnd.setDate(minEnd.getDate() + 1);
+    var minEndStr = minEnd.toISOString().split('T')[0];
+    if (!endDateEl.value || endDateEl.value < minEndStr) {
+      endDateEl.value = minEndStr;
+      updateBookingPrice();
+    }
+  }
+}
+
 function openBookingForm(vehicleId) {
   bookingFormVehicle = currentVehicleDetail;
   couponData = null;
@@ -1552,8 +1604,18 @@ function openBookingForm(vehicleId) {
 
     // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
-    '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfStartErr"></span></div>' +
+    '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
+    '<div class="form-group"><label>Pickup Time</label>' +
+    '<select id="bfPickupTime" onchange="autoSetReturnTime()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    generateTimeOptions('06:00') +
+    '</select></div>' +
     '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfEndErr"></span></div>' +
+    '<div class="form-group"><label>Return Time</label>' +
+    '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    generateTimeOptions('06:00') +
+    '</select>' +
+    '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-info-circle"></i> Return time is auto-set to 24 hrs after pickup</small>' +
+    '</div>' +
     '</div>' +
 
     // Pickup or Delivery
@@ -1832,6 +1894,8 @@ function submitBooking() {
     user_id: currentUser.id,
     vehicle_id: bookingFormVehicle.id,
     start_date: start, end_date: end,
+    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '06:00',
+    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : '06:00',
     pickup_location: pickupLocation,
     pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
     return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
@@ -2382,6 +2446,8 @@ function renderBookingDetail(b) {
     '<div class="card">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h4 style="font-weight:700;">' + (b.brand || '') + ' ' + (b.model || '') + '</h4>' + statusPill(b.status) + '</div>' +
     '<div class="price-row"><span>Period</span><span>' + b.start_date + ' to ' + b.end_date + '</span></div>' +
+    (b.pickup_time ? '<div class="price-row"><span>Pickup Time</span><span>' + formatTime12h(b.pickup_time) + '</span></div>' : '') +
+    (b.return_time ? '<div class="price-row"><span>Return Time</span><span>' + formatTime12h(b.return_time) + '</span></div>' : '') +
     '<div class="price-row"><span>Rental Type</span><span>' + (b.rental_type || '-') + '</span></div>' +
     '<div class="price-row"><span>Insurance</span><span>' + (b.insurance_type || 'Basic') + '</span></div>' +
     '</div>' +

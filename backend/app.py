@@ -2565,6 +2565,10 @@ def book():
 
         return_barangay = data.get('return_barangay')
 
+        pickup_time = data.get('pickup_time', '06:00')
+
+        return_time = data.get('return_time', '06:00')
+
 
 
         # New fields
@@ -2579,6 +2583,20 @@ def book():
 
         total_price = data.get('total_price')
 
+        # Ensure time columns exist
+
+        try:
+
+            cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_time VARCHAR(5) DEFAULT '06:00'")
+
+            cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS return_time VARCHAR(5) DEFAULT '06:00'")
+
+            commit_db()
+
+        except Exception:
+
+            pass
+
 
 
         cur.execute("""
@@ -2591,11 +2609,13 @@ def book():
 
                 pickup_province, pickup_municipality, pickup_barangay,
 
-                return_province, return_municipality, return_barangay
+                return_province, return_municipality, return_barangay,
+
+                pickup_time, return_time
 
             )
 
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
 
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
 
@@ -2603,7 +2623,9 @@ def book():
 
               pickup_province, pickup_municipality, pickup_barangay,
 
-              return_province, return_municipality, return_barangay))
+              return_province, return_municipality, return_barangay,
+
+              pickup_time, return_time))
 
         
 
