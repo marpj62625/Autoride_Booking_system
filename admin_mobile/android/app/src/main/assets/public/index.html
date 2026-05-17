@@ -14,37 +14,37 @@
             --on-primary: #ffffff;
             --primary-dark: #0040CC;
             --primary-light: #4D8FFF;
-            --primary-glow: rgba(0, 82, 255, 0.25);
+            --primary-glow: rgba(0, 82, 255, 0.18);
             /* Backgrounds & Surfaces */
-            --surface: #f9f9ff;
-            --surface-container: #f0f3ff;
+            --surface: #ffffff;
+            --surface-container: #f4f6fb;
             --surface-bright: #ffffff;
             /* Typography & Outlines */
-            --on-surface: #1a1c1e;
-            --on-surface-variant: #44474e;
-            --outline: #d3daea;
+            --on-surface: #0f1117;
+            --on-surface-variant: #3a3d47;
+            --outline: #dde2ee;
             /* Aliases */
-            --bg-dark: #f9f9ff;
-            --bg-page: #f9f9ff;
-            --bg-card: #f0f3ff;
-            --bg-card2: #ffffff;
-            --bg-input: #ffffff;
-            --text-main: #1a1c1e;
-            --text-on-surface: #1a1c1e;
-            --text-primary: #1a1c1e;
-            --text-secondary: #44474e;
-            --text-muted: #6B6E75;
-            --border: #d3daea;
-            --border-light: #E0E5F0;
-            --shadow-card: 0 4px 24px rgba(0,82,255,0.06);
+            --bg-dark: #f0f2f8;
+            --bg-page: #f0f2f8;
+            --bg-card: #ffffff;
+            --bg-card2: #f4f6fb;
+            --bg-input: #f4f6fb;
+            --text-main: #0f1117;
+            --text-on-surface: #0f1117;
+            --text-primary: #0f1117;
+            --text-secondary: #3a3d47;
+            --text-muted: #6b7080;
+            --border: #dde2ee;
+            --border-light: #e8ecf4;
+            --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,82,255,0.06);
             --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
-            --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
-            --success: #10b981;
-            --danger: #ef4444;
-            --amber: #f59e0b;
-            --radius-lg: 24px;
-            --radius-md: 16px;
-            --radius: 16px;
+            --shadow-premium: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,82,255,0.08);
+            --success: #059669;
+            --danger: #dc2626;
+            --amber: #d97706;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius: 14px;
         }
 
         [data-theme="dark"] {
@@ -87,8 +87,8 @@
         
         body {
             background: var(--bg-dark);
-            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 400px),
-                              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1), transparent 400px);
+            background-image: radial-gradient(circle at top right, rgba(0, 82, 255, 0.06), transparent 350px),
+                              radial-gradient(circle at bottom left, rgba(5, 150, 105, 0.04), transparent 350px);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -99,8 +99,8 @@
 
         /* ---------- PREMIUM HEADER ---------- */
         .mobile-header {
-            height: 70px;
-            padding: 0 20px;
+            height: 64px;
+            padding: 0 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -108,74 +108,71 @@
             top: 0;
             left: 0;
             width: 100%;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             z-index: 1000;
             border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(0,0,0,0.04);
         }
 
         .header-left { display: flex; align-items: center; gap: 14px; }
         .menu-btn { 
-            background: rgba(255, 255, 255, 0.05); 
+            background: var(--surface-container); 
             border: 1px solid var(--border); 
-            color: var(--text-main); 
-            width: 40px; height: 40px;
-            border-radius: 12px;
+            color: var(--text-secondary); 
+            width: 38px; height: 38px;
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
         }
-        .menu-btn:active { transform: scale(0.92); background: rgba(255, 255, 255, 0.1); }
+        .menu-btn:active { transform: scale(0.92); background: var(--border); }
         
-        .logo-wrap { display: flex; align-items: center; gap: 10px; }
+        .logo-wrap { display: flex; align-items: center; gap: 8px; }
         .logo-wrap i { 
             color: #f87171; 
-            font-size: 1.4rem; 
-            filter: drop-shadow(0 0 8px rgba(248, 113, 113, 0.5)); 
+            font-size: 1.3rem; 
         }
-        .logo-wrap span { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; }
+        .logo-wrap span { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; color: var(--text-main); }
         .admin-badge {
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             color: white;
-            font-size: 0.6rem;
-            font-weight: 900;
+            font-size: 0.58rem;
+            font-weight: 800;
             padding: 3px 8px;
             border-radius: 6px;
             letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px var(--primary-glow);
         }
 
-        .header-right { display: flex; align-items: center; gap: 12px; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
         .user-avatar {
-            width: 34px;
-            height: 34px;
+            width: 32px;
+            height: 32px;
             background: linear-gradient(135deg, #a78bfa, #8b5cf6);
-            border-radius: 10px;
+            border-radius: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: white;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
         }
         .notif-btn { 
-            background: rgba(255, 255, 255, 0.05); 
+            background: var(--surface-container); 
             border: 1px solid var(--border); 
-            color: var(--text-main); 
-            width: 40px; height: 40px;
-            border-radius: 12px;
+            color: var(--text-secondary); 
+            width: 38px; height: 38px;
+            border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
             position: relative; 
         }
         .notif-dot { 
-            position: absolute; top: 10px; right: 10px; 
-            width: 8px; height: 8px; 
+            position: absolute; top: 8px; right: 8px; 
+            width: 7px; height: 7px; 
             background: var(--danger); 
             border-radius: 50%; 
-            border: 2px solid #0f172a; 
-            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+            border: 2px solid white; 
         }
 
         /* ---------- SIDE DRAWER ---------- */
@@ -185,10 +182,10 @@
             left: -280px;
             width: 280px;
             height: 100%;
-            background: var(--surface-solid);
+            background: var(--surface);
             z-index: 5000;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.12);
             display: flex;
             flex-direction: column;
             border-right: 1px solid var(--border);
@@ -222,27 +219,28 @@
         .drawer-item {
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 14px 20px;
-            color: var(--text-muted);
+            gap: 12px;
+            padding: 11px 16px;
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             font-weight: 600;
-            border-radius: 14px;
-            margin-bottom: 5px;
-            transition: all 0.2s;
+            border-radius: 10px;
+            margin-bottom: 2px;
+            transition: all 0.15s;
         }
 
         .drawer-item i {
-            width: 20px;
-            font-size: 1.1rem;
+            width: 18px;
+            font-size: 1rem;
             text-align: center;
+            color: var(--text-muted);
         }
 
         .drawer-item.active {
-            background: rgba(99, 102, 241, 0.1);
-            color: white;
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: rgba(0, 82, 255, 0.08);
+            color: var(--primary);
+            border: 1px solid rgba(0, 82, 255, 0.15);
         }
 
         .drawer-item.active i {
@@ -283,97 +281,91 @@
         /* ---------- MAIN CONTENT ---------- */
         .main-content {
             flex: 1;
-            padding: 90px 20px 100px;
+            padding: 80px 16px 88px;
             width: 100%;
         }
 
         .page-title { 
-            font-size: 2.2rem; 
+            font-size: 1.75rem; 
             font-weight: 800; 
-            margin-bottom: 8px; 
-            letter-spacing: -1.5px; 
-            background: linear-gradient(to bottom right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px; 
+            letter-spacing: -0.8px;
+            color: var(--text-main);
         }
         .page-subtitle { 
-            font-size: 0.9rem; 
+            font-size: 0.82rem; 
             color: var(--text-muted); 
-            margin-bottom: 30px; 
+            margin-bottom: 24px; 
             display: flex; 
             align-items: center; 
-            gap: 8px; 
+            gap: 6px; 
             font-weight: 500;
         }
 
         /* ---------- PREMIUM CARDS ---------- */
         .stat-card {
             background: var(--surface);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 24px;
+            padding: 20px;
             border-radius: var(--radius-lg);
             border: 1px solid var(--border);
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             position: relative;
-            box-shadow: var(--shadow-premium);
-            transition: transform 0.2s;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.15s, box-shadow 0.15s;
         }
-        .stat-card:active { transform: scale(0.98); }
+        .stat-card:active { transform: scale(0.985); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
         
         .stat-card h5 { 
-            font-size: 0.75rem; 
+            font-size: 0.68rem; 
             color: var(--text-muted); 
             text-transform: uppercase; 
-            margin-bottom: 8px; 
-            font-weight: 800; 
-            letter-spacing: 1px; 
+            margin-bottom: 6px; 
+            font-weight: 700; 
+            letter-spacing: 0.8px; 
         }
         .stat-card .value { 
-            font-size: 2.2rem; 
-            font-weight: 900; 
-            letter-spacing: -1px;
-            margin-bottom: 4px;
+            font-size: 2rem; 
+            font-weight: 800; 
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+            color: var(--text-main);
         }
         .stat-card .label { 
-            font-size: 0.85rem; 
+            font-size: 0.8rem; 
             color: var(--text-muted); 
-            font-weight: 600; 
+            font-weight: 500; 
         }
         .stat-icon { 
             position: absolute; 
-            top: 24px; right: 24px; 
-            font-size: 1.8rem; 
-            opacity: 1;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+            top: 20px; right: 20px; 
+            font-size: 1.5rem; 
+            opacity: 0.7;
         }
 
         .chart-card {
             background: var(--surface);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 24px;
+            padding: 20px;
             border-radius: var(--radius-lg);
             border: 1px solid var(--border);
-            margin-bottom: 20px;
-            box-shadow: var(--shadow-premium);
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-card);
         }
         .chart-card h3 { 
-            font-size: 1rem; 
-            font-weight: 800; 
-            margin-bottom: 20px; 
+            font-size: 0.9rem; 
+            font-weight: 700; 
+            margin-bottom: 16px; 
             color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         .chart-card h3::before {
             content: '';
-            width: 4px; height: 16px;
+            width: 3px; height: 14px;
             background: var(--primary);
-            border-radius: 4px;
+            border-radius: 3px;
         }
-        .chart-container { height: 250px; width: 100%; position: relative; }
+        .chart-container { height: 220px; width: 100%; position: relative; }
 
         /* ---------- BOTTOM NAVIGATION ---------- */
         .bottom-nav {
@@ -381,16 +373,18 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 75px;
-            background: #0f172a;
+            height: 68px;
+            background: rgba(255, 255, 255, 0.95);
             border-top: 1px solid var(--border);
             display: flex;
             justify-content: space-around;
             align-items: center;
-            padding: 0 5px;
+            padding: 0 4px;
             padding-bottom: env(safe-area-inset-bottom);
             z-index: 1000;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 -1px 0 var(--border), 0 -4px 16px rgba(0,0,0,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
         .nav-item {
@@ -400,86 +394,85 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            font-size: 0.7rem;
+            gap: 4px;
+            font-size: 0.65rem;
             font-weight: 600;
             transition: all 0.2s ease;
             flex: 1;
-            padding: 10px 0;
+            padding: 8px 0;
             text-transform: none;
             letter-spacing: 0;
         }
 
-        .nav-item i { font-size: 1.5rem; transition: inherit; }
-        .nav-item.active { color: var(--primary-light); }
+        .nav-item i { font-size: 1.35rem; transition: inherit; }
+        .nav-item.active { color: var(--primary); }
         .nav-item.active i {
             color: var(--primary);
-            filter: drop-shadow(0 0 10px var(--primary-glow));
         }
 
         /* ---------- PILLS ---------- */
         .pill {
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             border: 1px solid transparent;
         }
-        .pill.pending { background: rgba(245, 158, 11, 0.1); color: var(--amber); border-color: rgba(245, 158, 11, 0.2); }
-        .pill.confirmed { background: rgba(99, 102, 241, 0.1); color: var(--primary); border-color: rgba(99, 102, 241, 0.2); }
-        .pill.success, .pill.paid { background: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.2); }
-        .pill.danger, .pill.cancelled { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
+        .pill.pending { background: rgba(217, 119, 6, 0.1); color: var(--amber); border-color: rgba(217, 119, 6, 0.2); }
+        .pill.confirmed { background: rgba(0, 82, 255, 0.08); color: var(--primary); border-color: rgba(0, 82, 255, 0.2); }
+        .pill.success, .pill.paid { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: rgba(5, 150, 105, 0.2); }
+        .pill.danger, .pill.cancelled { background: rgba(220, 38, 38, 0.08); color: var(--danger); border-color: rgba(220, 38, 38, 0.2); }
 
         /* ---------- BUTTONS ---------- */
         .btn-premium {
-            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 14px 24px;
-            border-radius: 16px;
-            font-weight: 800;
-            font-size: 0.95rem;
+            padding: 13px 22px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            box-shadow: 0 10px 20px var(--primary-glow);
-            transition: all 0.2s;
+            gap: 8px;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            transition: all 0.15s;
             cursor: pointer;
         }
-        .btn-premium:active { transform: scale(0.96); box-shadow: 0 5px 10px var(--primary-glow); }
+        .btn-premium:active { transform: scale(0.96); opacity: 0.9; }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 14px;
+            padding: 11px 18px;
+            border-radius: 10px;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            box-shadow: 0 6px 16px var(--primary-glow);
+            gap: 6px;
+            box-shadow: 0 2px 8px var(--primary-glow);
         }
-        .btn-primary:active { transform: scale(0.96); }
+        .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
 
         .btn-outline {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--surface-container);
             border: 1px solid var(--border);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: all 0.2s;
+            color: var(--text-secondary);
+            padding: 11px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.15s;
         }
-        .btn-outline:active { background: rgba(255, 255, 255, 0.1); }
+        .btn-outline:active { background: var(--border); }
 
         /* ---------- MODALS ---------- */
         .premium-modal {
@@ -509,15 +502,14 @@
         /* ---------- LIST ITEMS ---------- */
         .list-item {
             background: var(--surface);
-            backdrop-filter: blur(12px);
-            padding: 20px;
-            border-radius: 20px;
+            padding: 16px;
+            border-radius: var(--radius-md);
             border: 1px solid var(--border);
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             display: flex;
-            gap: 16px;
+            gap: 14px;
             align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-card);
         }
         /* ---------- LOGIN OVERLAY ---------- */
         #adminLoginOverlay {
@@ -534,14 +526,12 @@
         }
 
         .login-card {
-            background: var(--surface);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: #1e293b;
             width: 100%;
             max-width: 400px;
             padding: 40px 30px;
             border-radius: 32px;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255,255,255,0.1);
             text-align: center;
             box-shadow: var(--shadow-premium);
         }
@@ -551,16 +541,14 @@
             font-weight: 800;
             letter-spacing: -1px;
             margin-bottom: 30px;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: white;
         }
 
         .login-card input {
             width: 100%;
             padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255,255,255,0.12);
             border-radius: 16px;
             color: white;
             font-size: 1rem;
@@ -591,6 +579,107 @@
         }
 
         .login-card button:active { transform: scale(0.97); }
+
+        /* ---- LIGHT MODE: prevent white-on-white text ---- */
+        /*
+         * Broad reset: everything inside the main content area uses
+         * the theme text color by default. Exceptions are carved out
+         * below for elements that intentionally sit on dark/colored
+         * backgrounds (buttons, badges, pills, icon boxes, modals).
+         */
+
+        /* Reset all text in the main content area */
+        .main-content, .main-content * {
+            color: var(--text-main);
+        }
+
+        /* Muted / secondary text */
+        .main-content h5,
+        .main-content .label,
+        .main-content .page-subtitle,
+        .main-content small,
+        .main-content .text-muted {
+            color: var(--text-muted);
+        }
+
+        /* Inputs & selects inside light surfaces */
+        .main-content input:not([type="submit"]):not([type="button"]),
+        .main-content select,
+        .main-content textarea {
+            color: var(--text-main);
+            background: var(--surface-container);
+            border-color: var(--border);
+        }
+        .main-content input::placeholder,
+        .main-content textarea::placeholder { color: var(--text-muted); }
+
+        /* Buttons with colored backgrounds ó keep white text */
+        .main-content .btn-primary,
+        .main-content .btn-premium,
+        .main-content button[style*="background: var(--primary)"],
+        .main-content button[style*="background: linear-gradient"],
+        .main-content button[style*="background:#"],
+        .main-content button[style*="background: #"] {
+            color: white;
+        }
+
+        /* Badges / pills / colored icon containers ó keep white */
+        .main-content .admin-badge,
+        .main-content .user-avatar,
+        .main-content [style*="background: var(--primary)"] > i,
+        .main-content [style*="background: var(--primary)"] > span {
+            color: white;
+        }
+
+        /* Status pills keep their own colors */
+        .main-content .pill { color: inherit; }
+
+        /* Danger/logout link */
+        .main-content a[style*="color: #ef4444"] { color: #ef4444 !important; }
+
+        /* Stat card values that have explicit color overrides (confirmed, pending, etc.) */
+        .main-content .value[style*="color:"],
+        .main-content .value[style*="color: "] { color: inherit; }
+
+        /* ---- DARK OVERLAY PANELS ó keep white text ---- */
+        /* These elements have dark backgrounds and must stay white */
+        #exitConfirmModal *,
+        #adminNotifPanel *,
+        .premium-modal .modal-content,
+        .premium-modal .modal-content * {
+            color: white;
+        }
+        .premium-modal .modal-content input,
+        .premium-modal .modal-content select,
+        .premium-modal .modal-content textarea {
+            color: white;
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(255,255,255,0.12);
+        }
+        .premium-modal .modal-content input::placeholder { color: rgba(255,255,255,0.4); }
+
+        /* Modal content (dark background) */
+        .modal-content {
+            background: #1e293b;
+            color: white;
+        }
+
+        /* Settings tab ó stat-card items that are on white bg need dark text */
+        #settings .stat-card h4 { color: var(--text-main); }
+        #settings .stat-card p  { color: var(--text-muted); }
+
+        /* Dark theme overrides ó restore white text everywhere */
+        [data-theme="dark"] .main-content,
+        [data-theme="dark"] .main-content * {
+            color: var(--text-main); /* resolves to #FFFFFF in dark theme */
+        }
+        [data-theme="dark"] .main-content input:not([type="submit"]):not([type="button"]),
+        [data-theme="dark"] .main-content select,
+        [data-theme="dark"] .main-content textarea {
+            color: var(--text-main);
+            background: var(--bg-input);
+            border-color: var(--border);
+        }
     </style>
 </head>
 <body>
@@ -683,42 +772,62 @@
             <span id="headerTime">Loading time...</span>
         </div>
 
-
-
         <div class="stat-card">
             <h5>TOTAL REVENUE</h5>
-            <div class="value" id="dashTotalRevenue">‚Äî</div>
-            <div class="stat-icon">üí∞</div>
+            <div class="value" id="dashTotalRevenue">ó</div>
         </div>
 
         <div class="stat-card">
-            <h5>FLEET UTILIZATION</h5>
-            <div class="value" id="dashTotalBookings">‚Äî</div>
-            <div class="label">Total System Bookings</div>
-            <div class="stat-icon">üìä</div>
+            <h5>TOTAL BOOKINGS</h5>
+            <div class="value" id="dashTotalBookings">ó</div>
+            <div class="label">System-wide bookings</div>
         </div>
 
-        <div class="chart-card">
-            <h3>Revenue Performance (Last 30 Days)</h3>
-            <div class="chart-container">
+        <!-- Collapsible: Revenue Line Chart -->
+        <div class="chart-card" id="cc-revenue">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('revenue')">
+                <span>Revenue Trend (Last 30 Days)</span>
+                <i id="cc-icon-revenue" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-revenue" class="chart-container">
                 <canvas id="revenueChart"></canvas>
             </div>
         </div>
 
-        <div class="chart-card">
-            <h3>Fleet Health</h3>
-            <div class="chart-container">
+        <!-- Collapsible: Total Bookings Bar Chart -->
+        <div class="chart-card" id="cc-bookings">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('bookings')">
+                <span>Bookings per Day</span>
+                <i id="cc-icon-bookings" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-bookings" class="chart-container">
+                <canvas id="bookingsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Collapsible: Fleet Health Doughnut -->
+        <div class="chart-card" id="cc-fleet">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('fleet')">
+                <span>Fleet Health</span>
+                <i id="cc-icon-fleet" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-fleet" class="chart-container">
                 <canvas id="fleetHealthChart"></canvas>
             </div>
         </div>
 
-        <div class="chart-card">
-            <h3>User Verifications</h3>
-            <div class="chart-container">
-                <canvas id="userStatsChart"></canvas>
+        <!-- Collapsible: Top Vehicles Pie Chart -->
+        <div class="chart-card" id="cc-topveh">
+            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleChart('topveh')">
+                <span>Top Performing Vehicles</span>
+                <i id="cc-icon-topveh" class="fas fa-chevron-up" style="font-size:0.8rem;color:var(--text-muted);"></i>
+            </h3>
+            <div id="cc-body-topveh" class="chart-container">
+                <canvas id="topVehiclesPieChart"></canvas>
             </div>
         </div>
 
+        <!-- Top Grossing Table -->
         <div class="chart-card" style="height: auto;">
             <h3>Top Grossing Vehicles</h3>
             <div style="overflow-x: auto;">
@@ -856,9 +965,9 @@
             </div>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700; color: white;">Bookings List</h3>
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Bookings List</h3>
             <div style="display: flex; gap: 10px;">
-                <button onclick="Bookings.refresh()" style="background: #334155; border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem;">Refresh</button>
+                <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
             </div>
         </div>
         <div id="bookingsList">
@@ -879,7 +988,7 @@
                     <i class="fas fa-user-shield"></i>
                 </div>
                 <div>
-                    <h4 style="font-size: 1rem; color: white; margin-bottom: 2px;">Identity Audit</h4>
+                    <h4 style="font-size: 1rem; color: var(--text-main); font-weight: 700; margin-bottom: 2px;">Identity Audit</h4>
                     <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Review pending driver's licenses</p>
                 </div>
             </div>
@@ -943,28 +1052,83 @@
 
     <!-- REPORTS TAB -->
     <div id="reports" class="tab-content" style="display: none;">
-        <h1 class="page-title">Analytics & Reports</h1>
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; display: grid;">
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted);">AVG REVENUE</h5>
-                <div class="value" id="repAvgRev" style="font-size: 1.2rem; font-weight: 700; color: var(--success);">‚Ç±0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted);">ACTIVE FLEET</h5>
-                <div class="value" id="repActive" style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">0</div>
-            </div>
-        </div>
-        <div class="chart-card">
-            <h3 style="margin-bottom: 15px;">Revenue Growth</h3>
-            <div class="chart-container" style="height: 200px;">
-                <canvas id="reportsRevenueChart"></canvas>
+        <h1 class="page-title">Analytics &amp; Reports</h1>
+
+        <!-- Date range filter -->
+        <div class="stat-card" style="padding: 14px; margin-bottom: 16px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <div style="display:flex;gap:6px;">
+                    <button onclick="Reports.setFilter('day',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Day</button>
+                    <button onclick="Reports.setFilter('month',this)" class="rpt-filter-btn active-filter" style="padding:6px 12px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:white;font-size:0.72rem;font-weight:700;cursor:pointer;">Month</button>
+                    <button onclick="Reports.setFilter('year',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Year</button>
+                </div>
+                <input type="date" id="rptDateFrom" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
+                <input type="date" id="rptDateTo" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
             </div>
         </div>
-        <div class="chart-card" style="height: auto;">
-            <h3 style="margin-bottom: 15px;">Top Performing Vehicles</h3>
-            <div id="reportsTopVehicles" style="padding-bottom: 10px;">
-                <div style="text-align: center; padding: 20px; color: var(--text-muted);">Loading analytics...</div>
+
+        <!-- Summary stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">AVG REVENUE / BOOKING</h5>
+                <div class="value" id="repAvgRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
             </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL BOOKINGS</h5>
+                <div class="value" id="repActive" style="font-size:1.2rem;font-weight:700;color:var(--primary);">0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL REVENUE</h5>
+                <div class="value" id="repTotalRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">ACTIVE FLEET</h5>
+                <div class="value" id="repFleet" style="font-size:1.2rem;font-weight:700;color:var(--amber);">0</div>
+            </div>
+        </div>
+
+        <!-- Charts grid: Revenue + Top Vehicles side by side, Bookings full width -->
+        <div style="display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+            <!-- Revenue Trend -->
+            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
+                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Revenue Trend</div>
+                <div style="height:150px;position:relative;">
+                    <canvas id="reportsRevenueChart"></canvas>
+                </div>
+            </div>
+            <!-- Top Vehicles Pie -->
+            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
+                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Top Vehicles</div>
+                <div style="height:150px;position:relative;">
+                    <canvas id="reportsTopPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings Period full width -->
+        <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:16px;">
+            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Bookings Period</div>
+            <div style="height:150px;position:relative;">
+                <canvas id="reportsBookingsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Vehicles List -->
+        <div class="chart-card" style="height:auto;">
+            <h3 style="margin-bottom:15px;">Top Performing Vehicles</h3>
+            <div id="reportsTopVehicles" style="padding-bottom:10px;">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading analytics...</div>
+            </div>
+        </div>
+
+        <!-- Export buttons -->
+        <div style="display:flex;gap:10px;margin-bottom:30px;">
+            <button onclick="Reports.exportExcel()" class="btn-primary" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-file-excel"></i> Export Excel
+            </button>
+            <button onclick="Reports.printReport()" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
+                <i class="fas fa-print"></i> Print
+            </button>
         </div>
     </div>
 
@@ -1095,7 +1259,7 @@
         </div>
 
         <div class="stat-card" style="padding: 20px; border-radius: 20px; border: 1px solid var(--border);">
-            <h3 style="font-size: 1rem; color: white; margin-bottom: 20px;">Staff Accounts</h3>
+            <h3 style="font-size: 1rem; color: var(--text-main); font-weight: 700; margin-bottom: 20px;">Staff Accounts</h3>
             <div id="staffList">
                 <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading staff accounts...</div>
             </div>
@@ -1117,7 +1281,7 @@
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Password</label>
-                    <input id="staffPass" type="password" placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                    <input id="staffPass" type="password" placeholder="ïïïïïïïï" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
                     <small id="staffPassHint" style="font-size: 0.65rem; color: var(--text-muted); display: none;">Leave blank to keep current password</small>
                 </div>
                 <div style="margin-bottom: 25px;">
@@ -1141,6 +1305,36 @@
             <h2 id="modalTitle" style="margin-bottom: 25px; font-size: 1.5rem; font-weight: 700; color: white;">Add New Vehicle</h2>
             <form id="vehicleForm">
                 <input type="hidden" id="editId">
+
+                <!-- ?? PHOTO UPLOAD SECTION ?? -->
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Vehicle Photos <span style="color: #ef4444;">*</span>
+                        <span style="color: var(--text-muted); font-weight: 500; text-transform: none; letter-spacing: 0;">(max 4 ó first photo is Main)</span>
+                    </label>
+
+                    <!-- Thumbnail strip -->
+                    <div id="vPhotoStrip" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; min-height: 0;"></div>
+
+                    <!-- Picker buttons -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button type="button" onclick="VehiclePhotos.takePhoto()"
+                            style="padding: 12px 8px; background: rgba(99,102,241,0.12); border: 1px dashed rgba(99,102,241,0.5); border-radius: 12px; color: #818cf8; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                            <i class="fas fa-camera"></i> Take Photo
+                        </button>
+                        <label style="padding: 12px 8px; background: rgba(99,102,241,0.12); border: 1px dashed rgba(99,102,241,0.5); border-radius: 12px; color: #818cf8; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                            <i class="fas fa-images"></i> Upload from Gallery
+                            <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ?? EXISTING GALLERY (edit mode) ?? -->
+                <div id="vExistingGallery" style="display: none; margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Manage Existing Images (Arrows to reorder)</label>
+                    <div id="vGalleryManager" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid var(--border); border-radius: 10px; min-height: 100px;"></div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div style="grid-column: span 1;">
                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Brand</label>
@@ -1219,7 +1413,7 @@
                         </select>
                     </div>
                     <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Daily Rate (‚Ç±)</label>
+                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Daily Rate (&#8369;)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
                     </div>
                     <div style="grid-column: span 2;">
@@ -1238,23 +1432,13 @@
                             <option value="Repair">Repair</option>
                         </select>
                     </div>
-                    <div id="vExistingGallery" style="grid-column: span 2; display: none; margin-bottom: 15px;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Manage Existing Images (Arrows to reorder)</label>
-                        <div id="vGalleryManager" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid var(--border); border-radius: 10px; min-height: 100px;">
-                            <!-- Images -->
-                        </div>
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Vehicle Images (Select multiple)</label>
-                        <input type="file" id="vGallery" accept="image/*" multiple style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                    </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Image URL Fallback (optional)</label>
-                        <input type="text" id="vImage" placeholder="https://example.com/car.jpg" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                    </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
-                    <button type="button" onclick="Vehicles.closeModal()" style="padding: 12px 25px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; flex-wrap: wrap;">
+                    <button type="button" onclick="Vehicles.closeModal()" style="padding: 12px 20px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                    <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)"
+                        style="padding: 12px 20px; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 10px; color: #818cf8; font-weight: 600; display: none;">
+                        Save &amp; Add Another
+                    </button>
                     <button type="submit" id="submitBtnText" style="padding: 12px 25px; background: #6366f1; border: none; border-radius: 10px; color: white; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">Add Vehicle</button>
                 </div>
             </form>
@@ -1267,11 +1451,11 @@
             <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
-                <input id="newMobilePassword" type="password" placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="newMobilePassword" type="password" placeholder="ïïïïïïïï" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Confirm New Password</label>
-                <input id="confirmMobilePassword" type="password" placeholder="‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢‚Ä¢" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="confirmMobilePassword" type="password" placeholder="ïïïïïïïï" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
@@ -1342,15 +1526,15 @@
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ÔøΩ</div>
+            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ù</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ÔøΩ</div>
+            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ù</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ÔøΩ</div>
+            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ù</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
         </div>
     </div>
@@ -1425,7 +1609,7 @@
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
-    // Admin notification globals ó defined early so initSession can call them
+    // Admin notification globals ù defined early so initSession can call them
     window.adminNotifList = [];
 
     window.loadAdminNotifications = function(adminId) {
@@ -1576,7 +1760,7 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
-                // Load saved theme preference ó default to LIGHT
+                // Load saved theme preference ù default to LIGHT
                 var savedAdminTheme = localStorage.getItem('adminTheme');
                 if (savedAdminTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
@@ -1753,10 +1937,10 @@
                     <div style="flex: 1;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
                             <div>
-                                <h4 style="font-size: 1rem; font-weight: 800; color: white;">${v.brand || ''} ${v.model || ''}</h4>
+                                <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main);">${v.brand || ''} ${v.model || ''}</h4>
                                 <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">${v.plate_number || 'NO PLATE'}</p>
                             </div>
-                            <span style="font-size: 1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px;">‚Ç±${v.daily_rate || 0}</span>
+                            <span style="font-size: 1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px;">&#8369;${v.daily_rate || 0}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                             <span class="pill ${(v.status || '').toLowerCase() === 'available' ? 'success' : 'danger'}" style="font-size: 0.6rem; padding: 3px 10px;">
@@ -1775,6 +1959,10 @@
             document.getElementById('editId').value = id || '';
             document.getElementById('modalTitle').textContent = id ? 'Edit Vehicle' : 'Add New Vehicle';
             document.getElementById('submitBtnText').textContent = id ? 'Update Vehicle' : 'Add Vehicle';
+            // Show "Save & Add Another" only for new vehicles
+            const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
+            if (addAnotherBtn) addAnotherBtn.style.display = id ? 'none' : 'inline-flex';
+
             if (id) {
                 const v = this.data.find(x => x.id === id);
                 if (!v) return;
@@ -1789,8 +1977,6 @@
                 document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
                 document.getElementById('vStatus').value = v.status;
                 document.getElementById('vRate').value = v.daily_rate;
-                document.getElementById('vImage').value = v.vehicle_image || '';
-                document.getElementById('vGallery').value = ''; // Reset file input
                 
                 // Gallery Details
                 this.galleryDetails = v.gallery_details || [];
@@ -1801,6 +1987,8 @@
                 document.getElementById('vExistingGallery').style.display = 'none';
                 this.galleryDetails = [];
             }
+            // Always clear new-photo selections when opening the modal
+            VehiclePhotos.clear();
             document.getElementById('vehicleModal').style.display = 'block';
         },
 
@@ -1875,6 +2063,73 @@
                 alert('Network error: Could not reach the server at ' + API_BASE);
             }
         },
+        async submitForm(addAnother = false) {
+            const id = document.getElementById('editId').value;
+            const isEdit = !!id;
+
+            // Validate photos for new vehicles
+            if (!VehiclePhotos.validate(isEdit)) return;
+
+            const brand = document.getElementById('vBrand').value;
+            const model = document.getElementById('vModel').value;
+
+            const formData = new FormData();
+            formData.append('brand', brand);
+            formData.append('model', model);
+            formData.append('name', `${brand} ${model}`);
+            formData.append('plate_number', document.getElementById('vPlate').value);
+            formData.append('color', document.getElementById('vColor').value || '');
+            formData.append('vehicle_type', document.getElementById('vType').value);
+            formData.append('transmission', document.getElementById('vTrans').value);
+            formData.append('fuel_type', document.getElementById('vFuel').value);
+            formData.append('seats', document.getElementById('vSeats').value);
+            formData.append('location', document.getElementById('vLocation').value);
+            formData.append('status', document.getElementById('vStatus').value);
+            formData.append('daily_rate', document.getElementById('vRate').value);
+
+            // Append new photos
+            VehiclePhotos.appendTo(formData);
+
+            const method = isEdit ? 'PUT' : 'POST';
+            const url = isEdit ? `${API_URL}/vehicles/${id}/` : `${API_URL}/vehicles/`;
+
+            // Disable submit buttons during upload
+            const submitBtn = document.getElementById('submitBtnText');
+            const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
+            const origText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+            if (addAnotherBtn) addAnotherBtn.disabled = true;
+
+            try {
+                const res = await fetch(url, { method, body: formData });
+                if (res.ok) {
+                    showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
+                    this.refresh();
+                    if (addAnother) {
+                        // Reset form but keep modal open ó clear photos completely
+                        document.getElementById('vehicleForm').reset();
+                        this.updateModels();
+                        document.getElementById('vExistingGallery').style.display = 'none';
+                        this.galleryDetails = [];
+                        VehiclePhotos.clear();  // mandatory clear for "Save & Add Another"
+                        document.getElementById('vehicleModal').scrollTop = 0;
+                    } else {
+                        this.closeModal();
+                    }
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    showNotification(err.error || 'Error saving vehicle', 'error');
+                }
+            } catch (err) {
+                showNotification('Connection failed', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = origText;
+                if (addAnotherBtn) addAnotherBtn.disabled = false;
+            }
+        },
+
         closeModal() { document.getElementById('vehicleModal').style.display = 'none'; },
         async delete(id) {
             if (!confirm('Delete this vehicle?')) return;
@@ -1886,48 +2141,141 @@
         async edit(id) { this.openModal(id); }
     };
 
+    // ?? VEHICLE PHOTOS MODULE ??????????????????????????????????????????????????
+    // Manages up to 4 new photos selected for a vehicle add/edit operation.
+    // Each entry: { file: File, dataUrl: string, label: string }
+    const VehiclePhotos = {
+        MAX: 4,
+        LABELS: ['Main', 'Front', 'Side', 'Rear'],
+        _items: [],   // { file, dataUrl, label }
+
+        clear() {
+            this._items = [];
+            this._render();
+            // Reset the hidden file input so the same file can be re-selected
+            const inp = document.getElementById('vGalleryPicker');
+            if (inp) inp.value = '';
+        },
+
+        // Called when user picks files from gallery input
+        onFilePick(input) {
+            const files = Array.from(input.files);
+            files.forEach(f => this._addFile(f));
+            input.value = ''; // allow re-picking same file
+        },
+
+        // Called by "Take Photo" button ó uses Capacitor Camera if available,
+        // falls back to a hidden file input with capture="environment"
+        async takePhoto() {
+            const Camera = window.Capacitor?.Plugins?.Camera;
+            if (Camera) {
+                try {
+                    const photo = await Camera.getPhoto({
+                        quality: 85,
+                        allowEditing: false,
+                        resultType: 'base64',
+                        source: 'CAMERA'
+                    });
+                    // Convert base64 to File
+                    const byteStr = atob(photo.base64String);
+                    const arr = new Uint8Array(byteStr.length);
+                    for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+                    const blob = new Blob([arr], { type: 'image/jpeg' });
+                    const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                    this._addFile(file);
+                } catch (err) {
+                    if (err.message !== 'User cancelled photos app') {
+                        showNotification('Camera error: ' + err.message, 'error');
+                    }
+                }
+            } else {
+                // Fallback: trigger a file input with camera capture
+                let cap = document.getElementById('vCameraCapture');
+                if (!cap) {
+                    cap = document.createElement('input');
+                    cap.type = 'file';
+                    cap.accept = 'image/*';
+                    cap.capture = 'environment';
+                    cap.id = 'vCameraCapture';
+                    cap.style.display = 'none';
+                    cap.addEventListener('change', () => {
+                        Array.from(cap.files).forEach(f => this._addFile(f));
+                        cap.value = '';
+                    });
+                    document.body.appendChild(cap);
+                }
+                cap.click();
+            }
+        },
+
+        _addFile(file) {
+            if (this._items.length >= this.MAX) {
+                showNotification(`Maximum ${this.MAX} photos allowed.`, 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const label = this.LABELS[this._items.length] || `Photo ${this._items.length + 1}`;
+                this._items.push({ file, dataUrl: e.target.result, label });
+                this._render();
+            };
+            reader.readAsDataURL(file);
+        },
+
+        remove(index) {
+            this._items.splice(index, 1);
+            // Re-assign labels after removal
+            this._items.forEach((item, i) => { item.label = this.LABELS[i] || `Photo ${i + 1}`; });
+            this._render();
+        },
+
+        _render() {
+            const strip = document.getElementById('vPhotoStrip');
+            if (!strip) return;
+            if (this._items.length === 0) {
+                strip.innerHTML = '';
+                return;
+            }
+            strip.innerHTML = this._items.map((item, i) => `
+                <div style="position: relative; flex-shrink: 0;">
+                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#6366f1' : 'rgba(255,255,255,0.1)'};">
+                        <img src="${item.dataUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#818cf8' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
+                        ${item.label}
+                    </div>
+                    <button type="button" onclick="VehiclePhotos.remove(${i})"
+                        style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #ef4444; border: none; border-radius: 50%; color: white; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        },
+
+        // Returns true if valid, false + shows toast if not
+        validate(isEdit) {
+            if (isEdit) return true; // editing: photos optional (existing gallery handles it)
+            if (this._items.length === 0) {
+                showNotification('Please add at least one vehicle photo (Main photo is required).', 'error');
+                return false;
+            }
+            return true;
+        },
+
+        // Appends files to a FormData object
+        appendTo(formData) {
+            this._items.forEach(item => {
+                formData.append('gallery', item.file);
+            });
+            // Set first photo as the main vehicle_image via URL after upload
+            // (server will handle gallery[0] as primary)
+        }
+    };
+
     // Form Handler
     document.getElementById('vehicleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        const id = document.getElementById('editId').value;
-        const brand = document.getElementById('vBrand').value;
-        const model = document.getElementById('vModel').value;
-        
-        const formData = new FormData();
-        formData.append('brand', brand);
-        formData.append('model', model);
-        formData.append('name', `${brand} ${model}`);
-        formData.append('plate_number', document.getElementById('vPlate').value);
-        formData.append('color', document.getElementById('vColor').value || '');
-        formData.append('vehicle_type', document.getElementById('vType').value);
-        formData.append('transmission', document.getElementById('vTrans').value);
-        formData.append('fuel_type', document.getElementById('vFuel').value);
-        formData.append('seats', document.getElementById('vSeats').value);
-        formData.append('location', document.getElementById('vLocation').value);
-        formData.append('status', document.getElementById('vStatus').value);
-        formData.append('daily_rate', document.getElementById('vRate').value);
-        formData.append('vehicle_image', document.getElementById('vImage').value);
-
-        // Add gallery files
-        const galleryInput = document.getElementById('vGallery');
-        if (galleryInput.files.length > 0) {
-            for (let i = 0; i < galleryInput.files.length; i++) {
-                formData.append('gallery', galleryInput.files[i]);
-            }
-        }
-
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? `${API_URL}/vehicles/${id}/` : `${API_URL}/vehicles/`;
-        try {
-            const res = await fetch(url, {
-                method,
-                body: formData
-            });
-            if (res.ok) {
-                Vehicles.closeModal();
-                Vehicles.refresh();
-            } else { showNotification('Error saving vehicle', 'error'); }
-        } catch (err) { showNotification('Connection failed', 'error'); }
+        await Vehicles.submitForm(false);
     });
 
     function toggleDrawer(show) {
@@ -1971,7 +2319,15 @@
             if (tabId === 'tickets' && typeof Tickets !== 'undefined' && Tickets.data.length === 0) Tickets.refresh();
             if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
             if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
-            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) Reports.refresh();
+            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) {
+                // Set default date range (current month) on first open
+                const now = new Date();
+                const to = now.toISOString().split('T')[0];
+                const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                document.getElementById('rptDateFrom').value = from;
+                document.getElementById('rptDateTo').value = to;
+                Reports.refresh();
+            }
             if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
             if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
 
@@ -2061,7 +2417,7 @@
                             <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
                         </div>
                         <div style="flex: 1;">
-                            <p style="font-size: 0.9rem; font-weight: 700; color: white;">${b.car || 'Unknown Vehicle'}</p>
+                            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">${b.car || 'Unknown Vehicle'}</p>
                             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
                                 <i class="far fa-calendar-alt" style="margin-right: 4px;"></i>
                                 ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
@@ -2070,7 +2426,7 @@
                     </div>
  
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">‚Ç±${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
+                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
                         <div style="display: flex; gap: 8px;">
                             <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 12px; min-width: 70px;">Details</button>
                             
@@ -2195,42 +2551,42 @@
 
             const content = `
                 <div style="display: grid; gap: 15px;">
-                    <h2 style="font-size: 1.8rem; font-weight: 900; color: white; margin-bottom: 5px; letter-spacing: -1px;">Booking Details #${b.id}</h2>
+                    <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--text-main); margin-bottom: 5px; letter-spacing: -1px;">Booking Details #${b.id}</h2>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Customer</label>
-                            <p style="font-weight: 700; font-size: 1.1rem; color: white; margin-top: 2px;">${b.customer_name || 'Guest'}</p>
+                            <p style="font-weight: 700; font-size: 1.1rem; color: var(--text-main); margin-top: 2px;">${b.customer_name || 'Guest'}</p>
                         </div>
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Vehicle</label>
-                            <p style="font-weight: 700; font-size: 1rem; color: white; margin-top: 2px;">${b.car || '-'}</p>
+                            <p style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-top: 2px;">${b.car || '-'}</p>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Rental Period</label>
-                            <p style="font-weight: 700; font-size: 1rem; color: white; margin-top: 2px;">${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} to ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}</p>
+                            <p style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-top: 2px;">${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} to ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}</p>
                         </div>
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Payment Status</label>
-                            <p style="font-weight: 700; font-size: 1rem; margin-top: 2px; color: ${b.payment_status === 'Paid' ? '#10b981' : '#f59e0b'}">${b.payment_status || 'Unpaid'}</p>
+                            <p style="font-weight: 700; font-size: 1rem; margin-top: 2px; color: ${b.payment_status === 'Paid' ? 'var(--success)' : 'var(--amber)'}">${b.payment_status || 'Unpaid'}</p>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Total Price</label>
-                            <p style="font-weight: 800; color: #10b981; font-size: 1.2rem; margin-top: 2px;">‚Ç±${b.total_price ? b.total_price.toLocaleString() : '0.00'}</p>
+                            <p style="font-weight: 800; color: var(--success); font-size: 1.2rem; margin-top: 2px;">&#8369;${b.total_price ? b.total_price.toLocaleString() : '0.00'}</p>
                         </div>
                         <div>
                             <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Booking Status</label>
-                            <p style="font-weight: 900; color: white; font-size: 1.1rem; margin-top: 2px;">${(b.status || 'PENDING').toUpperCase()}</p>
+                            <p style="font-weight: 900; color: var(--text-main); font-size: 1.1rem; margin-top: 2px;">${(b.status || 'PENDING').toUpperCase()}</p>
                         </div>
                     </div>
 
-                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 10px 0;"></div>
+                    <div style="height: 1px; background: var(--border); margin: 10px 0;"></div>
 
                     <!-- INSPECTION SECTION -->
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -2646,7 +3002,7 @@
                             ${initial}
                         </div>
                         <div style="flex: 1;">
-                            <h4 style="font-size: 1.05rem; font-weight: 800; color: white;">${name}</h4>
+                            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${name}</h4>
                             <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">${v.email || 'No Email'}</p>
                         </div>
                     </div>
@@ -2729,14 +3085,14 @@
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px; ${t.status === 'resolved' ? 'opacity: 0.6;' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
                         <div>
-                            <h4 style="font-size: 1rem; font-weight: 800; color: white;">${t.subject || 'No Subject'}</h4>
+                            <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main);">${t.subject || 'No Subject'}</h4>
                             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${t.user_name || t.email}</p>
                         </div>
                         <span class="pill ${t.status === 'open' ? 'danger' : 'success'}" style="font-size: 0.55rem; padding: 3px 10px;">
                             ${t.status.toUpperCase()}
                         </span>
                     </div>
-                    <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 18px; line-height: 1.6; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border-left: 3px solid var(--primary);">${t.message}</p>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.6; background: var(--surface-container); padding: 12px; border-radius: 12px; border-left: 3px solid var(--primary);">${t.message}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
                         <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">${new Date(t.created_at).toLocaleDateString()}</span>
                         ${t.status === 'open' ? `
@@ -3011,14 +3367,14 @@
                                 <div style="width: 24px; height: 24px; background: rgba(99,102,241,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--primary);">
                                     <i class="fas fa-user-shield"></i>
                                 </div>
-                                <strong style="font-size: 0.9rem; color: white;">${l.admin_name || 'System'}</strong>
+                                <strong style="font-size: 0.9rem; color: var(--text-main);">${l.admin_name || 'System'}</strong>
                             </div>
                             <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">${new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </div>
                         <div style="font-size: 0.65rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
                             ${l.action.replace(/_/g, ' ')}
                         </div>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 8px;">${l.details || '-'}</p>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; background: var(--surface-container); padding: 8px; border-radius: 8px;">${l.details || '-'}</p>
                         <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; opacity: 0.6;">
                             <span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${new Date(l.created_at).toLocaleDateString()}</span>
                             <span style="font-family: monospace; font-size: 0.6rem; letter-spacing: 1px;">${l.ip_address || '-'}</span>
@@ -3034,58 +3390,197 @@
     // --- REPORTS MODULE ---
     const Reports = {
         chart: null,
+        chartBookings: null,
+        chartPie: null,
         _loaded: false,
+        _filter: 'month',
+        _rawData: null,
+
+        setFilter(period, btn) {
+            this._filter = period;
+            document.querySelectorAll('.rpt-filter-btn').forEach(b => {
+                b.style.background = 'var(--surface-container)';
+                b.style.borderColor = 'var(--border)';
+                b.style.color = 'var(--text-secondary)';
+            });
+            btn.style.background = 'var(--primary)';
+            btn.style.borderColor = 'var(--primary)';
+            btn.style.color = 'white';
+            // Set default date range based on period
+            const now = new Date();
+            const to = now.toISOString().split('T')[0];
+            let from;
+            if (period === 'day') {
+                from = to;
+            } else if (period === 'month') {
+                const d = new Date(now); d.setDate(1);
+                from = d.toISOString().split('T')[0];
+            } else {
+                const d = new Date(now); d.setMonth(0); d.setDate(1);
+                from = d.toISOString().split('T')[0];
+            }
+            document.getElementById('rptDateFrom').value = from;
+            document.getElementById('rptDateTo').value = to;
+            this.refresh();
+        },
+
         async refresh() {
             this._loaded = true;
             try {
-                const res = await fetch(`${API_BASE}/api/admin/detailed-stats`);
+                const from = document.getElementById('rptDateFrom').value;
+                const to = document.getElementById('rptDateTo').value;
+                const params = from && to ? `&date_from=${from}&date_to=${to}` : '';
+                const res = await fetch(`${API_BASE}/api/admin/detailed-stats?filter=${this._filter}${params}`);
                 const data = await res.json();
-                
-                document.getElementById('repAvgRev').textContent = '‚Ç±' + Math.floor(data.summary.total_revenue / (data.summary.total_bookings || 1)).toLocaleString();
-                document.getElementById('repActive').textContent = data.summary.total_bookings;
+                this._rawData = data;
 
-                this.renderChart(data.revenueTrend);
-                this.renderTop(data.topVehicles);
+                const totalRev = data.summary?.total_revenue || 0;
+                const totalBook = data.summary?.total_bookings || 0;
+                document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
+                document.getElementById('repActive').textContent = totalBook;
+                document.getElementById('repTotalRev').textContent = '\u20B1' + totalRev.toLocaleString();
+                document.getElementById('repFleet').textContent = data.summary?.active_fleet || 0;
+
+                this.renderRevenueChart(data.revenueTrend || []);
+                this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
+                this.renderPieChart(data.topVehicles || []);
+                this.renderTop(data.topVehicles || []);
             } catch (err) { console.error(err); }
         },
-        renderChart(trend) {
+
+        renderRevenueChart(trend) {
             const ctx = document.getElementById('reportsRevenueChart').getContext('2d');
             if (this.chart) this.chart.destroy();
             this.chart = new Chart(ctx, {
-                type: 'bar',
+                type: 'line',
                 data: {
-                    labels: trend.map(t => t.day.split('-')[2]),
+                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
                     datasets: [{
                         label: 'Revenue',
-                        data: trend.map(t => t.amount),
-                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                        borderColor: '#818cf8',
-                        borderWidth: 1,
-                        borderRadius: 4
+                        data: trend.map(t => t.amount || t.revenue || 0),
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6366f1'
                     }]
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
+                options: { responsive: true, maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
-                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
                     }
                 }
             });
         },
+
+        renderBookingsChart(trend) {
+            const ctx = document.getElementById('reportsBookingsChart').getContext('2d');
+            if (this.chartBookings) this.chartBookings.destroy();
+            this.chartBookings = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+                    datasets: [{
+                        label: 'Bookings',
+                        data: trend.map(t => t.count || t.bookings || 0),
+                        backgroundColor: 'rgba(0,82,255,0.6)',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    }
+                }
+            });
+        },
+
+        renderPieChart(cars) {
+            const ctx = document.getElementById('reportsTopPieChart').getContext('2d');
+            if (this.chartPie) this.chartPie.destroy();
+            const top = cars.slice(0, 6);
+            this.chartPie = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: top.map(c => `${c.brand} ${c.model}`),
+                    datasets: [{
+                        data: top.map(c => c.booking_count || 0),
+                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'var(--text-secondary)', font: { size: 10 }, padding: 10, usePointStyle: true } }
+                    }
+                }
+            });
+        },
+
         renderTop(cars) {
             const container = document.getElementById('reportsTopVehicles');
-            container.innerHTML = cars.slice(0, 3).map(c => `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(255,255,255,0.02); border-radius: 10px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="display: flex; flex-direction: column;">
-                        <span style="font-size: 0.85rem; font-weight: 700; color: white;">${c.brand} ${c.model}</span>
-                        <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 500;">${c.booking_count} bookings</span>
+            if (!cars.length) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px;">No data</p>'; return; }
+            container.innerHTML = cars.slice(0, 5).map((c, i) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:var(--surface-container);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+                        <div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);">${c.brand} ${c.model}</div>
+                            <div style="font-size:0.65rem;color:var(--text-muted);">${c.booking_count} bookings</div>
+                        </div>
                     </div>
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">‚Ç±${c.revenue.toLocaleString()}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">&#8369;${(c.revenue||0).toLocaleString()}</span>
                 </div>
             `).join('');
+        },
+
+        exportExcel() {
+            const data = this._rawData;
+            if (!data) { showNotification('No data to export', 'error'); return; }
+            // Build CSV (opens as Excel)
+            const rows = [['Vehicle', 'Bookings', 'Revenue (PHP)']];
+            (data.topVehicles || []).forEach(c => rows.push([`${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]));
+            rows.push([]);
+            rows.push(['Date', 'Revenue']);
+            (data.revenueTrend || []).forEach(t => rows.push([t.day || '', t.amount || 0]));
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Report exported!', 'success');
+        },
+
+        printReport() {
+            const data = this._rawData;
+            if (!data) { showNotification('No data to print', 'error'); return; }
+            const totalRev = data.summary?.total_revenue || 0;
+            const totalBook = data.summary?.total_bookings || 0;
+            const rows = (data.topVehicles || []).map((c, i) =>
+                `<tr><td>${i+1}</td><td>${c.brand} ${c.model}</td><td>${c.booking_count}</td><td>&#8369;${(c.revenue||0).toLocaleString()}</td></tr>`
+            ).join('');
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html><head><title>Autoride Report</title>
+                <style>body{font-family:Arial,sans-serif;padding:20px;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;}</style>
+                </head><body>
+                <h1>Autoride Sales Report</h1>
+                <p>Generated: ${new Date().toLocaleString()}</p>
+                <p><strong>Total Revenue:</strong> &#8369;${totalRev.toLocaleString()} &nbsp;&nbsp; <strong>Total Bookings:</strong> ${totalBook}</p>
+                <table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead><tbody>${rows}</tbody></table>
+                <script>window.print();window.close();<\/script>
+                </body></html>
+            `);
+            win.document.close();
         }
     };
 
@@ -3103,7 +3598,7 @@
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px;">${s.description}</label>
                         <div style="position: relative;">
-                            <input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.9rem; font-weight: 600;">
+                            <input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">
                         </div>
                     </div>
                 `).join('');
@@ -3147,7 +3642,7 @@
             const data = await res.json();
             
             // Update stat cards
-            document.getElementById('dashTotalRevenue').textContent = '‚Ç±' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
             document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
             
             // Render top grossing vehicles
@@ -3157,8 +3652,8 @@
             if (typeof Chart !== 'undefined') initCharts(data);
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
-            document.getElementById('dashTotalRevenue').textContent = '‚Ç±‚Äî';
-            document.getElementById('dashTotalBookings').textContent = '‚Äî';
+            document.getElementById('dashTotalRevenue').textContent = '?ó';
+            document.getElementById('dashTotalBookings').textContent = 'ó';
         }
     }
 
@@ -3171,40 +3666,42 @@
         tbody.innerHTML = cars.map(c => `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <td style="padding: 16px 8px;">
-                    <div style="font-weight: 800; color: white; font-size: 0.9rem;">${c.brand}</div>
+                    <div style="font-weight: 800; color: var(--text-main); font-size: 0.9rem;">${c.brand}</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${c.model}</div>
                 </td>
                 <td style="padding: 16px 8px; text-align: center;">
-                    <span style="font-size: 0.85rem; font-weight: 700; color: #cbd5e1;">${c.booking_count}</span>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">${c.booking_count}</span>
                 </td>
                 <td style="padding: 16px 8px; text-align: right;">
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">‚Ç±${c.revenue.toLocaleString()}</span>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${c.revenue.toLocaleString()}</span>
                 </td>
             </tr>
         `).join('');
     }
 
+    // --- CHART COLLAPSE TOGGLE ---
+    function toggleChart(id) {
+        const body = document.getElementById('cc-body-' + id);
+        const icon = document.getElementById('cc-icon-' + id);
+        if (!body) return;
+        const collapsed = body.style.display === 'none';
+        body.style.display = collapsed ? '' : 'none';
+        if (icon) icon.className = collapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    }
+
     let charts = {};
     function initCharts(data) {
         if (charts.revenue) charts.revenue.destroy();
+        if (charts.bookings) charts.bookings.destroy();
         if (charts.health) charts.health.destroy();
-        if (charts.user) charts.user.destroy();
+        if (charts.topPie) charts.topPie.destroy();
 
-        const defaultOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-            }
+        const defaultScales = {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
         };
 
-        // Revenue Chart
+        // Revenue Line Chart
         const revTrend = data.revenueTrend || [];
         const revCtx = document.getElementById('revenueChart').getContext('2d');
         charts.revenue = new Chart(revCtx, {
@@ -3224,10 +3721,26 @@
                     pointBorderWidth: 2
                 }]
             },
-            options: defaultOptions
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Fleet Health
+        // Bookings Bar Chart
+        const bookCtx = document.getElementById('bookingsChart').getContext('2d');
+        charts.bookings = new Chart(bookCtx, {
+            type: 'bar',
+            data: {
+                labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
+                datasets: [{
+                    label: 'Bookings',
+                    data: revTrend.length > 0 ? revTrend.map(t => t.count || 0) : [0],
+                    backgroundColor: 'rgba(0,82,255,0.6)',
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+        });
+
+        // Fleet Health Doughnut
         const dist = data.fleetDistribution || [];
         const fleetCtx = document.getElementById('fleetHealthChart').getContext('2d');
         charts.health = new Chart(fleetCtx, {
@@ -3242,45 +3755,27 @@
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '75%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true }
-                    }
-                }
+                responsive: true, maintainAspectRatio: false, cutout: '75%',
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
             }
         });
 
-        // User Stats Chart
-        const userStats = data.userStats || { email: { verified: 0, unverified: 0 }, license: { approved: 0, pending: 0, rejected: 0 } };
-        const userCtx = document.getElementById('userStatsChart').getContext('2d');
-        charts.user = new Chart(userCtx, {
-            type: 'bar',
+        // Top Vehicles Pie Chart
+        const topVeh = (data.topVehicles || []).slice(0, 6);
+        const pieCtx = document.getElementById('topVehiclesPieChart').getContext('2d');
+        charts.topPie = new Chart(pieCtx, {
+            type: 'pie',
             data: {
-                labels: ['Email', 'License'],
-                datasets: [
-                    { label: 'Verified', data: [userStats.email.verified, userStats.license.approved], backgroundColor: '#10b981', borderRadius: 6 },
-                    { label: 'Pending', data: [userStats.email.unverified, userStats.license.pending], backgroundColor: '#6366f1', borderRadius: 6 },
-                    { label: 'Rejected', data: [0, userStats.license.rejected], backgroundColor: '#ef4444', borderRadius: 6 }
-                ]
+                labels: topVeh.map(c => `${c.brand} ${c.model}`),
+                datasets: [{
+                    data: topVeh.map(c => c.booking_count || 0),
+                    backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                    borderWidth: 0
+                }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { color: '#94a3b8', font: { weight: '600', size: 10 }, usePointStyle: true }
-                    }
-                },
-                scales: {
-                    x: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8' } },
-                    y: { stacked: true, grid: { display: false }, ticks: { color: '#94a3b8' } }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
             }
         });
     }
@@ -3539,7 +4034,7 @@
                 return;
             }
 
-            // 7. On root tab ó show exit confirmation
+            // 7. On root tab ù show exit confirmation
             showExitConfirm();
         };
 
@@ -3655,7 +4150,7 @@
                     ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ÔøΩ';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ù';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
                     <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
@@ -3690,7 +4185,7 @@
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ÔøΩ';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ù';
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `
@@ -3716,14 +4211,14 @@
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Completed</div>
                 </div>
                 <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:12px;text-align:center;">
-                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">?${(u.total_spent||0).toLocaleString()}</div>
+                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">&#8369;${(u.total_spent||0).toLocaleString()}</div>
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Spent</div>
                 </div>
             </div>
 
             <!-- Info -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ÔøΩ'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ù'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
