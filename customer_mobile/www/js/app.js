@@ -1080,44 +1080,8 @@ function toggleFav(vehicleId, btn) {
     .catch(function(err) { showToast(err.message, 'error'); });
 }
 
-function renderVehicles(list) {
-  var grid = document.getElementById('vehicleGrid');
-  if (!grid) return;
-  if (!list.length) {
-    grid.innerHTML = '<div class="empty-state"><i class="fas fa-car"></i><p>No vehicles found</p></div>';
-    return;
-  }
-  grid.innerHTML = list.map(function(v) {
-    var vid = v.id || v.representative_id;
-    var available = parseInt(v.available_units) || 0;
-    var availBadge = available > 0
-      ? '<span class="badge-available">' + available + ' available</span>'
-      : '<span class="badge-available" style="background:rgba(230,57,70,0.85);">Unavailable</span>';
-    return '<div class="vehicle-card" onclick="openColorSelection(\'' + encodeURIComponent(v.brand) + '\',\'' + encodeURIComponent(v.model) + '\')">' +
-      '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
-      availBadge +
-      '</div>' +
-      '<div class="vehicle-info">' +
-      '<h3>' + v.brand + ' ' + v.model + '</h3>' +
-      '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + '</div>' +
-      '<div class="vehicle-meta"><i class="fas fa-users"></i> ' + (v.seats || '-') + ' seats</div>' +
-      '<div class="vehicle-location"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
-      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
-      '</div></div>';
-  }).join('');
-}
 
-function filterVehicles(filter, chipEl) {
-  var chips = document.querySelectorAll('#vehicleFilters .chip');
-  for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
-  chipEl.classList.add('active');
-  if (filter === 'all') { renderVehicles(allVehicles); return; }
-  var filtered = allVehicles.filter(function(v) {
-    return v.vehicle_type === filter || v.transmission === filter || v.fuel_type === filter;
-  });
-  renderVehicles(filtered);
-}
+
 
 // STEP 1: Model tapped - show color selection
 function openColorSelection(brandEnc, modelEnc) {
