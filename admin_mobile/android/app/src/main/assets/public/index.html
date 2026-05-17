@@ -772,69 +772,51 @@
             <span id="headerTime">Loading time...</span>
         </div>
 
-        <div class="stat-card">
-            <h5>TOTAL REVENUE</h5>
-            <div class="value" id="dashTotalRevenue">—</div>
-        </div>
-
-        <div class="stat-card">
-            <h5>TOTAL BOOKINGS</h5>
-            <div class="value" id="dashTotalBookings">—</div>
-            <div class="label">System-wide bookings</div>
-        </div>
-
-        <!-- Collapsible: Revenue Line Chart (collapsed by default) -->
-        <div class="chart-card" id="cc-revenue">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('revenue')">
-                <span>Revenue Trend (Last 30 Days)</span>
-                <i id="cc-icon-revenue" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
-            </h3>
-            <div id="cc-body-revenue" class="chart-container" style="display:none;margin-top:16px;">
-                <canvas id="revenueChart"></canvas>
+        <!-- Row 1: Stats side by side -->
+        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
+            <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">REVENUE</h5>
+                <div id="dashTotalRevenue" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">—</div>
+            </div>
+            <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">BOOKINGS</h5>
+                <div id="dashTotalBookings" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">—</div>
             </div>
         </div>
 
-        <!-- Collapsible: Total Bookings Bar Chart (collapsed by default) -->
-        <div class="chart-card" id="cc-bookings">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('bookings')">
-                <span>Bookings per Day</span>
-                <i id="cc-icon-bookings" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
-            </h3>
-            <div id="cc-body-bookings" class="chart-container" style="display:none;margin-top:16px;">
-                <canvas id="bookingsChart"></canvas>
+        <!-- Row 2: Revenue Trend + Bookings/Day side by side -->
+        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
+            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">REVENUE TREND</div>
+                <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Last 30 days</div>
+                <div style="height:120px;position:relative;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">BOOKINGS/DAY</div>
+                <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Volume daily</div>
+                <div style="height:120px;position:relative;">
+                    <canvas id="bookingsChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <!-- Collapsible: Top Vehicles Pie Chart (collapsed by default) -->
-        <div class="chart-card" id="cc-topveh">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('topveh')">
-                <span>Top Performing Vehicles</span>
-                <i id="cc-icon-topveh" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
-            </h3>
-            <div id="cc-body-topveh" class="chart-container" style="display:none;margin-top:16px;">
-                <canvas id="topVehiclesPieChart"></canvas>
+        <!-- Row 3: Top Performance + Top Grossing side by side -->
+        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
+            <!-- Top Performance: bookings by vehicle type -->
+            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:12px;">TOP PERFORMANCE</div>
+                <div id="dashTopPerformance">
+                    <div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">Loading...</div>
+                </div>
             </div>
-        </div>
-
-        <!-- Top Grossing Table (collapsed by default) -->
-        <div class="chart-card" style="height:auto;" id="cc-table">
-            <h3 style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:0;" onclick="toggleChart('table')">
-                <span>Top Grossing Vehicles</span>
-                <i id="cc-icon-table" class="fas fa-chevron-down" style="font-size:0.8rem;color:var(--text-muted);"></i>
-            </h3>
-            <div id="cc-body-table" style="display:none;margin-top:16px;overflow-x:auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
-                    <thead>
-                        <tr style="text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--border);">
-                            <th style="padding: 10px 5px;">Vehicle</th>
-                            <th style="padding: 10px 5px;">Bookings</th>
-                            <th style="padding: 10px 5px;">Revenue</th>
-                        </tr>
-                    </thead>
-                    <tbody id="topVehiclesBody">
-                        <tr><td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">Loading data...</td></tr>
-                    </tbody>
-                </table>
+            <!-- Top Grossing: revenue by vehicle -->
+            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:12px;">TOP GROSSING</div>
+                <div id="dashTopGrossing">
+                    <div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">Loading...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -3655,24 +3637,44 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
-            // Store for re-render on chart expand
+            // Store for potential re-use
             _dashData = data;
 
             // Update stat cards
             document.getElementById('dashTotalRevenue').textContent = '\u20B1' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
             document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
             
-            // Always render the top grossing table (not a chart, works in hidden div)
-            if (data.topVehicles) renderTopVehicles(data.topVehicles);
-
-            // Only init charts if their containers are visible; otherwise they'll render on expand
-            if (typeof Chart !== 'undefined') {
-                const anyVisible = ['revenue','bookings','topveh'].some(id => {
-                    const el = document.getElementById('cc-body-' + id);
-                    return el && el.style.display !== 'none';
-                });
-                if (anyVisible) initCharts(data);
+            // Top Performance: bookings by vehicle type (derived from topVehicles)
+            const topPerf = document.getElementById('dashTopPerformance');
+            if (topPerf && data.topVehicles && data.topVehicles.length) {
+                // Group by vehicle type if available, else show top vehicles by booking count
+                const top = data.topVehicles.slice(0, 4);
+                topPerf.innerHTML = top.map(c => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-light);">
+                        <span style="font-size:0.75rem;color:var(--text-secondary);">${c.brand} ${c.model}</span>
+                        <span style="font-size:0.75rem;font-weight:800;color:var(--text-main);">${c.booking_count}</span>
+                    </div>
+                `).join('');
+            } else if (topPerf) {
+                topPerf.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">No data.</div>';
             }
+
+            // Top Grossing: revenue by vehicle
+            const topGross = document.getElementById('dashTopGrossing');
+            if (topGross && data.topVehicles && data.topVehicles.length) {
+                const sorted = [...data.topVehicles].sort((a,b) => (b.revenue||0) - (a.revenue||0)).slice(0, 4);
+                topGross.innerHTML = sorted.map(c => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-light);">
+                        <span style="font-size:0.75rem;color:var(--text-secondary);">${c.brand} ${c.model}</span>
+                        <span style="font-size:0.7rem;font-weight:800;color:var(--success);">\u20B1${(c.revenue||0).toLocaleString()}</span>
+                    </div>
+                `).join('');
+            } else if (topGross) {
+                topGross.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">No data.</div>';
+            }
+
+            // Init charts (canvases are always visible now)
+            if (typeof Chart !== 'undefined') initCharts(data);
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
             document.getElementById('dashTotalRevenue').textContent = '\u20B1—';
