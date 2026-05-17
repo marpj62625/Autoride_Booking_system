@@ -7657,6 +7657,11 @@ def get_full_profile():
         return jsonify({'error': 'user_id is required'}), 400
     try:
         cur = get_cursor()
+        # Ensure license columns exist (safe no-op if already present)
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
+        commit_db()
         cur.execute(
             """SELECT id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points,
@@ -7670,7 +7675,6 @@ def get_full_profile():
         d = dict(user)
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
-        # Serialize date to string
         if d.get('license_expiry'):
             d['license_expiry'] = str(d['license_expiry'])
         return jsonify(d), 200
@@ -7688,6 +7692,12 @@ def update_license_info():
         return jsonify({'error': 'user_id is required'}), 400
     try:
         cur = get_cursor()
+        # Ensure license columns exist (safe no-op if already present)
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
+        commit_db()
+
         license_number = request.form.get('license_number', '').strip() or None
         license_expiry  = request.form.get('license_expiry', '').strip() or None
         license_type    = request.form.get('license_type', '').strip() or None
