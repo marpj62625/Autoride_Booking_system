@@ -3655,18 +3655,27 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
+            // Store for re-render on chart expand
+            _dashData = data;
+
             // Update stat cards
             document.getElementById('dashTotalRevenue').textContent = '\u20B1' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
             document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
             
-            // Render top grossing vehicles
+            // Always render the top grossing table (not a chart, works in hidden div)
             if (data.topVehicles) renderTopVehicles(data.topVehicles);
 
-            // Init charts with full data
-            if (typeof Chart !== 'undefined') initCharts(data);
+            // Only init charts if their containers are visible; otherwise they'll render on expand
+            if (typeof Chart !== 'undefined') {
+                const anyVisible = ['revenue','bookings','topveh'].some(id => {
+                    const el = document.getElementById('cc-body-' + id);
+                    return el && el.style.display !== 'none';
+                });
+                if (anyVisible) initCharts(data);
+            }
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
-            document.getElementById('dashTotalRevenue').textContent = '?—';
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1—';
             document.getElementById('dashTotalBookings').textContent = '—';
         }
     }
@@ -3694,6 +3703,8 @@
     }
 
     // --- CHART COLLAPSE TOGGLE ---
+    let _dashData = null; // store last dashboard data for re-render on expand
+
     function toggleChart(id) {
         const body = document.getElementById('cc-body-' + id);
         const icon = document.getElementById('cc-icon-' + id);
@@ -3701,9 +3712,14 @@
         const collapsed = body.style.display === 'none';
         body.style.display = collapsed ? '' : 'none';
         if (icon) icon.className = collapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-        // If expanding a chart canvas, trigger resize so Chart.js renders correctly
-        if (collapsed) {
-            setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 50);
+        // Re-render chart when expanding so Chart.js gets correct dimensions
+        if (collapsed && _dashData) {
+            setTimeout(function() {
+                if (id === 'revenue' || id === 'bookings' || id === 'fleet' || id === 'topveh') {
+                    initCharts(_dashData);
+                }
+                window.dispatchEvent(new Event('resize'));
+            }, 100);
         }
     }
 
