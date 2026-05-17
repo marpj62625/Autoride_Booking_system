@@ -1156,25 +1156,51 @@ def admin_list_users():
 
         cur = get_cursor()
 
+        # Ensure license detail columns exist
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_number VARCHAR(50)")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
+        commit_db()
+
         if status == 'pending':
 
             # is_verified = 1 is Pending
 
-            cur.execute("SELECT id, full_name, email, license_image_url as license_image, is_verified FROM users WHERE is_verified = 1 ORDER BY id DESC")
+            cur.execute("""
+                SELECT id, full_name, email, phone,
+                       license_image_url AS license_image,
+                       license_number, license_expiry, license_type,
+                       is_verified
+                FROM users
+                WHERE is_verified = 1
+                ORDER BY id DESC
+            """)
 
         else:
 
-            cur.execute("SELECT id, full_name, email, license_image_url as license_image, is_verified FROM users ORDER BY id DESC")
+            cur.execute("""
+                SELECT id, full_name, email, phone,
+                       license_image_url AS license_image,
+                       license_number, license_expiry, license_type,
+                       is_verified
+                FROM users
+                ORDER BY id DESC
+            """)
 
         
 
         users = cur.fetchall()
 
-        print(f"DEBUG: Found {len(users)} users matching criteria")
+        result = []
+        for u in users:
+            d = dict(u)
+            if d.get('license_expiry'):
+                d['license_expiry'] = str(d['license_expiry'])
+            result.append(d)
 
-        return jsonify([dict(u) for u in users]), 200
+        print(f"DEBUG: Found {len(result)} users matching criteria")
 
-        return jsonify(users), 200
+        return jsonify(result), 200
 
     except Exception as e:
 
