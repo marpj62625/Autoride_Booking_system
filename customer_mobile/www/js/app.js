@@ -3300,7 +3300,7 @@ var LiveChat = (function () {
   var _currentAdminId = null;
   var _lastMsgId = 0;
 
-  // ?? Inbox: pick an admin to chat with ??????????????????????
+  // ?? Inbox ??????????????????????????????????????????????????
   function loadInbox() {
     var el = document.getElementById('liveChatContent');
     if (!el) return;
@@ -3309,7 +3309,7 @@ var LiveChat = (function () {
         '<button class="back-btn" onclick="closeOverlay(\'page-livechat\')"><i class="fas fa-arrow-left"></i></button>' +
         '<h2>Live Chat</h2>' +
       '</div>' +
-      '<div id="liveChatInboxBody" class="scroll-content">' +
+      '<div id="liveChatInboxBody" class="scroll-content" style="padding:16px;">' +
         '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>' +
       '</div>';
 
@@ -3318,19 +3318,18 @@ var LiveChat = (function () {
         var body = document.getElementById('liveChatInboxBody');
         if (!body) return;
 
-        // If no admins returned, show a generic "Support Team" fallback
         if (!admins || !admins.length) {
           admins = [{ id: 1, username: 'Support Team' }];
         }
 
-        // If only one admin, skip the inbox and go straight to conversation
+        // Single admin: skip inbox, go straight to chat
         if (admins.length === 1) {
           openConversation(admins[0].id, admins[0].username);
           return;
         }
 
         body.innerHTML =
-          '<p style="font-size:0.8rem;color:var(--text-secondary);padding:0 4px 12px;">Choose a support agent to chat with:</p>' +
+          '<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;">Choose a support agent:</p>' +
           admins.map(function (a) {
             return '<div class="chat-inbox-item" onclick="LiveChat.openConversation(' + a.id + ',\'' + escapeHtml(a.username) + '\')">' +
               '<div class="chat-inbox-avatar"><i class="fas fa-headset"></i></div>' +
@@ -3343,12 +3342,11 @@ var LiveChat = (function () {
           }).join('');
       })
       .catch(function () {
-        // On error, fall back to admin id=1 directly
         openConversation(1, 'Support Team');
       });
   }
 
-  // ?? Conversation view ??????????????????????????????????????
+  // ?? Conversation ???????????????????????????????????????????
   function openConversation(adminId, adminName) {
     _currentAdminId = adminId;
     _lastMsgId = 0;
@@ -3361,13 +3359,12 @@ var LiveChat = (function () {
         '<button class="back-btn" onclick="LiveChat.backToInbox()"><i class="fas fa-arrow-left"></i></button>' +
         '<h2>' + escapeHtml(adminName) + '</h2>' +
       '</div>' +
-      '<div class="chat-messages" id="lcMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:0;height:calc(100% - 120px);"></div>' +
+      '<div id="lcMessages" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;height:calc(100vh - 180px);"></div>' +
       '<div class="chat-input-row">' +
-        '<input type="text" id="lcInput" placeholder="Type a message…" onkeydown="if(event.key===\'Enter\')LiveChat.send()">' +
+        '<input type="text" id="lcInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')LiveChat.send()">' +
         '<button onclick="LiveChat.send()"><i class="fas fa-paper-plane"></i></button>' +
       '</div>';
 
-    // Mark incoming as read
     apiCall('/chat/mark-read', {
       method: 'POST',
       body: JSON.stringify({ receiver_type: 'user', receiver_id: currentUser.id, sender_type: 'admin', sender_id: adminId })
@@ -3384,28 +3381,37 @@ var LiveChat = (function () {
         var container = document.getElementById('lcMessages');
         if (!container) return;
         if (!msgs || !msgs.length) {
-          if (initial) container.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:20px;">No messages yet. Say hello!</div>';
+          if (initial) container.innerHTML =
+            '<div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:30px;">No messages yet. Say hello!</div>';
           return;
         }
-        // Only re-render if there are new messages
         var latestId = msgs[msgs.length - 1].id;
         if (latestId === _lastMsgId && !initial) return;
         _lastMsgId = latestId;
 
-        var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+        var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
         container.innerHTML = msgs.map(function (m) {
           var isMe = m.sender_type === 'user';
-          var cls = isMe ? 'user' : 'admin';
           var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-          return '<div class="chat-msg ' + cls + '">' +
-            escapeHtml(m.message) +
-            '<span class="chat-ts">' + ts + '</span>' +
-          '</div>';
+          if (isMe) {
+            return '<div style="display:flex;justify-content:flex-end;">' +
+              '<div style="max-width:78%;background:var(--primary);color:var(--text-primary);padding:10px 14px;border-radius:18px 18px 4px 18px;font-size:0.875rem;line-height:1.4;">' +
+                escapeHtml(m.message) +
+                '<div style="font-size:0.62rem;color:rgba(255,255,255,0.6);margin-top:3px;text-align:right;">' + ts + '</div>' +
+              '</div>' +
+            '</div>';
+          } else {
+            return '<div style="display:flex;justify-content:flex-start;">' +
+              '<div style="max-width:78%;background:var(--bg-card);color:var(--text-primary);padding:10px 14px;border-radius:18px 18px 18px 4px;font-size:0.875rem;line-height:1.4;box-shadow:var(--shadow-card);">' +
+                escapeHtml(m.message) +
+                '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">' + ts + '</div>' +
+              '</div>' +
+            '</div>';
+          }
         }).join('');
 
         if (initial || atBottom) container.scrollTop = container.scrollHeight;
 
-        // Mark new admin messages as read
         apiCall('/chat/mark-read', {
           method: 'POST',
           body: JSON.stringify({ receiver_type: 'user', receiver_id: currentUser.id, sender_type: 'admin', sender_id: _currentAdminId })
