@@ -3538,7 +3538,7 @@ var LiveChat = (function () {
     }).catch(function () {});
 
     fetchMessages(true);
-    _pollTimer = setInterval(function () { fetchMessages(false); }, 4000);
+    _pollTimer = setInterval(function () { fetchMessages(false); }, 2000);
   }
 
   function fetchMessages(initial) {
@@ -3553,7 +3553,7 @@ var LiveChat = (function () {
           return;
         }
         var latestId = msgs[msgs.length - 1].id;
-        if (latestId === _lastMsgId && !initial) return;
+        if (String(latestId) === String(_lastMsgId) && !initial) return;
         _lastMsgId = latestId;
 
         var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
