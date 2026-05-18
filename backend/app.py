@@ -1203,6 +1203,19 @@ def upload_license():
 
         commit_db()
 
+        # Notify admins
+        try:
+            cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
+            u = cur.fetchone()
+            uname = u['full_name'] if u else f'User #{user_id}'
+            notification_service.notify_admins_inapp(
+                "License Uploaded for Review",
+                f"{uname} has uploaded a driver's license and is awaiting verification.",
+                'admin_license_upload'
+            )
+        except Exception as notif_err:
+            print(f"License upload admin notification error: {notif_err}")
+
         return jsonify({"message": "License uploaded for verification", "url": url}), 200
 
     except Exception as e:
