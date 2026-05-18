@@ -5054,19 +5054,31 @@
 
         function send() {
             const inputEl = document.getElementById('acInput');
-            if (!inputEl) return;
+            if (!inputEl) { console.error('CHAT: no input element'); return; }
             const msg = (inputEl.value || '').trim();
             const aid = _adminId();
-            if (!msg || !aid || !_currentUserId) return;
+            console.log('CHAT SEND: msg=' + msg + ' aid=' + aid + ' userId=' + _currentUserId);
+            if (!msg) { console.error('CHAT: empty message'); return; }
+            if (!aid) { alert('Not logged in - cannot send'); return; }
+            if (!_currentUserId) { alert('No user selected'); return; }
             inputEl.value = '';
             inputEl.disabled = true;
+
+            const payload = { sender_type: 'admin', sender_id: aid, receiver_type: 'user', receiver_id: _currentUserId, message: msg };
+            console.log('CHAT PAYLOAD:', JSON.stringify(payload));
 
             fetch(API_URL + '/chat/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sender_type: 'admin', sender_id: aid, receiver_type: 'user', receiver_id: _currentUserId, message: msg })
+                body: JSON.stringify(payload)
             })
-                .then(function() { _fetchMessages(false); })
+                .then(function(r) {
+                    console.log('CHAT SEND response status:', r.status);
+                    return r.json().then(function(d) {
+                        console.log('CHAT SEND response:', JSON.stringify(d));
+                        _fetchMessages(false);
+                    });
+                })
                 .catch(function(err) { alert('Send failed: ' + (err.message || 'Unknown error')); })
                 .finally(function() { if (inputEl) inputEl.disabled = false; });
         }
