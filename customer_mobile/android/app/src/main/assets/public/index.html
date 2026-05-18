@@ -203,6 +203,16 @@
         .chat-msg { max-width:80%; padding:10px 14px; border-radius:var(--radius-md); font-size:0.875rem; line-height:1.4; }
         .chat-msg.user { background:var(--primary); color:var(--text-primary); align-self:flex-end; border-bottom-right-radius:4px; }
         .chat-msg.bot { background:var(--bg-card); color:var(--text-primary); align-self:flex-start; border-bottom-left-radius:4px; box-shadow:var(--shadow-card); }
+        .chat-msg.admin { background:var(--bg-card); color:var(--text-primary); align-self:flex-start; border-bottom-left-radius:4px; box-shadow:var(--shadow-card); }
+        .chat-msg .chat-ts { display:block; font-size:0.65rem; color:rgba(255,255,255,0.55); margin-top:4px; }
+        .chat-msg.admin .chat-ts { color:var(--text-muted); }
+        .chat-inbox-item { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
+        .chat-inbox-item:active { background:rgba(255,255,255,0.05); }
+        .chat-inbox-avatar { width:42px; height:42px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#fff; flex-shrink:0; }
+        .chat-inbox-info { flex:1; min-width:0; }
+        .chat-inbox-name { font-size:0.9rem; font-weight:700; color:var(--text-primary); }
+        .chat-inbox-preview { font-size:0.78rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+        .chat-unread-badge { background:var(--primary); color:#fff; border-radius:50%; width:20px; height:20px; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .chat-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--bg-card); border-top:1px solid var(--border); }
         .chat-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:none; border-radius:var(--radius-sm); font-size:0.9rem; outline:none; }
         .chat-input-row button { background:var(--primary); color:var(--text-primary); border:none; border-radius:var(--radius-sm); padding:10px 16px; cursor:pointer; }
@@ -515,15 +525,27 @@
         </div>
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Support</span>
       </button>
-      <button onclick="showOverlay('page-chatbot')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="width:52px;height:52px;border-radius:18px;background:rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;"><i class="fas fa-robot" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
+      <button onclick="showOverlay('page-livechat')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div style="position:relative;width:52px;height:52px;border-radius:18px;background:rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:center;">
+          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;"><i class="fas fa-comments" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
+          <span id="chatUnreadBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;font-weight:700;align-items:center;justify-content:center;"></span>
         </div>
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Chat</span>
+        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Live Chat</span>
       </button>
     </div>
   </div>
   <div style="padding:0 16px;">
+    <!-- Active Booking Monitor -->
+    <div id="activeBookingMonitor" style="display:none;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Active Rental</h3>
+        <span style="font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(16,185,129,0.2);">LIVE</span>
+      </div>
+      <div id="activeBookingCard" style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;" onclick="openBookingDetail(window._activeBookingId)">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Recent Bookings</h3>
       <a href="#" onclick="showPage('page-bookings')" style="color:var(--primary);font-size:0.75rem;font-weight:700;text-decoration:none;">View all</a>
@@ -603,8 +625,15 @@
      PROFILE
 ??????????????????????????????????????????????????????????? -->
 <div id="page-profile" class="page">
-  <div class="page-header"><h2>My Profile</h2></div>
+  <div class="page-header">
+    <h2>My Profile</h2>
+    <button id="profileEditBtn" onclick="Profile.enterEdit()" style="margin-left:auto;background:none;border:none;color:var(--primary);font-size:0.9rem;font-weight:700;cursor:pointer;padding:6px 10px;border-radius:8px;display:flex;align-items:center;gap:6px;">
+      <i class="fas fa-pen"></i> Edit
+    </button>
+  </div>
   <div class="scroll-content">
+
+    <!-- Avatar + summary card -->
     <div class="card" style="text-align:center;padding:24px;">
       <div id="profileAvatarWrap" style="display:flex;justify-content:center;margin-bottom:12px;">
         <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">?</div>
@@ -620,8 +649,13 @@
         <i class="fas fa-star"></i> <span id="profilePoints">0</span> Loyalty Points
       </div>
     </div>
-    <div class="card">
-      <h4 style="font-weight:700;margin-bottom:14px;">Edit Profile</h4>
+
+    <!-- ?? EDIT PROFILE (hidden by default) ?? -->
+    <div id="profileEditCard" class="card" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h4 style="font-weight:700;margin:0;">Edit Profile</h4>
+        <button onclick="Profile.cancelEdit()" style="background:none;border:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;"><i class="fas fa-times"></i> Cancel</button>
+      </div>
       <div class="form-group">
         <label>Full Name</label>
         <input type="text" id="editName" placeholder="Full Name">
@@ -644,16 +678,79 @@
       </div>
       <button class="btn-primary" onclick="doUpdateProfile()">Save Changes</button>
     </div>
+
+    <!-- ?? LICENSE / ID SECTION ?? -->
     <div class="card">
-      <h4 style="font-weight:700;margin-bottom:10px;"><i class="fas fa-id-card" style="color:var(--primary);margin-right:8px;"></i>Uploaded License / ID</h4>
-      <div id="profileLicenseThumb"><p style="font-size:0.8rem;color:var(--text-muted);">Loading...</p></div>
-      <button class="btn-secondary" style="margin-top:10px;" onclick="showOverlay('page-license-upload')"><i class="fas fa-upload"></i> Upload / Update License</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h4 style="font-weight:700;margin:0;"><i class="fas fa-id-card" style="color:var(--primary);margin-right:8px;"></i>Driver's License</h4>
+        <button id="licenseEditBtn" onclick="Profile.enterLicenseEdit()" style="background:none;border:none;color:var(--primary);font-size:0.85rem;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px;display:flex;align-items:center;gap:5px;">
+          <i class="fas fa-pen"></i> Edit
+        </button>
+      </div>
+
+      <!-- VIEW MODE -->
+      <div id="licenseViewMode">
+        <div id="profileLicenseThumb" style="margin-bottom:12px;"><p style="font-size:0.8rem;color:var(--text-muted);">Loading...</p></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">License No.</div>
+            <div id="viewLicenseNumber" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Type</div>
+            <div id="viewLicenseType" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Expiry Date</div>
+            <div id="viewLicenseExpiry" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">—</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Status</div>
+            <div id="viewLicenseStatus" style="font-size:0.88rem;font-weight:600;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT MODE (hidden by default) -->
+      <div id="licenseEditMode" style="display:none;">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+          <button onclick="Profile.cancelLicenseEdit()" style="background:none;border:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;"><i class="fas fa-times"></i> Cancel</button>
+        </div>
+        <div class="form-group">
+          <label>License Number</label>
+          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label>License Type</label>
+            <select id="editLicenseType" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;">
+              <option value="">Select type</option>
+              <option value="Non-Professional">Non-Professional</option>
+              <option value="Professional">Professional</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Expiry Date</label>
+            <input type="date" id="editLicenseExpiry" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>License Photo <span style="font-weight:400;color:var(--text-muted);">(optional — upload to re-submit for verification)</span></label>
+          <button class="btn-secondary" onclick="pickLicenseForProfile()"><i class="fas fa-id-card"></i> Choose License Photo</button>
+          <img id="licenseEditPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:10px;display:none;">
+          <span class="field-error" id="licenseEditErr" style="display:block;margin-top:6px;"></span>
+        </div>
+        <button class="btn-primary" onclick="Profile.saveLicenseInfo()"><i class="fas fa-save"></i> Save License Info</button>
+      </div>
     </div>
+
+    <!-- Account -->
     <div class="card">
       <h4 style="font-weight:700;margin-bottom:14px;">Account</h4>
       <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-saved-payments')"><i class="fas fa-credit-card"></i> Saved Payment Methods</button>
       <button class="btn-secondary" onclick="showOverlay('page-favorites')"><i class="fas fa-heart"></i> My Favorites</button>
     </div>
+
   </div>
 </div>
 
@@ -668,9 +765,14 @@
       <div class="more-item-text"><h4>Support</h4><p>Submit a support ticket</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
     </div>
+    <div class="more-item" onclick="showOverlay('page-livechat')">
+      <div class="more-item-icon"><i class="fas fa-comments"></i></div>
+      <div class="more-item-text"><h4>Live Chat</h4><p>Chat with our support team</p></div>
+      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
     <div class="more-item" onclick="showOverlay('page-chatbot')">
       <div class="more-item-icon"><i class="fas fa-robot"></i></div>
-      <div class="more-item-text"><h4>Chat Assistant</h4><p>Get quick answers</p></div>
+      <div class="more-item-text"><h4>AI Assistant</h4><p>Get quick automated answers</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
     </div>
     <div class="more-item" onclick="showOverlay('page-notifications')">
@@ -682,6 +784,16 @@
       <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
       <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+    </div>
+    <div class="more-item" style="cursor:default;">
+      <div class="more-item-icon"><i class="fas fa-sms"></i></div>
+      <div class="more-item-text"><h4>SMS Notifications</h4><p>Receive booking updates via SMS</p></div>
+      <label style="position:relative;display:inline-block;width:44px;height:24px;margin-left:auto;flex-shrink:0;">
+        <input type="checkbox" id="smsOptOutToggle" onchange="toggleSmsOptOut(this)" style="opacity:0;width:0;height:0;">
+        <span id="smsToggleSlider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;">
+          <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;display:block;" id="smsToggleKnob"></span>
+        </span>
+      </label>
     </div>
     <div class="more-item" onclick="toggleDarkMode()" id="darkModeToggleItem">
       <div class="more-item-icon"><i class="fas fa-moon" id="darkModeIcon"></i></div>
@@ -712,6 +824,7 @@
 <div id="page-split-payment" class="overlay-page" onclick="loadSplitPayment()"><div id="splitPaymentContent"></div></div>
 <div id="page-support" class="overlay-page" onclick="loadSupport()"><div id="supportContent"></div></div>
 <div id="page-chatbot" class="overlay-page" onclick="loadChatbot()"><div id="chatbotContent"></div></div>
+<div id="page-livechat" class="overlay-page"><div id="liveChatContent"></div></div>
 <div id="page-notifications" class="overlay-page"><div id="notificationsContent"></div></div>
 <div id="page-newsletter" class="overlay-page" onclick="loadNewsletter()"><div id="newsletterContent"></div></div>
 

@@ -78,6 +78,16 @@ function formatPHP(value) {
   });
 }
 
+function formatTime12h(time24) {
+  if (!time24) return '';
+  var parts = time24.split(':');
+  var h = parseInt(parts[0]);
+  var m = parts[1] || '00';
+  var ampm = h < 12 ? 'AM' : 'PM';
+  var h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return String(h12).padStart(2, '0') + ':' + m + ' ' + ampm;
+}
+
 /**
  * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
  * Property 7: File validation — format and size.
@@ -220,6 +230,25 @@ function calculateBookingPrice(
     downpaymentAmount,
     balanceAmount
   };
+}
+
+/**
+ * Formats a booking date string into a clean, human-readable format.
+ * Handles ISO strings, RFC strings (e.g. "Tue, 12 May 2026 00:00:00 GMT"),
+ * and YYYY-MM-DD strings.
+ * Example: "2026-05-12" ? "May 12, 2026"
+ * @param {string} dateStr
+ * @returns {string}
+ */
+function formatBookingDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
 /**

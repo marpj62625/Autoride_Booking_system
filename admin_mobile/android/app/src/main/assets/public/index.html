@@ -78,6 +78,7 @@
 
         .hidden { display: none !important; }
         .revenue-restricted { display: none; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
 
         * { 
             margin: 0; padding: 0; box-sizing: border-box; 
@@ -680,6 +681,25 @@
             background: var(--bg-input);
             border-color: var(--border);
         }
+
+        /* ?? Admin Chat ?? */
+        .ac-inbox-item { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:12px; margin-bottom:4px; background:var(--surface); }
+        .ac-inbox-item:active { opacity:0.75; }
+        .ac-avatar { width:44px; height:44px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#fff; flex-shrink:0; font-weight:700; }
+        .ac-inbox-info { flex:1; min-width:0; }
+        .ac-inbox-name { font-size:0.9rem; font-weight:700; color:var(--text-main); }
+        .ac-inbox-preview { font-size:0.78rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+        .ac-unread { background:var(--primary); color:#fff; border-radius:50%; min-width:20px; height:20px; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px; flex-shrink:0; }
+        .ac-chat-wrap { display:flex; flex-direction:column; height:calc(100vh - 140px); }
+        .ac-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
+        .ac-msg { max-width:80%; padding:10px 14px; border-radius:16px; font-size:0.875rem; line-height:1.4; }
+        .ac-msg.me { background:var(--primary); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+        .ac-msg.them { background:var(--surface); color:var(--text-main); align-self:flex-start; border-bottom-left-radius:4px; border:1px solid var(--border); }
+        .ac-msg .ac-ts { display:block; font-size:0.65rem; color:rgba(255,255,255,0.55); margin-top:4px; }
+        .ac-msg.them .ac-ts { color:var(--text-muted); }
+        .ac-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--surface); border-top:1px solid var(--border); }
+        .ac-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:50px; color:var(--text-main); font-size:0.9rem; outline:none; }
+        .ac-input-row button { background:var(--primary); color:#fff; border:none; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
     </style>
 </head>
 <body>
@@ -723,6 +743,7 @@
         <a href="#" class="drawer-item" data-tab="users" onclick="navTo('users')"><i class="fas fa-users"></i> User Management</a>
         <a href="#" class="drawer-item" data-tab="reports" onclick="navTo('reports')"><i class="fas fa-chart-pie"></i> Reports</a>
         <a href="#" class="drawer-item" data-tab="tickets" onclick="navTo('tickets')"><i class="fas fa-ticket-alt"></i> Support Tickets</a>
+        <a href="#" class="drawer-item" data-tab="chat" onclick="navTo('chat')"><i class="fas fa-comments"></i> Live Chat</a>
         <a href="#" class="drawer-item" data-tab="instructions" onclick="navTo('instructions')"><i class="fas fa-book"></i> Instructions</a>
         <a href="#" class="drawer-item revenue-restricted" data-tab="staff" onclick="navTo('staff')"><i class="fas fa-users-cog"></i> Staff Management</a>
         <div style="border-top: 1px solid var(--border); margin: 15px 10px; padding-top: 15px;">
@@ -785,19 +806,19 @@
         </div>
 
         <!-- Row 2: Revenue Trend + Bookings/Day side by side -->
-        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">REVENUE TREND</div>
-                <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Last 30 days</div>
-                <div style="height:120px;position:relative;">
-                    <canvas id="revenueChart"></canvas>
+        <div style="display:-webkit-flex;display:flex;gap:10px;margin-bottom:12px;">
+            <div class="stat-card" style="-webkit-flex:1;flex:1;min-width:0;padding:12px;margin-bottom:0;overflow:hidden;">
+                <div style="font-size:0.65rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">REVENUE TREND</div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Last 30 days</div>
+                <div style="height:110px;position:relative;width:100%;">
+                    <canvas id="revenueChart" style="max-width:100%;"></canvas>
                 </div>
             </div>
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">BOOKINGS/DAY</div>
-                <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Volume daily</div>
-                <div style="height:120px;position:relative;">
-                    <canvas id="bookingsChart"></canvas>
+            <div class="stat-card" style="-webkit-flex:1;flex:1;min-width:0;padding:12px;margin-bottom:0;overflow:hidden;">
+                <div style="font-size:0.65rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">BOOKINGS/DAY</div>
+                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Volume daily</div>
+                <div style="height:110px;position:relative;width:100%;">
+                    <canvas id="bookingsChart" style="max-width:100%;"></canvas>
                 </div>
             </div>
         </div>
@@ -823,11 +844,29 @@
 
     <!-- VEHICLES TAB -->
     <div id="vehicles" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Vehicles</h1>
-            <button onclick="Vehicles.openModal()" class="btn-primary" style="padding: 8px 15px; border-radius: 10px; font-size: 0.8rem;">+ Add New</button>
+            <button onclick="Vehicles.openModal()" class="btn-primary" style="padding: 10px 18px; border-radius: 24px; font-size: 0.85rem; font-weight: 700;"><i class="fas fa-plus" style="margin-right:6px;"></i>Add New</button>
         </div>
-        <div id="vehiclesList" class="vehicle-grid">
+
+        <!-- Search -->
+        <div style="position:relative; margin-bottom: 12px;">
+            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
+            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate…"
+                oninput="Vehicles.applyFilters()"
+                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+        </div>
+
+        <!-- Filter chips -->
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
+            <button class="veh-chip veh-chip-active" data-filter="all"         onclick="Vehicles.setFilter('all',this)"         style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+            <button class="veh-chip"                 data-filter="available"   onclick="Vehicles.setFilter('available',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Available</button>
+            <button class="veh-chip"                 data-filter="rented"      onclick="Vehicles.setFilter('rented',this)"      style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Rented</button>
+            <button class="veh-chip"                 data-filter="maintenance" onclick="Vehicles.setFilter('maintenance',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Maintenance</button>
+            <button class="veh-chip"                 data-filter="unavailable" onclick="Vehicles.setFilter('unavailable',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Unavailable</button>
+        </div>
+
+        <div id="vehiclesList">
             <div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>
         </div>
     </div>
@@ -856,13 +895,13 @@
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
 
-            <div class="stat-card" onclick="showNotification('Push notifications are managed through the device settings.', 'info')" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+            <div class="stat-card" onclick="testAdminPushNotification()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                 <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-bell" style="color: var(--text-muted);"></i>
                 </div>
                 <div style="flex: 1;">
                     <h4 style="font-size: 0.95rem;">Push Notifications</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Manage app alerts</p>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Tap to send a test push</p>
                 </div>
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
@@ -908,11 +947,31 @@
 
     <!-- ACTIVITY LOG TAB -->
     <div id="activity" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Activity Log</h1>
             <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
         </div>
-        <div id="activityList" style="display: grid; gap: 12px; margin-bottom: 30px;">
+
+        <!-- Search -->
+        <div style="position:relative; margin-bottom: 12px;">
+            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
+            <input id="activitySearch" type="text" placeholder="Search by name, action or details…"
+                oninput="Activity.applyFilters()"
+                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+        </div>
+
+        <!-- Filter chips -->
+        <div id="activityFilterChips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
+            <button class="act-chip act-chip-active" data-filter="all"    onclick="Activity.setFilter('all',this)"    style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+            <button class="act-chip" data-filter="login"   onclick="Activity.setFilter('login',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Login</button>
+            <button class="act-chip" data-filter="approve" onclick="Activity.setFilter('approve',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Approve</button>
+            <button class="act-chip" data-filter="reject"  onclick="Activity.setFilter('reject',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Reject</button>
+            <button class="act-chip" data-filter="create"  onclick="Activity.setFilter('create',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Create</button>
+            <button class="act-chip" data-filter="update"  onclick="Activity.setFilter('update',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Update</button>
+            <button class="act-chip" data-filter="delete"  onclick="Activity.setFilter('delete',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Delete</button>
+        </div>
+
+        <div id="activityList" style="margin-bottom: 30px;">
             <div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading system logs...</div>
         </div>
     </div>
@@ -938,6 +997,22 @@
                 <div class="value" id="bookCancelled" style="font-size: 1.4rem; font-weight: 700; color: #ef4444;">0</div>
             </div>
         </div>
+
+        <!-- ACTIVE NOW MONITOR -->
+        <div style="margin-bottom: 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:pulse 1.5s infinite;"></span>
+                    <h3 style="font-size:1rem;font-weight:800;color:var(--text-main);">Active Now</h3>
+                    <span id="activeNowCount" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
+                </div>
+                <span style="font-size:0.65rem;color:var(--text-muted);" id="activeNowRefreshLabel">auto-refresh 30s</span>
+            </div>
+            <div id="activeNowList">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">Loading active rentals...</div>
+            </div>
+        </div>
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Bookings List</h3>
             <div style="display: flex; gap: 10px;">
@@ -1150,31 +1225,28 @@
 
     <!-- GPS TRACKING TAB -->
     <div id="gps" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">GPS Tracking</h1>
-            <span style="font-size: 0.6rem; padding: 4px 10px; background: rgba(16, 185, 129, 0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">SYSTEM ONLINE</span>
+            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(16,185,129,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
         </div>
 
-        <div class="stat-card" style="padding: 0; overflow: hidden; height: 550px; position: relative; border-radius: 20px; border: 1px solid var(--border);">
+        <!-- Map iframe -->
+        <div class="stat-card" style="padding: 0; overflow: hidden; height: 320px; position: relative; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 16px;">
             <iframe src="https://car-rental-inlaguna.vercel.app/" style="width: 100%; height: 100%; border: none;" allow="geolocation"></iframe>
-            <div style="position: absolute; bottom: 15px; right: 15px; z-index: 10;">
-                <button onclick="window.open('https://car-rental-inlaguna.vercel.app/', '_blank')" style="background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); border: 1px solid var(--border); color: white; padding: 10px 15px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-external-link-alt"></i> Open Full Map
+            <div style="position: absolute; bottom: 12px; right: 12px; z-index: 10;">
+                <button onclick="window.open('https://car-rental-inlaguna.vercel.app/', '_blank')" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(5px); border: 1px solid var(--border); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <i class="fas fa-external-link-alt"></i> Full Map
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- USER VERIFICATIONS TAB -->
-    <div id="verifications" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h1 class="page-title" style="margin: 0;">Verifications</h1>
-            <button onclick="Verifications.refresh()" style="background: var(--surface); border: 1px solid var(--border); color: white; padding: 8px 15px; border-radius: 10px; font-size: 0.75rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
+        <!-- Live vehicle list -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">Active Vehicles</h3>
+            <button onclick="GPS.refresh()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer;"><i class="fas fa-sync-alt"></i></button>
         </div>
-        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Review driver's licenses to grant booking privileges.</p>
-        
-        <div id="verificationsList">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>
+        <div id="gpsDeviceList">
+            <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading vehicles...</div>
         </div>
     </div>
 
@@ -1273,46 +1345,47 @@
         </div>
     </div>
 
-    <!-- VEHICLE MODAL (MATCHING DESKTOP) -->
-    <div id="vehicleModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; overflow-y: auto;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); max-width: 500px; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
-            <h2 id="modalTitle" style="margin-bottom: 25px; font-size: 1.5rem; font-weight: 700; color: white;">Add New Vehicle</h2>
+    <!-- VEHICLE MODAL -->
+    <div id="vehicleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div style="background:#fff;border-radius:24px 24px 0 0;padding:28px 20px 32px;max-width:520px;margin:60px auto 0;min-height:calc(100vh - 60px);box-shadow:0 -8px 40px rgba(0,0,0,0.18);">
+
+            <h2 id="modalTitle" style="font-size:1.6rem;font-weight:900;color:#0f172a;margin:0 0 22px;">Add New Vehicle</h2>
             <form id="vehicleForm">
                 <input type="hidden" id="editId">
 
-                <!-- ?? PHOTO UPLOAD SECTION ?? -->
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                        Vehicle Photos <span style="color: #ef4444;">*</span>
-                        <span style="color: var(--text-muted); font-weight: 500; text-transform: none; letter-spacing: 0;">(max 4 — first photo is Main)</span>
+                <!-- VEHICLE PHOTOS -->
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;font-size:0.78rem;font-weight:800;color:#0f172a;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
+                        Vehicle Photos <span style="color:#ef4444;">*</span>
+                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b;">(max 4 — first photo is Main)</span>
                     </label>
-
-                    <!-- Thumbnail strip -->
-                    <div id="vPhotoStrip" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; min-height: 0;"></div>
-
-                    <!-- Picker buttons -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                         <button type="button" onclick="VehiclePhotos.takePhoto()"
-                            style="padding: 12px 8px; background: rgba(99,102,241,0.12); border: 1px dashed rgba(99,102,241,0.5); border-radius: 12px; color: #818cf8; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
-                            <i class="fas fa-camera"></i> Take Photo
+                            style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+                            <i class="fas fa-camera" style="font-size:1rem;"></i> Take Photo
                         </button>
-                        <label style="padding: 12px 8px; background: rgba(99,102,241,0.12); border: 1px dashed rgba(99,102,241,0.5); border-radius: 12px; color: #818cf8; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
-                            <i class="fas fa-images"></i> Upload from Gallery
+                        <label style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
+                            <i class="fas fa-images" style="font-size:1rem;"></i> Upload from Gallery
                             <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
                         </label>
                     </div>
                 </div>
 
-                <!-- ?? EXISTING GALLERY (edit mode) ?? -->
-                <div id="vExistingGallery" style="display: none; margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Manage Existing Images (Arrows to reorder)</label>
-                    <div id="vGalleryManager" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px; background: rgba(15, 23, 42, 0.3); border: 1px solid var(--border); border-radius: 10px; min-height: 100px;"></div>
+                <!-- EXISTING GALLERY (edit mode) -->
+                <div id="vExistingGallery" style="display:none;margin-bottom:20px;">
+                    <label style="display:block;font-size:0.75rem;color:#64748b;margin-bottom:5px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
+                    <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;min-height:100px;"></div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Brand</label>
-                        <select id="vBrand" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required onchange="Vehicles.updateModels()">
+                <!-- FIELDS GRID -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+                    <!-- Brand -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Brand</label>
+                        <select id="vBrand" required onchange="Vehicles.updateModels()"
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="">Select Brand</option>
                             <option value="Toyota">Toyota</option>
                             <option value="Mitsubishi">Mitsubishi</option>
@@ -1324,35 +1397,41 @@
                             <option value="Isuzu">Isuzu</option>
                         </select>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Model</label>
-                        <input id="vModel" list="vModelList" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required onchange="Vehicles.applySpecs(this.value)" placeholder="Model">
+
+                    <!-- Model -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Model</label>
+                        <input id="vModel" list="vModelList" required placeholder="Model"
+                            onchange="Vehicles.applySpecs(this.value)"
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
                         <datalist id="vModelList"></datalist>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Plate Number</label>
-                        <input type="text" id="vPlate" placeholder="ABC-1234" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Plate Number -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Plate Number</label>
+                        <input type="text" id="vPlate" placeholder="ABC-1234" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Color</label>
-                        <input type="text" id="vColor" placeholder="e.g. Red, Black, White" list="vColorList" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+
+                    <!-- Color -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Color</label>
+                        <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList"
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
                         <datalist id="vColorList">
-                            <option value="White">
-                            <option value="Black">
-                            <option value="Silver">
-                            <option value="Gray">
-                            <option value="Red">
-                            <option value="Blue">
-                            <option value="Brown">
-                            <option value="Gold">
-                            <option value="Green">
-                            <option value="Orange">
-                            <option value="Beige">
+                            <option value="White"><option value="Black"><option value="Silver">
+                            <option value="Gray"><option value="Red"><option value="Blue">
+                            <option value="Brown"><option value="Gold"><option value="Green">
+                            <option value="Orange"><option value="Beige">
                         </datalist>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Vehicle Type</label>
-                        <select id="vType" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Vehicle Type -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Vehicle Type</label>
+                        <select id="vType" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="">Select type</option>
                             <option value="Sedan">Sedan</option>
                             <option value="SUV">SUV</option>
@@ -1362,23 +1441,32 @@
                             <option value="Pickup">Pickup</option>
                         </select>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Transmission</label>
-                        <select id="vTrans" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Transmission -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Transmission</label>
+                        <select id="vTrans" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="Manual">Manual</option>
                             <option value="Automatic">Automatic</option>
                         </select>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Fuel Type</label>
-                        <select id="vFuel" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Fuel Type -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Fuel Type</label>
+                        <select id="vFuel" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="Diesel">Diesel</option>
                             <option value="Gasoline">Gasoline</option>
                         </select>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Seats</label>
-                        <select id="vSeats" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Seats -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Seats</label>
+                        <select id="vSeats" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="4">4 Seats</option>
                             <option value="5">5 Seats</option>
                             <option value="7">7 Seats</option>
@@ -1386,35 +1474,56 @@
                             <option value="12">12 Seats</option>
                         </select>
                     </div>
-                    <div style="grid-column: span 1;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Daily Rate (&#8369;)</label>
-                        <input type="number" id="vRate" placeholder="e.g. 2500" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Daily Rate — half width -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Daily Rate (&#8369;)</label>
+                        <input type="number" id="vRate" placeholder="e.g. 2500" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
                     </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Location</label>
-                        <select id="vLocation" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;" required>
+
+                    <!-- Location — full width -->
+                    <div style="grid-column:span 2;">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Location</label>
+                        <select id="vLocation" required
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
                             <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
                         </select>
                     </div>
-                    <div style="grid-column: span 2;">
-                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Status</label>
-                        <select id="vStatus" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+
+                    <!-- Status — full width -->
+                    <div style="grid-column:span 2;">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Status</label>
+                        <select id="vStatus"
+                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
                             <option value="Available">Available</option>
                             <option value="Booked">Booked</option>
                             <option value="Maintenance">Maintenance</option>
                             <option value="Repair">Repair</option>
                         </select>
                     </div>
+
                 </div>
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; flex-wrap: wrap;">
-                    <button type="button" onclick="Vehicles.closeModal()" style="padding: 12px 20px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+
+                <!-- BUTTONS -->
+                <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;">
                     <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)"
-                        style="padding: 12px 20px; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4); border-radius: 10px; color: #818cf8; font-weight: 600; display: none;">
+                        style="display:none;width:100%;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;">
                         Save &amp; Add Another
                     </button>
-                    <button type="submit" id="submitBtnText" style="padding: 12px 25px; background: #6366f1; border: none; border-radius: 10px; color: white; font-weight: 600; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">Add Vehicle</button>
+                    <div style="display:flex;gap:10px;">
+                        <button type="button" onclick="Vehicles.closeModal()"
+                            style="flex:1;padding:16px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:1rem;font-weight:700;cursor:pointer;">
+                            Cancel
+                        </button>
+                        <button type="submit" id="submitBtnText"
+                            style="flex:2;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,0.4);">
+                            Add Vehicle
+                        </button>
+                    </div>
                 </div>
+
             </form>
         </div>
     </div>
@@ -1541,6 +1650,13 @@
     </div>
 </div>
 
+<!-- ===================== CHAT TAB ===================== -->
+<div id="chat" class="tab-content" style="display:none; padding:0; padding-bottom:80px;">
+    <div id="adminChatContent" style="padding:20px;">
+        <div style="text-align:center; padding:40px; color:var(--text-muted);">Loading...</div>
+    </div>
+</div>
+
 <nav class="bottom-nav">
     <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
         <i class="fas fa-th-large"></i>
@@ -1557,6 +1673,11 @@
     <button class="nav-item" data-tab="reports" onclick="switchTab('reports')">
         <i class="fas fa-chart-pie"></i>
         <span>Reports</span>
+    </button>
+    <button class="nav-item" data-tab="chat" onclick="switchTab('chat')">
+        <i class="fas fa-comments" style="position:relative;"></i>
+        <span id="adminChatNavBadge" style="display:none;position:absolute;top:6px;right:calc(50% - 22px);background:#ef4444;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px;"></span>
+        <span>Chat</span>
     </button>
     <button class="nav-item" data-tab="settings" onclick="switchTab('settings')">
         <i class="fas fa-cog"></i>
@@ -1770,6 +1891,12 @@
                 // Load admin notifications
                 loadAdminNotifications(user.id);
 
+                // Start chat badge polling every 30s
+                if (typeof AdminChat !== 'undefined') {
+                    AdminChat.updateNavBadge();
+                    setInterval(function() { AdminChat.updateNavBadge(); }, 30000);
+                }
+
                 if (isSuper) { switchTab('dashboard'); refreshDashboard(); }
                 else switchTab('vehicles');
             } else {
@@ -1801,9 +1928,36 @@
     // --- VEHICLES MODULE (REFINED) ---
     const Vehicles = {
         data: [],
+        _filter: 'all',
+
+        setFilter(filter, btn) {
+            this._filter = filter;
+            document.querySelectorAll('.veh-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color       = active ? '#fff' : 'var(--text-secondary)';
+            });
+            this.applyFilters();
+        },
+
+        applyFilters() {
+            const q = (document.getElementById('vehicleSearch')?.value || '').toLowerCase().trim();
+            const f = this._filter;
+            const filtered = this.data.filter(v => {
+                const status = (v.status || '').toLowerCase();
+                const matchF = f === 'all' || status === f;
+                const matchQ = !q ||
+                    (v.brand        || '').toLowerCase().includes(q) ||
+                    (v.model        || '').toLowerCase().includes(q) ||
+                    (v.plate_number || '').toLowerCase().includes(q) ||
+                    (v.vehicle_type || '').toLowerCase().includes(q);
+                return matchF && matchQ;
+            });
+            this._render(filtered);
+        },
         async refresh() {
             const listContainer = document.getElementById('vehiclesList');
-            // Only show loading state if list is empty (first load)
             if (!listContainer.innerHTML.trim() || listContainer.innerHTML.includes('Loading vehicles')) {
                 listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>';
             }
@@ -1811,7 +1965,17 @@
                 const res = await fetch(`${API_URL}/vehicles`);
                 if (!res.ok) throw new Error('Server not reachable');
                 this.data = await res.json();
-                this.render();
+                // Reset search + chips
+                const s = document.getElementById('vehicleSearch');
+                if (s) s.value = '';
+                this._filter = 'all';
+                document.querySelectorAll('.veh-chip').forEach(b => {
+                    const active = b.dataset.filter === 'all';
+                    b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                    b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                    b.style.color       = active ? '#fff' : 'var(--text-secondary)';
+                });
+                this._render(this.data);
             } catch (err) {
                 console.error('Vehicles Refresh Error:', err);
                 listContainer.innerHTML = `<div style="text-align: center; padding: 50px; color: var(--danger);">
@@ -1893,41 +2057,51 @@
             }
         },
 
-        render() {
+        render() { this._render(this.data); },
+
+        _render(vehicles) {
             const listContainer = document.getElementById('vehiclesList');
-            if (this.data.length === 0) {
+            if (!vehicles || vehicles.length === 0) {
                 listContainer.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                        <i class="fas fa-car-crash" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
-                        <p style="color: var(--text-muted); font-weight: 600;">No vehicles found.</p>
+                    <div style="text-align:center;padding:60px 20px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid var(--border);">
+                        <i class="fas fa-car-crash" style="font-size:3rem;color:var(--text-muted);opacity:0.3;margin-bottom:15px;"></i>
+                        <p style="color:var(--text-muted);font-weight:600;">No vehicles found.</p>
                     </div>`;
                 return;
             }
-            listContainer.innerHTML = this.data.map(v => `
-                <div class="stat-card" style="padding: 16px; margin-bottom: 16px; display: flex; gap: 16px; align-items: center;">
-                    <div style="width: 70px; height: 70px; background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05)); border-radius: 18px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); overflow: hidden;">
-                        ${v.vehicle_image ? `<img src="${v.vehicle_image}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fas fa-car" style="font-size: 1.8rem; color: var(--primary); opacity: 0.5;"></i>`}
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                            <div>
-                                <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main);">${v.brand || ''} ${v.model || ''}</h4>
-                                <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">${v.plate_number || 'NO PLATE'}</p>
-                            </div>
-                            <span style="font-size: 1rem; font-weight: 900; color: var(--primary); letter-spacing: -0.5px;">&#8369;${v.daily_rate || 0}</span>
+
+            const statusColor = s => {
+                switch ((s||'').toLowerCase()) {
+                    case 'available':   return '#10b981';
+                    case 'rented':      return '#6366f1';
+                    case 'maintenance': return '#f59e0b';
+                    default:            return '#ef4444';
+                }
+            };
+
+            listContainer.innerHTML = `<ul style="list-style:none;margin:0;padding:0;">` +
+                vehicles.map((v, i) => {
+                    const sc = statusColor(v.status);
+                    const imgHtml = v.vehicle_image
+                        ? `<img src="${v.vehicle_image}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`
+                        : `<i class="fas fa-car" style="font-size:1.6rem;color:var(--primary);opacity:0.4;"></i>`;
+                    return `
+                    <li style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface-card,var(--surface));${i === 0 ? 'border-radius:16px 16px 0 0;' : ''}${i === vehicles.length-1 ? 'border-radius:0 0 16px 16px;' : ''}border-bottom:${i < vehicles.length-1 ? '1px solid var(--border)' : 'none'};">
+                        <div style="flex-shrink:0;width:72px;height:56px;background:var(--surface-container);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                            ${imgHtml}
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                            <span class="pill ${(v.status || '').toLowerCase() === 'available' ? 'success' : 'danger'}" style="font-size: 0.6rem; padding: 3px 10px;">
-                                ${(v.status || 'Unavailable').toUpperCase()}
-                            </span>
-                            <div style="display: flex; gap: 16px;">
-                                <button onclick="Vehicles.edit(${v.id})" style="background: none; border: none; color: var(--text-muted); font-size: 1rem;"><i class="fas fa-edit"></i></button>
-                                <button onclick="Vehicles.delete(${v.id})" style="background: none; border: none; color: var(--danger); font-size: 1rem;"><i class="fas fa-trash-alt"></i></button>
-                            </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;margin-bottom:1px;">&#8369;${Number(v.daily_rate||0).toLocaleString()}</div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.brand||''} ${v.model||''}</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-bottom:5px;">${v.plate_number||'NO PLATE'}</div>
+                            <span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;">${(v.status||'Unavailable')}</span>
                         </div>
-                    </div>
-                </div>
-            `).join('');
+                        <div style="flex-shrink:0;display:flex;flex-direction:column;gap:12px;align-items:center;">
+                            <button onclick="Vehicles.edit(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-pen-to-square"></i></button>
+                            <button onclick="Vehicles.delete(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-trash-can"></i></button>
+                        </div>
+                    </li>`;
+                }).join('') + `</ul>`;
         },
         openModal(id = null) {
             document.getElementById('editId').value = id || '';
@@ -2276,6 +2450,10 @@
     let currentTab = 'dashboard';
     function switchTab(tabId) {
         currentTab = tabId;
+        // Stop ActiveNow timers when leaving bookings tab
+        if (tabId !== 'bookings' && typeof ActiveNow !== 'undefined') ActiveNow.stop();
+        // Stop chat polling when leaving chat tab
+        if (tabId !== 'chat' && typeof AdminChat !== 'undefined') AdminChat.stopPolling();
         try {
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.querySelectorAll('.nav-item, .drawer-item').forEach(l => l.classList.remove('active'));
@@ -2304,6 +2482,12 @@
             }
             if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
             if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
+            if (tabId === 'chat' && typeof AdminChat !== 'undefined') {
+                AdminChat.loadInbox();
+                // Clear nav badge when entering chat
+                const b = document.getElementById('adminChatNavBadge');
+                if (b) b.style.display = 'none';
+            }
 
             if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
             else if (typeof GPS !== 'undefined') GPS.stopLive();
@@ -2353,6 +2537,7 @@
                 if (!listRes.ok) throw new Error(`Server error: ${listRes.status}`);
                 this.data = await listRes.json();
                 this.render();
+                ActiveNow.render(this.data);
             } catch (err) {
                 console.error('Bookings Error:', err);
                 list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
@@ -2480,9 +2665,14 @@
         },
 
         async reject(id) {
-            if (!confirm('Reject this booking?')) return;
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
             try {
-                const res = await fetch(`${API_URL}/bookings/${id}/reject`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
                 if (res.ok) {
                     showNotification('Booking Rejected!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
@@ -2495,25 +2685,33 @@
         },
 
         async pickup(id) {
-            if (!confirm('Vehicle picked up?')) return;
+            if (!confirm('Confirm vehicle has been picked up?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/pickup`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/pickup`, { method: 'PUT' });
                 if (res.ok) {
-                    showNotification('Picked Up!', 'success');
+                    showNotification('Marked as Picked Up!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
+                } else {
+                    const data = await res.json();
+                    showNotification(data.error || 'Failed', 'error');
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async complete(id) {
-            if (!confirm('Vehicle returned?')) return;
+            if (!confirm('Confirm vehicle has been returned?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/complete`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/complete`, { method: 'PUT' });
                 if (res.ok) {
-                    showNotification('Completed!', 'success');
+                    showNotification('Booking Completed!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
+                } else {
+                    const data = await res.json();
+                    showNotification(data.error || 'Failed', 'error');
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         view(id) {
@@ -2595,6 +2793,15 @@
 
                     ${isApprovable ? `
                         <button onclick="Bookings.approve(${b.id})" class="btn-premium" style="width: 100%; background: var(--success); margin-top: 10px;">Approve Booking</button>
+                        <button onclick="Bookings.reject(${b.id})" class="btn-premium" style="width: 100%; background: var(--danger); margin-top: 8px;">Reject Booking</button>
+                    ` : ''}
+
+                    ${b.status === 'Confirmed' || b.status === 'Approved' ? `
+                        <button onclick="Bookings.pickup(${b.id})" class="btn-premium" style="width: 100%; background: #7c3aed; margin-top: 10px;"><i class="fas fa-car"></i> Mark as Picked Up</button>
+                    ` : ''}
+
+                    ${b.status === 'Picked Up' ? `
+                        <button onclick="Bookings.complete(${b.id})" class="btn-premium" style="width: 100%; background: #059669; margin-top: 10px;"><i class="fas fa-flag-checkered"></i> Mark as Completed</button>
                     ` : ''}
 
                     <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr; gap: 10px; margin-top: 20px;">
@@ -2958,8 +3165,33 @@
                 const name = v.full_name || 'Unnamed User';
                 const initial = name[0] ? name[0].toUpperCase() : '?';
                 const licenseUrl = v.license_image || v.license_image_url || '';
-                
-                const actionButtons = licenseUrl 
+
+                // License detail rows
+                const hasDetails = v.license_number || v.license_type || v.license_expiry;
+                const detailsHtml = `
+                    <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+                        <div style="font-size:0.65rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;"><i class="fas fa-id-card" style="margin-right:5px;"></i>Declared License Details</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">License No.</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_number || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Type</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_type || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Expiry Date</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_expiry || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Phone</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.phone || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not set</span>'}</div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                const actionButtons = licenseUrl
                     ? `<button onclick="Verifications.viewLicense('${licenseUrl}')" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px;">
                             <i class="fas fa-id-card" style="margin-right: 6px;"></i> License
                        </button>
@@ -2971,15 +3203,16 @@
 
                 return `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
-                    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 20px;">
-                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow);">
+                    <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
+                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
                             ${initial}
                         </div>
-                        <div style="flex: 1;">
-                            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">${name}</h4>
-                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">${v.email || 'No Email'}</p>
+                        <div style="flex: 1; min-width:0;">
+                            <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.email || 'No Email'}</p>
                         </div>
                     </div>
+                    ${detailsHtml}
                     <div style="display: flex; gap: 12px;">
                         ${actionButtons}
                     </div>
@@ -3317,47 +3550,217 @@
     // --- ACTIVITY MODULE ---
     const Activity = {
         data: [],
+        _filter: 'all',
+
+        _colors: { login:'#6366f1', logout:'#94a3b8', approve:'#10b981', reject:'#ef4444', create:'#3b82f6', update:'#f59e0b', delete:'#ef4444', view:'#8b5cf6' },
+
+        _color(action) {
+            const k = Object.keys(this._colors).find(k => action.toLowerCase().includes(k));
+            return k ? this._colors[k] : '#6366f1';
+        },
+
+        _icon(action) {
+            const a = action.toLowerCase();
+            if (a.includes('login'))  return 'fa-sign-in-alt';
+            if (a.includes('logout')) return 'fa-sign-out-alt';
+            if (a.includes('approve')) return 'fa-check';
+            if (a.includes('reject')) return 'fa-times';
+            if (a.includes('delete')) return 'fa-trash';
+            if (a.includes('create') || a.includes('add')) return 'fa-plus';
+            if (a.includes('update') || a.includes('edit')) return 'fa-pen';
+            return 'fa-history';
+        },
+
+        setFilter(filter, btn) {
+            this._filter = filter;
+            document.querySelectorAll('.act-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background   = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor  = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color        = active ? '#fff' : 'var(--text-secondary)';
+            });
+            this.applyFilters();
+        },
+
+        applyFilters() {
+            const q = (document.getElementById('activitySearch')?.value || '').toLowerCase().trim();
+            const f = this._filter;
+            const filtered = this.data.filter(l => {
+                const matchF = f === 'all' || l.action.toLowerCase().includes(f);
+                const matchQ = !q ||
+                    (l.admin_name || '').toLowerCase().includes(q) ||
+                    (l.action     || '').toLowerCase().includes(q) ||
+                    (l.details    || '').toLowerCase().includes(q);
+                return matchF && matchQ;
+            });
+            this._render(filtered);
+        },
+
+        _render(logs) {
+            const list = document.getElementById('activityList');
+            if (!list) return;
+            if (!logs.length) {
+                list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No matching logs found.</div>';
+                return;
+            }
+            const now = new Date();
+            list.innerHTML = `<ul style="list-style:none;margin:0;padding:0;background:var(--surface-card,var(--surface));border-radius:16px;overflow:hidden;">` +
+                logs.map((l, i) => {
+                    const color = this._color(l.action);
+                    const icon  = this._icon(l.action);
+                    const dt    = new Date(l.created_at);
+                    const isToday = dt.toDateString() === now.toDateString();
+                    const dateStr = isToday
+                        ? dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                        : dt.toLocaleDateString([], {month:'numeric', day:'numeric', year:'2-digit'});
+                    return `
+                    <li style="display:flex;align-items:center;gap:14px;padding:13px 16px;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
+                        <div style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;color:${color};font-size:1rem;">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.admin_name || 'System'}</div>
+                            <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.action.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+                            <div style="font-size:0.73rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.details || '-'}</div>
+                        </div>
+                        <div style="flex-shrink:0;display:flex;align-items:center;gap:4px;">
+                            <span style="font-size:0.72rem;color:${color};font-weight:600;">${dateStr}</span>
+                            <i class="fas fa-chevron-right" style="font-size:0.6rem;color:var(--text-muted);"></i>
+                        </div>
+                    </li>`;
+                }).join('') + `</ul>`;
+        },
+
         async refresh() {
             const list = document.getElementById('activityList');
             if (!list) return;
-            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
-                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading activity logs...</div>';
-            }
-
+            list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
             try {
                 const res = await apiFetch(`admin/activity-logs`);
                 const logs = await res.json();
                 this.data = logs || [];
-                
-                if (!logs || logs.length === 0) {
-                    list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">No activity logs found.</div>';
+                // Reset search + chips
+                const s = document.getElementById('activitySearch');
+                if (s) s.value = '';
+                this._filter = 'all';
+                document.querySelectorAll('.act-chip').forEach(b => {
+                    const active = b.dataset.filter === 'all';
+                    b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                    b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                    b.style.color       = active ? '#fff' : 'var(--text-secondary)';
+                });
+                if (!this.data.length) {
+                    list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No activity logs found.</div>';
                     return;
                 }
+                this._render(this.data);
+            } catch (err) {
+                list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--danger);">Failed to load logs.</div>';
+            }
+        }
+    };
 
-                list.innerHTML = logs.map(l => `
-                    <div class="stat-card" style="padding: 16px; margin-bottom: 12px; border-left: 3px solid var(--primary); background: rgba(255,255,255,0.02);">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="width: 24px; height: 24px; background: rgba(99,102,241,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--primary);">
-                                    <i class="fas fa-user-shield"></i>
-                                </div>
-                                <strong style="font-size: 0.9rem; color: var(--text-main);">${l.admin_name || 'System'}</strong>
-                            </div>
-                            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">${new Date(l.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+    // --- ACTIVE NOW MODULE ---
+    const ActiveNow = {
+        _timer: null,
+        _countdown: {},
+
+        render(allBookings) {
+            const active = (allBookings || []).filter(b =>
+                b.status === 'Picked Up' || b.status === 'Ongoing'
+            );
+            const countEl = document.getElementById('activeNowCount');
+            if (countEl) countEl.textContent = active.length;
+
+            const list = document.getElementById('activeNowList');
+            if (!list) return;
+
+            if (active.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.8rem;background:var(--surface-container);border-radius:14px;">No active rentals right now.</div>';
+                return;
+            }
+
+            list.innerHTML = active.map((b, i) => {
+                const endDate = b.end_date ? new Date(b.end_date) : null;
+                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : '—';
+                const cdId    = 'anCountdown_' + b.id;
+                return `
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #10b981;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-car" style="color:#10b981;font-size:1rem;"></i>
                         </div>
-                        <div style="font-size: 0.65rem; color: var(--primary); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
-                            ${l.action.replace(/_/g, ' ')}
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.88rem;font-weight:800;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.car || (b.brand||'') + ' ' + (b.model||'')}</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);">${b.customer_name || 'Customer'} &bull; #${b.id}</div>
                         </div>
-                        <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; background: var(--surface-container); padding: 8px; border-radius: 8px;">${l.details || '-'}</p>
-                        <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; opacity: 0.6;">
-                            <span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${new Date(l.created_at).toLocaleDateString()}</span>
-                            <span style="font-family: monospace; font-size: 0.6rem; letter-spacing: 1px;">${l.ip_address || '-'}</span>
+                        <span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
+                            <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Return By</div>
+                            <div style="font-size:0.78rem;font-weight:700;color:var(--text-main);">${endStr}</div>
+                        </div>
+                        <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
+                            <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#10b981;">—</div>
                         </div>
                     </div>
-                `).join('');
-            } catch (err) {
-                list.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--danger);">Failed to load logs.</div>';
-            }
+                </div>`;
+            }).join('');
+
+            // Start countdowns
+            this._stopCountdowns();
+            active.forEach(b => {
+                if (!b.end_date) return;
+                const endParts = this._normDate(b.end_date).split('-');
+                const endDt = new Date(parseInt(endParts[0]), parseInt(endParts[1])-1, parseInt(endParts[2]), 23, 59, 59);
+                const cdId = 'anCountdown_' + b.id;
+                this._countdown[b.id] = setInterval(() => {
+                    const el = document.getElementById(cdId);
+                    if (!el) { clearInterval(this._countdown[b.id]); return; }
+                    const ms = endDt - new Date();
+                    if (ms <= 0) { el.textContent = 'Ended'; el.style.color = '#ef4444'; return; }
+                    const d = Math.floor(ms/86400000);
+                    const h = Math.floor((ms%86400000)/3600000);
+                    const m = Math.floor((ms%3600000)/60000);
+                    const s = Math.floor((ms%60000)/1000);
+                    el.textContent = d > 0
+                        ? `${d}d ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
+                        : `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+                    el.style.color = ms < 86400000 ? '#ef4444' : '#10b981';
+                }, 1000);
+            });
+
+            // Auto-refresh every 30s
+            if (this._timer) clearInterval(this._timer);
+            this._timer = setInterval(() => {
+                const label = document.getElementById('activeNowRefreshLabel');
+                if (label) label.textContent = 'refreshing…';
+                Bookings.refresh().then(() => {
+                    if (label) label.textContent = 'auto-refresh 30s';
+                }).catch(() => {
+                    if (label) label.textContent = 'auto-refresh 30s';
+                });
+            }, 30000);
+        },
+
+        _normDate(d) {
+            if (!d) return '';
+            if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) return String(d);
+            const dt = new Date(d);
+            if (isNaN(dt.getTime())) return String(d);
+            return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+        },
+
+        _stopCountdowns() {
+            Object.values(this._countdown).forEach(t => clearInterval(t));
+            this._countdown = {};
+        },
+
+        stop() {
+            this._stopCountdowns();
+            if (this._timer) { clearInterval(this._timer); this._timer = null; }
         }
     };
 
@@ -3760,60 +4163,70 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Bookings Bar Chart
-        const bookCtx = document.getElementById('bookingsChart').getContext('2d');
-        charts.bookings = new Chart(bookCtx, {
-            type: 'bar',
-            data: {
-                labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
-                datasets: [{
-                    label: 'Bookings',
-                    data: revTrend.length > 0 ? revTrend.map(t => t.count || 0) : [0],
-                    backgroundColor: 'rgba(0,82,255,0.6)',
-                    borderRadius: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
-        });
+        // Bookings Bar Chart — use booking status breakdown
+        const bookCtx = document.getElementById('bookingsChart');
+        if (bookCtx) {
+            const bStatus = data.bookingsByStatus || {};
+            const bLabels = Object.keys(bStatus).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+            const bData = Object.values(bStatus);
+            charts.bookings = new Chart(bookCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: bLabels.length ? bLabels : revTrend.map(t => t.day.split('-').slice(1).join('/')),
+                    datasets: [{
+                        label: 'Bookings',
+                        data: bData.length ? bData : revTrend.map(() => 0),
+                        backgroundColor: 'rgba(0,82,255,0.6)',
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+            });
+        }
 
-        // Fleet Health Doughnut
-        const dist = data.fleetDistribution || [];
-        const fleetCtx = document.getElementById('fleetHealthChart').getContext('2d');
-        charts.health = new Chart(fleetCtx, {
-            type: 'doughnut',
-            data: {
-                labels: dist.map(d => d.status),
-                datasets: [{
-                    data: dist.map(d => d.count),
-                    backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ef4444'],
-                    hoverOffset: 10,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '75%',
-                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
-            }
-        });
+        // Fleet Health doughnut (only if canvas exists)
+        const fleetCtxEl = document.getElementById('fleetHealthChart');
+        if (fleetCtxEl) {
+            const fleetDist = data.fleetDistribution || [];
+            if (charts.health) charts.health.destroy();
+            charts.health = new Chart(fleetCtxEl.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: fleetDist.map(f => f.status),
+                    datasets: [{
+                        data: fleetDist.map(f => f.count),
+                        backgroundColor: ['#10b981','#f59e0b','#ef4444','#6366f1','#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '75%',
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
+                }
+            });
+        }
 
         // Top Vehicles Pie Chart
-        const topVeh = (data.topVehicles || []).slice(0, 6);
-        const pieCtx = document.getElementById('topVehiclesPieChart').getContext('2d');
-        charts.topPie = new Chart(pieCtx, {
-            type: 'pie',
-            data: {
-                labels: topVeh.map(c => `${c.brand} ${c.model}`),
-                datasets: [{
-                    data: topVeh.map(c => c.booking_count || 0),
-                    backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
-            }
-        });
+        const topVehEl = document.getElementById('topVehiclesPieChart');
+        if (topVehEl) {
+            const topVeh = (data.topVehicles || []).slice(0, 6);
+            if (charts.topPie) charts.topPie.destroy();
+            charts.topPie = new Chart(topVehEl.getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: topVeh.map(c => `${c.brand} ${c.model}`),
+                    datasets: [{
+                        data: topVeh.map(c => c.booking_count || 0),
+                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
+                }
+            });
+        }
     }
 
     // --- INSPECTIONS LOGIC ---
@@ -4410,6 +4823,362 @@
         }
     };
     // ??? END USER MANAGEMENT MODULE ???????????????????????????????????????
+
+    // ============================================================
+    // ADMIN CHAT MODULE
+    // ============================================================
+    const AdminChat = (function () {
+        let _pollTimer = null;
+        let _currentUserId = null;
+        let _currentUserName = '';
+        let _lastMsgId = 0;
+        let _view = 'inbox'; // 'inbox' | 'conversation'
+
+        function _esc(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function _adminId() {
+            const u = adminAuth.getUser();
+            return u ? u.id : null;
+        }
+
+        // ?? Inbox ??????????????????????????????????????????????
+        function loadInbox() {
+            stopPolling();
+            _currentUserId = null;
+            _view = 'inbox';
+            const el = document.getElementById('adminChatContent');
+            if (!el) return;
+            const aid = _adminId();
+            if (!aid) {
+                el.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px;">Please log in first.</p>';
+                return;
+            }
+
+            el.innerHTML =
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+                    '<h1 class="page-title" style="margin:0;">Live Chat</h1>' +
+                    '<button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-main);width:40px;height:40px;border-radius:12px;cursor:pointer;font-size:0.9rem;"><i class="fas fa-sync-alt"></i></button>' +
+                '</div>' +
+                '<div id="acInboxList" style="margin-bottom:16px;"><div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div></div>' +
+                '<button onclick="AdminChat.showUserSearch()" style="width:100%;padding:13px;background:var(--primary);border:none;border-radius:14px;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">' +
+                    '<i class="fas fa-plus" style="margin-right:6px;"></i>Start New Conversation' +
+                '</button>' +
+                '<div id="acUserSearch" style="display:none;margin-top:12px;">' +
+                    '<input type="text" id="acUserSearchInput" placeholder="Search by name or email..." oninput="AdminChat.searchUsers(this.value)"' +
+                        ' style="width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">' +
+                    '<div id="acUserSearchResults" style="margin-top:8px;"></div>' +
+                '</div>';
+
+            fetch(API_URL + '/chat/inbox?viewer_type=admin&viewer_id=' + aid)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    const list = document.getElementById('acInboxList');
+                    if (!list) return;
+                    if (!Array.isArray(data) || !data.length) {
+                        list.innerHTML =
+                            '<div style="text-align:center;padding:24px 16px;color:var(--text-muted);">' +
+                                '<i class="fas fa-comments" style="font-size:2.5rem;margin-bottom:10px;display:block;opacity:0.3;"></i>' +
+                                '<p style="font-size:0.85rem;margin:0;">No conversations yet.<br>Use the button below to start one.</p>' +
+                            '</div>';
+                        return;
+                    }
+                    list.innerHTML = data.map(function(c) {
+                        const initials = (c.other_name || 'U').charAt(0).toUpperCase();
+                        const unread = parseInt(c.unread_count) || 0;
+                        const preview = _esc(c.last_message || '');
+                        const ts = c.last_at ? new Date(c.last_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        return '<div class="ac-inbox-item" onclick="AdminChat.openConversation(' + c.other_id + ',\'' + _esc(c.other_name) + '\')">' +
+                            '<div class="ac-avatar">' + initials + '</div>' +
+                            '<div class="ac-inbox-info">' +
+                                '<div class="ac-inbox-name">' + _esc(c.other_name) + '</div>' +
+                                '<div class="ac-inbox-preview">' + preview + '</div>' +
+                            '</div>' +
+                            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">' +
+                                '<span style="font-size:0.65rem;color:var(--text-muted);">' + ts + '</span>' +
+                                (unread ? '<span class="ac-unread">' + unread + '</span>' : '') +
+                            '</div>' +
+                        '</div>';
+                    }).join('');
+                })
+                .catch(function() {
+                    const list = document.getElementById('acInboxList');
+                    if (list) list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Failed to load. Tap refresh.</div>';
+                });
+        }
+
+        function showUserSearch() {
+            const box = document.getElementById('acUserSearch');
+            if (!box) return;
+            const isHidden = box.style.display === 'none';
+            box.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                const inp = document.getElementById('acUserSearchInput');
+                if (inp) { inp.value = ''; inp.focus(); }
+                const res = document.getElementById('acUserSearchResults');
+                if (res) res.innerHTML = '';
+            }
+        }
+
+        function searchUsers(q) {
+            const res = document.getElementById('acUserSearchResults');
+            if (!res) return;
+            if (!q || q.length < 2) { res.innerHTML = ''; return; }
+            fetch(API_URL + '/users/search?q=' + encodeURIComponent(q) + '&limit=10')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!Array.isArray(data) || !data.length) {
+                        res.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);padding:8px 0;">No users found.</p>';
+                        return;
+                    }
+                    res.innerHTML = data.map(function(u) {
+                        const name = u.full_name || 'Unknown';
+                        return '<div class="ac-inbox-item" style="margin-bottom:4px;" onclick="AdminChat.openConversation(' + u.id + ',\'' + _esc(name) + '\')">' +
+                            '<div class="ac-avatar" style="font-size:0.85rem;">' + name.charAt(0).toUpperCase() + '</div>' +
+                            '<div class="ac-inbox-info">' +
+                                '<div class="ac-inbox-name">' + _esc(name) + '</div>' +
+                                '<div class="ac-inbox-preview">' + _esc(u.email || '') + '</div>' +
+                            '</div>' +
+                            '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
+                        '</div>';
+                    }).join('');
+                })
+                .catch(function() {
+                    res.innerHTML = '<p style="font-size:0.8rem;color:var(--danger);padding:8px 0;">Search failed.</p>';
+                });
+        }
+
+        // ?? Conversation ???????????????????????????????????????
+        function openConversation(userId, userName) {
+            stopPolling();
+            _currentUserId = userId;
+            _currentUserName = userName;
+            _lastMsgId = 0;
+            _view = 'conversation';
+
+            const el = document.getElementById('adminChatContent');
+            if (!el) return;
+
+            el.innerHTML =
+                '<div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--border);margin-bottom:0;">' +
+                    '<button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-main);width:38px;height:38px;border-radius:10px;flex-shrink:0;cursor:pointer;font-size:0.9rem;"><i class="fas fa-arrow-left"></i></button>' +
+                    '<div class="ac-avatar" style="width:36px;height:36px;font-size:0.9rem;">' + _esc(userName).charAt(0).toUpperCase() + '</div>' +
+                    '<div>' +
+                        '<div style="font-weight:700;font-size:0.95rem;color:var(--text-main);">' + _esc(userName) + '</div>' +
+                        '<div style="font-size:0.7rem;color:var(--text-muted);">Customer</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div id="acMessages" style="overflow-y:auto;padding:14px 0;display:flex;flex-direction:column;gap:8px;height:calc(100vh - 280px);"></div>' +
+                '<div style="display:flex;gap:10px;padding-top:10px;border-top:1px solid var(--border);">' +
+                    '<input type="text" id="acInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')AdminChat.send()"' +
+                        ' style="flex:1;padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:50px;color:var(--text-main);font-size:0.9rem;outline:none;">' +
+                    '<button onclick="AdminChat.send()" style="background:var(--primary);color:#fff;border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">' +
+                        '<i class="fas fa-paper-plane"></i>' +
+                    '</button>' +
+                '</div>';
+
+            const aid = _adminId();
+            if (aid) {
+                fetch(API_URL + '/chat/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ receiver_type: 'admin', receiver_id: aid, sender_type: 'user', sender_id: userId })
+                }).catch(function() {});
+            }
+
+            _fetchMessages(true);
+            _pollTimer = setInterval(function() { _fetchMessages(false); }, 2000);
+        }
+
+        function _fetchMessages(initial) {
+            const aid = _adminId();
+            if (!aid || !_currentUserId) return;
+            fetch(API_URL + '/chat/messages?user_id=' + _currentUserId + '&admin_id=' + aid + '&limit=100')
+                .then(function(r) { return r.json(); })
+                .then(function(msgs) {
+                    const container = document.getElementById('acMessages');
+                    if (!container) return;
+                    if (!Array.isArray(msgs) || !msgs.length) {
+                        if (initial) container.innerHTML =
+                            '<div style="text-align:center;color:var(--text-muted);font-size:0.85rem;padding:30px;">No messages yet. Say hello!</div>';
+                        return;
+                    }
+                    const latestId = msgs[msgs.length - 1].id;
+                    if (String(latestId) === String(_lastMsgId) && !initial) return;
+
+                    // Detect new message from user
+                    const lastMsg = msgs[msgs.length - 1];
+                    const isNewFromUser = !initial && String(latestId) !== String(_lastMsgId) && lastMsg.sender_type === 'user';
+                    _lastMsgId = latestId;
+
+                    // Show pop-up banner
+                    if (isNewFromUser) {
+                        showAdminChatPopup(_currentUserName, lastMsg.message, _currentUserId);
+                    }
+
+                    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+                    container.innerHTML = msgs.map(function(m) {
+                        const isMe = m.sender_type === 'admin';
+                        const ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        if (isMe) {
+                            return '<div style="display:flex;justify-content:flex-end;">' +
+                                '<div style="max-width:78%;background:var(--primary);color:#fff;padding:10px 14px;border-radius:18px 18px 4px 18px;font-size:0.875rem;line-height:1.4;">' +
+                                    _esc(m.message) +
+                                    '<div style="font-size:0.62rem;color:rgba(255,255,255,0.6);margin-top:3px;text-align:right;">' + ts + '</div>' +
+                                '</div>' +
+                            '</div>';
+                        } else {
+                            return '<div style="display:flex;justify-content:flex-start;">' +
+                                '<div style="max-width:78%;background:var(--surface);border:1px solid var(--border);color:var(--text-main);padding:10px 14px;border-radius:18px 18px 18px 4px;font-size:0.875rem;line-height:1.4;">' +
+                                    _esc(m.message) +
+                                    '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">' + ts + '</div>' +
+                                '</div>' +
+                            '</div>';
+                        }
+                    }).join('');
+
+                    if (initial || atBottom) container.scrollTop = container.scrollHeight;
+
+                    fetch(API_URL + '/chat/mark-read', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ receiver_type: 'admin', receiver_id: aid, sender_type: 'user', sender_id: _currentUserId })
+                    }).catch(function() {});
+                })
+                .catch(function() {});
+        }
+
+        function send() {
+            const inputEl = document.getElementById('acInput');
+            if (!inputEl) return;
+            const msg = (inputEl.value || '').trim();
+            const aid = _adminId();
+            if (!msg || !aid || !_currentUserId) return;
+            inputEl.value = '';
+            inputEl.disabled = true;
+
+            fetch(API_URL + '/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sender_type: 'admin', sender_id: aid, receiver_type: 'user', receiver_id: _currentUserId, message: msg })
+            })
+                .then(function() { _fetchMessages(false); })
+                .catch(function(err) { alert('Send failed: ' + (err.message || 'Unknown error')); })
+                .finally(function() { if (inputEl) inputEl.disabled = false; });
+        }
+
+        function stopPolling() {
+            if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+        }
+
+        function updateNavBadge() {
+            const aid = _adminId();
+            if (!aid) return;
+            fetch(API_URL + '/chat/inbox?viewer_type=admin&viewer_id=' + aid)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    const badge = document.getElementById('adminChatNavBadge');
+                    if (!badge) return;
+                    let total = 0;
+                    if (Array.isArray(data)) data.forEach(function(c) { total += parseInt(c.unread_count) || 0; });
+                    if (total > 0) {
+                        badge.textContent = total > 9 ? '9+' : String(total);
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(function() {});
+        }
+
+        return { loadInbox: loadInbox, openConversation: openConversation, send: send, stopPolling: stopPolling, showUserSearch: showUserSearch, searchUsers: searchUsers, updateNavBadge: updateNavBadge };
+    })();
+
+    window.AdminChat = AdminChat;
+    // END ADMIN CHAT MODULE
+
+    // Admin Chat Pop-up Banner
+    window.showAdminChatPopup = function(senderName, message, userId) {
+        var existing = document.getElementById('adminChatPopup');
+        if (existing) existing.remove();
+        var banner = document.createElement('div');
+        banner.id = 'adminChatPopup';
+        banner.style.cssText = 'position:fixed;top:72px;left:12px;right:12px;z-index:6000;background:var(--primary);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;cursor:pointer;';
+        banner.innerHTML =
+            '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:0.9rem;">' + (senderName||'U').charAt(0).toUpperCase() + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:0.72rem;font-weight:700;opacity:0.85;">' + (senderName||'Customer') + ' sent a message</div>' +
+                '<div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (message||'') + '</div>' +
+            '</div>' +
+            '<button onclick="document.getElementById(\'adminChatPopup\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:0.75rem;flex-shrink:0;">x</button>';
+        banner.onclick = function(e) {
+            if (e.target.tagName === 'BUTTON') return;
+            banner.remove();
+            switchTab('chat');
+            if (userId && typeof AdminChat !== 'undefined') {
+                setTimeout(function() { AdminChat.openConversation(userId, senderName); }, 300);
+            }
+        };
+        document.body.appendChild(banner);
+        setTimeout(function() { if (banner.parentNode) banner.remove(); }, 6000);
+    };
+
+    // Background inbox polling (when not on chat tab)
+    var _adminBgChatTimer = null;
+    var _adminBgLastAt = '';
+    function startAdminBgChatPolling() {
+        if (_adminBgChatTimer) return;
+        _adminBgChatTimer = setInterval(function() {
+            if (typeof currentTab !== 'undefined' && currentTab === 'chat') return;
+            const user = adminAuth.getUser();
+            if (!user) return;
+            fetch(API_URL + '/chat/inbox?viewer_type=admin&viewer_id=' + user.id)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!Array.isArray(data)) return;
+                    let totalUnread = 0;
+                    data.forEach(function(c) { totalUnread += parseInt(c.unread_count) || 0; });
+                    const badge = document.getElementById('adminChatNavBadge');
+                    if (badge) {
+                        if (totalUnread > 0) { badge.textContent = totalUnread > 9 ? '9+' : String(totalUnread); badge.style.display = 'flex'; }
+                        else { badge.style.display = 'none'; }
+                    }
+                    const conv = data.find(function(c) { return parseInt(c.unread_count) > 0; });
+                    if (conv && conv.last_at && conv.last_at !== _adminBgLastAt) {
+                        _adminBgLastAt = conv.last_at;
+                        showAdminChatPopup(conv.other_name, conv.last_message, conv.other_id);
+                    }
+                })
+                .catch(function() {});
+        }, 10000);
+    }
+    window.startAdminBgChatPolling = startAdminBgChatPolling;
+
+    // Test Push Notification
+    window.testAdminPushNotification = function() {
+        const user = adminAuth.getUser();
+        if (!user) { alert('Please log in first.'); return; }
+        fetch(API_URL + '/debug/test-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showNotification('Test push sent! Check your notifications.', 'success');
+            } else {
+                showNotification('Push failed: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(function(err) {
+            showNotification('Network error: ' + err.message, 'error');
+        });
+    };
 
 </script>
 </body>
