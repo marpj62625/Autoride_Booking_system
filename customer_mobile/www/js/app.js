@@ -3499,7 +3499,7 @@ var LiveChat = (function () {
         '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>' +
       '</div>';
 
-    apiCall('/chat/admins')
+    apiCall('/chat/admins?user_id=' + (currentUser.id || ''))
       .then(function (admins) {
         var body = document.getElementById('liveChatInboxBody');
         if (!body) return;

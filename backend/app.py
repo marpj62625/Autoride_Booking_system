@@ -8619,7 +8619,9 @@ def chat_mark_read():
 def chat_list_admins():
     """Return list of active admins a customer can chat with.
     Falls back to all admins if is_active column doesn't exist yet.
+    Also includes admins the user has already chatted with.
     """
+    user_id = request.args.get('user_id')
     try:
         cur = get_cursor()
         # Check if is_active column exists
@@ -8637,7 +8639,33 @@ def chat_list_admins():
         else:
             cur.execute("SELECT id, username FROM admins ORDER BY id ASC")
         rows = cur.fetchall()
-        return jsonify([dict(r) for r in rows]), 200
+        result = [dict(r) for r in rows]
+
+        # If no admins found via is_active, fall back to admins from existing conversations
+        if not result and user_id:
+            try:
+                cur.execute("""
+                    SELECT DISTINCT
+                        CASE WHEN sender_type='admin' THEN sender_id ELSE receiver_id END AS id
+                    FROM chat_messages
+                    WHERE (sender_type='user' AND sender_id=%s)
+                       OR (receiver_type='user' AND receiver_id=%s)
+                """, (int(user_id), int(user_id)))
+                admin_ids = [r['id'] for r in cur.fetchall()]
+                if admin_ids:
+                    cur.execute("SELECT id, username FROM admins WHERE id = ANY(%s) ORDER BY id ASC", (admin_ids,))
+                    result = [dict(r) for r in cur.fetchall()]
+            except Exception:
+                pass
+
+        # Last resort: return first admin
+        if not result:
+            cur.execute("SELECT id, username FROM admins ORDER BY id ASC LIMIT 1")
+            row = cur.fetchone()
+            if row:
+                result = [dict(row)]
+
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
