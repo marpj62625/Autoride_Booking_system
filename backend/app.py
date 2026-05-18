@@ -8046,20 +8046,41 @@ def get_sms_logs():
 
 @app.route('/debug/admin-fcm-check', methods=['GET'])
 def debug_admin_fcm_check():
-    """Debug: check admin FCM tokens."""
+    """Debug: check admin FCM tokens and test push."""
     try:
         cur = get_cursor()
-        # Check what columns admins table has
         cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'admins' ORDER BY ordinal_position")
         columns = [r['column_name'] for r in cur.fetchall()]
-        # Try to get admin data with available columns
         cur.execute("SELECT * FROM admins LIMIT 5")
         admins = [dict(r) for r in cur.fetchall()]
-        # Remove sensitive fields
         for a in admins:
             a.pop('password', None)
             a.pop('password_hash', None)
         return jsonify({'columns': columns, 'admins': admins}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/debug/test-push', methods=['POST'])
+def debug_test_push():
+    """Debug: send a test push notification to an admin by admin_id."""
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if not admin_id:
+        return jsonify({'error': 'admin_id required'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, username, fcm_token FROM admins WHERE id = %s", (int(admin_id),))
+        admin = cur.fetchone()
+        if not admin:
+            return jsonify({'error': 'Admin not found'}), 404
+        if not admin.get('fcm_token'):
+            return jsonify({'error': 'No FCM token registered for this admin', 'admin': dict(admin)}), 400
+        from notifications import fcm_service
+        ok = fcm_service.send_push(admin['fcm_token'], 'Test Notification', 'Push notifications are working!')
+        return jsonify({'success': ok, 'admin_id': admin_id, 'token_prefix': admin['fcm_token'][:20] + '...'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

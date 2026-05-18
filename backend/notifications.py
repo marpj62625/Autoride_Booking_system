@@ -670,48 +670,70 @@ class FCM_Service:
 
     def send_push(self, fcm_token: str, title: str, body: str) -> bool:
         """
-        Sends a push notification to a single device via FCM V1 API.
-        Returns True on success, False on failure.
+        Sends a push notification via FCM V1 API (service account) with
+        legacy FCM HTTP API fallback if service account is unavailable.
         """
+        # Try V1 API first (service account)
         try:
             access_token = self._get_access_token()
-            if not access_token:
-                return False
+            if access_token:
+                project_id = 'autoride-a1a32'
+                resp = requests.post(
+                    f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send',
+                    headers={
+                        'Authorization': f'Bearer {access_token}',
+                        'Content-Type': 'application/json',
+                    },
+                    json={
+                        'message': {
+                            'token': fcm_token,
+                            'notification': {'title': title, 'body': body},
+                            'android': {
+                                'priority': 'high',
+                                'notification': {'sound': 'default', 'channel_id': 'autoride_notifications'}
+                            },
+                            'data': {'title': title, 'body': body}
+                        }
+                    },
+                    timeout=10
+                )
+                if resp.ok:
+                    return True
+                print(f"FCM V1 failed ({resp.status_code}), trying legacy API", file=sys.stderr)
+        except Exception as exc:
+            print(f"FCM V1 error: {exc}, trying legacy API", file=sys.stderr)
 
-            project_id = 'autoride-a1a32'
+        # Fallback: legacy FCM HTTP API using server key
+        try:
+            import os
+            from config import FCM_SERVER_KEY
+            server_key = os.environ.get('FCM_SERVER_KEY', FCM_SERVER_KEY)
+            if not server_key:
+                return False
             resp = requests.post(
-                f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send',
+                'https://fcm.googleapis.com/fcm/send',
                 headers={
-                    'Authorization': f'Bearer {access_token}',
+                    'Authorization': f'key={server_key}',
                     'Content-Type': 'application/json',
                 },
                 json={
-                    'message': {
-                        'token': fcm_token,
-                        'notification': {
-                            'title': title,
-                            'body': body,
-                        },
-                        'android': {
-                            'priority': 'high',
-                            'notification': {
-                                'sound': 'default',
-                                'channel_id': 'autoride_notifications',
-                            }
-                        },
-                        'data': {
-                            'title': title,
-                            'body': body,
-                        }
-                    }
+                    'to': fcm_token,
+                    'priority': 'high',
+                    'notification': {
+                        'title': title,
+                        'body': body,
+                        'sound': 'default',
+                        'android_channel_id': 'autoride_notifications',
+                    },
+                    'data': {'title': title, 'body': body}
                 },
                 timeout=10
             )
             if not resp.ok:
-                print(f"FCM_Service.send_push: FCM error {resp.status_code}: {resp.text}", file=sys.stderr)
+                print(f"FCM legacy failed ({resp.status_code}): {resp.text}", file=sys.stderr)
             return resp.ok
         except Exception as exc:
-            print(f"FCM_Service.send_push: failed: {exc}", file=sys.stderr)
+            print(f"FCM legacy error: {exc}", file=sys.stderr)
             return False
 
     def notify_user_push(self, user_id: int, title: str, body: str) -> bool:

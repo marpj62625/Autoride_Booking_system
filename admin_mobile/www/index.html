@@ -895,13 +895,13 @@
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
 
-            <div class="stat-card" onclick="showNotification('Push notifications are managed through the device settings.', 'info')" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+            <div class="stat-card" onclick="testAdminPushNotification()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                 <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-bell" style="color: var(--text-muted);"></i>
                 </div>
                 <div style="flex: 1;">
                     <h4 style="font-size: 0.95rem;">Push Notifications</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Manage app alerts</p>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Tap to send a test push</p>
                 </div>
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
@@ -5091,6 +5091,28 @@
 
     window.AdminChat = AdminChat;
     // END ADMIN CHAT MODULE
+
+    // ?? Test Push Notification ??????????????????????????????
+    window.testAdminPushNotification = function() {
+        const user = adminAuth.getUser();
+        if (!user) { alert('Please log in first.'); return; }
+        fetch(API_URL + '/debug/test-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ admin_id: user.id })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                showNotification('Test push sent! Check your notifications.', 'success');
+            } else {
+                showNotification('Push failed: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(function(err) {
+            showNotification('Network error: ' + err.message, 'error');
+        });
+    };
 
 </script>
 </body>
