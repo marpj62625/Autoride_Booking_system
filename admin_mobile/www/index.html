@@ -2665,9 +2665,14 @@
         },
 
         async reject(id) {
-            if (!confirm('Reject this booking?')) return;
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
             try {
-                const res = await fetch(`${API_URL}/bookings/${id}/reject`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason })
+                });
                 if (res.ok) {
                     showNotification('Booking Rejected!', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none';
@@ -2680,25 +2685,33 @@
         },
 
         async pickup(id) {
-            if (!confirm('Vehicle picked up?')) return;
+            if (!confirm('Confirm vehicle has been picked up?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/pickup`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/pickup`, { method: 'PUT' });
                 if (res.ok) {
-                    showNotification('Picked Up!', 'success');
+                    showNotification('Marked as Picked Up!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
+                } else {
+                    const data = await res.json();
+                    showNotification(data.error || 'Failed', 'error');
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         async complete(id) {
-            if (!confirm('Vehicle returned?')) return;
+            if (!confirm('Confirm vehicle has been returned?')) return;
             try {
-                const res = await fetch(`${API_BASE}/bookings/${id}/complete`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/bookings/${id}/complete`, { method: 'PUT' });
                 if (res.ok) {
-                    showNotification('Completed!', 'success');
+                    showNotification('Booking Completed!', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
                     this.refresh();
+                } else {
+                    const data = await res.json();
+                    showNotification(data.error || 'Failed', 'error');
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { showNotification('Network error', 'error'); }
         },
 
         view(id) {
@@ -2780,6 +2793,15 @@
 
                     ${isApprovable ? `
                         <button onclick="Bookings.approve(${b.id})" class="btn-premium" style="width: 100%; background: var(--success); margin-top: 10px;">Approve Booking</button>
+                        <button onclick="Bookings.reject(${b.id})" class="btn-premium" style="width: 100%; background: var(--danger); margin-top: 8px;">Reject Booking</button>
+                    ` : ''}
+
+                    ${b.status === 'Confirmed' || b.status === 'Approved' ? `
+                        <button onclick="Bookings.pickup(${b.id})" class="btn-premium" style="width: 100%; background: #7c3aed; margin-top: 10px;"><i class="fas fa-car"></i> Mark as Picked Up</button>
+                    ` : ''}
+
+                    ${b.status === 'Picked Up' ? `
+                        <button onclick="Bookings.complete(${b.id})" class="btn-premium" style="width: 100%; background: #059669; margin-top: 10px;"><i class="fas fa-flag-checkered"></i> Mark as Completed</button>
                     ` : ''}
 
                     <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr; gap: 10px; margin-top: 20px;">
