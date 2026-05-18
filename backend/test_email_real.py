@@ -8,7 +8,7 @@ def test_real_email():
     print(f"Using sender: {EMAIL_USER}")
     
     subject = "Autoride System: REAL SMTP TEST SUCCESS"
-    body = "Hello! If you are reading this, it means your Autoride System is now successfully sending real emails via Gmail SMTP. 🚀🏆"
+    body = "Hello! If you are reading this, it means your Autoride System is now successfully sending real emails via Gmail SMTP. --------"
     
     try:
         msg = MIMEText(body)

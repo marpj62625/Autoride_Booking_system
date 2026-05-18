@@ -343,7 +343,7 @@ def check_payment_status(booking_id):
                 'paid': True
             }), 200
 
-        # Not yet confirmed — actively check PayMongo API
+        # Not yet confirmed - actively check PayMongo API
         link_id = booking['paymongo_link_id']
         debug_info = {'link_id': link_id, 'has_key': bool(PAYMONGO_SECRET_KEY)}
         if link_id and PAYMONGO_SECRET_KEY:
@@ -361,7 +361,7 @@ def check_payment_status(booking_id):
                     debug_info['link_status'] = link_status
                     debug_info['payments_count'] = len(payments)
 
-                    # PayMongo paid link — process payment
+                    # PayMongo paid link - process payment
                     if link_status == 'paid':
                         # Try to get payment details from payments array
                         method = 'online'

@@ -86,7 +86,7 @@ def flask_test_client():
 
 
 # ===========================================================================
-# 9.1 — compose_booking_rejected_sms() contains booking ID and support text
+# 9.1 - compose_booking_rejected_sms() contains booking ID and support text
 # ===========================================================================
 
 def test_compose_booking_rejected_sms_contains_booking_id_and_support():
@@ -97,7 +97,7 @@ def test_compose_booking_rejected_sms_contains_booking_id_and_support():
 
 
 # ===========================================================================
-# 9.2 — compose_completed_sms() contains booking ID and thank-you text
+# 9.2 - compose_completed_sms() contains booking ID and thank-you text
 # ===========================================================================
 
 def test_compose_completed_sms_contains_booking_id_and_thank_you():
@@ -108,7 +108,7 @@ def test_compose_completed_sms_contains_booking_id_and_thank_you():
 
 
 # ===========================================================================
-# 9.3 — compose_license_approved_sms() contains "verified" and "book vehicles"
+# 9.3 - compose_license_approved_sms() contains "verified" and "book vehicles"
 # ===========================================================================
 
 def test_compose_license_approved_sms_contains_verified_and_book_vehicles():
@@ -119,7 +119,7 @@ def test_compose_license_approved_sms_contains_verified_and_book_vehicles():
 
 
 # ===========================================================================
-# 9.4 — compose_license_rejected_sms() contains "not approved" and "re-upload"
+# 9.4 - compose_license_rejected_sms() contains "not approved" and "re-upload"
 # ===========================================================================
 
 def test_compose_license_rejected_sms_contains_not_approved_and_reupload():
@@ -130,7 +130,7 @@ def test_compose_license_rejected_sms_contains_not_approved_and_reupload():
 
 
 # ===========================================================================
-# 9.5 — send_sms() with mocked Semaphore returning 200
+# 9.5 - send_sms() with mocked Semaphore returning 200
 # ===========================================================================
 
 def test_send_sms_success_logs_sent_returns_true_api_called_once():
@@ -204,7 +204,7 @@ def test_send_sms_success_status_is_sent():
 
 
 # ===========================================================================
-# 9.6 — send_sms() with mocked Semaphore always returning 500
+# 9.6 - send_sms() with mocked Semaphore always returning 500
 # ===========================================================================
 
 def test_send_sms_always_fails_logs_retried_then_failed_api_called_twice():
@@ -240,7 +240,7 @@ def test_send_sms_always_fails_logs_retried_then_failed_api_called_twice():
 
 
 # ===========================================================================
-# 9.7 — send_sms() with mocked Semaphore failing then succeeding
+# 9.7 - send_sms() with mocked Semaphore failing then succeeding
 # ===========================================================================
 
 def test_send_sms_fail_then_succeed_logs_retried_then_sent_api_called_twice():
@@ -280,7 +280,7 @@ def test_send_sms_fail_then_succeed_logs_retried_then_sent_api_called_twice():
 
 
 # ===========================================================================
-# 9.8 — POST /user/sms-preference with valid data — 200 response, DB updated
+# 9.8 - POST /user/sms-preference with valid data - 200 response, DB updated
 # ===========================================================================
 
 def test_sms_preference_valid_data_returns_200_and_updates_db(flask_test_client):
@@ -319,7 +319,7 @@ def test_sms_preference_valid_data_returns_200_and_updates_db(flask_test_client)
 
 
 # ===========================================================================
-# 9.9 — POST /user/sms-preference with missing fields — 400 response
+# 9.9 - POST /user/sms-preference with missing fields - 400 response
 # ===========================================================================
 
 def test_sms_preference_missing_sms_opt_out_returns_400(flask_test_client):
@@ -341,7 +341,7 @@ def test_sms_preference_empty_body_returns_400(flask_test_client):
 
 
 # ===========================================================================
-# 9.10 — GET /admin/sms-logs with no filters — returns records ordered by
+# 9.10 - GET /admin/sms-logs with no filters - returns records ordered by
 #         created_at DESC
 # ===========================================================================
 

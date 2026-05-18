@@ -21,7 +21,7 @@ SEMAPHORE_SENDER_NAME = os.getenv('SEMAPHORE_SENDER_NAME', 'SEMAPHORE')
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://fydfsgjrlowrrtlmefwq.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4')
 
-# Firebase Cloud Messaging (FCM) — for push notifications
+# Firebase Cloud Messaging (FCM) - for push notifications
 FCM_SERVER_KEY = os.getenv('FCM_SERVER_KEY', 'BIb5YffHFeCD1_TYpNHpC5TOeZgML5MW8CIsaD-jExr1a5soJ598H7PPrdppR2JX2EvJhZc1CFBp7oF7BEwk-sU')
 
 # PayMongo Configuration

@@ -1,0 +1,4 @@
+# file: C:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\backend\routers\report_routes.py
+# hypothesis_version: 6.131.15
+
+[200, 400, 500, '/reports/revenue', '/reports/summary', '/reports/user-stats', 'GET', 'Unknown', 'active_vehicles', 'avg_revenue', 'cnt', 'daily', 'date', 'error', 'label', 'labels', 'monthly', 'period', 'report', 'revenue', 'status', 'total_revenue', 'values', 'vehicles']

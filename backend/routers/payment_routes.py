@@ -133,7 +133,7 @@ def process_payment():
                 # Notify admins of new payment
                 notification_service.notify_admins_inapp(
                     "New Payment Received",
-                    f"Booking #{booking_id} — PHP {amount} via {method}. Ref: {reference_number}.",
+                    f"Booking #{booking_id} - PHP {amount} via {method}. Ref: {reference_number}.",
                     'admin_payment_proof'
                 )
         except Exception as sms_err:

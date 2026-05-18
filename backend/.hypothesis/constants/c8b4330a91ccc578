@@ -1,0 +1,4 @@
+# file: C:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\backend\routers\booking_routes.py
+# hypothesis_version: 6.131.15
+
+[0.2, 100, 200, 201, 400, 403, 404, 500, '/book', '0', 'Basic', 'Booking not found', 'Cancelled', 'Completed', 'Customer', 'Downpayment', 'Full', 'Missing booking data', 'No reason provided', 'POST', 'Paid', 'Partially Paid', 'Pending', 'Self-Drive', 'Unknown', 'User ID required', 'User not found', 'Vehicle', 'addon_price', 'addons', 'amount_paid', 'applied_coupon_id', 'balance_amount', 'base_price', 'booking', 'booking_id', 'brand', 'discount_amount', 'driver_id', 'end_date', 'error', 'false', 'full_name', 'id', 'insurance_price', 'insurance_type', 'is_verified', 'message', 'model', 'payment_status', 'payment_type', 'pickup_location', 'points_redeemed', 'reason', 'rental_type', 'start_date', 'status', 'total_price', 'user_id', 'vehicle_id']
