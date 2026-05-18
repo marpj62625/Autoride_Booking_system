@@ -294,6 +294,10 @@ def migrate_sms_notification():
 
         cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE")
 
+        # Ensure existing admins have is_active = TRUE (in case they were added before this column)
+
+        cur.execute("UPDATE admins SET is_active = TRUE WHERE is_active IS NULL OR is_active = FALSE")
+
         # 1.3 sms_logs table
 
         cur.execute("""
