@@ -5009,7 +5009,16 @@
                     }
                     const latestId = msgs[msgs.length - 1].id;
                     if (String(latestId) === String(_lastMsgId) && !initial) return;
+
+                    // Detect new message from user
+                    const lastMsg = msgs[msgs.length - 1];
+                    const isNewFromUser = !initial && String(latestId) !== String(_lastMsgId) && lastMsg.sender_type === 'user';
                     _lastMsgId = latestId;
+
+                    // Show pop-up banner
+                    if (isNewFromUser) {
+                        showAdminChatPopup(_currentUserName, lastMsg.message, _currentUserId);
+                    }
 
                     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
                     container.innerHTML = msgs.map(function(m) {
@@ -5092,7 +5101,64 @@
     window.AdminChat = AdminChat;
     // END ADMIN CHAT MODULE
 
-    // ?? Test Push Notification ??????????????????????????????
+    // Admin Chat Pop-up Banner
+    window.showAdminChatPopup = function(senderName, message, userId) {
+        var existing = document.getElementById('adminChatPopup');
+        if (existing) existing.remove();
+        var banner = document.createElement('div');
+        banner.id = 'adminChatPopup';
+        banner.style.cssText = 'position:fixed;top:72px;left:12px;right:12px;z-index:6000;background:var(--primary);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;cursor:pointer;';
+        banner.innerHTML =
+            '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:0.9rem;">' + (senderName||'U').charAt(0).toUpperCase() + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:0.72rem;font-weight:700;opacity:0.85;">' + (senderName||'Customer') + ' sent a message</div>' +
+                '<div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (message||'') + '</div>' +
+            '</div>' +
+            '<button onclick="document.getElementById(\'adminChatPopup\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:0.75rem;flex-shrink:0;">x</button>';
+        banner.onclick = function(e) {
+            if (e.target.tagName === 'BUTTON') return;
+            banner.remove();
+            switchTab('chat');
+            if (userId && typeof AdminChat !== 'undefined') {
+                setTimeout(function() { AdminChat.openConversation(userId, senderName); }, 300);
+            }
+        };
+        document.body.appendChild(banner);
+        setTimeout(function() { if (banner.parentNode) banner.remove(); }, 6000);
+    };
+
+    // Background inbox polling (when not on chat tab)
+    var _adminBgChatTimer = null;
+    var _adminBgLastAt = '';
+    function startAdminBgChatPolling() {
+        if (_adminBgChatTimer) return;
+        _adminBgChatTimer = setInterval(function() {
+            if (typeof currentTab !== 'undefined' && currentTab === 'chat') return;
+            const user = adminAuth.getUser();
+            if (!user) return;
+            fetch(API_URL + '/chat/inbox?viewer_type=admin&viewer_id=' + user.id)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!Array.isArray(data)) return;
+                    let totalUnread = 0;
+                    data.forEach(function(c) { totalUnread += parseInt(c.unread_count) || 0; });
+                    const badge = document.getElementById('adminChatNavBadge');
+                    if (badge) {
+                        if (totalUnread > 0) { badge.textContent = totalUnread > 9 ? '9+' : String(totalUnread); badge.style.display = 'flex'; }
+                        else { badge.style.display = 'none'; }
+                    }
+                    const conv = data.find(function(c) { return parseInt(c.unread_count) > 0; });
+                    if (conv && conv.last_at && conv.last_at !== _adminBgLastAt) {
+                        _adminBgLastAt = conv.last_at;
+                        showAdminChatPopup(conv.other_name, conv.last_message, conv.other_id);
+                    }
+                })
+                .catch(function() {});
+        }, 10000);
+    }
+    window.startAdminBgChatPolling = startAdminBgChatPolling;
+
+    // Test Push Notification
     window.testAdminPushNotification = function() {
         const user = adminAuth.getUser();
         if (!user) { alert('Please log in first.'); return; }

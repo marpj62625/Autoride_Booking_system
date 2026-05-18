@@ -464,6 +464,7 @@ function initApp() {
       }
       loadNotifications(user.id);
       subscribeToNotifications(user.id);
+      startBgChatPolling();
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
       showPage('page-home');
@@ -3572,7 +3573,16 @@ var LiveChat = (function () {
         }
         var latestId = msgs[msgs.length - 1].id;
         if (String(latestId) === String(_lastMsgId) && !initial) return;
+
+        // Detect new message from admin (not from us)
+        var lastMsg = msgs[msgs.length - 1];
+        var isNewFromAdmin = !initial && String(latestId) !== String(_lastMsgId) && lastMsg.sender_type === 'admin';
         _lastMsgId = latestId;
+
+        // Show pop-up banner if chat overlay is not focused
+        if (isNewFromAdmin) {
+          showChatPopup('Support Team', lastMsg.message);
+        }
 
         var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
         container.innerHTML = msgs.map(function (m) {
@@ -3649,6 +3659,67 @@ var LiveChat = (function () {
 
 function loadLiveChat() {
   LiveChat.loadInbox();
+}
+
+// Chat pop-up banner (shows even when chat overlay is closed)
+function showChatPopup(senderName, message) {
+  var existing = document.getElementById('chatPopupBanner');
+  if (existing) existing.remove();
+  var banner = document.createElement('div');
+  banner.id = 'chatPopupBanner';
+  banner.style.cssText = 'position:fixed;top:16px;left:16px;right:16px;z-index:9998;background:var(--primary);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,0.3);display:flex;align-items:center;gap:12px;cursor:pointer;animation:slideDown 0.3s ease;';
+  banner.innerHTML =
+    '<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-comments" style="font-size:1rem;"></i></div>' +
+    '<div style="flex:1;min-width:0;">' +
+      '<div style="font-size:0.78rem;font-weight:700;opacity:0.85;">' + escapeHtml(senderName) + '</div>' +
+      '<div style="font-size:0.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(message) + '</div>' +
+    '</div>' +
+    '<button onclick="document.getElementById(\'chatPopupBanner\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.8rem;flex-shrink:0;">x</button>';
+  banner.onclick = function(e) {
+    if (e.target.tagName === 'BUTTON') return;
+    banner.remove();
+    showOverlay('page-livechat');
+  };
+  document.body.appendChild(banner);
+  // Auto-dismiss after 5s
+  setTimeout(function() { if (banner.parentNode) banner.remove(); }, 5000);
+}
+
+// Background chat polling — checks for new messages even when chat is closed
+var _bgChatPollTimer = null;
+var _bgChatLastId = 0;
+
+function startBgChatPolling() {
+  if (_bgChatPollTimer) return;
+  _bgChatPollTimer = setInterval(function() {
+    if (!currentUser.id) return;
+    // Only poll if chat overlay is NOT open
+    var chatOverlay = document.getElementById('page-livechat');
+    if (chatOverlay && chatOverlay.classList.contains('active')) return;
+    apiCall('/chat/inbox?viewer_type=user&viewer_id=' + currentUser.id)
+      .then(function(data) {
+        if (!Array.isArray(data) || !data.length) return;
+        var totalUnread = 0;
+        data.forEach(function(c) { totalUnread += parseInt(c.unread_count) || 0; });
+        if (totalUnread > 0) {
+          // Find the conversation with unread messages and get latest
+          var conv = data.find(function(c) { return parseInt(c.unread_count) > 0; });
+          if (conv && conv.last_message) {
+            var msgId = conv.last_at || '';
+            if (msgId !== _bgChatLastId) {
+              _bgChatLastId = msgId;
+              showChatPopup(conv.other_name || 'Support Team', conv.last_message);
+            }
+          }
+        }
+        updateChatUnreadBadge();
+      })
+      .catch(function() {});
+  }, 10000); // Check every 10s in background
+}
+
+function stopBgChatPolling() {
+  if (_bgChatPollTimer) { clearInterval(_bgChatPollTimer); _bgChatPollTimer = null; }
 }
 
 function escapeHtml(str) {
