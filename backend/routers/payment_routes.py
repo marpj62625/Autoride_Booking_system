@@ -130,6 +130,12 @@ def process_payment():
                         f"Downpayment of PHP {amount} received for booking #{booking_id}. Ref: {reference_number}. Remaining balance: PHP {balance_amount}.",
                         'payment_downpayment'
                     )
+                # Notify admins of new payment
+                notification_service.notify_admins_inapp(
+                    "New Payment Received",
+                    f"Booking #{booking_id} — PHP {amount} via {method}. Ref: {reference_number}.",
+                    'admin_payment_proof'
+                )
         except Exception as sms_err:
             print(f"ERROR SENDING PAYMENT SMS: {sms_err}")
 

@@ -198,6 +198,11 @@ def cancel_booking(booking_id):
             f"Your booking #{booking_id} has been cancelled. Reason: {reason}.",
             'booking_cancelled'
         )
+        notification_service.notify_admins_inapp(
+            "Booking Cancelled by Customer",
+            f"Booking #{booking_id} was cancelled by the customer. Reason: {reason}.",
+            'admin_booking_cancelled'
+        )
         
         return jsonify({"message": "Booking cancelled successfully"}), 200
         
