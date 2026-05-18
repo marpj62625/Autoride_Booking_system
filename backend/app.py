@@ -428,7 +428,7 @@ def migrate_chat():
         has_old_schema = cur.fetchone()
 
         if has_old_schema:
-            # Old chatbot table — drop and recreate with new live-chat schema
+            # Old chatbot table - drop and recreate with new live-chat schema
             print("DEBUG: Dropping old chat_messages table (chatbot schema) and recreating...")
             cur.execute("DROP TABLE IF EXISTS chat_messages CASCADE")
             commit_db()
@@ -1034,7 +1034,7 @@ def admin_verify_user():
     except (ValueError, TypeError) as e:
         return jsonify({"error": f"Invalid parameter types: {e}"}), 400
 
-    # Use a fresh direct connection — bypasses g.db_conn / PgBouncer state issues
+    # Use a fresh direct connection - bypasses g.db_conn / PgBouncer state issues
     import psycopg as _psycopg
     from config import SUPABASE_DB_URL as _DB_URL
     from psycopg.rows import dict_row as _dict_row
@@ -3630,7 +3630,7 @@ def modify_booking():
 
             new_total *= 0.90
 
-        # Preview mode — return new total without saving
+        # Preview mode - return new total without saving
         if preview:
             return jsonify({"new_total": float(f"{new_total:.2f}")}), 200
 
