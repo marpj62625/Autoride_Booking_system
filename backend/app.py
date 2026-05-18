@@ -8104,6 +8104,143 @@ def debug_test_push():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/debug/admins-schema-check', methods=['GET'])
+def debug_admins_schema_check():
+    """
+    Diagnose why admins table appears empty.
+    Forces SET search_path = public, then reports:
+      - current DB, user, search_path
+      - all schemas that contain an 'admins' table
+      - row count in public.admins
+      - up to 5 rows (passwords redacted)
+    """
+    try:
+        cur = get_cursor()
+        # Force the correct schema so we always hit the right table
+        cur.execute("SET search_path = public")
+
+        # Report connection identity
+        cur.execute("SELECT current_database() AS db, current_user AS usr, current_setting('search_path') AS sp")
+        conn_info = dict(cur.fetchone())
+
+        # Find every schema that has an 'admins' table
+        cur.execute("""
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_name = 'admins'
+            ORDER BY table_schema
+        """)
+        table_locations = [dict(r) for r in cur.fetchall()]
+
+        # Count rows in public.admins explicitly
+        cur.execute("SELECT COUNT(*) AS cnt FROM public.admins")
+        row_count = cur.fetchone()['cnt']
+
+        # Fetch up to 5 rows
+        cur.execute("SELECT * FROM public.admins LIMIT 5")
+        rows = [dict(r) for r in cur.fetchall()]
+        for r in rows:
+            r.pop('password', None)
+            r.pop('password_hash', None)
+
+        # Also grab column list
+        cur.execute("""
+            SELECT column_name, data_type
+            FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'admins'
+            ORDER BY ordinal_position
+        """)
+        columns = [dict(r) for r in cur.fetchall()]
+
+        return jsonify({
+            'connection': conn_info,
+            'admins_table_found_in_schemas': table_locations,
+            'public_admins_row_count': row_count,
+            'columns': columns,
+            'sample_rows': rows,
+        }), 200
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+@app.route('/debug/fix-admin-fcm', methods=['POST'])
+def debug_fix_admin_fcm():
+    """
+    Directly write an FCM token to the admins table in public schema.
+    Bypasses any Vercel function-level caching of migration state.
+
+    Body (JSON):
+      { "admin_id": <int>,       -- use EITHER admin_id OR username
+        "username":  <str>,
+        "fcm_token": <str> }
+
+    Returns the updated admin row (password redacted).
+    """
+    data = request.get_json() or {}
+    fcm_token = (data.get('fcm_token') or '').strip()
+    admin_id  = data.get('admin_id')
+    username  = (data.get('username') or '').strip()
+
+    if not fcm_token:
+        return jsonify({'error': 'fcm_token is required'}), 400
+    if not admin_id and not username:
+        return jsonify({'error': 'admin_id or username is required'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SET search_path = public")
+
+        # Resolve admin_id from username if needed
+        if not admin_id:
+            cur.execute("SELECT id FROM public.admins WHERE username = %s", (username,))
+            row = cur.fetchone()
+            if not row:
+                return jsonify({'error': f'Admin with username "{username}" not found in public.admins'}), 404
+            admin_id = row['id']
+        else:
+            admin_id = int(admin_id)
+
+        # Ensure fcm_token column exists (safe ALTER for older schemas)
+        cur.execute("""
+            ALTER TABLE public.admins
+            ADD COLUMN IF NOT EXISTS fcm_token TEXT DEFAULT NULL
+        """)
+        commit_db()
+
+        # Write the token
+        cur.execute(
+            "UPDATE public.admins SET fcm_token = %s WHERE id = %s",
+            (fcm_token, admin_id)
+        )
+        rows_updated = cur.rowcount
+        commit_db()
+
+        if rows_updated == 0:
+            return jsonify({'error': f'No admin found with id={admin_id} in public.admins'}), 404
+
+        # Return updated row
+        cur.execute("SELECT * FROM public.admins WHERE id = %s", (admin_id,))
+        updated = dict(cur.fetchone())
+        updated.pop('password', None)
+        updated.pop('password_hash', None)
+
+        return jsonify({
+            'success': True,
+            'rows_updated': rows_updated,
+            'admin': updated,
+        }), 200
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 @app.route('/debug/booking-info/<int:booking_id>', methods=['GET'])
 def debug_booking_info(booking_id):
     """Debug: show booking user_id and whether that user exists."""
