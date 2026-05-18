@@ -446,6 +446,37 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
 
         commit_db()
 
+        # Send notifications (SMS + in-app)
+        try:
+            from notifications import sms_service, notification_service, compose_full_payment_sms, compose_downpayment_sms
+            cur.execute(
+                "SELECT user_id, total_price, amount_paid, balance_amount FROM bookings WHERE id = %s",
+                (booking_id,)
+            )
+            bk2 = cur.fetchone()
+            if bk2:
+                uid = bk2['user_id']
+                amt = float(bk2['amount_paid'] or amount)
+                bal = float(bk2['balance_amount'] or 0)
+                if payment_type == 'Downpayment':
+                    sms_service.notify_customer(uid, compose_downpayment_sms(booking_id, amt, method, ref_num, bal))
+                    notification_service.notify_user(
+                        uid,
+                        'Downpayment Received',
+                        f'Downpayment of PHP {amt:.2f} received for booking #{booking_id} via {method}. Remaining balance: PHP {bal:.2f}.',
+                        'payment_downpayment'
+                    )
+                else:
+                    sms_service.notify_customer(uid, compose_full_payment_sms(booking_id, amt, method, ref_num))
+                    notification_service.notify_user(
+                        uid,
+                        'Payment Confirmed',
+                        f'Payment of PHP {amt:.2f} confirmed for booking #{booking_id} via {method}. Ref: {ref_num}.',
+                        'payment_confirmed'
+                    )
+        except Exception as notif_err:
+            print(f'_confirm_payment notification error: {notif_err}')
+
         # Send receipt email
         try:
             cur.execute("""
