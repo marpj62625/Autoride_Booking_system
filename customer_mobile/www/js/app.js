@@ -586,6 +586,24 @@ function handleBackButton() {
       window.Capacitor.Plugins.App.addListener('backButton', function() {
         handleBackButton();
       });
+      // Deep link handler — fires when PayMongo success page redirects back
+      window.Capacitor.Plugins.App.addListener('appUrlOpen', function(event) {
+        var url = event.url || '';
+        // com.autoride.customer://payment-success?booking_id=123
+        if (url.indexOf('payment-success') !== -1) {
+          // Close the in-app browser if open
+          if (window.Capacitor.Plugins.Browser) {
+            window.Capacitor.Plugins.Browser.close().catch(function() {});
+          }
+          // Extract booking_id
+          var match = url.match(/booking_id=(\d+)/);
+          if (match) {
+            var bookingId = parseInt(match[1]);
+            // Auto-check payment status
+            checkPaymentStatus(bookingId, 0, 'online');
+          }
+        }
+      });
     }
   }, false);
 })();
@@ -2279,21 +2297,21 @@ function showPaymentWaiting(bookingId, amount, method) {
 
 function checkPaymentStatus(bookingId, amount, method) {
   showLoading(true);
+  // Close in-app browser if still open
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    window.Capacitor.Plugins.Browser.close().catch(function() {});
+  }
   apiCall('/paymongo/status/' + bookingId)
     .then(function(data) {
       showLoading(false);
       if (data.paid) {
         closeOverlay('page-payment');
-        NotifStore.add('Payment confirmed for Booking #' + bookingId + '! A receipt has been sent to your email.');
         showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
+        loadNotifications(currentUser.id);
+        loadBookings();
         showPage('page-bookings');
       } else {
-        var debugMsg = '';
-        if (data.debug) {
-          var d = data.debug;
-          debugMsg = ' [key:' + d.has_key + ' link:' + (d.link_status || 'none') + ' pays:' + (d.payments_count || 0) + ']';
-        }
-        showToast('Payment not yet confirmed.' + debugMsg, 'info');
+        showToast('Payment not yet confirmed. Please wait a moment and try again.', 'info');
       }
     })
     .catch(function() {

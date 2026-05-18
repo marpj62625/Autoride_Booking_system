@@ -186,23 +186,43 @@ def payment_success():
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
-                body {{ font-family: -apple-system, sans-serif; background: #0a0a0a; color: white; 
-                       display: flex; align-items: center; justify-content: center; min-height: 100vh;
-                       flex-direction: column; gap: 16px; padding: 20px; text-align: center; }}
-                .icon {{ font-size: 4rem; }}
-                h2 {{ font-size: 1.5rem; font-weight: 800; color: #34d399; }}
-                p {{ color: #94a3b8; font-size: 0.9rem; }}
-                a {{ background: #dc2626; color: white; padding: 14px 28px; border-radius: 12px;
-                     text-decoration: none; font-weight: 700; display: inline-block; margin-top: 10px; }}
+                * {{ margin:0; padding:0; box-sizing:border-box; }}
+                body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                       background: #0f172a; color: white;
+                       display: flex; align-items: center; justify-content: center;
+                       min-height: 100vh; flex-direction: column; gap: 16px;
+                       padding: 32px 24px; text-align: center; }}
+                .check {{ width:80px; height:80px; border-radius:50%;
+                          background: rgba(52,211,153,0.15); border: 2px solid #34d399;
+                          display:flex; align-items:center; justify-content:center;
+                          font-size:2.5rem; margin-bottom:8px; }}
+                h2 {{ font-size: 1.6rem; font-weight: 800; color: #34d399; margin-bottom:6px; }}
+                p {{ color: #94a3b8; font-size: 0.9rem; line-height:1.5; }}
+                .btn {{ background: #e63946; color: white; padding: 16px 32px;
+                        border-radius: 14px; text-decoration: none; font-weight: 700;
+                        font-size: 1rem; display: inline-block; margin-top: 24px;
+                        border: none; cursor: pointer; width: 100%; max-width: 320px; }}
+                .btn-outline {{ background: transparent; border: 2px solid #334155;
+                                color: #94a3b8; margin-top: 10px; }}
+                small {{ color: #475569; font-size: 0.75rem; margin-top: 8px; display:block; }}
             </style>
         </head>
         <body>
-            <div class="icon">?</div>
+            <div class="check">&#10003;</div>
             <h2>Payment Successful!</h2>
-            <p>Booking #{booking_id} has been confirmed.</p>
-            <p>You can now return to the Autoride app.</p>
-            <a href="javascript:window.close()">Close & Return to App</a>
+            <p>Booking #{booking_id} has been confirmed.<br>Tap the button below to return to Autoride.</p>
+            <a href="com.autoride.customer://payment-success?booking_id={booking_id}" class="btn"
+               onclick="this.textContent='Returning...'">
+                &#8592; Return to Autoride App
+            </a>
+            <small>If the button doesn\'t work, close this window and tap "I\'ve Completed Payment" in the app.</small>
         </body>
+        <script>
+            // Auto-redirect after 2 seconds
+            setTimeout(function() {{
+                window.location.href = 'com.autoride.customer://payment-success?booking_id={booking_id}';
+            }}, 2000);
+        </script>
         </html>
         ''', 200
 
