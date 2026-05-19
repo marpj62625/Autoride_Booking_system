@@ -662,12 +662,6 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
-  // Google Sign-In requires proper OAuth setup in Google Cloud Console
-  // For now, we'll show a message to use email login
-  showToast('Google Sign-In is currently unavailable. Please use email login.', 'info');
-  
-  // Uncomment below when Google OAuth is properly configured:
-  /*
   if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.GoogleAuth) {
     showToast('Google Sign-In is only available in the mobile app', 'info');
     return;
@@ -716,7 +710,6 @@ function doGoogleLogin() {
     .finally(function() {
       showLoading(false);
     });
-  */
 }
 
 function doLogout() {
