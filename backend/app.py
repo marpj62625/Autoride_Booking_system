@@ -8587,6 +8587,48 @@ def chat_send():
         """, (sender_type, int(sender_id), receiver_type, int(receiver_id), message))
         row = cur.fetchone()
         conn.commit()
+        
+        # Send push notification to receiver
+        try:
+            from notifications import fcm_service
+            receiver_token = None
+            sender_name = 'User'
+            
+            # Get receiver's FCM token and sender's name
+            if receiver_type == 'admin':
+                cur.execute("SELECT fcm_token, username FROM admins WHERE id = %s", (int(receiver_id),))
+                receiver_row = cur.fetchone()
+                if receiver_row:
+                    receiver_token = receiver_row.get('fcm_token')
+                # Get sender name (user)
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (int(sender_id),))
+                sender_row = cur.fetchone()
+                if sender_row:
+                    sender_name = sender_row.get('full_name') or 'User'
+            else:  # receiver is user
+                cur.execute("SELECT fcm_token, full_name FROM users WHERE id = %s", (int(receiver_id),))
+                receiver_row = cur.fetchone()
+                if receiver_row:
+                    receiver_token = receiver_row.get('fcm_token')
+                # Get sender name (admin)
+                cur.execute("SELECT username FROM admins WHERE id = %s", (int(sender_id),))
+                sender_row = cur.fetchone()
+                if sender_row:
+                    sender_name = sender_row.get('username') or 'Support Team'
+            
+            # Send push notification if token exists
+            if receiver_token:
+                # Truncate message for notification
+                notif_message = message[:100] + '...' if len(message) > 100 else message
+                fcm_service.send_push(
+                    receiver_token,
+                    f'New message from {sender_name}',
+                    notif_message
+                )
+        except Exception as notif_err:
+            # Log but don't fail the request if notification fails
+            print(f'Failed to send chat notification: {notif_err}')
+        
         cur.close(); conn.close(); conn = None
         return jsonify({'id': row['id'], 'created_at': row['created_at'].isoformat()}), 201
     except Exception as e:
