@@ -3505,7 +3505,9 @@ var LiveChat = (function () {
         if (!body) return;
 
         if (!admins || !admins.length) {
-          admins = [{ id: 1, username: 'Support Team' }];
+          // Default to admin_id=20 if no admins returned
+          console.log('[LiveChat] No admins returned, using default admin_id=20');
+          admins = [{ id: 20, username: 'Support Team' }];
         }
 
         // Single admin: skip inbox, go straight to chat
@@ -3527,8 +3529,10 @@ var LiveChat = (function () {
             '</div>';
           }).join('');
       })
-      .catch(function () {
-        openConversation(1, 'Support Team');
+      .catch(function (err) {
+        console.error('[LiveChat] Error loading admins:', err);
+        // Fallback to admin_id=20 on error
+        openConversation(20, 'Support Team');
       });
   }
 
