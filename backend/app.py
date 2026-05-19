@@ -1631,9 +1631,25 @@ def google_auth():
 
     try:
 
-        # Verify the ID token using Google's libraries
+        # Try to verify with the Web Client ID first
 
-        idinfo = id_token.verify_oauth2_token(credential, google_requests.Request(), GOOGLE_CLIENT_ID)
+        try:
+
+            idinfo = id_token.verify_oauth2_token(credential, google_requests.Request(), GOOGLE_CLIENT_ID)
+
+            print(f"[GOOGLE_AUTH] Token verified with Web Client ID")
+
+        except ValueError as e:
+
+            # If that fails, try with the old Android Client ID
+
+            print(f"[GOOGLE_AUTH] Web Client ID failed, trying Android Client ID: {e}")
+
+            OLD_ANDROID_CLIENT_ID = "857792394948-vrf515cmh0d1lalr6g1d4g0alaqci903.apps.googleusercontent.com"
+
+            idinfo = id_token.verify_oauth2_token(credential, google_requests.Request(), OLD_ANDROID_CLIENT_ID)
+
+            print(f"[GOOGLE_AUTH] Token verified with Android Client ID")
 
 
 
