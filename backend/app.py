@@ -1601,13 +1601,29 @@ def google_auth():
 
     data = request.json
 
-    credential = data.get('credential')
+    print(f"[GOOGLE_AUTH] Received data keys: {list(data.keys()) if data else 'None'}")
+
+    print(f"[GOOGLE_AUTH] credential: {data.get('credential')[:50] if data and data.get('credential') else 'None'}...")
+
+    print(f"[GOOGLE_AUTH] id_token: {data.get('id_token')[:50] if data and data.get('id_token') else 'None'}...")
+
+    
+
+    # Accept both 'credential' and 'id_token' for compatibility
+
+    credential = data.get('credential') or data.get('id_token')
 
     is_driver = 1 if data.get('is_driver') else 0
+
+    email = data.get('email')
+
+    name = data.get('name')
 
     
 
     if not credential:
+
+        print(f"[GOOGLE_AUTH] ERROR: No credential found! Data: {data}")
 
         return jsonify({"error": "No credential provided"}), 400
 
@@ -1677,13 +1693,21 @@ def google_auth():
 
                 return jsonify({
 
-                    "message": "login success", 
+                    "message": "login success",
 
-                    "user_id": user_fresh['id'], 
+                    "user": {
 
-                    "full_name": user_fresh['full_name'],
+                        "id": user_fresh['id'],
 
-                    "is_driver": user_fresh.get('is_driver', 0),
+                        "fullName": user_fresh['full_name'],
+
+                        "email": email,
+
+                        "isDriver": user_fresh.get('is_driver', 0),
+
+                        "isVerified": 1
+
+                    },
 
                     "verification_required": False
 
@@ -1735,13 +1759,21 @@ def google_auth():
 
                 return jsonify({
 
-                    "message": "login success", 
+                    "message": "login success",
 
-                    "user_id": new_user_id, 
+                    "user": {
 
-                    "full_name": name,
+                        "id": new_user_id,
 
-                    "is_driver": is_driver,
+                        "fullName": name,
+
+                        "email": email,
+
+                        "isDriver": is_driver,
+
+                        "isVerified": 1
+
+                    },
 
                     "verification_required": False
 
