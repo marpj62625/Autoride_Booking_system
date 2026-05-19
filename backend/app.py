@@ -8650,6 +8650,7 @@ def chat_messages():
         return jsonify({'error': 'user_id and admin_id required'}), 400
     try:
         cur = get_cursor()
+        cur.execute("SET search_path = public")
         cur.execute("""
             SELECT id, sender_type, sender_id, receiver_type, receiver_id,
                    message, is_read, created_at
@@ -8668,6 +8669,8 @@ def chat_messages():
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
     finally:
         if 'cur' in locals(): cur.close()
 
@@ -8699,6 +8702,47 @@ def debug_chat_messages_raw():
         return jsonify({
             'total_messages': total,
             'recent_messages': messages
+        }), 200
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/debug/chat-query-test', methods=['GET'])
+def debug_chat_query_test():
+    """Debug: Test the exact query used by /chat/messages endpoint."""
+    user_id = request.args.get('user_id', '33')  # Default to user 33 from screenshot
+    admin_id = request.args.get('admin_id', '20')  # Default to admin 20 from screenshot
+    
+    try:
+        cur = get_cursor()
+        cur.execute("SET search_path = public")
+        
+        # Run the exact same query as /chat/messages
+        cur.execute("""
+            SELECT id, sender_type, sender_id, receiver_type, receiver_id,
+                   message, is_read, created_at
+            FROM chat_messages
+            WHERE (sender_type='user'  AND sender_id=%s   AND receiver_type='admin' AND receiver_id=%s)
+               OR (sender_type='admin' AND sender_id=%s   AND receiver_type='user'  AND receiver_id=%s)
+            ORDER BY created_at ASC
+            LIMIT 100
+        """, (int(user_id), int(admin_id), int(admin_id), int(user_id)))
+        
+        messages = [dict(r) for r in cur.fetchall()]
+        for m in messages:
+            if m.get('created_at'):
+                m['created_at'] = m['created_at'].isoformat()
+        
+        return jsonify({
+            'query_params': {
+                'user_id': int(user_id),
+                'admin_id': int(admin_id)
+            },
+            'message_count': len(messages),
+            'messages': messages
         }), 200
     except Exception as e:
         import traceback
