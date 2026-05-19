@@ -5041,9 +5041,16 @@
         function _fetchMessages(initial) {
             const aid = _adminId();
             if (!aid || !_currentUserId) return;
+            console.log('[AdminChat] Fetching messages: user_id=' + _currentUserId + ', admin_id=' + aid);
             fetch(API_URL + '/chat/messages?user_id=' + _currentUserId + '&admin_id=' + aid + '&limit=100')
                 .then(function(r) { return r.json(); })
                 .then(function(msgs) {
+                    console.log('[AdminChat] Received ' + (Array.isArray(msgs) ? msgs.length : 0) + ' messages');
+                    if (msgs && msgs.length > 0) {
+                        console.log('[AdminChat] First message:', JSON.stringify(msgs[0]));
+                        console.log('[AdminChat] Last message:', JSON.stringify(msgs[msgs.length - 1]));
+                    }
+                    
                     const container = document.getElementById('acMessages');
                     if (!container) return;
                     if (!Array.isArray(msgs) || !msgs.length) {
@@ -5052,9 +5059,13 @@
                         return;
                     }
                     const latestId = msgs[msgs.length - 1].id;
+                    console.log('[AdminChat] Latest ID: ' + latestId + ', Last ID: ' + _lastMsgId);
                     
                     // Only skip update if not initial AND same lastMsgId AND not forced
-                    if (String(latestId) === String(_lastMsgId) && !initial && initial !== 'force') return;
+                    if (String(latestId) === String(_lastMsgId) && !initial && initial !== 'force') {
+                        console.log('[AdminChat] Skipping update - same message ID');
+                        return;
+                    }
 
                     // Detect new message from user
                     const lastMsg = msgs[msgs.length - 1];
@@ -5067,6 +5078,7 @@
                     }
 
                     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+                    console.log('[AdminChat] Rendering ' + msgs.length + ' messages');
                     container.innerHTML = msgs.map(function(m) {
                         const isMe = m.sender_type === 'admin';
                         const ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -5095,7 +5107,9 @@
                         body: JSON.stringify({ receiver_type: 'admin', receiver_id: aid, sender_type: 'user', sender_id: _currentUserId })
                     }).catch(function() {});
                 })
-                .catch(function() {});
+                .catch(function(err) {
+                    console.error('[AdminChat] Error fetching messages:', err);
+                });
         }
 
         function send() {
