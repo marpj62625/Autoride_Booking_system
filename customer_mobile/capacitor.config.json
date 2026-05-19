@@ -13,6 +13,11 @@
   "plugins": {
     "Camera": {
       "permissions": ["camera", "photos"]
+    },
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
     }
   }
 }

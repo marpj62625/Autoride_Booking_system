@@ -482,7 +482,15 @@ initApp();
 
 // Also listen for events as fallback
 document.addEventListener('DOMContentLoaded', initApp);
-document.addEventListener('deviceready', initApp);
+document.addEventListener('deviceready', function() {
+  initApp();
+  
+  // Initialize Google Auth
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
+    console.log('Google Auth plugin available');
+    window.Capacitor.Plugins.GoogleAuth.initialize();
+  }
+});
 
 // ---------------------------------------------------------------------------
 // DARK MODE TOGGLE
@@ -654,7 +662,54 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
-  showToast('Google Sign-In requires native setup. Use email login.', 'info');
+  if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.GoogleAuth) {
+    showToast('Google Sign-In is only available in the mobile app', 'info');
+    return;
+  }
+
+  showLoading(true);
+  const GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
+  
+  GoogleAuth.signIn()
+    .then(function(result) {
+      console.log('Google Sign-In success:', result);
+      var googleUser = result.authentication || result;
+      var idToken = googleUser.idToken;
+      var email = result.email;
+      var name = result.name || result.givenName + ' ' + result.familyName;
+      
+      // Send to backend for verification and user creation/login
+      return apiCall('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({
+          id_token: idToken,
+          email: email,
+          name: name
+        })
+      });
+    })
+    .then(function(data) {
+      if (data && data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        currentUser = data.user;
+        showToast('Welcome, ' + currentUser.fullName + '!', 'success');
+        closeOverlay('page-login');
+        loadHome();
+      } else {
+        showToast('Login failed. Please try again.', 'error');
+      }
+    })
+    .catch(function(err) {
+      console.error('Google Sign-In error:', err);
+      if (err.message && err.message.includes('cancel')) {
+        showToast('Sign-in cancelled', 'info');
+      } else {
+        showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+      }
+    })
+    .finally(function() {
+      showLoading(false);
+    });
 }
 
 function doLogout() {

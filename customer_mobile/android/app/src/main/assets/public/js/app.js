@@ -3505,7 +3505,9 @@ var LiveChat = (function () {
         if (!body) return;
 
         if (!admins || !admins.length) {
-          admins = [{ id: 1, username: 'Support Team' }];
+          // Default to admin_id=20 if no admins returned
+          console.log('[LiveChat] No admins returned, using default admin_id=20');
+          admins = [{ id: 20, username: 'Support Team' }];
         }
 
         // Single admin: skip inbox, go straight to chat
@@ -3527,8 +3529,10 @@ var LiveChat = (function () {
             '</div>';
           }).join('');
       })
-      .catch(function () {
-        openConversation(1, 'Support Team');
+      .catch(function (err) {
+        console.error('[LiveChat] Error loading admins:', err);
+        // Fallback to admin_id=20 on error
+        openConversation(20, 'Support Team');
       });
   }
 
@@ -3562,8 +3566,15 @@ var LiveChat = (function () {
 
   function fetchMessages(initial) {
     if (!_currentAdminId || !currentUser.id) return;
+    console.log('[LiveChat] Fetching messages: user_id=' + currentUser.id + ', admin_id=' + _currentAdminId);
     apiCall('/chat/messages?user_id=' + currentUser.id + '&admin_id=' + _currentAdminId + '&limit=100')
       .then(function (msgs) {
+        console.log('[LiveChat] Received ' + (msgs ? msgs.length : 0) + ' messages');
+        if (msgs && msgs.length > 0) {
+          console.log('[LiveChat] First message:', JSON.stringify(msgs[0]));
+          console.log('[LiveChat] Last message:', JSON.stringify(msgs[msgs.length - 1]));
+        }
+        
         var container = document.getElementById('lcMessages');
         if (!container) return;
         if (!msgs || !msgs.length) {
@@ -3572,7 +3583,11 @@ var LiveChat = (function () {
           return;
         }
         var latestId = msgs[msgs.length - 1].id;
-        if (String(latestId) === String(_lastMsgId) && !initial) return;
+        console.log('[LiveChat] Latest ID: ' + latestId + ', Last ID: ' + _lastMsgId);
+        if (String(latestId) === String(_lastMsgId) && !initial) {
+          console.log('[LiveChat] Skipping update - same message ID');
+          return;
+        }
 
         // Detect new message from admin (not from us)
         var lastMsg = msgs[msgs.length - 1];
@@ -3585,6 +3600,7 @@ var LiveChat = (function () {
         }
 
         var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+        console.log('[LiveChat] Rendering ' + msgs.length + ' messages');
         container.innerHTML = msgs.map(function (m) {
           var isMe = m.sender_type === 'user';
           var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -3612,7 +3628,9 @@ var LiveChat = (function () {
           body: JSON.stringify({ receiver_type: 'user', receiver_id: currentUser.id, sender_type: 'admin', sender_id: _currentAdminId })
         }).catch(function () {});
       })
-      .catch(function () {});
+      .catch(function (err) {
+        console.error('[LiveChat] Error fetching messages:', err);
+      });
   }
 
   function send() {
@@ -3633,7 +3651,11 @@ var LiveChat = (function () {
         message: msg
       })
     })
-      .then(function () { fetchMessages(false); })
+      .then(function () { 
+        // Force refresh by resetting _lastMsgId
+        _lastMsgId = null;
+        fetchMessages(false); 
+      })
       .catch(function (err) { showToast(err.message || 'Failed to send', 'error'); })
       .finally(function () { if (inputEl) inputEl.disabled = false; });
   }
