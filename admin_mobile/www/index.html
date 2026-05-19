@@ -4502,6 +4502,50 @@
                         handleBackButton();
                     });
                 }
+                
+                // Initialize Push Notifications for Admin
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+                    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+                    
+                    // Request permission
+                    PushNotifications.requestPermissions().then(function(result) {
+                        if (result.receive === 'granted') {
+                            PushNotifications.register();
+                        }
+                    });
+                    
+                    // Listen for registration success
+                    PushNotifications.addListener('registration', function(token) {
+                        console.log('Admin FCM Token:', token.value);
+                        window._adminFcmToken = token.value;
+                        saveAdminFcmToken(token.value);
+                    });
+                    
+                    // Listen for registration errors
+                    PushNotifications.addListener('registrationError', function(error) {
+                        console.error('Admin FCM Registration Error:', error);
+                    });
+                    
+                    // Listen for push notifications received
+                    PushNotifications.addListener('pushNotificationReceived', function(notification) {
+                        console.log('Admin Push notification received:', notification);
+                        // Show in-app notification
+                        showNotification(notification.title || 'New Notification', 'info');
+                        
+                        // Refresh chat if on chat tab
+                        const user = adminAuth.getUser();
+                        if (user && typeof AdminChat !== 'undefined') {
+                            AdminChat.updateNavBadge();
+                        }
+                    });
+                    
+                    // Listen for notification taps
+                    PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
+                        console.log('Admin Push notification action performed:', notification);
+                        // Navigate to chat tab
+                        switchTab('chat');
+                    });
+                }
             }, false);
         })();
     });

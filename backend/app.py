@@ -8672,6 +8672,43 @@ def chat_messages():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/debug/chat-messages-raw', methods=['GET'])
+def debug_chat_messages_raw():
+    """Debug: Show all chat messages in the database with full details."""
+    try:
+        cur = get_cursor()
+        cur.execute("SET search_path = public")
+        
+        # Get all messages
+        cur.execute("""
+            SELECT id, sender_type, sender_id, receiver_type, receiver_id,
+                   message, is_read, created_at
+            FROM chat_messages
+            ORDER BY created_at DESC
+            LIMIT 50
+        """)
+        messages = [dict(r) for r in cur.fetchall()]
+        for m in messages:
+            if m.get('created_at'):
+                m['created_at'] = m['created_at'].isoformat()
+        
+        # Get count
+        cur.execute("SELECT COUNT(*) as cnt FROM chat_messages")
+        total = cur.fetchone()['cnt']
+        
+        return jsonify({
+            'total_messages': total,
+            'recent_messages': messages
+        }), 200
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/chat/inbox', methods=['GET'])
 def chat_inbox():
     """
