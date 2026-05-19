@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest --run",
     "test:watch": "vitest",
-    "sync": "npx cap sync"
+    "sync": "npx cap sync",
+    "postinstall": "node scripts/fix-google-auth.js"
   },
   "keywords": [],
   "author": "",
