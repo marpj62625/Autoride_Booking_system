@@ -8651,6 +8651,10 @@ def chat_messages():
     try:
         cur = get_cursor()
         cur.execute("SET search_path = public")
+        
+        # Log the query parameters for debugging
+        print(f"[CHAT_MESSAGES] user_id={user_id}, admin_id={admin_id}, limit={limit}")
+        
         cur.execute("""
             SELECT id, sender_type, sender_id, receiver_type, receiver_id,
                    message, is_read, created_at
@@ -8661,13 +8665,21 @@ def chat_messages():
             LIMIT %s
         """, (int(user_id), int(admin_id), int(admin_id), int(user_id), limit))
         rows = cur.fetchall()
+        
+        print(f"[CHAT_MESSAGES] Found {len(rows)} messages")
+        
         result = []
         for r in rows:
             d = dict(r)
             if d.get('created_at'): d['created_at'] = d['created_at'].isoformat()
             result.append(d)
+            print(f"[CHAT_MESSAGES] Message: {d['sender_type']}({d['sender_id']}) -> {d['receiver_type']}({d['receiver_id']}): {d['message'][:30]}")
+        
         return jsonify(result), 200
     except Exception as e:
+        print(f"[CHAT_MESSAGES] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
