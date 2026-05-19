@@ -3633,7 +3633,11 @@ var LiveChat = (function () {
         message: msg
       })
     })
-      .then(function () { fetchMessages(false); })
+      .then(function () { 
+        // Force refresh by resetting _lastMsgId
+        _lastMsgId = null;
+        fetchMessages(false); 
+      })
       .catch(function (err) { showToast(err.message || 'Failed to send', 'error'); })
       .finally(function () { if (inputEl) inputEl.disabled = false; });
   }

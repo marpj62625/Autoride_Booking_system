@@ -5052,7 +5052,9 @@
                         return;
                     }
                     const latestId = msgs[msgs.length - 1].id;
-                    if (String(latestId) === String(_lastMsgId) && !initial) return;
+                    
+                    // Only skip update if not initial AND same lastMsgId AND not forced
+                    if (String(latestId) === String(_lastMsgId) && !initial && initial !== 'force') return;
 
                     // Detect new message from user
                     const lastMsg = msgs[msgs.length - 1];
@@ -5120,6 +5122,8 @@
                     console.log('CHAT SEND response status:', r.status);
                     return r.json().then(function(d) {
                         console.log('CHAT SEND response:', JSON.stringify(d));
+                        // Force refresh by resetting _lastMsgId
+                        _lastMsgId = null;
                         _fetchMessages(false);
                     });
                 })
