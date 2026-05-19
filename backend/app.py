@@ -8671,8 +8671,6 @@ def chat_messages():
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
-    finally:
-        if 'cur' in locals(): cur.close()
 
 
 @app.route('/debug/chat-messages-raw', methods=['GET'])
