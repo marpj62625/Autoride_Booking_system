@@ -1,35 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/admin_mobile/(.*)",
-      "dest": "/admin_mobile/www/$1"
-    },
-    {
-      "src": "/admin_mobile",
-      "dest": "/admin_mobile/www/index.html"
-    },
-    {
-      "src": "/admin_app/(.*)",
-      "dest": "/admin_app/$1"
-    },
-    {
-      "src": "/customer/(.*)",
-      "dest": "/customer_mobile/www/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
     }
   ]
 }
