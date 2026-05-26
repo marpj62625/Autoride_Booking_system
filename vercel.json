@@ -1,5 +1,39 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.py" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "admin_mobile/www/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "admin_app/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/admin_mobile/(.*)",
+      "dest": "/admin_mobile/www/$1"
+    },
+    {
+      "src": "/admin_app/(.*)",
+      "dest": "/admin_app/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
   ]
 }
