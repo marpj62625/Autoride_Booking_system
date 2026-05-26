@@ -4,44 +4,32 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python"
-    },
-    {
-      "src": "frontend/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "admin_app/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "admin_mobile/www/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "customer_mobile/www/**",
-      "use": "@vercel/static"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "api/index.py"
+      "src": "/api/(.*)",
+      "dest": "/api/index.py"
     },
     {
-      "source": "/admin_app/(.*)",
-      "destination": "admin_app/$1"
+      "src": "/admin_mobile/(.*)",
+      "dest": "/admin_mobile/www/$1"
     },
     {
-      "source": "/admin_mobile/(.*)",
-      "destination": "admin_mobile/www/$1"
+      "src": "/admin_mobile",
+      "dest": "/admin_mobile/www/index.html"
     },
     {
-      "source": "/customer/(.*)",
-      "destination": "customer_mobile/www/$1"
+      "src": "/admin_app/(.*)",
+      "dest": "/admin_app/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "frontend/$1"
+      "src": "/customer/(.*)",
+      "dest": "/customer_mobile/www/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
     }
   ]
 }
