@@ -978,20 +978,12 @@
             </div>
         </div>
 
-        <!-- Row 3: Top Performance + Top Grossing side by side -->
+        <!-- Row 3: Top Performing Vehicles Pie Chart -->
         <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
-            <!-- Top Performance: bookings by vehicle type -->
             <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:12px;">TOP PERFORMANCE</div>
-                <div id="dashTopPerformance">
-                    <div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">Loading...</div>
-                </div>
-            </div>
-            <!-- Top Grossing: revenue by vehicle -->
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:12px;">TOP GROSSING</div>
-                <div id="dashTopGrossing">
-                    <div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">Loading...</div>
+                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:12px;text-transform:uppercase;">TOP PERFORMING VEHICLES</div>
+                <div style="height:220px;position:relative;">
+                    <canvas id="topVehiclesPieChart"></canvas>
                 </div>
             </div>
         </div>
@@ -4758,7 +4750,7 @@
             charts.topPie = new Chart(topVehEl.getContext('2d'), {
                 type: 'pie',
                 data: {
-                    labels: topVeh.map(c => `${c.brand} ${c.model}`),
+                    labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
                     datasets: [{
                         data: topVeh.map(c => c.booking_count || 0),
                         backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
