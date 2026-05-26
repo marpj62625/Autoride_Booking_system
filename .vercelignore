@@ -1,0 +1,21 @@
+# Don't ignore static directories
+!frontend/
+!admin_app/
+!admin_mobile/
+!customer_mobile/
+
+# Ignore Python cache and test files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.pytest_cache/
+.hypothesis/
+
+# Ignore development files
+.vscode/
+.kiro/
+scratch/
+*.md
+!README.md

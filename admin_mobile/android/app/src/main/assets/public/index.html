@@ -700,6 +700,15 @@
         .ac-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--surface); border-top:1px solid var(--border); }
         .ac-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:50px; color:var(--text-main); font-size:0.9rem; outline:none; }
         .ac-input-row button { background:var(--primary); color:#fff; border:none; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+        
+        /* Chat Search Highlight */
+        .search-highlight {
+            background: rgba(245, 158, 11, 0.3);
+            color: var(--amber);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -998,29 +1007,120 @@
             </div>
         </div>
 
-        <!-- ACTIVE NOW MONITOR -->
-        <div style="margin-bottom: 20px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:pulse 1.5s infinite;"></span>
-                    <h3 style="font-size:1rem;font-weight:800;color:var(--text-main);">Active Now</h3>
-                    <span id="activeNowCount" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
+        <!-- BOOKINGS TABS -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+            <button onclick="switchBookingTab('active')" id="tabBtnActive" class="booking-tab-btn active-booking-tab" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--primary); background: var(--primary); color: white; font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 6px;"></i> Active Now
+            </button>
+            <button onclick="switchBookingTab('past')" id="tabBtnPast" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-check-circle" style="font-size: 0.75rem; margin-right: 6px;"></i> Past Bookings
+            </button>
+            <button onclick="switchBookingTab('all')" id="tabBtnAll" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-list" style="font-size: 0.75rem; margin-right: 6px;"></i> All Bookings
+            </button>
+        </div>
+
+        <!-- ACTIVE NOW TAB CONTENT -->
+        <div id="tabActive" class="booking-tab-content">
+            <div style="margin-bottom: 20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:pulse 1.5s infinite;"></span>
+                        <h3 style="font-size:1rem;font-weight:800;color:var(--text-main);">Active Rentals</h3>
+                        <span id="activeNowCount" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
+                    </div>
+                    <span style="font-size:0.65rem;color:var(--text-muted);" id="activeNowRefreshLabel">auto-refresh 30s</span>
                 </div>
-                <span style="font-size:0.65rem;color:var(--text-muted);" id="activeNowRefreshLabel">auto-refresh 30s</span>
-            </div>
-            <div id="activeNowList">
-                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">Loading active rentals...</div>
+                <div id="activeNowList">
+                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">Loading active rentals...</div>
+                </div>
             </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">Bookings List</h3>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
+        <!-- PAST BOOKINGS TAB CONTENT -->
+        <div id="tabPast" class="booking-tab-content" style="display: none;">
+            <!-- Toolbar -->
+            <div style="margin-bottom: 16px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <div style="flex: 1; position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+                        <input type="text" id="pastBookingsSearch" placeholder="Search by customer, ID, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="filterPastBookings()">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Sort by:</label>
+                    <select id="pastBookingsSort" onchange="sortPastBookings()" style="flex: 1; padding: 8px 10px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 600;">
+                        <option value="completion_date_desc">Completion Date (Newest)</option>
+                        <option value="completion_date_asc">Completion Date (Oldest)</option>
+                        <option value="customer_name">Customer Name</option>
+                        <option value="total_price_desc">Total Price (High to Low)</option>
+                        <option value="total_price_asc">Total Price (Low to High)</option>
+                    </select>
+                    <select id="pastBookingsPageSize" onchange="changePastBookingsPageSize()" style="padding: 8px 10px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 600;">
+                        <option value="10">10 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="100">100 / page</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x: auto; margin-bottom: 16px;">
+                <table id="pastBookingsTable" style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <thead>
+                        <tr style="background: var(--surface-container); border-bottom: 2px solid var(--border);">
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">ID</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rental Dates</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Completed</th>
+                            <th style="padding: 12px 10px; text-align: right; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Price</th>
+                            <th style="padding: 12px 10px; text-align: center; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pastBookingsTableBody">
+                        <!-- Rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;">
+                <button id="pastBookingsPrevBtn" onclick="previousPastBookingsPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    <i class="fas fa-chevron-left" style="margin-right: 6px;"></i> Previous
+                </button>
+                <span id="pastBookingsPageInfo" style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">Page 1 of 1</span>
+                <button id="pastBookingsNextBtn" onclick="nextPastBookingsPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    Next <i class="fas fa-chevron-right" style="margin-left: 6px;"></i>
+                </button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="pastBookingsEmpty" class="hidden" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3;"></i>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">No Past Bookings</h3>
+                <p style="font-size: 0.85rem;">Completed bookings will appear here.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="pastBookingsLoading" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <div style="width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite;"></div>
+                <p style="font-size: 0.85rem; font-weight: 600;">Loading past bookings...</p>
             </div>
         </div>
-        <div id="bookingsList">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>
+
+        <!-- ALL BOOKINGS TAB CONTENT -->
+        <div id="tabAll" class="booking-tab-content" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">All Bookings</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
+                </div>
+            </div>
+            <div id="bookingsList">
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>
+            </div>
         </div>
     </div>
 
@@ -3684,6 +3784,21 @@
                 const endDate = b.end_date ? new Date(b.end_date) : null;
                 const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : '—';
                 const cdId    = 'anCountdown_' + b.id;
+                
+                // Location handling
+                const pickupLoc = b.pickup_location || b.location || 'N/A';
+                const dropoffLoc = b.dropoff_location || b.pickup_location || b.location || 'N/A';
+                const showBothLocations = pickupLoc !== dropoffLoc && dropoffLoc !== 'N/A';
+                
+                // Truncate location for display (max 30 chars)
+                const truncateLocation = (loc) => {
+                    if (!loc || loc === 'N/A') return 'N/A';
+                    return loc.length > 30 ? loc.substring(0, 30) + '...' : loc;
+                };
+                
+                const pickupDisplay = truncateLocation(pickupLoc);
+                const dropoffDisplay = truncateLocation(dropoffLoc);
+                
                 return `
                 <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #10b981;">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
@@ -3696,6 +3811,30 @@
                         </div>
                         <span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
                     </div>
+                    
+                    <!-- Location Information -->
+                    <div style="background:var(--surface-container);border-radius:10px;padding:10px;margin-bottom:8px;">
+                        <div style="display:flex;align-items:flex-start;gap:8px;">
+                            <i class="fas fa-map-marker-alt" style="color:var(--primary);font-size:1.1rem;flex-shrink:0;margin-top:2px;"></i>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Location</div>
+                                <div style="display:flex;flex-direction:column;gap:4px;">
+                                    <div title="${pickupLoc}" style="font-size:0.78rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        <span style="font-size:0.65rem;color:var(--text-muted);font-weight:600;">Pickup:</span> ${pickupDisplay}
+                                    </div>
+                                    ${showBothLocations ? `
+                                    <div style="display:flex;align-items:center;gap:4px;margin:2px 0;">
+                                        <i class="fas fa-arrow-down" style="color:var(--text-muted);font-size:0.65rem;"></i>
+                                    </div>
+                                    <div title="${dropoffLoc}" style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                        <span style="font-size:0.65rem;color:var(--text-muted);font-weight:600;">Dropoff:</span> ${dropoffDisplay}
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Return By</div>
@@ -3761,6 +3900,261 @@
         stop() {
             this._stopCountdowns();
             if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        }
+    };
+
+    // --- PAST BOOKINGS MODULE ---
+    const PastBookings = {
+        data: [],
+        filteredData: [],
+        currentPage: 1,
+        pageSize: 10,
+        sortBy: 'completion_date_desc',
+        totalPages: 1,
+
+        async load() {
+            const loadingEl = document.getElementById('pastBookingsLoading');
+            const emptyEl = document.getElementById('pastBookingsEmpty');
+            const tableEl = document.getElementById('pastBookingsTable');
+            
+            // Show loading state
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (emptyEl) emptyEl.classList.add('hidden');
+            if (tableEl) tableEl.style.display = 'none';
+
+            try {
+                // Fetch past bookings from API
+                const res = await fetch(`${API_BASE}/api/bookings/past?page=${this.currentPage}&page_size=${this.pageSize}&sort_by=${this.sortBy}`);
+                
+                if (!res.ok) {
+                    throw new Error(`Server error: ${res.status}`);
+                }
+                
+                const responseData = await res.json();
+                
+                // Handle response format - could be array or object with pagination
+                if (Array.isArray(responseData)) {
+                    this.data = responseData;
+                    this.filteredData = [...responseData];
+                    this.totalPages = Math.ceil(responseData.length / this.pageSize);
+                } else if (responseData.bookings) {
+                    this.data = responseData.bookings;
+                    this.filteredData = [...responseData.bookings];
+                    this.totalPages = responseData.total_pages || 1;
+                } else {
+                    this.data = [];
+                    this.filteredData = [];
+                    this.totalPages = 1;
+                }
+                
+                this.renderTable();
+                this.updatePaginationControls();
+                
+            } catch (err) {
+                console.error('Failed to load past bookings:', err);
+                
+                // Hide loading, show empty state with error
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (emptyEl) {
+                    emptyEl.classList.remove('hidden');
+                    emptyEl.innerHTML = `
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3; color: var(--danger);"></i>
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Failed to Load</h3>
+                        <p style="font-size: 0.85rem; margin-bottom: 16px;">${err.message}</p>
+                        <button onclick="PastBookings.load()" style="padding: 10px 20px; background: var(--primary); border: none; color: white; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">Retry</button>
+                    `;
+                }
+                if (tableEl) tableEl.style.display = 'none';
+            }
+        },
+
+        renderTable() {
+            const tbody = document.getElementById('pastBookingsTableBody');
+            const loadingEl = document.getElementById('pastBookingsLoading');
+            const emptyEl = document.getElementById('pastBookingsEmpty');
+            const tableEl = document.getElementById('pastBookingsTable');
+            
+            // Hide loading
+            if (loadingEl) loadingEl.style.display = 'none';
+            
+            if (!tbody) return;
+            
+            if (this.filteredData.length === 0) {
+                // Show empty state
+                if (emptyEl) emptyEl.classList.remove('hidden');
+                if (tableEl) tableEl.style.display = 'none';
+                return;
+            }
+            
+            // Show table, hide empty state
+            if (emptyEl) emptyEl.classList.add('hidden');
+            if (tableEl) tableEl.style.display = 'table';
+            
+            // Render table rows
+            tbody.innerHTML = this.filteredData.map(b => {
+                const completionDate = b.completion_date || b.updated_at || b.end_date;
+                const completionDateStr = completionDate ? new Date(completionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const startDateStr = b.start_date ? new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+                const endDateStr = b.end_date ? new Date(b.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+                const rentalDates = `${startDateStr} - ${endDateStr}`;
+                const totalPrice = b.total_price ? parseFloat(b.total_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                
+                return `
+                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">
+                        <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">#${b.id}</td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${b.customer_name || 'N/A'}</td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${b.car || b.vehicle || 'N/A'}</td>
+                        <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${rentalDates}</td>
+                        <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${completionDateStr}</td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">?${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                            <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                                <i class="fas fa-eye" style="margin-right: 4px;"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        },
+
+        updatePaginationControls() {
+            const pageInfo = document.getElementById('pastBookingsPageInfo');
+            const prevBtn = document.getElementById('pastBookingsPrevBtn');
+            const nextBtn = document.getElementById('pastBookingsNextBtn');
+            
+            if (pageInfo) {
+                pageInfo.textContent = `Page ${this.currentPage} of ${this.totalPages}`;
+            }
+            
+            if (prevBtn) {
+                prevBtn.disabled = this.currentPage <= 1;
+                prevBtn.style.opacity = this.currentPage <= 1 ? '0.5' : '1';
+                prevBtn.style.cursor = this.currentPage <= 1 ? 'not-allowed' : 'pointer';
+            }
+            
+            if (nextBtn) {
+                nextBtn.disabled = this.currentPage >= this.totalPages;
+                nextBtn.style.opacity = this.currentPage >= this.totalPages ? '0.5' : '1';
+                nextBtn.style.cursor = this.currentPage >= this.totalPages ? 'not-allowed' : 'pointer';
+            }
+        }
+    };
+
+    // Global functions for past bookings
+    window.loadPastBookings = function() {
+        PastBookings.load();
+    };
+
+    window.filterPastBookings = function() {
+        const searchInput = document.getElementById('pastBookingsSearch');
+        if (!searchInput) return;
+        
+        const query = searchInput.value.toLowerCase().trim();
+        
+        if (!query) {
+            PastBookings.filteredData = [...PastBookings.data];
+        } else {
+            PastBookings.filteredData = PastBookings.data.filter(b => {
+                const customerName = (b.customer_name || '').toLowerCase();
+                const bookingId = String(b.id || '');
+                const vehicle = (b.car || b.vehicle || '').toLowerCase();
+                
+                return customerName.includes(query) || 
+                       bookingId.includes(query) || 
+                       vehicle.includes(query);
+            });
+        }
+        
+        PastBookings.currentPage = 1;
+        PastBookings.renderTable();
+        PastBookings.updatePaginationControls();
+    };
+
+    window.sortPastBookings = function() {
+        const sortSelect = document.getElementById('pastBookingsSort');
+        if (!sortSelect) return;
+        
+        PastBookings.sortBy = sortSelect.value;
+        PastBookings.currentPage = 1;
+        PastBookings.load();
+    };
+
+    window.changePastBookingsPageSize = function() {
+        const pageSizeSelect = document.getElementById('pastBookingsPageSize');
+        if (!pageSizeSelect) return;
+        
+        PastBookings.pageSize = parseInt(pageSizeSelect.value);
+        PastBookings.currentPage = 1;
+        PastBookings.load();
+    };
+
+    window.previousPastBookingsPage = function() {
+        if (PastBookings.currentPage > 1) {
+            PastBookings.currentPage--;
+            PastBookings.load();
+        }
+    };
+
+    window.nextPastBookingsPage = function() {
+        if (PastBookings.currentPage < PastBookings.totalPages) {
+            PastBookings.currentPage++;
+            PastBookings.load();
+        }
+    };
+
+    window.switchBookingTab = function(tab) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.booking-tab-content');
+        tabContents.forEach(content => {
+            content.style.display = 'none';
+        });
+        
+        // Remove active class from all tab buttons
+        const tabButtons = document.querySelectorAll('.booking-tab-btn');
+        tabButtons.forEach(btn => {
+            btn.style.border = '1px solid var(--border)';
+            btn.style.background = 'var(--surface-container)';
+            btn.style.color = 'var(--text-secondary)';
+        });
+        
+        // Show selected tab content
+        if (tab === 'active') {
+            const activeTab = document.getElementById('tabActive');
+            if (activeTab) activeTab.style.display = 'block';
+            const activeBtn = document.getElementById('tabBtnActive');
+            if (activeBtn) {
+                activeBtn.style.border = '1px solid var(--primary)';
+                activeBtn.style.background = 'var(--primary)';
+                activeBtn.style.color = 'white';
+            }
+            // Refresh active bookings
+            if (typeof ActiveNow !== 'undefined' && typeof Bookings !== 'undefined') {
+                ActiveNow.render(Bookings.data);
+            }
+        } else if (tab === 'past') {
+            const pastTab = document.getElementById('tabPast');
+            if (pastTab) pastTab.style.display = 'block';
+            const pastBtn = document.getElementById('tabBtnPast');
+            if (pastBtn) {
+                pastBtn.style.border = '1px solid var(--primary)';
+                pastBtn.style.background = 'var(--primary)';
+                pastBtn.style.color = 'white';
+            }
+            // Load past bookings
+            PastBookings.load();
+        } else if (tab === 'all') {
+            const allTab = document.getElementById('tabAll');
+            if (allTab) allTab.style.display = 'block';
+            const allBtn = document.getElementById('tabBtnAll');
+            if (allBtn) {
+                allBtn.style.border = '1px solid var(--primary)';
+                allBtn.style.background = 'var(--primary)';
+                allBtn.style.color = 'white';
+            }
+            // Refresh all bookings
+            if (typeof Bookings !== 'undefined') {
+                Bookings.render();
+            }
         }
     };
 
@@ -4877,6 +5271,8 @@
         let _currentUserName = '';
         let _lastMsgId = 0;
         let _view = 'inbox'; // 'inbox' | 'conversation'
+        let allConversations = [];
+        let filteredConversations = [];
 
         function _esc(str) {
             if (!str) return '';
@@ -4888,6 +5284,17 @@
         function _adminId() {
             const u = adminAuth.getUser();
             return u ? u.id : null;
+        }
+
+        // Search utility functions
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function highlightText(text, searchTerm) {
+            if (!text || !searchTerm) return text || '';
+            const regex = new RegExp('(' + escapeRegex(searchTerm) + ')', 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
         }
 
         // ?? Inbox ??????????????????????????????????????????????
@@ -4908,6 +5315,27 @@
                     '<h1 class="page-title" style="margin:0;">Live Chat</h1>' +
                     '<button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-main);width:40px;height:40px;border-radius:12px;cursor:pointer;font-size:0.9rem;"><i class="fas fa-sync-alt"></i></button>' +
                 '</div>' +
+                '<!-- Chat Search Container -->' +
+                '<div class="chat-search-container" style="margin-bottom:16px;">' +
+                    '<div class="search-box" style="position:relative;display:flex;align-items:center;">' +
+                        '<span class="search-icon" style="position:absolute;left:12px;font-size:1.2rem;color:var(--text-muted);"><i class="fas fa-search"></i></span>' +
+                        '<input type="text" id="chatSearchInput" placeholder="Search conversations by name, email, or message..." autocomplete="off"' +
+                            ' oninput="AdminChat.searchConversations(this.value)"' +
+                            ' style="width:100%;padding:0.75rem 2.5rem 0.75rem 2.5rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.95rem;outline:none;box-sizing:border-box;"' +
+                            ' onfocus="this.style.borderColor=\'var(--primary)\';this.style.boxShadow=\'0 0 0 3px var(--primary-glow)\'"' +
+                            ' onblur="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'">' +
+                        '<button class="clear-search hidden" id="clearSearch" onclick="AdminChat.clearSearch()"' +
+                            ' style="position:absolute;right:8px;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:4px;transition:all 0.2s ease;"' +
+                            ' onmouseover="this.style.background=\'rgba(255,255,255,0.1)\';this.style.color=\'var(--text-primary)\'"' +
+                            ' onmouseout="this.style.background=\'none\';this.style.color=\'var(--text-muted)\'">' +
+                            '<i class="fas fa-times"></i>' +
+                        '</button>' +
+                    '</div>' +
+                    '<div class="search-results-count hidden" id="searchResultsCount"' +
+                        ' style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.1);border-radius:6px;text-align:center;">' +
+                        '<span id="resultsText" style="font-size:0.85rem;color:var(--primary);font-weight:600;"></span>' +
+                    '</div>' +
+                '</div>' +
                 '<div id="acInboxList" style="margin-bottom:16px;"><div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div></div>' +
                 '<button onclick="AdminChat.showUserSearch()" style="width:100%;padding:13px;background:var(--primary);border:none;border-radius:14px;color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">' +
                     '<i class="fas fa-plus" style="margin-right:6px;"></i>Start New Conversation' +
@@ -4918,36 +5346,26 @@
                     '<div id="acUserSearchResults" style="margin-top:8px;"></div>' +
                 '</div>';
 
+            loadConversations();
+        }
+
+        // Load conversations from API
+        function loadConversations() {
+            const aid = _adminId();
+            if (!aid) return;
+
             fetch(API_URL + '/chat/inbox?viewer_type=admin&viewer_id=' + aid)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    const list = document.getElementById('acInboxList');
-                    if (!list) return;
-                    if (!Array.isArray(data) || !data.length) {
-                        list.innerHTML =
-                            '<div style="text-align:center;padding:24px 16px;color:var(--text-muted);">' +
-                                '<i class="fas fa-comments" style="font-size:2.5rem;margin-bottom:10px;display:block;opacity:0.3;"></i>' +
-                                '<p style="font-size:0.85rem;margin:0;">No conversations yet.<br>Use the button below to start one.</p>' +
-                            '</div>';
-                        return;
+                    if (Array.isArray(data)) {
+                        allConversations = data;
+                        filteredConversations = data.slice();
+                        renderConversations(filteredConversations);
+                    } else {
+                        allConversations = [];
+                        filteredConversations = [];
+                        renderConversations([]);
                     }
-                    list.innerHTML = data.map(function(c) {
-                        const initials = (c.other_name || 'U').charAt(0).toUpperCase();
-                        const unread = parseInt(c.unread_count) || 0;
-                        const preview = _esc(c.last_message || '');
-                        const ts = c.last_at ? new Date(c.last_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                        return '<div class="ac-inbox-item" onclick="AdminChat.openConversation(' + c.other_id + ',\'' + _esc(c.other_name) + '\')">' +
-                            '<div class="ac-avatar">' + initials + '</div>' +
-                            '<div class="ac-inbox-info">' +
-                                '<div class="ac-inbox-name">' + _esc(c.other_name) + '</div>' +
-                                '<div class="ac-inbox-preview">' + preview + '</div>' +
-                            '</div>' +
-                            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">' +
-                                '<span style="font-size:0.65rem;color:var(--text-muted);">' + ts + '</span>' +
-                                (unread ? '<span class="ac-unread">' + unread + '</span>' : '') +
-                            '</div>' +
-                        '</div>';
-                    }).join('');
                 })
                 .catch(function() {
                     const list = document.getElementById('acInboxList');
@@ -4955,6 +5373,114 @@
                 });
         }
 
+        // Search conversations
+        function searchConversations(query) {
+            const searchTerm = (query || '').toLowerCase().trim();
+            
+            if (!searchTerm) {
+                filteredConversations = allConversations.slice();
+                const resultsCount = document.getElementById('searchResultsCount');
+                const clearBtn = document.getElementById('clearSearch');
+                if (resultsCount) resultsCount.classList.add('hidden');
+                if (clearBtn) clearBtn.classList.add('hidden');
+                renderConversations(filteredConversations);
+                return;
+            }
+            
+            const clearBtn = document.getElementById('clearSearch');
+            if (clearBtn) clearBtn.classList.remove('hidden');
+            
+            filteredConversations = allConversations.filter(function(conv) {
+                // Search in customer name
+                if (conv.other_name && conv.other_name.toLowerCase().includes(searchTerm)) {
+                    return true;
+                }
+                // Search in email (if available)
+                if (conv.other_email && conv.other_email.toLowerCase().includes(searchTerm)) {
+                    return true;
+                }
+                // Search in last message content
+                if (conv.last_message && conv.last_message.toLowerCase().includes(searchTerm)) {
+                    return true;
+                }
+                return false;
+            });
+            
+            // Show results count
+            const resultsCount = document.getElementById('searchResultsCount');
+            const resultsText = document.getElementById('resultsText');
+            if (resultsCount && resultsText) {
+                resultsText.textContent = filteredConversations.length + ' conversation' + (filteredConversations.length !== 1 ? 's' : '') + ' found';
+                resultsCount.classList.remove('hidden');
+            }
+            
+            renderConversations(filteredConversations);
+        }
+
+        // Clear search
+        function clearSearch() {
+            const searchInput = document.getElementById('chatSearchInput');
+            if (searchInput) searchInput.value = '';
+            searchConversations('');
+        }
+
+        // Render conversations
+        function renderConversations(conversations) {
+            const list = document.getElementById('acInboxList');
+            if (!list) return;
+            
+            // Handle empty conversations
+            if (!conversations || conversations.length === 0) {
+                const searchInput = document.getElementById('chatSearchInput');
+                const hasSearchTerm = searchInput && searchInput.value.trim();
+                
+                // Display "No results found" message when search is active
+                if (hasSearchTerm) {
+                    list.innerHTML = '<div class="no-results" style="text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:0.95rem;">No results found</div>';
+                } else {
+                    // Display default empty state when no search is active
+                    list.innerHTML =
+                        '<div style="text-align:center;padding:24px 16px;color:var(--text-muted);">' +
+                            '<i class="fas fa-comments" style="font-size:2.5rem;margin-bottom:10px;display:block;opacity:0.3;"></i>' +
+                            '<p style="font-size:0.85rem;margin:0;">No conversations yet.<br>Use the button below to start one.</p>' +
+                        '</div>';
+                }
+                return;
+            }
+            
+            // Get search term for highlighting
+            const searchInput = document.getElementById('chatSearchInput');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            
+            // Render conversation items with highlighted search terms
+            list.innerHTML = conversations.map(function(c) {
+                const initials = (c.other_name || 'U').charAt(0).toUpperCase();
+                const unread = parseInt(c.unread_count) || 0;
+                
+                // Format time metadata
+                const ts = c.last_at ? new Date(c.last_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                
+                // Apply highlighting using highlightText() helper for search term highlighting
+                const displayName = searchTerm ? highlightText(_esc(c.other_name), searchTerm) : _esc(c.other_name);
+                const displayMessage = searchTerm ? highlightText(_esc(c.last_message || ''), searchTerm) : _esc(c.last_message || '');
+                
+                // Use data attributes to avoid XSS in onclick - escape for HTML attribute context
+                const escapedName = _esc(c.other_name);
+                
+                // Render conversation item with metadata (time, unread count)
+                return '<div class="ac-inbox-item" onclick="AdminChat.openConversation(' + c.other_id + ',\'' + escapedName + '\')">' +
+                    '<div class="ac-avatar">' + initials + '</div>' +
+                    '<div class="ac-inbox-info">' +
+                        '<div class="ac-inbox-name">' + displayName + '</div>' +
+                        '<div class="ac-inbox-preview">' + displayMessage + '</div>' +
+                    '</div>' +
+                    '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">' +
+                        '<span style="font-size:0.65rem;color:var(--text-muted);">' + ts + '</span>' +
+                        (unread ? '<span class="ac-unread">' + unread + '</span>' : '') +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
         function showUserSearch() {
             const box = document.getElementById('acUserSearch');
             if (!box) return;
@@ -5169,7 +5695,19 @@
                 .catch(function() {});
         }
 
-        return { loadInbox: loadInbox, openConversation: openConversation, send: send, stopPolling: stopPolling, showUserSearch: showUserSearch, searchUsers: searchUsers, updateNavBadge: updateNavBadge };
+        return { 
+            loadInbox: loadInbox, 
+            openConversation: openConversation, 
+            send: send, 
+            stopPolling: stopPolling, 
+            showUserSearch: showUserSearch, 
+            searchUsers: searchUsers, 
+            updateNavBadge: updateNavBadge,
+            loadConversations: loadConversations,
+            searchConversations: searchConversations,
+            clearSearch: clearSearch,
+            renderConversations: renderConversations
+        };
     })();
 
     window.AdminChat = AdminChat;
