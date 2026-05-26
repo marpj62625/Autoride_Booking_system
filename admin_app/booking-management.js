@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    Autoride Admin — Booking Management JS
    Handles fetching, filtering, approving, and rejecting bookings
    ============================================================ */
@@ -1163,4 +1163,5 @@ function applyCancelledFilters() {
         tbody.appendChild(tr);
     });
 }
+
 
