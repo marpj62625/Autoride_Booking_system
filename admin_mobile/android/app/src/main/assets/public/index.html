@@ -4404,7 +4404,7 @@
                     labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
                     datasets: [{
                         label: 'Bookings',
-                        data: trend.map(t => t.count || t.bookings || 0),
+                        data: trend.map(t => t.booking_count || t.count || t.bookings || 0),
                         backgroundColor: 'rgba(0,82,255,0.6)',
                         borderRadius: 4
                     }]
@@ -4922,11 +4922,9 @@
                 originalChartData.labels = trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || '');
                 originalChartData.datasets[0].data = trend.map(t => t.amount || t.revenue || 0);
             } else if (currentChartType === 'bookings') {
-                const trend = data.bookingsByStatus || {};
-                const bLabels = Object.keys(trend).map(k => k.charAt(0).toUpperCase() + k.slice(1));
-                const bData = Object.values(trend);
-                originalChartData.labels = bLabels;
-                originalChartData.datasets[0].data = bData;
+                const trend = data.revenueTrend || [];
+                originalChartData.labels = trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || '');
+                originalChartData.datasets[0].data = trend.map(t => t.booking_count || t.count || t.bookings || 0);
             } else if (currentChartType === 'fleet') {
                 const fleetDist = data.fleetDistribution || [];
                 originalChartData.labels = fleetDist.map(f => f.status);
