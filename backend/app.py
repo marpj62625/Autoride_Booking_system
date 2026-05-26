@@ -5569,16 +5569,16 @@ def get_detailed_stats():
         
         # 4. Top Performing Vehicles
         top_query = """
-            SELECT v.brand, v.model, COUNT(b.id) as booking_count, SUM(b.total_price) as revenue
+            SELECT v.brand, v.model, v.plate_number, COUNT(b.id) as booking_count, COALESCE(SUM(b.total_price), 0) as revenue
             FROM vehicles v
             JOIN bookings b ON v.id = b.vehicle_id
-            WHERE b.status != 'Cancelled'
+            WHERE b.status != 'Cancelled' AND b.payment_status = 'Paid'
         """
         top_params = []
         top_query, top_params = apply_filters(top_query, top_params, 'b', 'v', skip_status=False)
-        top_query += " GROUP BY v.id, v.brand, v.model ORDER BY revenue DESC LIMIT 5"
+        top_query += " GROUP BY v.id, v.brand, v.model, v.plate_number ORDER BY revenue DESC LIMIT 5"
         cur.execute(top_query, tuple(top_params))
-        top_vehicles = cur.fetchall()
+        top_vehicles = [{"brand": r.get('brand'), "model": r.get('model'), "plate_number": r.get('plate_number'), "booking_count": int(r.get('booking_count') or 0), "revenue": float(r.get('revenue') or 0)} for r in cur.fetchall()]
 
         return jsonify({
             "totalRevenue": float(basic_stats['total_revenue'] or 0),

@@ -1400,9 +1400,9 @@
             </div>
         </div>
 
-        <!-- Bookings Period full width -->
+        <!-- BOOKINGS DETAIL full width -->
         <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:16px;">
-            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Bookings Period</div>
+            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">BOOKINGS DETAIL</div>
             <div style="height:150px;position:relative;">
                 <canvas id="reportsBookingsChart"></canvas>
             </div>
@@ -4351,12 +4351,13 @@
                 const data = await res.json();
                 this._rawData = data;
 
-                const totalRev = data.summary?.total_revenue || 0;
-                const totalBook = data.summary?.total_bookings || 0;
+                const totalRev = data.totalRevenue || 0;
+                const totalBook = data.totalBookings || 0;
                 document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
                 document.getElementById('repActive').textContent = totalBook;
                 document.getElementById('repTotalRev').textContent = '\u20B1' + totalRev.toLocaleString();
-                document.getElementById('repFleet').textContent = data.summary?.active_fleet || 0;
+                const activeFleetCount = (data.fleetDistribution || []).reduce((sum, item) => sum + (item.count || 0), 0);
+                document.getElementById('repFleet').textContent = activeFleetCount;
 
                 this.renderRevenueChart(data.revenueTrend || []);
                 this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
@@ -4473,7 +4474,7 @@
                     <div style="display:flex;align-items:center;gap:10px;">
                         <span style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">${i+1}</span>
                         <div>
-                            <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);">${c.brand} ${c.model}</div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);">${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}</div>
                             <div style="font-size:0.65rem;color:var(--text-muted);">${c.booking_count} bookings</div>
                         </div>
                     </div>
