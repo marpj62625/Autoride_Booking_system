@@ -1,0 +1,150 @@
+/* Print Header Styles */
+/* Requirements: 6.1, 6.3, 6.4 */
+
+.print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: var(--bg-secondary, #f8fafc);
+    border-bottom: 1px solid var(--border-glass, #e2e8f0);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--bg-glass, rgba(255, 255, 255, 0.8));
+    border: 1px solid var(--border-glass, #e2e8f0);
+    border-radius: 8px;
+    color: var(--text-primary, #1e293b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: var(--accent, #6366f1);
+    transform: translateX(-3px);
+}
+
+.btn-back:active {
+    transform: translateX(-3px) scale(0.98);
+}
+
+.back-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.back-text {
+    font-weight: 600;
+}
+
+.print-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary, #1e293b);
+    margin: 0;
+    text-align: center;
+    flex: 1;
+}
+
+.btn-print {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--accent, #6366f1);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.btn-print:hover {
+    background: #5558dd;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-print:active {
+    transform: scale(0.98);
+}
+
+.print-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.print-text {
+    font-weight: 700;
+}
+
+/* Hide navigation elements when printing */
+/* Requirement: 6.3 - Back button visible on screen but hidden when printing */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-header {
+        display: none !important;
+    }
+}
+
+/* Responsive adjustments for mobile devices */
+@media (max-width: 768px) {
+    .print-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .btn-back,
+    .btn-print {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+    }
+    
+    .print-title {
+        font-size: 1.25rem;
+    }
+    
+    .back-text,
+    .print-text {
+        display: none;
+    }
+    
+    .back-icon,
+    .print-icon {
+        font-size: 1.4rem;
+    }
+}
+
+/* Dark theme support */
+[data-theme="dark"] .print-header {
+    background: #1e293b;
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .btn-back {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+[data-theme="dark"] .btn-back:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent, #6366f1);
+}
+
+[data-theme="dark"] .print-title {
+    color: #f1f5f9;
+}

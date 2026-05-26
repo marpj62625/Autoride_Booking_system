@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="config.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </nav>
+    </header>
+
+    <div class="auth-container" id="authContainer">
+        <div style="text-align: left;">
+            <a href="vehicles.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 1.5rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Vehicles
+            </a>
+        </div>
+
+        <!-- STEP 1: Login/Auth Forms -->
+        <div class="auth-form-step">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 id="loginTitle" style="margin:0; font-size: 2rem; background: linear-gradient(to right, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Welcome Back</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Sign in to continue your journey</p>
+            </div>
+            
+            <!-- Default Email Login -->
+            <div id="emailAuthSection">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" class="form-input" required placeholder="example@gmail.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-input" required placeholder="••••••••">
+                    </div>
+                    
+                    <button type="submit" class="btn">Sign In</button>
+                </form>
+                
+                <div class="divider" style="display:flex; align-items:center; text-align:center; margin: 1.5rem 0; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-right: 1rem;"></div>
+                    OR
+                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-left: 1rem;"></div>
+                </div>
+                
+                <button type="button" class="btn-outline" style="margin-bottom: 1.25rem;" onclick="toggleOTP()">Login with Phone (OTP)</button>
+                
+                <div style="display: flex; justify-content: center; width: 100%; overflow: hidden;">
+                    <div id="g_id_onload"
+                         data-client_id="632685261969-pak4g39l46krdnufu49h576eo5ainddl.apps.googleusercontent.com"
+                         data-callback="handleCredentialResponse"
+                         data-auto_prompt="false">
+                    </div>
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-size="large"
+                         data-theme="outline"
+                         data-text="continue_with"
+                         data-shape="rectangular"
+                         data-logo_alignment="left"
+                         data-width="320">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phone OTP Login -->
+            <div id="otpAuthSection" style="display:none;">
+                <form id="otpRequestForm">
+                    <div class="form-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="mobilePhone" class="form-input" required placeholder="+63 912 345 6789">
+                    </div>
+                    <button type="submit" class="btn">Send Verification Code</button>
+                </form>
+                
+                <form id="otpVerifyForm" style="display:none; margin-top:1.5rem;">
+                    <div class="form-group">
+                        <label>Enter 6-digit Code (See Terminal)</label>
+                        <input type="text" id="otpCode" class="form-input" required maxlength="6" placeholder="123456">
+                    </div>
+                    <button type="submit" class="btn">Verify & Sign In</button>
+                </form>
+                
+                <div class="divider" style="display:flex; align-items:center; text-align:center; margin: 2rem 0; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
+                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-right: 1rem;"></div>
+                    OR
+                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-left: 1rem;"></div>
+                </div>
+                <button type="button" class="btn-outline" onclick="toggleOTP()">Back to Email</button>
+            </div>
+        </div>
+
+        <!-- STEP 2: Email Verification (Hidden by default) -->
+        <div class="verification-step" id="stepVerification">
+            <h2 style="font-size: 1.75rem; margin-bottom: 1rem; text-align: center;">Verify Your Account</h2>
+            <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; font-size: 0.95rem;">
+                Your email <strong id="displayEmail" style="color: var(--text-main);"></strong> is not yet verified.<br>
+                Please enter the 6-digit code sent during registration.
+            </p>
+            
+            <div class="otp-input-group">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+            </div>
+
+            <button type="button" class="btn" id="verifyBtn">Verify & Sign In</button>
+            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
+                <a href="#" onclick="location.reload()" style="color: var(--primary-color); text-decoration: none;">Back to Login</a>
+            </p>
+        </div>
+
+        <div id="message" style="text-align:center; margin-top: 1.5rem; font-weight: 500;"></div>
+
+        <div class="auth-links" id="authLinks" style="margin-top: 2rem; text-align:center; font-size: 0.95rem;">
+            <p style="color: var(--text-muted);">Don't have an account? <a href="register.html" style="color: var(--primary-color); font-weight: 600;">Sign up</a></p>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        let redirectUrl = urlParams.get('redirect') || 'vehicles.html';
+        
+        // Ensure API_BASE is available globally
+        if (typeof window.API_BASE === 'undefined') {
+            window.API_BASE = window.location.origin;
+        }
+        
+        const authContainer = document.getElementById('authContainer');
+        const displayEmail = document.getElementById('displayEmail');
+        const messageEl = document.getElementById('message');
+        const otpDigits = document.querySelectorAll('.otp-digit');
+        let unverifiedEmail = "";
+
+        // OTP Input Auto-focus
+        otpDigits.forEach((d, idx) => {
+            d.addEventListener('input', (e) => {
+                if (e.target.value && idx < otpDigits.length - 1) {
+                    otpDigits[idx + 1].focus();
+                }
+            });
+            d.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                    otpDigits[idx - 1].focus();
+                }
+            });
+        });
+
+        
+        if (localStorage.getItem('user_id') && window.location.search.includes('redirect')) {
+            window.location.href = redirectUrl;
+        }
+
+        if (urlParams.get('redirect')) {
+            document.querySelectorAll('a[href="register.html"]').forEach(a => {
+                a.href = 'register.html?redirect=' + encodeURIComponent(urlParams.get('redirect'));
+            });
+        }
+        
+        function showMessage(msg, isError=false) {
+            messageEl.textContent = msg;
+            messageEl.style.color = isError ? '#dc2626' : '#16a34a';
+        }
+
+        function toggleOTP() {
+            const emailSec = document.getElementById('emailAuthSection');
+            const otpSec = document.getElementById('otpAuthSection');
+            if (emailSec.style.display !== 'none') {
+                emailSec.style.display = 'none';
+                otpSec.style.display = 'block';
+            } else {
+                emailSec.style.display = 'block';
+                otpSec.style.display = 'none';
+            }
+        }
+
+        async function handleCredentialResponse(response) {
+            console.log('Google credential received. Sending to backend...');
+            showMessage('Verifying Google account...');
+            try {
+                const res = await fetch(`${window.API_BASE}/api/auth/google`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        credential: response.credential
+                    })
+                });
+                console.log('Backend response status:', res.status);
+                const data = await res.json();
+                console.log('Backend response data:', data);
+
+                if (res.ok) {
+                    if (data.verification_required) {
+                        unverifiedEmail = data.email;
+                        displayEmail.textContent = data.email;
+                        authContainer.classList.add('verification-active');
+                        showMessage(data.message);
+                    } else {
+                        finalizeLogin(data);
+                    }
+                } else {
+                    showMessage('Google Login Error: ' + (data.error || 'Unknown error'), true);
+                }
+            } catch (err) {
+                console.error('Fetch error:', err);
+                showMessage('Server connection error.', true);
+            }
+        }
+        
+        function finalizeLogin(data) {
+            showMessage('Login successful!');
+            localStorage.setItem('user_id', data.user_id);
+            localStorage.setItem('full_name', data.full_name);
+            setTimeout(() => window.location.href = redirectUrl, 1000);
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${window.API_BASE}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    finalizeLogin(data);
+                } else if (response.status === 403 && data.verification_required) {
+                    unverifiedEmail = data.email;
+                    displayEmail.textContent = data.email;
+                    authContainer.classList.add('verification-active');
+                    messageEl.textContent = '';
+                } else {
+                    showMessage('Error: ' + (data.error || 'Invalid credentials'), true);
+                }
+            } catch (err) {
+                showMessage('Server connection error.', true);
+            }
+        });
+
+        // Verify Email OTP Handler
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            const otp = Array.from(otpDigits).map(d => d.value).join('');
+            if (otp.length < 6) {
+                showMessage('Please enter all 6 digits.', true);
+                return;
+            }
+
+            try {
+                const res = await fetch(`${window.API_BASE}/api/auth/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: unverifiedEmail, otp })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.user_id) {
+                        finalizeLogin(data);
+                    } else {
+                        showMessage('Email verified! You can now sign in.');
+                        authContainer.classList.remove('verification-active');
+                        messageEl.textContent = 'Please sign in now.';
+                    }
+                } else {
+                    showMessage('Error: ' + data.error, true);
+                }
+            } catch (err) {
+                showMessage('Verification error.', true);
+            }
+        });
+
+        // Phone OTP Flow
+        let currentPhone = "";
+        document.getElementById('otpRequestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('mobilePhone').value;
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/request-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentPhone = phone;
+                    showMessage("OTP Sent! Check console.");
+                    document.getElementById('otpRequestForm').style.display = 'none';
+                    document.getElementById('otpVerifyForm').style.display = 'block';
+                } else {
+                    showMessage(data.error, true);
+                }
+            } catch (err) {
+                 showMessage('Server connection error.', true);
+            }
+        });
+        
+        document.getElementById('otpVerifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const otp = document.getElementById('otpCode').value;
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: currentPhone, otp })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    finalizeLogin(data);
+                } else {
+                    showMessage('Error: ' + data.error, true);
+                }
+            } catch (err) {
+                 showMessage('Server connection error.', true);
+            }
+        });
+    </script>
+    <script src="chat.js"></script>
+</body>
+</html>
+    <script src="chat.js"></script>
+</body>
+</html>

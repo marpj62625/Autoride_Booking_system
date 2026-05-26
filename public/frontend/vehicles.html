@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicles | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="config.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <span id="userGreeting" style="margin-right: 1.5rem; font-weight: 500; font-size: 0.9rem; color: var(--text-muted);"></span>
+            <a href="dashboard.html" id="dashboardLink" style="display: none;">Dashboard</a>
+            <a href="profile.html" id="profileLink" style="display: none;">My Profile</a>
+            <a href="#" id="logoutBtn" style="display: none;">Logout</a>
+            <a href="login.html" id="loginLink">Login</a>
+            <a href="register.html" id="registerLink">Register</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Mobile Filter Toggle -->
+        <button id="mobileFilterBtn" class="btn-outline" style="display: none; margin-bottom: 1rem; align-items: center; justify-content: center; gap: 0.5rem; width: 100%;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            Show Filters
+        </button>
+
+        <div class="vehicles-layout">
+            <!-- Sidebar Filters -->
+            <aside class="filters-sidebar">
+                <h3>Filters</h3>
+                <div class="filter-group">
+                    <label>Search Vehicle</label>
+                    <input type="text" id="nameSearch" class="form-input" placeholder="e.g. Toyota">
+                </div>
+                <div class="filter-group">
+                    <label>Vehicle Type</label>
+                    <select id="typeFilter">
+                        <option value="all">All Types</option>
+                        <option value="Sedan">Sedan</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Van">Van</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Location</label>
+                    <select id="locationFilter">
+                        <option value="all">All Locations</option>
+                        <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
+                        <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Fuel Type</label>
+                    <select id="fuelFilter">
+                        <option value="all">All</option>
+                        <option value="Gasoline">Gasoline</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="Electric">Electric</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Transmission</label>
+                    <select id="transmissionFilter">
+                        <option value="all">All</option>
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Max Daily Rate (₱)</label>
+                    <input type="range" id="priceFilter" min="1000" max="10000" step="500" value="10000">
+                    <div style="text-align: right; margin-top: 0.5rem; font-size: 0.9rem;" id="priceLabel">₱10000</div>
+                </div>
+                <div class="filter-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 2rem;">
+                    <input type="checkbox" id="favoriteFilter" style="width: auto;">
+                    <label for="favoriteFilter" style="margin-bottom: 0;">Favorites Only</label>
+                </div>
+            </aside>
+
+            <!-- Vehicle Listing -->
+            <main>
+                <div id="vehiclesGrid" class="vehicles-grid">
+                    <!-- Cards will be populated here via JavaScript -->
+                    <div style="text-align: center; width: 100%; grid-column: 1 / -1; color: var(--text-muted); margin-top: 2rem;">
+                        Loading vehicles...
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Newsletter Footer -->
+    <footer style="background: #060912; color: white; padding: 4rem 1rem; border-top: 1px solid var(--border-color);">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; text-align: center;">
+            <h3 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(to right, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Join Our Newsletter</h3>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 500px;">Get exclusive discounts and updates on new fleet arrivals directly to your inbox.</p>
+            <form id="newsletterForm" style="display: flex; gap: 0.5rem; width: 100%; max-width: 450px;">
+                <input type="email" id="nlEmail" placeholder="Enter your email" required style="flex: 1; padding: 0.85rem 1.25rem; border-radius: 8px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: white; font-size: 1rem;">
+                <button type="submit" class="btn-outline" style="width: auto; padding: 0 1.5rem;">Subscribe</button>
+            </form>
+            <div id="nlSuccess" style="display: none; color: var(--success); margin-top: 1.5rem; font-weight: 600; font-size: 1.1rem;">? Subscribed successfully!</div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Filter Toggle Logic
+        const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+        const sidebar = document.querySelector('.filters-sidebar');
+        
+        if (window.innerWidth <= 1024) {
+            mobileFilterBtn.style.display = 'flex';
+            sidebar.style.display = 'none';
+        }
+
+        mobileFilterBtn.onclick = () => {
+            const isHidden = sidebar.style.display === 'none';
+            sidebar.style.display = isHidden ? 'block' : 'none';
+            mobileFilterBtn.innerHTML = isHidden 
+                ? '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> Hide Filters'
+                : '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg> Show Filters';
+        };
+
+        document.getElementById('newsletterForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const email = document.getElementById('nlEmail').value;
+            
+            btn.textContent = '...';
+            try {
+                const res = await fetch(`${API_BASE}/api/newsletter`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email })
+                });
+                if(res.ok) {
+                    document.getElementById('nlSuccess').style.display = 'block';
+                    e.target.reset();
+                }
+            } catch(e) {}
+            btn.textContent = 'Subscribe';
+        });
+
+        // Check authentication
+        const userId = localStorage.getItem('user_id');
+
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://fydfsgjrlowrrtlmefwq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Subscribe to Realtime Changes
+        function subscribeToUpdates() {
+            supabaseClient
+                .channel('realtime-vehicles')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, payload => {
+                    console.log('Realtime change detected:', payload);
+                    fetchVehicles(); // Reload UI
+                })
+                .subscribe();
+        }
+
+        if (userId) {
+            const userFullName = localStorage.getItem('full_name');
+            document.getElementById('userGreeting').textContent = `Hello, ${userFullName}`;
+            document.getElementById('logoutBtn').style.display = 'inline';
+            const dbLink = document.getElementById('dashboardLink');
+            if (dbLink) dbLink.style.display = 'inline';
+            const profLink = document.getElementById('profileLink');
+            if (profLink) profLink.style.display = 'inline';
+            document.getElementById('loginLink').style.display = 'none';
+            document.getElementById('registerLink').style.display = 'none';
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.reload();
+        });
+
+        // Ensure API_BASE is available globally
+        if (typeof window.API_BASE === 'undefined') {
+            window.API_BASE = window.location.origin;
+        }
+
+        async function fetchVehicles() {
+            try {
+                let url = userId ? `${window.API_BASE}/api/vehicles/categories?user_id=${userId}` : `${window.API_BASE}/api/vehicles/categories?`;
+                
+                const response = await fetch(url);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    allVehicles = data;
+                    renderVehicles(allVehicles);
+                } else {
+                    console.error('Server error:', response.status);
+                    document.getElementById('vehiclesGrid').innerHTML = '<p class="error">Failed to load vehicles from server.</p>';
+                }
+            } catch (err) {
+                console.error('Fetch Error:', err);
+                document.getElementById('vehiclesGrid').innerHTML = `<p class="error">Error connecting to server: ${err.message}</p>`;
+            }
+        }
+
+        function renderVehicles(vehicles) {
+            const grid = document.getElementById('vehiclesGrid');
+            grid.innerHTML = '';
+            
+            if (vehicles.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">No vehicles found matching your criteria.</p>';
+                return;
+            }
+
+            vehicles.forEach(v => {
+                const isAvailable = v.available_units > 0;
+                const statusClass = isAvailable ? 'status-available' : 'status-booked';
+                const statusText = isAvailable 
+                    ? (v.available_units === 1 ? 'Only 1 unit left!' : `${v.available_units} units available`) 
+                    : 'Fully Booked';
+                
+                const isFav = v.is_favorite ? 'active' : '';
+                
+                // Star display
+                let stars = '';
+                const rating = Math.round(v.avg_rating || 0);
+                for(let i=1; i<=5; i++) {
+                    stars += `<span style="color: ${i <= rating ? '#fbbf24' : '#cbd5e1'}">★</span>`;
+                }
+
+                const card = `
+                    <div class="vehicle-card">
+                        <div class="vehicle-image">
+                            ${v.vehicle_image ? `<img src="${v.vehicle_image}" alt="${v.brand}">` : `<svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`}
+                            ${userId ? `
+                                <button class="fav-btn ${isFav}" onclick="toggleFavorite(event, ${v.id})">
+                                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="vehicle-content">
+                            <div class="vehicle-header">
+                                <h3 class="vehicle-title">${v.brand} ${v.model} or similar</h3>
+                                <div class="status-badge ${statusClass}">${statusText}</div>
+                            </div>
+                            <div class="star-rating">${stars} <span style="font-size: 0.8rem; color: var(--text-muted);">(${v.avg_rating ? v.avg_rating.toFixed(1) : 'No reviews'})</span></div>
+                            <div class="vehicle-price">₱${v.daily_rate}/day</div>
+                            <div class="vehicle-specs">
+                                <span><b>Seats:</b> ${v.seats}</span>
+                                <span><b>Trans:</b> ${v.transmission}</span>
+                                <span><b>Fuel:</b> ${v.fuel_type}</span>
+                                <span><b>Loc:</b> ${v.location}</span>
+                            </div>
+                            <a href="vehicle-details.html?id=${v.id}" class="btn-outline">View Details</a>
+                        </div>
+                    </div>
+                `;
+                grid.insertAdjacentHTML('beforeend', card);
+            });
+        }
+
+        async function toggleFavorite(event, vehicleId) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!userId || userId === 'null') return;
+
+            const btn = event.currentTarget;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/toggle-favorite`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, vehicle_id: vehicleId })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update the clicked button's visual state instantly without re-rendering the list
+                    if (data.is_favorite) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+
+                    // Update memory array silently
+                    allVehicles = allVehicles.map(v => {
+                        if (v.id === vehicleId) v.is_favorite = data.is_favorite;
+                        return v;
+                    });
+                }
+            } catch (err) {
+                console.error('Error toggling favorite:', err);
+            }
+        }
+
+        // Filter Logic
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('transmissionFilter').addEventListener('change', applyFilters);
+        document.getElementById('locationFilter').addEventListener('change', applyFilters);
+        document.getElementById('fuelFilter').addEventListener('change', applyFilters);
+        document.getElementById('nameSearch').addEventListener('input', applyFilters);
+        document.getElementById('favoriteFilter').addEventListener('change', applyFilters);
+        document.getElementById('priceFilter').addEventListener('input', (e) => {
+            document.getElementById('priceLabel').textContent = `?${e.target.value}`;
+            applyFilters();
+        });
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('nameSearch').value.toLowerCase();
+            const type = document.getElementById('typeFilter').value;
+            const trans = document.getElementById('transmissionFilter').value;
+            const location = document.getElementById('locationFilter').value;
+            const fuel = document.getElementById('fuelFilter').value;
+            const maxPrice = parseFloat(document.getElementById('priceFilter').value);
+            const favOnly = document.getElementById('favoriteFilter').checked;
+
+            const filtered = allVehicles.filter(v => {
+                const nameMatch = (v.brand + " " + v.model).toLowerCase().includes(searchTerm);
+                const matchType = type === 'all' || v.vehicle_type === type;
+                const matchTrans = trans === 'all' || v.transmission === trans;
+                const matchLoc = location === 'all' || v.location === location;
+                const matchFuel = fuel === 'all' || v.fuel_type === fuel;
+                const matchPrice = parseFloat(v.daily_rate) <= maxPrice;
+                const matchFav = !favOnly || v.is_favorite;
+                return nameMatch && matchType && matchTrans && matchLoc && matchFuel && matchPrice && matchFav;
+            });
+
+            renderVehicles(filtered);
+        }
+
+
+        // Initial load
+        fetchVehicles();
+        subscribeToUpdates();
+    </script>
+    <script src="chat.js"></script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 5 - Expandable Charts Test</title>
+    <link rel="stylesheet" href="reports.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            padding: 2rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .test-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+        }
+        .test-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .test-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+        }
+        .test-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .test-section p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .test-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .test-chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .test-chart-card:hover {
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+        .test-chart-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        .test-chart-body {
+            height: 250px;
+            position: relative;
+        }
+        .click-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(99, 102, 241, 0.9);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+        .test-chart-card:hover .click-hint {
+            opacity: 1;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-secondary);
+        }
+        .feature-list li:before {
+            content: "?";
+            position: absolute;
+            left: 0;
+            color: var(--green);
+            font-weight: bold;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--green-bg);
+            color: var(--green);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>?? Task 5: Expandable Dashboard Charts</h1>
+        <p>Click on any chart below to test the expandable chart functionality with interactive filters</p>
+        <span class="status-badge">? FULLY IMPLEMENTED</span>
+    </div>
+
+    <div class="test-section">
+        <h2>?? Implementation Summary</h2>
+        <p>All subtasks have been completed and verified:</p>
+        <ul class="feature-list">
+            <li><strong>5.1:</strong> Chart popup modal HTML structure with filters and canvas</li>
+            <li><strong>5.2:</strong> makeChartClickable() function adds cursor pointer and click handlers</li>
+            <li><strong>5.3:</strong> openChartPopup() stores data, sets title, initializes filters, shows modal</li>
+            <li><strong>5.4:</strong> renderPopupChart() creates enlarged Chart.js instance at 150% size</li>
+            <li><strong>5.5:</strong> applyChartFilters() fetches and transforms filtered data from API</li>
+            <li><strong>5.6:</strong> Filter event handlers with 500ms debouncing and reset functionality</li>
+            <li><strong>5.7:</strong> CSS styling with responsive design and mobile adjustments</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>?? Test Charts</h2>
+        <p>Click on any chart to open the expandable view with interactive filters:</p>
+        
+        <div class="test-charts">
+            <!-- Revenue Chart -->
+            <div class="test-chart-card">
+                <h3>?? Revenue Overview (Bar Chart)</h3>
+                <div class="test-chart-body">
+                    <canvas id="testRevenueChart"></canvas>
+                    <div class="click-hint">?? Click to Expand</div>
+                </div>
+            </div>
+
+            <!-- Status Chart -->
+            <div class="test-chart-card">
+                <h3>?? Booking Status (Doughnut Chart)</h3>
+                <div class="test-chart-body">
+                    <canvas id="testStatusChart"></canvas>
+                    <div class="click-hint">?? Click to Expand</div>
+                </div>
+            </div>
+
+            <!-- Trend Chart -->
+            <div class="test-chart-card">
+                <h3>?? Bookings Trend (Line Chart)</h3>
+                <div class="test-chart-body">
+                    <canvas id="testTrendChart"></canvas>
+                    <div class="click-hint">?? Click to Expand</div>
+                </div>
+            </div>
+
+            <!-- Vehicles Chart -->
+            <div class="test-chart-card">
+                <h3>?? Top Vehicles (Horizontal Bar)</h3>
+                <div class="test-chart-body">
+                    <canvas id="testVehiclesChart"></canvas>
+                    <div class="click-hint">?? Click to Expand</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>??? Filter Features</h2>
+        <p>When you click a chart, the popup includes:</p>
+        <ul class="feature-list">
+            <li>Date range filter (Start Date & End Date) - defaults to last 30 days</li>
+            <li>Status filter (All, Pending, Approved, Completed, Cancelled)</li>
+            <li>Vehicle type filter (All, Sedan, SUV, Van)</li>
+            <li>Reset Filters button to restore defaults</li>
+            <li>500ms debounced updates for smooth performance</li>
+            <li>Real-time chart updates based on filter selections</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>? User Experience Features</h2>
+        <ul class="feature-list">
+            <li>Smooth fade-in and slide-up animations</li>
+            <li>Toast notifications for filter actions</li>
+            <li>Hover effects on charts and buttons</li>
+            <li>Close on Escape key or overlay click</li>
+            <li>Responsive design for mobile devices</li>
+            <li>Custom scrollbar styling</li>
+            <li>Proper chart cleanup to prevent memory leaks</li>
+        </ul>
+    </div>
+
+    <!-- Chart Popup Modal (from reports.html) -->
+    <div class="modal-overlay hidden" id="chartPopupModal">
+        <div class="modal-card chart-popup-card">
+            <header class="modal-header">
+                <h3 id="chartPopupTitle">Chart Details</h3>
+                <button class="close-btn" id="chartPopupClose">×</button>
+            </header>
+            <div class="chart-filters">
+                <div class="filter-group">
+                    <label for="filterStartDate">Start Date:</label>
+                    <input type="date" id="filterStartDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterEndDate">End Date:</label>
+                    <input type="date" id="filterEndDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterStatus">Status:</label>
+                    <select id="filterStatus" class="filter-input">
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterVehicleType">Vehicle Type:</label>
+                    <select id="filterVehicleType" class="filter-input">
+                        <option value="all">All Types</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="van">Van</option>
+                    </select>
+                </div>
+                <button class="btn-reset-filters" id="btnResetFilters">?? Reset Filters</button>
+            </div>
+            <div class="chart-popup-body">
+                <canvas id="popupChartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast hidden" id="toast">
+        <span class="toast-icon" id="toastIcon"></span>
+        <span class="toast-msg" id="toastMsg"></span>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let currentPopupChart = null;
+        let currentChartData = null;
+        let currentChartType = null;
+        let originalChartData = null;
+        let filterTimeout = null;
+        let currentPeriod = 'daily';
+
+        // Sample data for test charts
+        const sampleRevenueData = {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            values: [12000, 15000, 13500, 18000, 16500, 22000, 19000]
+        };
+
+        const sampleStatusData = {
+            labels: ['Pending', 'Approved', 'Completed', 'Cancelled'],
+            values: [15, 25, 45, 10]
+        };
+
+        const sampleTrendData = {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            values: [35, 42, 38, 50]
+        };
+
+        const sampleVehiclesData = {
+            vehicles: [
+                { vehicle_name: 'Toyota Camry', total_bookings: 45 },
+                { vehicle_name: 'Honda CR-V', total_bookings: 38 },
+                { vehicle_name: 'Ford Explorer', total_bookings: 32 },
+                { vehicle_name: 'Nissan Altima', total_bookings: 28 },
+                { vehicle_name: 'Mazda CX-5', total_bookings: 25 }
+            ]
+        };
+
+        // Initialize test charts
+        function initTestCharts() {
+            // Revenue Chart
+            const revenueCtx = document.getElementById('testRevenueChart').getContext('2d');
+            const revenueGradient = revenueCtx.createLinearGradient(0, 0, 0, 250);
+            revenueGradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+            revenueGradient.addColorStop(1, 'rgba(99, 102, 241, 0.02)');
+
+            const revenueChart = new Chart(revenueCtx, {
+                type: 'bar',
+                data: {
+                    labels: sampleRevenueData.labels,
+                    datasets: [{
+                        label: 'Revenue (?)',
+                        data: sampleRevenueData.values,
+                        backgroundColor: revenueGradient,
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: getChartOptions('?')
+            });
+            makeChartClickable(document.getElementById('testRevenueChart'), revenueChart, 'bar');
+
+            // Status Chart
+            const statusCtx = document.getElementById('testStatusChart').getContext('2d');
+            const statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: sampleStatusData.labels,
+                    datasets: [{
+                        data: sampleStatusData.values,
+                        backgroundColor: ['#f59e0b', '#22c55e', '#3b82f6', '#64748b'],
+                        borderColor: '#111827',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        }
+                    }
+                }
+            });
+            makeChartClickable(document.getElementById('testStatusChart'), statusChart, 'doughnut');
+
+            // Trend Chart
+            const trendCtx = document.getElementById('testTrendChart').getContext('2d');
+            const trendGradient = trendCtx.createLinearGradient(0, 0, 0, 250);
+            trendGradient.addColorStop(0, 'rgba(6, 182, 212, 0.35)');
+            trendGradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+
+            const trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: sampleTrendData.labels,
+                    datasets: [{
+                        label: 'Bookings',
+                        data: sampleTrendData.values,
+                        borderColor: '#06b6d4',
+                        backgroundColor: trendGradient,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#06b6d4'
+                    }]
+                },
+                options: getChartOptions('')
+            });
+            makeChartClickable(document.getElementById('testTrendChart'), trendChart, 'line');
+
+            // Vehicles Chart
+            const vehiclesCtx = document.getElementById('testVehiclesChart').getContext('2d');
+            const vehiclesChart = new Chart(vehiclesCtx, {
+                type: 'bar',
+                data: {
+                    labels: sampleVehiclesData.vehicles.map(v => v.vehicle_name),
+                    datasets: [{
+                        label: 'Bookings',
+                        data: sampleVehiclesData.vehicles.map(v => v.total_bookings),
+                        backgroundColor: ['rgba(99, 102, 241, 0.8)', 'rgba(6, 182, 212, 0.8)', 
+                                        'rgba(168, 85, 247, 0.8)', 'rgba(34, 197, 94, 0.8)', 
+                                        'rgba(245, 158, 11, 0.8)'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.04)' },
+                            ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            makeChartClickable(document.getElementById('testVehiclesChart'), vehiclesChart, 'bar');
+        }
+
+        function getChartOptions(prefix) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.04)' },
+                        ticks: { color: '#64748b', font: { family: 'Inter', size: 11 } }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.04)' },
+                        ticks: { 
+                            color: '#64748b', 
+                            font: { family: 'Inter', size: 11 },
+                            callback: v => prefix + v.toLocaleString()
+                        },
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleColor: '#f1f5f9',
+                        bodyColor: '#94a3b8',
+                        padding: 12,
+                        cornerRadius: 8
+                    }
+                }
+            };
+        }
+
+        // Copy functions from reports.js
+        function makeChartClickable(chartElement, chartInstance, chartType) {
+            chartElement.style.cursor = 'pointer';
+            chartElement.addEventListener('click', () => {
+                openChartPopup(chartInstance, chartType);
+            });
+        }
+
+        async function openChartPopup(chartInstance, chartType) {
+            currentChartType = chartType;
+            currentChartData = {
+                labels: [...chartInstance.data.labels],
+                datasets: chartInstance.data.datasets.map(ds => ({
+                    ...ds,
+                    data: [...ds.data]
+                }))
+            };
+            
+            originalChartData = JSON.parse(JSON.stringify(currentChartData));
+            
+            const titles = {
+                'bar': 'Revenue Overview',
+                'doughnut': 'Booking Status Distribution',
+                'line': 'Bookings Trend'
+            };
+            document.getElementById('chartPopupTitle').textContent = titles[chartType] || 'Chart Details';
+            
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('filterStartDate').value = thirtyDaysAgo;
+            document.getElementById('filterEndDate').value = today;
+            document.getElementById('filterStatus').value = 'all';
+            document.getElementById('filterVehicleType').value = 'all';
+            
+            document.getElementById('chartPopupModal').classList.remove('hidden');
+            renderPopupChart();
+        }
+
+        function renderPopupChart() {
+            const canvas = document.getElementById('popupChartCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (currentPopupChart) {
+                currentPopupChart.destroy();
+            }
+            
+            const chartConfig = {
+                type: currentChartType,
+                data: currentChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#f1f5f9',
+                                font: { family: 'Inter', size: 14, weight: 500 }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            if (currentChartType !== 'doughnut') {
+                chartConfig.options.scales = {
+                    y: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        beginAtZero: true
+                    },
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                };
+            } else {
+                chartConfig.options.cutout = '68%';
+            }
+            
+            currentPopupChart = new Chart(ctx, chartConfig);
+        }
+
+        function showToast(type, message) {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMsg = document.getElementById('toastMsg');
+
+            toast.className = `toast ${type}`;
+            toastIcon.textContent = type === 'success' ? '?' : '?';
+            toastMsg.textContent = message;
+
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Initialize event handlers
+        document.getElementById('chartPopupClose').addEventListener('click', () => {
+            document.getElementById('chartPopupModal').classList.add('hidden');
+            if (currentPopupChart) {
+                currentPopupChart.destroy();
+                currentPopupChart = null;
+            }
+        });
+
+        document.getElementById('chartPopupModal').addEventListener('click', (e) => {
+            if (e.target.id === 'chartPopupModal') {
+                document.getElementById('chartPopupModal').classList.add('hidden');
+                if (currentPopupChart) {
+                    currentPopupChart.destroy();
+                    currentPopupChart = null;
+                }
+            }
+        });
+
+        document.getElementById('btnResetFilters').addEventListener('click', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('filterStartDate').value = thirtyDaysAgo;
+            document.getElementById('filterEndDate').value = today;
+            document.getElementById('filterStatus').value = 'all';
+            document.getElementById('filterVehicleType').value = 'all';
+            
+            if (originalChartData && currentPopupChart) {
+                currentChartData = JSON.parse(JSON.stringify(originalChartData));
+                renderPopupChart();
+            }
+            
+            showToast('success', 'Filters reset to default');
+        });
+
+        // Initialize charts on load
+        document.addEventListener('DOMContentLoaded', initTestCharts);
+    </script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Enhanced Booking Details Modal</title>
+    <link rel="stylesheet" href="booking-management.css">
+    <link rel="stylesheet" href="shared-enhancements.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .test-section {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-glass);
+            max-width: 800px;
+            width: 100%;
+        }
+        .test-section h2 {
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .test-section p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        .btn-test {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+        .btn-test:hover {
+            background: #5558dd;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+            margin-top: 1rem;
+        }
+        .checklist li {
+            padding: 0.5rem 0;
+            color: var(--text-secondary);
+        }
+        .checklist li::before {
+            content: "? ";
+            color: var(--green);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h2>Enhanced Booking Details Modal Test</h2>
+        <p>This test verifies the implementation of Task 2: Enhanced Booking Details Modal</p>
+        
+        <h3 style="color: var(--text-primary); margin-top: 1.5rem; margin-bottom: 0.5rem;">Test Checklist:</h3>
+        <ul class="checklist">
+            <li>Enhanced-text class applied to info-grid container</li>
+            <li>Font sizes increased: labels (1.05rem), values (1.1rem)</li>
+            <li>"View Profile" button added next to customer name</li>
+            <li>Proper semantic HTML structure with info-label and info-value classes</li>
+            <li>Responsive typography adjustments for mobile (768px breakpoint)</li>
+            <li>Text overflow handling with word-wrap</li>
+        </ul>
+        
+        <button class="btn-test" onclick="openTestModal()">Open Enhanced Booking Details Modal</button>
+        <button class="btn-test" onclick="openProfileModal()" style="margin-left: 1rem;">Open Customer Profile Modal</button>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal-overlay hidden" id="detailsModal">
+        <div class="modal-card details-card">
+            <header class="modal-header">
+                <h3>Booking Details</h3>
+                <button class="close-btn" id="detailsClose">?</button>
+            </header>
+            <div class="details-content" id="detailsContent">
+                <!-- Test content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-test" onclick="closeTestModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Profile Modal -->
+    <div class="modal-overlay hidden" id="customerProfileModal">
+        <div class="modal-card profile-preview-card">
+            <header class="modal-header">
+                <h3>Customer Profile</h3>
+                <button class="close-btn" id="profileClose">?</button>
+            </header>
+            <div class="profile-content" id="profileContent">
+                <div class="profile-avatar-section">
+                    <img id="profileAvatar" class="profile-avatar-img" src="https://via.placeholder.com/120" alt="Customer Avatar">
+                </div>
+                <div class="profile-info-section">
+                    <h4 id="profileName">John Doe</h4>
+                    <p id="profileEmail">john.doe@example.com</p>
+                    <p id="profilePhone">+63 912 345 6789</p>
+                </div>
+                <div class="license-section">
+                    <h4>License Information</h4>
+                    <div class="license-image-container">
+                        <img id="licenseImage" class="license-img" src="https://via.placeholder.com/400x250" alt="License">
+                    </div>
+                    <div class="license-details">
+                        <div class="license-field">
+                            <span class="license-label">License Number:</span>
+                            <span id="licenseNumber">N01-12-345678</span>
+                        </div>
+                        <div class="license-field">
+                            <span class="license-label">Type:</span>
+                            <span id="licenseType">Professional</span>
+                        </div>
+                        <div class="license-field">
+                            <span class="license-label">Expiry Date:</span>
+                            <span id="licenseExpiry" class="expiry-date expiring-soon">Dec 15, 2024 <span class="warning-badge expiring">?? Expires in 25 days</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast hidden" id="toast">
+        <span class="toast-icon" id="toastIcon"></span>
+        <span class="toast-msg" id="toastMsg"></span>
+    </div>
+
+    <script src="shared-utils.js"></script>
+    <script>
+        function openTestModal() {
+            const detailsContent = document.getElementById('detailsContent');
+            detailsContent.innerHTML = `
+                <div class="info-grid enhanced-text">
+                    <div class="info-item">
+                        <strong class="info-label">Customer:</strong> 
+                        <span class="info-value">John Doe</span>
+                        <button class="btn-view-profile" onclick="openProfileModal()">
+                            ?? View Profile
+                        </button>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Vehicle:</strong> 
+                        <span class="info-value">Toyota Vios 2023 - ABC 1234</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Period:</strong> 
+                        <span class="info-value">Nov 20, 2024 - Nov 25, 2024</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Total:</strong> 
+                        <span class="info-value">?15,000.00</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Status:</strong> 
+                        <span class="status-badge status-approved">Approved</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Payment:</strong> 
+                        <span class="payment-status paid">Paid</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Long Description Test:</strong> 
+                        <span class="info-value">This is a very long booking description that tests the text overflow handling with word-wrap and overflow-wrap properties to ensure that long text content wraps properly without breaking the layout or causing horizontal scrolling issues.</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('detailsModal').classList.remove('hidden');
+            showToast('success', 'Enhanced booking details modal opened successfully!');
+        }
+
+        function closeTestModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+
+        function openProfileModal() {
+            document.getElementById('customerProfileModal').classList.remove('hidden');
+            showToast('info', 'Customer profile modal opened!');
+        }
+
+        // Close handlers
+        document.getElementById('detailsClose').addEventListener('click', closeTestModal);
+        document.getElementById('profileClose').addEventListener('click', () => {
+            document.getElementById('customerProfileModal').classList.add('hidden');
+        });
+
+        // Close on overlay click
+        document.getElementById('detailsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'detailsModal') closeTestModal();
+        });
+        document.getElementById('customerProfileModal').addEventListener('click', (e) => {
+            if (e.target.id === 'customerProfileModal') {
+                document.getElementById('customerProfileModal').classList.add('hidden');
+            }
+        });
+
+        // Test responsive behavior
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            if (width <= 768) {
+                console.log('Mobile view - typography should be adjusted');
+            } else if (width <= 1024) {
+                console.log('Tablet view - typography should be adjusted');
+            } else {
+                console.log('Desktop view - full typography sizes');
+            }
+        });
+    </script>
+</body>
+</html>

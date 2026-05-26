@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .dashboard-grid {
+            display: grid;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        .dashboard-section {
+            background: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+        .dashboard-section h3 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .booking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 1rem;
+            transition: box-shadow 0.2s;
+        }
+        .booking-item:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .booking-details h4 {
+            margin-bottom: 0.25rem;
+            color: var(--text-main);
+        }
+        .booking-details p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin: 0.1rem 0;
+        }
+        .booking-meta {
+            text-align: right;
+        }
+        .booking-meta .price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 2rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: var(--radius);
+            border: 1px dashed var(--border-color);
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow-premium);
+            border: 1px solid var(--border-color);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .star-input {
+            font-size: 2rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .star-input.active {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Autoride Dashboard</h1>
+        <nav>
+            <span id="userName" style="margin-right: 1.5rem; font-weight: 500; font-size: 0.9rem; color: var(--text-muted);"></span>
+            <a href="vehicles.html">Browse Vehicles</a>
+            <a href="profile.html">My Profile</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>My Bookings</h2>
+        
+        <div id="loading" style="text-align: center; margin: 3rem 0; color: var(--text-muted);">
+            Loading your dashboard...
+        </div>
+
+        <div class="dashboard-grid" id="dashboardContent" style="display: none;">
+            <!-- Active Rentals -->
+            <section class="dashboard-section">
+                <h3>Active Rentals</h3>
+                <div id="activeRentalsList"></div>
+            </section>
+
+            <!-- Upcoming Bookings -->
+            <section class="dashboard-section">
+                <h3>Upcoming Bookings</h3>
+                <div id="upcomingBookingsList"></div>
+            </section>
+
+            <!-- Pending Split Requests -->
+            <section class="dashboard-section" id="splitBillSection">
+                <h3>Incoming Split Requests</h3>
+                <div id="splitBillList"></div>
+            </section>
+
+            <!-- Booking History -->
+            <section class="dashboard-section">
+                <h3>Booking History</h3>
+                <div id="historyList"></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Reschedule Modal -->
+    <div id="rescheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reschedule Booking</h3>
+                <button class="close-modal" onclick="closeModal('rescheduleModal')">&times;</button>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Change your rental dates. Note: Total price will be recalculated based on new duration.</p>
+            <form id="rescheduleForm">
+                <input type="hidden" id="res_booking_id">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>New Start Date</label>
+                        <input type="date" id="res_start_date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>New End Date</label>
+                        <input type="date" id="res_end_date" class="form-input" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn" style="margin-top: 1rem;">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Cancel Modal -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Cancel Reservation</h3>
+                <button class="close-modal" onclick="closeModal('cancelModal')">&times;</button>
+            </div>
+            <form id="cancelForm">
+                <input type="hidden" id="can_booking_id">
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Please let us know why you are cancelling. Note: Cancellations made less than 48 hours before pickup will forfeit the reservation fee.
+                </p>
+                <div class="form-group">
+                    <label>Reason for Cancellation</label>
+                    <select id="cancelReason" class="form-input" required style="margin-bottom: 15px;">
+                        <option value="">Select a reason...</option>
+                        <option value="Change of plans">Change of plans</option>
+                        <option value="Found a cheaper alternative">Found a cheaper alternative</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" style="background: var(--danger); border-color: var(--danger);">Confirm Cancellation</button>
+            </form>
+        </div>
+    </div>
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Rate & Review</h3>
+                <button class="close-modal" onclick="closeModal('reviewModal')">&times;</button>
+            </div>
+            <form id="reviewForm">
+                <input type="hidden" id="rev_booking_id">
+                <input type="hidden" id="rev_vehicle_id">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <span class="star-input" data-value="1">?</span>
+                    <span class="star-input" data-value="2">?</span>
+                    <span class="star-input" data-value="3">?</span>
+                    <span class="star-input" data-value="4">?</span>
+                    <span class="star-input" data-value="5">?</span>
+                    <input type="hidden" id="ratingValue" value="5">
+                </div>
+                <div class="form-group">
+                    <label>Your Feedback</label>
+                    <textarea id="reviewComment" class="form-input" rows="4" placeholder="How was your experience?" required></textarea>
+                </div>
+                <button type="submit" class="btn">Submit Review</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('user_id');
+        const userFullName = localStorage.getItem('full_name');
+
+        // Ensure API_BASE is available globally
+        if (typeof window.API_BASE === 'undefined') {
+            if (window.location.hostname.includes('vercel.app')) {
+                window.API_BASE = window.location.origin + '/api';
+            } else {
+                window.API_BASE = window.location.origin;
+            }
+        }
+
+        if (!userId || userId === 'null') {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('userName').textContent = `Hello, ${userFullName}`;
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = 'login.html';
+        });
+
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://fydfsgjrlowrrtlmefwq.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Subscribe to Realtime Changes
+        function subscribeToUpdates() {
+            supabaseClient
+                .channel('realtime-dashboard')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, payload => {
+                    console.log('Booking change detected:', payload);
+                    fetchDashboard(); // Reload UI
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'split_payments' }, payload => {
+                    console.log('Split payment change detected:', payload);
+                    fetchDashboard(); // Reload UI
+                })
+                .subscribe();
+        }
+
+        async function fetchDashboard() {
+            try {
+                console.log("DEBUG: Fetching dashboard for User ID:", userId);
+                
+                // Fetch User Bookings
+                const bookingsRes = await fetch(`${API_BASE}/user-bookings?user_id=${userId}`);
+                let bookings = [];
+                if (bookingsRes.ok) {
+                    bookings = await bookingsRes.json();
+                    console.log("DEBUG: Bookings received:", bookings);
+                } else {
+                    console.error("DEBUG: Failed to fetch bookings. Status:", bookingsRes.status);
+                }
+                
+                let userEmail = "";
+                const profRes = await fetch(`${API_BASE}/profile?user_id=${userId}`);
+                if (profRes.ok) {
+                    const profData = await profRes.json();
+                    userEmail = profData.email;
+                    console.log("DEBUG: Profile loaded for email:", userEmail);
+                }
+
+                if (userEmail) {
+                    const splitRes = await fetch(`${API_BASE}/split-bills?email=${userEmail}`);
+                    if (splitRes.ok) {
+                         const splits = await splitRes.json();
+                         console.log("DEBUG: Split bills received:", splits);
+                         renderSplitBills(splits);
+                    }
+                }
+
+                renderBookings(bookings);
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'grid';
+            } catch (err) {
+                console.error("DEBUG: Dashboard Fetch Error:", err);
+                document.getElementById('loading').innerHTML = '<span class="error">Server error loading dashboard. Check console for details.</span>';
+            }
+        }
+
+
+        function renderBookings(bookings) {
+            const activeList = document.getElementById('activeRentalsList');
+            const upcomingList = document.getElementById('upcomingBookingsList');
+            const historyList = document.getElementById('historyList');
+
+            activeList.innerHTML = '';
+            upcomingList.innerHTML = '';
+            historyList.innerHTML = '';
+
+            let activeCount = 0;
+            let upcomingCount = 0;
+            let historyCount = 0;
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            bookings.forEach(b => {
+                const start = new Date(b.start_date);
+                const end = new Date(b.end_date);
+                
+                // Determine category
+                let category = 'history'; // default
+                
+                if (b.status === 'Confirmed') {
+                    if (start <= today && end >= today) {
+                        category = 'active';
+                    } else if (start > today) {
+                        category = 'upcoming';
+                    } else {
+                        category = 'history';
+                    }
+                } else if (b.status === 'Pending' && start >= today) {
+                    category = 'upcoming';
+                }
+
+                const statusColor = b.status === 'Confirmed' ? 'status-available' : (b.status === 'Pending' ? '' : 'status-booked');
+
+                const itemHTML = `
+                    <div class="booking-item">
+                        <div class="booking-details">
+                            <h4>${b.brand} ${b.model} (${b.plate_number})</h4>
+                            <p><strong>Dates:</strong> ${new Date(b.start_date).toLocaleDateString()} to ${new Date(b.end_date).toLocaleDateString()}</p>
+                            ${b.addons ? `<p><strong>Extras:</strong> ${b.addons}</p>` : ''}
+                            <p><strong>Rental Type:</strong> ${b.rental_type}</p>
+                            <p><strong>Pickup:</strong> ${b.pickup_location}</p>
+                            <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                <span>Breakdown: Base ₱${parseFloat(b.base_price).toFixed(2)} + Extras ₱${parseFloat(b.addon_price).toFixed(2)} + Tax/Fees</span>
+                            </div>
+                        </div>
+                        <div class="booking-meta">
+                            <span class="price">₱${parseFloat(b.total_price).toFixed(2)}</span>
+                            <span class="status-badge ${statusColor}" style="background: ${b.status==='Pending'?'#fef3c7':''}; color: ${b.status==='Pending'?'#d97706':''}">${b.status}</span>
+                            
+                            <div style="margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                                ${b.status === 'Pending' ? `
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <button onclick="resumeBookingPayment(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Pay Now</button>
+                                        <button onclick="openCancelModal(${b.id})" class="btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel</button>
+                                    </div>
+                                ` : ''}
+
+                                ${b.status === 'Active' ? `
+                                    <button onclick="location.href='track.html?id=${b.id}'" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--accent-color); color: #fff;">Track Vehicle</button>
+                                ` : ''}
+
+                                ${b.status === 'Confirmed' ? `
+                                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
+                                        ${b.payment_status === 'Partially Paid' ? `
+                                            <button onclick="payBalance(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--primary-color); color: #fff;">Pay Balance (₱${parseFloat(b.balance_amount || 0).toFixed(2)})</button>
+                                        ` : ''}
+                                        <button onclick="downloadReceipt(${b.id})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #6366f1; color: #fff;">Download Receipt</button>
+                                        <button onclick="openCancelModal(${b.id})" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel Booking</button>
+                                    </div>
+                                ` : ''}
+
+                                ${(b.status === 'Confirmed' || b.status === 'Pending') && category === 'upcoming' ? `
+                                    <button onclick="openRescheduleModal(${b.id}, '${b.start_date}', '${b.end_date}')" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Modify Dates</button>
+                                ` : ''}
+
+                                ${b.status === 'Confirmed' && category === 'history' ? `
+                                    <button onclick="openReviewModal(${b.id}, ${b.vehicle_id})" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: var(--success); color: var(--success);">Rate & Review</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (category === 'active') {
+                    activeList.insertAdjacentHTML('beforeend', itemHTML);
+                    activeCount++;
+                } else if (category === 'upcoming') {
+                    upcomingList.insertAdjacentHTML('beforeend', itemHTML);
+                    upcomingCount++;
+                } else {
+                    historyList.insertAdjacentHTML('beforeend', itemHTML);
+                    historyCount++;
+                }
+            });
+
+            if (activeCount === 0) activeList.innerHTML = '<div class="empty-state">No active rentals right now.</div>';
+            if (upcomingCount === 0) upcomingList.innerHTML = '<div class="empty-state">No upcoming bookings. <br><a href="vehicles.html" style="color:var(--primary-color);">Book a vehicle</a></div>';
+            if (historyCount === 0) historyList.innerHTML = '<div class="empty-state">No past booking history found.</div>';
+        }
+        
+        function renderSplitBills(splits) {
+            const splitList = document.getElementById('splitBillList');
+            const splitSection = document.getElementById('splitBillSection');
+            
+            if (!splits || splits.length === 0) {
+                splitSection.style.display = 'none'; // Hide if no splits
+                return;
+            }
+            
+            splitSection.style.display = 'block';
+            splitList.innerHTML = '';
+            
+            splits.forEach(sp => {
+                const isPaid = sp.status === 'Paid';
+                const itemHTML = `
+                    <div class="booking-item" style="border-left: 4px solid var(--primary-color);">
+                        <div class="booking-details">
+                            <h4>Split Request from ${sp.initiator_name}</h4>
+                            <p><strong>Vehicle:</strong> ${sp.brand} ${sp.model}</p>
+                            <p><strong>Dates:</strong> ${new Date(sp.start_date).toLocaleDateString()} to ${new Date(sp.end_date).toLocaleDateString()}</p>
+                        </div>
+                        <div class="booking-meta">
+                            <span class="price">₱${parseFloat(sp.amount).toFixed(2)}</span>
+                            <span class="status-badge" style="background: ${isPaid ? '#dcfce7' : '#fef3c7'}; color: ${isPaid ? '#16a34a' : '#d97706'}">${sp.status}</span>
+                            
+                            ${!isPaid ? `
+                            <div style="margin-top: 0.8rem; display: flex; flex-direction: column; align-items: flex-end;">
+                                <button onclick="paySplitBill(${sp.split_id}, ${sp.amount})" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Pay Your Share</button>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                splitList.insertAdjacentHTML('beforeend', itemHTML);
+            });
+        }
+        
+        function resumeBookingPayment(b) {
+            // Prepare for Checkout
+            const resumeData = {
+                existing_booking_id: b.id,
+                vehicle_id: b.vehicle_id,
+                brand: b.brand,
+                model: b.model,
+                start_date: b.start_date,
+                end_date: b.end_date,
+                total_price: b.total_price,
+                base_price: b.base_price,
+                addon_price: b.addon_price,
+                tax_amount: b.tax_amount,
+                service_fee: b.service_fee,
+                paying_balance: false,
+                days: Math.ceil(Math.abs(new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24)) + 1
+            };
+            sessionStorage.setItem('pending_booking', JSON.stringify(resumeData));
+            window.location.href = 'checkout.html';
+        }
+
+        function payBalance(b) {
+            const resumeData = {
+                existing_booking_id: b.id,
+                vehicle_id: b.vehicle_id,
+                brand: b.brand,
+                model: b.model,
+                start_date: b.start_date,
+                end_date: b.end_date,
+                total_price: b.total_price,
+                base_price: b.base_price,
+                addon_price: b.addon_price,
+                balance_amount: b.balance_amount,
+                paying_balance: true,
+                days: Math.ceil(Math.abs(new Date(b.end_date) - new Date(b.start_date)) / (1000 * 60 * 60 * 24)) + 1
+            };
+            sessionStorage.setItem('pending_booking', JSON.stringify(resumeData));
+            window.location.href = 'checkout.html';
+        }
+
+        function paySplitBill(splitId, amount) {
+            alert('Split billing payments should be completed through the shared link or by contacting support. This feature is being unified.');
+        }
+
+        function setPaymentData(id, amount) {
+            // Deprecated in favor of resumeBookingPayment
+        }
+
+        // Modal Logic
+        function openRescheduleModal(id, start, end) {
+            document.getElementById('res_booking_id').value = id;
+            document.getElementById('res_start_date').value = start.split('T')[0];
+            document.getElementById('res_end_date').value = end.split('T')[0];
+            document.getElementById('rescheduleModal').style.display = 'flex';
+        }
+
+        function openCancelModal(bookingId) {
+            document.getElementById('can_booking_id').value = bookingId;
+            document.getElementById('cancelModal').style.display = 'flex';
+        }
+
+        function openReviewModal(bookingId, vehicleId) {
+            document.getElementById('rev_booking_id').value = bookingId;
+            document.getElementById('rev_vehicle_id').value = vehicleId;
+            document.getElementById('reviewModal').style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // Star Rating Selection
+        document.querySelectorAll('.star-input').forEach(star => {
+            star.addEventListener('click', () => {
+                const val = parseInt(star.getAttribute('data-value'));
+                document.getElementById('ratingValue').value = val;
+                
+                document.querySelectorAll('.star-input').forEach(s => {
+                    const sVal = parseInt(s.getAttribute('data-value'));
+                    if (sVal <= val) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+            });
+        });
+        // Set initial stars
+        document.querySelector('.star-input[data-value="5"]').click();
+
+        // Submit Actions
+        document.getElementById('rescheduleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                booking_id: document.getElementById('res_booking_id').value,
+                start_date: document.getElementById('res_start_date').value,
+                end_date: document.getElementById('res_end_date').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/modify-booking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    alert('Booking dates modified successfully!');
+                    closeModal('rescheduleModal');
+                    fetchDashboard();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Failed to modify booking');
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        });
+
+        document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                user_id: userId,
+                vehicle_id: document.getElementById('rev_vehicle_id').value,
+                booking_id: document.getElementById('rev_booking_id').value,
+                rating: parseInt(document.getElementById('ratingValue').value),
+                comment: document.getElementById('reviewComment').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    alert('Review submitted! Thank you.');
+                    closeModal('reviewModal');
+                    fetchDashboard();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Failed to submit review');
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        });
+
+        document.getElementById('cancelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('can_booking_id').value;
+            const reason = document.getElementById('cancelReason').value;
+            
+            if (!confirm('Are you ABSOLUTELY sure you want to cancel this booking? This action cannot be undone.')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/bookings/${id}/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        user_id: userId,
+                        reason: reason
+                    })
+                });
+                if (response.ok) {
+                    alert('Booking cancelled successfully.');
+                    closeModal('cancelModal');
+                    fetchDashboard();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Failed to cancel');
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        });
+
+        async function downloadReceipt(id) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = 'Generating...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/bookings/${id}/receipt`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `Autoride_Receipt_${id}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    alert('Failed to generate receipt. Please try again.');
+                }
+            } catch (err) {
+                alert('Connection error while downloading receipt.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Initialize
+        fetchDashboard();
+        subscribeToUpdates();
+    </script>
+    <script src="chat.js"></script>
+</body>
+</html>

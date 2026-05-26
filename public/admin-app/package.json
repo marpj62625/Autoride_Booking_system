@@ -1,0 +1,22 @@
+{
+  "name": "autoride-admin-app",
+  "version": "1.0.0",
+  "description": "Autoride Admin Panel Web Application",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
+  },
+  "keywords": ["admin", "panel", "autoride"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitest/ui": "^1.6.0",
+    "fast-check": "^3.19.0",
+    "jsdom": "^24.0.0",
+    "vitest": "^1.6.0"
+  }
+}

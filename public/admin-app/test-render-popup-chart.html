@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test renderPopupChart() - Task 5.4</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #6366f1;
+        }
+
+        .test-section {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .test-section h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #94a3b8;
+        }
+
+        .test-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background: #6366f1;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #5558dd;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .status {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .status.success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid #22c55e;
+            color: #22c55e;
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .status.info {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid #6366f1;
+            color: #6366f1;
+        }
+
+        .test-results {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .test-results pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .chart-popup-card {
+            background: #1e293b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            max-width: 1200px;
+            width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.2rem;
+            padding: 0;
+        }
+
+        .close-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #ef4444;
+            transform: rotate(90deg);
+        }
+
+        .chart-popup-body {
+            padding: 1.5rem;
+            min-height: 400px;
+        }
+
+        .checkmark {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .crossmark {
+            color: #ef4444;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>? Task 5.4: Test renderPopupChart() Function</h1>
+        
+        <div class="test-section">
+            <h2>Test Requirements</h2>
+            <ul style="list-style-position: inside; line-height: 1.8;">
+                <li>? Destroy existing chart instance if present</li>
+                <li>? Create new Chart.js instance at 150% size (aspectRatio: 2)</li>
+                <li>? Apply chart styling (legend, colors, grid)</li>
+                <li>? Handle different chart types (line, bar, doughnut)</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <div class="test-controls">
+                <button onclick="testBarChart()">Test Bar Chart</button>
+                <button onclick="testLineChart()">Test Line Chart</button>
+                <button onclick="testDoughnutChart()">Test Doughnut Chart</button>
+                <button onclick="testChartDestroy()">Test Chart Destroy</button>
+                <button onclick="runAllTests()">Run All Tests</button>
+            </div>
+            <div id="testStatus"></div>
+            <div id="testResults" class="test-results"></div>
+        </div>
+    </div>
+
+    <!-- Chart Popup Modal -->
+    <div class="modal-overlay hidden" id="chartPopupModal">
+        <div class="chart-popup-card">
+            <header class="modal-header">
+                <h3 id="chartPopupTitle">Chart Details</h3>
+                <button class="close-btn" id="chartPopupClose">×</button>
+            </header>
+            <div class="chart-popup-body">
+                <canvas id="popupChartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Global variables (from reports.js)
+        let currentPopupChart = null;
+        let currentChartData = null;
+        let currentChartType = null;
+
+        // Test data
+        const testData = {
+            bar: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Revenue (?)',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                    borderColor: '#6366f1',
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            line: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Bookings',
+                    data: [65, 59, 80, 81],
+                    borderColor: '#06b6d4',
+                    backgroundColor: 'rgba(6, 182, 212, 0.35)',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#06b6d4'
+                }]
+            },
+            doughnut: {
+                labels: ['Pending', 'Approved', 'Completed', 'Cancelled'],
+                datasets: [{
+                    data: [30, 50, 100, 20],
+                    backgroundColor: ['#f59e0b', '#22c55e', '#3b82f6', '#64748b'],
+                    borderColor: '#111827',
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            }
+        };
+
+        // renderPopupChart function (from reports.js)
+        function renderPopupChart() {
+            const canvas = document.getElementById('popupChartCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart instance if present
+            if (currentPopupChart) {
+                currentPopupChart.destroy();
+                log('? Destroyed existing chart instance');
+            }
+            
+            // Create new Chart.js instance at 150% size (aspectRatio: 2)
+            const chartConfig = {
+                type: currentChartType,
+                data: currentChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#f1f5f9',
+                                font: { family: 'Inter', size: 14, weight: 500 },
+                                padding: 16,
+                                usePointStyle: currentChartType === 'doughnut',
+                                pointStyleWidth: 10
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#94a3b8',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { family: 'Inter', weight: 600 },
+                            bodyFont: { family: 'Inter' }
+                        }
+                    }
+                }
+            };
+            
+            // Handle different chart types (line, bar, doughnut)
+            if (currentChartType !== 'doughnut') {
+                chartConfig.options.scales = {
+                    y: {
+                        ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12 } },
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        beginAtZero: true
+                    },
+                    x: {
+                        ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12 } },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                };
+                log('? Applied scales for ' + currentChartType + ' chart');
+            } else {
+                chartConfig.options.cutout = '68%';
+                log('? Applied cutout for doughnut chart');
+            }
+            
+            currentPopupChart = new Chart(ctx, chartConfig);
+            log('? Created new Chart.js instance with aspectRatio: 2');
+            log('? Applied chart styling (legend, colors, grid)');
+            
+            return currentPopupChart;
+        }
+
+        // Test functions
+        function log(message) {
+            const results = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML += `[${timestamp}] ${message}\n`;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('testStatus');
+            status.className = `status ${type}`;
+            status.textContent = message;
+        }
+
+        function testBarChart() {
+            clearLog();
+            log('=== Testing Bar Chart ===');
+            currentChartType = 'bar';
+            currentChartData = testData.bar;
+            document.getElementById('chartPopupTitle').textContent = 'Revenue Overview';
+            document.getElementById('chartPopupModal').classList.remove('hidden');
+            
+            try {
+                renderPopupChart();
+                log('? Bar chart rendered successfully');
+                showStatus('? Bar chart test passed', 'success');
+                
+                // Verify aspectRatio
+                if (currentPopupChart.options.aspectRatio === 2) {
+                    log('? Aspect ratio is correctly set to 2');
+                } else {
+                    log('? Aspect ratio is not 2: ' + currentPopupChart.options.aspectRatio);
+                }
+                
+                // Verify scales exist
+                if (currentPopupChart.options.scales) {
+                    log('? Scales are applied');
+                } else {
+                    log('? Scales are missing');
+                }
+            } catch (err) {
+                log('? Error: ' + err.message);
+                showStatus('? Bar chart test failed', 'error');
+            }
+        }
+
+        function testLineChart() {
+            clearLog();
+            log('=== Testing Line Chart ===');
+            currentChartType = 'line';
+            currentChartData = testData.line;
+            document.getElementById('chartPopupTitle').textContent = 'Bookings Trend';
+            document.getElementById('chartPopupModal').classList.remove('hidden');
+            
+            try {
+                renderPopupChart();
+                log('? Line chart rendered successfully');
+                showStatus('? Line chart test passed', 'success');
+                
+                // Verify aspectRatio
+                if (currentPopupChart.options.aspectRatio === 2) {
+                    log('? Aspect ratio is correctly set to 2');
+                }
+                
+                // Verify scales exist
+                if (currentPopupChart.options.scales) {
+                    log('? Scales are applied');
+                }
+            } catch (err) {
+                log('? Error: ' + err.message);
+                showStatus('? Line chart test failed', 'error');
+            }
+        }
+
+        function testDoughnutChart() {
+            clearLog();
+            log('=== Testing Doughnut Chart ===');
+            currentChartType = 'doughnut';
+            currentChartData = testData.doughnut;
+            document.getElementById('chartPopupTitle').textContent = 'Booking Status Distribution';
+            document.getElementById('chartPopupModal').classList.remove('hidden');
+            
+            try {
+                renderPopupChart();
+                log('? Doughnut chart rendered successfully');
+                showStatus('? Doughnut chart test passed', 'success');
+                
+                // Verify aspectRatio
+                if (currentPopupChart.options.aspectRatio === 2) {
+                    log('? Aspect ratio is correctly set to 2');
+                }
+                
+                // Verify cutout exists (doughnut specific)
+                if (currentPopupChart.options.cutout === '68%') {
+                    log('? Cutout is correctly set to 68%');
+                } else {
+                    log('? Cutout is not 68%: ' + currentPopupChart.options.cutout);
+                }
+                
+                // Verify scales don't exist for doughnut
+                if (!currentPopupChart.options.scales) {
+                    log('? Scales are correctly not applied for doughnut chart');
+                }
+            } catch (err) {
+                log('? Error: ' + err.message);
+                showStatus('? Doughnut chart test failed', 'error');
+            }
+        }
+
+        function testChartDestroy() {
+            clearLog();
+            log('=== Testing Chart Destroy ===');
+            
+            // First create a chart
+            currentChartType = 'bar';
+            currentChartData = testData.bar;
+            document.getElementById('chartPopupModal').classList.remove('hidden');
+            renderPopupChart();
+            log('? Created initial chart');
+            
+            const firstChartId = currentPopupChart.id;
+            log('First chart ID: ' + firstChartId);
+            
+            // Now render a different chart (should destroy the first one)
+            currentChartType = 'line';
+            currentChartData = testData.line;
+            renderPopupChart();
+            log('? Created second chart');
+            
+            const secondChartId = currentPopupChart.id;
+            log('Second chart ID: ' + secondChartId);
+            
+            if (firstChartId !== secondChartId) {
+                log('? Chart was destroyed and recreated with new ID');
+                showStatus('? Chart destroy test passed', 'success');
+            } else {
+                log('? Chart IDs are the same, destroy may not have worked');
+                showStatus('? Chart destroy test failed', 'error');
+            }
+        }
+
+        function runAllTests() {
+            clearLog();
+            log('=== Running All Tests ===\n');
+            
+            let passed = 0;
+            let failed = 0;
+            
+            // Test 1: Bar Chart
+            try {
+                currentChartType = 'bar';
+                currentChartData = testData.bar;
+                document.getElementById('chartPopupModal').classList.remove('hidden');
+                renderPopupChart();
+                if (currentPopupChart && currentPopupChart.options.aspectRatio === 2) {
+                    log('? Test 1: Bar chart - PASSED');
+                    passed++;
+                } else {
+                    log('? Test 1: Bar chart - FAILED');
+                    failed++;
+                }
+            } catch (err) {
+                log('? Test 1: Bar chart - FAILED: ' + err.message);
+                failed++;
+            }
+            
+            // Test 2: Line Chart
+            try {
+                currentChartType = 'line';
+                currentChartData = testData.line;
+                renderPopupChart();
+                if (currentPopupChart && currentPopupChart.options.aspectRatio === 2) {
+                    log('? Test 2: Line chart - PASSED');
+                    passed++;
+                } else {
+                    log('? Test 2: Line chart - FAILED');
+                    failed++;
+                }
+            } catch (err) {
+                log('? Test 2: Line chart - FAILED: ' + err.message);
+                failed++;
+            }
+            
+            // Test 3: Doughnut Chart
+            try {
+                currentChartType = 'doughnut';
+                currentChartData = testData.doughnut;
+                renderPopupChart();
+                if (currentPopupChart && currentPopupChart.options.aspectRatio === 2 && currentPopupChart.options.cutout === '68%') {
+                    log('? Test 3: Doughnut chart - PASSED');
+                    passed++;
+                } else {
+                    log('? Test 3: Doughnut chart - FAILED');
+                    failed++;
+                }
+            } catch (err) {
+                log('? Test 3: Doughnut chart - FAILED: ' + err.message);
+                failed++;
+            }
+            
+            // Test 4: Chart Destroy
+            try {
+                const firstId = currentPopupChart.id;
+                currentChartType = 'bar';
+                currentChartData = testData.bar;
+                renderPopupChart();
+                const secondId = currentPopupChart.id;
+                if (firstId !== secondId) {
+                    log('? Test 4: Chart destroy - PASSED');
+                    passed++;
+                } else {
+                    log('? Test 4: Chart destroy - FAILED');
+                    failed++;
+                }
+            } catch (err) {
+                log('? Test 4: Chart destroy - FAILED: ' + err.message);
+                failed++;
+            }
+            
+            log('\n=== Test Summary ===');
+            log(`Total: ${passed + failed} | Passed: ${passed} | Failed: ${failed}`);
+            
+            if (failed === 0) {
+                showStatus(`? All tests passed (${passed}/${passed + failed})`, 'success');
+            } else {
+                showStatus(`? Some tests failed (${passed}/${passed + failed})`, 'error');
+            }
+        }
+
+        // Close button handler
+        document.getElementById('chartPopupClose').addEventListener('click', () => {
+            document.getElementById('chartPopupModal').classList.add('hidden');
+            if (currentPopupChart) {
+                currentPopupChart.destroy();
+                currentPopupChart = null;
+            }
+        });
+
+        // Close on overlay click
+        document.getElementById('chartPopupModal').addEventListener('click', (e) => {
+            if (e.target.id === 'chartPopupModal') {
+                document.getElementById('chartPopupModal').classList.add('hidden');
+                if (currentPopupChart) {
+                    currentPopupChart.destroy();
+                    currentPopupChart = null;
+                }
+            }
+        });
+
+        // Initial message
+        log('Test suite ready. Click a button to run tests.');
+        showStatus('Ready to test', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <script src="config.js"></script>
+    <style>
+        .profile-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        @media (max-width: 768px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+            .profile-sidebar, .profile-main {
+                padding: 1.5rem;
+            }
+            .avatar-placeholder {
+                width: 80px;
+                height: 80px;
+                font-size: 2rem;
+            }
+        }
+        .profile-main {
+            background: var(--surface-color);
+            padding: 2.5rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-premium);
+        }
+        .avatar-placeholder {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+        .status-verified { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-pending { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
+        .status-unverified { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); }
+        
+        .verify-box {
+            background: rgba(99, 102, 241, 0.03);
+            border: 1px dashed var(--primary-color);
+            padding: 2rem;
+            border-radius: var(--radius);
+            margin-bottom: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .verify-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <a href="vehicles.html">Browse Vehicles</a>
+            <a href="dashboard.html">My Bookings</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="profile-container">
+            <aside class="profile-sidebar">
+                <div class="avatar-placeholder" id="avatarInitials">U</div>
+                <h3 id="profileName" style="font-size: 1.5rem; margin-bottom: 0.25rem;">User Name</h3>
+                <p id="profileEmail" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;"></p>
+                <div id="statusContainer"></div>
+                
+                <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--border-color); text-align: left;">
+                    <p style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem;">Loyalty Program</p>
+                    <div style="display: flex; align-items: baseline; gap: 8px;">
+                        <span style="font-size: 2rem; font-weight: 800; color: var(--primary-color);" id="loyaltyPoints">0</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Points</span>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="profile-main">
+                <div id="verificationSection" style="display:none;" class="verify-box">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1rem;">
+                        <svg width="24" height="24" fill="none" stroke="var(--primary-color)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        <h3 style="margin: 0; color: var(--text-main);">Verify Your Account</h3>
+                    </div>
+                    <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1.5rem;">Please upload a clear photo of your <strong>Driver's License</strong>. This is a one-time process to enable faster bookings and secure your rentals.</p>
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <input type="file" id="licenseInput" class="form-input" accept="image/*" style="flex: 1; padding: 10px;">
+                        <button class="btn" id="uploadBtn" style="width: auto; padding: 0.85rem 2rem;" onclick="uploadLicense()">Upload ID</button>
+                    </div>
+                </div>
+
+                <div id="pendingSection" style="display:none;" class="verify-box" style="border-color: #fbbf24; background: rgba(251, 191, 36, 0.03);">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem;">
+                        <svg width="24" height="24" fill="none" stroke="#fbbf24" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <h3 style="margin: 0; color: #fbbf24;">Verification Pending</h3>
+                    </div>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">We are currently reviewing your Driver's License. You will be notified once your account is verified.</p>
+                </div>
+
+                <h3 style="font-size: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Account Settings
+                </h3>
+                
+                <form id="profileForm">
+                    <div class="profile-form-grid">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="editName" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="text" id="editPhone" class="form-input" placeholder="09XX XXX XXXX">
+                        </div>
+                    </div>
+                    <style>
+                        .profile-form-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 20px;
+                        }
+                        @media (max-width: 600px) {
+                            .profile-form-grid {
+                                grid-template-columns: 1fr;
+                                gap: 10px;
+                            }
+                        }
+                    </style>
+                    <div class="form-group" style="margin-top: 10px;">
+                        <label>Email Address</label>
+                        <input type="email" id="editEmail" class="form-input" readonly style="opacity: 0.6; cursor: not-allowed;">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">Email cannot be changed.</p>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="width: auto; padding: 0.85rem 3rem; margin-top: 1rem;">Save Changes</button>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('user_id');
+        if (!userId) window.location.href = 'login.html';
+
+        // Ensure API_BASE is available globally
+        if (typeof window.API_BASE === 'undefined') {
+            window.API_BASE = window.location.origin;
+        }
+
+        async function fetchProfile() {
+            try {
+                const res = await fetch(`${API_BASE}/api/user/verify-status?user_id=${userId}`);
+                const data = await res.json();
+                
+                if (res.ok) {
+                    const fullName = localStorage.getItem('full_name') || 'User';
+                    document.getElementById('profileName').textContent = fullName;
+                    document.getElementById('profileEmail').textContent = data.email || '';
+                    document.getElementById('editName').value = fullName;
+                    document.getElementById('editEmail').value = data.email || '';
+                    document.getElementById('avatarInitials').textContent = fullName.charAt(0).toUpperCase();
+                    
+                    renderStatus(data.is_verified);
+                }
+            } catch (err) { console.error('Profile fetch error:', err); }
+        }
+
+        function renderStatus(status) {
+            const container = document.getElementById('statusContainer');
+            const verifySec = document.getElementById('verificationSection');
+            const pendingSec = document.getElementById('pendingSection');
+            
+            if (status === 0) {
+                container.innerHTML = '<span class="status-badge status-unverified">Not Verified</span>';
+                verifySec.style.display = 'block';
+                pendingSec.style.display = 'none';
+            } else if (status === 1) {
+                container.innerHTML = '<span class="status-badge status-pending">Verification Pending</span>';
+                verifySec.style.display = 'none';
+                pendingSec.style.display = 'block';
+            } else if (status === 2) {
+                container.innerHTML = '<span class="status-badge status-verified">Verified Account</span>';
+                verifySec.style.display = 'none';
+                pendingSec.style.display = 'none';
+            }
+        }
+
+        async function uploadLicense() {
+            const input = document.getElementById('licenseInput');
+            const file = input.files[0];
+            if (!file) return alert('Please select a photo of your Driver\'s License first.');
+
+            const btn = document.getElementById('uploadBtn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Uploading...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('license', file);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/upload-license`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.ok) {
+                    alert('✅ ID Uploaded Successfully!\n\nOur team will review your Driver\'s License. You will be verified shortly.');
+                    location.reload();
+                } else {
+                    const d = await res.json();
+                    alert('❌ Upload Failed: ' + (d.error || 'Server error'));
+                }
+            } catch (err) { alert('🚨 Network Error. Please check your connection.'); }
+            
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+
+        document.getElementById('logoutBtn').onclick = (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        };
+
+        // Initialize
+        fetchProfile();
+    </script>
+    <script src="chat.js"></script>
+</body>
+</html>
