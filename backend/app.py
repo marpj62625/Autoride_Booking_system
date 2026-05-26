@@ -5542,7 +5542,7 @@ def get_detailed_stats():
         
         # 2. Daily Revenue (Last 30 days)
         trend_query = """
-            SELECT TO_CHAR(b.start_date, 'YYYY-MM-DD') as day, SUM(b.total_price) as amount
+            SELECT TO_CHAR(b.start_date, 'YYYY-MM-DD') as day, SUM(b.total_price) as amount, COUNT(b.id) as booking_count
             FROM bookings b
             JOIN vehicles v ON b.vehicle_id = v.id
             WHERE b.start_date >= CURRENT_DATE - INTERVAL '30 days' AND b.status != 'Cancelled'
