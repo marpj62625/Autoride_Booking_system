@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -3924,7 +3924,7 @@
 
             try {
                 // Fetch past bookings from API
-                const res = await fetch(`${API_BASE}/bookings/past?page=${this.currentPage}&page_size=${this.pageSize}&sort_by=${this.sortBy}`);
+                const res = await fetch(`${API_BASE}/api/bookings/past?page=${this.currentPage}&page_size=${this.pageSize}&sort_by=${this.sortBy}`);
                 
                 if (!res.ok) {
                     throw new Error(`Server error: ${res.status}`);

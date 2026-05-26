@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Autoride Admin — Booking Management JS
    Handles fetching, filtering, approving, and rejecting bookings
    ============================================================ */
@@ -953,7 +953,7 @@ async function loadPastBookings() {
             sort_by: pastSortBy
         });
         
-        const res = await fetch(`${API_BASE}/bookings/past?${params}`);
+        const res = await fetch(`${API_BASE}/api/bookings/past?${params}`);
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         
         const data = await res.json();
