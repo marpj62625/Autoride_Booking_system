@@ -1080,7 +1080,7 @@ function renderVehicles(list) {
     var mEnc = encodeURIComponent(v.model);
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\\'https://via.placeholder.com/400x200?text=No+Image\'">' +
       '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
@@ -1182,7 +1182,7 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
       if (plateEl) plateEl.textContent = unit.plate_number || 'N/A';
       if (imgWrap) {
         var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
-        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'" style="width:100%;height:100%;object-fit:cover;">';
+        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\\'https://via.placeholder.com/400x200?text=No+Image\'" style="width:100%;height:100%;object-fit:cover;">';
       }
       if (bookBtn) {
         var canBook = parseInt(currentUser.isVerified) === 2;
@@ -1286,7 +1286,7 @@ function renderVehicleUnits(brand, model, color, units) {
     var imgSrc = (v.gallery && v.gallery.length) ? buildImgUrl(v.gallery[0]) : buildImgUrl(v.vehicle_image);
     return '<div class="card" style="margin-bottom:14px;">' +
       '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
-      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/400x180?text=No+Image\'">' +
+      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\\'https://via.placeholder.com/400x180?text=No+Image\'">' +
       '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
       (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
       '</div>' +
@@ -1432,7 +1432,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<div class="card" style="margin-bottom:16px;">' +
         // Gallery image
         '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\\'https://via.placeholder.com/400x200?text=No+Image\'">' +
         '</div>' +
         // Title + status
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
@@ -1618,7 +1618,7 @@ function renderVehicleDetail(v) {
   if (!el) return;
   var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
   var galleryHtml = galleryImgs.map(function(img) {
-    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.src=\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
+    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
   }).join('');
   var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
     return '<div class="review-item"><div class="reviewer">' +
@@ -3255,7 +3255,7 @@ function loadFavorites() {
         '<div class="vehicle-grid" style="padding:16px;">' +
         (data.length ? data.map(function(v) {
           return '<div class="vehicle-card" onclick="openVehicleDetail(' + v.id + ')">' +
-            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.src=\'https://via.placeholder.com/400x200?text=No+Image\'"></div>' +
+            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\\'https://via.placeholder.com/400x200?text=No+Image\'"></div>' +
             '<div class="vehicle-info"><h3>' + v.brand + ' ' + v.model + '</h3>' +
             '<div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
             '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div></div></div>';
@@ -3828,4 +3828,5 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 

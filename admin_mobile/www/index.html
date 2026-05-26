@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1172,7 +1172,7 @@
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="menu-btn" style="width: 34px; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;"><i class="fas fa-times"></i></button>
             </div>
             <div style="border-radius: 12px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; min-height: 200px; border: 1px solid rgba(255,255,255,0.1);">
-                <img id="licensePreviewImg" src="" style="width: 100%; height: auto; display: block;" onerror="this.src='https://via.placeholder.com/400x250?text=Failed+to+load+image'">
+                <img id="licensePreviewImg" src="" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=Failed+to+load+image'">
             </div>
             <div style="margin-top: 20px;">
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="btn-premium" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--primary); border: none; color: white; font-weight: 800;">Close Preview</button>
@@ -5828,4 +5828,5 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
 </script>
 </body>
 </html>
+
 
