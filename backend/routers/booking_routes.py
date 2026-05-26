@@ -271,7 +271,7 @@ def admin_mark_paid(booking_id):
         print(f"ADMIN MARK PAID ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@booking_bp.route('/api/bookings/past', methods=['GET'])
+@booking_bp.route('/bookings/past', methods=['GET'])
 def get_past_bookings():
     """Fetch past/completed bookings with pagination and sorting."""
     try:
