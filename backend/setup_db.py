@@ -63,18 +63,7 @@ def create_tables_and_data():
         """)
         print("Table 'vehicles' created or verified successfully.")
 
-        # Create Drivers table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS drivers(
-                id SERIAL PRIMARY KEY,
-                full_name VARCHAR(100) NOT NULL,
-                license_number VARCHAR(50) NOT NULL UNIQUE,
-                contact_info VARCHAR(120) NOT NULL,
-                status VARCHAR(20) NOT NULL DEFAULT 'Pending',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        print("Table 'drivers' created or verified successfully.")
+
 
         # Create Coupons Table
         cursor.execute("""
@@ -97,7 +86,6 @@ def create_tables_and_data():
                 id SERIAL PRIMARY KEY,
                 user_id INT,
                 vehicle_id INT,
-                driver_id INT,
                 start_date DATE,
                 end_date DATE,
                 pickup_location VARCHAR(100),

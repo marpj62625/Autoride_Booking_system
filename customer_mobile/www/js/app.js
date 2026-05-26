@@ -1,4 +1,4 @@
-/**
+ï»¿/**
  * Autoride Customer Mobile App - Main Application Script
  * utils.js is loaded as a separate script tag before this file
  */
@@ -48,7 +48,7 @@ function getCamera() {
   return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) || null;
 }
 
-// SESSION — expires after 8 hours of inactivity
+// SESSION ï¿½ expires after 8 hours of inactivity
 var SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 var Session = {
@@ -69,7 +69,7 @@ var Session = {
         try {
           var parsed = JSON.parse(raw);
           // Support old format (plain user object without savedAt)
-          if (parsed && parsed.id) return parsed; // old format — no expiry check
+          if (parsed && parsed.id) return parsed; // old format ï¿½ no expiry check
           if (parsed && parsed.user && parsed.savedAt) {
             var age = Date.now() - parsed.savedAt;
             if (age > SESSION_TTL_MS) return null; // expired
@@ -202,7 +202,7 @@ function subscribeToNotifications(userId) {
                                 var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
                                 var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
                                 var v2 = currentUser.isVerified;
-                                statusEl.textContent = statusMap[v2] || '—';
+                                statusEl.textContent = statusMap[v2] || 'ï¿½';
                                 statusEl.style.color = statusColor[v2] || 'var(--text-main)';
                             }
                         }).catch(function() {});
@@ -434,7 +434,7 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
-  // Load theme — default to LIGHT
+  // Load theme ï¿½ default to LIGHT
   var savedTheme = null;
   try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
   if (savedTheme === 'dark') {
@@ -485,10 +485,20 @@ document.addEventListener('DOMContentLoaded', initApp);
 document.addEventListener('deviceready', function() {
   initApp();
   
-  // Initialize Google Auth
+  // Initialize Google Auth with explicit configuration
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-    console.log('Google Auth plugin available');
-    window.Capacitor.Plugins.GoogleAuth.initialize();
+    console.log('Google Auth plugin available - initializing with config');
+    window.Capacitor.Plugins.GoogleAuth.initialize({
+      clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true
+    }).then(function() {
+      console.log('[GoogleAuth] Initialized successfully');
+    }).catch(function(err) {
+      console.error('[GoogleAuth] Initialization error:', err);
+    });
+  } else {
+    console.warn('[GoogleAuth] Plugin not available');
   }
 });
 
@@ -535,7 +545,7 @@ function handleBackButton() {
     return;
   }
 
-  // 3. On auth pages — do nothing (can't go back from login/register)
+  // 3. On auth pages ï¿½ do nothing (can't go back from login/register)
   var authPages = document.querySelectorAll('.auth-page.active');
   if (authPages.length > 0) {
     // On register/otp pages, go back to login
@@ -543,7 +553,7 @@ function handleBackButton() {
     if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify' || activeAuth.id === 'page-phone-login') {
       showPage('page-login');
     }
-    // On login page itself — double-back to exit
+    // On login page itself ï¿½ double-back to exit
     else {
       if (_backPressedOnce) {
         clearTimeout(_backPressTimer);
@@ -559,7 +569,7 @@ function handleBackButton() {
     return;
   }
 
-  // 4. On main pages — double-back to exit (with logout)
+  // 4. On main pages ï¿½ double-back to exit (with logout)
   if (_backPressedOnce) {
     clearTimeout(_backPressTimer);
     // Logout then exit
@@ -577,7 +587,7 @@ function handleBackButton() {
   }
 }
 
-// Register back button — always register immediately, also re-register on deviceready
+// Register back button ï¿½ always register immediately, also re-register on deviceready
 (function() {
   function _backListener(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -595,7 +605,7 @@ function handleBackButton() {
       window.Capacitor.Plugins.App.addListener('backButton', function() {
         handleBackButton();
       });
-      // Deep link handler — fires when PayMongo success page redirects back
+      // Deep link handler ï¿½ fires when PayMongo success page redirects back
       window.Capacitor.Plugins.App.addListener('appUrlOpen', function(event) {
         var url = event.url || '';
         // com.autoride.customer://payment-success?booking_id=123
@@ -662,7 +672,10 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
+  console.log('[doGoogleLogin] Starting Google Sign-In...');
+  
   if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.GoogleAuth) {
+    console.error('[doGoogleLogin] Google Auth plugin not available');
     showToast('Google Sign-In is only available in the mobile app', 'info');
     return;
   }
@@ -670,13 +683,39 @@ function doGoogleLogin() {
   showLoading(true);
   const GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
   
+  console.log('[doGoogleLogin] Calling GoogleAuth.signIn()...');
   GoogleAuth.signIn()
     .then(function(result) {
-      console.log('Google Sign-In success:', result);
-      var googleUser = result.authentication || result;
-      var idToken = googleUser.idToken;
+      console.log('[doGoogleLogin] Google Sign-In success - Full result:', JSON.stringify(result));
+      console.log('[doGoogleLogin] result.authentication:', JSON.stringify(result.authentication));
+      console.log('[doGoogleLogin] result.idToken:', result.idToken);
+      console.log('[doGoogleLogin] result.credential:', result.credential);
+      
+      // Extract token - try different possible locations
+      var idToken = null;
+      if (result.authentication && result.authentication.idToken) {
+        idToken = result.authentication.idToken;
+        console.log('[doGoogleLogin] ? Token from result.authentication.idToken');
+      } else if (result.idToken) {
+        idToken = result.idToken;
+        console.log('[doGoogleLogin] ? Token from result.idToken');
+      } else if (result.credential) {
+        idToken = result.credential;
+        console.log('[doGoogleLogin] ? Token from result.credential');
+      } else if (result.serverAuthCode) {
+        idToken = result.serverAuthCode;
+        console.log('[doGoogleLogin] ? Token from result.serverAuthCode');
+      }
+      
       var email = result.email;
-      var name = result.name || result.givenName + ' ' + result.familyName;
+      var name = result.name || result.displayName || (result.givenName && result.familyName ? result.givenName + ' ' + result.familyName : 'User');
+      
+      console.log('[doGoogleLogin] Extracted - email:', email, 'name:', name, 'hasToken:', !!idToken, 'tokenLength:', idToken ? idToken.length : 0);
+      
+      if (!idToken) {
+        console.error('[doGoogleLogin] ? No ID token found in result! Available keys:', Object.keys(result));
+        throw new Error('No ID token received from Google');
+      }
       
       // Send to backend for verification and user creation/login
       return apiCall('/auth/google', {
@@ -689,22 +728,32 @@ function doGoogleLogin() {
       });
     })
     .then(function(data) {
+      console.log('[doGoogleLogin] Backend response:', JSON.stringify(data));
       if (data && data.user) {
+        console.log('[doGoogleLogin] ? User data received:', data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         currentUser = data.user;
+        console.log('[doGoogleLogin] ? User saved to localStorage and currentUser');
         showToast('Welcome, ' + currentUser.fullName + '!', 'success');
+        console.log('[doGoogleLogin] ? Toast shown, closing overlay...');
         closeOverlay('page-login');
+        console.log('[doGoogleLogin] ? Overlay closed, loading home...');
         loadHome();
+        console.log('[doGoogleLogin] ? loadHome() called');
+        showPage('page-home');
+        console.log('[doGoogleLogin] ? showPage(page-home) called - SUCCESS!');
       } else {
+        console.error('[doGoogleLogin] No user data in response');
         showToast('Login failed. Please try again.', 'error');
       }
     })
     .catch(function(err) {
-      console.error('Google Sign-In error:', err);
+      console.error('[doGoogleLogin] Error:', err);
+      console.error('[doGoogleLogin] Error details:', JSON.stringify(err));
       if (err.message && err.message.includes('cancel')) {
         showToast('Sign-in cancelled', 'info');
       } else {
-        showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+        showToast('Google Sign-In failed: ' + (err.message || err.error || 'Unknown error'), 'error');
       }
     })
     .finally(function() {
@@ -871,7 +920,7 @@ function _startActiveBookingCountdown(endDateStr) {
     if (result.urgent && !_activeBookingNotified) {
       _activeBookingNotified = true;
       showToast('?? Your rental ends in less than 24 hours!', 'error');
-      NotifStore.add('Your rental is ending soon — less than 24 hours remaining.');
+      NotifStore.add('Your rental is ending soon ï¿½ less than 24 hours remaining.');
     }
   }
   tick();
@@ -951,7 +1000,7 @@ function loadHome() {
             '</div>' +
             '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
               '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
-              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:#10b981;">—</div>' +
+              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:#10b981;">ï¿½</div>' +
               '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + _fmtDate(endNorm) + '</strong></div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
@@ -978,36 +1027,7 @@ function loadHome() {
         if (monitor) monitor.style.display = 'none';
         if (_activeBookingTimer) { clearInterval(_activeBookingTimer); _activeBookingTimer = null; }
       }
-
-      // --- Recent bookings list ---
-      var recent = bookings.slice(0, 3);
-      var el = document.getElementById('recentBookings');
-      if (!el) return;
-      if (!recent.length) {
-        el.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings yet</p></div>';
-      } else {
-        var statusColors = {
-          'Pending': '#fbbf24', 'Confirmed': '#34d399', 'Approved': '#34d399',
-          'Picked Up': '#a78bfa', 'Completed': '#a78bfa', 'Cancelled': '#f87171', 'Rejected': '#f87171'
-        };
-        el.innerHTML = recent.map(function(b) {
-          var color = statusColors[b.status] || '#a1a1aa';
-          return '<div style="background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:20px;overflow:hidden;margin-bottom:10px;cursor:pointer;" onclick="openBookingDetail(' + b.id + ')">' +
-            '<div style="height:3px;background:' + color + ';opacity:0.5;"></div>' +
-            '<div style="padding:14px;display:flex;align-items:center;gap:12px;">' +
-            '<div style="width:48px;height:48px;border-radius:14px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '<i class="fas fa-car" style="color:#52525b;font-size:1.1rem;"></i></div>' +
-            '<div style="flex:1;min-width:0;">' +
-            '<div style="font-weight:800;font-size:0.875rem;color:#fff;">' + (b.brand || '') + ' ' + (b.model || '') + '</div>' +
-            '<div style="font-size:0.72rem;color:#52525b;margin-top:2px;">' + b.start_date + ' to ' + b.end_date + '</div>' +
-            '<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;background:' + color + '22;color:' + color + ';">' + b.status + '</span>' +
-            '</div>' +
-            '<div style="text-align:right;flex-shrink:0;">' +
-            '<div style="font-weight:800;font-size:0.875rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
-            '</div></div></div>';
-        }).join('');
-      }
-    }).catch(function() {});
+      }).catch(function() {});
   updateNotifBadge();
 }
 
@@ -1419,7 +1439,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<h4 style="font-weight:800;font-size:1rem;">' + brand + ' ' + model + '</h4>' +
         '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
         '</div>' +
-        // Specs grid — Transmission and Color are dropdowns
+        // Specs grid ï¿½ Transmission and Color are dropdowns
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
 
         // Transmission dropdown
@@ -1480,7 +1500,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
     .finally(function() { showLoading(false); });
 }
 
-// Called when transmission dropdown changes — repopulate colors and update card
+// Called when transmission dropdown changes ï¿½ repopulate colors and update card
 function onVdTransChange() {
   var trans = document.getElementById('vd-trans').value;
   var availUnits = (window._vdUnits || []).filter(function(u) {
@@ -1501,7 +1521,7 @@ function onVdTransChange() {
   onVdColorChange();
 }
 
-// Called when color dropdown changes — update plate, image, book button
+// Called when color dropdown changes ï¿½ update plate, image, book button
 function onVdColorChange() {
   var trans = document.getElementById('vd-trans') ? document.getElementById('vd-trans').value : '';
   var color = document.getElementById('vd-color') ? document.getElementById('vd-color').value : '';
@@ -2130,7 +2150,7 @@ function confirmAndBook() {
     .finally(function() { showLoading(false); });
 }
 
-// PAYMENT — PayMongo Integration
+// PAYMENT ï¿½ PayMongo Integration
 function openPaymentScreen(bookingId, priceResult, payType) {
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
@@ -2264,7 +2284,7 @@ function submitPayment(bookingId, amount) {
   var errEl = document.getElementById('payErr');
   if (errEl) errEl.textContent = '';
 
-  // Cash payment — use existing manual flow
+  // Cash payment ï¿½ use existing manual flow
   if (method === 'cash') {
     var refEl = document.getElementById('payRef');
     var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
@@ -2294,7 +2314,7 @@ function submitPayment(bookingId, amount) {
     return;
   }
 
-  // Online payment — redirect to PayMongo
+  // Online payment ï¿½ redirect to PayMongo
   showLoading(true);
   apiCall('/paymongo/create-payment', {
     method: 'POST',
@@ -2499,7 +2519,7 @@ function renderBookingsList(data) {
     var color = statusColors[b.status] || '#a1a1aa';
     var payColor = b.payment_status === 'Paid' ? '#34d399' : '#f87171';
     var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
-    var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' · ');
+    var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' ï¿½ ');
     var startFmt = formatBookingDate(b.start_date);
     var endFmt = formatBookingDate(b.end_date);
     return '<div style="background:#2a2a2a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;overflow:hidden;margin-bottom:14px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);" onclick="openBookingDetail(' + b.id + ')">' +
@@ -3031,19 +3051,19 @@ function loadProfile() {
         }
       }
 
-      // License detail fields — view mode
+      // License detail fields ï¿½ view mode
       var el = document.getElementById('viewLicenseNumber');
-      if (el) el.textContent = profile.license_number || '—';
+      if (el) el.textContent = profile.license_number || 'ï¿½';
       el = document.getElementById('viewLicenseType');
-      if (el) el.textContent = profile.license_type || '—';
+      if (el) el.textContent = profile.license_type || 'ï¿½';
       el = document.getElementById('viewLicenseExpiry');
-      if (el) el.textContent = profile.license_expiry || '—';
+      if (el) el.textContent = profile.license_expiry || 'ï¿½';
       el = document.getElementById('viewLicenseStatus');
       if (el) {
         var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
         var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
         var v = currentUser.isVerified;
-        el.textContent = statusMap[v] || '—';
+        el.textContent = statusMap[v] || 'ï¿½';
         el.style.color = statusColor[v] || 'var(--text-main)';
       }
 
@@ -3762,7 +3782,7 @@ function showChatPopup(senderName, message) {
   setTimeout(function() { if (banner.parentNode) banner.remove(); }, 5000);
 }
 
-// Background chat polling — checks for new messages even when chat is closed
+// Background chat polling ï¿½ checks for new messages even when chat is closed
 var _bgChatPollTimer = null;
 var _bgChatLastId = 0;
 
@@ -3808,3 +3828,4 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+

@@ -33,7 +33,6 @@ def book_vehicle():
         total_price = data.get('total_price', 0)
 
         # Optional fields
-        driver_id = data.get('driver_id')
         addons = json.dumps(data.get('addons', []))
         insurance_type = data.get('insurance_type', 'Basic')
         insurance_price = data.get('insurance_price', 0)
@@ -74,15 +73,15 @@ def book_vehicle():
         # Insert the booking
         cur.execute("""
             INSERT INTO bookings (
-                user_id, vehicle_id, driver_id, start_date, end_date,
+                user_id, vehicle_id, start_date, end_date,
                 pickup_location, rental_type, addons, insurance_type, insurance_price,
                 base_price, addon_price, total_price, 
                 applied_coupon_id, discount_amount, points_redeemed, points_earned,
                 status, payment_type, amount_paid, balance_amount
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
-            user_id, vehicle_id, driver_id, start_date, end_date,
+            user_id, vehicle_id, start_date, end_date,
             pickup_location, rental_type, addons, insurance_type, insurance_price,
             base_price, addon_price, total_price,
             applied_coupon_id, discount_amount, points_redeemed, points_earned,
@@ -270,4 +269,91 @@ def admin_mark_paid(booking_id):
 
     except Exception as e:
         print(f"ADMIN MARK PAID ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@booking_bp.route('/api/bookings/past', methods=['GET'])
+def get_past_bookings():
+    """Fetch past/completed bookings with pagination and sorting."""
+    try:
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('page_size', 10, type=int)
+        sort_by = request.args.get('sort_by', 'completion_date_desc')
+        
+        # Validate page_size
+        if page_size not in [10, 25, 50, 100]:
+            page_size = 10
+            
+        # Validate page number
+        if page < 1:
+            page = 1
+            
+        # Calculate offset
+        offset = (page - 1) * page_size
+        
+        # Determine sort order
+        sort_column = 'b.end_date'
+        sort_order = 'DESC'
+        
+        if sort_by == 'completion_date_asc':
+            sort_column = 'b.end_date'
+            sort_order = 'ASC'
+        elif sort_by == 'customer_name':
+            sort_column = 'u.full_name'
+            sort_order = 'ASC'
+        elif sort_by == 'total_price_desc':
+            sort_column = 'b.total_price'
+            sort_order = 'DESC'
+        elif sort_by == 'total_price_asc':
+            sort_column = 'b.total_price'
+            sort_order = 'ASC'
+        # Default is completion_date_desc
+        
+        cur = get_cursor()
+        
+        # Get total count of past bookings
+        cur.execute("""
+            SELECT COUNT(*) as total
+            FROM bookings b
+            WHERE b.status = 'Completed'
+        """)
+        total_count = cur.fetchone()['total']
+        
+        # Calculate total pages
+        total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+        
+        # Fetch past bookings with pagination
+        query = f"""
+            SELECT 
+                b.id,
+                b.user_id,
+                u.full_name as customer_name,
+                CONCAT(v.brand, ' ', v.model) as car,
+                b.start_date,
+                b.end_date,
+                b.total_price,
+                b.end_date as completion_date,
+                b.status,
+                b.payment_status
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE b.status = 'Completed'
+            ORDER BY {sort_column} {sort_order}
+            LIMIT %s OFFSET %s
+        """
+        
+        cur.execute(query, (page_size, offset))
+        bookings = cur.fetchall()
+        
+        return jsonify({
+            "bookings": bookings,
+            "page": page,
+            "page_size": page_size,
+            "total": total_count,
+            "total_pages": total_pages
+        }), 200
+        
+    except Exception as e:
+        print(f"GET PAST BOOKINGS ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500

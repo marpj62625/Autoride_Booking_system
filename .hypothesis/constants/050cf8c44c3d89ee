@@ -1,0 +1,4 @@
+# file: C:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\backend\utils\pdf_generator.py
+# hypothesis_version: 6.131.15
+
+[128, 140, 150, 185, 200, 210, 241, 245, 249, 255, ' Brand/Model:', ' COST BREAKDOWN', ' Plate Number:', ' Rental Type:', 'AUTORIDE SYSTEM', 'B', 'BILLED TO:', 'Base Rental Rate', 'Basic Insurance', 'C', 'F', 'Helvetica', 'I', 'Insurance/Extras', 'L', 'Promo Discount', 'R', 'RENTAL PERIOD:', 'Total Payable Amount', 'addon_price', 'base_price', 'discount_amount', 'email', 'full_name', 'insurance_price', 'points_earned', 'total_price']

@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 2.4 - Enhanced Booking Details Unit Tests</title>
+    <link rel="stylesheet" href="booking-management.css">
+    <link rel="stylesheet" href="shared-enhancements.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            padding: 2rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .test-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .test-subtitle {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .test-result {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 0.25rem 0;
+            font-size: 0.9rem;
+        }
+        .test-result.pass {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+        .test-result.fail {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+        .measurement {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+        .test-list {
+            list-style: none;
+            padding: 0;
+        }
+        .test-list li {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            border-left: 3px solid transparent;
+        }
+        .test-list li.pass {
+            border-left-color: var(--green);
+        }
+        .test-list li.fail {
+            border-left-color: var(--red);
+        }
+        .test-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .test-controls button {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+        .btn-secondary {
+            background: var(--bg-glass);
+            color: var(--text-primary);
+            border: 1px solid var(--border-glass);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .viewport-simulator {
+            border: 2px dashed var(--border-glass);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+            resize: horizontal;
+            overflow: auto;
+            min-width: 300px;
+            max-width: 100%;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(99,102,241,0.05));
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+        .stat-box .value {
+            font-size: 2rem;
+            font-weight: 800;
+            display: block;
+        }
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; margin-bottom: 2rem;">Task 2.4: Enhanced Booking Details Unit Tests</h1>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem;">
+        Comprehensive unit tests for font size calculations, responsive adjustments, text overflow handling, and modal rendering
+    </p>
+
+    <!-- Test Controls -->
+    <div class="test-section">
+        <div class="test-title">Test Controls</div>
+        <div class="test-controls">
+            <button class="btn-primary" onclick="runAllTests()">? Run All Tests</button>
+            <button class="btn-secondary" onclick="testFontSizeCalculations()">Test Font Sizes</button>
+            <button class="btn-secondary" onclick="testResponsiveAdjustments()">Test Responsive</button>
+            <button class="btn-secondary" onclick="testTextOverflow()">Test Overflow</button>
+            <button class="btn-secondary" onclick="testModalRendering()">Test Modal</button>
+            <button class="btn-secondary" onclick="clearResults()">Clear Results</button>
+        </div>
+    </div>
+
+    <!-- Test 1: Font Size Calculations -->
+    <div class="test-section">
+        <div class="test-title">Test 1: Font Size Calculations</div>
+        <p>Validates: Requirements 1.1, 1.2</p>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+            Tests that all text elements have font sizes increased by at least 15% and maintain proper hierarchy.
+        </p>
+
+        <div class="test-subtitle">Test Elements:</div>
+        <div class="info-grid enhanced-text" style="margin-top: 1rem;">
+            <div class="info-item">
+                <strong class="info-label" id="testLabel1">Customer Name:</strong>
+                <span class="info-value" id="testValue1">John Doe</span>
+            </div>
+            <div class="info-item">
+                <strong class="info-label" id="testLabel2">Booking ID:</strong>
+                <span class="info-value" id="testValue2">BK-2024-001</span>
+            </div>
+        </div>
+        <h3 id="testH3" style="margin-top: 1rem;">Booking Details Heading</h3>
+        <h4 id="testH4" style="margin-top: 0.5rem;">Vehicle Information Subheading</h4>
+
+        <div class="test-subtitle">Test Results:</div>
+        <div id="fontSizeResults"></div>
+    </div>
+
+    <!-- Test 2: Responsive Adjustments -->
+    <div class="test-section">
+        <div class="test-title">Test 2: Responsive Adjustments</div>
+        <p>Validates: Requirement 1.4</p>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+            Tests that the modal maintains responsive layout and adapts to different viewport sizes.
+        </p>
+
+        <div class="test-subtitle">Current Viewport:</div>
+        <p>Width: <span id="viewportWidth" class="measurement"></span> | Height: <span id="viewportHeight" class="measurement"></span></p>
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Resize your browser window to test responsive behavior at 768px and 480px breakpoints.</p>
+
+        <div class="test-subtitle">Responsive Test Container:</div>
+        <div class="viewport-simulator enhanced-text">
+            <div class="info-grid">
+                <div class="info-item">
+                    <strong class="info-label">Test Label:</strong>
+                    <span class="info-value">Test Value Content</span>
+                </div>
+                <div class="info-item">
+                    <strong class="info-label">Another Label:</strong>
+                    <span class="info-value">More Content Here</span>
+                </div>
+            </div>
+            <h3 style="margin-top: 1rem;">Responsive Heading H3</h3>
+            <h4 style="margin-top: 0.5rem;">Responsive Heading H4</h4>
+        </div>
+
+        <div class="test-subtitle">Test Results:</div>
+        <div id="responsiveResults"></div>
+    </div>
+
+    <!-- Test 3: Text Overflow Handling -->
+    <div class="test-section">
+        <div class="test-title">Test 3: Text Overflow Handling</div>
+        <p>Validates: Requirement 1.3</p>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+            Tests that all text remains fully visible without overflow or truncation with long content.
+        </p>
+
+        <div class="test-subtitle">Long Content Test Cases:</div>
+        <div style="max-width: 400px; border: 1px solid var(--border-glass); padding: 1rem; margin-top: 1rem; border-radius: 8px;">
+            <div class="info-grid enhanced-text">
+                <div class="info-item">
+                    <strong class="info-label">Long Name:</strong>
+                    <span class="info-value" id="longName">Bartholomew Christopher Montgomery-Wellington III Esquire</span>
+                </div>
+                <div class="info-item">
+                    <strong class="info-label">Long Word:</strong>
+                    <span class="info-value" id="longWord">ThisIsAnExtremelyLongWordWithoutAnySpacesThatShouldWrapProperlyWithoutCausingOverflowIssues</span>
+                </div>
+                <div class="info-item">
+                    <strong class="info-label">Long URL:</strong>
+                    <span class="info-value" id="longUrl">https://www.example.com/very/long/path/to/resource/that/should/wrap/properly/without/breaking/the/layout/structure</span>
+                </div>
+                <div class="info-item">
+                    <strong class="info-label">Long Description:</strong>
+                    <span class="info-value" id="longDesc">This is a very long description with multiple words that should wrap naturally across multiple lines without causing any horizontal overflow or breaking the container layout structure.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-subtitle">Test Results:</div>
+        <div id="overflowResults"></div>
+    </div>
+
+    <!-- Test 4: Modal Rendering with Various Booking Data -->
+    <div class="test-section">
+        <div class="test-title">Test 4: Modal Rendering with Various Booking Data</div>
+        <p>Validates: Requirements 1.1, 1.2, 1.3, 1.4</p>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">
+            Tests that the modal renders correctly with different types of booking data including edge cases.
+        </p>
+
+        <div class="test-subtitle">Test Scenarios:</div>
+        <div class="test-controls">
+            <button class="btn-secondary" onclick="openModalWithData('normal')">Normal Data</button>
+            <button class="btn-secondary" onclick="openModalWithData('long')">Long Content</button>
+            <button class="btn-secondary" onclick="openModalWithData('minimal')">Minimal Data</button>
+            <button class="btn-secondary" onclick="openModalWithData('special')">Special Characters</button>
+        </div>
+
+        <div class="test-subtitle">Test Results:</div>
+        <div id="modalResults"></div>
+    </div>
+
+    <!-- Test Modal -->
+    <div class="modal-overlay hidden" id="testModal">
+        <div class="modal-card details-card">
+            <header class="modal-header">
+                <h3>Enhanced Booking Details</h3>
+                <button class="close-btn" onclick="closeTestModal()">?</button>
+            </header>
+            <div class="details-content" id="modalContent">
+                <!-- Content will be dynamically inserted -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeTestModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Summary -->
+    <div class="test-section summary-card">
+        <div class="test-title">Test Summary</div>
+        <div id="testSummary">
+            <p style="color: var(--text-muted);">Click "Run All Tests" to see results</p>
+        </div>
+        <div class="summary-stats" id="summaryStats" style="display: none;">
+            <div class="stat-box">
+                <span class="value" id="totalTests" style="color: var(--blue);">0</span>
+                <span class="label">Total Tests</span>
+            </div>
+            <div class="stat-box">
+                <span class="value" id="passedTests" style="color: var(--green);">0</span>
+                <span class="label">Passed</span>
+            </div>
+            <div class="stat-box">
+                <span class="value" id="failedTests" style="color: var(--red);">0</span>
+                <span class="label">Failed</span>
+            </div>
+            <div class="stat-box">
+                <span class="value" id="passRate" style="color: var(--accent);">0%</span>
+                <span class="label">Pass Rate</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared-utils.js"></script>
+    <script>
+        // Test state
+        let testResults = {
+            fontSizes: [],
+            responsive: [],
+            overflow: [],
+            modal: []
+        };
+
+        // Utility functions
+        function getComputedFontSize(elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return 0;
+            const fontSize = window.getComputedStyle(element).fontSize;
+            return parseFloat(fontSize);
+        }
+
+        function pxToRem(px) {
+            const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            return px / rootFontSize;
+        }
+
+        function remToPx(rem) {
+            const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+            return rem * rootFontSize;
+        }
+
+        function createTestResult(name, expected, actual, pass, details = '') {
+            return { name, expected, actual, pass, details };
+        }
+
+        // Test 1: Font Size Calculations
+        function testFontSizeCalculations() {
+            console.log('Running font size calculations tests...');
+            testResults.fontSizes = [];
+
+            // Test info-label font size (should be 1.05rem)
+            const labelSize = getComputedFontSize('testLabel1');
+            const labelRem = pxToRem(labelSize);
+            const labelExpected = 1.05;
+            const labelPass = Math.abs(labelRem - labelExpected) < 0.05;
+            testResults.fontSizes.push(createTestResult(
+                'Info Label Font Size',
+                `${labelExpected}rem`,
+                `${labelRem.toFixed(3)}rem (${labelSize.toFixed(2)}px)`,
+                labelPass,
+                'Labels should be at least 0.85rem (1.05rem = 23.5% increase)'
+            ));
+
+            // Test info-value font size (should be 1.1rem)
+            const valueSize = getComputedFontSize('testValue1');
+            const valueRem = pxToRem(valueSize);
+            const valueExpected = 1.1;
+            const valuePass = Math.abs(valueRem - valueExpected) < 0.05;
+            testResults.fontSizes.push(createTestResult(
+                'Info Value Font Size',
+                `${valueExpected}rem`,
+                `${valueRem.toFixed(3)}rem (${valueSize.toFixed(2)}px)`,
+                valuePass,
+                'Body text should be at least 0.95rem (1.1rem = 15.8% increase)'
+            ));
+
+            // Test h3 font size (should be 1.44rem)
+            const h3Size = getComputedFontSize('testH3');
+            const h3Rem = pxToRem(h3Size);
+            const h3Expected = 1.44;
+            const h3Pass = Math.abs(h3Rem - h3Expected) < 0.05;
+            testResults.fontSizes.push(createTestResult(
+                'H3 Heading Font Size',
+                `${h3Expected}rem`,
+                `${h3Rem.toFixed(3)}rem (${h3Size.toFixed(2)}px)`,
+                h3Pass,
+                'H3 headings should be at least 1.2rem (1.44rem = 20% increase)'
+            ));
+
+            // Test h4 font size (should be 1.08rem)
+            const h4Size = getComputedFontSize('testH4');
+            const h4Rem = pxToRem(h4Size);
+            const h4Expected = 1.08;
+            const h4Pass = Math.abs(h4Rem - h4Expected) < 0.05;
+            testResults.fontSizes.push(createTestResult(
+                'H4 Subheading Font Size',
+                `${h4Expected}rem`,
+                `${h4Rem.toFixed(3)}rem (${h4Size.toFixed(2)}px)`,
+                h4Pass,
+                'H4 headings should be at least 0.9rem (1.08rem = 20% increase)'
+            ));
+
+            // Test font size hierarchy
+            const hierarchyPass = h3Size > valueSize && valueSize > labelSize;
+            testResults.fontSizes.push(createTestResult(
+                'Font Size Hierarchy',
+                'H3 > Value > Label',
+                `H3(${h3Size.toFixed(1)}px) > Value(${valueSize.toFixed(1)}px) > Label(${labelSize.toFixed(1)}px)`,
+                hierarchyPass,
+                'Text hierarchy must be maintained with proper size relationships'
+            ));
+
+            displayFontSizeResults();
+        }
+
+        function displayFontSizeResults() {
+            const container = document.getElementById('fontSizeResults');
+            let html = '<ul class="test-list">';
+            
+            testResults.fontSizes.forEach(result => {
+                const icon = result.pass ? '?' : '?';
+                const className = result.pass ? 'pass' : 'fail';
+                html += `
+                    <li class="${className}">
+                        <strong>${icon} ${result.name}</strong><br>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Expected: ${result.expected} | Actual: ${result.actual}
+                            ${result.details ? '<br>' + result.details : ''}
+                        </span>
+                    </li>
+                `;
+            });
+            
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+
+        // Test 2: Responsive Adjustments
+        function testResponsiveAdjustments() {
+            console.log('Running responsive adjustments tests...');
+            testResults.responsive = [];
+
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            
+            document.getElementById('viewportWidth').textContent = `${width}px`;
+            document.getElementById('viewportHeight').textContent = `${height}px`;
+
+            // Determine breakpoint
+            let breakpoint = 'desktop';
+            let expectedBehavior = 'Desktop view (>1024px)';
+            
+            if (width <= 480) {
+                breakpoint = 'small-mobile';
+                expectedBehavior = 'Small mobile breakpoint (?480px)';
+            } else if (width <= 768) {
+                breakpoint = 'mobile';
+                expectedBehavior = 'Mobile breakpoint (?768px)';
+            } else if (width <= 1024) {
+                breakpoint = 'tablet';
+                expectedBehavior = 'Tablet breakpoint (?1024px)';
+            }
+
+            testResults.responsive.push(createTestResult(
+                'Viewport Detection',
+                expectedBehavior,
+                `${width}x${height}px`,
+                true,
+                `Current breakpoint: ${breakpoint}`
+            ));
+
+            // Test responsive font sizes at mobile breakpoint
+            if (width <= 768) {
+                const labelSize = getComputedFontSize('testLabel1');
+                const labelRem = pxToRem(labelSize);
+                const mobileExpected = 0.95;
+                const labelPass = Math.abs(labelRem - mobileExpected) < 0.05;
+                
+                testResults.responsive.push(createTestResult(
+                    'Mobile Label Font Size',
+                    `${mobileExpected}rem`,
+                    `${labelRem.toFixed(3)}rem`,
+                    labelPass,
+                    'Labels should adjust to 0.95rem on mobile'
+                ));
+
+                const valueSize = getComputedFontSize('testValue1');
+                const valueRem = pxToRem(valueSize);
+                const mobileValueExpected = 1.0;
+                const valuePass = Math.abs(valueRem - mobileValueExpected) < 0.05;
+                
+                testResults.responsive.push(createTestResult(
+                    'Mobile Value Font Size',
+                    `${mobileValueExpected}rem`,
+                    `${valueRem.toFixed(3)}rem`,
+                    valuePass,
+                    'Values should adjust to 1.0rem on mobile'
+                ));
+            } else {
+                testResults.responsive.push(createTestResult(
+                    'Desktop Font Sizes',
+                    'Full size',
+                    'Active',
+                    true,
+                    'Desktop breakpoint uses full enhanced font sizes'
+                ));
+            }
+
+            // Test layout adaptation
+            const infoGrid = document.querySelector('.info-grid');
+            if (infoGrid) {
+                const gridStyle = window.getComputedStyle(infoGrid);
+                const gridColumns = gridStyle.gridTemplateColumns;
+                const hasResponsiveLayout = gridColumns !== 'none';
+                
+                testResults.responsive.push(createTestResult(
+                    'Grid Layout Adaptation',
+                    'Responsive grid',
+                    gridColumns,
+                    hasResponsiveLayout,
+                    'Info grid should adapt to viewport size'
+                ));
+            }
+
+            displayResponsiveResults();
+        }
+
+        function displayResponsiveResults() {
+            const container = document.getElementById('responsiveResults');
+            let html = '<ul class="test-list">';
+            
+            testResults.responsive.forEach(result => {
+                const icon = result.pass ? '?' : '?';
+                const className = result.pass ? 'pass' : 'fail';
+                html += `
+                    <li class="${className}">
+                        <strong>${icon} ${result.name}</strong><br>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Expected: ${result.expected} | Actual: ${result.actual}
+                            ${result.details ? '<br>' + result.details : ''}
+                        </span>
+                    </li>
+                `;
+            });
+            
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+
+        // Test 3: Text Overflow Handling
+        function testTextOverflow() {
+            console.log('Running text overflow handling tests...');
+            testResults.overflow = [];
+
+            const testElements = [
+                { id: 'longName', name: 'Long Name' },
+                { id: 'longWord', name: 'Long Word Without Spaces' },
+                { id: 'longUrl', name: 'Long URL' },
+                { id: 'longDesc', name: 'Long Description' }
+            ];
+
+            testElements.forEach(({ id, name }) => {
+                const element = document.getElementById(id);
+                if (!element) return;
+
+                const parent = element.parentElement;
+                const isOverflowing = element.scrollWidth > parent.clientWidth;
+                const computedStyle = window.getComputedStyle(element);
+                const overflowWrap = computedStyle.overflowWrap || computedStyle.wordWrap;
+                const overflow = computedStyle.overflow;
+
+                const hasProperWrapping = overflowWrap === 'break-word' || overflowWrap === 'anywhere';
+                const pass = !isOverflowing && hasProperWrapping;
+
+                testResults.overflow.push(createTestResult(
+                    name,
+                    'No overflow, proper wrapping',
+                    `Overflow: ${isOverflowing ? 'YES' : 'NO'}, Wrap: ${overflowWrap}`,
+                    pass,
+                    `Element width: ${element.scrollWidth}px, Container: ${parent.clientWidth}px`
+                ));
+            });
+
+            // Test that info-grid has proper overflow settings
+            const infoGrid = document.querySelector('.info-grid');
+            if (infoGrid) {
+                const gridStyle = window.getComputedStyle(infoGrid);
+                const overflowWrap = gridStyle.overflowWrap || gridStyle.wordWrap;
+                const hasProperSettings = overflowWrap === 'break-word';
+
+                testResults.overflow.push(createTestResult(
+                    'Info Grid Overflow Settings',
+                    'overflow-wrap: break-word',
+                    `overflow-wrap: ${overflowWrap}`,
+                    hasProperSettings,
+                    'Grid container should have proper overflow handling'
+                ));
+            }
+
+            displayOverflowResults();
+        }
+
+        function displayOverflowResults() {
+            const container = document.getElementById('overflowResults');
+            let html = '<ul class="test-list">';
+            
+            testResults.overflow.forEach(result => {
+                const icon = result.pass ? '?' : '?';
+                const className = result.pass ? 'pass' : 'fail';
+                html += `
+                    <li class="${className}">
+                        <strong>${icon} ${result.name}</strong><br>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">
+                            Expected: ${result.expected} | Actual: ${result.actual}
+                            ${result.details ? '<br>' + result.details : ''}
+                        </span>
+                    </li>
+                `;
+            });
+            
+            html += '</ul>';
+            container.innerHTML = html;
+        }
+
+        // Test 4: Modal Rendering with Various Booking Data
+        const testBookingData = {
+            normal: {
+                id: 'BK-2024-001',
+                customer_name: 'John Doe',
+                car: 'Toyota Fortuner 2023',
+                start_date: '2024-12-15',
+                end_date: '2024-12-20',
+                total_price: 15000,
+                status: 'Approved',
+                payment_status: 'Paid'
+            },
+            long: {
+                id: 'BK-2024-VERY-LONG-ID-002',
+                customer_name: 'Bartholomew Christopher Montgomery-Wellington III Esquire',
+                car: 'Mercedes-Benz GLE 450 4MATIC Premium Plus Package with Extended Warranty',
+                start_date: '2024-12-15',
+                end_date: '2024-12-20',
+                total_price: 150000,
+                status: 'Approved',
+                payment_status: 'Paid',
+                notes: 'This is a very long note with extensive details about the booking including special requests, customer preferences, vehicle modifications, insurance requirements, and additional services that need to be provided during the rental period.'
+            },
+            minimal: {
+                id: 'BK-2024-003',
+                customer_name: 'Jane',
+                car: 'Car',
+                start_date: '2024-12-15',
+                end_date: '2024-12-15',
+                total_price: 1000,
+                status: 'Pending',
+                payment_status: 'Unpaid'
+            },
+            special: {
+                id: 'BK-2024-004',
+                customer_name: 'José María García-López & O\'Brien',
+                car: 'Nissan X-Trail "Premium" <2023>',
+                start_date: '2024-12-15',
+                end_date: '2024-12-20',
+                total_price: 25000.50,
+                status: 'Approved',
+                payment_status: 'Paid',
+                notes: 'Special chars: <script>alert("test")</script> & "quotes" \'apostrophes\''
+            }
+        };
+
+        function openModalWithData(dataType) {
+            const data = testBookingData[dataType];
+            if (!data) return;
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="info-grid enhanced-text">
+                    <div class="info-item">
+                        <strong class="info-label">Booking ID:</strong>
+                        <span class="info-value">${escapeHtml(data.id)}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Customer:</strong>
+                        <span class="info-value">${escapeHtml(data.customer_name)}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Vehicle:</strong>
+                        <span class="info-value">${escapeHtml(data.car)}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Period:</strong>
+                        <span class="info-value">${formatDate(data.start_date)} - ${formatDate(data.end_date)}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Total:</strong>
+                        <span class="info-value">${formatPrice(data.total_price)}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Status:</strong>
+                        <span class="info-value">${escapeHtml(data.status)}</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Payment:</strong>

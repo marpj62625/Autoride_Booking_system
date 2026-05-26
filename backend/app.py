@@ -308,7 +308,7 @@ def migrate_sms_notification():
 
                 recipient_phone         TEXT NOT NULL,
 
-                recipient_type          TEXT NOT NULL CHECK (recipient_type IN ('customer', 'driver', 'admin')),
+                recipient_type          TEXT NOT NULL CHECK (recipient_type IN ('customer', 'admin')),
 
                 recipient_id            INTEGER,
 
@@ -543,14 +543,6 @@ from flask import send_from_directory
 
 
 
-@app.route('/driver_portal/<path:filename>')
-
-def serve_driver_portal(filename):
-
-    return send_from_directory('../driver_portal', filename)
-
-
-
 @app.route('/admin_app/<path:filename>')
 
 def serve_admin_app(filename):
@@ -611,7 +603,7 @@ def is_gmail(email: str) -> bool:
 
 
 
-from notifications import sms_service, notification_service, compose_booking_approved_sms, compose_booking_rejected_sms, compose_admin_cancel_sms, compose_pickup_sms, compose_completed_sms, compose_driver_approved_sms, compose_driver_rejected_sms, compose_license_approved_sms, compose_license_rejected_sms, compose_customer_cancel_sms, compose_full_payment_sms, compose_downpayment_sms, compose_admin_payment_proof_sms, compose_modify_booking_sms, compose_split_request_sms, compose_split_paid_sms, compose_admin_driver_application_sms, compose_otp_sms
+from notifications import sms_service, notification_service, compose_booking_approved_sms, compose_booking_rejected_sms, compose_admin_cancel_sms, compose_pickup_sms, compose_completed_sms, compose_license_approved_sms, compose_license_rejected_sms, compose_customer_cancel_sms, compose_full_payment_sms, compose_downpayment_sms, compose_admin_payment_proof_sms, compose_modify_booking_sms, compose_split_request_sms, compose_split_paid_sms, compose_otp_sms
 
 
 
@@ -1345,7 +1337,8 @@ def admin_user_detail(user_id):
         cur.execute("""
             SELECT id, full_name, email, phone, is_verified, is_frozen,
                    freeze_reason, loyalty_points, created_at,
-                   profile_picture, auth_provider, province, municipality, barangay
+                   profile_picture, auth_provider, province, municipality, barangay,
+                   license_image_url, license_number, license_expiry, license_type
             FROM users WHERE id = %s
         """, (user_id,))
         user = cur.fetchone()
@@ -1357,6 +1350,8 @@ def admin_user_detail(user_id):
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         if d.get('created_at'):
             d['created_at'] = str(d['created_at'])
+        if d.get('license_expiry'):
+            d['license_expiry'] = str(d['license_expiry'])
         # Booking stats
         cur.execute("SELECT COUNT(*) as total FROM bookings WHERE user_id = %s", (user_id,))
         d['total_bookings'] = (cur.fetchone() or {}).get('total', 0)
@@ -4086,6 +4081,81 @@ def get_all_bookings():
 
             cur.close()
 
+
+@app.route('/bookings/cancelled', methods=['GET'])
+def get_cancelled_bookings():
+    """Get all cancelled bookings with pagination and sorting for admin panel."""
+    try:
+        # Get pagination parameters
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 25))
+        sort_by = request.args.get('sort_by', 'cancellation_date_desc')
+        
+        # Validate page_size
+        if page_size not in [10, 25, 50, 100]:
+            page_size = 25
+        
+        # Calculate offset
+        offset = (page - 1) * page_size
+        
+        # Determine sort order
+        sort_clause = "b.updated_at DESC"  # Default: cancellation date descending
+        if sort_by == 'cancellation_date_asc':
+            sort_clause = "b.updated_at ASC"
+        elif sort_by == 'customer_name':
+            sort_clause = "u.full_name ASC"
+        elif sort_by == 'original_booking_date':
+            sort_clause = "b.created_at DESC"
+        
+        cur = get_cursor()
+        
+        # Get total count of cancelled bookings
+        cur.execute("""
+            SELECT COUNT(*) as total
+            FROM bookings b
+            WHERE b.status = 'Cancelled' OR b.status = 'Rejected'
+        """)
+        total_count = cur.fetchone()['total']
+        
+        # Get cancelled bookings with pagination
+        query = f"""
+            SELECT b.id, u.full_name AS customer_name, b.user_id,
+                   CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
+                   b.start_date, b.end_date, b.total_price, b.status,
+                   b.created_at AS booking_date,
+                   b.updated_at AS cancellation_date,
+                   b.cancellation_reason,
+                   b.cancelled_by,
+                   b.payment_status
+            FROM bookings b
+            JOIN users u ON b.user_id = u.id
+            JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE b.status = 'Cancelled' OR b.status = 'Rejected'
+            ORDER BY {sort_clause}
+            LIMIT %s OFFSET %s
+        """
+        
+        cur.execute(query, (page_size, offset))
+        data = cur.fetchall()
+        bookings = [dict(row) for row in data]
+        
+        # Calculate total pages
+        total_pages = (total_count + page_size - 1) // page_size
+        
+        return jsonify({
+            'bookings': bookings,
+            'pagination': {
+                'page': page,
+                'page_size': page_size,
+                'total': total_count,
+                'total_pages': total_pages
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
 
 @app.route('/admin/bookings/<int:booking_id>/assign_driver', methods=['PUT'])
@@ -7918,6 +7988,37 @@ def get_full_profile():
         d = dict(user)
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
+        if d.get('license_expiry'):
+            d['license_expiry'] = str(d['license_expiry'])
+        return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/users/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    """Get user profile by ID for admin customer profile preview."""
+    try:
+        cur = get_cursor()
+        cur.execute(
+            """SELECT id, full_name, email, phone, profile_picture, license_image_url,
+                      is_verified, loyalty_points,
+                      license_number, license_expiry, license_type
+               FROM users WHERE id = %s""",
+            (user_id,)
+        )
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        d = dict(user)
+        d['loyalty_points'] = int(d.get('loyalty_points') or 0)
+        d['is_verified'] = int(d.get('is_verified') or 0)
+        # Add profile_picture_url alias for consistency
+        d['profile_picture_url'] = d.get('profile_picture')
+        # Add name alias for consistency
+        d['name'] = d.get('full_name')
         if d.get('license_expiry'):
             d['license_expiry'] = str(d['license_expiry'])
         return jsonify(d), 200

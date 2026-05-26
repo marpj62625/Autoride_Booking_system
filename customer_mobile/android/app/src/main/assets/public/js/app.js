@@ -485,10 +485,20 @@ document.addEventListener('DOMContentLoaded', initApp);
 document.addEventListener('deviceready', function() {
   initApp();
   
-  // Initialize Google Auth
+  // Initialize Google Auth with explicit configuration
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-    console.log('Google Auth plugin available');
-    window.Capacitor.Plugins.GoogleAuth.initialize();
+    console.log('Google Auth plugin available - initializing with config');
+    window.Capacitor.Plugins.GoogleAuth.initialize({
+      clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true
+    }).then(function() {
+      console.log('[GoogleAuth] Initialized successfully');
+    }).catch(function(err) {
+      console.error('[GoogleAuth] Initialization error:', err);
+    });
+  } else {
+    console.warn('[GoogleAuth] Plugin not available');
   }
 });
 
@@ -662,7 +672,10 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
+  console.log('[doGoogleLogin] Starting Google Sign-In...');
+  
   if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.GoogleAuth) {
+    console.error('[doGoogleLogin] Google Auth plugin not available');
     showToast('Google Sign-In is only available in the mobile app', 'info');
     return;
   }
@@ -670,13 +683,39 @@ function doGoogleLogin() {
   showLoading(true);
   const GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
   
+  console.log('[doGoogleLogin] Calling GoogleAuth.signIn()...');
   GoogleAuth.signIn()
     .then(function(result) {
-      console.log('Google Sign-In success:', result);
-      var googleUser = result.authentication || result;
-      var idToken = googleUser.idToken;
+      console.log('[doGoogleLogin] Google Sign-In success - Full result:', JSON.stringify(result));
+      console.log('[doGoogleLogin] result.authentication:', JSON.stringify(result.authentication));
+      console.log('[doGoogleLogin] result.idToken:', result.idToken);
+      console.log('[doGoogleLogin] result.credential:', result.credential);
+      
+      // Extract token - try different possible locations
+      var idToken = null;
+      if (result.authentication && result.authentication.idToken) {
+        idToken = result.authentication.idToken;
+        console.log('[doGoogleLogin] ? Token from result.authentication.idToken');
+      } else if (result.idToken) {
+        idToken = result.idToken;
+        console.log('[doGoogleLogin] ? Token from result.idToken');
+      } else if (result.credential) {
+        idToken = result.credential;
+        console.log('[doGoogleLogin] ? Token from result.credential');
+      } else if (result.serverAuthCode) {
+        idToken = result.serverAuthCode;
+        console.log('[doGoogleLogin] ? Token from result.serverAuthCode');
+      }
+      
       var email = result.email;
-      var name = result.name || result.givenName + ' ' + result.familyName;
+      var name = result.name || result.displayName || (result.givenName && result.familyName ? result.givenName + ' ' + result.familyName : 'User');
+      
+      console.log('[doGoogleLogin] Extracted - email:', email, 'name:', name, 'hasToken:', !!idToken, 'tokenLength:', idToken ? idToken.length : 0);
+      
+      if (!idToken) {
+        console.error('[doGoogleLogin] ? No ID token found in result! Available keys:', Object.keys(result));
+        throw new Error('No ID token received from Google');
+      }
       
       // Send to backend for verification and user creation/login
       return apiCall('/auth/google', {
@@ -689,22 +728,32 @@ function doGoogleLogin() {
       });
     })
     .then(function(data) {
+      console.log('[doGoogleLogin] Backend response:', JSON.stringify(data));
       if (data && data.user) {
+        console.log('[doGoogleLogin] ? User data received:', data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         currentUser = data.user;
+        console.log('[doGoogleLogin] ? User saved to localStorage and currentUser');
         showToast('Welcome, ' + currentUser.fullName + '!', 'success');
+        console.log('[doGoogleLogin] ? Toast shown, closing overlay...');
         closeOverlay('page-login');
+        console.log('[doGoogleLogin] ? Overlay closed, loading home...');
         loadHome();
+        console.log('[doGoogleLogin] ? loadHome() called');
+        showPage('page-home');
+        console.log('[doGoogleLogin] ? showPage(page-home) called - SUCCESS!');
       } else {
+        console.error('[doGoogleLogin] No user data in response');
         showToast('Login failed. Please try again.', 'error');
       }
     })
     .catch(function(err) {
-      console.error('Google Sign-In error:', err);
+      console.error('[doGoogleLogin] Error:', err);
+      console.error('[doGoogleLogin] Error details:', JSON.stringify(err));
       if (err.message && err.message.includes('cancel')) {
         showToast('Sign-in cancelled', 'info');
       } else {
-        showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+        showToast('Google Sign-In failed: ' + (err.message || err.error || 'Unknown error'), 'error');
       }
     })
     .finally(function() {

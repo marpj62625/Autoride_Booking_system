@@ -183,3 +183,110 @@ def report_user_stats():
         return jsonify({"labels": labels, "values": values}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@report_bp.route('/reports/filtered', methods=['GET'])
+def report_filtered():
+    """Get filtered report data based on date range, status, and vehicle type."""
+    start_date = request.args.get('start')
+    end_date = request.args.get('end')
+    status = request.args.get('status', 'all')
+    vehicle_type = request.args.get('vehicle_type', 'all')
+    period = request.args.get('period', 'daily')
+
+    if not start_date or not end_date:
+        return jsonify({"error": "start and end date parameters are required"}), 400
+
+    try:
+        cur = get_cursor()
+        
+        # Build WHERE clause based on filters
+        where_clauses = ["b.start_date BETWEEN %s::date AND %s::date"]
+        params = [start_date, end_date]
+        
+        if status != 'all':
+            where_clauses.append("b.status = %s")
+            params.append(status)
+        
+        if vehicle_type != 'all':
+            where_clauses.append("v.vehicle_type = %s")
+            params.append(vehicle_type)
+        
+        where_clause = " AND ".join(where_clauses)
+        
+        # Get revenue data
+        if period == 'monthly':
+            cur.execute(f"""
+                SELECT TO_CHAR(b.start_date, 'YYYY-MM') AS label,
+                       COALESCE(SUM(b.total_price), 0) AS revenue,
+                       COUNT(*) AS bookings
+                FROM bookings b
+                LEFT JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE {where_clause}
+                GROUP BY label
+                ORDER BY label ASC
+            """, params)
+        else:
+            cur.execute(f"""
+                SELECT TO_CHAR(b.start_date, 'Mon DD') AS label,
+                       COALESCE(SUM(b.total_price), 0) AS revenue,
+                       COUNT(*) AS bookings
+                FROM bookings b
+                LEFT JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE {where_clause}
+                GROUP BY b.start_date, label
+                ORDER BY b.start_date ASC
+            """, params)
+        
+        rows = cur.fetchall()
+        labels = [r['label'] for r in rows]
+        revenue_values = [float(r['revenue']) for r in rows]
+        booking_values = [r['bookings'] for r in rows]
+        
+        # Get status distribution
+        cur.execute(f"""
+            SELECT b.status, COUNT(*) AS cnt
+            FROM bookings b
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE {where_clause}
+            GROUP BY b.status
+            ORDER BY cnt DESC
+        """, params)
+        status_rows = cur.fetchall()
+        status_labels = [r['status'] or 'Unknown' for r in status_rows]
+        status_values = [r['cnt'] for r in status_rows]
+        
+        # Get top vehicles for filtered period
+        cur.execute(f"""
+            SELECT v.name AS vehicle_name, 
+                   COUNT(b.id) AS total_bookings,
+                   COALESCE(SUM(b.total_price), 0) AS total_revenue
+            FROM vehicles v
+            JOIN bookings b ON v.id = b.vehicle_id
+            WHERE {where_clause}
+            GROUP BY v.id, v.name
+            ORDER BY total_bookings DESC
+            LIMIT 5
+        """, params)
+        vehicle_rows = cur.fetchall()
+        for r in vehicle_rows:
+            r['total_revenue'] = float(r['total_revenue'])
+        
+        return jsonify({
+            "revenue": {
+                "labels": labels,
+                "values": revenue_values
+            },
+            "bookings_trend": {
+                "labels": labels,
+                "values": booking_values
+            },
+            "status": {
+                "labels": status_labels,
+                "values": status_values
+            },
+            "top_vehicles": {
+                "vehicles": vehicle_rows
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

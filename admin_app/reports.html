@@ -9,6 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+            ? 'http://localhost:5000/api' 
+            : window.location.origin + '/api';
+    </script>
 </head>
 <body>
 
@@ -36,7 +41,7 @@
                 <span class="nav-icon">📈</span> Reports
             </a>
             <a href="#" class="nav-link">
-                <span class="nav-icon">📍</span> GPS Tracking
+                <span class="nav-icon">📝</span> GPS Tracking
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -108,7 +113,7 @@
             </div>
             <div class="stat-card stat-avg-revenue">
                 <div class="stat-icon-wrap avg-icon">
-                    <span class="stat-icon">📐</span>
+                    <span class="stat-icon">📝</span>
                 </div>
                 <div class="stat-info">
                     <span class="stat-value" id="statAvgRevenue">₱0</span>
@@ -179,7 +184,7 @@
         <!-- Top Vehicles Table -->
         <section class="table-section">
             <div class="table-header">
-                <h3 class="table-title">🏆 Top Rented Vehicles — Detailed</h3>
+                <h3 class="table-title">🝆 Top Rented Vehicles — Detailed</h3>
             </div>
             <div class="table-container">
                 <div class="table-scroll">
@@ -220,6 +225,49 @@
     <div class="toast hidden" id="toast">
         <span class="toast-icon" id="toastIcon"></span>
         <span class="toast-msg" id="toastMsg"></span>
+    </div>
+
+    <!-- Chart Popup Modal -->
+    <div class="modal-overlay hidden" id="chartPopupModal">
+        <div class="modal-card chart-popup-card">
+            <header class="modal-header">
+                <h3 id="chartPopupTitle">Chart Details</h3>
+                <button class="close-btn" id="chartPopupClose">?</button>
+            </header>
+            <div class="chart-filters">
+                <div class="filter-group">
+                    <label for="filterStartDate">Start Date:</label>
+                    <input type="date" id="filterStartDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterEndDate">End Date:</label>
+                    <input type="date" id="filterEndDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterStatus">Status:</label>
+                    <select id="filterStatus" class="filter-input">
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterVehicleType">Vehicle Type:</label>
+                    <select id="filterVehicleType" class="filter-input">
+                        <option value="all">All Types</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="van">Van</option>
+                    </select>
+                </div>
+                <button class="btn-reset-filters" id="btnResetFilters">?? Reset Filters</button>
+            </div>
+            <div class="chart-popup-body">
+                <canvas id="popupChartCanvas"></canvas>
+            </div>
+        </div>
     </div>
 
     <script src="reports.js"></script>

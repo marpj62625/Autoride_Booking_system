@@ -61,6 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
     detailsClose.addEventListener('click', closeDetails);
     detailsCloseBtn.addEventListener('click', closeDetails);
     
+    // Tabs and search filters initialization
+    initTabs();
+    initCancelledBookingsHandlers();
+    initPastBookingsHandlers();
+    
+    document.getElementById('searchActiveInput').addEventListener('input', applyActiveFilters);
+    document.getElementById('btnActiveRefresh').addEventListener('click', fetchActiveBookings);
+    
+    document.getElementById('searchPastInput').addEventListener('input', applyPastFilters);
+    document.getElementById('btnPastRefresh').addEventListener('click', loadPastBookings);
+    
+    document.getElementById('searchCancelledInput').addEventListener('input', applyCancelledFilters);
+    document.getElementById('btnCancelledRefresh').addEventListener('click', loadCancelledBookings);
+    
     btnAddInspection.addEventListener('click', () => {
         inspectionForm.classList.remove('hidden');
         btnAddInspection.classList.add('hidden');
@@ -139,7 +153,7 @@ function renderTable(bookings) {
             <td class="price-cell">₱${formatPrice(b.total_price)}</td>
             <td>${statusBadge(b.status)}</td>
             <td class="actions-cell">
-                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👁 View</button>
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
                 ${actionButtons(b)}
             </td>
         `;
@@ -244,13 +258,19 @@ async function viewDetails(id) {
     inspectionForm.classList.add('hidden');
     btnAddInspection.classList.remove('hidden');
     detailsContent.innerHTML = `
-        <div class="info-grid">
-            <div class="info-item"><strong>Customer:</strong> ${escapeHtml(b.customer_name)}</div>
-            <div class="info-item"><strong>Vehicle:</strong> ${escapeHtml(b.car)}</div>
-            <div class="info-item"><strong>Period:</strong> ${formatRentalDates(b.start_date, b.end_date)}</div>
-            <div class="info-item"><strong>Total:</strong> ₱${formatPrice(b.total_price)}</div>
-            <div class="info-item"><strong>Status:</strong> ${statusBadge(b.status)}</div>
-            <div class="info-item"><strong>Payment:</strong> <span class="payment-status ${b.payment_status?.toLowerCase()}">${b.payment_status || 'Unpaid'}</span></div>
+        <div class="info-grid enhanced-text" role="list">
+            <div class="info-item" role="listitem">
+                <strong class="info-label">Customer:</strong> 
+                <span class="info-value">${escapeHtml(b.customer_name)}</span>
+                <button class="btn-view-profile" onclick="viewCustomerProfile(${b.user_id})" aria-label="View ${escapeHtml(b.customer_name)}'s profile">
+                    ?? View Profile
+                </button>
+            </div>
+            <div class="info-item" role="listitem"><strong class="info-label">Vehicle:</strong> <span class="info-value">${escapeHtml(b.car)}</span></div>
+            <div class="info-item" role="listitem"><strong class="info-label">Period:</strong> <span class="info-value">${formatRentalDates(b.start_date, b.end_date)}</span></div>
+            <div class="info-item" role="listitem"><strong class="info-label">Total:</strong> <span class="info-value">?${formatPrice(b.total_price)}</span></div>
+            <div class="info-item" role="listitem"><strong class="info-label">Status:</strong> ${statusBadge(b.status)}</div>
+            <div class="info-item" role="listitem"><strong class="info-label">Payment:</strong> <span class="payment-status ${b.payment_status?.toLowerCase()}">${b.payment_status || 'Unpaid'}</span></div>
         </div>
     `;
 
@@ -312,7 +332,7 @@ function renderInspections(list) {
                 <span class="insp-date">${new Date(insp.created_at).toLocaleString()}</span>
             </div>
             <div class="insp-stats">
-                <span>📍 ${insp.mileage} km</span>
+                <span>📝 ${insp.mileage} km</span>
                 <span>⛽ ${insp.fuel_level}</span>
             </div>
             <div class="insp-photos">${photosHtml || '<i>No photos</i>'}</div>
@@ -463,7 +483,7 @@ function actionButtons(booking) {
 
 function cancelBooking(id) {
     openModal({
-        icon: '⚠️',
+        icon: '⚠︝',
         title: 'Cancel Approved Booking',
         message: `Are you sure you want to cancel booking <strong>#${id}</strong>? Status will be changed to Rejected and a refund will be required if already paid.`,
         confirmClass: 'danger',
@@ -497,3 +517,650 @@ function escapeHtml(str) {
 const styleTag = document.createElement('style');
 styleTag.textContent = `@keyframes popIn { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }`;
 document.head.appendChild(styleTag);
+
+// ==================== CANCELLED BOOKINGS ====================
+
+// State for cancelled bookings
+let cancelledBookings = [];
+let cancelledPagination = {
+    page: 1,
+    page_size: 25,
+    total: 0,
+    total_pages: 0
+};
+let cancelledSortBy = 'cancellation_date_desc';
+
+async function loadCancelledBookings() {
+    const loadingEl = document.getElementById('cancelledLoadingState');
+    const tableEl = document.getElementById('cancelledBookingsTable');
+    const emptyEl = document.getElementById('cancelledEmptyState');
+    
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (tableEl) tableEl.classList.add('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    
+    try {
+        const params = new URLSearchParams({
+            page: cancelledPagination.page,
+            page_size: cancelledPagination.page_size,
+            sort_by: cancelledSortBy
+        });
+        
+        const res = await fetch(`${API_BASE}/bookings/cancelled?${params}`);
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        
+        const data = await res.json();
+        cancelledBookings = data.bookings || [];
+        cancelledPagination = data.pagination || cancelledPagination;
+        
+        renderCancelledBookingsTable();
+        updateCancelledPaginationControls();
+    } catch (err) {
+        console.error('Failed to fetch cancelled bookings:', err);
+        showToast('error', 'Failed to load cancelled bookings');
+        cancelledBookings = [];
+        renderCancelledBookingsTable();
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+    }
+}
+
+function renderCancelledBookingsTable() {
+    const tbody = document.getElementById('cancelledBookingsBody');
+    const tableEl = document.getElementById('cancelledBookingsTable');
+    const emptyEl = document.getElementById('cancelledEmptyState');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (cancelledBookings.length === 0) {
+        if (tableEl) tableEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    
+    if (tableEl) tableEl.classList.remove('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    
+    cancelledBookings.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="id-cell">#${b.id}</td>
+            <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
+            <td>${escapeHtml(b.car)}</td>
+            <td>${formatRentalDates(b.start_date, b.end_date)}</td>
+            <td>${formatDate(b.cancellation_date)}</td>
+            <td class="reason-cell">${escapeHtml(b.cancellation_reason || 'N/A')}</td>
+            <td>${escapeHtml(b.cancelled_by || 'N/A')}</td>
+            <td class="actions-cell">
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">?? View</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function updateCancelledPaginationControls() {
+    const pageInfo = document.getElementById('cancelledPageInfo');
+    const prevBtn = document.getElementById('cancelledPrevPage');
+    const nextBtn = document.getElementById('cancelledNextPage');
+    
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${cancelledPagination.page} of ${cancelledPagination.total_pages || 1}`;
+    }
+    
+    if (prevBtn) {
+        prevBtn.disabled = cancelledPagination.page <= 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = cancelledPagination.page >= cancelledPagination.total_pages;
+    }
+}
+
+// Event handlers for cancelled bookings (to be attached when tab is created)
+function initCancelledBookingsHandlers() {
+    const sortSelect = document.getElementById('cancelledSortBy');
+    const pageSizeSelect = document.getElementById('cancelledPageSize');
+    const prevBtn = document.getElementById('cancelledPrevPage');
+    const nextBtn = document.getElementById('cancelledNextPage');
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            cancelledSortBy = e.target.value;
+            cancelledPagination.page = 1;
+            loadCancelledBookings();
+        });
+    }
+    
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+            cancelledPagination.page_size = parseInt(e.target.value);
+            cancelledPagination.page = 1;
+            loadCancelledBookings();
+        });
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (cancelledPagination.page > 1) {
+                cancelledPagination.page--;
+                loadCancelledBookings();
+            }
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (cancelledPagination.page < cancelledPagination.total_pages) {
+                cancelledPagination.page++;
+                loadCancelledBookings();
+            }
+        });
+    }
+}
+
+// ==================== CUSTOMER PROFILE PREVIEW ====================
+
+// Helper function to get initials from a name
+function getInitials(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) {
+        return parts[0].charAt(0).toUpperCase();
+    }
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+async function viewCustomerProfile(userId) {
+    try {
+        const res = await fetch(`${API_BASE}/users/${userId}`);
+        if (!res.ok) throw new Error('Failed to load customer profile');
+        
+        const customer = await res.json();
+        
+        // Populate modal
+        const avatarImg = document.getElementById('profileAvatar');
+        if (customer.profile_picture_url) {
+            avatarImg.src = `${API_BASE}${customer.profile_picture_url}`;
+            avatarImg.style.display = 'block';
+        } else {
+            // Use a placeholder with customer initials
+            const initials = getInitials(customer.full_name || customer.name || 'User');
+            avatarImg.style.display = 'none';
+            const avatarSection = document.querySelector('.profile-avatar-section');
+            avatarSection.innerHTML = `<div class="profile-avatar-placeholder">${initials}</div>`;
+        }
+        
+        document.getElementById('profileName').textContent = customer.full_name || customer.name || 'N/A';
+        document.getElementById('profileEmail').textContent = customer.email || 'N/A';
+        document.getElementById('profilePhone').textContent = customer.phone || 'N/A';
+        
+        // License information
+        const licenseSection = document.querySelector('.license-section');
+        if (customer.license_image_url) {
+            document.getElementById('licenseImage').src = `${API_BASE}${customer.license_image_url}`;
+            document.getElementById('licenseNumber').textContent = customer.license_number || 'N/A';
+            document.getElementById('licenseType').textContent = customer.license_type || 'N/A';
+            
+            const expiryElement = document.getElementById('licenseExpiry');
+            if (customer.license_expiry) {
+                const expiryDate = new Date(customer.license_expiry);
+                const today = new Date();
+                const daysUntilExpiry = Math.floor((expiryDate - today) / (1000 * 60 * 60 * 24));
+                
+                expiryElement.textContent = formatDate(customer.license_expiry);
+                
+                // Warning indicator for expiring/expired licenses
+                if (daysUntilExpiry < 0) {
+                    expiryElement.classList.add('expired');
+                    expiryElement.innerHTML += ' <span class="warning-badge">?? EXPIRED</span>';
+                } else if (daysUntilExpiry <= 30) {
+                    expiryElement.classList.add('expiring-soon');
+                    expiryElement.innerHTML += ` <span class="warning-badge expiring">?? Expires in ${daysUntilExpiry} days</span>`;
+                }
+            } else {
+                expiryElement.textContent = 'N/A';
+            }
+            
+            // Show license section
+            licenseSection.style.display = 'block';
+        } else {
+            // Hide license section if no license info
+            licenseSection.innerHTML = '<p class="no-license">No license information available</p>';
+        }
+        
+        document.getElementById('customerProfileModal').classList.remove('hidden');
+    } catch (err) {
+        showToast('error', 'Failed to load customer profile');
+        console.error(err);
+    }
+}
+
+// Close profile modal handler
+document.getElementById('profileClose').addEventListener('click', () => {
+    document.getElementById('customerProfileModal').classList.add('hidden');
+});
+
+// Close profile modal on overlay click
+document.getElementById('customerProfileModal').addEventListener('click', (e) => {
+    if (e.target.id === 'customerProfileModal') {
+        document.getElementById('customerProfileModal').classList.add('hidden');
+    }
+});
+
+// Close profile modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const profileModal = document.getElementById('customerProfileModal');
+        if (profileModal && !profileModal.classList.contains('hidden')) {
+            profileModal.classList.add('hidden');
+        }
+    }
+});
+
+// ==================== TABS SWITCHING ====================
+let activeTab = 'all';
+
+function initTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.add('hidden'));
+            
+            btn.classList.add('active');
+            const targetTab = btn.getAttribute('data-tab');
+            activeTab = targetTab;
+            
+            const targetContent = document.getElementById(`tab${targetTab.charAt(0).toUpperCase() + targetTab.slice(1)}`);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+            }
+            
+            // Fetch/render appropriate data
+            if (targetTab === 'all') {
+                fetchBookings();
+            } else if (targetTab === 'active') {
+                fetchActiveBookings();
+            } else if (targetTab === 'past') {
+                loadPastBookings();
+            } else if (targetTab === 'cancelled') {
+                loadCancelledBookings();
+            }
+        });
+    });
+}
+
+// ==================== ACTIVE BOOKINGS ====================
+let activeBookings = [];
+
+function fetchActiveBookings() {
+    const loadingEl = document.getElementById('activeLoadingState');
+    const tableEl = document.getElementById('activeBookingsTable');
+    const emptyEl = document.getElementById('activeEmptyState');
+    
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (tableEl) tableEl.classList.add('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    
+    // Active rentals are either Approved or Active
+    activeBookings = allBookings.filter(b => b.status === 'Approved' || b.status === 'Active');
+    
+    renderActiveBookingsTable();
+    
+    if (loadingEl) loadingEl.classList.add('hidden');
+}
+
+function renderActiveBookingsTable() {
+    const tbody = document.getElementById('activeBookingsBody');
+    const tableEl = document.getElementById('activeBookingsTable');
+    const emptyEl = document.getElementById('activeEmptyState');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (activeBookings.length === 0) {
+        if (tableEl) tableEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    
+    if (tableEl) tableEl.classList.remove('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    
+    activeBookings.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.className = 'booking-row active-booking';
+        
+        const locationDisplay = b.dropoff_location && b.dropoff_location !== b.pickup_location
+            ? `<span class="pickup-location" title="${escapeHtml(b.pickup_location)}">${truncateLocation(b.pickup_location)}</span>
+               <span class="location-separator">➔</span>
+               <span class="dropoff-location" title="${escapeHtml(b.dropoff_location)}">${truncateLocation(b.dropoff_location)}</span>`
+            : `<span class="pickup-location" title="${escapeHtml(b.pickup_location || '')}">${truncateLocation(b.pickup_location)}</span>`;
+        
+        tr.innerHTML = `
+            <td class="id-cell">#${b.id}</td>
+            <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
+            <td>${escapeHtml(b.car)}</td>
+            <td class="location-cell">
+                <div class="location-info">
+                    <span class="location-icon">📍</span>
+                    <div class="location-text">${locationDisplay}</div>
+                </div>
+            </td>
+            <td>${formatRentalDates(b.start_date, b.end_date)}</td>
+            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td>${statusBadge(b.status)}</td>
+            <td class="actions-cell">
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
+                ${actionButtons(b)}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function applyActiveFilters() {
+    const search = document.getElementById('searchActiveInput').value.toLowerCase().trim();
+    if (!search) {
+        renderActiveBookingsTable();
+        return;
+    }
+    
+    const filtered = activeBookings.filter(b => 
+        (b.customer_name || '').toLowerCase().includes(search) ||
+        (b.car || '').toLowerCase().includes(search) ||
+        (b.pickup_location || '').toLowerCase().includes(search) ||
+        (b.dropoff_location || '').toLowerCase().includes(search) ||
+        String(b.id).includes(search)
+    );
+    
+    const tbody = document.getElementById('activeBookingsBody');
+    const tableEl = document.getElementById('activeBookingsTable');
+    const emptyEl = document.getElementById('activeEmptyState');
+    
+    tbody.innerHTML = '';
+    
+    if (filtered.length === 0) {
+        tableEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+    
+    tableEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    
+    filtered.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.className = 'booking-row active-booking';
+        
+        const locationDisplay = b.dropoff_location && b.dropoff_location !== b.pickup_location
+            ? `<span class="pickup-location" title="${escapeHtml(b.pickup_location)}">${truncateLocation(b.pickup_location)}</span>
+               <span class="location-separator">➔</span>
+               <span class="dropoff-location" title="${escapeHtml(b.dropoff_location)}">${truncateLocation(b.dropoff_location)}</span>`
+            : `<span class="pickup-location" title="${escapeHtml(b.pickup_location || '')}">${truncateLocation(b.pickup_location)}</span>`;
+            
+        tr.innerHTML = `
+            <td class="id-cell">#${b.id}</td>
+            <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
+            <td>${escapeHtml(b.car)}</td>
+            <td class="location-cell">
+                <div class="location-info">
+                    <span class="location-icon">📍</span>
+                    <div class="location-text">${locationDisplay}</div>
+                </div>
+            </td>
+            <td>${formatRentalDates(b.start_date, b.end_date)}</td>
+            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td>${statusBadge(b.status)}</td>
+            <td class="actions-cell">
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
+                ${actionButtons(b)}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ==================== PAST BOOKINGS ====================
+let pastBookings = [];
+let pastPagination = {
+    page: 1,
+    page_size: 25,
+    total: 0,
+    total_pages: 0
+};
+let pastSortBy = 'completion_date_desc';
+
+async function loadPastBookings() {
+    const loadingEl = document.getElementById('loadingPastState');
+    const tableEl = document.getElementById('pastBookingsTable');
+    const emptyEl = document.getElementById('emptyPastState');
+    
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (tableEl) tableEl.classList.add('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    
+    try {
+        const params = new URLSearchParams({
+            page: pastPagination.page,
+            page_size: pastPagination.page_size,
+            sort_by: pastSortBy
+        });
+        
+        const res = await fetch(`${API_BASE}/api/bookings/past?${params}`);
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        
+        const data = await res.json();
+        pastBookings = data.bookings || [];
+        pastPagination = data.pagination || {
+            page: data.page || 1,
+            page_size: data.page_size || 25,
+            total: data.total || 0,
+            total_pages: data.total_pages || 1
+        };
+        
+        renderPastBookingsTable();
+        updatePastPaginationControls();
+    } catch (err) {
+        console.error('Failed to fetch past bookings:', err);
+        showToast('error', 'Failed to load past bookings');
+        pastBookings = [];
+        renderPastBookingsTable();
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+    }
+}
+
+function renderPastBookingsTable() {
+    const tbody = document.getElementById('pastBookingsBody');
+    const tableEl = document.getElementById('pastBookingsTable');
+    const emptyEl = document.getElementById('emptyPastState');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (pastBookings.length === 0) {
+        if (tableEl) tableEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+    }
+    
+    if (tableEl) tableEl.classList.remove('hidden');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    
+    pastBookings.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="id-cell">#${b.id}</td>
+            <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
+            <td>${escapeHtml(b.car)}</td>
+            <td>${formatRentalDates(b.start_date, b.end_date)}</td>
+            <td>${formatDate(b.completion_date)}</td>
+            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="actions-cell">
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function updatePastPaginationControls() {
+    const pageInfo = document.getElementById('pastPageInfo');
+    const prevBtn = document.getElementById('btnPastPrev');
+    const nextBtn = document.getElementById('btnPastNext');
+    
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${pastPagination.page} of ${pastPagination.total_pages || 1}`;
+    }
+    
+    if (prevBtn) {
+        prevBtn.disabled = pastPagination.page <= 1;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = pastPagination.page >= pastPagination.total_pages;
+    }
+}
+
+function applyPastFilters() {
+    const search = document.getElementById('searchPastInput').value.toLowerCase().trim();
+    if (!search) {
+        renderPastBookingsTable();
+        return;
+    }
+    
+    const filtered = pastBookings.filter(b => 
+        (b.customer_name || '').toLowerCase().includes(search) ||
+        (b.car || '').toLowerCase().includes(search) ||
+        String(b.id).includes(search)
+    );
+    
+    const tbody = document.getElementById('pastBookingsBody');
+    const tableEl = document.getElementById('pastBookingsTable');
+    const emptyEl = document.getElementById('emptyPastState');
+    
+    tbody.innerHTML = '';
+    
+    if (filtered.length === 0) {
+        tableEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+    
+    tableEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    
+    filtered.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="id-cell">#${b.id}</td>
+            <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
+            <td>${escapeHtml(b.car)}</td>
+            <td>${formatRentalDates(b.start_date, b.end_date)}</td>
+            <td>${formatDate(b.completion_date)}</td>
+            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="actions-cell">
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function initPastBookingsHandlers() {
+    const sortSelect = document.getElementById('sortPastBy');
+    const pageSizeSelect = document.getElementById('pageSizePast');
+    const prevBtn = document.getElementById('btnPastPrev');
+    const nextBtn = document.getElementById('btnPastNext');
+    
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            pastSortBy = e.target.value;
+            pastPagination.page = 1;
+            loadPastBookings();
+        });
+    }
+    
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+            pastPagination.page_size = parseInt(e.target.value);
+            pastPagination.page = 1;
+            loadPastBookings();
+        });
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (pastPagination.page > 1) {
+                pastPagination.page--;
+                loadPastBookings();
+            }
+        });
+    }
+    
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (pastPagination.page < pastPagination.total_pages) {
+                pastPagination.page++;
+                loadPastBookings();
+            }
+        });
+    }
+}
+
+// ==================== CANCELLED BOOKINGS SEARCH ====================
+function applyCancelledFilters() {
+    const search = document.getElementById('searchCancelledInput').value.toLowerCase().trim();
+    if (!search) {
+        renderCancelledBookingsTable();
+        return;
+    }
+    
+    const filtered = cancelledBookings.filter(b => 
+        (b.customer_name || '').toLowerCase().includes(search) ||
+        (b.car || '').toLowerCase().includes(search) ||
+        (b.cancellation_reason || '').toLowerCase().includes(search) ||
+        String(b.id).includes(search)
+    );
+    
+    const tbody = document.getElementById('cancelledBookingsBody');
+    const tableEl = document.getElementById('cancelledBookingsTable');
+    const emptyEl = document.getElementById('cancelledEmptyState');
+    
+    tbody.innerHTML = '';
+    
+    if (filtered.length === 0) {
+        tableEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+    }
+    
+    tableEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    
+    filtered.forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="id-cell">#${b.id}</td>
+            <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
+            <td>${escapeHtml(b.car)}</td>
+            <td>${formatRentalDates(b.start_date, b.end_date)}</td>
+            <td>${formatDate(b.cancellation_date)}</td>
+            <td class="reason-cell">${escapeHtml(b.cancellation_reason || 'N/A')}</td>
+            <td>${escapeHtml(b.cancelled_by || 'N/A')}</td>
+            <td class="actions-cell">
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+

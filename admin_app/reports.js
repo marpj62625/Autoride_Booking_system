@@ -35,6 +35,10 @@ const menuToggle = document.getElementById('menuToggle');
 // State
 let currentPeriod = 'daily'; // 'daily' | 'monthly'
 let revenueChart, statusChart, bookingsTrendChart, topVehiclesChart;
+let currentPopupChart = null;
+let currentChartData = null;
+let currentChartType = null;
+let filterTimeout = null;
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -60,6 +64,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebar.classList.remove('open');
         }
     });
+
+    // Initialize chart popup handlers
+    initChartPopupHandlers();
 
     // Initial load
     loadReport();
@@ -216,6 +223,9 @@ function renderRevenueChart(data) {
         },
         options: chartOptions('₱')
     });
+    
+    // Make chart clickable
+    makeChartClickable(document.getElementById('revenueChart'), revenueChart, 'bar');
 }
 
 // -- Booking Status Doughnut --
@@ -270,6 +280,9 @@ function renderStatusChart(data) {
             }
         }
     });
+    
+    // Make chart clickable
+    makeChartClickable(document.getElementById('statusChart'), statusChart, 'doughnut');
 }
 
 // -- Bookings Trend (Line) --
@@ -302,6 +315,9 @@ function renderBookingsTrendChart(data) {
         },
         options: chartOptions('')
     });
+    
+    // Make chart clickable
+    makeChartClickable(document.getElementById('bookingsTrendChart'), bookingsTrendChart, 'line');
 }
 
 // -- Top Vehicles (Horizontal Bar) --
@@ -361,6 +377,9 @@ function renderTopVehiclesChart(data) {
             }
         }
     });
+    
+    // Make chart clickable
+    makeChartClickable(document.getElementById('topVehiclesChart'), topVehiclesChart, 'bar');
 }
 
 // -- Shared chart options  --
@@ -463,6 +482,296 @@ function showToast(type, message) {
 
     clearTimeout(_toastTimeout);
     _toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4000);
+}
+
+// ==================== EXPANDABLE CHART FUNCTIONALITY ====================
+
+let originalChartData = null; // Store original data for reset
+
+// Make charts clickable (subtask 5.2)
+function makeChartClickable(chartElement, chartInstance, chartType) {
+    chartElement.style.cursor = 'pointer';
+    chartElement.addEventListener('click', () => {
+        openChartPopup(chartInstance, chartType);
+    });
+}
+
+// Open chart popup (subtask 5.3)
+async function openChartPopup(chartInstance, chartType) {
+    currentChartType = chartType;
+    currentChartData = {
+        labels: [...chartInstance.data.labels],
+        datasets: chartInstance.data.datasets.map(ds => ({
+            ...ds,
+            data: [...ds.data]
+        }))
+    };
+    
+    // Store original data for reset functionality
+    originalChartData = JSON.parse(JSON.stringify(currentChartData));
+    
+    // Set chart popup title based on chart type
+    const titles = {
+        'bar': 'Revenue Overview',
+        'doughnut': 'Booking Status Distribution',
+        'line': 'Bookings Trend',
+        'horizontalBar': 'Most Rented Vehicles'
+    };
+    document.getElementById('chartPopupTitle').textContent = titles[chartType] || 'Chart Details';
+    
+    // Initialize date range filters (default: last 30 days)
+    const today = new Date().toISOString().split('T')[0];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    document.getElementById('filterStartDate').value = thirtyDaysAgo;
+    document.getElementById('filterEndDate').value = today;
+    document.getElementById('filterStatus').value = 'all';
+    document.getElementById('filterVehicleType').value = 'all';
+    
+    // Show chart popup modal
+    document.getElementById('chartPopupModal').classList.remove('hidden');
+    
+    // Render the enlarged chart
+    renderPopupChart();
+}
+
+// Render popup chart (subtask 5.4)
+function renderPopupChart() {
+    const canvas = document.getElementById('popupChartCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Destroy existing chart instance if present
+    if (currentPopupChart) {
+        currentPopupChart.destroy();
+    }
+    
+    // Create new Chart.js instance at 150% size (aspectRatio: 2)
+    const chartConfig = {
+        type: currentChartType,
+        data: currentChartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#f1f5f9',
+                        font: { family: 'Inter', size: 14, weight: 500 },
+                        padding: 16,
+                        usePointStyle: currentChartType === 'doughnut',
+                        pointStyleWidth: 10
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleColor: '#f1f5f9',
+                    bodyColor: '#94a3b8',
+                    padding: 12,
+                    cornerRadius: 8,
+                    titleFont: { family: 'Inter', weight: 600 },
+                    bodyFont: { family: 'Inter' }
+                }
+            }
+        }
+    };
+    
+    // Handle different chart types (line, bar, doughnut)
+    if (currentChartType !== 'doughnut') {
+        chartConfig.options.scales = {
+            y: {
+                ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12 } },
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                beginAtZero: true
+            },
+            x: {
+                ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12 } },
+                grid: { color: 'rgba(255,255,255,0.1)' }
+            }
+        };
+    } else {
+        chartConfig.options.cutout = '68%';
+    }
+    
+    currentPopupChart = new Chart(ctx, chartConfig);
+}
+
+// Apply chart filters (subtask 5.5)
+async function applyChartFilters() {
+    const startDate = document.getElementById('filterStartDate').value;
+    const endDate = document.getElementById('filterEndDate').value;
+    const status = document.getElementById('filterStatus').value;
+    const vehicleType = document.getElementById('filterVehicleType').value;
+    
+    if (!startDate || !endDate) {
+        showToast('error', 'Please select both start and end dates');
+        return;
+    }
+    
+    try {
+        // Fetch data from /api/reports/filtered with filter parameters
+        const params = new URLSearchParams({
+            start: startDate,
+            end: endDate,
+            status: status,
+            vehicle_type: vehicleType,
+            period: currentPeriod
+        });
+        
+        const res = await fetch(`${API_BASE}/reports/filtered?${params}`);
+        if (!res.ok) throw new Error('Failed to fetch filtered data');
+        
+        const data = await res.json();
+        
+        // Transform filtered data for chart rendering
+        currentChartData = transformDataForChart(data, currentChartType);
+        
+        // Update chart with new data
+        renderPopupChart();
+        
+        showToast('success', 'Filters applied successfully');
+    } catch (err) {
+        console.error('Filter error:', err);
+        showToast('error', 'Failed to apply filters. Using current data.');
+    }
+}
+
+// Transform data for different chart types
+function transformDataForChart(data, chartType) {
+    // Transform the filtered data based on chart type
+    let transformedData = { labels: [], datasets: [] };
+    
+    switch(chartType) {
+        case 'bar': // Revenue chart
+            if (data.revenue) {
+                const ctx = document.getElementById('popupChartCanvas').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+                gradient.addColorStop(0, 'rgba(99, 102, 241, 0.5)');
+                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.02)');
+                
+                transformedData = {
+                    labels: data.revenue.labels,
+                    datasets: [{
+                        label: 'Revenue (?)',
+                        data: data.revenue.values,
+                        backgroundColor: gradient,
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        hoverBackgroundColor: 'rgba(99, 102, 241, 0.7)',
+                    }]
+                };
+            }
+            break;
+            
+        case 'line': // Bookings trend chart
+            if (data.bookings_trend) {
+                const ctx = document.getElementById('popupChartCanvas').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+                gradient.addColorStop(0, 'rgba(6, 182, 212, 0.35)');
+                gradient.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+                
+                transformedData = {
+                    labels: data.bookings_trend.labels,
+                    datasets: [{
+                        label: 'Bookings',
+                        data: data.bookings_trend.values,
+                        borderColor: '#06b6d4',
+                        backgroundColor: gradient,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#06b6d4',
+                        pointBorderColor: '#111827',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 7,
+                    }]
+                };
+            }
+            break;
+            
+        case 'doughnut': // Status chart
+            if (data.status) {
+                const colors = {
+                    'Pending':   '#f59e0b',
+                    'Approved':  '#22c55e',
+                    'Rejected':  '#ef4444',
+                    'Confirmed': '#3b82f6',
+                    'Cancelled': '#64748b',
+                    'Completed': '#10b981'
+                };
+                
+                transformedData = {
+                    labels: data.status.labels,
+                    datasets: [{
+                        data: data.status.values,
+                        backgroundColor: data.status.labels.map(l => colors[l] || '#6366f1'),
+                        borderColor: '#111827',
+                        borderWidth: 3,
+                        hoverOffset: 8
+                    }]
+                };
+            }
+            break;
+            
+        default:
+            // Return current data if chart type is unknown
+            return currentChartData;
+    }
+    
+    return transformedData;
+}
+
+// Initialize chart popup event handlers
+function initChartPopupHandlers() {
+    // Close button handler
+    document.getElementById('chartPopupClose').addEventListener('click', () => {
+        document.getElementById('chartPopupModal').classList.add('hidden');
+        if (currentPopupChart) {
+            currentPopupChart.destroy();
+            currentPopupChart = null;
+        }
+    });
+    
+    // Close on overlay click
+    document.getElementById('chartPopupModal').addEventListener('click', (e) => {
+        if (e.target.id === 'chartPopupModal') {
+            document.getElementById('chartPopupModal').classList.add('hidden');
+            if (currentPopupChart) {
+                currentPopupChart.destroy();
+                currentPopupChart = null;
+            }
+        }
+    });
+    
+    // Filter event handlers with debouncing (subtask 5.6)
+    const filterInputs = ['filterStartDate', 'filterEndDate', 'filterStatus', 'filterVehicleType'];
+    filterInputs.forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(applyChartFilters, 500);
+        });
+    });
+    
+    // Reset filters button handler
+    document.getElementById('btnResetFilters').addEventListener('click', () => {
+        const today = new Date().toISOString().split('T')[0];
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        document.getElementById('filterStartDate').value = thirtyDaysAgo;
+        document.getElementById('filterEndDate').value = today;
+        document.getElementById('filterStatus').value = 'all';
+        document.getElementById('filterVehicleType').value = 'all';
+        
+        // Restore original chart data
+        if (originalChartData && currentPopupChart) {
+            currentChartData = JSON.parse(JSON.stringify(originalChartData));
+            renderPopupChart();
+        }
+        
+        showToast('success', 'Filters reset to default');
+    });
 }
 
 // ==================== HELPERS ====================

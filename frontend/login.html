@@ -15,7 +15,6 @@
         <nav>
             <a href="login.html">Login</a>
             <a href="register.html">Register</a>
-            <!-- <a href="login.html?redirect=driver_portal/apply.html" class="btn-outline" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; width: auto;">Apply as Driver</a> -->
         </nav>
     </header>
 
@@ -162,27 +161,6 @@
             });
         });
 
-        let isDriverLogin = false;
-        function toggleDriverLogin() {
-            isDriverLogin = !isDriverLogin;
-            const title = document.getElementById('loginTitle');
-            const btn = document.getElementById('driverToggleBtn');
-            if (isDriverLogin) {
-                title.textContent = 'Driver Login';
-                btn.textContent = 'Login as Customer';
-                btn.style.background = '#e0f2fe';
-                btn.style.color = '#0284c7';
-                btn.style.borderColor = '#bae6fd';
-                redirectUrl = 'driver_portal/driver-dashboard.html';
-            } else {
-                title.textContent = 'Welcome Back';
-                btn.textContent = 'Login as Driver';
-                btn.style.background = 'none';
-                btn.style.color = '#64748b';
-                btn.style.borderColor = '#e2e8f0';
-                redirectUrl = urlParams.get('redirect') || 'vehicles.html';
-            }
-        }
         
         if (localStorage.getItem('user_id') && window.location.search.includes('redirect')) {
             window.location.href = redirectUrl;
@@ -219,8 +197,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        credential: response.credential,
-                        is_driver: isDriverLogin 
+                        credential: response.credential
                     })
                 });
                 console.log('Backend response status:', res.status);
@@ -249,11 +226,6 @@
             showMessage('Login successful!');
             localStorage.setItem('user_id', data.user_id);
             localStorage.setItem('full_name', data.full_name);
-            if (isDriverLogin || data.is_driver) {
-                localStorage.setItem('is_driver', '1');
-            } else {
-                localStorage.removeItem('is_driver');
-            }
             setTimeout(() => window.location.href = redirectUrl, 1000);
         }
 

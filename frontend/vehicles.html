@@ -17,10 +17,8 @@
             <span id="userGreeting" style="margin-right: 1.5rem; font-weight: 500; font-size: 0.9rem; color: var(--text-muted);"></span>
             <a href="dashboard.html" id="dashboardLink" style="display: none;">Dashboard</a>
             <a href="profile.html" id="profileLink" style="display: none;">My Profile</a>
-            <!-- <a href="driver_portal/driver-dashboard.html" id="driverPortalLink" class="btn-outline" style="display: none; padding: 0.5rem 1rem; font-size: 0.85rem; width: auto;">Driver Portal</a> -->
             <a href="#" id="logoutBtn" style="display: none;">Logout</a>
             <a href="login.html" id="loginLink">Login</a>
-            <!-- <a href="login.html?redirect=driver_portal/apply.html" id="applyDriverLink" class="btn-outline" style="padding: 0.5rem 1.25rem; font-size: 0.85rem; width: auto;">Apply as Driver</a> -->
             <a href="register.html" id="registerLink">Register</a>
         </nav>
     </header>
@@ -171,19 +169,12 @@
             const userFullName = localStorage.getItem('full_name');
             document.getElementById('userGreeting').textContent = `Hello, ${userFullName}`;
             document.getElementById('logoutBtn').style.display = 'inline';
-            if (localStorage.getItem('is_driver') === '1') {
-                const dpLink = document.getElementById('driverPortalLink');
-                if (dpLink) dpLink.style.display = 'inline';
-            } else {
-                const dbLink = document.getElementById('dashboardLink');
-                if (dbLink) dbLink.style.display = 'inline';
-            }
+            const dbLink = document.getElementById('dashboardLink');
+            if (dbLink) dbLink.style.display = 'inline';
             const profLink = document.getElementById('profileLink');
             if (profLink) profLink.style.display = 'inline';
             document.getElementById('loginLink').style.display = 'none';
             document.getElementById('registerLink').style.display = 'none';
-            const applyLink = document.getElementById('applyDriverLink');
-            if (applyLink) applyLink.style.display = 'none';
         }
 
         document.getElementById('logoutBtn').addEventListener('click', () => {

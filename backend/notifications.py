@@ -165,26 +165,6 @@ def compose_license_rejected_sms() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Driver application compose functions
-# ---------------------------------------------------------------------------
-
-def compose_driver_approved_sms(driver_name) -> str:
-    """SMS sent to a driver applicant when their application is approved."""
-    return (
-        f"Congratulations, {driver_name}! Your driver application has been approved. "
-        f"You can now start accepting bookings."
-    )
-
-
-def compose_driver_rejected_sms(reason) -> str:
-    """SMS sent to a driver applicant when their application is rejected."""
-    return (
-        f"Your driver application was not approved. Reason: {reason}. "
-        f"You may re-apply once the issues are resolved."
-    )
-
-
-# ---------------------------------------------------------------------------
 # Admin alert compose functions
 # ---------------------------------------------------------------------------
 
@@ -193,14 +173,6 @@ def compose_admin_new_booking_sms(booking_id, customer_name, brand, model, start
     return (
         f"New booking #{booking_id} from {customer_name} for {brand} {model}, "
         f"{start_date} to {end_date}. Review in admin panel."
-    )
-
-
-def compose_admin_driver_application_sms(applicant_name) -> str:
-    """Admin alert SMS when a new driver application is submitted."""
-    return (
-        f"New driver application from {applicant_name}. "
-        f"Please review in the admin panel."
     )
 
 

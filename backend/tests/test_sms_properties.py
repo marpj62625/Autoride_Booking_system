@@ -55,10 +55,7 @@ from notifications import (  # noqa: E402  (import after sys.path / patch setup)
     compose_split_paid_sms,
     compose_license_approved_sms,
     compose_license_rejected_sms,
-    compose_driver_approved_sms,
-    compose_driver_rejected_sms,
     compose_admin_new_booking_sms,
-    compose_admin_driver_application_sms,
     compose_admin_payment_proof_sms,
     compose_otp_sms,
     SMS_Service,
@@ -89,7 +86,7 @@ _amount = st.decimals(
 _amount_str = st.floats(min_value=1.0, max_value=999_999.0, allow_nan=False, allow_infinity=False)
 _otp = st.from_regex(r"[0-9]{6}", fullmatch=True)
 _date_str = st.dates().map(str)
-_recipient_type = st.sampled_from(["customer", "admin", "driver"])
+_recipient_type = st.sampled_from(["customer", "admin"])
 
 
 # ===========================================================================
@@ -322,29 +319,8 @@ def test_compose_split_paid_contains_required_fields(booking_id, amount):
 
 
 # ===========================================================================
-# Property 6: driver application messages preserve variable fields
-# Feature: sms-notification, Property 6: driver application messages preserve variable fields
-# ===========================================================================
-
-@given(_text)
-@settings(max_examples=200)
-def test_compose_driver_approved_contains_driver_name(driver_name):
-    """compose_driver_approved_sms contains the driver name."""
-    result = compose_driver_approved_sms(driver_name)
-    assert driver_name in result
-
-
-@given(_text)
-@settings(max_examples=200)
-def test_compose_driver_rejected_contains_reason(reason):
-    """compose_driver_rejected_sms contains the rejection reason."""
-    result = compose_driver_rejected_sms(reason)
-    assert reason in result
-
-
-# ===========================================================================
-# Property 7: admin alert messages contain required fields
-# Feature: sms-notification, Property 7: admin alert messages contain required fields
+# Property 6: admin alert messages contain required fields
+# Feature: sms-notification, Property 6: admin alert messages contain required fields
 # ===========================================================================
 
 @given(_booking_id, _text, _text, _text, _date_str, _date_str)
@@ -362,14 +338,6 @@ def test_compose_admin_new_booking_contains_required_fields(
     assert model in result
     assert str(start_date) in result
     assert str(end_date) in result
-
-
-@given(_text)
-@settings(max_examples=200)
-def test_compose_admin_driver_application_contains_applicant_name(applicant_name):
-    """compose_admin_driver_application_sms contains the applicant name."""
-    result = compose_admin_driver_application_sms(applicant_name)
-    assert applicant_name in result
 
 
 @given(_booking_id, _text, _amount_str)
