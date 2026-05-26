@@ -5496,208 +5496,103 @@ def update_driver_booking_status(booking_id):
 @app.route('/admin/detailed-stats', methods=['GET'])
 
 def get_detailed_stats():
-
     """Aggregated stats for the executive dashboard charts."""
-
     admin_id = request.args.get('admin_id')
+    chart_type = request.args.get('type')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    status_filter = request.args.get('status')
+    vehicle_type = request.args.get('vehicle_type')
 
     try:
-
         cur = get_cursor()
-
         
-
         # Determine location filter
-
         location_filter = None
-
         if admin_id:
-
             cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (admin_id,))
-
             adm = cur.fetchone()
-
             if adm and adm['role'] == 'admin' and adm['assigned_location']:
-
                 location_filter = adm['assigned_location']
 
-
+        def apply_filters(query, params, prefix_b='b', prefix_v='v', skip_status=False):
+            if location_filter:
+                query += f" AND {prefix_v}.location = %s"
+                params.append(location_filter)
+            if date_from:
+                query += f" AND {prefix_b}.start_date >= %s"
+                params.append(date_from)
+            if date_to:
+                query += f" AND {prefix_b}.start_date <= %s"
+                params.append(date_to)
+            if not skip_status and status_filter and status_filter != 'all':
+                query += f" AND {prefix_b}.status = %s"
+                params.append(status_filter)
+            if vehicle_type and vehicle_type != 'all':
+                query += f" AND {prefix_v}.type = %s"
+                params.append(vehicle_type)
+            return query, params
 
         # 1. Revenue & Bookings
-
         rev_query = "SELECT SUM(b.total_price) as total_revenue, COUNT(b.id) as total_bookings FROM bookings b JOIN vehicles v ON b.vehicle_id = v.id WHERE b.status != 'Cancelled'"
-
         rev_params = []
-
-        if location_filter:
-
-            rev_query += " AND v.location = %s"
-
-            rev_params.append(location_filter)
-
-            
-
+        rev_query, rev_params = apply_filters(rev_query, rev_params, 'b', 'v', skip_status=False)
         cur.execute(rev_query, tuple(rev_params))
-
         basic_stats = cur.fetchone()
-
         
-
         # 2. Daily Revenue (Last 30 days)
-
         trend_query = """
-
             SELECT TO_CHAR(b.start_date, 'YYYY-MM-DD') as day, SUM(b.total_price) as amount
-
             FROM bookings b
-
             JOIN vehicles v ON b.vehicle_id = v.id
-
             WHERE b.start_date >= CURRENT_DATE - INTERVAL '30 days' AND b.status != 'Cancelled'
-
         """
-
         trend_params = []
-
-        if location_filter:
-
-            trend_query += " AND v.location = %s"
-
-            trend_params.append(location_filter)
-
-            
-
+        trend_query, trend_params = apply_filters(trend_query, trend_params, 'b', 'v', skip_status=False)
         trend_query += " GROUP BY day ORDER BY day ASC"
-
         cur.execute(trend_query, tuple(trend_params))
-
         revenue_trend = cur.fetchall()
-
         
-
         # 3. Fleet Distribution
-
-        fleet_query = "SELECT status, COUNT(*) as count FROM vehicles"
-
+        # For fleet, we don't have bookings 'b', just 'v'
+        fleet_query = "SELECT status, COUNT(*) as count FROM vehicles v WHERE 1=1"
         fleet_params = []
-
         if location_filter:
-
-            fleet_query += " WHERE location = %s"
-
+            fleet_query += " AND v.location = %s"
             fleet_params.append(location_filter)
-
-        
-
+        if vehicle_type and vehicle_type != 'all':
+            fleet_query += " AND v.type = %s"
+            fleet_params.append(vehicle_type)
         fleet_query += " GROUP BY status"
-
         cur.execute(fleet_query, tuple(fleet_params))
-
         fleet_dist = cur.fetchall()
-
         
-
         # 4. Top Performing Vehicles
-
         top_query = """
-
             SELECT v.brand, v.model, COUNT(b.id) as booking_count, SUM(b.total_price) as revenue
-
             FROM vehicles v
-
             JOIN bookings b ON v.id = b.vehicle_id
-
             WHERE b.status != 'Cancelled'
-
         """
-
         top_params = []
-
-        if location_filter:
-
-            top_query += " AND v.location = %s"
-
-            top_params.append(location_filter)
-
-            
-
+        top_query, top_params = apply_filters(top_query, top_params, 'b', 'v', skip_status=False)
         top_query += " GROUP BY v.id, v.brand, v.model ORDER BY revenue DESC LIMIT 5"
-
         cur.execute(top_query, tuple(top_params))
-
         top_vehicles = cur.fetchall()
 
-
-
-        # 5. User Stats (Enhanced Breakdown)
-
-        # Email Stats
-
-        cur.execute("SELECT is_email_verified, COUNT(*) as count FROM users GROUP BY is_email_verified")
-
-        email_rows = cur.fetchall()
-
-        email_stats = {
-
-            "verified": next((int(r['count']) for r in email_rows if r['is_email_verified'] is True), 0),
-
-            "unverified": next((int(r['count']) for r in email_rows if r['is_email_verified'] is False), 0)
-
-        }
-
-
-
-        # License Status
-
-        cur.execute("SELECT is_verified, COUNT(*) as count FROM users GROUP BY is_verified")
-
-        id_rows = cur.fetchall()
-
-        license_stats = {
-
-            "pending": next((int(r['count']) for r in id_rows if r['is_verified'] == 0), 0),
-
-            "approved": next((int(r['count']) for r in id_rows if r['is_verified'] == 1), 0),
-
-            "rejected": next((int(r['count']) for r in id_rows if r['is_verified'] == 2), 0)
-
-        }
-
-        
-
         return jsonify({
-
-            "summary": dict(basic_stats) if basic_stats else {"total_revenue": 0, "total_bookings": 0},
-
-            "revenueTrend": [dict(r) for r in revenue_trend],
-
-            "fleetDistribution": [dict(f) for f in fleet_dist],
-
-            "topVehicles": [dict(v) for v in top_vehicles],
-
-            "userStats": {
-
-                "email": email_stats,
-
-                "license": license_stats
-
-            }
-
-        }), 200
-
-        
+            "totalRevenue": float(basic_stats['total_revenue'] or 0),
+            "totalBookings": basic_stats['total_bookings'] or 0,
+            "revenueTrend": revenue_trend,
+            "fleetDistribution": fleet_dist,
+            "topVehicles": top_vehicles
+        })
 
     except Exception as e:
-
+        print(f"Error in detailed stats: {e}")
         return jsonify({"error": str(e)}), 500
-
     finally:
-
-        if 'cur' in locals():
-
-            cur.close()
-
-
+        if 'cur' in locals(): cur.close()
 
 @app.route('/bookings/<int:booking_id>/receipt', methods=['GET'])
 
@@ -7466,7 +7361,7 @@ def get_admin_stats_v2():
 
 
 
-@app.route('/admin/detailed-stats', methods=['GET'])
+@app.route('/admin/dashboard-stats', methods=['GET'])
 
 def get_admin_detailed_stats():
 
