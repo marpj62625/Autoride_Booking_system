@@ -4747,21 +4747,34 @@
         if (topVehEl) {
             const topVeh = (data.topVehicles || []).slice(0, 6);
             if (charts.topPie) charts.topPie.destroy();
-            charts.topPie = new Chart(topVehEl.getContext('2d'), {
-                type: 'pie',
-                data: {
-                    labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
-                    datasets: [{
-                        data: topVeh.map(c => c.booking_count || 0),
-                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
-                }
-            });
+            
+            const hasData = topVeh.length > 0 && topVeh.some(c => c.booking_count > 0);
+            
+            if (hasData) {
+                charts.topPie = new Chart(topVehEl.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
+                        datasets: [{
+                            data: topVeh.map(c => c.booking_count || 0),
+                            backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
+                    }
+                });
+            } else {
+                const ctx = topVehEl.getContext('2d');
+                ctx.clearRect(0, 0, topVehEl.width, topVehEl.height);
+                ctx.font = 'bold 12px Arial';
+                ctx.fillStyle = '#94a3b8';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('No data available', topVehEl.width / 2, topVehEl.height / 2);
+            }
         }
 
         // Make dashboard charts clickable

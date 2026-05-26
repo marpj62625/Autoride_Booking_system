@@ -7300,16 +7300,21 @@ def get_admin_stats_v2():
         # Top grossing vehicles
 
         try:
-            cur.execute("""
+            top_query = """
                 SELECT v.brand, v.model, v.plate_number,
                        COUNT(b.id) as booking_count,
                        COALESCE(SUM(b.total_price), 0) as revenue
                 FROM vehicles v
                 LEFT JOIN bookings b ON b.vehicle_id = v.id AND b.payment_status = 'Paid'
+            """
+            if date_filter:
+                top_query += date_filter
+            top_query += """
                 GROUP BY v.id, v.brand, v.model, v.plate_number
                 ORDER BY revenue DESC
                 LIMIT 5
-            """)
+            """
+            cur.execute(top_query, tuple(params))
             top_vehicles = [{"brand": r.get('brand'), "model": r.get('model'), "booking_count": int(r.get('booking_count') or 0), "revenue": float(r.get('revenue') or 0)} for r in cur.fetchall()]
         except Exception as e:
             print("ERROR in topVehicles query:", e)
