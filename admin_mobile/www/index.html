@@ -4608,23 +4608,39 @@
             
             // Add BOM for Excel UTF-8 support
             const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+            const csvContent = BOM + csv;
             
-            // Add to document body for mobile compatibility
-            document.body.appendChild(a);
-            a.click();
-            
-            // Clean up after a delay
-            setTimeout(() => {
+            // Try multiple download methods for mobile compatibility
+            try {
+                // Method 1: Blob download (works on most browsers)
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 250);
+                
+                showNotification('Report exported! Check your Downloads folder.', 'success');
+            } catch (err) {
+                // Method 2: Data URL fallback for mobile
+                const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
                 document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 100);
-            
-            showNotification('Report exported successfully!', 'success');
+                showNotification('Report exported! Check your Downloads folder.', 'success');
+            }
         },
 
         printReport() {
@@ -4637,13 +4653,8 @@
                 `<tr><td>${i+1}</td><td>${c.brand} ${c.model}</td><td>${c.booking_count}</td><td>&#8369;${(c.revenue||0).toLocaleString()}</td></tr>`
             ).join('');
             
-            const win = window.open('', '_blank');
-            if (!win) {
-                showNotification('Please allow popups to print', 'error');
-                return;
-            }
-            
-            win.document.write(`
+            // Create print content as data URL to avoid popup blockers
+            const printContent = `
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -4657,7 +4668,20 @@
                         table { width: 100%; border-collapse: collapse; margin-top: 16px; }
                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                         th { background: #f4f4f4; font-weight: bold; }
+                        .no-print { margin-top: 20px; }
+                        .no-print button {
+                            background: #0052ff;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            margin-right: 10px;
+                        }
                         @media print {
+                            .no-print { display: none; }
                             body { padding: 10px; }
                         }
                     </style>
@@ -4680,32 +4704,28 @@
                             ${rows}
                         </tbody>
                     </table>
+                    <div class="no-print">
+                        <button onclick="window.print()">??? Print Report</button>
+                        <button onclick="window.close()" style="background: #6b7080;">? Close</button>
+                    </div>
                     <script>
-                        // Auto-print when page loads
-                        window.onload = function() {
-                            window.print();
-                        };
-                        
-                        // Close window after printing or when user cancels
-                        window.onafterprint = function() {
-                            window.close();
-                        };
-                        
-                        // Handle Android back button
+                        // Handle back button
                         window.addEventListener('popstate', function() {
                             window.close();
                         });
-                        
-                        // Fallback: close after 500ms if history is empty
-                        if (window.history.length <= 1) {
-                            setTimeout(function() {
-                                window.close();
-                            }, 500);
-                        }
                     <\/script>
                 </body>
                 </html>
-            `);
+            `;
+            
+            // Open in new window with the content
+            const win = window.open('', '_blank');
+            if (!win) {
+                showNotification('Please allow popups to print', 'error');
+                return;
+            }
+            
+            win.document.write(printContent);
             win.document.close();
         }
     };
