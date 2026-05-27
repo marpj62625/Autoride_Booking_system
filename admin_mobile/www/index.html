@@ -4570,21 +4570,52 @@
         exportExcel() {
             const data = this._rawData;
             if (!data) { showNotification('No data to export', 'error'); return; }
-            // Build CSV (opens as Excel)
-            const rows = [['Vehicle', 'Bookings', 'Revenue (PHP)']];
-            (data.topVehicles || []).forEach(c => rows.push([`${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]));
+            
+            const totalRev = data.totalRevenue || 0;
+            const totalBook = data.totalBookings || 0;
+            
+            // Build comprehensive CSV with summary
+            const rows = [];
+            rows.push(['Autoride Sales Report']);
+            rows.push(['Generated:', new Date().toLocaleString()]);
             rows.push([]);
-            rows.push(['Date', 'Revenue']);
-            (data.revenueTrend || []).forEach(t => rows.push([t.day || '', t.amount || 0]));
-            const csv = rows.map(r => r.join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
+            rows.push(['Summary']);
+            rows.push(['Total Revenue (PHP)', totalRev]);
+            rows.push(['Total Bookings', totalBook]);
+            rows.push(['Average Revenue per Booking (PHP)', totalBook > 0 ? Math.floor(totalRev / totalBook) : 0]);
+            rows.push([]);
+            rows.push(['Top Vehicles by Revenue']);
+            rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
+            (data.topVehicles || []).forEach((c, i) => {
+                rows.push([i + 1, `${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]);
+            });
+            rows.push([]);
+            rows.push(['Revenue Trend']);
+            rows.push(['Date', 'Revenue (PHP)']);
+            (data.revenueTrend || []).forEach(t => {
+                rows.push([t.day || t.label || '', t.amount || 0]);
+            });
+            
+            // Create CSV content
+            const csv = rows.map(r => r.map(cell => {
+                // Escape cells containing commas or quotes
+                const str = String(cell);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')).join('\n');
+            
+            // Add BOM for Excel UTF-8 support
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
             URL.revokeObjectURL(url);
-            showNotification('Report exported!', 'success');
+            showNotification('Report exported successfully!', 'success');
         },
 
         printReport() {
