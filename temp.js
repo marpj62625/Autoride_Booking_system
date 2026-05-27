@@ -1,1967 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Autoride Admin Premium</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root {
-            /* Brand & Primary Actions */
-            --primary: #0052ff;
-            --on-primary: #ffffff;
-            --primary-dark: #0040CC;
-            --primary-light: #4D8FFF;
-            --primary-glow: rgba(0, 82, 255, 0.18);
-            /* Backgrounds & Surfaces */
-            --surface: #ffffff;
-            --surface-container: #f4f6fb;
-            --surface-bright: #ffffff;
-            /* Typography & Outlines */
-            --on-surface: #0f1117;
-            --on-surface-variant: #3a3d47;
-            --outline: #dde2ee;
-            /* Aliases */
-            --bg-dark: #f0f2f8;
-            --bg-page: #f0f2f8;
-            --bg-card: #ffffff;
-            --bg-card2: #f4f6fb;
-            --bg-input: #f4f6fb;
-            --text-main: #0f1117;
-            --text-on-surface: #0f1117;
-            --text-primary: #0f1117;
-            --text-secondary: #3a3d47;
-            --text-muted: #6b7080;
-            --border: #dde2ee;
-            --border-light: #e8ecf4;
-            --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,82,255,0.06);
-            --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
-            --shadow-premium: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,82,255,0.08);
-            --success: #059669;
-            --danger: #dc2626;
-            --amber: #d97706;
-            --radius-lg: 20px;
-            --radius-md: 14px;
-            --radius: 14px;
-        }
 
-        [data-theme="dark"] {
-            --primary: #4D8FFF;
-            --on-primary: #ffffff;
-            --primary-dark: #0052FF;
-            --primary-light: #80AFFF;
-            --primary-glow: rgba(77, 143, 255, 0.4);
-            --surface: #0A0A0A;
-            --surface-container: #141414;
-            --surface-bright: #1a1a1a;
-            --bg-dark: #0A0A0A;
-            --bg-page: #0A0A0A;
-            --bg-card: #141414;
-            --bg-card2: #1a1a1a;
-            --bg-input: #1a1a1a;
-            --on-surface: #FFFFFF;
-            --on-surface-variant: #a1a1aa;
-            --outline: rgba(255,255,255,0.08);
-            --text-main: #FFFFFF;
-            --text-on-surface: #FFFFFF;
-            --text-primary: #FFFFFF;
-            --text-secondary: #a1a1aa;
-            --text-muted: #52525b;
-            --border: rgba(255,255,255,0.08);
-            --border-light: rgba(255,255,255,0.12);
-            --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
-            --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
-            --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-        }
-
-        .hidden { display: none !important; }
-        .revenue-restricted { display: none; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
-
-        * { 
-            margin: 0; padding: 0; box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        
-        body {
-            background: var(--bg-dark);
-            background-image: radial-gradient(circle at top right, rgba(0, 82, 255, 0.06), transparent 350px),
-                              radial-gradient(circle at bottom left, rgba(5, 150, 105, 0.04), transparent 350px);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow-x: hidden;
-            line-height: 1.5;
-        }
-
-        /* ---------- PREMIUM HEADER ---------- */
-        .mobile-header {
-            height: 64px;
-            padding: 0 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 1000;
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(0,0,0,0.04);
-        }
-
-        .header-left { display: flex; align-items: center; gap: 14px; }
-        .menu-btn { 
-            background: var(--surface-container); 
-            border: 1px solid var(--border); 
-            color: var(--text-secondary); 
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .menu-btn:active { transform: scale(0.92); background: var(--border); }
-        
-        .logo-wrap { display: flex; align-items: center; gap: 8px; }
-        .logo-wrap i { 
-            color: #f87171; 
-            font-size: 1.3rem; 
-        }
-        .logo-wrap span { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; color: var(--text-main); }
-        .admin-badge {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            color: white;
-            font-size: 0.58rem;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
-        }
-
-        .header-right { display: flex; align-items: center; gap: 10px; }
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 0.85rem;
-            color: white;
-        }
-        .notif-btn { 
-            background: var(--surface-container); 
-            border: 1px solid var(--border); 
-            color: var(--text-secondary); 
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            position: relative; 
-        }
-        .notif-dot { 
-            position: absolute; top: 8px; right: 8px; 
-            width: 7px; height: 7px; 
-            background: var(--danger); 
-            border-radius: 50%; 
-            border: 2px solid white; 
-        }
-
-        /* ---------- SIDE DRAWER ---------- */
-        .side-drawer {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: var(--surface);
-            z-index: 5000;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 4px 0 24px rgba(0,0,0,0.12);
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-        }
-
-        .drawer-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 4999;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .drawer-header {
-            padding: 30px 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .drawer-content {
-            flex: 1;
-            padding: 20px 10px;
-            overflow-y: auto;
-        }
-
-        .drawer-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 11px 16px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.875rem;
-            font-weight: 600;
-            border-radius: 10px;
-            margin-bottom: 2px;
-            transition: all 0.15s;
-        }
-
-        .drawer-item i {
-            width: 18px;
-            font-size: 1rem;
-            text-align: center;
-            color: var(--text-muted);
-        }
-
-        .drawer-item.active {
-            background: rgba(0, 82, 255, 0.08);
-            color: var(--primary);
-            border: 1px solid rgba(0, 82, 255, 0.15);
-        }
-
-        .drawer-item.active i {
-            color: var(--primary);
-        }
-
-        /* ---------- NOTIFICATIONS ---------- */
-        .notification-container {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            left: 20px;
-            z-index: 6000;
-            pointer-events: none;
-        }
-
-        .notification {
-            background: var(--surface-solid);
-            border: 1px solid var(--border);
-            padding: 16px;
-            border-radius: 16px;
-            margin-bottom: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transform: translateX(120%);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: auto;
-            border-left: 4px solid var(--primary);
-        }
-
-        .notification.show { transform: translateX(0); }
-        .notification.success { border-left-color: var(--success); }
-        .notification.error { border-left-color: var(--danger); }
-        .notification-icon { font-size: 1.2rem; }
-
-        /* ---------- MAIN CONTENT ---------- */
-        .main-content {
-            flex: 1;
-            padding: 80px 16px 88px;
-            width: 100%;
-        }
-
-        .page-title { 
-            font-size: 1.75rem; 
-            font-weight: 800; 
-            margin-bottom: 4px; 
-            letter-spacing: -0.8px;
-            color: var(--text-main);
-        }
-        .page-subtitle { 
-            font-size: 0.82rem; 
-            color: var(--text-muted); 
-            margin-bottom: 24px; 
-            display: flex; 
-            align-items: center; 
-            gap: 6px; 
-            font-weight: 500;
-        }
-
-        /* ---------- PREMIUM CARDS ---------- */
-        .stat-card {
-            background: var(--surface);
-            padding: 20px;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border);
-            margin-bottom: 12px;
-            position: relative;
-            box-shadow: var(--shadow-card);
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .stat-card:active { transform: scale(0.985); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-        
-        .stat-card h5 { 
-            font-size: 0.68rem; 
-            color: var(--text-muted); 
-            text-transform: uppercase; 
-            margin-bottom: 6px; 
-            font-weight: 700; 
-            letter-spacing: 0.8px; 
-        }
-        .stat-card .value { 
-            font-size: 2rem; 
-            font-weight: 800; 
-            letter-spacing: -0.5px;
-            margin-bottom: 2px;
-            color: var(--text-main);
-        }
-        .stat-card .label { 
-            font-size: 0.8rem; 
-            color: var(--text-muted); 
-            font-weight: 500; 
-        }
-        .stat-icon { 
-            position: absolute; 
-            top: 20px; right: 20px; 
-            font-size: 1.5rem; 
-            opacity: 0.7;
-        }
-
-        .chart-card {
-            background: var(--surface);
-            padding: 20px;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border);
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-card);
-        }
-        .chart-card h3 { 
-            font-size: 0.9rem; 
-            font-weight: 700; 
-            margin-bottom: 16px; 
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .chart-card h3::before {
-            content: '';
-            width: 3px; height: 14px;
-            background: var(--primary);
-            border-radius: 3px;
-        }
-        .chart-container { height: 220px; width: 100%; position: relative; }
-
-        /* ---------- BOTTOM NAVIGATION ---------- */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 68px;
-            background: rgba(255, 255, 255, 0.95);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0 4px;
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1000;
-            box-shadow: 0 -1px 0 var(--border), 0 -4px 16px rgba(0,0,0,0.06);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-        }
-
-        .nav-item {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            flex: 1;
-            padding: 8px 0;
-            text-transform: none;
-            letter-spacing: 0;
-        }
-
-        .nav-item i { font-size: 1.35rem; transition: inherit; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item.active i {
-            color: var(--primary);
-        }
-
-        /* ---------- PILLS ---------- */
-        .pill {
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            border: 1px solid transparent;
-        }
-        .pill.pending { background: rgba(217, 119, 6, 0.1); color: var(--amber); border-color: rgba(217, 119, 6, 0.2); }
-        .pill.confirmed { background: rgba(0, 82, 255, 0.08); color: var(--primary); border-color: rgba(0, 82, 255, 0.2); }
-        .pill.success, .pill.paid { background: rgba(5, 150, 105, 0.1); color: var(--success); border-color: rgba(5, 150, 105, 0.2); }
-        .pill.danger, .pill.cancelled { background: rgba(220, 38, 38, 0.08); color: var(--danger); border-color: rgba(220, 38, 38, 0.2); }
-
-        /* ---------- BUTTONS ---------- */
-        .btn-premium {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 13px 22px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            box-shadow: 0 4px 12px var(--primary-glow);
-            transition: all 0.15s;
-            cursor: pointer;
-        }
-        .btn-premium:active { transform: scale(0.96); opacity: 0.9; }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 11px 18px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            box-shadow: 0 2px 8px var(--primary-glow);
-        }
-        .btn-primary:active { transform: scale(0.96); opacity: 0.9; }
-
-        .btn-outline {
-            background: var(--surface-container);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 11px 18px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            transition: all 0.15s;
-        }
-        .btn-outline:active { background: var(--border); }
-
-        /* ---------- MODALS ---------- */
-        .premium-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            z-index: 5000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .modal-content {
-            background: var(--surface-solid);
-            width: 100%;
-            max-width: 450px;
-            border-radius: 32px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-premium);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        /* ---------- LIST ITEMS ---------- */
-        .list-item {
-            background: var(--surface);
-            padding: 16px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            margin-bottom: 10px;
-            display: flex;
-            gap: 14px;
-            align-items: center;
-            box-shadow: var(--shadow-card);
-        }
-        /* ---------- LOGIN OVERLAY ---------- */
-        #adminLoginOverlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-dark);
-            background-image: radial-gradient(circle at top right, rgba(99, 102, 241, 0.2), transparent 400px),
-                              radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1), transparent 400px);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .login-card {
-            background: #1e293b;
-            width: 100%;
-            max-width: 400px;
-            padding: 40px 30px;
-            border-radius: 32px;
-            border: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-            box-shadow: var(--shadow-premium);
-        }
-
-        .login-card h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            margin-bottom: 30px;
-            color: white;
-        }
-
-        .login-card input {
-            width: 100%;
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.07);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 16px;
-            color: white;
-            font-size: 1rem;
-            margin-bottom: 16px;
-            transition: all 0.3s;
-            outline: none;
-        }
-
-        .login-card input:focus {
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px var(--primary-glow);
-        }
-
-        .login-card button {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, var(--primary), #4f46e5);
-            color: white;
-            border: none;
-            border-radius: 18px;
-            font-weight: 800;
-            font-size: 1rem;
-            margin-top: 10px;
-            box-shadow: 0 10px 25px var(--primary-glow);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .login-card button:active { transform: scale(0.97); }
-
-        /* ---- LIGHT MODE: prevent white-on-white text ---- */
-        /*
-         * Broad reset: everything inside the main content area uses
-         * the theme text color by default. Exceptions are carved out
-         * below for elements that intentionally sit on dark/colored
-         * backgrounds (buttons, badges, pills, icon boxes, modals).
-         */
-
-        /* Reset all text in the main content area */
-        .main-content, .main-content * {
-            color: var(--text-main);
-        }
-
-        /* Muted / secondary text */
-        .main-content h5,
-        .main-content .label,
-        .main-content .page-subtitle,
-        .main-content small,
-        .main-content .text-muted {
-            color: var(--text-muted);
-        }
-
-        /* Inputs & selects inside light surfaces */
-        .main-content input:not([type="submit"]):not([type="button"]),
-        .main-content select,
-        .main-content textarea {
-            color: var(--text-main);
-            background: var(--surface-container);
-            border-color: var(--border);
-        }
-        .main-content input::placeholder,
-        .main-content textarea::placeholder { color: var(--text-muted); }
-
-        /* Buttons with colored backgrounds � keep white text */
-        .main-content .btn-primary,
-        .main-content .btn-premium,
-        .main-content button[style*="background: var(--primary)"],
-        .main-content button[style*="background: linear-gradient"],
-        .main-content button[style*="background:#"],
-        .main-content button[style*="background: #"] {
-            color: white;
-        }
-
-        /* Badges / pills / colored icon containers � keep white */
-        .main-content .admin-badge,
-        .main-content .user-avatar,
-        .main-content [style*="background: var(--primary)"] > i,
-        .main-content [style*="background: var(--primary)"] > span {
-            color: white;
-        }
-
-        /* Status pills keep their own colors */
-        .main-content .pill { color: inherit; }
-
-        /* Danger/logout link */
-        .main-content a[style*="color: #ef4444"] { color: #ef4444 !important; }
-
-        /* Stat card values that have explicit color overrides (confirmed, pending, etc.) */
-        .main-content .value[style*="color:"],
-        .main-content .value[style*="color: "] { color: inherit; }
-
-        /* ---- DARK OVERLAY PANELS � keep white text ---- */
-        /* These elements have dark backgrounds and must stay white */
-        #exitConfirmModal *,
-        #adminNotifPanel *,
-        .premium-modal .modal-content,
-        .premium-modal .modal-content * {
-            color: white;
-        }
-        .premium-modal .modal-content input,
-        .premium-modal .modal-content select,
-        .premium-modal .modal-content textarea {
-            color: white;
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(255,255,255,0.12);
-        }
-        .premium-modal .modal-content input::placeholder { color: rgba(255,255,255,0.4); }
-
-        /* Modal content (dark background) */
-        .modal-content {
-            background: #1e293b;
-            color: white;
-        }
-
-        /* Settings tab � stat-card items that are on white bg need dark text */
-        #settings .stat-card h4 { color: var(--text-main); }
-        #settings .stat-card p  { color: var(--text-muted); }
-
-        /* Dark theme overrides � restore white text everywhere */
-        [data-theme="dark"] .main-content,
-        [data-theme="dark"] .main-content * {
-            color: var(--text-main); /* resolves to #FFFFFF in dark theme */
-        }
-        [data-theme="dark"] .main-content input:not([type="submit"]):not([type="button"]),
-        [data-theme="dark"] .main-content select,
-        [data-theme="dark"] .main-content textarea {
-            color: var(--text-main);
-            background: var(--bg-input);
-            border-color: var(--border);
-        }
-
-        /* ?? Admin Chat ?? */
-        .ac-inbox-item { display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:12px; margin-bottom:4px; background:var(--surface); }
-        .ac-inbox-item:active { opacity:0.75; }
-        .ac-avatar { width:44px; height:44px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:#fff; flex-shrink:0; font-weight:700; }
-        .ac-inbox-info { flex:1; min-width:0; }
-        .ac-inbox-name { font-size:0.9rem; font-weight:700; color:var(--text-main); }
-        .ac-inbox-preview { font-size:0.78rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
-        .ac-unread { background:var(--primary); color:#fff; border-radius:50%; min-width:20px; height:20px; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; padding:0 4px; flex-shrink:0; }
-        .ac-chat-wrap { display:flex; flex-direction:column; height:calc(100vh - 140px); }
-        .ac-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; }
-        .ac-msg { max-width:80%; padding:10px 14px; border-radius:16px; font-size:0.875rem; line-height:1.4; }
-        .ac-msg.me { background:var(--primary); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
-        .ac-msg.them { background:var(--surface); color:var(--text-main); align-self:flex-start; border-bottom-left-radius:4px; border:1px solid var(--border); }
-        .ac-msg .ac-ts { display:block; font-size:0.65rem; color:rgba(255,255,255,0.55); margin-top:4px; }
-        .ac-msg.them .ac-ts { color:var(--text-muted); }
-        .ac-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--surface); border-top:1px solid var(--border); }
-        .ac-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:1px solid var(--border); border-radius:50px; color:var(--text-main); font-size:0.9rem; outline:none; }
-        .ac-input-row button { background:var(--primary); color:#fff; border:none; border-radius:50%; width:42px; height:42px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
-        
-        /* Chat Search Highlight */
-        .search-highlight {
-            background: rgba(245, 158, 11, 0.3);
-            color: var(--amber);
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: 600;
-        }
-
-        /* --- Chart Popup Modal (Premium Styling) --- */
-        .chart-popup-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            z-index: 9500;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .chart-popup-overlay.show {
-            display: flex;
-            opacity: 1;
-        }
-        .chart-popup-container {
-            background: var(--surface);
-            width: 100%;
-            max-width: 480px;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow-premium);
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-            overflow: hidden;
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .chart-popup-overlay.show .chart-popup-container {
-            transform: scale(1);
-        }
-        .chart-popup-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .chart-popup-title {
-            font-size: 1.05rem;
-            font-weight: 800;
-            color: var(--text-main);
-        }
-        .chart-popup-close-btn {
-            background: var(--surface-container);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .chart-popup-close-btn:active { transform: scale(0.9); }
-        .chart-popup-body {
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .chart-popup-canvas-wrap {
-            height: 240px;
-            position: relative;
-            width: 100%;
-        }
-        .chart-popup-filters {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            background: var(--surface-container);
-            padding: 14px;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-        }
-        .chart-popup-filters label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            display: block;
-        }
-        .chart-popup-filters input, .chart-popup-filters select {
-            width: 100%;
-            padding: 8px 10px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-main);
-            font-size: 0.8rem;
-            outline: none;
-        }
-    </style>
-</head>
-<body>
-    <!-- Chart Popup Modal -->
-    <div id="chartPopupModal" class="chart-popup-overlay" onclick="closeChartPopupOverlay(event)">
-        <div class="chart-popup-container">
-            <div class="chart-popup-header">
-                <span class="chart-popup-title" id="popupChartTitle">Chart Details</span>
-                <button class="chart-popup-close-btn" onclick="closeChartPopup()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="chart-popup-body">
-                <div class="chart-popup-canvas-wrap">
-                    <canvas id="popupChartCanvas"></canvas>
-                </div>
-                <div class="chart-popup-filters">
-                    <div>
-                        <label>Start Date</label>
-                        <input type="date" id="popupDateFrom" onchange="applyPopupFilters()">
-                    </div>
-                    <div>
-                        <label>End Date</label>
-                        <input type="date" id="popupDateTo" onchange="applyPopupFilters()">
-                    </div>
-                    <div id="popupStatusFilterContainer">
-                        <label>Status</label>
-                        <select id="popupStatusFilter" onchange="applyPopupFilters()">
-                            <option value="all">All Statuses</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Confirmed">Confirmed</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </select>
-                    </div>
-                    <div id="popupVehicleFilterContainer">
-                        <label>Vehicle Type</label>
-                        <select id="popupVehicleFilter" onchange="applyPopupFilters()">
-                            <option value="all">All Types</option>
-                            <option value="SUV">SUV</option>
-                            <option value="Sedan">Sedan</option>
-                            <option value="Hatchback">Hatchback</option>
-                            <option value="Van">Van</option>
-                        </select>
-                    </div>
-                    <div id="popupMetricFilterContainer" style="display:none;">
-                        <label>Metric</label>
-                        <select id="popupMetricFilter" onchange="applyPopupFilters()">
-                            <option value="bookings">Booking Count</option>
-                            <option value="revenue">Revenue (₱)</option>
-                        </select>
-                    </div>
-                    <div id="popupLimitFilterContainer" style="display:none;">
-                        <label>Show Top</label>
-                        <select id="popupLimitFilter" onchange="applyPopupFilters()">
-                            <option value="5">Top 5</option>
-                            <option value="10">Top 10</option>
-                            <option value="15">Top 15</option>
-                            <option value="all">All</option>
-                        </select>
-                    </div>
-                </div>
-                <button onclick="resetPopupFilters()" class="btn-outline" style="width: 100%; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">Reset Filters</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Exit Confirmation Modal (Android Back Button) -->
-    <div id="exitConfirmModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(6px);">
-        <div style="background: #1e293b; width: 100%; max-width: 500px; padding: 32px 24px 40px; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -20px 60px rgba(0,0,0,0.5);">
-            <div style="text-align: center; margin-bottom: 24px;">
-                <div style="width: 60px; height: 60px; background: rgba(239,68,68,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid rgba(239,68,68,0.3);">
-                    <i class="fas fa-sign-out-alt" style="color: #ef4444; font-size: 1.5rem;"></i>
-                </div>
-                <h3 style="font-size: 1.3rem; font-weight: 800; color: white; margin-bottom: 8px;">Exit App?</h3>
-                <p style="font-size: 0.9rem; color: #94a3b8; font-weight: 500;">You will be logged out and the app will close.</p>
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <button onclick="hideExitConfirm()" style="flex: 1; padding: 16px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; color: white; font-weight: 700; font-size: 1rem;">Cancel</button>
-                <button onclick="confirmExit()" style="flex: 1; padding: 16px; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; border-radius: 16px; color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 8px 20px rgba(239,68,68,0.4);">Logout &amp; Exit</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification Container -->
-    <div class="notification-container" id="notificationContainer"></div>
-
-    <!-- Side Drawer -->
-<div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)"></div>
-<div class="side-drawer" id="sideDrawer">
-    <div class="drawer-header">
-        <div class="logo-wrap" style="margin-bottom: 10px;">
-            <i class="fas fa-car-side" style="color: #f87171; font-size: 1.5rem;"></i>
-            <span style="font-size: 1.2rem; font-weight: 800;">Autoride</span>
-        </div>
-        <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Admin Console Mobile</p>
-    </div>
-    <div class="drawer-content">
-        <a href="#" class="drawer-item active" data-tab="dashboard" onclick="navTo('dashboard')"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="#" class="drawer-item" data-tab="vehicles" onclick="navTo('vehicles')"><i class="fas fa-car"></i> Vehicles</a>
-        <!-- <a href="#" class="drawer-item" data-tab="drivers" onclick="navTo('drivers')"><i class="fas fa-id-card"></i> Drivers</a> -->
-        <a href="#" class="drawer-item" data-tab="bookings" onclick="navTo('bookings')"><i class="fas fa-calendar-alt"></i> Bookings</a>
-        <a href="#" class="drawer-item" data-tab="gps" onclick="navTo('gps')"><i class="fas fa-map-marker-alt"></i> GPS Tracking</a>
-        <a href="#" class="drawer-item" data-tab="verifications" onclick="navTo('verifications')"><i class="fas fa-user-check"></i> User Verifications</a>
-        <a href="#" class="drawer-item" data-tab="users" onclick="navTo('users')"><i class="fas fa-users"></i> User Management</a>
-        <a href="#" class="drawer-item" data-tab="reports" onclick="navTo('reports')"><i class="fas fa-chart-pie"></i> Reports</a>
-        <a href="#" class="drawer-item" data-tab="tickets" onclick="navTo('tickets')"><i class="fas fa-ticket-alt"></i> Support Tickets</a>
-        <a href="#" class="drawer-item" data-tab="chat" onclick="navTo('chat')"><i class="fas fa-comments"></i> Live Chat</a>
-        <a href="#" class="drawer-item" data-tab="instructions" onclick="navTo('instructions')"><i class="fas fa-book"></i> Instructions</a>
-        <a href="#" class="drawer-item revenue-restricted" data-tab="staff" onclick="navTo('staff')"><i class="fas fa-users-cog"></i> Staff Management</a>
-        <div style="border-top: 1px solid var(--border); margin: 15px 10px; padding-top: 15px;">
-            <a href="#" class="drawer-item" data-tab="activity" onclick="navTo('activity')"><i class="fas fa-history"></i> Activity Log</a>
-            <a href="#" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
-            <a href="#" class="drawer-item" onclick="adminAuth.logout()" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </div>
-    </div>
-</div>
-
-<header class="mobile-header">
-    <div class="header-left">
-        <button class="menu-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
-        <div class="logo-wrap">
-            <i class="fas fa-car-side"></i>
-            <span>Autoride</span>
-            <span class="admin-badge">ADMIN</span>
-        </div>
-    </div>
-    <div class="header-right">
-        <div class="user-avatar" id="adminAvatar">S</div>
-        <div style="position:relative;display:inline-block;">
-            <button class="notif-btn" onclick="toggleAdminNotifPanel()" id="adminNotifBtn">
-                <i class="fas fa-bell"></i>
-            </button>
-            <span id="adminNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:800;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 3px;">0</span>
-        </div>
-    </div>
-</header>
-
-<!-- Admin Notification Panel -->
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <h4 style="font-weight:700;font-size:0.95rem;color:#f1f5f9;">Notifications</h4>
-        <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
-    </div>
-    <div id="adminNotifList"><p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
-</div>
-
-<main class="main-content">
-    
-    <!-- DASHBOARD TAB -->
-    <div id="dashboard" class="tab-content active" style="display: block;">
-        <h1 class="page-title">Admin Dashboard</h1>
-        <div class="page-subtitle">
-            <i class="fas fa-cloud-sun" style="color: #fbbf24;"></i>
-            <span id="headerTime">Loading time...</span>
-        </div>
-
-        <!-- Row 1: Stats side by side -->
-        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
-            <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
-                <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">REVENUE</h5>
-                <div id="dashTotalRevenue" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">�</div>
-            </div>
-            <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
-                <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">BOOKINGS</h5>
-                <div id="dashTotalBookings" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">�</div>
-            </div>
-        </div>
-
-        <!-- Row 2: Revenue Trend + Bookings/Day side by side -->
-        <div style="display:-webkit-flex;display:flex;gap:10px;margin-bottom:12px;">
-            <div class="stat-card" style="-webkit-flex:1;flex:1;min-width:0;padding:12px;margin-bottom:0;overflow:hidden;">
-                <div style="font-size:0.65rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">REVENUE TREND</div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Last 30 days</div>
-                <div style="height:110px;position:relative;width:100%;">
-                    <canvas id="revenueChart" style="max-width:100%;"></canvas>
-                </div>
-            </div>
-            <div class="stat-card" style="-webkit-flex:1;flex:1;min-width:0;padding:12px;margin-bottom:0;overflow:hidden;">
-                <div style="font-size:0.65rem;font-weight:800;color:var(--text-main);margin-bottom:2px;">BOOKINGS/DAY</div>
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Volume daily</div>
-                <div style="height:110px;position:relative;width:100%;">
-                    <canvas id="bookingsChart" style="max-width:100%;"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Row 3: Top Performing Vehicles Pie Chart -->
-        <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;cursor:pointer;" onclick="if(charts.topPie) openChartPopup(charts.topPie, 'topveh')">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);text-transform:uppercase;">TOP PERFORMING VEHICLES</div>
-                    <i class="fas fa-expand-alt" style="font-size:0.65rem;color:var(--text-muted);opacity:0.6;"></i>
-                </div>
-                <div style="height:220px;position:relative;">
-                    <canvas id="topVehiclesPieChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- VEHICLES TAB -->
-    <div id="vehicles" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h1 class="page-title" style="margin: 0;">Vehicles</h1>
-            <button onclick="Vehicles.openModal()" class="btn-primary" style="padding: 10px 18px; border-radius: 24px; font-size: 0.85rem; font-weight: 700;"><i class="fas fa-plus" style="margin-right:6px;"></i>Add New</button>
-        </div>
-
-        <!-- Search -->
-        <div style="position:relative; margin-bottom: 12px;">
-            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate�"
-                oninput="Vehicles.applyFilters()"
-                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
-        </div>
-
-        <!-- Filter chips -->
-        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
-            <button class="veh-chip veh-chip-active" data-filter="all"         onclick="Vehicles.setFilter('all',this)"         style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
-            <button class="veh-chip"                 data-filter="available"   onclick="Vehicles.setFilter('available',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Available</button>
-            <button class="veh-chip"                 data-filter="rented"      onclick="Vehicles.setFilter('rented',this)"      style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Rented</button>
-            <button class="veh-chip"                 data-filter="maintenance" onclick="Vehicles.setFilter('maintenance',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Maintenance</button>
-            <button class="veh-chip"                 data-filter="unavailable" onclick="Vehicles.setFilter('unavailable',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Unavailable</button>
-        </div>
-
-        <div id="vehiclesList">
-            <div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>
-        </div>
-    </div>
-
-    <!-- SETTINGS TAB -->
-    <div id="settings" class="tab-content" style="display: none;">
-        <h1 class="page-title">Settings</h1>
-        
-        <!-- Profile Card -->
-        <div class="stat-card" style="padding: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--primary-glow);">
-            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #818cf8, #6366f1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
-            <h2 id="settingsName" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 5px;">Super Admin</h2>
-            <p id="settingsRole" style="font-size: 0.75rem; color: var(--primary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">SUPER ADMIN</p>
-            <p id="settingsEmail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">admin@autoride.com</p>
-        </div>
-
-        <div style="display: grid; gap: 12px;">
-            <div class="stat-card" onclick="openChangePasswordModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-lock" style="color: var(--text-muted);"></i>
-                </div>
-                <div style="flex: 1;">
-                    <h4 style="font-size: 0.95rem;">Change Password</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Secure your account</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-            </div>
-
-            <div class="stat-card" onclick="testAdminPushNotification()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-bell" style="color: var(--text-muted);"></i>
-                </div>
-                <div style="flex: 1;">
-                    <h4 style="font-size: 0.95rem;">Push Notifications</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Tap to send a test push</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-            </div>
-
-            <div class="stat-card" onclick="toggleDarkMode()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                    <i id="adminDarkModeIcon" class="fas fa-moon" style="color: var(--text-muted);"></i>
-                </div>
-                <div style="flex: 1;">
-                    <h4 id="adminDarkModeLabel" style="font-size: 0.95rem;">Dark Mode</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Switch appearance</p>
-                </div>
-                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
-            </div>
-            <div id="mobileSystemConfig" class="revenue-restricted">
-                <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 4px solid var(--primary); margin-top: 10px;">
-                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-cogs" style="color: #818cf8;"></i>
-                    </div>
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 0.95rem;">System Configuration</h4>
-                        <div id="mobileSettingsList" style="display: grid; gap: 8px; margin-top: 10px;">
-                            <p style="font-size: 0.7rem; color: var(--text-muted);">Loading settings...</p>
-                        </div>
-                        <button onclick="Settings.save()" style="width: 100%; margin-top: 15px; padding: 10px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.75rem;">
-                            Save Settings
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <button onclick="adminAuth.logout()" style="width: 100%; margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius); color: var(--danger); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <i class="fas fa-sign-out-alt"></i>
-            Logout Account
-        </button>
-        
-        <div style="text-align: center; margin-top: 40px; opacity: 0.3;">
-            <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">AUTORIDE ADMIN MOBILE</p>
-            <p style="font-size: 0.6rem; margin-top: 5px;">v2.1.0-PREMIUM</p>
-        </div>
-    </div>
-
-    <!-- ACTIVITY LOG TAB -->
-    <div id="activity" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h1 class="page-title" style="margin: 0;">Activity Log</h1>
-            <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-
-        <!-- Search -->
-        <div style="position:relative; margin-bottom: 12px;">
-            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="activitySearch" type="text" placeholder="Search by name, action or details�"
-                oninput="Activity.applyFilters()"
-                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
-        </div>
-
-        <!-- Filter chips -->
-        <div id="activityFilterChips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
-            <button class="act-chip act-chip-active" data-filter="all"    onclick="Activity.setFilter('all',this)"    style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
-            <button class="act-chip" data-filter="login"   onclick="Activity.setFilter('login',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Login</button>
-            <button class="act-chip" data-filter="approve" onclick="Activity.setFilter('approve',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Approve</button>
-            <button class="act-chip" data-filter="reject"  onclick="Activity.setFilter('reject',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Reject</button>
-            <button class="act-chip" data-filter="create"  onclick="Activity.setFilter('create',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Create</button>
-            <button class="act-chip" data-filter="update"  onclick="Activity.setFilter('update',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Update</button>
-            <button class="act-chip" data-filter="delete"  onclick="Activity.setFilter('delete',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Delete</button>
-        </div>
-
-        <div id="activityList" style="margin-bottom: 30px;">
-            <div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading system logs...</div>
-        </div>
-    </div>
-
-    <!-- BOOKINGS TAB -->
-    <div id="bookings" class="tab-content" style="display: none;">
-        <h1 class="page-title">Bookings Overview</h1>
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; display: grid;">
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.65rem; color: var(--text-muted);">TOTAL BOOKINGS</h5>
-                <div class="value" id="bookTotal" style="font-size: 1.4rem; font-weight: 700;">0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.65rem; color: var(--text-muted);">CONFIRMED</h5>
-                <div class="value" id="bookConfirmed" style="font-size: 1.4rem; font-weight: 700; color: #818cf8;">0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.65rem; color: var(--text-muted);">PENDING</h5>
-                <div class="value" id="bookPending" style="font-size: 1.4rem; font-weight: 700; color: #fbbf24;">0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.65rem; color: var(--text-muted);">CANCELLED</h5>
-                <div class="value" id="bookCancelled" style="font-size: 1.4rem; font-weight: 700; color: #ef4444;">0</div>
-            </div>
-        </div>
-
-        <!-- BOOKINGS TABS -->
-        <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
-            <button onclick="switchBookingTab('active')" id="tabBtnActive" class="booking-tab-btn active-booking-tab" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--primary); background: var(--primary); color: white; font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
-                <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 6px;"></i> Active Now
-            </button>
-            <button onclick="switchBookingTab('past')" id="tabBtnPast" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
-                <i class="fas fa-check-circle" style="font-size: 0.75rem; margin-right: 6px;"></i> Past Bookings
-            </button>
-            <button onclick="switchBookingTab('all')" id="tabBtnAll" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
-                <i class="fas fa-list" style="font-size: 0.75rem; margin-right: 6px;"></i> All Bookings
-            </button>
-        </div>
-
-        <!-- ACTIVE NOW TAB CONTENT -->
-        <div id="tabActive" class="booking-tab-content">
-            <div style="margin-bottom: 20px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:pulse 1.5s infinite;"></span>
-                        <h3 style="font-size:1rem;font-weight:800;color:var(--text-main);">Active Rentals</h3>
-                        <span id="activeNowCount" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
-                    </div>
-                    <span style="font-size:0.65rem;color:var(--text-muted);" id="activeNowRefreshLabel">auto-refresh 30s</span>
-                </div>
-                <div id="activeNowList">
-                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">Loading active rentals...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- PAST BOOKINGS TAB CONTENT -->
-        <div id="tabPast" class="booking-tab-content" style="display: none;">
-            <!-- Toolbar -->
-            <div style="margin-bottom: 16px;">
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <div style="flex: 1; position: relative;">
-                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
-                        <input type="text" id="pastBookingsSearch" placeholder="Search by customer, ID, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="filterPastBookings()">
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;">Sort by:</label>
-                    <select id="pastBookingsSort" onchange="sortPastBookings()" style="flex: 1; padding: 8px 10px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 600;">
-                        <option value="completion_date_desc">Completion Date (Newest)</option>
-                        <option value="completion_date_asc">Completion Date (Oldest)</option>
-                        <option value="customer_name">Customer Name</option>
-                        <option value="total_price_desc">Total Price (High to Low)</option>
-                        <option value="total_price_asc">Total Price (Low to High)</option>
-                    </select>
-                    <select id="pastBookingsPageSize" onchange="changePastBookingsPageSize()" style="padding: 8px 10px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 600;">
-                        <option value="10">10 / page</option>
-                        <option value="25">25 / page</option>
-                        <option value="50">50 / page</option>
-                        <option value="100">100 / page</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <div style="overflow-x: auto; margin-bottom: 16px;">
-                <table id="pastBookingsTable" style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
-                    <thead>
-                        <tr style="background: var(--surface-container); border-bottom: 2px solid var(--border);">
-                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">ID</th>
-                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
-                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle</th>
-                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rental Dates</th>
-                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Completed</th>
-                            <th style="padding: 12px 10px; text-align: right; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total Price</th>
-                            <th style="padding: 12px 10px; text-align: center; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pastBookingsTableBody">
-                        <!-- Rows will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Pagination Controls -->
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;">
-                <button id="pastBookingsPrevBtn" onclick="previousPastBookingsPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
-                    <i class="fas fa-chevron-left" style="margin-right: 6px;"></i> Previous
-                </button>
-                <span id="pastBookingsPageInfo" style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">Page 1 of 1</span>
-                <button id="pastBookingsNextBtn" onclick="nextPastBookingsPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
-                    Next <i class="fas fa-chevron-right" style="margin-left: 6px;"></i>
-                </button>
-            </div>
-
-            <!-- Empty State -->
-            <div id="pastBookingsEmpty" class="hidden" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3;"></i>
-                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">No Past Bookings</h3>
-                <p style="font-size: 0.85rem;">Completed bookings will appear here.</p>
-            </div>
-
-            <!-- Loading State -->
-            <div id="pastBookingsLoading" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                <div style="width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite;"></div>
-                <p style="font-size: 0.85rem; font-weight: 600;">Loading past bookings...</p>
-            </div>
-        </div>
-
-        <!-- ALL BOOKINGS TAB CONTENT -->
-        <div id="tabAll" class="booking-tab-content" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">All Bookings</h3>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
-                </div>
-            </div>
-            <div id="bookingsList">
-                <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- VERIFICATIONS TAB -->
-    <div id="verifications" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 class="page-title" style="margin: 0;">Verifications</h1>
-            <button onclick="Verifications.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-        
-        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(99,102,241,0.1), transparent);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="width: 45px; height: 45px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; box-shadow: 0 8px 16px var(--primary-glow);">
-                    <i class="fas fa-user-shield"></i>
-                </div>
-                <div>
-                    <h4 style="font-size: 1rem; color: var(--text-main); font-weight: 700; margin-bottom: 2px;">Identity Audit</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">Review pending driver's licenses</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="verificationsList" style="display: grid; gap: 16px; margin-bottom: 40px;">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>
-        </div>
-    </div>
-
-    <!-- BOOKING DETAILS MODAL -->
-    <div id="bookingDetailsModal" class="premium-modal">
-        <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="font-size: 1.5rem; font-weight: 900; color: white; margin: 0; letter-spacing: -1px;">Booking Details</h2>
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="menu-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="bookingDetailContent">
-                <!-- Content injected via JS -->
-            </div>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="width: 100%;">Close Details</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- LICENSE PREVIEW MODAL -->
-    <div id="licensePreviewModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);">
-        <div class="modal-content" style="max-width: 95%; padding: 15px; border-radius: 20px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0; font-size: 1.1rem; color: white;">License Preview</h3>
-                <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="menu-btn" style="width: 34px; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;"><i class="fas fa-times"></i></button>
-            </div>
-            <div style="border-radius: 12px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; min-height: 200px; border: 1px solid rgba(255,255,255,0.1);">
-                <img id="licensePreviewImg" src="" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=Failed+to+load+image'">
-            </div>
-            <div style="margin-top: 20px;">
-                <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="btn-premium" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--primary); border: none; color: white; font-weight: 800;">Close Preview</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- <div id="assignDriverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
-            <h2 style="margin-bottom: 15px; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
-                <i class="fas fa-user-plus" style="color: var(--primary);"></i> Assign Driver
-            </h2>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Choose an approved driver for this trip.</p>
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 700;">Select Driver</label>
-                <select id="assignDriverSelect" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white; font-size: 0.9rem;">
-                    <option value="">Select a driver...</option>
-                </select>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('assignDriverModal').style.display='none'" style="flex: 1; padding: 12px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
-                <button onclick="Bookings.saveAssign()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Assign</button>
-            </div>
-        </div>
-    </div> -->
-
-    <!-- REPORTS TAB -->
-    <div id="reports" class="tab-content" style="display: none;">
-        <h1 class="page-title">Analytics &amp; Reports</h1>
-
-        <!-- Date range filter -->
-        <div class="stat-card" style="padding: 14px; margin-bottom: 16px;">
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <div style="display:flex;gap:6px;">
-                    <button onclick="Reports.setFilter('day',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Day</button>
-                    <button onclick="Reports.setFilter('month',this)" class="rpt-filter-btn active-filter" style="padding:6px 12px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:white;font-size:0.72rem;font-weight:700;cursor:pointer;">Month</button>
-                    <button onclick="Reports.setFilter('year',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Year</button>
-                </div>
-                <input type="date" id="rptDateFrom" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
-                <input type="date" id="rptDateTo" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
-            </div>
-        </div>
-
-        <!-- Summary stats -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
-            <div class="stat-card" style="padding:15px;margin-bottom:0;">
-                <h5 style="font-size:0.6rem;color:var(--text-muted);">AVG REVENUE / BOOKING</h5>
-                <div class="value" id="repAvgRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
-            </div>
-            <div class="stat-card" style="padding:15px;margin-bottom:0;">
-                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL BOOKINGS</h5>
-                <div class="value" id="repActive" style="font-size:1.2rem;font-weight:700;color:var(--primary);">0</div>
-            </div>
-            <div class="stat-card" style="padding:15px;margin-bottom:0;">
-                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL REVENUE</h5>
-                <div class="value" id="repTotalRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
-            </div>
-            <div class="stat-card" style="padding:15px;margin-bottom:0;">
-                <h5 style="font-size:0.6rem;color:var(--text-muted);">ACTIVE FLEET</h5>
-                <div class="value" id="repFleet" style="font-size:1.2rem;font-weight:700;color:var(--amber);">0</div>
-            </div>
-        </div>
-
-        <!-- Charts grid: Revenue + Top Vehicles side by side, Bookings full width -->
-        <div style="display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
-            <!-- Revenue Trend -->
-            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
-                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Revenue Trend</div>
-                <div style="height:150px;position:relative;">
-                    <canvas id="reportsRevenueChart"></canvas>
-                </div>
-            </div>
-            <!-- Top Vehicles Pie -->
-            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
-                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Top Vehicles</div>
-                <div style="height:150px;position:relative;">
-                    <canvas id="reportsTopPieChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- BOOKINGS DETAIL full width -->
-        <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:16px;">
-            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">BOOKINGS DETAIL</div>
-            <div style="height:150px;position:relative;">
-                <canvas id="reportsBookingsChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Top Vehicles List -->
-        <div class="chart-card" style="height:auto;">
-            <h3 style="margin-bottom:15px;">Top Performing Vehicles</h3>
-            <div id="reportsTopVehicles" style="padding-bottom:10px;">
-                <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading analytics...</div>
-            </div>
-        </div>
-
-        <!-- Export buttons -->
-        <div style="display:flex;gap:10px;margin-bottom:30px;">
-            <button onclick="Reports.exportExcel()" class="btn-primary" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </button>
-            <button onclick="Reports.printReport()" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <i class="fas fa-print"></i> Print
-            </button>
-        </div>
-    </div>
-
-    <!-- <div id="drivers" class="tab-content" style="display: none;">
-        <h1 class="page-title">Drivers</h1>
-        
-        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 0.9rem; color: #818cf8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-cog" style="font-size: 0.8rem;"></i> Driver Wage Settings
-            </h3>
-            <div style="display: flex; flex-direction: column; gap: 15px;">
-                <div>
-                    <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 8px;">Default Wage (% or Flat Rate)</label>
-                    <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.9rem;">
-                </div>
-                <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(99,102,241,0.2);">
-                    Apply Wage Settings
-                </button>
-            </div>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                <div style="flex: 1; position: relative;">
-                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.8rem;"></i>
-                    <input type="text" id="driverSearchInput" oninput="Drivers.applyFilters()" placeholder="Search drivers..." style="width: 100%; padding: 12px 12px 12px 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; color: white; font-size: 0.85rem;">
-                </div>
-                <button onclick="Drivers.refresh()" style="background: var(--surface); border: 1px solid var(--border); color: white; width: 45px; border-radius: 50px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-sync-alt" style="font-size: 0.9rem;"></i></button>
-            </div>
-            <div style="position: relative;">
-                <select id="driverStatusFilter" onchange="Drivers.applyFilters()" style="width: 100%; padding: 12px 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; color: white; font-size: 0.85rem; appearance: none;">
-                    <option value="all">All Statuses</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Rejected">Rejected</option>
-                </select>
-                <i class="fas fa-chevron-down" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.7rem; pointer-events: none;"></i>
-            </div>
-        </div>
-
-        <div id="driversList">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading drivers...</div>
-        </div>
-    </div> -->
-
-    <!-- GPS TRACKING TAB -->
-    <div id="gps" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h1 class="page-title" style="margin: 0;">GPS Tracking</h1>
-            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(16,185,129,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
-        </div>
-
-        <!-- Map iframe -->
-        <div class="stat-card" style="padding: 0; overflow: hidden; height: 320px; position: relative; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 16px;">
-            <iframe src="https://car-rental-inlaguna.vercel.app/" style="width: 100%; height: 100%; border: none;" allow="geolocation"></iframe>
-            <div style="position: absolute; bottom: 12px; right: 12px; z-index: 10;">
-                <button onclick="window.open('https://car-rental-inlaguna.vercel.app/', '_blank')" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(5px); border: 1px solid var(--border); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <i class="fas fa-external-link-alt"></i> Full Map
-                </button>
-            </div>
-        </div>
-
-        <!-- Live vehicle list -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">Active Vehicles</h3>
-            <button onclick="GPS.refresh()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-        <div id="gpsDeviceList">
-            <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading vehicles...</div>
-        </div>
-    </div>
-
-    <!-- SUPPORT TICKETS TAB -->
-    <div id="tickets" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 class="page-title" style="margin: 0;">Support Center</h1>
-            <button onclick="Tickets.refresh()" style="background: var(--surface); border: 1px solid var(--border); color: white; width: 40px; height: 40px; border-radius: 12px;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; display: grid;">
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Open Tickets</h5>
-                <div class="value" id="ticketOpenCount" style="font-size: 1.2rem; font-weight: 700; color: var(--danger);">0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Resolved</h5>
-                <div class="value" id="ticketResolvedCount" style="font-size: 1.2rem; font-weight: 700; color: var(--success);">0</div>
-            </div>
-        </div>
-        
-        <div id="ticketsList">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading tickets...</div>
-        </div>
-    </div>
-
-    <!-- INSTRUCTIONS TAB -->
-    <div id="instructions" class="tab-content" style="display: none;">
-        <h1 class="page-title">Instructions</h1>
-        
-        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary);">
-            <h3 style="font-size: 0.95rem; color: #818cf8; margin-bottom: 15px;">Add New Instruction</h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                <button onclick="Instructions.add()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Add Globally</button>
-            </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="font-size: 0.9rem; color: var(--text-muted);">ACTIVE INSTRUCTIONS</h3>
-            <button onclick="Instructions.refresh()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-        
-        <div id="instructionsList">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading instructions...</div>
-        </div>
-    </div>
-
-    <!-- STAFF MANAGEMENT TAB -->
-    <div id="staff" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-            <h1 class="page-title" style="margin: 0;">Staff</h1>
-            <button onclick="Staff.openModal()" style="background: var(--primary); border: none; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(99,102,241,0.3);">
-                <i class="fas fa-plus-circle" style="font-size: 0.9rem;"></i> New Staff
-            </button>
-        </div>
-
-        <div class="stat-card" style="padding: 20px; border-radius: 20px; border: 1px solid var(--border);">
-            <h3 style="font-size: 1rem; color: var(--text-main); font-weight: 700; margin-bottom: 20px;">Staff Accounts</h3>
-            <div id="staffList">
-                <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading staff accounts...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- STAFF MODAL -->
-    <div id="staffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
-            <h2 id="staffFormTitle" style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Add New Staff</h2>
-            <form id="staffForm">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Full Name</label>
-                    <input id="staffName" type="text" required placeholder="John Doe" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Email Address</label>
-                    <input id="staffEmail" type="email" required placeholder="john@autoride.com" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Password</label>
-                    <input id="staffPass" type="password" placeholder="��������" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                    <small id="staffPassHint" style="font-size: 0.65rem; color: var(--text-muted); display: none;">Leave blank to keep current password</small>
-                </div>
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Role</label>
-                    <select id="staffRole" required style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-                        <option value="admin">Staff Admin</option>
-                        <option value="super_admin">Super Admin</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" onclick="Staff.closeModal()" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
-                    <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Save Account</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- VEHICLE MODAL -->
-    <div id="vehicleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-        <div style="background:#fff;border-radius:24px 24px 0 0;padding:28px 20px 32px;max-width:520px;margin:60px auto 0;min-height:calc(100vh - 60px);box-shadow:0 -8px 40px rgba(0,0,0,0.18);">
-
-            <h2 id="modalTitle" style="font-size:1.6rem;font-weight:900;color:#0f172a;margin:0 0 22px;">Add New Vehicle</h2>
-            <form id="vehicleForm">
-                <input type="hidden" id="editId">
-
-                <!-- VEHICLE PHOTOS -->
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;font-size:0.78rem;font-weight:800;color:#0f172a;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
-                        Vehicle Photos <span style="color:#ef4444;">*</span>
-                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b;">(max 4 � first photo is Main)</span>
-                    </label>
-                    <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <button type="button" onclick="VehiclePhotos.takePhoto()"
-                            style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
-                            <i class="fas fa-camera" style="font-size:1rem;"></i> Take Photo
-                        </button>
-                        <label style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
-                            <i class="fas fa-images" style="font-size:1rem;"></i> Upload from Gallery
-                            <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
-                        </label>
-                    </div>
-                </div>
-
-                <!-- EXISTING GALLERY (edit mode) -->
-                <div id="vExistingGallery" style="display:none;margin-bottom:20px;">
-                    <label style="display:block;font-size:0.75rem;color:#64748b;margin-bottom:5px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
-                    <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;min-height:100px;"></div>
-                </div>
-
-                <!-- FIELDS GRID -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-
-                    <!-- Brand -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Brand</label>
-                        <select id="vBrand" required onchange="Vehicles.updateModels()"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="">Select Brand</option>
-                            <option value="Toyota">Toyota</option>
-                            <option value="Mitsubishi">Mitsubishi</option>
-                            <option value="Nissan">Nissan</option>
-                            <option value="Honda">Honda</option>
-                            <option value="Hyundai">Hyundai</option>
-                            <option value="Ford">Ford</option>
-                            <option value="Suzuki">Suzuki</option>
-                            <option value="Isuzu">Isuzu</option>
-                        </select>
-                    </div>
-
-                    <!-- Model -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Model</label>
-                        <input id="vModel" list="vModelList" required placeholder="Model"
-                            onchange="Vehicles.applySpecs(this.value)"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
-                        <datalist id="vModelList"></datalist>
-                    </div>
-
-                    <!-- Plate Number -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Plate Number</label>
-                        <input type="text" id="vPlate" placeholder="ABC-1234" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
-                    </div>
-
-                    <!-- Color -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Color</label>
-                        <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
-                        <datalist id="vColorList">
-                            <option value="White"><option value="Black"><option value="Silver">
-                            <option value="Gray"><option value="Red"><option value="Blue">
-                            <option value="Brown"><option value="Gold"><option value="Green">
-                            <option value="Orange"><option value="Beige">
-                        </datalist>
-                    </div>
-
-                    <!-- Vehicle Type -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Vehicle Type</label>
-                        <select id="vType" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="">Select type</option>
-                            <option value="Sedan">Sedan</option>
-                            <option value="SUV">SUV</option>
-                            <option value="Van">Van</option>
-                            <option value="Hatchback">Hatchback</option>
-                            <option value="MPV">MPV</option>
-                            <option value="Pickup">Pickup</option>
-                        </select>
-                    </div>
-
-                    <!-- Transmission -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Transmission</label>
-                        <select id="vTrans" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="Manual">Manual</option>
-                            <option value="Automatic">Automatic</option>
-                        </select>
-                    </div>
-
-                    <!-- Fuel Type -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Fuel Type</label>
-                        <select id="vFuel" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="Diesel">Diesel</option>
-                            <option value="Gasoline">Gasoline</option>
-                        </select>
-                    </div>
-
-                    <!-- Seats -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Seats</label>
-                        <select id="vSeats" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="4">4 Seats</option>
-                            <option value="5">5 Seats</option>
-                            <option value="7">7 Seats</option>
-                            <option value="10">10 Seats</option>
-                            <option value="12">12 Seats</option>
-                        </select>
-                    </div>
-
-                    <!-- Daily Rate � half width -->
-                    <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Daily Rate (&#8369;)</label>
-                        <input type="number" id="vRate" placeholder="e.g. 2500" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
-                    </div>
-
-                    <!-- Location � full width -->
-                    <div style="grid-column:span 2;">
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Location</label>
-                        <select id="vLocation" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
-                            <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
-                        </select>
-                    </div>
-
-                    <!-- Status � full width -->
-                    <div style="grid-column:span 2;">
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Status</label>
-                        <select id="vStatus"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
-                            <option value="Available">Available</option>
-                            <option value="Booked">Booked</option>
-                            <option value="Maintenance">Maintenance</option>
-                            <option value="Repair">Repair</option>
-                        </select>
-                    </div>
-
-                </div>
-
-                <!-- BUTTONS -->
-                <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;">
-                    <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)"
-                        style="display:none;width:100%;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;">
-                        Save &amp; Add Another
-                    </button>
-                    <div style="display:flex;gap:10px;">
-                        <button type="button" onclick="Vehicles.closeModal()"
-                            style="flex:1;padding:16px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:1rem;font-weight:700;cursor:pointer;">
-                            Cancel
-                        </button>
-                        <button type="submit" id="submitBtnText"
-                            style="flex:2;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,0.4);">
-                            Add Vehicle
-                        </button>
-                    </div>
-                </div>
-
-            </form>
-        </div>
-    </div>
-
-    <!-- CHANGE PASSWORD MODAL -->
-    <div id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
-            <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
-                <input id="newMobilePassword" type="password" placeholder="��������" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-            </div>
-            <div style="margin-bottom: 25px;">
-                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Confirm New Password</label>
-                <input id="confirmMobilePassword" type="password" placeholder="��������" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
-                <button onclick="submitChangePassword()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Update</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- INSPECTION MODAL -->
-    <div id="inspectionModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; animation: slideUp 0.3s ease-out;">
-            <div style="padding: 24px; background: linear-gradient(135deg, var(--surface), #1e293b); border-bottom: 1px solid var(--border); position: relative;">
-                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -10px auto 15px;"></div>
-                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: white;">Vehicle Inspection</h3>
-                <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
-                <button onclick="document.getElementById('inspectionModal').style.display='none'" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; max-height: 70vh; overflow-y: auto;">
-                <input type="hidden" id="inspectBookingId">
-                <input type="hidden" id="inspectType">
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                    <div>
-                        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
-                        <input type="number" id="inspectMileage" placeholder="0" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-weight: 600;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fuel Level</label>
-                        <select id="inspectFuel" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-weight: 600;">
-                            <option value="Full">Full</option>
-                            <option value="3/4">3/4</option>
-                            <option value="1/2">1/2</option>
-                            <option value="1/4">1/4</option>
-                            <option value="Reserve">Reserve</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Vehicle Photos</label>
-                    <div id="inspectPhotoPreview" style="display: flex; gap: 10px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 5px;"></div>
-                    <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 15px; background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); box-shadow: none;">
-                        <i class="fas fa-camera"></i> Take Photos
-                        <input type="file" id="inspectPhotos" multiple accept="image/*" capture="environment" style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
-                    </label>
-                    <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; text-align: center;">Take photos of all 4 sides and interior.</p>
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Notes / Issues</label>
-                    <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleaness issues..." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
-                </div>
-
-                <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(99,102,241,0.4); margin-bottom: 20px;">
-                    Submit Inspection Report
-                </button>
-            </form>
-        </div>
-    </div>
-</main>
-
-<!-- ===================== USER MANAGEMENT TAB ===================== -->
-<div id="users" class="tab-content" style="display:none; padding: 20px; padding-bottom: 100px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h1 class="page-title" style="margin:0;">User Management</h1>
-        <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">�</div>
-            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
-        </div>
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">�</div>
-            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
-        </div>
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">�</div>
-            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
-        </div>
-    </div>
-    <div style="display:flex; gap:10px; margin-bottom:12px;">
-        <div style="flex:1; position:relative;">
-            <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
-            <input type="text" id="umSearch" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 12px 12px 38px; background:var(--surface); border:1px solid var(--border); border-radius:50px; color:white; font-size:0.85rem;">
-        </div>
-        <button onclick="UserMgmt.exportCSV()" style="background:rgba(16,185,129,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
-    </div>
-    <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
-        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Verified</button>
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Unverified</button>
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Frozen</button>
-    </div>
-    <div id="umList"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading users...</div></div>
-</div>
-
-<!-- User Detail Modal -->
-<div id="umModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); overflow-y:auto;">
-    <div style="min-height:100vh; display:flex; align-items:flex-end;">
-        <div style="width:100%; background:#1e293b; border-radius:28px 28px 0 0; padding:24px; max-height:92vh; overflow-y:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="font-size:1.1rem; font-weight:800;">User Details</h2>
-                <button onclick="UserMgmt.closeModal()" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; width:36px; height:36px; border-radius:10px; font-size:1rem;"><i class="fas fa-times"></i></button>
-            </div>
-            <div id="umModalContent"></div>
-        </div>
-    </div>
-</div>
-
-<!-- ===================== CHAT TAB ===================== -->
-<div id="chat" class="tab-content" style="display:none; padding:0; padding-bottom:80px;">
-    <div id="adminChatContent" style="padding:20px;">
-        <div style="text-align:center; padding:40px; color:var(--text-muted);">Loading...</div>
-    </div>
-</div>
-
-<nav class="bottom-nav">
-    <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
-        <i class="fas fa-th-large"></i>
-        <span>Dashboard</span>
-    </button>
-    <button class="nav-item" data-tab="vehicles" onclick="switchTab('vehicles')">
-        <i class="fas fa-car"></i>
-        <span>Vehicles</span>
-    </button>
-    <button class="nav-item" data-tab="bookings" onclick="switchTab('bookings')">
-        <i class="fas fa-calendar-alt"></i>
-        <span>Bookings</span>
-    </button>
-    <button class="nav-item" data-tab="reports" onclick="switchTab('reports')">
-        <i class="fas fa-chart-pie"></i>
-        <span>Reports</span>
-    </button>
-    <button class="nav-item" data-tab="chat" onclick="switchTab('chat')">
-        <i class="fas fa-comments" style="position:relative;"></i>
-        <span id="adminChatNavBadge" style="display:none;position:absolute;top:6px;right:calc(50% - 22px);background:#ef4444;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 3px;"></span>
-        <span>Chat</span>
-    </button>
-    <button class="nav-item" data-tab="settings" onclick="switchTab('settings')">
-        <i class="fas fa-cog"></i>
-        <span>Settings</span>
-    </button>
-</nav>
-
-<!-- Admin Login Overlay -->
-<div id="adminLoginOverlay">
-    <div class="login-card">
-        <div class="logo-wrap" style="justify-content: center; margin-bottom: 25px;">
-            <i class="fas fa-car-side" style="color: #f87171; font-size: 2.5rem;"></i>
-            <span style="font-size: 2rem; font-weight: 800;">Autoride</span>
-        </div>
-        <h1 style="font-size: 1.5rem; margin-bottom: 20px;">Admin Login</h1>
-        <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 15px;">
-        <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 20px;">
-        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px var(--primary-glow);">Login to Dashboard</button>
-        <p id="loginError" style="color: var(--danger); margin-top: 15px; font-size: 0.85rem; font-weight: 600;"></p>
-    </div>
-</div>
-
-<script>
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
-    // Admin notification globals � defined early so initSession can call them
+    // Admin notification globals ï¿½ defined early so initSession can call them
     window.adminNotifList = [];
 
     window.loadAdminNotifications = function(adminId) {
@@ -2112,7 +153,7 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
-                // Load saved theme preference � default to LIGHT
+                // Load saved theme preference ï¿½ default to LIGHT
                 var savedAdminTheme = localStorage.getItem('adminTheme');
                 if (savedAdminTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
@@ -2512,7 +553,7 @@
                     showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
                     this.refresh();
                     if (addAnother) {
-                        // Reset form but keep modal open � clear photos completely
+                        // Reset form but keep modal open ï¿½ clear photos completely
                         document.getElementById('vehicleForm').reset();
                         this.updateModels();
                         document.getElementById('vExistingGallery').style.display = 'none';
@@ -2569,7 +610,7 @@
             input.value = ''; // allow re-picking same file
         },
 
-        // Called by "Take Photo" button � uses Capacitor Camera if available,
+        // Called by "Take Photo" button ï¿½ uses Capacitor Camera if available,
         // falls back to a hidden file input with capture="environment"
         async takePhoto() {
             const Camera = window.Capacitor?.Plugins?.Camera;
@@ -4012,7 +2053,7 @@
 
             list.innerHTML = active.map((b, i) => {
                 const endDate = b.end_date ? new Date(b.end_date) : null;
-                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : '�';
+                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'ï¿½';
                 const cdId    = 'anCountdown_' + b.id;
                 
                 // Location handling
@@ -4072,7 +2113,7 @@
                         </div>
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
-                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#10b981;">�</div>
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#10b981;">ï¿½</div>
                         </div>
                     </div>
                 </div>`;
@@ -4105,7 +2146,7 @@
             if (this._timer) clearInterval(this._timer);
             this._timer = setInterval(() => {
                 const label = document.getElementById('activeNowRefreshLabel');
-                if (label) label.textContent = 'refreshing�';
+                if (label) label.textContent = 'refreshingï¿½';
                 Bookings.refresh().then(() => {
                     if (label) label.textContent = 'auto-refresh 30s';
                 }).catch(() => {
@@ -4607,23 +2648,33 @@
             const csvContent = BOM + csv;
             const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
 
-            // Use Web Share API (native Android share sheet)
-            if (navigator.share && navigator.canShare) {
-                try {
-                    const file = new File([csvContent], filename, { type: 'text/csv' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
+            try {
+                // Use Capacitor Filesystem to write to Downloads
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                if (Filesystem) {
+                    // Write file to Downloads directory
+                    const result = await Filesystem.writeFile({
+                        path: filename,
+                        data: btoa(unescape(encodeURIComponent(csvContent))),
+                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
+                        recursive: true
+                    });
+                    
+                    // Share the saved file
+                    const { Share } = window.Capacitor.Plugins;
+                    if (Share) {
+                        await Share.share({
                             title: 'Autoride Sales Report',
-                            text: 'Sales report exported from Autoride Admin',
-                            files: [file]
+                            text: 'Sales report from Autoride Admin',
+                            url: result.uri,
+                            dialogTitle: 'Share Report'
                         });
-                        showNotification('Report shared successfully!', 'success');
-                        return;
                     }
-                } catch (err) {
-                    if (err.name === 'AbortError') return;
-                    console.log('Share failed, falling back to clipboard', err);
+                    showNotification('Report saved and ready to share!', 'success');
+                    return;
                 }
+            } catch (err) {
+                console.error('Filesystem export failed:', err);
             }
 
             // Fallback: Copy CSV to clipboard
@@ -4631,15 +2682,11 @@
                 await navigator.clipboard.writeText(csv);
                 showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
             } catch (err) {
-                const modal = document.createElement('div');
-                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;padding:20px;';
-                modal.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="color:white;margin:0;">Report Data (Copy Below)</h3><button onclick="this.parentElement.parentElement.remove()" style="background:#ef4444;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:700;">Close</button></div><textarea style="flex:1;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;" readonly>' + csv.replace(/</g, '&lt;') + '</textarea>';
-                document.body.appendChild(modal);
-                showNotification('Long-press the text to copy it', 'info');
+                showNotification('Export failed. Please try again.', 'error');
             }
         },
 
-        printReport() {
+        async printReport() {
             const data = this._rawData;
             if (!data) { showNotification('No data to print', 'error'); return; }
 
@@ -4649,82 +2696,67 @@
                 '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
             ).join('');
 
-            // Remove any existing overlay
-            const existing = document.getElementById('printOverlay');
-            if (existing) existing.remove();
+            // Build HTML report content
+            var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
+            htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
+            htmlReport += '</head><body>';
+            htmlReport += '<h1>Autoride Sales Report</h1>';
+            htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Bookings:</strong> ' + totalBook + '</p>';
+            htmlReport += '<table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead>';
+            htmlReport += '<tbody>' + tableRows + '</tbody></table>';
+            htmlReport += '</body></html>';
 
-            // Create fullscreen in-app overlay
-            const overlay = document.createElement('div');
-            overlay.id = 'printOverlay';
-            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;overflow-y:auto;padding:20px;';
+            try {
+                // Save HTML file and share it
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                if (Filesystem) {
+                    const filename = 'Autoride_Report_' + new Date().toISOString().split('T')[0] + '.html';
+                    const result = await Filesystem.writeFile({
+                        path: filename,
+                        data: btoa(unescape(encodeURIComponent(htmlReport))),
+                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
+                        recursive: true
+                    });
 
-            const styleTag = document.createElement('style');
-            styleTag.textContent = '@media print { body > *:not(#printOverlay) { display: none !important; } #printOverlay { position: static !important; } .no-print-btns { display: none !important; } }';
-            overlay.appendChild(styleTag);
+                    const { Share } = window.Capacitor.Plugins;
+                    if (Share) {
+                        await Share.share({
+                            title: 'Autoride Sales Report',
+                            url: result.uri,
+                            dialogTitle: 'Share or Print Report'
+                        });
+                    }
+                    showNotification('Report saved! Open it in Chrome to print.', 'success');
+                    return;
+                }
+            } catch (err) {
+                console.error('Print/share failed:', err);
+            }
 
-            const content = document.createElement('div');
-            content.innerHTML = '<h1 style="font-size:1.4rem;margin-bottom:10px;color:#000;">Autoride Sales Report</h1>' +
-                '<p style="color:#333;margin:5px 0;">Generated: ' + new Date().toLocaleString() + '</p>' +
-                '<p style="color:#000;margin:5px 0;"><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>' +
-                '<p style="color:#000;margin:5px 0;"><strong>Total Bookings:</strong> ' + totalBook + '</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-top:16px;"><thead><tr>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">#</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Vehicle</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Bookings</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Revenue</th>' +
-                '</tr></thead><tbody>' + tableRows + '</tbody></table>';
-            overlay.appendChild(content);
-
-            const btns = document.createElement('div');
-            btns.className = 'no-print-btns';
-            btns.style.cssText = 'margin-top:20px;display:flex;gap:10px;';
-
-            const printBtn = document.createElement('button');
-            printBtn.style.cssText = 'flex:1;background:#0052ff;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            printBtn.innerHTML = '&#128424; Share Report';
-            printBtn.onclick = async function() {
-                // Build plain text version of the report
+            // Fallback: share as text
+            try {
                 var reportText = 'AUTORIDE SALES REPORT\n';
                 reportText += 'Generated: ' + new Date().toLocaleString() + '\n\n';
                 reportText += 'Total Revenue: PHP ' + totalRev.toLocaleString() + '\n';
                 reportText += 'Total Bookings: ' + totalBook + '\n\n';
-                reportText += 'TOP VEHICLES BY REVENUE\n';
-                reportText += '------------------------\n';
+                reportText += 'TOP VEHICLES BY REVENUE\n------------------------\n';
                 (data.topVehicles || []).forEach(function(c, i) {
                     reportText += (i+1) + '. ' + c.brand + ' ' + c.model + ' - ' + c.booking_count + ' bookings - PHP ' + (c.revenue||0).toLocaleString() + '\n';
                 });
-
                 if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'Autoride Sales Report',
-                            text: reportText
-                        });
-                        return;
-                    } catch (err) {
-                        if (err.name === 'AbortError') return;
-                    }
-                }
-                // Fallback: copy to clipboard
-                try {
+                    await navigator.share({ title: 'Autoride Sales Report', text: reportText });
+                } else {
                     await navigator.clipboard.writeText(reportText);
-                    alert('Report copied to clipboard!');
-                } catch(e) {
-                    alert(reportText);
+                    showNotification('Report copied to clipboard!', 'success');
                 }
-            };
-
-            const closeBtn = document.createElement('button');
-            closeBtn.style.cssText = 'flex:1;background:#6b7080;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            closeBtn.innerHTML = '&#10006; Close';
-            closeBtn.onclick = function() { document.getElementById('printOverlay').remove(); };
-
-            btns.appendChild(printBtn);
-            btns.appendChild(closeBtn);
-            overlay.appendChild(btns);
-            document.body.appendChild(overlay);
+            } catch(e) {
+                if (e.name !== 'AbortError') showNotification('Share failed', 'error');
+            }
         }
     };
+
 
 
     // --- SETTINGS MODULE ---
@@ -4824,8 +2856,8 @@
             if (typeof Chart !== 'undefined') initCharts(data);
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
-            document.getElementById('dashTotalRevenue').textContent = '\u20B1�';
-            document.getElementById('dashTotalBookings').textContent = '�';
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1ï¿½';
+            document.getElementById('dashTotalBookings').textContent = 'ï¿½';
         }
     }
 
@@ -4907,7 +2939,7 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Bookings Bar Chart � use booking status breakdown
+        // Bookings Bar Chart ï¿½ use booking status breakdown
         const bookCtx = document.getElementById('bookingsChart');
         if (bookCtx) {
             const bStatus = data.bookingsByStatus || {};
@@ -5100,7 +3132,7 @@
             };
             if (currentChartType === 'revenue') {
                 chartConfig.options.scales.y.ticks.callback = function(value) {
-                    return '₱' + value.toLocaleString();
+                    return 'â±' + value.toLocaleString();
                 };
             }
         } else {
@@ -5444,7 +3476,7 @@
                 return;
             }
 
-            // 7. On root tab � show exit confirmation
+            // 7. On root tab ï¿½ show exit confirmation
             showExitConfirm();
         };
 
@@ -5604,7 +3636,7 @@
                     ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : '�';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ï¿½';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
                     <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
@@ -5647,7 +3679,7 @@
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : '�';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ï¿½';
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `
@@ -5707,7 +3739,7 @@
 
             <!-- Info -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || '�'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ï¿½'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
@@ -6394,22 +4426,8 @@
         });
     };
 
-</script>
 
-<!-- DEBUG PANEL -->
-<div id="__adminDebug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#111;border-top:2px solid #e63946;">
-    <span style="color:#e63946;font-weight:bold;font-size:12px;">DEBUG LOG</span>
-    <div style="display:flex;gap:8px;">
-      <button onclick="document.getElementById('__adminDbgList').innerHTML=''" style="background:#333;color:white;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Clear</button>
-      <button onclick="document.getElementById('__adminDebug').style.display='none'" style="background:#e63946;color:white;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Close</button>
-    </div>
-  </div>
-  <div id="__adminDbgList" style="flex:1;overflow-y:auto;padding:6px 10px;font-size:11px;line-height:1.6;"></div>
-</div>
-<button id="__adminDebugBtn" onclick="var d=document.getElementById('__adminDebug');d.style.display=d.style.display==='none'?'flex':'none';"
-  style="position:fixed;bottom:76px;right:10px;width:36px;height:36px;background:#e63946;color:white;border:none;border-radius:50%;font-size:16px;z-index:99998;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);">&#x1F41E;</button>
-<script>
+
 function adminDbg(msg, color) {
   var list = document.getElementById('__adminDbgList');
   if (!list) return;
@@ -6436,9 +4454,4 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
             modal.style.display = 'flex';
         }
     }
-
-</script>
-</body>
-</html>
-
 

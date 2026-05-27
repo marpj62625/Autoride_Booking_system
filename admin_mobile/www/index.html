@@ -4607,23 +4607,33 @@
             const csvContent = BOM + csv;
             const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
 
-            // Use Web Share API (native Android share sheet)
-            if (navigator.share && navigator.canShare) {
-                try {
-                    const file = new File([csvContent], filename, { type: 'text/csv' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
+            try {
+                // Use Capacitor Filesystem to write to Downloads
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                if (Filesystem) {
+                    // Write file to Downloads directory
+                    const result = await Filesystem.writeFile({
+                        path: filename,
+                        data: btoa(unescape(encodeURIComponent(csvContent))),
+                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
+                        recursive: true
+                    });
+                    
+                    // Share the saved file
+                    const { Share } = window.Capacitor.Plugins;
+                    if (Share) {
+                        await Share.share({
                             title: 'Autoride Sales Report',
-                            text: 'Sales report exported from Autoride Admin',
-                            files: [file]
+                            text: 'Sales report from Autoride Admin',
+                            url: result.uri,
+                            dialogTitle: 'Share Report'
                         });
-                        showNotification('Report shared successfully!', 'success');
-                        return;
                     }
-                } catch (err) {
-                    if (err.name === 'AbortError') return;
-                    console.log('Share failed, falling back to clipboard', err);
+                    showNotification('Report saved and ready to share!', 'success');
+                    return;
                 }
+            } catch (err) {
+                console.error('Filesystem export failed:', err);
             }
 
             // Fallback: Copy CSV to clipboard
@@ -4631,15 +4641,11 @@
                 await navigator.clipboard.writeText(csv);
                 showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
             } catch (err) {
-                const modal = document.createElement('div');
-                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;padding:20px;';
-                modal.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="color:white;margin:0;">Report Data (Copy Below)</h3><button onclick="this.parentElement.parentElement.remove()" style="background:#ef4444;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:700;">Close</button></div><textarea style="flex:1;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;" readonly>' + csv.replace(/</g, '&lt;') + '</textarea>';
-                document.body.appendChild(modal);
-                showNotification('Long-press the text to copy it', 'info');
+                showNotification('Export failed. Please try again.', 'error');
             }
         },
 
-        printReport() {
+        async printReport() {
             const data = this._rawData;
             if (!data) { showNotification('No data to print', 'error'); return; }
 
@@ -4649,84 +4655,67 @@
                 '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
             ).join('');
 
-            // Remove any existing overlay
-            const existing = document.getElementById('printOverlay');
-            if (existing) existing.remove();
+            // Build HTML report content
+            var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
+            htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
+            htmlReport += '</head><body>';
+            htmlReport += '<h1>Autoride Sales Report</h1>';
+            htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Bookings:</strong> ' + totalBook + '</p>';
+            htmlReport += '<table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead>';
+            htmlReport += '<tbody>' + tableRows + '</tbody></table>';
+            htmlReport += '</body></html>';
 
-            // Create fullscreen in-app overlay
-            const overlay = document.createElement('div');
-            overlay.id = 'printOverlay';
-            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;overflow-y:auto;padding:20px;';
+            try {
+                // Save HTML file and share it
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                if (Filesystem) {
+                    const filename = 'Autoride_Report_' + new Date().toISOString().split('T')[0] + '.html';
+                    const result = await Filesystem.writeFile({
+                        path: filename,
+                        data: btoa(unescape(encodeURIComponent(htmlReport))),
+                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
+                        recursive: true
+                    });
 
-            const styleTag = document.createElement('style');
-            styleTag.textContent = '@media print { body > *:not(#printOverlay) { display: none !important; } #printOverlay { position: static !important; } .no-print-btns { display: none !important; } }';
-            overlay.appendChild(styleTag);
+                    const { Share } = window.Capacitor.Plugins;
+                    if (Share) {
+                        await Share.share({
+                            title: 'Autoride Sales Report',
+                            url: result.uri,
+                            dialogTitle: 'Share or Print Report'
+                        });
+                    }
+                    showNotification('Report saved! Open it in Chrome to print.', 'success');
+                    return;
+                }
+            } catch (err) {
+                console.error('Print/share failed:', err);
+            }
 
-            const content = document.createElement('div');
-            content.innerHTML = '<h1 style="font-size:1.4rem;margin-bottom:10px;color:#000;">Autoride Sales Report</h1>' +
-                '<p style="color:#333;margin:5px 0;">Generated: ' + new Date().toLocaleString() + '</p>' +
-                '<p style="color:#000;margin:5px 0;"><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>' +
-                '<p style="color:#000;margin:5px 0;"><strong>Total Bookings:</strong> ' + totalBook + '</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-top:16px;"><thead><tr>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">#</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Vehicle</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Bookings</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Revenue</th>' +
-                '</tr></thead><tbody>' + tableRows + '</tbody></table>';
-            overlay.appendChild(content);
-
-            const btns = document.createElement('div');
-            btns.className = 'no-print-btns';
-            btns.style.cssText = 'margin-top:20px;display:flex;gap:10px;';
-
-            const printBtn = document.createElement('button');
-            printBtn.style.cssText = 'flex:1;background:#0052ff;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            printBtn.innerHTML = '&#128424; Share Report';
-            printBtn.onclick = async function() {
-                // Build plain text version of the report
+            // Fallback: share as text
+            try {
                 var reportText = 'AUTORIDE SALES REPORT\n';
                 reportText += 'Generated: ' + new Date().toLocaleString() + '\n\n';
                 reportText += 'Total Revenue: PHP ' + totalRev.toLocaleString() + '\n';
                 reportText += 'Total Bookings: ' + totalBook + '\n\n';
-                reportText += 'TOP VEHICLES BY REVENUE\n';
-                reportText += '------------------------\n';
+                reportText += 'TOP VEHICLES BY REVENUE\n------------------------\n';
                 (data.topVehicles || []).forEach(function(c, i) {
                     reportText += (i+1) + '. ' + c.brand + ' ' + c.model + ' - ' + c.booking_count + ' bookings - PHP ' + (c.revenue||0).toLocaleString() + '\n';
                 });
-
                 if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'Autoride Sales Report',
-                            text: reportText
-                        });
-                        return;
-                    } catch (err) {
-                        if (err.name === 'AbortError') return;
-                    }
-                }
-                // Fallback: copy to clipboard
-                try {
+                    await navigator.share({ title: 'Autoride Sales Report', text: reportText });
+                } else {
                     await navigator.clipboard.writeText(reportText);
-                    alert('Report copied to clipboard!');
-                } catch(e) {
-                    alert(reportText);
+                    showNotification('Report copied to clipboard!', 'success');
                 }
-            };
-
-            const closeBtn = document.createElement('button');
-            closeBtn.style.cssText = 'flex:1;background:#6b7080;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            closeBtn.innerHTML = '&#10006; Close';
-            closeBtn.onclick = function() { document.getElementById('printOverlay').remove(); };
-
-            btns.appendChild(printBtn);
-            btns.appendChild(closeBtn);
-            overlay.appendChild(btns);
-            document.body.appendChild(overlay);
+            } catch(e) {
+                if (e.name !== 'AbortError') showNotification('Share failed', 'error');
+            }
         }
-    };
-
-
+    };
+
     // --- SETTINGS MODULE ---
     const Settings = {
         async fetch() {
