@@ -4681,25 +4681,36 @@
 
             const printBtn = document.createElement('button');
             printBtn.style.cssText = 'flex:1;background:#0052ff;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            printBtn.innerHTML = '&#128424; Share / Print';
+            printBtn.innerHTML = '&#128424; Share Report';
             printBtn.onclick = async function() {
-                // Build a clean HTML document for sharing
-                const htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Autoride Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style></head><body>' + content.innerHTML + '</body></html>';
-                try {
-                    const file = new File([htmlContent], 'Autoride_Report.html', { type: 'text/html' });
-                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                // Build plain text version of the report
+                var reportText = 'AUTORIDE SALES REPORT\n';
+                reportText += 'Generated: ' + new Date().toLocaleString() + '\n\n';
+                reportText += 'Total Revenue: PHP ' + totalRev.toLocaleString() + '\n';
+                reportText += 'Total Bookings: ' + totalBook + '\n\n';
+                reportText += 'TOP VEHICLES BY REVENUE\n';
+                reportText += '------------------------\n';
+                (data.topVehicles || []).forEach(function(c, i) {
+                    reportText += (i+1) + '. ' + c.brand + ' ' + c.model + ' - ' + c.booking_count + ' bookings - PHP ' + (c.revenue||0).toLocaleString() + '\n';
+                });
+
+                if (navigator.share) {
+                    try {
                         await navigator.share({
                             title: 'Autoride Sales Report',
-                            files: [file]
+                            text: reportText
                         });
-                    } else {
-                        // Fallback: try window.print anyway
-                        window.print();
+                        return;
+                    } catch (err) {
+                        if (err.name === 'AbortError') return;
                     }
-                } catch (err) {
-                    if (err.name !== 'AbortError') {
-                        window.print();
-                    }
+                }
+                // Fallback: copy to clipboard
+                try {
+                    await navigator.clipboard.writeText(reportText);
+                    alert('Report copied to clipboard!');
+                } catch(e) {
+                    alert(reportText);
                 }
             };
 
