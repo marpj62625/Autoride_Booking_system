@@ -1255,13 +1255,13 @@ def admin_list_users():
             # is_verified = 1 is Pending
 
             cur.execute("""
-                SELECT u.id, u.full_name, u.email, u.phone,
+                SELECT u.id, COALESCE(ld.full_name, u.full_name) AS full_name, u.email, u.phone,
                        COALESCE(ld.license_front_url, u.license_image_url) AS license_image,
                        COALESCE(ld.license_number, u.license_number) AS license_number,
-                       COALESCE(ld.expiry_date, u.license_expiry) AS license_expiry,
+                       COALESCE(CAST(ld.expiry_date AS TEXT), u.license_expiry) AS license_expiry,
                        COALESCE(ld.license_class, u.license_type) AS license_type,
                        ld.license_back_url, ld.issuing_country_state, 
-                       ld.date_of_birth, ld.emergency_contact_name, 
+                       CAST(ld.date_of_birth AS TEXT) AS date_of_birth, ld.emergency_contact_name, 
                        ld.emergency_contact_phone, ld.emergency_contact_relationship,
                        u.is_verified
                 FROM users u
@@ -1273,13 +1273,13 @@ def admin_list_users():
         else:
 
             cur.execute("""
-                SELECT u.id, u.full_name, u.email, u.phone,
+                SELECT u.id, COALESCE(ld.full_name, u.full_name) AS full_name, u.email, u.phone,
                        COALESCE(ld.license_front_url, u.license_image_url) AS license_image,
                        COALESCE(ld.license_number, u.license_number) AS license_number,
-                       COALESCE(ld.expiry_date, u.license_expiry) AS license_expiry,
+                       COALESCE(CAST(ld.expiry_date AS TEXT), u.license_expiry) AS license_expiry,
                        COALESCE(ld.license_class, u.license_type) AS license_type,
                        ld.license_back_url, ld.issuing_country_state, 
-                       ld.date_of_birth, ld.emergency_contact_name, 
+                       CAST(ld.date_of_birth AS TEXT) AS date_of_birth, ld.emergency_contact_name, 
                        ld.emergency_contact_phone, ld.emergency_contact_relationship,
                        u.is_verified
                 FROM users u
@@ -1295,7 +1295,9 @@ def admin_list_users():
         for u in users:
             d = dict(u)
             if d.get('license_expiry'):
-                d['license_expiry'] = str(d['license_expiry'])
+                d['license_expiry'] = str(d['license_expiry']).split(' ')[0]
+            if d.get('date_of_birth'):
+                d['date_of_birth'] = str(d['date_of_birth']).split(' ')[0]
             result.append(d)
 
         print(f"DEBUG: Found {len(result)} users matching criteria")

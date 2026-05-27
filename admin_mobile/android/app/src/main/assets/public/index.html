@@ -3468,31 +3468,64 @@
                 const detailsHtml = `
                     <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
                         <div style="font-size:0.65rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;"><i class="fas fa-id-card" style="margin-right:5px;"></i>Declared License Details</div>
+                        
+                        <div style="display:flex;gap:10px;margin-bottom:12px;">
+                            ${licenseUrl ? `<div style="flex:1;"><div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Front</div><img src="${licenseUrl}" style="width:100%;border-radius:8px;cursor:pointer;" onclick="Verifications.viewLicense('${licenseUrl}')"></div>` : ''}
+                            ${v.license_back_url ? `<div style="flex:1;"><div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Back</div><img src="${v.license_back_url}" style="width:100%;border-radius:8px;cursor:pointer;" onclick="Verifications.viewLicense('${v.license_back_url}')"></div>` : ''}
+                        </div>
+
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                             <div>
                                 <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">License No.</div>
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_number || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
-                            </div>
-                            <div>
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Type</div>
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_type || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_number || '-'}</div>
                             </div>
                             <div>
                                 <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Expiry Date</div>
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_expiry || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not provided</span>'}</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_expiry || '-'}</div>
                             </div>
                             <div>
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Phone</div>
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.phone || '<span style="color:var(--text-muted);font-style:italic;font-weight:400;">Not set</span>'}</div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Class / Category</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.license_type || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Country / State</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.issuing_country_state || '-'}</div>
+                            </div>
+                        </div>
+                        
+                        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:12px 0;">
+                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-main);margin-bottom:8px;">Personal Info</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Full Name</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${name || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Date of Birth</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.date_of_birth || '-'}</div>
+                            </div>
+                        </div>
+
+                        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:12px 0;">
+                        <div style="font-size:0.75rem;font-weight:800;color:var(--text-main);margin-bottom:8px;">IV. IN CASE OF EMERGENCY NOTIFY:</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <div style="grid-column: span 2;">
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Contact Name</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.emergency_contact_name || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Phone Number</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.emergency_contact_phone || '-'}</div>
+                            </div>
+                            <div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Relationship</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.emergency_contact_relationship || '-'}</div>
                             </div>
                         </div>
                     </div>`;
 
                 const actionButtons = licenseUrl
-                    ? `<button onclick="Verifications.viewLicense('${licenseUrl}')" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px;">
-                            <i class="fas fa-id-card" style="margin-right: 6px;"></i> License
-                       </button>
-                       <button onclick="Verifications.process(${v.id}, 2)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--success); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);">Approve</button>
+                    ? `<button onclick="Verifications.process(${v.id}, 2)" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--success); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);">Approve</button>
                        <button onclick="Verifications.process(${v.id}, 0)" class="btn-premium" style="flex: 0.7; padding: 12px; font-size: 0.8rem; border-radius: 14px; background: var(--danger); box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);">Reject</button>`
                     : `<div style="flex: 1; text-align: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; color: var(--text-muted); font-size: 0.75rem; font-weight: 600; border: 1px dashed var(--border);">
                             <i class="fas fa-clock" style="margin-right: 5px;"></i> Waiting for Upload
