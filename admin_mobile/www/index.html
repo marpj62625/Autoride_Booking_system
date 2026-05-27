@@ -4590,8 +4590,8 @@
         printReport() {
             const data = this._rawData;
             if (!data) { showNotification('No data to print', 'error'); return; }
-            const totalRev = data.summary?.total_revenue || 0;
-            const totalBook = data.summary?.total_bookings || 0;
+            const totalRev = data.totalRevenue || 0;
+            const totalBook = data.totalBookings || 0;
             const rows = (data.topVehicles || []).map((c, i) =>
                 `<tr><td>${i+1}</td><td>${c.brand} ${c.model}</td><td>${c.booking_count}</td><td>&#8369;${(c.revenue||0).toLocaleString()}</td></tr>`
             ).join('');
@@ -4604,7 +4604,15 @@
                 <p>Generated: ${new Date().toLocaleString()}</p>
                 <p><strong>Total Revenue:</strong> &#8369;${totalRev.toLocaleString()} &nbsp;&nbsp; <strong>Total Bookings:</strong> ${totalBook}</p>
                 <table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead><tbody>${rows}</tbody></table>
-                <script>window.print();window.close();<\/script>
+                <script>
+                    window.print();
+                    // Handle back button - close window when user cancels print or finishes
+                    window.onafterprint = function() { window.close(); };
+                    // Also handle Android back button
+                    if (window.history && window.history.length <= 1) {
+                        setTimeout(function() { window.close(); }, 100);
+                    }
+                <\/script>
                 </body></html>
             `);
             win.document.close();
