@@ -8064,8 +8064,9 @@ def save_license_details():
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (user_id, full_name, date_of_birth, license_number, expiry_date, issuing_country_state, license_class, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, front_url, back_url))
             
+        cur.execute("UPDATE users SET is_verified = 1 WHERE id = %s", (user_id,))
         commit_db()
-        return jsonify({'message': 'License details saved successfully'}), 200
+        return jsonify({'message': 'License details saved successfully', 'is_verified': 1}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
