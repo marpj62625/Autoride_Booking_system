@@ -852,6 +852,22 @@
                             <option value="Van">Van</option>
                         </select>
                     </div>
+                    <div id="popupMetricFilterContainer" style="display:none;">
+                        <label>Metric</label>
+                        <select id="popupMetricFilter" onchange="applyPopupFilters()">
+                            <option value="bookings">Booking Count</option>
+                            <option value="revenue">Revenue (₱)</option>
+                        </select>
+                    </div>
+                    <div id="popupLimitFilterContainer" style="display:none;">
+                        <label>Show Top</label>
+                        <select id="popupLimitFilter" onchange="applyPopupFilters()">
+                            <option value="5">Top 5</option>
+                            <option value="10">Top 10</option>
+                            <option value="15">Top 15</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
                 </div>
                 <button onclick="resetPopupFilters()" class="btn-outline" style="width: 100%; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">Reset Filters</button>
             </div>
@@ -980,8 +996,11 @@
 
         <!-- Row 3: Top Performing Vehicles Pie Chart -->
         <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
-            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;">
-                <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);margin-bottom:12px;text-transform:uppercase;">TOP PERFORMING VEHICLES</div>
+            <div class="stat-card" style="flex:1;padding:14px;margin-bottom:0;cursor:pointer;" onclick="if(charts.topPie) openChartPopup(charts.topPie, 'topveh')">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <div style="font-size:0.72rem;font-weight:800;color:var(--text-main);text-transform:uppercase;">TOP PERFORMING VEHICLES</div>
+                    <i class="fas fa-expand-alt" style="font-size:0.65rem;color:var(--text-muted);opacity:0.6;"></i>
+                </div>
                 <div style="height:220px;position:relative;">
                     <canvas id="topVehiclesPieChart"></canvas>
                 </div>
@@ -4780,6 +4799,7 @@
         // Make dashboard charts clickable
         makeChartClickable('revenueChart', charts.revenue, 'revenue');
         makeChartClickable('bookingsChart', charts.bookings, 'bookings');
+        if (charts.topPie) makeChartClickable('topVehiclesPieChart', charts.topPie, 'topveh');
     }
 
     // --- EXPANDABLE CHART POPUP LOGIC ---
@@ -4817,10 +4837,24 @@
         document.getElementById('popupVehicleFilter').value = 'all';
 
         // Adjust visibility of filters based on chart type
+        const metricContainer = document.getElementById('popupMetricFilterContainer');
+        const limitContainer = document.getElementById('popupLimitFilterContainer');
         if (chartType === 'fleet') {
             document.getElementById('popupStatusFilterContainer').style.display = 'none';
         } else {
             document.getElementById('popupStatusFilterContainer').style.display = '';
+        }
+        if (chartType === 'topveh') {
+            metricContainer.style.display = '';
+            limitContainer.style.display = '';
+            document.getElementById('popupMetricFilter').value = 'bookings';
+            document.getElementById('popupLimitFilter').value = '5';
+            document.getElementById('popupStatusFilterContainer').style.display = 'none';
+            document.getElementById('popupVehicleFilterContainer').style.display = 'none';
+        } else {
+            metricContainer.style.display = 'none';
+            limitContainer.style.display = 'none';
+            document.getElementById('popupVehicleFilterContainer').style.display = '';
         }
 
         const modal = document.getElementById('chartPopupModal');
@@ -4936,9 +4970,19 @@
                 originalChartData.labels = fleetDist.map(f => f.status);
                 originalChartData.datasets[0].data = fleetDist.map(f => f.count);
             } else if (currentChartType === 'topveh') {
-                const topVeh = data.topVehicles || [];
-                originalChartData.labels = topVeh.map(c => `${c.brand} ${c.model}`);
-                originalChartData.datasets[0].data = topVeh.map(c => c.booking_count || 0);
+                const metric = document.getElementById('popupMetricFilter').value || 'bookings';
+                const limitVal = document.getElementById('popupLimitFilter').value || '5';
+                let topVeh = data.topVehicles || [];
+                if (limitVal !== 'all') topVeh = topVeh.slice(0, parseInt(limitVal));
+                originalChartData.labels = topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim());
+                if (metric === 'revenue') {
+                    originalChartData.datasets[0].data = topVeh.map(c => c.revenue || 0);
+                } else {
+                    originalChartData.datasets[0].data = topVeh.map(c => c.booking_count || 0);
+                }
+                // Ensure enough colors
+                const pieColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9','#22d3ee'];
+                originalChartData.datasets[0].backgroundColor = pieColors.slice(0, topVeh.length);
             }
 
             renderPopupChart();
@@ -4952,6 +4996,8 @@
         document.getElementById('popupDateTo').value = '';
         document.getElementById('popupStatusFilter').value = 'all';
         document.getElementById('popupVehicleFilter').value = 'all';
+        document.getElementById('popupMetricFilter').value = 'bookings';
+        document.getElementById('popupLimitFilter').value = '5';
         applyPopupFilters();
     }
 

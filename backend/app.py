@@ -7283,7 +7283,7 @@ def get_admin_stats_v2():
             top_vehicles = [{"brand": r.get('brand'), "model": r.get('model'), "plate_number": r.get('plate_number'), "booking_count": int(r.get('booking_count') or 0), "revenue": float(r.get('revenue') or 0)} for r in cur.fetchall()]
         except Exception as e:
             print("ERROR in topVehicles query:", e)
-            top_vehicles = [{"brand": "ERROR", "model": str(e), "booking_count": 0, "revenue": 0}]
+            top_vehicles = []
 
 
         
