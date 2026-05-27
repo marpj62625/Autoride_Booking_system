@@ -5513,7 +5513,7 @@ def update_driver_booking_status(booking_id):
 
 
 
-@app.route('/api/admin/download-report', methods=['POST'])
+@app.route('/admin/download-report', methods=['POST'])
 def download_report():
     try:
         content = request.form.get('content', '')
