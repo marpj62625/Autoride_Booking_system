@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Autoride Customer Mobile App - Main Application Script
  * utils.js is loaded as a separate script tag before this file
  */
@@ -252,7 +252,13 @@ function uploadFile(endpoint, formData) {
   var url = API_BASE + endpoint;
   return fetch(url, { method: 'POST', body: formData })
     .then(function(res) {
-      return res.json().then(function(data) {
+      return res.text().then(function(text) {
+        var data;
+        try { data = JSON.parse(text); } catch(e) {
+          var parseErr = new Error('Server error (status ' + res.status + ')');
+          parseErr.status = res.status;
+          throw parseErr;
+        }
         if (!res.ok) {
           var err = new Error(data.error || 'Upload failed');
           err.status = res.status;
@@ -263,7 +269,7 @@ function uploadFile(endpoint, formData) {
     })
     .catch(function(err) {
       if (err.status) throw err;
-      var netErr = new Error('Network error during upload.');
+      var netErr = new Error('Network error during upload. Check connection.');
       netErr.status = 0;
       throw netErr;
     });
@@ -2928,7 +2934,8 @@ function submitReview(vehicleId) {
 }
 
 // PROFILE
-var _licenseBlob = null; // blob for license edit upload
+var _licenseFrontBlob = null;
+var _licenseBackBlob = null;
 
 var Profile = {
   enterEdit: function() {
@@ -2947,29 +2954,74 @@ var Profile = {
     document.getElementById('licenseViewMode').style.display = 'none';
     document.getElementById('licenseEditMode').style.display = '';
     document.getElementById('licenseEditBtn').style.display = 'none';
-    _licenseBlob = null;
-    var prev = document.getElementById('licenseEditPreview');
-    if (prev) { prev.src = ''; prev.style.display = 'none'; }
+    _licenseFrontBlob = null;
+    _licenseBackBlob = null;
+    var prevF = document.getElementById('licenseEditPreviewFront');
+    if (prevF) { prevF.src = ''; prevF.style.display = 'none'; }
+    var prevB = document.getElementById('licenseEditPreviewBack');
+    if (prevB) { prevB.src = ''; prevB.style.display = 'none'; }
+    // Load existing data into edit fields
+    loadLicenseDetailsForEdit();
   },
   cancelLicenseEdit: function() {
     document.getElementById('licenseViewMode').style.display = '';
     document.getElementById('licenseEditMode').style.display = 'none';
     document.getElementById('licenseEditBtn').style.display = '';
-    _licenseBlob = null;
+    _licenseFrontBlob = null;
+    _licenseBackBlob = null;
   },
   saveLicenseInfo: function() {
     var errEl = document.getElementById('licenseEditErr');
     if (errEl) errEl.textContent = '';
+
+    // Validate required fields
+    var fields = {
+      'editLicenseNumber': 'License Number',
+      'editLicenseExpiry': 'Expiry Date',
+      'editLicenseCountry': 'Country / State',
+      'editLicenseClass': 'License Class',
+      'editLicenseName': 'Full Name',
+      'editLicenseDob': 'Date of Birth',
+      'editLicenseEmName': 'Emergency Contact Name',
+      'editLicenseEmPhone': 'Emergency Phone',
+      'editLicenseEmRel': 'Relationship'
+    };
+    for (var fid in fields) {
+      var val = (document.getElementById(fid).value || '').trim();
+      if (!val) {
+        if (errEl) errEl.textContent = fields[fid] + ' is required.';
+        return;
+      }
+    }
+
     var fd = new FormData();
     fd.append('user_id', currentUser.id);
-    fd.append('license_number', (document.getElementById('editLicenseNumber').value || '').trim());
-    fd.append('license_expiry',  (document.getElementById('editLicenseExpiry').value  || '').trim());
-    fd.append('license_type',    (document.getElementById('editLicenseType').value    || '').trim());
-    if (_licenseBlob) fd.append('license', _licenseBlob, 'license.jpg');
+    fd.append('license_number', document.getElementById('editLicenseNumber').value.trim());
+    fd.append('expiry_date', document.getElementById('editLicenseExpiry').value.trim());
+    fd.append('issuing_country_state', document.getElementById('editLicenseCountry').value.trim());
+    fd.append('license_class', document.getElementById('editLicenseClass').value.trim());
+    fd.append('full_name', document.getElementById('editLicenseName').value.trim());
+    fd.append('date_of_birth', document.getElementById('editLicenseDob').value.trim());
+    fd.append('emergency_contact_name', document.getElementById('editLicenseEmName').value.trim());
+    fd.append('emergency_contact_phone', document.getElementById('editLicenseEmPhone').value.trim());
+    fd.append('emergency_contact_relationship', document.getElementById('editLicenseEmRel').value.trim());
+
+    // Keep existing URLs if no new files uploaded
+    if (_licenseFrontBlob) {
+      fd.append('license_front_file', _licenseFrontBlob, 'front.jpg');
+    } else {
+      fd.append('license_front_url', currentUser._licenseDetails?.license_front_url || '');
+    }
+    if (_licenseBackBlob) {
+      fd.append('license_back_file', _licenseBackBlob, 'back.jpg');
+    } else {
+      fd.append('license_back_url', currentUser._licenseDetails?.license_back_url || '');
+    }
+
     showLoading(true);
-    uploadFile('/user/update-license-info', fd)
+    uploadFile('/user/license-details', fd)
       .then(function() {
-        showToast('License info saved!', 'success');
+        showToast('License details saved!', 'success');
         Profile.cancelLicenseEdit();
         loadProfile();
       })
@@ -2978,27 +3030,73 @@ var Profile = {
   }
 };
 
-function pickLicenseForProfile() {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/jpeg,image/png';
-  input.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var err = validateUploadFile(file);
-    if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
-    _licenseBlob = file;
-    var preview = document.getElementById('licenseEditPreview');
+function pickLicenseForProfile(side) {
+  var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
+  var el = document.getElementById(inputId);
+  if (el) el.click();
+}
+
+function handleLicenseFileSelect(e, side) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var err = validateUploadFile(file);
+  if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
+  if (side === 'front') {
+    _licenseFrontBlob = file;
+    var preview = document.getElementById('licenseEditPreviewFront');
     if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-  };
-  input.click();
+  } else {
+    _licenseBackBlob = file;
+    var preview = document.getElementById('licenseEditPreviewBack');
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+  }
+}
+
+function loadLicenseDetailsForEdit() {
+  if (!currentUser.id) return;
+  apiCall('/user/license-details?user_id=' + currentUser.id)
+    .then(function(data) {
+      if (!data || !data.license_number) return;
+      var el;
+      el = document.getElementById('editLicenseNumber'); if (el) el.value = data.license_number || '';
+      el = document.getElementById('editLicenseExpiry'); if (el) el.value = data.expiry_date || '';
+      el = document.getElementById('editLicenseCountry'); if (el) el.value = data.issuing_country_state || '';
+      el = document.getElementById('editLicenseClass'); if (el) el.value = data.license_class || '';
+      el = document.getElementById('editLicenseName'); if (el) el.value = data.full_name || '';
+      el = document.getElementById('editLicenseDob'); if (el) el.value = data.date_of_birth || '';
+      el = document.getElementById('editLicenseEmName'); if (el) el.value = data.emergency_contact_name || '';
+      el = document.getElementById('editLicenseEmPhone'); if (el) el.value = data.emergency_contact_phone || '';
+      el = document.getElementById('editLicenseEmRel'); if (el) el.value = data.emergency_contact_relationship || '';
+      // Show existing images in preview
+      if (data.license_front_url) {
+        var prevF = document.getElementById('licenseEditPreviewFront');
+        if (prevF) { prevF.src = data.license_front_url; prevF.style.display = 'block'; }
+      }
+      if (data.license_back_url) {
+        var prevB = document.getElementById('licenseEditPreviewBack');
+        if (prevB) { prevB.src = data.license_back_url; prevB.style.display = 'block'; }
+      }
+    })
+    .catch(function() { /* ignore */ });
 }
 
 function loadProfile() {
   if (!currentUser.id) return;
   showLoading(true);
-  apiCall('/user/profile-full?user_id=' + currentUser.id)
-    .then(function(profile) {
+
+  // Load main profile
+  var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
+  // Load license details from new table
+  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id).catch(function() { return {}; });
+
+  Promise.all([profilePromise, licensePromise])
+    .then(function(results) {
+      var profile = results[0];
+      var licenseData = results[1] || {};
+
+      // Store license details on currentUser for reference
+      currentUser._licenseDetails = licenseData;
+
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
       var editNameEl = document.getElementById('editName');
@@ -3041,53 +3139,45 @@ function loadProfile() {
       var emailDisplay = document.getElementById('profileEmailDisplay');
       if (emailDisplay) emailDisplay.textContent = profile.email || '';
 
-      // License image thumbnail
+      // License images thumbnail (from new license_details table)
       var licenseThumb = document.getElementById('profileLicenseThumb');
       if (licenseThumb) {
-        if (profile.license_image_url) {
-          licenseThumb.innerHTML = '<img src="' + profile.license_image_url + '" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;cursor:pointer;" onclick="viewLicenseImage(\'' + profile.license_image_url + '\')" alt="License ID">';
-        } else {
-          licenseThumb.innerHTML = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photo uploaded yet.</p>';
+        var html = '';
+        if (licenseData.license_front_url) {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><img src="' + licenseData.license_front_url + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + licenseData.license_front_url + '\')"></div>';
         }
+        if (licenseData.license_back_url) {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><img src="' + licenseData.license_back_url + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + licenseData.license_back_url + '\')"></div>';
+        }
+        if (!html) {
+          html = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photos uploaded yet.</p>';
+        }
+        licenseThumb.innerHTML = html;
       }
 
-      // License detail fields � view mode
-      var el = document.getElementById('viewLicenseNumber');
-      if (el) el.textContent = profile.license_number || '�';
-      el = document.getElementById('viewLicenseType');
-      if (el) el.textContent = profile.license_type || '�';
+      // License detail fields - view mode (from new license_details table)
+      var el;
+      el = document.getElementById('viewLicenseNumber');
+      if (el) el.textContent = licenseData.license_number || '-';
       el = document.getElementById('viewLicenseExpiry');
-      if (el) el.textContent = profile.license_expiry || '�';
-      el = document.getElementById('viewLicenseStatus');
-      if (el) {
-        var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-        var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
-        var v = currentUser.isVerified;
-        el.textContent = statusMap[v] || '�';
-        el.style.color = statusColor[v] || 'var(--text-main)';
-      }
-
-      // Pre-fill license edit fields
-      var lnEl = document.getElementById('editLicenseNumber');
-      if (lnEl) lnEl.value = profile.license_number || '';
-      var ltEl = document.getElementById('editLicenseType');
-      if (ltEl) ltEl.value = profile.license_type || '';
-      var leEl = document.getElementById('editLicenseExpiry');
-      if (leEl) leEl.value = profile.license_expiry || '';
+      if (el) el.textContent = licenseData.expiry_date || '-';
+      el = document.getElementById('viewLicenseClass');
+      if (el) el.textContent = licenseData.license_class || '-';
+      el = document.getElementById('viewLicenseCountry');
+      if (el) el.textContent = licenseData.issuing_country_state || '-';
+      el = document.getElementById('viewLicenseName');
+      if (el) el.textContent = licenseData.full_name || '-';
+      el = document.getElementById('viewLicenseDob');
+      if (el) el.textContent = licenseData.date_of_birth || '-';
+      el = document.getElementById('viewLicenseEmName');
+      if (el) el.textContent = licenseData.emergency_contact_name || '-';
+      el = document.getElementById('viewLicenseEmPhone');
+      if (el) el.textContent = licenseData.emergency_contact_phone || '-';
+      el = document.getElementById('viewLicenseEmRel');
+      if (el) el.textContent = licenseData.emergency_contact_relationship || '-';
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
-}
-
-function viewLicenseImage(url) {
-  var modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML = '<div style="position:relative;width:100%;max-width:500px;">' +
-    '<p style="color:#fff;text-align:center;margin-bottom:10px;font-weight:700;">Uploaded License / ID</p>' +
-    '<img src="' + url + '" style="width:100%;border-radius:var(--radius-md);" alt="License">' +
-    '<button onclick="this.parentElement.parentElement.remove()" style="display:block;width:100%;margin-top:12px;background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);padding:12px;font-weight:700;cursor:pointer;">Close</button>' +
-    '</div>';
-  document.body.appendChild(modal);
 }
 
 function pickProfilePicture() {
