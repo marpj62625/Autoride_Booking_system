@@ -1260,6 +1260,9 @@ def admin_list_users():
                        COALESCE(ld.license_number, u.license_number) AS license_number,
                        COALESCE(ld.expiry_date, u.license_expiry) AS license_expiry,
                        COALESCE(ld.license_class, u.license_type) AS license_type,
+                       ld.license_back_url, ld.issuing_country_state, 
+                       ld.date_of_birth, ld.emergency_contact_name, 
+                       ld.emergency_contact_phone, ld.emergency_contact_relationship,
                        u.is_verified
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
@@ -1275,6 +1278,9 @@ def admin_list_users():
                        COALESCE(ld.license_number, u.license_number) AS license_number,
                        COALESCE(ld.expiry_date, u.license_expiry) AS license_expiry,
                        COALESCE(ld.license_class, u.license_type) AS license_type,
+                       ld.license_back_url, ld.issuing_country_state, 
+                       ld.date_of_birth, ld.emergency_contact_name, 
+                       ld.emergency_contact_phone, ld.emergency_contact_relationship,
                        u.is_verified
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
