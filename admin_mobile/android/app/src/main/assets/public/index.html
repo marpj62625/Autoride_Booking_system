@@ -4570,43 +4570,162 @@
         exportExcel() {
             const data = this._rawData;
             if (!data) { showNotification('No data to export', 'error'); return; }
-            // Build CSV (opens as Excel)
-            const rows = [['Vehicle', 'Bookings', 'Revenue (PHP)']];
-            (data.topVehicles || []).forEach(c => rows.push([`${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]));
+            
+            const totalRev = data.totalRevenue || 0;
+            const totalBook = data.totalBookings || 0;
+            
+            // Build comprehensive CSV with summary
+            const rows = [];
+            rows.push(['Autoride Sales Report']);
+            rows.push(['Generated:', new Date().toLocaleString()]);
             rows.push([]);
-            rows.push(['Date', 'Revenue']);
-            (data.revenueTrend || []).forEach(t => rows.push([t.day || '', t.amount || 0]));
-            const csv = rows.map(r => r.join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showNotification('Report exported!', 'success');
+            rows.push(['Summary']);
+            rows.push(['Total Revenue (PHP)', totalRev]);
+            rows.push(['Total Bookings', totalBook]);
+            rows.push(['Average Revenue per Booking (PHP)', totalBook > 0 ? Math.floor(totalRev / totalBook) : 0]);
+            rows.push([]);
+            rows.push(['Top Vehicles by Revenue']);
+            rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
+            (data.topVehicles || []).forEach((c, i) => {
+                rows.push([i + 1, `${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]);
+            });
+            rows.push([]);
+            rows.push(['Revenue Trend']);
+            rows.push(['Date', 'Revenue (PHP)']);
+            (data.revenueTrend || []).forEach(t => {
+                rows.push([t.day || t.label || '', t.amount || 0]);
+            });
+            
+            // Create CSV content
+            const csv = rows.map(r => r.map(cell => {
+                // Escape cells containing commas or quotes
+                const str = String(cell);
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            }).join(',')).join('\n');
+            
+            // Add BOM for Excel UTF-8 support
+            const BOM = '\uFEFF';
+            const csvContent = BOM + csv;
+            
+            // Try multiple download methods for mobile compatibility
+            try {
+                // Method 1: Blob download (works on most browsers)
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 250);
+                
+                showNotification('Report exported! Check your Downloads folder.', 'success');
+            } catch (err) {
+                // Method 2: Data URL fallback for mobile
+                const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showNotification('Report exported! Check your Downloads folder.', 'success');
+            }
         },
 
         printReport() {
             const data = this._rawData;
             if (!data) { showNotification('No data to print', 'error'); return; }
-            const totalRev = data.summary?.total_revenue || 0;
-            const totalBook = data.summary?.total_bookings || 0;
+            
+            const totalRev = data.totalRevenue || 0;
+            const totalBook = data.totalBookings || 0;
             const rows = (data.topVehicles || []).map((c, i) =>
                 `<tr><td>${i+1}</td><td>${c.brand} ${c.model}</td><td>${c.booking_count}</td><td>&#8369;${(c.revenue||0).toLocaleString()}</td></tr>`
             ).join('');
+            
+            // Create print content as data URL to avoid popup blockers
+            const printContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Autoride Report</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+                        h1 { font-size: 1.4rem; margin-bottom: 10px; }
+                        p { margin: 5px 0; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background: #f4f4f4; font-weight: bold; }
+                        .no-print { margin-top: 20px; }
+                        .no-print button {
+                            background: #0052ff;
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            font-size: 1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            margin-right: 10px;
+                        }
+                        @media print {
+                            .no-print { display: none; }
+                            body { padding: 10px; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Autoride Sales Report</h1>
+                    <p>Generated: ${new Date().toLocaleString()}</p>
+                    <p><strong>Total Revenue:</strong> &#8369;${totalRev.toLocaleString()}</p>
+                    <p><strong>Total Bookings:</strong> ${totalBook}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Vehicle</th>
+                                <th>Bookings</th>
+                                <th>Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                    <div class="no-print">
+                        <button onclick="window.print()">??? Print Report</button>
+                        <button onclick="window.close()" style="background: #6b7080;">? Close</button>
+                    </div>
+                    <script>
+                        // Handle back button
+                        window.addEventListener('popstate', function() {
+                            window.close();
+                        });
+                    <\/script>
+                </body>
+                </html>
+            `;
+            
+            // Open in new window with the content
             const win = window.open('', '_blank');
-            win.document.write(`
-                <html><head><title>Autoride Report</title>
-                <style>body{font-family:Arial,sans-serif;padding:20px;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;}</style>
-                </head><body>
-                <h1>Autoride Sales Report</h1>
-                <p>Generated: ${new Date().toLocaleString()}</p>
-                <p><strong>Total Revenue:</strong> &#8369;${totalRev.toLocaleString()} &nbsp;&nbsp; <strong>Total Bookings:</strong> ${totalBook}</p>
-                <table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead><tbody>${rows}</tbody></table>
-                <script>window.print();window.close();<\/script>
-                </body></html>
-            `);
+            if (!win) {
+                showNotification('Please allow popups to print', 'error');
+                return;
+            }
+            
+            win.document.write(printContent);
             win.document.close();
         }
     };

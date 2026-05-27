@@ -4612,33 +4612,36 @@
             
             // Try multiple download methods for mobile compatibility
             try {
-                // Method 1: Blob download (works on most browsers)
+                // Method 1: Blob download (works on desktop and standard mobile browsers)
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
                 a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-                
+
                 document.body.appendChild(a);
                 a.click();
-                
+
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
                 }, 250);
-                
+
+                // On Capacitor native, Blob download via a.click() fails silently without throwing an error.
+                // We proactively trigger Method 2 for native apps.
+                if (window.Capacitor && window.Capacitor.isNative) {
+                    const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                    // '_system' tells Capacitor to open in the native device browser (Chrome/Safari)
+                    // which correctly handles data URI downloads to the file system.
+                    window.open(dataUrl, '_system');
+                }
+
                 showNotification('Report exported! Check your Downloads folder.', 'success');
             } catch (err) {
-                // Method 2: Data URL fallback for mobile
+                // Method 2: Data URL fallback for any other errors
                 const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-                const a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-                a.target = '_blank';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                window.open(dataUrl, '_system');
                 showNotification('Report exported! Check your Downloads folder.', 'success');
             }
         },
@@ -4705,8 +4708,8 @@
                         </tbody>
                     </table>
                     <div class="no-print">
-                        <button onclick="window.print()">??? Print Report</button>
-                        <button onclick="window.close()" style="background: #6b7080;">? Close</button>
+                        <button onclick="window.print()">&#128424; Print Report</button>
+                        <button onclick="window.close()" style="background: #6b7080;">&#10006; Close</button>
                     </div>
                     <script>
                         // Handle back button
