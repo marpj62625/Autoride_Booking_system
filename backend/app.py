@@ -7259,41 +7259,11 @@ def get_admin_stats_v2():
 
 
 
-        # User verification stats
-
-        try:
-
-            cur.execute("SELECT license_status, COUNT(*) as count FROM users WHERE license_status IS NOT NULL GROUP BY license_status")
-
-            lic_rows = {r['license_status']: int(r['count']) for r in cur.fetchall()}
-
-            cur.execute("SELECT COUNT(*) as count FROM users WHERE is_verified = TRUE")
-
-            verified_count = int(cur.fetchone()['count'] or 0)
-
-            cur.execute("SELECT COUNT(*) as count FROM users WHERE is_verified = FALSE")
-
-            unverified_count = int(cur.fetchone()['count'] or 0)
-
-            user_stats = {
-
-                "email": {"verified": verified_count, "unverified": unverified_count},
-
-                "license": {
-
-                    "approved": lic_rows.get('approved', 0),
-
-                    "pending": lic_rows.get('pending', 0),
-
-                    "rejected": lic_rows.get('rejected', 0)
-
-                }
-
-            }
-
-        except Exception:
-
-            user_stats = {"email": {"verified": 0, "unverified": 0}, "license": {"approved": 0, "pending": 0, "rejected": 0}}
+        # User verification stats (Currently unused in dashboard frontend)
+        user_stats = {
+            "email": {"verified": 0, "unverified": 0},
+            "license": {"approved": 0, "pending": 0, "rejected": 0}
+        }
 
 
 
