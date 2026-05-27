@@ -4610,40 +4610,45 @@
             const BOM = '\uFEFF';
             const csvContent = BOM + csv;
             
-            // Try multiple download methods for mobile compatibility
-            try {
-                // Method 1: Blob download (works on desktop and standard mobile browsers)
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+            // For mobile compatibility, especially Capacitor Android, we use a hidden form to POST to the backend
+            // which responds with the file as a proper attachment. This triggers the native download manager.
+            const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `${API_BASE}/api/admin/download-report`;
+            // If native, use _system to open the native browser which handles downloads beautifully.
+            // If web, _blank is fine.
+            form.target = (window.Capacitor && window.Capacitor.isNative) ? '_system' : '_blank';
+            form.style.display = 'none';
 
-                document.body.appendChild(a);
-                a.click();
+            const inputContent = document.createElement('input');
+            inputContent.type = 'hidden';
+            inputContent.name = 'content';
+            inputContent.value = csvContent;
+            
+            const inputFilename = document.createElement('input');
+            inputFilename.type = 'hidden';
+            inputFilename.name = 'filename';
+            inputFilename.value = filename;
+            
+            const inputMimetype = document.createElement('input');
+            inputMimetype.type = 'hidden';
+            inputMimetype.name = 'mimetype';
+            inputMimetype.value = 'text/csv';
 
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 250);
+            form.appendChild(inputContent);
+            form.appendChild(inputFilename);
+            form.appendChild(inputMimetype);
+            document.body.appendChild(form);
+            
+            form.submit();
+            
+            setTimeout(() => {
+                document.body.removeChild(form);
+            }, 500);
 
-                // On Capacitor native, Blob download via a.click() fails silently without throwing an error.
-                // We proactively trigger Method 2 for native apps.
-                if (window.Capacitor && window.Capacitor.isNative) {
-                    const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-                    // '_system' tells Capacitor to open in the native device browser (Chrome/Safari)
-                    // which correctly handles data URI downloads to the file system.
-                    window.open(dataUrl, '_system');
-                }
-
-                showNotification('Report exported! Check your Downloads folder.', 'success');
-            } catch (err) {
-                // Method 2: Data URL fallback for any other errors
-                const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-                window.open(dataUrl, '_system');
-                showNotification('Report exported! Check your Downloads folder.', 'success');
-            }
+            showNotification('Report exported! Check your Downloads folder.', 'success');
         },
 
         printReport() {
@@ -4716,20 +4721,43 @@
                         window.addEventListener('popstate', function() {
                             window.close();
                         });
-                    <\/script>
+                    </script>
                 </body>
                 </html>
             `;
             
-            // Open in new window with the content
-            const win = window.open('', '_blank');
-            if (!win) {
-                showNotification('Please allow popups to print', 'error');
-                return;
-            }
+            // Open in native browser via the backend endpoint so the native print dialog works properly
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `${API_BASE}/api/admin/download-report`;
+            form.target = (window.Capacitor && window.Capacitor.isNative) ? '_system' : '_blank';
+            form.style.display = 'none';
+
+            const inputContent = document.createElement('input');
+            inputContent.type = 'hidden';
+            inputContent.name = 'content';
+            inputContent.value = printContent;
             
-            win.document.write(printContent);
-            win.document.close();
+            const inputFilename = document.createElement('input');
+            inputFilename.type = 'hidden';
+            inputFilename.name = 'filename';
+            inputFilename.value = 'print.html';
+            
+            const inputMimetype = document.createElement('input');
+            inputMimetype.type = 'hidden';
+            inputMimetype.name = 'mimetype';
+            inputMimetype.value = 'text/html';
+
+            form.appendChild(inputContent);
+            form.appendChild(inputFilename);
+            form.appendChild(inputMimetype);
+            document.body.appendChild(form);
+            
+            form.submit();
+            
+            setTimeout(() => {
+                document.body.removeChild(form);
+            }, 500);
         }
     };
 
