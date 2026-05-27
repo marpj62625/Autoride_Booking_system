@@ -4681,8 +4681,27 @@
 
             const printBtn = document.createElement('button');
             printBtn.style.cssText = 'flex:1;background:#0052ff;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            printBtn.innerHTML = '&#128424; Print Report';
-            printBtn.onclick = function() { window.print(); };
+            printBtn.innerHTML = '&#128424; Share / Print';
+            printBtn.onclick = async function() {
+                // Build a clean HTML document for sharing
+                const htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Autoride Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style></head><body>' + content.innerHTML + '</body></html>';
+                try {
+                    const file = new File([htmlContent], 'Autoride_Report.html', { type: 'text/html' });
+                    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: 'Autoride Sales Report',
+                            files: [file]
+                        });
+                    } else {
+                        // Fallback: try window.print anyway
+                        window.print();
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        window.print();
+                    }
+                }
+            };
 
             const closeBtn = document.createElement('button');
             closeBtn.style.cssText = 'flex:1;background:#6b7080;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';

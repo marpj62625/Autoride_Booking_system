@@ -4567,14 +4567,13 @@
             `).join('');
         },
 
-        exportExcel() {
+        async exportExcel() {
             const data = this._rawData;
             if (!data) { showNotification('No data to export', 'error'); return; }
-            
+
             const totalRev = data.totalRevenue || 0;
             const totalBook = data.totalBookings || 0;
-            
-            // Build comprehensive CSV with summary
+
             const rows = [];
             rows.push(['Autoride Sales Report']);
             rows.push(['Generated:', new Date().toLocaleString()]);
@@ -4595,171 +4594,108 @@
             (data.revenueTrend || []).forEach(t => {
                 rows.push([t.day || t.label || '', t.amount || 0]);
             });
-            
-            // Create CSV content
+
             const csv = rows.map(r => r.map(cell => {
-                // Escape cells containing commas or quotes
                 const str = String(cell);
                 if (str.includes(',') || str.includes('"') || str.includes('\n')) {
                     return `"${str.replace(/"/g, '""')}"`;
                 }
                 return str;
             }).join(',')).join('\n');
-            
-            // Add BOM for Excel UTF-8 support
+
             const BOM = '\uFEFF';
             const csvContent = BOM + csv;
-            
-            // For mobile compatibility, especially Capacitor Android, we use a hidden form to POST to the backend
-            // which responds with the file as a proper attachment. This triggers the native download manager.
             const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-            
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `${API_URL}/admin/download-report`;
-            // If native, use _system to open the native browser which handles downloads beautifully.
-            // If web, _blank is fine.
-            form.target = (window.Capacitor && window.Capacitor.isNative) ? '_system' : '_blank';
-            form.style.display = 'none';
 
-            const inputContent = document.createElement('input');
-            inputContent.type = 'hidden';
-            inputContent.name = 'content';
-            inputContent.value = csvContent;
-            
-            const inputFilename = document.createElement('input');
-            inputFilename.type = 'hidden';
-            inputFilename.name = 'filename';
-            inputFilename.value = filename;
-            
-            const inputMimetype = document.createElement('input');
-            inputMimetype.type = 'hidden';
-            inputMimetype.name = 'mimetype';
-            inputMimetype.value = 'text/csv';
+            // Use Web Share API (native Android share sheet)
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const file = new File([csvContent], filename, { type: 'text/csv' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: 'Autoride Sales Report',
+                            text: 'Sales report exported from Autoride Admin',
+                            files: [file]
+                        });
+                        showNotification('Report shared successfully!', 'success');
+                        return;
+                    }
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                    console.log('Share failed, falling back to clipboard', err);
+                }
+            }
 
-            form.appendChild(inputContent);
-            form.appendChild(inputFilename);
-            form.appendChild(inputMimetype);
-            document.body.appendChild(form);
-            
-            form.submit();
-            
-            setTimeout(() => {
-                document.body.removeChild(form);
-            }, 500);
-
-            showNotification('Report exported! Check your Downloads folder.', 'success');
+            // Fallback: Copy CSV to clipboard
+            try {
+                await navigator.clipboard.writeText(csv);
+                showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
+            } catch (err) {
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;padding:20px;';
+                modal.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="color:white;margin:0;">Report Data (Copy Below)</h3><button onclick="this.parentElement.parentElement.remove()" style="background:#ef4444;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:700;">Close</button></div><textarea style="flex:1;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;" readonly>' + csv.replace(/</g, '&lt;') + '</textarea>';
+                document.body.appendChild(modal);
+                showNotification('Long-press the text to copy it', 'info');
+            }
         },
 
         printReport() {
             const data = this._rawData;
             if (!data) { showNotification('No data to print', 'error'); return; }
-            
+
             const totalRev = data.totalRevenue || 0;
             const totalBook = data.totalBookings || 0;
-            const rows = (data.topVehicles || []).map((c, i) =>
-                `<tr><td>${i+1}</td><td>${c.brand} ${c.model}</td><td>${c.booking_count}</td><td>&#8369;${(c.revenue||0).toLocaleString()}</td></tr>`
+            const tableRows = (data.topVehicles || []).map((c, i) =>
+                '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
             ).join('');
-            
-            // Create print content as data URL to avoid popup blockers
-            const printContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Autoride Report</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-                        h1 { font-size: 1.4rem; margin-bottom: 10px; }
-                        p { margin: 5px 0; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background: #f4f4f4; font-weight: bold; }
-                        .no-print { margin-top: 20px; }
-                        .no-print button {
-                            background: #0052ff;
-                            color: white;
-                            border: none;
-                            padding: 12px 24px;
-                            border-radius: 8px;
-                            font-size: 1rem;
-                            font-weight: 600;
-                            cursor: pointer;
-                            margin-right: 10px;
-                        }
-                        @media print {
-                            .no-print { display: none; }
-                            body { padding: 10px; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <h1>Autoride Sales Report</h1>
-                    <p>Generated: ${new Date().toLocaleString()}</p>
-                    <p><strong>Total Revenue:</strong> &#8369;${totalRev.toLocaleString()}</p>
-                    <p><strong>Total Bookings:</strong> ${totalBook}</p>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Vehicle</th>
-                                <th>Bookings</th>
-                                <th>Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${rows}
-                        </tbody>
-                    </table>
-                    <div class="no-print">
-                        <button onclick="window.print()">&#128424; Print Report</button>
-                        <button onclick="window.close()" style="background: #6b7080;">&#10006; Close</button>
-                    </div>
-                    <script>
-                        // Handle back button
-                        window.addEventListener('popstate', function() {
-                            window.close();
-                        });
-                    <\/script>
-                </body>
-                </html>
-            `;
-            
-            // Open in native browser via the backend endpoint so the native print dialog works properly
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = `${API_URL}/admin/download-report`;
-            form.target = (window.Capacitor && window.Capacitor.isNative) ? '_system' : '_blank';
-            form.style.display = 'none';
 
-            const inputContent = document.createElement('input');
-            inputContent.type = 'hidden';
-            inputContent.name = 'content';
-            inputContent.value = printContent;
-            
-            const inputFilename = document.createElement('input');
-            inputFilename.type = 'hidden';
-            inputFilename.name = 'filename';
-            inputFilename.value = 'print.html';
-            
-            const inputMimetype = document.createElement('input');
-            inputMimetype.type = 'hidden';
-            inputMimetype.name = 'mimetype';
-            inputMimetype.value = 'text/html';
+            // Remove any existing overlay
+            const existing = document.getElementById('printOverlay');
+            if (existing) existing.remove();
 
-            form.appendChild(inputContent);
-            form.appendChild(inputFilename);
-            form.appendChild(inputMimetype);
-            document.body.appendChild(form);
-            
-            form.submit();
-            
-            setTimeout(() => {
-                document.body.removeChild(form);
-            }, 500);
+            // Create fullscreen in-app overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'printOverlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;overflow-y:auto;padding:20px;';
+
+            const styleTag = document.createElement('style');
+            styleTag.textContent = '@media print { body > *:not(#printOverlay) { display: none !important; } #printOverlay { position: static !important; } .no-print-btns { display: none !important; } }';
+            overlay.appendChild(styleTag);
+
+            const content = document.createElement('div');
+            content.innerHTML = '<h1 style="font-size:1.4rem;margin-bottom:10px;color:#000;">Autoride Sales Report</h1>' +
+                '<p style="color:#333;margin:5px 0;">Generated: ' + new Date().toLocaleString() + '</p>' +
+                '<p style="color:#000;margin:5px 0;"><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>' +
+                '<p style="color:#000;margin:5px 0;"><strong>Total Bookings:</strong> ' + totalBook + '</p>' +
+                '<table style="width:100%;border-collapse:collapse;margin-top:16px;"><thead><tr>' +
+                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">#</th>' +
+                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Vehicle</th>' +
+                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Bookings</th>' +
+                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Revenue</th>' +
+                '</tr></thead><tbody>' + tableRows + '</tbody></table>';
+            overlay.appendChild(content);
+
+            const btns = document.createElement('div');
+            btns.className = 'no-print-btns';
+            btns.style.cssText = 'margin-top:20px;display:flex;gap:10px;';
+
+            const printBtn = document.createElement('button');
+            printBtn.style.cssText = 'flex:1;background:#0052ff;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
+            printBtn.innerHTML = '&#128424; Print Report';
+            printBtn.onclick = function() { window.print(); };
+
+            const closeBtn = document.createElement('button');
+            closeBtn.style.cssText = 'flex:1;background:#6b7080;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
+            closeBtn.innerHTML = '&#10006; Close';
+            closeBtn.onclick = function() { document.getElementById('printOverlay').remove(); };
+
+            btns.appendChild(printBtn);
+            btns.appendChild(closeBtn);
+            overlay.appendChild(btns);
+            document.body.appendChild(overlay);
         }
     };
+
 
     // --- SETTINGS MODULE ---
     const Settings = {
