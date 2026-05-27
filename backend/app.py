@@ -5513,6 +5513,25 @@ def update_driver_booking_status(booking_id):
 
 
 
+@app.route('/api/admin/download-report', methods=['POST'])
+def download_report():
+    try:
+        content = request.form.get('content', '')
+        filename = request.form.get('filename', 'report.csv')
+        mimetype = request.form.get('mimetype', 'text/csv')
+        
+        response = make_response(content)
+        response.headers['Content-Type'] = f"{mimetype}; charset=utf-8"
+        if mimetype == 'text/csv':
+            response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        else:
+            response.headers['Content-Disposition'] = 'inline'
+            
+        return response
+    except Exception as e:
+        print(f"Error in download_report: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/admin/detailed-stats', methods=['GET'])
 
 def get_detailed_stats():
