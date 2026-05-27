@@ -4616,7 +4616,7 @@
             
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `${API_BASE}/api/admin/download-report`;
+            form.action = `${API_URL}/admin/download-report`;
             // If native, use _system to open the native browser which handles downloads beautifully.
             // If web, _blank is fine.
             form.target = (window.Capacitor && window.Capacitor.isNative) ? '_system' : '_blank';
@@ -4729,7 +4729,7 @@
             // Open in native browser via the backend endpoint so the native print dialog works properly
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = `${API_BASE}/api/admin/download-report`;
+            form.action = `${API_URL}/admin/download-report`;
             form.target = (window.Capacitor && window.Capacitor.isNative) ? '_system' : '_blank';
             form.style.display = 'none';
 
