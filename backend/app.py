@@ -1255,24 +1255,30 @@ def admin_list_users():
             # is_verified = 1 is Pending
 
             cur.execute("""
-                SELECT id, full_name, email, phone,
-                       license_image_url AS license_image,
-                       license_number, license_expiry, license_type,
-                       is_verified
-                FROM users
-                WHERE is_verified = 1
-                ORDER BY id DESC
+                SELECT u.id, u.full_name, u.email, u.phone,
+                       COALESCE(ld.license_front_url, u.license_image_url) AS license_image,
+                       COALESCE(ld.license_number, u.license_number) AS license_number,
+                       COALESCE(ld.expiry_date, u.license_expiry) AS license_expiry,
+                       COALESCE(ld.license_class, u.license_type) AS license_type,
+                       u.is_verified
+                FROM users u
+                LEFT JOIN license_details ld ON u.id = ld.user_id
+                WHERE u.is_verified = 1
+                ORDER BY u.id DESC
             """)
 
         else:
 
             cur.execute("""
-                SELECT id, full_name, email, phone,
-                       license_image_url AS license_image,
-                       license_number, license_expiry, license_type,
-                       is_verified
-                FROM users
-                ORDER BY id DESC
+                SELECT u.id, u.full_name, u.email, u.phone,
+                       COALESCE(ld.license_front_url, u.license_image_url) AS license_image,
+                       COALESCE(ld.license_number, u.license_number) AS license_number,
+                       COALESCE(ld.expiry_date, u.license_expiry) AS license_expiry,
+                       COALESCE(ld.license_class, u.license_type) AS license_type,
+                       u.is_verified
+                FROM users u
+                LEFT JOIN license_details ld ON u.id = ld.user_id
+                ORDER BY u.id DESC
             """)
 
         
