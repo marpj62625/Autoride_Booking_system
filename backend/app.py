@@ -7987,7 +7987,7 @@ def get_license_details():
         )
         row = cur.fetchone()
         if row:
-            d = dict_row(cur).load(row)
+            d = dict(row)
             # convert dates to string
             if d.get('date_of_birth'): d['date_of_birth'] = str(d['date_of_birth'])
             if d.get('expiry_date'): d['expiry_date'] = str(d['expiry_date'])

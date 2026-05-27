@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Autoride Customer Mobile App - Main Application Script
  * utils.js is loaded as a separate script tag before this file
  */
@@ -252,7 +252,13 @@ function uploadFile(endpoint, formData) {
   var url = API_BASE + endpoint;
   return fetch(url, { method: 'POST', body: formData })
     .then(function(res) {
-      return res.json().then(function(data) {
+      return res.text().then(function(text) {
+        var data;
+        try { data = JSON.parse(text); } catch(e) {
+          var parseErr = new Error('Server error (status ' + res.status + ')');
+          parseErr.status = res.status;
+          throw parseErr;
+        }
         if (!res.ok) {
           var err = new Error(data.error || 'Upload failed');
           err.status = res.status;
@@ -263,7 +269,7 @@ function uploadFile(endpoint, formData) {
     })
     .catch(function(err) {
       if (err.status) throw err;
-      var netErr = new Error('Network error during upload.');
+      var netErr = new Error('Network error during upload. Check connection.');
       netErr.status = 0;
       throw netErr;
     });
@@ -3013,7 +3019,7 @@ var Profile = {
     }
 
     showLoading(true);
-    uploadFile('/api/user/license-details', fd)
+    uploadFile('/user/license-details', fd)
       .then(function() {
         showToast('License details saved!', 'success');
         Profile.cancelLicenseEdit();
@@ -3048,7 +3054,7 @@ function handleLicenseFileSelect(e, side) {
 
 function loadLicenseDetailsForEdit() {
   if (!currentUser.id) return;
-  apiCall('/api/user/license-details?user_id=' + currentUser.id)
+  apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(data) {
       if (!data || !data.license_number) return;
       var el;
@@ -3081,7 +3087,7 @@ function loadProfile() {
   // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
   // Load license details from new table
-  var licensePromise = apiCall('/api/user/license-details?user_id=' + currentUser.id).catch(function() { return {}; });
+  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id).catch(function() { return {}; });
 
   Promise.all([profilePromise, licensePromise])
     .then(function(results) {

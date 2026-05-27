@@ -2971,14 +2971,47 @@
             } catch (err) { showNotification('Network error', 'error'); }
         },
 
-        view(id) {
+        async view(id) {
             const b = this.data.find(x => x.id === id);
             if (!b) return;
             
             const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
             const isApprovable = (b.status === 'Pending');
 
+            // Fetch license details for this booking
+            let licenseHtml = '<p style="font-size: 0.85rem; color: var(--text-muted);">No license details available.</p>';
+            try {
+                const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`);
+                if (licRes.ok) {
+                    const lData = await licRes.json();
+                    if (lData && lData.license_number) {
+                        licenseHtml = `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
+                                <div><span style="color:var(--text-muted)">License #:</span> <span style="color:white;font-weight:600">${lData.license_number}</span></div>
+                                <div><span style="color:var(--text-muted)">Expiry:</span> <span style="color:white;font-weight:600">${lData.expiry_date || '-'}</span></div>
+                                <div><span style="color:var(--text-muted)">Class:</span> <span style="color:white;font-weight:600">${lData.license_class || '-'}</span></div>
+                                <div><span style="color:var(--text-muted)">Country/State:</span> <span style="color:white;font-weight:600">${lData.issuing_country_state || '-'}</span></div>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.85rem;">
+                                <div><span style="color:var(--text-muted)">Full Name:</span> <span style="color:white;font-weight:600">${lData.full_name || '-'}</span></div>
+                                <div><span style="color:var(--text-muted)">DOB:</span> <span style="color:white;font-weight:600">${lData.date_of_birth || '-'}</span></div>
+                            </div>
+                            <div style="margin-top: 10px; font-size: 0.85rem; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <p style="color:var(--text-muted);font-weight:700;margin-bottom:5px;">Emergency Contact</p>
+                                <div><span style="color:var(--text-muted)">Name:</span> <span style="color:white;font-weight:600">${lData.emergency_contact_name || '-'}</span></div>
+                                <div><span style="color:var(--text-muted)">Phone:</span> <span style="color:white;font-weight:600">${lData.emergency_contact_phone || '-'}</span></div>
+                                <div><span style="color:var(--text-muted)">Rel:</span> <span style="color:white;font-weight:600">${lData.emergency_contact_relationship || '-'}</span></div>
+                            </div>
+                            <div style="display:flex; gap:10px; margin-top: 10px;">
+                                ${lData.license_front_url ? `<button onclick="viewLicenseImage('${lData.license_front_url}')" class="btn-outline" style="flex:1;font-size:0.75rem;padding:6px;">Front Image</button>` : ''}
+                                ${lData.license_back_url ? `<button onclick="viewLicenseImage('${lData.license_back_url}')" class="btn-outline" style="flex:1;font-size:0.75rem;padding:6px;">Back Image</button>` : ''}
+                            </div>`;
+                    }
+                }
+            } catch (e) { console.error('License fetch error:', e); }
+
             const content = `
+
                 <div style="display: grid; gap: 15px;">
                     <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--text-main); margin-bottom: 5px; letter-spacing: -1px;">Booking Details #${b.id}</h2>
                     
@@ -6245,6 +6278,16 @@ var _origErr = console.error;
 console.log = function() { _origLog.apply(console, arguments); adminDbg(Array.from(arguments).join(' '), '#aaa'); };
 console.error = function() { _origErr.apply(console, arguments); adminDbg(Array.from(arguments).join(' '), '#ff4444'); };
 window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (src||'').split('/').pop() + ':' + line + ']', '#ff4444'); };
+
+    function viewLicenseImage(url) {
+        var modal = document.getElementById('licensePreviewModal');
+        var img = document.getElementById('licensePreviewImg');
+        if (modal && img) {
+            img.src = url;
+            modal.style.display = 'flex';
+        }
+    }
+
 </script>
 </body>
 </html>
