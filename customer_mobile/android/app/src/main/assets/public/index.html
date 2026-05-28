@@ -19,7 +19,7 @@
         .form-group input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
         .form-group input:focus { border-color: #0052ff; outline: none; }
         
-        .login-btn { width: 100%; padding: 18px; background: #0052ff; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .login-btn { width: 100%; padding: 20px; background: #0052ff; color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; cursor: pointer; margin-top: 20px; }
         .login-btn:hover { background: #0040cc; }
         
         .main-app { display: none; }
@@ -30,25 +30,24 @@
         .header p { opacity: 0.9; margin-top: 5px; }
         
         .content { padding: 30px 20px; }
-        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .menu-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
-        .menu-item:hover { border-color: #0052ff; background: #f0f8ff; }
-        .menu-item i { font-size: 32px; color: #0052ff; margin-bottom: 10px; display: block; }
-        .menu-item span { font-weight: bold; color: #333; }
         
         .page { display: none; padding: 20px; }
         .page.active { display: block; }
         .page h3 { color: #0052ff; margin-bottom: 20px; font-size: 24px; }
         .page p { color: #666; line-height: 1.6; }
         
-        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 400px; background: white; border-top: 2px solid #e9ecef; display: none; }
-        .bottom-nav.show { display: flex; }
-        .nav-item { flex: 1; padding: 15px 10px; text-align: center; cursor: pointer; border: none; background: none; color: #666; }
-        .nav-item.active { color: #0052ff; }
-        .nav-item i { display: block; font-size: 20px; margin-bottom: 5px; }
-        .nav-item span { font-size: 12px; font-weight: bold; }
+        .nav-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 30px; }
+        .nav-btn { padding: 25px 15px; background: #0052ff; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; }
+        .nav-btn:hover { background: #0040cc; }
+        .nav-btn i { display: block; font-size: 24px; margin-bottom: 8px; }
         
-        .logout-btn { background: #dc3545; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin-top: 20px; }
+        .back-btn { background: #6c757d; color: white; border: none; padding: 15px 25px; border-radius: 8px; font-size: 16px; cursor: pointer; margin-bottom: 20px; }
+        .back-btn:hover { background: #5a6268; }
+        
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-size: 16px; }
+        .logout-btn:hover { background: #c82333; }
+        
+        .big-message { background: #d4edda; border: 2px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; font-weight: bold; }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -70,11 +69,11 @@
             <input type="password" id="password-input" value="123456">
         </div>
         
-        <button class="login-btn" onclick="doLogin()">LOGIN NOW</button>
+        <button class="login-btn" id="login-button">?? LOGIN NOW</button>
         
         <p style="margin-top: 30px; font-size: 14px; color: #999;">
-            Click LOGIN NOW to continue<br>
-            (Credentials are pre-filled)
+            Click the big blue button above to login<br>
+            (Credentials are already filled in)
         </p>
     </div>
 
@@ -87,30 +86,40 @@
                 <p>Ready for your next ride?</p>
             </div>
             <div class="content">
-                <div class="menu-grid">
-                    <div class="menu-item" onclick="showPage('vehicles')">
+                <div class="big-message">
+                    ? LOGIN SUCCESSFUL!<br>
+                    Click the big buttons below to navigate
+                </div>
+                
+                <div class="nav-buttons">
+                    <button class="nav-btn" id="btn-vehicles">
                         <i class="fas fa-car"></i>
-                        <span>Browse Cars</span>
-                    </div>
-                    <div class="menu-item" onclick="showPage('bookings')">
+                        Browse Cars
+                    </button>
+                    <button class="nav-btn" id="btn-bookings">
                         <i class="fas fa-calendar-check"></i>
-                        <span>My Bookings</span>
-                    </div>
-                    <div class="menu-item" onclick="showPage('support')">
+                        My Bookings
+                    </button>
+                    <button class="nav-btn" id="btn-support">
                         <i class="fas fa-headset"></i>
-                        <span>Support</span>
-                    </div>
-                    <div class="menu-item" onclick="showPage('profile')">
+                        Support
+                    </button>
+                    <button class="nav-btn" id="btn-profile">
                         <i class="fas fa-user"></i>
-                        <span>My Profile</span>
-                    </div>
+                        My Profile
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- VEHICLES PAGE -->
         <div id="vehicles-page" class="page">
+            <button class="back-btn" id="back-from-vehicles">? Back to Home</button>
             <h3>?? Browse Vehicles</h3>
+            <div class="big-message">
+                ?? NAVIGATION WORKS!<br>
+                You successfully navigated to Vehicles page
+            </div>
             <p>Here you can browse all available vehicles for rent.</p>
             <p style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
                 <strong>Coming Soon:</strong><br>
@@ -122,7 +131,12 @@
 
         <!-- BOOKINGS PAGE -->
         <div id="bookings-page" class="page">
+            <button class="back-btn" id="back-from-bookings">? Back to Home</button>
             <h3>?? My Bookings</h3>
+            <div class="big-message">
+                ?? NAVIGATION WORKS!<br>
+                You successfully navigated to Bookings page
+            </div>
             <p>View and manage your vehicle bookings here.</p>
             <p style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
                 <strong>No bookings yet!</strong><br>
@@ -132,7 +146,12 @@
 
         <!-- SUPPORT PAGE -->
         <div id="support-page" class="page">
+            <button class="back-btn" id="back-from-support">? Back to Home</button>
             <h3>?? Customer Support</h3>
+            <div class="big-message">
+                ?? NAVIGATION WORKS!<br>
+                You successfully navigated to Support page
+            </div>
             <p>Get help with your Autoride experience.</p>
             <p style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
                 <strong>Support Options:</strong><br>
@@ -144,49 +163,52 @@
 
         <!-- PROFILE PAGE -->
         <div id="profile-page" class="page">
+            <button class="back-btn" id="back-from-profile">? Back to Home</button>
             <h3>?? My Profile</h3>
+            <div class="big-message">
+                ?? NAVIGATION WORKS!<br>
+                You successfully navigated to Profile page
+            </div>
             <p>Manage your account settings and personal information.</p>
             <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
                 <p><strong>Account Info:</strong></p>
                 <p id="profile-email">Email: Loading...</p>
                 <p style="margin-top: 15px;">
-                    <button class="logout-btn" onclick="doLogout()">Logout</button>
+                    <button class="logout-btn" id="logout-button">?? Logout</button>
                 </p>
             </div>
         </div>
     </div>
-
-    <!-- BOTTOM NAVIGATION -->
-    <div id="bottom-nav" class="bottom-nav">
-        <button class="nav-item active" onclick="showPage('home')">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-        </button>
-        <button class="nav-item" onclick="showPage('vehicles')">
-            <i class="fas fa-car"></i>
-            <span>Vehicles</span>
-        </button>
-        <button class="nav-item" onclick="showPage('bookings')">
-            <i class="fas fa-calendar-check"></i>
-            <span>Bookings</span>
-        </button>
-        <button class="nav-item" onclick="showPage('support')">
-            <i class="fas fa-headset"></i>
-            <span>Support</span>
-        </button>
-        <button class="nav-item" onclick="showPage('profile')">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-        </button>
-    </div>
 </div>
 
 <script>
-console.log('?? Autoride Customer App Loading...');
+console.log('?? Autoride Customer App Starting...');
+
+// SHOW PAGE FUNCTION
+function showPage(pageName) {
+    console.log('?? SHOWING PAGE:', pageName);
+    
+    // Hide all pages
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => {
+        page.classList.remove('active');
+        console.log('? Hidden page:', page.id);
+    });
+    
+    // Show target page
+    const targetPage = document.getElementById(pageName + '-page');
+    if (targetPage) {
+        targetPage.classList.add('active');
+        console.log('? SHOWN PAGE:', pageName);
+    } else {
+        console.error('? PAGE NOT FOUND:', pageName);
+        alert('? Page not found: ' + pageName);
+    }
+}
 
 // LOGIN FUNCTION
 function doLogin() {
-    console.log('?? LOGIN BUTTON CLICKED!');
+    console.log('?? LOGIN FUNCTION CALLED!');
     
     const email = document.getElementById('email-input').value;
     const password = document.getElementById('password-input').value;
@@ -199,7 +221,7 @@ function doLogin() {
         return;
     }
     
-    console.log('? FORCING LOGIN SUCCESS...');
+    console.log('? LOGIN SUCCESS - SHOWING MAIN APP...');
     
     // Save user data
     const userData = {
@@ -220,11 +242,6 @@ function doLogin() {
     mainApp.classList.add('show');
     console.log('? Main app shown');
     
-    // Show bottom navigation
-    const bottomNav = document.getElementById('bottom-nav');
-    bottomNav.classList.add('show');
-    console.log('?? Bottom nav shown');
-    
     // Update welcome message
     const welcomeMsg = document.getElementById('user-welcome');
     welcomeMsg.textContent = 'Hello, ' + userData.name + '!';
@@ -238,42 +255,9 @@ function doLogin() {
     console.log('?? LOGIN COMPLETE!');
 }
 
-// SHOW PAGE FUNCTION
-function showPage(pageName) {
-    console.log('?? Showing page:', pageName);
-    
-    // Hide all pages
-    const pages = document.querySelectorAll('.page');
-    pages.forEach(page => {
-        page.classList.remove('active');
-    });
-    
-    // Show target page
-    const targetPage = document.getElementById(pageName + '-page');
-    if (targetPage) {
-        targetPage.classList.add('active');
-        console.log('? Page shown:', pageName);
-    } else {
-        console.error('? Page not found:', pageName);
-    }
-    
-    // Update navigation
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.classList.remove('active');
-    });
-    
-    // Find and activate corresponding nav item
-    navItems.forEach(item => {
-        if (item.onclick.toString().includes("'" + pageName + "'")) {
-            item.classList.add('active');
-        }
-    });
-}
-
 // LOGOUT FUNCTION
 function doLogout() {
-    console.log('?? LOGOUT CLICKED');
+    console.log('?? LOGOUT FUNCTION CALLED');
     
     if (confirm('Are you sure you want to logout?')) {
         localStorage.removeItem('autoride_customer');
@@ -281,19 +265,94 @@ function doLogout() {
         
         // Hide main app
         document.getElementById('main-app').classList.remove('show');
-        document.getElementById('bottom-nav').classList.remove('show');
         
         // Show login screen
         document.getElementById('login-screen').style.display = 'block';
+        
+        // Reset to home page
+        showPage('home');
         
         console.log('? Logged out successfully');
     }
 }
 
-// CHECK IF ALREADY LOGGED IN
+// SETUP EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('?? DOM Loaded - Checking login status...');
+    console.log('?? DOM LOADED - SETTING UP EVENT LISTENERS...');
     
+    // Login button
+    const loginBtn = document.getElementById('login-button');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function() {
+            console.log('?? LOGIN BUTTON CLICKED!');
+            doLogin();
+        });
+        console.log('? Login button listener added');
+    }
+    
+    // Navigation buttons
+    const btnVehicles = document.getElementById('btn-vehicles');
+    if (btnVehicles) {
+        btnVehicles.addEventListener('click', function() {
+            console.log('?? VEHICLES BUTTON CLICKED!');
+            showPage('vehicles');
+        });
+        console.log('? Vehicles button listener added');
+    }
+    
+    const btnBookings = document.getElementById('btn-bookings');
+    if (btnBookings) {
+        btnBookings.addEventListener('click', function() {
+            console.log('?? BOOKINGS BUTTON CLICKED!');
+            showPage('bookings');
+        });
+        console.log('? Bookings button listener added');
+    }
+    
+    const btnSupport = document.getElementById('btn-support');
+    if (btnSupport) {
+        btnSupport.addEventListener('click', function() {
+            console.log('?? SUPPORT BUTTON CLICKED!');
+            showPage('support');
+        });
+        console.log('? Support button listener added');
+    }
+    
+    const btnProfile = document.getElementById('btn-profile');
+    if (btnProfile) {
+        btnProfile.addEventListener('click', function() {
+            console.log('?? PROFILE BUTTON CLICKED!');
+            showPage('profile');
+        });
+        console.log('? Profile button listener added');
+    }
+    
+    // Back buttons
+    const backButtons = ['back-from-vehicles', 'back-from-bookings', 'back-from-support', 'back-from-profile'];
+    backButtons.forEach(buttonId => {
+        const btn = document.getElementById(buttonId);
+        if (btn) {
+            btn.addEventListener('click', function() {
+                console.log('?? BACK BUTTON CLICKED:', buttonId);
+                showPage('home');
+            });
+            console.log('? Back button listener added:', buttonId);
+        }
+    });
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logout-button');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            console.log('?? LOGOUT BUTTON CLICKED!');
+            doLogout();
+        });
+        console.log('? Logout button listener added');
+    }
+    
+    console.log('?? ALL EVENT LISTENERS SETUP COMPLETE!');
+    
+    // Check if already logged in
     const userData = localStorage.getItem('autoride_customer');
     if (userData) {
         console.log('?? User found - Auto login');
@@ -302,7 +361,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Auto login
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('main-app').classList.add('show');
-        document.getElementById('bottom-nav').classList.add('show');
         
         // Update UI
         document.getElementById('user-welcome').textContent = 'Hello, ' + user.name + '!';
@@ -314,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('? Script loaded successfully!');
+console.log('? SCRIPT LOADED SUCCESSFULLY!');
 </script>
 
 </body>
