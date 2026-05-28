@@ -1599,7 +1599,9 @@ function showPage(pageId) {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize the app
+    console.log('DOM Content Loaded - Starting app initialization...');
+    
+    // Initialize the app immediately
     initializeApp();
     
     // Initialize payment page if it's the current page
@@ -1608,46 +1610,110 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Also initialize on window load as fallback
+window.addEventListener('load', function() {
+    console.log('Window loaded - Ensuring app is initialized...');
+    
+    // Check if app is already initialized
+    const splashScreen = document.getElementById('page-splash');
+    if (splashScreen && splashScreen.style.display !== 'none') {
+        console.log('App not initialized yet, starting initialization...');
+        initializeApp();
+    }
+});
+
 // App initialization function
 function initializeApp() {
     console.log('Initializing Autoride app...');
     
-    // Show splash screen for 2 seconds, then check authentication
+    // Ensure splash screen is visible first
+    const splashScreen = document.getElementById('page-splash');
+    if (splashScreen) {
+        splashScreen.style.display = 'flex';
+        splashScreen.classList.add('active');
+    }
+    
+    // Hide all other pages during initialization
+    document.querySelectorAll('.page, .auth-page').forEach(page => {
+        if (page.id !== 'page-splash') {
+            page.classList.remove('active');
+        }
+    });
+    
+    // Show splash screen for 2.5 seconds, then check authentication
     setTimeout(() => {
+        console.log('Splash timeout completed, checking authentication...');
         checkAuthenticationStatus();
-    }, 2000);
+    }, 2500);
 }
 
 // Check if user is logged in
 function checkAuthenticationStatus() {
+    console.log('Checking authentication status...');
+    
     // Check if user is logged in (you can modify this logic based on your auth system)
     const isLoggedIn = localStorage.getItem('autoride_user') || sessionStorage.getItem('autoride_user');
     
-    // Hide splash screen
+    console.log('User logged in:', !!isLoggedIn);
+    
+    // Hide splash screen with smooth transition
     const splashScreen = document.getElementById('page-splash');
     if (splashScreen) {
-        splashScreen.style.display = 'none';
+        splashScreen.style.opacity = '0';
+        splashScreen.style.transition = 'opacity 0.5s ease-out';
+        
+        setTimeout(() => {
+            splashScreen.style.display = 'none';
+            splashScreen.classList.remove('active');
+        }, 500);
     }
     
-    if (isLoggedIn) {
-        // User is logged in, show main app
-        showMainApp();
-    } else {
-        // User not logged in, show login page
-        showPage('page-login');
-    }
+    // Wait for splash transition to complete before showing next screen
+    setTimeout(() => {
+        if (isLoggedIn) {
+            console.log('User authenticated, showing main app...');
+            // User is logged in, show main app
+            showMainApp();
+        } else {
+            console.log('User not authenticated, showing login page...');
+            // User not logged in, show login page
+            showPage('page-login');
+        }
+    }, 600);
 }
 
 // Show main app (home page with navigation)
 function showMainApp() {
+    console.log('Loading main app...');
+    
     // Show bottom navigation
     const bottomNav = document.getElementById('bottomNav');
     if (bottomNav) {
         bottomNav.classList.remove('hidden');
+        console.log('Bottom navigation shown');
     }
     
     // Show home page
     showPage('page-home');
+    
+    // Load user data if available
+    const userData = localStorage.getItem('autoride_user');
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            window.currentUser = user;
+            
+            // Update UI with user data
+            const homeUserName = document.getElementById('homeUserName');
+            if (homeUserName && user.name) {
+                homeUserName.textContent = user.name;
+            }
+            
+            console.log('User data loaded:', user.name || user.email);
+        } catch (e) {
+            console.error('Error parsing user data:', e);
+        }
+    }
     
     // Initialize app data (you can add more initialization here)
     console.log('Main app loaded successfully');
@@ -1714,46 +1780,142 @@ function showPage(pageId) {
 
 // Mock login function for testing (replace with your actual login logic)
 function doLogin() {
+    console.log('Attempting login...');
+    
     const email = document.getElementById('loginEmail')?.value;
     const password = document.getElementById('loginPassword')?.value;
+    
+    // Clear any previous error messages
+    const errorElements = document.querySelectorAll('.field-error');
+    errorElements.forEach(el => el.textContent = '');
     
     if (!email || !password) {
         showToast('Please enter email and password', 'error');
         return;
     }
     
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showToast('Please enter a valid email address', 'error');
+        return;
+    }
+    
+    // Show loading state
+    showToast('Signing in...', 'info');
+    
     // Mock successful login (replace with actual API call)
-    showToast('Login successful!', 'success');
-    
-    // Store user session (mock data)
-    const userData = {
-        id: 1,
-        email: email,
-        name: 'Test User',
-        loginTime: new Date().toISOString()
-    };
-    localStorage.setItem('autoride_user', JSON.stringify(userData));
-    
-    // Show main app
     setTimeout(() => {
-        showMainApp();
-    }, 1000);
+        showToast('Login successful!', 'success');
+        
+        // Store user session (mock data)
+        const userData = {
+            id: 1,
+            email: email,
+            name: email.split('@')[0], // Use email prefix as name
+            loginTime: new Date().toISOString()
+        };
+        localStorage.setItem('autoride_user', JSON.stringify(userData));
+        
+        // Show main app
+        setTimeout(() => {
+            showMainApp();
+        }, 1000);
+    }, 1500);
 }
 
 // Mock register function for testing
 function doRegister() {
+    console.log('Registration attempted');
     showToast('Registration feature coming soon!', 'info');
 }
 
 // Mock Google login function
 function doGoogleLogin() {
+    console.log('Google login attempted');
     showToast('Google login feature coming soon!', 'info');
+}
+
+// Password visibility toggle function
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    const icon = button.querySelector('i');
+    
+    if (input && icon) {
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+}
+
+// OTP input navigation functions
+function otpNext(current, nextIndex) {
+    if (current.value.length === 1 && nextIndex >= 0 && nextIndex <= 5) {
+        const nextInput = document.getElementById('otp' + nextIndex);
+        if (nextInput) {
+            nextInput.focus();
+        }
+    }
+}
+
+function otpBackspace(event, current, prevIndex) {
+    if (event.key === 'Backspace' && current.value === '' && prevIndex >= 0) {
+        const prevInput = document.getElementById('otp' + prevIndex);
+        if (prevInput) {
+            prevInput.focus();
+        }
+    }
+}
+
+// SMS OTP navigation functions
+function otpNextSms(current, nextIndex) {
+    if (current.value.length === 1 && nextIndex >= 0 && nextIndex <= 5) {
+        const nextInput = document.getElementById('smsOtp' + nextIndex);
+        if (nextInput) {
+            nextInput.focus();
+        }
+    }
+}
+
+// Password validation function
+function validatePassword(password, errorElementId) {
+    const requirements = {
+        'req-uppercase': /[A-Z]/.test(password),
+        'req-lowercase': /[a-z]/.test(password),
+        'req-number': /\d/.test(password),
+        'req-length': password.length >= 8
+    };
+    
+    Object.keys(requirements).forEach(reqId => {
+        const element = document.getElementById(reqId);
+        if (element) {
+            const icon = element.querySelector('i');
+            if (requirements[reqId]) {
+                element.classList.add('valid');
+                element.classList.remove('invalid');
+                if (icon) icon.className = 'fas fa-check';
+            } else {
+                element.classList.add('invalid');
+                element.classList.remove('valid');
+                if (icon) icon.className = 'fas fa-times';
+            }
+        }
+    });
 }
 
 // Logout function
 function doLogout() {
+    console.log('Logging out...');
+    
     localStorage.removeItem('autoride_user');
     sessionStorage.removeItem('autoride_user');
+    
+    // Clear current user data
+    window.currentUser = null;
     
     // Hide navigation
     const bottomNav = document.getElementById('bottomNav');
@@ -1766,87 +1928,60 @@ function doLogout() {
     showToast('Logged out successfully', 'success');
 }
 
-// Additional utility functions
-function togglePasswordVisibility(inputId, button) {
-    const input = document.getElementById(inputId);
-    const icon = button.querySelector('i');
+// Show overlay page function
+function showOverlay(overlayId) {
+    console.log('Showing overlay:', overlayId);
     
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.className = 'fas fa-eye-slash';
+    const overlay = document.getElementById(overlayId);
+    if (overlay) {
+        overlay.classList.add('active');
+        overlay.style.display = 'block';
     } else {
-        input.type = 'password';
-        icon.className = 'fas fa-eye';
+        console.error('Overlay not found:', overlayId);
+        showToast('Feature not available yet', 'info');
     }
 }
 
-function validatePassword(password, errorElementId) {
-    // Basic password validation
-    const requirements = {
-        'req-length': password.length >= 8,
-        'req-uppercase': /[A-Z]/.test(password),
-        'req-lowercase': /[a-z]/.test(password),
-        'req-number': /\d/.test(password)
-    };
-    
-    Object.keys(requirements).forEach(reqId => {
-        const element = document.getElementById(reqId);
-        if (element) {
-            if (requirements[reqId]) {
-                element.classList.add('valid');
-                element.classList.remove('invalid');
-                element.querySelector('i').className = 'fas fa-check';
-            } else {
-                element.classList.add('invalid');
-                element.classList.remove('valid');
-                element.querySelector('i').className = 'fas fa-times';
-            }
-        }
-    });
-}
-
-// OTP functions
-function otpNext(current, nextIndex) {
-    if (current.value.length === 1 && nextIndex !== -1) {
-        const nextInput = document.getElementById(`otp${nextIndex}`);
-        if (nextInput) {
-            nextInput.focus();
-        }
+// Hide overlay page function
+function hideOverlay(overlayId) {
+    const overlay = document.getElementById(overlayId);
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.style.display = 'none';
     }
 }
 
-function otpBackspace(event, current, prevIndex) {
-    if (event.key === 'Backspace' && current.value === '' && prevIndex !== -1) {
-        const prevInput = document.getElementById(`otp${prevIndex}`);
-        if (prevInput) {
-            prevInput.focus();
+// Emergency fallback initialization
+setTimeout(() => {
+    const splashScreen = document.getElementById('page-splash');
+    if (splashScreen && splashScreen.style.display !== 'none') {
+        console.warn('App initialization may have failed, forcing initialization...');
+        
+        // Force hide splash screen
+        splashScreen.style.display = 'none';
+        
+        // Check if any page is active
+        const activePages = document.querySelectorAll('.page.active, .auth-page.active');
+        if (activePages.length === 0) {
+            console.warn('No active pages found, showing login page...');
+            showPage('page-login');
         }
     }
+}, 10000); // 10 second fallback
+
+// Debug function to check app state
+function debugAppState() {
+    console.log('=== App Debug Info ===');
+    console.log('Current user:', window.currentUser);
+    console.log('Local storage user:', localStorage.getItem('autoride_user'));
+    console.log('Active pages:', document.querySelectorAll('.page.active, .auth-page.active'));
+    console.log('Splash screen display:', document.getElementById('page-splash')?.style.display);
+    console.log('Bottom nav hidden:', document.getElementById('bottomNav')?.classList.contains('hidden'));
+    console.log('======================');
 }
 
-// Mock functions for features not yet implemented
-function doVerifyEmail() {
-    showToast('Email verification feature coming soon!', 'info');
-}
-
-function resendOtp() {
-    showToast('OTP resent!', 'success');
-}
-
-function openGmail() {
-    window.open('https://gmail.com', '_blank');
-}
-
-function doRequestOtp() {
-    showToast('OTP request feature coming soon!', 'info');
-}
-
-function doVerifyPhone() {
-    showToast('Phone verification feature coming soon!', 'info');
-}
-
-// Initialize app on load
-console.log('Autoride Customer App - Script loaded');
+// Make debug function available globally
+window.debugAppState = debugAppState;
 </script>
 
 </body>
