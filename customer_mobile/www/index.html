@@ -198,6 +198,27 @@
         .booking-item .booking-footer { display:flex; align-items:center; justify-content:space-between; }
         /* Profile */
         .profile-avatar { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primary); }
+        
+        /* Payment Page Styles */
+        .addon-item { margin-bottom:12px; }
+        .addon-checkbox { position:relative; display:inline-block; width:20px; height:20px; cursor:pointer; }
+        .addon-checkbox input { position:absolute; opacity:0; cursor:pointer; height:0; width:0; }
+        .addon-checkbox .checkmark { position:absolute; top:0; left:0; height:20px; width:20px; background:var(--bg-input); border:2px solid var(--border); border-radius:4px; transition:all 0.2s; }
+        .addon-checkbox input:checked ~ .checkmark { background:#10b981; border-color:#10b981; }
+        .addon-checkbox .checkmark:after { content:""; position:absolute; display:none; left:6px; top:2px; width:5px; height:10px; border:solid white; border-width:0 2px 2px 0; transform:rotate(45deg); }
+        .addon-checkbox input:checked ~ .checkmark:after { display:block; }
+        .addon-item input:checked ~ * .addon-price { color:var(--text-primary) !important; }
+        .addon-item input:not(:checked) ~ * .addon-price { color:var(--text-muted) !important; }
+        .addon-item input:checked ~ * i { color:#10b981 !important; }
+        .addon-item input:not(:checked) ~ * i { color:#6b7280 !important; }
+        
+        .payment-type-btn { background:var(--bg-input); border:2px solid var(--border); border-radius:12px; padding:12px; cursor:pointer; text-align:center; transition:all 0.2s; }
+        .payment-type-btn.active { background:rgba(37,99,235,0.1); border-color:#2563eb; color:#2563eb; }
+        .payment-type-btn:not(.active) { color:var(--text-muted); }
+        
+        .payment-method { display:flex; align-items:center; justify-content:space-between; padding:12px; border:2px solid var(--border); border-radius:12px; margin-bottom:10px; cursor:pointer; transition:all 0.2s; }
+        .payment-method.active { border-color:#10b981; background:rgba(16,185,129,0.05); }
+        .payment-method:not(.active):hover { border-color:var(--primary); }
         .profile-avatar-placeholder { width:80px; height:80px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:var(--text-primary); border:3px solid var(--primary-dark); }
         .verify-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:0.78rem; font-weight:700; }
         .verify-0 { background:#f8d7da; color:#842029; }
@@ -872,6 +893,215 @@
 </div>
 
 <!-- ???????????????????????????????????????????????????????????
+     PAYMENT PAGE
+??????????????????????????????????????????????????????????? -->
+<div id="page-payment" class="page" style="background:var(--bg-page);">
+  <div class="page-header">
+    <button class="back-btn" onclick="showPage('page-vehicles')"><i class="fas fa-arrow-left"></i></button>
+    <h2>Payment</h2>
+  </div>
+  <div class="scroll-content">
+    <!-- Booking Summary Card -->
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-receipt" style="color:white;font-size:1rem;"></i>
+        </div>
+        <div>
+          <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">Booking #<span id="paymentBookingId">57</span> Summary</h3>
+        </div>
+      </div>
+      
+      <!-- Base Rate -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:0.95rem;color:var(--text-secondary);">Base Rate (<span id="paymentDays">2</span> days)</span>
+        <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span id="paymentBasePrice">4,398.00</span></span>
+      </div>
+      
+      <!-- Interactive Add-ons Section -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
+        <!-- Child Safety Seat -->
+        <div class="addon-item" data-addon="child_safety_seat" data-price="300">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <label class="addon-checkbox">
+                <input type="checkbox" onchange="toggleAddon(this)" checked>
+                <span class="checkmark"></span>
+              </label>
+              <div>
+                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+                  <i class="fas fa-baby" style="color:#10b981;"></i>
+                  Child Safety Seat
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-muted);">Safety seat for children under 12</div>
+              </div>
+            </div>
+            <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span class="addon-price">300.00</span></span>
+          </div>
+        </div>
+        
+        <!-- GPS Navigation -->
+        <div class="addon-item" data-addon="gps_navigation" data-price="400">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <label class="addon-checkbox">
+                <input type="checkbox" onchange="toggleAddon(this)" checked>
+                <span class="checkmark"></span>
+              </label>
+              <div>
+                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+                  <i class="fas fa-map-marker-alt" style="color:#10b981;"></i>
+                  GPS Navigation
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-muted);">Built-in GPS with real-time traffic</div>
+              </div>
+            </div>
+            <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span class="addon-price">400.00</span></span>
+          </div>
+        </div>
+        
+        <!-- Dashcam -->
+        <div class="addon-item" data-addon="dashcam" data-price="250">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <label class="addon-checkbox">
+                <input type="checkbox" onchange="toggleAddon(this)">
+                <span class="checkmark"></span>
+              </label>
+              <div>
+                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+                  <i class="fas fa-video" style="color:#6b7280;"></i>
+                  Dashcam Recording
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-muted);">Front and rear camera recording</div>
+              </div>
+            </div>
+            <span style="font-size:0.95rem;font-weight:700;color:var(--text-muted);">PHP <span class="addon-price">250.00</span></span>
+          </div>
+        </div>
+        
+        <!-- WiFi Hotspot -->
+        <div class="addon-item" data-addon="wifi_hotspot" data-price="150">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <label class="addon-checkbox">
+                <input type="checkbox" onchange="toggleAddon(this)">
+                <span class="checkmark"></span>
+              </label>
+              <div>
+                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
+                  <i class="fas fa-wifi" style="color:#6b7280;"></i>
+                  WiFi Hotspot
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-muted);">Mobile internet access (5GB data)</div>
+              </div>
+            </div>
+            <span style="font-size:0.95rem;font-weight:700;color:var(--text-muted);">PHP <span class="addon-price">150.00</span></span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Insurance Section -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-shield-alt" style="color:#2563eb;"></i>
+            <span style="font-size:0.95rem;color:var(--text-secondary);">Standard Protection</span>
+          </div>
+          <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span id="paymentInsurancePrice">1,000.00</span></span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-left:24px;">Covers damage, theft, and third-party liability</div>
+      </div>
+      
+      <!-- Total Section -->
+      <div style="border-top:2px solid var(--border);padding-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <span style="font-size:1.2rem;font-weight:800;color:#2563eb;">Total</span>
+          <span style="font-size:1.2rem;font-weight:800;color:#2563eb;">PHP <span id="paymentTotalPrice">6,098.00</span></span>
+        </div>
+        
+        <!-- Amount Due Button -->
+        <div style="background:linear-gradient(135deg,#2563eb,#1d4ed8);border-radius:16px;padding:16px;text-align:center;margin-bottom:16px;">
+          <div style="font-size:0.9rem;color:rgba(255,255,255,0.8);margin-bottom:4px;">Amount Due Now</div>
+          <div style="font-size:1.8rem;font-weight:900;color:white;">PHP <span id="paymentAmountDue">6,098.00</span></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Payment Method Selection -->
+    <div class="card">
+      <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:16px;">Select Payment Method</h3>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;text-align:center;">
+        <i class="fas fa-shield-alt" style="color:#10b981;margin-right:6px;"></i>
+        Secure payments powered by PayMongo
+      </div>
+      
+      <!-- Payment Type Selection -->
+      <div style="margin-bottom:20px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button class="payment-type-btn active" data-type="full" onclick="selectPaymentType('full', this)">
+            <div style="font-size:0.8rem;font-weight:700;margin-bottom:4px;">Full Payment</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);">Pay complete amount</div>
+          </button>
+          <button class="payment-type-btn" data-type="downpayment" onclick="selectPaymentType('downpayment', this)">
+            <div style="font-size:0.8rem;font-weight:700;margin-bottom:4px;">Downpayment</div>
+            <div style="font-size:0.7rem;color:var(--text-muted);">Pay 20% now</div>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Payment Methods -->
+      <div class="payment-methods">
+        <div class="payment-method active" data-method="gcash" onclick="selectPaymentMethod('gcash', this)">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:8px;background:#007dff;display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-mobile-alt" style="color:white;"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.9rem;">GCash</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Pay with GCash wallet</div>
+            </div>
+          </div>
+          <i class="fas fa-check-circle" style="color:#10b981;"></i>
+        </div>
+        
+        <div class="payment-method" data-method="paymaya" onclick="selectPaymentMethod('paymaya', this)">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:8px;background:#00d4ff;display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-credit-card" style="color:white;"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.9rem;">PayMaya</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Pay with PayMaya wallet</div>
+            </div>
+          </div>
+          <i class="fas fa-circle" style="color:var(--border);"></i>
+        </div>
+        
+        <div class="payment-method" data-method="card" onclick="selectPaymentMethod('card', this)">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:8px;background:#6b7280;display:flex;align-items:center;justify-content:center;">
+              <i class="fas fa-credit-card" style="color:white;"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.9rem;">Credit/Debit Card</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Visa, Mastercard, etc.</div>
+            </div>
+          </div>
+          <i class="fas fa-circle" style="color:var(--border);"></i>
+        </div>
+      </div>
+      
+      <!-- Confirm Payment Button -->
+      <button class="btn-primary" onclick="confirmPayment()" style="margin-top:20px;font-size:1.1rem;padding:16px;">
+        <i class="fas fa-lock" style="margin-right:8px;"></i>
+        Confirm & Pay PHP <span id="confirmButtonAmount">6,098.00</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ???????????????????????????????????????????????????????????
      MORE
 ??????????????????????????????????????????????????????????? -->
 <div id="page-more" class="page">
@@ -1109,3 +1339,272 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<script>
+// Payment Page Functionality
+let paymentData = {
+    basePrice: 4398.00,
+    insurancePrice: 1000.00,
+    selectedAddons: ['child_safety_seat', 'gps_navigation'], // Default selected
+    paymentType: 'full',
+    paymentMethod: 'gcash'
+};
+
+// Available add-ons with prices
+const availableAddons = {
+    'child_safety_seat': { name: 'Child Safety Seat', price: 300.00 },
+    'gps_navigation': { name: 'GPS Navigation', price: 400.00 },
+    'dashcam': { name: 'Dashcam Recording', price: 250.00 },
+    'wifi_hotspot': { name: 'WiFi Hotspot', price: 150.00 }
+};
+
+// Toggle add-on selection
+function toggleAddon(checkbox) {
+    const addonItem = checkbox.closest('.addon-item');
+    const addonId = addonItem.dataset.addon;
+    const addonPrice = parseFloat(addonItem.dataset.price);
+    
+    if (checkbox.checked) {
+        // Add addon if not already selected
+        if (!paymentData.selectedAddons.includes(addonId)) {
+            paymentData.selectedAddons.push(addonId);
+        }
+        // Update visual state
+        addonItem.style.opacity = '1';
+    } else {
+        // Remove addon from selection
+        paymentData.selectedAddons = paymentData.selectedAddons.filter(id => id !== addonId);
+        // Update visual state
+        addonItem.style.opacity = '0.6';
+    }
+    
+    // Recalculate total
+    updatePaymentTotal();
+}
+
+// Calculate and update payment total
+function updatePaymentTotal() {
+    let addonTotal = 0;
+    
+    // Calculate total add-on price
+    paymentData.selectedAddons.forEach(addonId => {
+        if (availableAddons[addonId]) {
+            addonTotal += availableAddons[addonId].price;
+        }
+    });
+    
+    // Calculate total price
+    const totalPrice = paymentData.basePrice + paymentData.insurancePrice + addonTotal;
+    
+    // Calculate amount due based on payment type
+    let amountDue = totalPrice;
+    if (paymentData.paymentType === 'downpayment') {
+        amountDue = totalPrice * 0.20; // 20% downpayment
+    }
+    
+    // Update display
+    document.getElementById('paymentTotalPrice').textContent = totalPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('paymentAmountDue').textContent = amountDue.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('confirmButtonAmount').textContent = amountDue.toLocaleString('en-US', {minimumFractionDigits: 2});
+    
+    // Update add-on item visual states
+    document.querySelectorAll('.addon-item').forEach(item => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        const addonId = item.dataset.addon;
+        
+        if (paymentData.selectedAddons.includes(addonId)) {
+            checkbox.checked = true;
+            item.style.opacity = '1';
+        } else {
+            checkbox.checked = false;
+            item.style.opacity = '0.6';
+        }
+    });
+}
+
+// Select payment type (full or downpayment)
+function selectPaymentType(type, button) {
+    paymentData.paymentType = type;
+    
+    // Update button states
+    document.querySelectorAll('.payment-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    button.classList.add('active');
+    
+    // Recalculate total
+    updatePaymentTotal();
+}
+
+// Select payment method
+function selectPaymentMethod(method, element) {
+    paymentData.paymentMethod = method;
+    
+    // Update visual states
+    document.querySelectorAll('.payment-method').forEach(item => {
+        item.classList.remove('active');
+        const icon = item.querySelector('i:last-child');
+        icon.className = 'fas fa-circle';
+        icon.style.color = 'var(--border)';
+    });
+    
+    element.classList.add('active');
+    const activeIcon = element.querySelector('i:last-child');
+    activeIcon.className = 'fas fa-check-circle';
+    activeIcon.style.color = '#10b981';
+}
+
+// Confirm payment and proceed
+function confirmPayment() {
+    // Show loading
+    showToast('Processing payment...', 'info');
+    
+    // Calculate final amounts
+    let addonTotal = 0;
+    paymentData.selectedAddons.forEach(addonId => {
+        if (availableAddons[addonId]) {
+            addonTotal += availableAddons[addonId].price;
+        }
+    });
+    
+    const totalPrice = paymentData.basePrice + paymentData.insurancePrice + addonTotal;
+    let amountDue = totalPrice;
+    if (paymentData.paymentType === 'downpayment') {
+        amountDue = totalPrice * 0.20;
+    }
+    
+    // Prepare booking data
+    const bookingData = {
+        vehicle_id: window.selectedVehicleId || 1, // This should be set when selecting a vehicle
+        user_id: window.currentUser?.id || 1, // Current logged in user
+        start_date: '2024-06-01', // These should be set from vehicle selection
+        end_date: '2024-06-03',
+        pickup_location: 'Manila, Philippines',
+        rental_type: 'Self-Drive',
+        base_price: paymentData.basePrice,
+        addon_price: addonTotal,
+        total_price: totalPrice,
+        addons: paymentData.selectedAddons,
+        insurance_type: 'Standard Protection',
+        insurance_price: paymentData.insurancePrice,
+        payment_type: paymentData.paymentType === 'full' ? 'Full' : 'Downpayment',
+        amount_paid: amountDue,
+        balance_amount: paymentData.paymentType === 'downpayment' ? (totalPrice - amountDue) : 0
+    };
+    
+    // Create booking first
+    fetch('/api/book', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.booking_id) {
+            // Now process payment
+            const paymentData = {
+                booking_id: data.booking_id,
+                amount: amountDue,
+                method: paymentData.paymentMethod,
+                reference_number: 'REF-' + Date.now() // Generate reference number
+            };
+            
+            return fetch('/api/payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(paymentData)
+            });
+        } else {
+            throw new Error(data.error || 'Failed to create booking');
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message === 'Payment successful') {
+            showToast('Payment successful! Booking confirmed.', 'success');
+            // Redirect to bookings page
+            setTimeout(() => {
+                showPage('page-bookings');
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Payment failed');
+        }
+    })
+    .catch(error => {
+        console.error('Payment error:', error);
+        showToast('Payment failed: ' + error.message, 'error');
+    });
+}
+
+// Initialize payment page
+function initPaymentPage() {
+    updatePaymentTotal();
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type} show`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 300);
+    }, 3000);
+}
+
+// Show page function (if not already defined)
+function showPage(pageId) {
+    // Hide all pages
+    document.querySelectorAll('.page, .auth-page').forEach(page => {
+        page.classList.remove('active');
+    });
+    
+    // Show selected page
+    const targetPage = document.getElementById(pageId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        
+        // Initialize payment page if needed
+        if (pageId === 'page-payment') {
+            initPaymentPage();
+        }
+    }
+    
+    // Update navigation
+    document.querySelectorAll('.bottom-nav button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Set active nav button
+    const navMap = {
+        'page-home': 'nav-home',
+        'page-vehicles': 'nav-vehicles', 
+        'page-bookings': 'nav-bookings',
+        'page-profile': 'nav-profile',
+        'page-more': 'nav-more'
+    };
+    
+    if (navMap[pageId]) {
+        document.getElementById(navMap[pageId])?.classList.add('active');
+    }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize payment page if it's the current page
+    if (document.getElementById('page-payment')?.classList.contains('active')) {
+        initPaymentPage();
+    }
+});
+</script>
+
+</body>
+</html>
