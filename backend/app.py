@@ -8014,15 +8014,36 @@ def get_booking_license_details(booking_id):
         if not b:
             return jsonify({'error': 'Booking not found'}), 404
         user_id = b['user_id']
+
+        # Try license_details table first
         cur.execute("SELECT * FROM license_details WHERE user_id = %s", (user_id,))
         details = cur.fetchone()
-        if not details:
-            return jsonify({}), 200
-        if details.get('expiry_date') and hasattr(details['expiry_date'], 'strftime'):
-            details['expiry_date'] = details['expiry_date'].strftime('%Y-%m-%d')
-        if details.get('date_of_birth') and hasattr(details['date_of_birth'], 'strftime'):
-            details['date_of_birth'] = details['date_of_birth'].strftime('%Y-%m-%d')
-        return jsonify(details), 200
+
+        if details:
+            result = dict(details)
+            if result.get('expiry_date') and hasattr(result['expiry_date'], 'strftime'):
+                result['expiry_date'] = result['expiry_date'].strftime('%Y-%m-%d')
+            if result.get('date_of_birth') and hasattr(result['date_of_birth'], 'strftime'):
+                result['date_of_birth'] = result['date_of_birth'].strftime('%Y-%m-%d')
+            # Ensure consistent key name for frontend
+            result['emergency_contact_relation'] = result.get('emergency_contact_relationship', '-')
+            return jsonify(result), 200
+
+        # Fall back to users table
+        cur.execute("""
+            SELECT full_name, license_number, license_expiry AS expiry_date,
+                   license_image_url AS license_front_url
+            FROM users WHERE id = %s
+        """, (user_id,))
+        user = cur.fetchone()
+        if user and user.get('license_number'):
+            result = dict(user)
+            if result.get('expiry_date') and hasattr(result['expiry_date'], 'strftime'):
+                result['expiry_date'] = result['expiry_date'].strftime('%Y-%m-%d')
+            result['emergency_contact_relation'] = '-'
+            return jsonify(result), 200
+
+        return jsonify({}), 200
     except Exception as e:
         print(f"Error fetching license details for booking {booking_id}:", e)
         return jsonify({'error': str(e)}), 500

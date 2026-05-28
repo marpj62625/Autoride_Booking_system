@@ -3158,13 +3158,13 @@
                 const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`);
                 if (licRes.ok) {
                     const lData = await licRes.json();
-                    if (lData && lData.license_number) {
+                    if (lData && (lData.license_number || lData.full_name)) {
                         licenseHtml = `
                             <div style="font-size: 0.95rem; line-height: 1.6; color: #1e293b; margin-bottom: 15px;">
-                                <div>Full Name: ${lData.full_name || '-'}</div>
-                                <div>DOB: ${lData.date_of_birth || '-'}</div>
-                                <div>License #: ${lData.license_number}</div>
-                                <div>Expiry: ${lData.expiry_date || '-'}</div>
+                                <div style="margin-bottom:6px;"><strong>Full Name:</strong> ${lData.full_name || '-'}</div>
+                                <div style="margin-bottom:6px;"><strong>DOB:</strong> ${lData.date_of_birth || '-'}</div>
+                                <div style="margin-bottom:6px;"><strong>License #:</strong> ${lData.license_number || '-'}</div>
+                                <div style="margin-bottom:6px;"><strong>Expiry:</strong> ${lData.expiry_date || '-'}</div>
                             </div>
                             <div style="display:flex; gap:10px;">
                                 <button onclick="viewLicenseImage('${lData.license_front_url}')" ${!lData.license_front_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Front Image</button>
@@ -3174,9 +3174,9 @@
                             
                             <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.6; color: #1e293b; background: white; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
                                 <h3 style="font-size: 1.05rem; color: #0f172a; font-weight: 800; margin-bottom: 10px;">Emergency Contact</h3>
-                                <div>Name: ${lData.emergency_contact_name || '-'}</div>
-                                <div>Phone: ${lData.emergency_contact_phone || '-'}</div>
-                                <div>Rel: ${lData.emergency_contact_relation || '-'}</div>
+                                <div style="margin-bottom:4px;"><strong>Name:</strong> ${lData.emergency_contact_name || '-'}</div>
+                                <div style="margin-bottom:4px;"><strong>Phone:</strong> ${lData.emergency_contact_phone || '-'}</div>
+                                <div><strong>Rel:</strong> ${lData.emergency_contact_relationship || lData.emergency_contact_relation || '-'}</div>
                             </div>
                             <!-- dummy closing to balance template -->
                             <div style="display:none">
