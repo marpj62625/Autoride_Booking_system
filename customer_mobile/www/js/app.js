@@ -2258,9 +2258,14 @@ function openPaymentScreen(bookingId, priceResult, payType) {
 
   var breakdownHtml =
     '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
-    (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
-      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);"></i> ' + a.name + '</span><span>' + formatPHP(a.price) + '</span></div>';
-    }).join('') : '') +
+    // Render all available addons as toggleable on payment page
+    (ADDON_OPTIONS.map(function(opt, idx) {
+      var isSelected = selectedAddons.some(function(a) { return a.name === opt.name; });
+      var aPrice = opt.pricePerDay * priceResult.days;
+      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;" onclick="togglePaymentAddon(' + idx + ', ' + bookingId + ')">' +
+             '<span><i class="fas ' + (isSelected ? 'fa-check-square' : 'fa-square') + '" style="color:var(--' + (isSelected ? 'success' : 'border') + ');margin-right:6px;font-size:1.1em;vertical-align:middle;"></i> ' + opt.name + '</span>' +
+             '<span>' + formatPHP(aPrice) + '</span></div>';
+    }).join('')) +
     (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
     (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
     (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
@@ -2348,6 +2353,37 @@ function openPaymentScreen(bookingId, priceResult, payType) {
   if (gcashEl) gcashEl.classList.add('selected');
 
   showOverlay('page-payment');
+}
+
+
+function togglePaymentAddon(idx, bookingId) {
+  var opt = ADDON_OPTIONS[idx];
+  var days = _pendingPriceResult.days;
+  var existingIdx = selectedAddons.findIndex(function(a) { return a.name === opt.name; });
+  if (existingIdx >= 0) {
+    selectedAddons.splice(existingIdx, 1);
+  } else {
+    selectedAddons.push({ name: opt.name, price: opt.pricePerDay * days, pricePerDay: opt.pricePerDay });
+  }
+  
+  // Recalculate price
+  var v = bookingFormVehicle;
+  var cpPct = couponData ? couponData.discount_percent : 0;
+  var pts = parseInt(document.getElementById('bfPoints') ? document.getElementById('bfPoints').value : 0) || 0;
+  
+  _pendingPriceResult = calculateBookingPrice(
+    v.daily_rate, _pendingBookingPayload.start_date, _pendingBookingPayload.end_date, selectedAddons, selectedInsurance.price,
+    parseInt(appSettings.long_term_discount_days) || 7,
+    parseInt(appSettings.long_term_discount_percent) || 10,
+    cpPct, pts
+  );
+  
+  _pendingBookingPayload.addons = selectedAddons.map(function(a) { return a.name; });
+  _pendingBookingPayload.addon_price = _pendingPriceResult.addonPrice;
+  _pendingBookingPayload.total_price = _pendingPriceResult.total;
+  
+  // Re-render payment screen
+  openPaymentScreen(bookingId, _pendingPriceResult, _pendingPayType);
 }
 
 function selectPayMethod(method, el) {
