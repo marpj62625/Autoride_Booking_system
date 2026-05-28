@@ -691,95 +691,125 @@ def send_receipt_email(email: str, details: dict):
     method = str(details.get('method', 'N/A') or 'N/A')
     receipt_url = 'https://autoride-booking-system.vercel.app/api/bookings/' + booking_id + '/receipt'
 
-    # Build breakdown rows
-    breakdown = (
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:50%;'>Base Rental</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(base_price) + "</td></tr>"
+    # Build breakdown rows for POS style receipt
+    from datetime import datetime
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    html = (
+        "<body style='margin:0;padding:20px;background:#f0f0f0;font-family:Arial,sans-serif;'>"
+        "<div style='max-width:380px;margin:0 auto;background:#fff;padding:20px;color:#000;box-shadow:0 2px 10px rgba(0,0,0,0.1);'>"
+        "<div style='text-align:center;margin-bottom:15px;'>"
+        "<h2 style='margin:0;font-size:22px;letter-spacing:1px;text-transform:uppercase;'>AUTORIDE</h2>"
+        "<p style='margin:2px 0 0;font-size:12px;'>Your ride, your way</p>"
+        "</div>"
+        
+        "<div style='text-align:center;font-weight:bold;font-size:16px;margin:15px 0;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:8px 0;letter-spacing:2px;'>"
+        "INVOICE"
+        "</div>"
+        
+        "<table width='100%' style='font-size:13px;margin-bottom:15px;line-height:1.4;'>"
+        "<tr><td width='35%'>Booking No</td><td width='65%' style='text-align:right;'>" + booking_id + "</td></tr>"
+        "<tr><td>Date</td><td style='text-align:right;'>" + now_str + "</td></tr>"
+        "<tr><td>Customer</td><td style='text-align:right;'>" + full_name + "</td></tr>"
+        "<tr><td>Rental Period</td><td style='text-align:right;'>" + start_date + " to " + end_date + "</td></tr>"
+        "<tr><td>Vehicle</td><td style='text-align:right;'>" + brand + " " + model_name + "</td></tr>"
+        "</table>"
+        
+        "<div style='border-top:1px dashed #000;margin:10px 0;'></div>"
+        
+        "<table width='100%' style='font-size:13px;margin-bottom:10px;'>"
+        "<tr>"
+        "<th style='text-align:left;padding-bottom:5px;width:65%;'>Item</th>"
+        "<th style='text-align:center;padding-bottom:5px;width:10%;'>Qty</th>"
+        "<th style='text-align:right;padding-bottom:5px;width:25%;'>Amount</th>"
+        "</tr>"
+        
+        "<tr>"
+        "<td style='padding:3px 0;'>Base Rental</td>"
+        "<td style='text-align:center;padding:3px 0;'>1</td>"
+        "<td style='text-align:right;padding:3px 0;'>" + '{:,.2f}'.format(base_price) + "</td>"
+        "</tr>"
     )
+    
     if addon_price > 0 and addons_raw and addons_raw != 'None':
         addon_list = [a.strip() for a in addons_raw.split(',') if a.strip()]
         for addon in addon_list:
-            breakdown += (
-                "<tr><td style='padding:8px 16px 8px 24px;font-size:12px;color:#6c757d;border-bottom:1px solid #dee2e6;'>+ " + addon + "</td>"
-                "<td style='padding:8px 16px;font-size:12px;color:#212529;border-bottom:1px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(addon_price / max(1, len(addon_list))) + "</td></tr>"
+            html += (
+                "<tr>"
+                "<td style='padding:3px 0;'>- " + addon + "</td>"
+                "<td style='text-align:center;padding:3px 0;'>1</td>"
+                "<td style='text-align:right;padding:3px 0;'>" + '{:,.2f}'.format(addon_price / max(1, len(addon_list))) + "</td>"
+                "</tr>"
             )
+            
     if insurance_price > 0:
-        breakdown += (
-            "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Insurance (" + insurance_text + ")</td>"
-            "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(insurance_price) + "</td></tr>"
+        html += (
+            "<tr>"
+            "<td style='padding:3px 0;'>Insurance (" + insurance_text + ")</td>"
+            "<td style='text-align:center;padding:3px 0;'>1</td>"
+            "<td style='text-align:right;padding:3px 0;'>" + '{:,.2f}'.format(insurance_price) + "</td>"
+            "</tr>"
         )
+        
     if discount_amount > 0:
-        breakdown += (
-            "<tr><td style='padding:10px 16px;font-size:13px;color:#2dc653;border-bottom:1px solid #dee2e6;'>Discount</td>"
-            "<td style='padding:10px 16px;font-size:13px;color:#2dc653;border-bottom:1px solid #dee2e6;text-align:right;'>- PHP " + '{:,.2f}'.format(discount_amount) + "</td></tr>"
+        html += (
+            "<tr>"
+            "<td style='padding:3px 0;'>Discount</td>"
+            "<td style='text-align:center;padding:3px 0;'></td>"
+            "<td style='text-align:right;padding:3px 0;'>-" + '{:,.2f}'.format(discount_amount) + "</td>"
+            "</tr>"
         )
-    breakdown += (
-        "<tr><td style='padding:12px 16px;font-size:14px;font-weight:bold;color:#212529;'>TOTAL</td>"
-        "<td style='padding:12px 16px;font-size:14px;font-weight:bold;color:#e63946;text-align:right;'>PHP " + '{:,.2f}'.format(total_price) + "</td></tr>"
+        
+    html += (
+        "</table>"
+        "<div style='border-top:1px dashed #000;margin:10px 0;'></div>"
+        
+        "<table width='100%' style='font-size:14px;margin-bottom:15px;'>"
+        "<tr>"
+        "<td><strong>TOTAL (PHP)</strong></td>"
+        "<td style='text-align:right;'><strong>" + '{:,.2f}'.format(total_price) + "</strong></td>"
+        "</tr>"
     )
+    
     if payment_type == 'Downpayment' and balance_amount > 0:
-        breakdown += (
-            "<tr><td style='padding:10px 16px;font-size:13px;color:#e63946;border-top:2px solid #dee2e6;'>Paid Now (20%)</td>"
-            "<td style='padding:10px 16px;font-size:13px;color:#e63946;border-top:2px solid #dee2e6;text-align:right;'>PHP " + '{:,.2f}'.format(amount_paid) + "</td></tr>"
-            "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;'>Remaining Balance</td>"
-            "<td style='padding:10px 16px;font-size:13px;color:#6c757d;text-align:right;'>PHP " + '{:,.2f}'.format(balance_amount) + "</td></tr>"
+        html += (
+            "<tr>"
+            "<td style='padding-top:5px;font-size:13px;'>Paid Now (20%)</td>"
+            "<td style='text-align:right;padding-top:5px;font-size:13px;'>" + '{:,.2f}'.format(amount_paid) + "</td>"
+            "</tr>"
+            "<tr>"
+            "<td style='padding-top:3px;font-size:13px;'>Balance</td>"
+            "<td style='text-align:right;padding-top:3px;font-size:13px;'>" + '{:,.2f}'.format(balance_amount) + "</td>"
+            "</tr>"
         )
-
-    html = (
-        "<body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;'>"
-        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f4f4f4;padding:30px 0;'>"
-        "<tr><td align='center'><table width='600' cellpadding='0' cellspacing='0' style='background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);'>"
-        "<tr><td style='background:#e63946;padding:28px;text-align:center;'>"
-        "<h1 style='color:#fff;margin:0;font-size:26px;'>Autoride</h1>"
-        "<p style='color:rgba(255,255,255,0.85);margin:6px 0 0;font-size:13px;'>Your ride, your way</p></td></tr>"
-        "<tr><td style='background:#2dc653;padding:12px;text-align:center;'>"
-        "<p style='color:#fff;margin:0;font-size:14px;font-weight:bold;'>Booking Confirmed! - Booking #" + booking_id + "</p></td></tr>"
-        "<tr><td style='padding:24px 28px 10px;'>"
-        "<p style='font-size:15px;color:#212529;margin:0;'>Hello <strong>" + full_name + "</strong>,</p>"
-        "<p style='font-size:13px;color:#6c757d;margin:8px 0 0;'>Thank you for choosing Autoride! Your payment has been received and your booking is confirmed.</p>"
-        "</td></tr>"
-        "<tr><td style='padding:16px 28px;'>"
-        "<p style='font-size:13px;font-weight:bold;color:#212529;margin:0 0 10px;'>Booking Details</p>"
-        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Vehicle</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + brand + " " + model_name + "</td></tr>"
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Rental Period</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;font-weight:bold;border-bottom:1px solid #dee2e6;'>" + start_date + " to " + end_date + "</td></tr>"
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;'>Insurance</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + insurance_text + "</td></tr>"
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;'>Add-ons</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;'>" + (addons_raw if addons_raw and addons_raw != 'None' else 'None') + "</td></tr>"
-        "</table></td></tr>"
-        "<tr><td style='padding:0 28px 16px;'>"
-        "<p style='font-size:13px;font-weight:bold;color:#212529;margin:0 0 10px;'>Price Breakdown</p>"
-        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
-        + breakdown +
-        "</table></td></tr>"
-        "<tr><td style='padding:0 28px 16px;'>"
-        "<p style='font-size:13px;font-weight:bold;color:#212529;margin:0 0 10px;'>Payment Details</p>"
-        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#f8f9fa;border-radius:8px;overflow:hidden;'>"
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;border-bottom:1px solid #dee2e6;width:40%;'>Method</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;border-bottom:1px solid #dee2e6;'>" + method + "</td></tr>"
-        "<tr><td style='padding:10px 16px;font-size:13px;color:#6c757d;'>Reference No.</td>"
-        "<td style='padding:10px 16px;font-size:13px;color:#212529;font-weight:bold;'>" + ref_num + "</td></tr>"
-        "</table></td></tr>"
-        "<tr><td style='padding:0 28px 16px;text-align:center;'>"
-        "<a href='" + receipt_url + "' style='display:inline-block;background:#e63946;color:#fff;text-decoration:none;padding:13px 28px;border-radius:8px;font-size:14px;font-weight:bold;'>Download PDF Receipt</a>"
-        "</td></tr>"
-        "<tr><td style='padding:0 28px 16px;'>"
-        "<table width='100%' cellpadding='0' cellspacing='0' style='background:#fff3cd;border-radius:8px;border-left:4px solid #f4a261;'>"
-        "<tr><td style='padding:14px;'>"
-        "<p style='margin:0 0 6px;font-size:12px;font-weight:bold;color:#856404;'>Important Reminders</p>"
-        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Bring 2 valid government-issued IDs upon pickup</p>"
-        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Mileage limit: 250 km/day (excess: PHP 10/km)</p>"
-        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Return vehicle with same fuel level as pickup</p>"
-        "<p style='margin:3px 0;font-size:11px;color:#856404;'>- Late return penalty: PHP 500/hour</p>"
-        "</td></tr></table></td></tr>"
-        "<tr><td style='background:#f8f9fa;padding:18px 28px;text-align:center;border-top:1px solid #dee2e6;'>"
-        "<p style='margin:0;font-size:12px;color:#6c757d;'>Safe travels! The Autoride Team</p>"
-        "<p style='margin:4px 0 0;font-size:11px;color:#adb5bd;'>autoride-booking-system.vercel.app</p>"
-        "</td></tr>"
-        "</table></td></tr></table></body></html>"
+    else:
+        html += (
+            "<tr>"
+            "<td style='padding-top:5px;font-size:13px;'>Amount Paid</td>"
+            "<td style='text-align:right;padding-top:5px;font-size:13px;'>" + '{:,.2f}'.format(amount_paid) + "</td>"
+            "</tr>"
+        )
+        
+    html += (
+        "</table>"
+        "<div style='border-top:1px dashed #000;margin:10px 0;'></div>"
+        
+        "<table width='100%' style='font-size:13px;margin-bottom:20px;'>"
+        "<tr><td>Payment Method</td><td style='text-align:right;'>" + method + "</td></tr>"
+        "<tr><td>Reference No</td><td style='text-align:right;'>" + ref_num + "</td></tr>"
+        "</table>"
+        
+        "<div style='text-align:center;margin:25px 0 15px;'>"
+        "<p style='margin:0 0 5px;font-size:13px;'>Please Come Again</p>"
+        "<p style='margin:0;font-size:11px;color:#555;'>autoride-booking-system.vercel.app</p>"
+        "</div>"
+        
+        "<div style='text-align:center;margin-top:20px;'>"
+        "<a href='" + receipt_url + "' style='display:inline-block;border:1px solid #000;color:#000;text-decoration:none;padding:8px 15px;font-size:12px;text-transform:uppercase;'>Download PDF</a>"
+        "</div>"
+        
+        "</div>"
+        "</body>"
     )
 
     print('RECEIPT EMAIL - TO: ' + email + ' BOOKING: #' + booking_id)
