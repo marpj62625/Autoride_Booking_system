@@ -3153,37 +3153,41 @@
             const isApprovable = (b.status === 'Pending');
 
             // Fetch license details for this booking
-            let licenseHtml = '<p style="font-size: 0.85rem; color: var(--text-muted);">No license details available.</p>';
+            let licenseHtml = '<p style="font-size: 0.85rem; color: #64748b;">No license details available.</p>';
             try {
                 const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`);
-                if (licRes.ok) {
-                    const lData = await licRes.json();
-                    if (lData && (lData.license_number || lData.full_name || lData.license_front_url)) {
-                        licenseHtml = `
-                            <div style="font-size: 0.95rem; line-height: 1.6; color: #1e293b; margin-bottom: 15px;">
-                                <div style="margin-bottom:6px;"><strong>Full Name:</strong> ${lData.full_name || '-'}</div>
-                                <div style="margin-bottom:6px;"><strong>DOB:</strong> ${lData.date_of_birth || '-'}</div>
-                                <div style="margin-bottom:6px;"><strong>License #:</strong> ${lData.license_number || '-'}</div>
-                                <div style="margin-bottom:6px;"><strong>Expiry:</strong> ${lData.expiry_date || '-'}</div>
-                            </div>
-                            <div style="display:flex; gap:10px;">
-                                <button onclick="viewLicenseImage('${lData.license_front_url}')" ${!lData.license_front_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Front Image</button>
-                                <button onclick="viewLicenseImage('${lData.license_back_url}')" ${!lData.license_back_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Back Image</button>
-                            </div>
-                            </div> <!-- close license wrapper -->
-                            
-                            <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.6; color: #1e293b; background: white; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                                <h3 style="font-size: 1.05rem; color: #0f172a; font-weight: 800; margin-bottom: 10px;">Emergency Contact</h3>
-                                <div style="margin-bottom:4px;"><strong>Name:</strong> ${lData.emergency_contact_name || '-'}</div>
-                                <div style="margin-bottom:4px;"><strong>Phone:</strong> ${lData.emergency_contact_phone || '-'}</div>
-                                <div><strong>Rel:</strong> ${lData.emergency_contact_relationship || lData.emergency_contact_relation || '-'}</div>
-                            </div>
-                            <!-- dummy closing to balance template -->
-                            <div style="display:none">
-                        `;
-                    }
+                const lData = licRes.ok ? await licRes.json() : {};
+                console.log('License API response for booking', id, ':', JSON.stringify(lData));
+
+                if (lData && Object.keys(lData).length > 0 && !lData.error) {
+                    licenseHtml = `
+                        <div style="font-size: 0.95rem; line-height: 1.8; color: #1e293b; margin-bottom: 15px;">
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">Full Name:</strong> <span style="color:#1e293b;">${lData.full_name || '-'}</span></div>
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">DOB:</strong> <span style="color:#1e293b;">${lData.date_of_birth || '-'}</span></div>
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">License #:</strong> <span style="color:#1e293b;">${lData.license_number || '-'}</span></div>
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">Expiry:</strong> <span style="color:#1e293b;">${lData.expiry_date || '-'}</span></div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="viewLicenseImage('${lData.license_front_url || ''}')" ${!lData.license_front_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Front Image</button>
+                            <button onclick="viewLicenseImage('${lData.license_back_url || ''}')" ${!lData.license_back_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Back Image</button>
+                        </div>
+                        </div>
+                        <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.8; color: #1e293b; background: white; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <h3 style="font-size: 1.05rem; color: #0f172a; font-weight: 800; margin-bottom: 10px;">Emergency Contact</h3>
+                            <div style="margin-bottom:4px;"><strong style="color:#0f172a;">Name:</strong> <span style="color:#1e293b;">${lData.emergency_contact_name || '-'}</span></div>
+                            <div style="margin-bottom:4px;"><strong style="color:#0f172a;">Phone:</strong> <span style="color:#1e293b;">${lData.emergency_contact_phone || '-'}</span></div>
+                            <div><strong style="color:#0f172a;">Rel:</strong> <span style="color:#1e293b;">${lData.emergency_contact_relationship || lData.emergency_contact_relation || '-'}</span></div>
+                        </div>
+                        <div style="display:none">
+                    `;
+                } else {
+                    // Show raw response for debugging
+                    licenseHtml = `<p style="font-size:0.8rem;color:#64748b;">No license data found. (API returned: ${JSON.stringify(lData)})</p>`;
                 }
-            } catch (e) { console.error('License fetch error:', e); }
+            } catch (e) {
+                console.error('License fetch error:', e);
+                licenseHtml = `<p style="font-size:0.8rem;color:#ef4444;">Error loading license: ${e.message}</p>`;
+            }
 
             const paymentBg = b.payment_status === 'Paid' ? '#dcfce7' : '#fee2e2';
             const paymentColor = b.payment_status === 'Paid' ? '#16a34a' : '#ef4444';

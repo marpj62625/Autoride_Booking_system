@@ -10,10 +10,10 @@
     <style>
         :root {
             /* Brand & Primary Actions */
-            --primary: #0052ff;
+            --primary: #00B14F;
             --on-primary: #ffffff;
-            --primary-dark: #0040CC;
-            --primary-light: #4D8FFF;
+            --primary-dark: #005339;
+            --primary-light: #7bdcb5;
             --primary-glow: rgba(0, 82, 255, 0.18);
             /* Backgrounds & Surfaces */
             --surface: #ffffff;
@@ -39,7 +39,7 @@
             --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,82,255,0.06);
             --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
             --shadow-premium: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,82,255,0.08);
-            --success: #059669;
+            --success: #005339;
             --danger: #dc2626;
             --amber: #d97706;
             --radius-lg: 20px;
@@ -48,10 +48,10 @@
         }
 
         [data-theme="dark"] {
-            --primary: #4D8FFF;
+            --primary: #00B14F;
             --on-primary: #ffffff;
-            --primary-dark: #0052FF;
-            --primary-light: #80AFFF;
+            --primary-dark: #00B14F;
+            --primary-light: #005339;
             --primary-glow: rgba(77, 143, 255, 0.4);
             --surface: #0A0A0A;
             --surface-container: #141414;
@@ -178,7 +178,7 @@
         }
         .logo-wrap span { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; color: var(--text-main); }
         .admin-badge {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            background: linear-gradient(135deg, #00B14F, #005339);
             color: white;
             font-size: 0.58rem;
             font-weight: 800;
@@ -191,7 +191,7 @@
         .user-avatar {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+            background: linear-gradient(135deg, #00B14F, #5FDBE2);
             border-radius: 9px;
             display: flex;
             align-items: center;
@@ -568,7 +568,7 @@
         }
 
         .login-card {
-            background: #1e293b;
+            background: var(--surface-container);
             width: 100%;
             max-width: 400px;
             padding: 40px 30px;
@@ -600,7 +600,7 @@
         }
 
         .login-card input:focus {
-            border-color: #4f46e5;
+            border-color: #005339;
             background: rgba(79, 70, 229, 0.05);
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
             outline: none;
@@ -627,7 +627,7 @@
         .login-card button {
             width: 100%;
             padding: 18px;
-            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            background: linear-gradient(135deg, var(--primary), #005339);
             color: white;
             border: none;
             border-radius: 18px;
@@ -721,7 +721,7 @@
 
         /* Modal content (dark background) */
         .modal-content {
-            background: #1e293b;
+            background: var(--surface-container);
             color: white;
         }
 
@@ -877,7 +877,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            background: linear-gradient(135deg, var(--surface-container) 0%, var(--surface) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -922,6 +922,7 @@
             transform: translateY(0);
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- Chart Popup Modal -->
@@ -988,7 +989,7 @@
 
     <!-- Exit Confirmation Modal (Android Back Button) -->
     <div id="exitConfirmModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(6px);">
-        <div style="background: #1e293b; width: 100%; max-width: 500px; padding: 32px 24px 40px; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -20px 60px rgba(0,0,0,0.5);">
+        <div style="background: var(--surface-container); width: 100%; max-width: 500px; padding: 32px 24px 40px; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -20px 60px rgba(0,0,0,0.5);">
             <div style="text-align: center; margin-bottom: 24px;">
                 <div style="width: 60px; height: 60px; background: rgba(239,68,68,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid rgba(239,68,68,0.3);">
                     <i class="fas fa-sign-out-alt" style="color: #ef4444; font-size: 1.5rem;"></i>
@@ -1058,12 +1059,12 @@
 </header>
 
 <!-- Admin Notification Panel -->
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
+<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h4 style="font-weight:700;font-size:0.95rem;color:#f1f5f9;">Notifications</h4>
         <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
     </div>
-    <div id="adminNotifList"><p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
+    <div id="adminNotifList"><p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
 </div>
 
 <main class="main-content">
@@ -1072,7 +1073,7 @@
     <div id="dashboard" class="tab-content active" style="display: block;">
         <h1 class="page-title">Admin Dashboard</h1>
         <div class="page-subtitle">
-            <i class="fas fa-cloud-sun" style="color: #fbbf24;"></i>
+            <i class="fas fa-cloud-sun" style="color: #f59e0b;"></i>
             <span id="headerTime">Loading time...</span>
         </div>
 
@@ -1137,7 +1138,7 @@
 
         <!-- Filter chips -->
         <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
-            <button class="veh-chip veh-chip-active" data-filter="all"         onclick="Vehicles.setFilter('all',this)"         style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+            <button class="veh-chip veh-chip-active" data-filter="all"         onclick="Vehicles.setFilter('all',this)"         style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
             <button class="veh-chip"                 data-filter="available"   onclick="Vehicles.setFilter('available',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Available</button>
             <button class="veh-chip"                 data-filter="rented"      onclick="Vehicles.setFilter('rented',this)"      style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Rented</button>
             <button class="veh-chip"                 data-filter="maintenance" onclick="Vehicles.setFilter('maintenance',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Maintenance</button>
@@ -1155,7 +1156,7 @@
         
         <!-- Profile Card -->
         <div class="stat-card" style="padding: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--primary-glow);">
-            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #818cf8, #6366f1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
+            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #00B14F, #00B14F); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
             <h2 id="settingsName" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 5px;">Super Admin</h2>
             <p id="settingsRole" style="font-size: 0.75rem; color: var(--primary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">SUPER ADMIN</p>
             <p id="settingsEmail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">admin@autoride.com</p>
@@ -1236,7 +1237,7 @@
 
         <!-- Filter chips -->
         <div id="activityFilterChips" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none;">
-            <button class="act-chip act-chip-active" data-filter="all"    onclick="Activity.setFilter('all',this)"    style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+            <button class="act-chip act-chip-active" data-filter="all"    onclick="Activity.setFilter('all',this)"    style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
             <button class="act-chip" data-filter="login"   onclick="Activity.setFilter('login',this)"   style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Login</button>
             <button class="act-chip" data-filter="approve" onclick="Activity.setFilter('approve',this)" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Approve</button>
             <button class="act-chip" data-filter="reject"  onclick="Activity.setFilter('reject',this)"  style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.75rem;font-weight:700;cursor:pointer;">Reject</button>
@@ -1260,11 +1261,11 @@
             </div>
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.65rem; color: var(--text-muted);">CONFIRMED</h5>
-                <div class="value" id="bookConfirmed" style="font-size: 1.4rem; font-weight: 700; color: #818cf8;">0</div>
+                <div class="value" id="bookConfirmed" style="font-size: 1.4rem; font-weight: 700; color: #00B14F;">0</div>
             </div>
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.65rem; color: var(--text-muted);">PENDING</h5>
-                <div class="value" id="bookPending" style="font-size: 1.4rem; font-weight: 700; color: #fbbf24;">0</div>
+                <div class="value" id="bookPending" style="font-size: 1.4rem; font-weight: 700; color: #f59e0b;">0</div>
             </div>
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.65rem; color: var(--text-muted);">CANCELLED</h5>
@@ -1290,9 +1291,9 @@
             <div style="margin-bottom: 20px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                     <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:pulse 1.5s infinite;"></span>
+                        <span style="width:8px;height:8px;border-radius:50%;background:#00B14F;display:inline-block;box-shadow:0 0 0 3px rgba(0,177,79,0.25);animation:pulse 1.5s infinite;"></span>
                         <h3 style="font-size:1rem;font-weight:800;color:var(--text-main);">Active Rentals</h3>
-                        <span id="activeNowCount" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
+                        <span id="activeNowCount" style="background:rgba(0,177,79,0.12);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
                     </div>
                     <span style="font-size:0.65rem;color:var(--text-muted);" id="activeNowRefreshLabel">auto-refresh 30s</span>
                 </div>
@@ -1396,7 +1397,7 @@
             <button onclick="Verifications.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
         </div>
         
-        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(99,102,241,0.1), transparent);">
+        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(0,177,79,0.1), transparent);">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 45px; height: 45px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; box-shadow: 0 8px 16px var(--primary-glow);">
                     <i class="fas fa-user-shield"></i>
@@ -1414,24 +1415,22 @@
     </div>
 
     <!-- BOOKING DETAILS MODAL -->
-    <div id="bookingDetailsModal" class="premium-modal">
-        <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="font-size: 1.5rem; font-weight: 900; color: white; margin: 0; letter-spacing: -1px;">Booking Details</h2>
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="menu-btn"><i class="fas fa-times"></i></button>
+    <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
+            <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" style="position: absolute; left: 0; background: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
+                <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Booking Details</h2>
             </div>
             <div id="bookingDetailContent">
                 <!-- Content injected via JS -->
             </div>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="width: 100%;">Close Details</button>
-            </div>
+
         </div>
     </div>
     
     <!-- LICENSE PREVIEW MODAL -->
     <div id="licensePreviewModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);">
-        <div class="modal-content" style="max-width: 95%; padding: 15px; border-radius: 20px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="modal-content" style="max-width: 95%; padding: 15px; border-radius: 20px; background: var(--surface-container); border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="margin: 0; font-size: 1.1rem; color: white;">License Preview</h3>
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="menu-btn" style="width: 34px; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;"><i class="fas fa-times"></i></button>
@@ -1480,7 +1479,7 @@
     </div>
 
     <!-- <div id="assignDriverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+        <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
             <h2 style="margin-bottom: 15px; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-user-plus" style="color: var(--primary);"></i> Assign Driver
             </h2>
@@ -1492,7 +1491,7 @@
                 </select>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('assignDriverModal').style.display='none'" style="flex: 1; padding: 12px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <button onclick="document.getElementById('assignDriverModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
                 <button onclick="Bookings.saveAssign()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Assign</button>
             </div>
         </div>
@@ -1584,7 +1583,7 @@
         <h1 class="page-title">Drivers</h1>
         
         <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 0.9rem; color: #818cf8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <h3 style="font-size: 0.9rem; color: #00B14F; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-cog" style="font-size: 0.8rem;"></i> Driver Wage Settings
             </h3>
             <div style="display: flex; flex-direction: column; gap: 15px;">
@@ -1592,7 +1591,7 @@
                     <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 8px;">Default Wage (% or Flat Rate)</label>
                     <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.9rem;">
                 </div>
-                <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(99,102,241,0.2);">
+                <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(0,177,79,0.2);">
                     Apply Wage Settings
                 </button>
             </div>
@@ -1626,7 +1625,7 @@
     <div id="gps" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">GPS Tracking</h1>
-            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(16,185,129,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
+            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(0,177,79,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
         </div>
 
         <!-- Map iframe -->
@@ -1677,7 +1676,7 @@
         <h1 class="page-title">Instructions</h1>
         
         <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary);">
-            <h3 style="font-size: 0.95rem; color: #818cf8; margin-bottom: 15px;">Add New Instruction</h3>
+            <h3 style="font-size: 0.95rem; color: #00B14F; margin-bottom: 15px;">Add New Instruction</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white;">
                 <button onclick="Instructions.add()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Add Globally</button>
@@ -1698,7 +1697,7 @@
     <div id="staff" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h1 class="page-title" style="margin: 0;">Staff</h1>
-            <button onclick="Staff.openModal()" style="background: var(--primary); border: none; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(99,102,241,0.3);">
+            <button onclick="Staff.openModal()" style="background: var(--primary); border: none; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,177,79,0.3);">
                 <i class="fas fa-plus-circle" style="font-size: 0.9rem;"></i> New Staff
             </button>
         </div>
@@ -1713,7 +1712,7 @@
 
     <!-- STAFF MODAL -->
     <div id="staffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+        <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
             <h2 id="staffFormTitle" style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Add New Staff</h2>
             <form id="staffForm">
                 <div style="margin-bottom: 15px;">
@@ -1737,7 +1736,7 @@
                     </select>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button type="button" onclick="Staff.closeModal()" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                    <button type="button" onclick="Staff.closeModal()" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
                     <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Save Account</button>
                 </div>
             </form>
@@ -1748,23 +1747,23 @@
     <div id="vehicleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="background:#fff;border-radius:24px 24px 0 0;padding:28px 20px 32px;max-width:520px;margin:60px auto 0;min-height:calc(100vh - 60px);box-shadow:0 -8px 40px rgba(0,0,0,0.18);">
 
-            <h2 id="modalTitle" style="font-size:1.6rem;font-weight:900;color:#0f172a;margin:0 0 22px;">Add New Vehicle</h2>
+            <h2 id="modalTitle" style="font-size:1.6rem;font-weight:900;color:var(--text-primary);margin:0 0 22px;">Add New Vehicle</h2>
             <form id="vehicleForm">
                 <input type="hidden" id="editId">
 
                 <!-- VEHICLE PHOTOS -->
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;font-size:0.78rem;font-weight:800;color:#0f172a;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
+                    <label style="display:block;font-size:0.78rem;font-weight:800;color:var(--text-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
                         Vehicle Photos <span style="color:#ef4444;">*</span>
-                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b;">(max 4 � first photo is Main)</span>
+                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);">(max 4 � first photo is Main)</span>
                     </label>
                     <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                         <button type="button" onclick="VehiclePhotos.takePhoto()"
-                            style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+                            style="padding:16px 8px;background:var(--surface-container);border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
                             <i class="fas fa-camera" style="font-size:1rem;"></i> Take Photo
                         </button>
-                        <label style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
+                        <label style="padding:16px 8px;background:var(--surface-container);border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
                             <i class="fas fa-images" style="font-size:1rem;"></i> Upload from Gallery
                             <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
                         </label>
@@ -1773,8 +1772,8 @@
 
                 <!-- EXISTING GALLERY (edit mode) -->
                 <div id="vExistingGallery" style="display:none;margin-bottom:20px;">
-                    <label style="display:block;font-size:0.75rem;color:#64748b;margin-bottom:5px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
-                    <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;min-height:100px;"></div>
+                    <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
+                    <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;min-height:100px;"></div>
                 </div>
 
                 <!-- FIELDS GRID -->
@@ -1782,9 +1781,9 @@
 
                     <!-- Brand -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Brand</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Brand</label>
                         <select id="vBrand" required onchange="Vehicles.updateModels()"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="">Select Brand</option>
                             <option value="Toyota">Toyota</option>
                             <option value="Mitsubishi">Mitsubishi</option>
@@ -1799,25 +1798,25 @@
 
                     <!-- Model -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Model</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Model</label>
                         <input id="vModel" list="vModelList" required placeholder="Model"
                             onchange="Vehicles.applySpecs(this.value)"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         <datalist id="vModelList"></datalist>
                     </div>
 
                     <!-- Plate Number -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Plate Number</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Plate Number</label>
                         <input type="text" id="vPlate" placeholder="ABC-1234" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
                     <!-- Color -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Color</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Color</label>
                         <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         <datalist id="vColorList">
                             <option value="White"><option value="Black"><option value="Silver">
                             <option value="Gray"><option value="Red"><option value="Blue">
@@ -1828,9 +1827,9 @@
 
                     <!-- Vehicle Type -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Vehicle Type</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Vehicle Type</label>
                         <select id="vType" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="">Select type</option>
                             <option value="Sedan">Sedan</option>
                             <option value="SUV">SUV</option>
@@ -1843,9 +1842,9 @@
 
                     <!-- Transmission -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Transmission</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Transmission</label>
                         <select id="vTrans" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Manual">Manual</option>
                             <option value="Automatic">Automatic</option>
                         </select>
@@ -1853,9 +1852,9 @@
 
                     <!-- Fuel Type -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Fuel Type</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Fuel Type</label>
                         <select id="vFuel" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Diesel">Diesel</option>
                             <option value="Gasoline">Gasoline</option>
                         </select>
@@ -1863,9 +1862,9 @@
 
                     <!-- Seats -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Seats</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Seats</label>
                         <select id="vSeats" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="4">4 Seats</option>
                             <option value="5">5 Seats</option>
                             <option value="7">7 Seats</option>
@@ -1876,16 +1875,16 @@
 
                     <!-- Daily Rate � half width -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Daily Rate (&#8369;)</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (&#8369;)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
                     <!-- Location � full width -->
                     <div style="grid-column:span 2;">
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Location</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Location</label>
                         <select id="vLocation" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
                             <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
                         </select>
@@ -1893,9 +1892,9 @@
 
                     <!-- Status � full width -->
                     <div style="grid-column:span 2;">
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Status</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Status</label>
                         <select id="vStatus"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Available">Available</option>
                             <option value="Booked">Booked</option>
                             <option value="Maintenance">Maintenance</option>
@@ -1908,16 +1907,16 @@
                 <!-- BUTTONS -->
                 <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;">
                     <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)"
-                        style="display:none;width:100%;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;">
+                        style="display:none;width:100%;padding:16px;background:#00B14F;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;">
                         Save &amp; Add Another
                     </button>
                     <div style="display:flex;gap:10px;">
                         <button type="button" onclick="Vehicles.closeModal()"
-                            style="flex:1;padding:16px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:1rem;font-weight:700;cursor:pointer;">
+                            style="flex:1;padding:16px;background:transparent;border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:1rem;font-weight:700;cursor:pointer;">
                             Cancel
                         </button>
                         <button type="submit" id="submitBtnText"
-                            style="flex:2;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,0.4);">
+                            style="flex:2;padding:16px;background:#00B14F;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,0.4);">
                             Add Vehicle
                         </button>
                     </div>
@@ -1929,7 +1928,7 @@
 
     <!-- CHANGE PASSWORD MODAL -->
     <div id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+        <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
             <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
@@ -1940,7 +1939,7 @@
                 <input id="confirmMobilePassword" type="password" placeholder="��������" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
                 <button onclick="submitChangePassword()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Update</button>
             </div>
         </div>
@@ -1992,7 +1991,7 @@
                     <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleaness issues..." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
                 </div>
 
-                <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(99,102,241,0.4); margin-bottom: 20px;">
+                <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,177,79,0.4); margin-bottom: 20px;">
                     Submit Inspection Report
                 </button>
             </form>
@@ -2025,7 +2024,7 @@
             <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
             <input type="text" id="umSearch" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 12px 12px 38px; background:var(--surface); border:1px solid var(--border); border-radius:50px; color:white; font-size:0.85rem;">
         </div>
-        <button onclick="UserMgmt.exportCSV()" style="background:rgba(16,185,129,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
+        <button onclick="UserMgmt.exportCSV()" style="background:rgba(0,177,79,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
     </div>
     <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
         <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
@@ -2039,7 +2038,7 @@
 <!-- User Detail Modal -->
 <div id="umModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); overflow-y:auto;">
     <div style="min-height:100vh; display:flex; align-items:flex-end;">
-        <div style="width:100%; background:#1e293b; border-radius:28px 28px 0 0; padding:24px; max-height:92vh; overflow-y:auto;">
+        <div style="width:100%; background:var(--surface-container); border-radius:28px 28px 0 0; padding:24px; max-height:92vh; overflow-y:auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="font-size:1.1rem; font-weight:800;">User Details</h2>
                 <button onclick="UserMgmt.closeModal()" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; width:36px; height:36px; border-radius:10px; font-size:1rem;"><i class="fas fa-times"></i></button>
@@ -2099,7 +2098,7 @@
             <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 18px 24px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 0; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
         </div>
         
-        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
+        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #005339, #00B14F); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
         
         <p id="loginError" style="color: #ef4444; margin-top: 24px; font-size: 1rem; font-weight: 600; text-align: center; padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); display: none;"></p>
     </div>
@@ -2153,15 +2152,15 @@
             }
             const notifs = window.adminNotifList || [];
             if (!notifs.length) {
-                list.innerHTML = '<p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
+                list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
             } else {
                 list.innerHTML = notifs.map(n => {
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #6366f1;padding-left:8px;background:rgba(99,102,241,0.08);';
+                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);';
                     return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
                         <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
                         <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-                        <small style="color:#64748b;">${ts}</small>
+                        <small style="color:var(--text-muted);">${ts}</small>
                     </div>`;
                 }).join('');
             }
@@ -2503,8 +2502,8 @@
 
             const statusColor = s => {
                 switch ((s||'').toLowerCase()) {
-                    case 'available':   return '#10b981';
-                    case 'rented':      return '#6366f1';
+                    case 'available':   return '#00B14F';
+                    case 'rented':      return '#00B14F';
                     case 'maintenance': return '#f59e0b';
                     default:            return '#ef4444';
                 }
@@ -2817,10 +2816,10 @@
             }
             strip.innerHTML = this._items.map((item, i) => `
                 <div style="position: relative; flex-shrink: 0;">
-                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#6366f1' : 'rgba(255,255,255,0.1)'};">
+                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#00B14F' : 'rgba(255,255,255,0.1)'};">
                         <img src="${item.dataUrl}" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
-                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#818cf8' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#00B14F' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
                         ${item.label}
                     </div>
                     <button type="button" onclick="VehiclePhotos.remove(${i})"
@@ -3146,146 +3145,157 @@
         },
 
         async view(id) {
+          try {
             const b = this.data.find(x => x.id === id);
-            if (!b) return;
+            if (!b) { alert('Booking not found for id: ' + id); return; }
             
             const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
             const isApprovable = (b.status === 'Pending');
 
             // Fetch license details for this booking
-            let licenseHtml = '<p style="font-size: 0.85rem; color: var(--text-muted);">No license details available.</p>';
+            let licenseHtml = '<p style="font-size: 0.85rem; color: #64748b;">No license details available.</p>';
             try {
                 const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`);
-                if (licRes.ok) {
-                    const lData = await licRes.json();
-                    if (lData && lData.license_number) {
-                        licenseHtml = `
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
-                                <div><span style="color:var(--text-muted)">License #:</span> <span style="color:white;font-weight:600">${lData.license_number}</span></div>
-                                <div><span style="color:var(--text-muted)">Expiry:</span> <span style="color:white;font-weight:600">${lData.expiry_date || '-'}</span></div>
-                                <div><span style="color:var(--text-muted)">Class:</span> <span style="color:white;font-weight:600">${lData.license_class || '-'}</span></div>
-                                <div><span style="color:var(--text-muted)">Country/State:</span> <span style="color:white;font-weight:600">${lData.issuing_country_state || '-'}</span></div>
-                            </div>
-                            <div style="margin-top: 10px; font-size: 0.85rem;">
-                                <div><span style="color:var(--text-muted)">Full Name:</span> <span style="color:white;font-weight:600">${lData.full_name || '-'}</span></div>
-                                <div><span style="color:var(--text-muted)">DOB:</span> <span style="color:white;font-weight:600">${lData.date_of_birth || '-'}</span></div>
-                            </div>
-                            <div style="margin-top: 10px; font-size: 0.85rem; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <p style="color:var(--text-muted);font-weight:700;margin-bottom:5px;">Emergency Contact</p>
-                                <div><span style="color:var(--text-muted)">Name:</span> <span style="color:white;font-weight:600">${lData.emergency_contact_name || '-'}</span></div>
-                                <div><span style="color:var(--text-muted)">Phone:</span> <span style="color:white;font-weight:600">${lData.emergency_contact_phone || '-'}</span></div>
-                                <div><span style="color:var(--text-muted)">Rel:</span> <span style="color:white;font-weight:600">${lData.emergency_contact_relationship || '-'}</span></div>
-                            </div>
-                            <div style="display:flex; gap:10px; margin-top: 10px;">
-                                ${lData.license_front_url ? `<button onclick="viewLicenseImage('${lData.license_front_url}')" class="btn-outline" style="flex:1;font-size:0.75rem;padding:6px;">Front Image</button>` : ''}
-                                ${lData.license_back_url ? `<button onclick="viewLicenseImage('${lData.license_back_url}')" class="btn-outline" style="flex:1;font-size:0.75rem;padding:6px;">Back Image</button>` : ''}
-                            </div>`;
-                    }
+                const lData = licRes.ok ? await licRes.json() : {};
+                console.log('License API response for booking', id, ':', JSON.stringify(lData));
+
+                if (lData && Object.keys(lData).length > 0 && !lData.error) {
+                    licenseHtml = `
+                        <div style="font-size: 0.95rem; line-height: 1.8; color: #1e293b; margin-bottom: 15px;">
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">Full Name:</strong> <span style="color:#1e293b;">${lData.full_name || '-'}</span></div>
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">DOB:</strong> <span style="color:#1e293b;">${lData.date_of_birth || '-'}</span></div>
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">License #:</strong> <span style="color:#1e293b;">${lData.license_number || '-'}</span></div>
+                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">Expiry:</strong> <span style="color:#1e293b;">${lData.expiry_date || '-'}</span></div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="viewLicenseImage('${lData.license_front_url || ''}')" ${!lData.license_front_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Front Image</button>
+                            <button onclick="viewLicenseImage('${lData.license_back_url || ''}')" ${!lData.license_back_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Back Image</button>
+                        </div>
+                        </div>
+                        <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.8; color: #1e293b; background: white; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <h3 style="font-size: 1.05rem; color: #0f172a; font-weight: 800; margin-bottom: 10px;">Emergency Contact</h3>
+                            <div style="margin-bottom:4px;"><strong style="color:#0f172a;">Name:</strong> <span style="color:#1e293b;">${lData.emergency_contact_name || '-'}</span></div>
+                            <div style="margin-bottom:4px;"><strong style="color:#0f172a;">Phone:</strong> <span style="color:#1e293b;">${lData.emergency_contact_phone || '-'}</span></div>
+                            <div><strong style="color:#0f172a;">Rel:</strong> <span style="color:#1e293b;">${lData.emergency_contact_relationship || lData.emergency_contact_relation || '-'}</span></div>
+                        </div>
+                        <div style="display:none">
+                    `;
+                } else {
+                    licenseHtml = `<p style="font-size:0.8rem;color:#64748b;">No license data found. (API: ${JSON.stringify(lData)})</p>`;
                 }
-            } catch (e) { console.error('License fetch error:', e); }
+            } catch (e) {
+                console.error('License fetch error:', e);
+                licenseHtml = `<p style="font-size:0.8rem;color:#ef4444;">Error: ${e.message}</p>`;
+            }
+
+            const paymentBg = b.payment_status === 'Paid' ? '#dcfce7' : '#fee2e2';
+            const paymentColor = b.payment_status === 'Paid' ? '#16a34a' : '#ef4444';
+            const statusBg = ['Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status) ? '#dcfce7' : (['Pending'].includes(b.status) ? '#fef3c7' : '#fee2e2');
+            const statusColor = ['Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status) ? '#16a34a' : (['Pending'].includes(b.status) ? '#d97706' : '#ef4444');
 
             const content = `
+                <div style="display: flex; flex-direction: column; gap: 24px; background: white; padding-bottom: 20px;">
+                    <h2 style="font-size: 1.8rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -0.5px;">Booking Details #${b.id}</h2>
 
-                <div style="display: grid; gap: 15px;">
-                    <h2 style="font-size: 1.8rem; font-weight: 900; color: var(--text-main); margin-bottom: 5px; letter-spacing: -1px;">Booking Details #${b.id}</h2>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px 10px; align-items: start;">
+                        <!-- Row 1 -->
                         <div>
-                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Customer</label>
-                            <p style="font-weight: 700; font-size: 1.1rem; color: var(--text-main); margin-top: 2px;">${b.customer_name || 'Guest'}</p>
+                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Customer</label>
+                            <div style="font-weight: 500; font-size: 0.95rem; color: #0f172a; margin-top: 4px; word-break: break-word;">${b.customer_name || 'Guest'}</div>
                         </div>
                         <div>
-                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Vehicle</label>
-                            <p style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-top: 2px;">${b.car || '-'}</p>
+                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Vehicle</label>
+                            <div style="font-weight: 500; font-size: 0.95rem; color: #0f172a; margin-top: 4px; word-break: break-word;">${b.car || '-'}</div>
+                        </div>
+                        <div>
+                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Rental Period</label>
+                            <div style="font-weight: 500; font-size: 0.95rem; color: #0f172a; margin-top: 4px; word-break: break-word; line-height: 1.4;">${b.start_date ? new Date(b.start_date).toLocaleDateString() : '-'} to<br>${b.end_date ? new Date(b.end_date).toLocaleDateString() : '-'}</div>
+                        </div>
+                        
+                        <!-- Row 2 -->
+                        <div>
+                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Payment Status</label>
+                            <div style="margin-top: 6px;">
+                                <span style="background: ${paymentBg}; color: ${paymentColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${(b.payment_status || 'Unpaid')}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Total Price</label>
+                            <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 6px;">&#8369;${b.total_price ? parseFloat(b.total_price).toFixed(2) : '0.00'}</div>
+                        </div>
+                        <div>
+                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Booking Status</label>
+                            <div style="margin-top: 6px;">
+                                <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${(b.status || 'PENDING')}</span>
+                            </div>
                         </div>
                     </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div>
-                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Rental Period</label>
-                            <p style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-top: 2px;">${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} to ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}</p>
-                        </div>
-                        <div>
-                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Payment Status</label>
-                            <p style="font-weight: 700; font-size: 1rem; margin-top: 2px; color: ${b.payment_status === 'Paid' ? 'var(--success)' : 'var(--amber)'}">${b.payment_status || 'Unpaid'}</p>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div>
-                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Total Price</label>
-                            <p style="font-weight: 800; color: var(--success); font-size: 1.2rem; margin-top: 2px;">&#8369;${b.total_price ? b.total_price.toLocaleString() : '0.00'}</p>
-                        </div>
-                        <div>
-                            <label style="color: var(--text-muted); font-size: 0.65rem; font-weight: 800; text-transform: uppercase;">Booking Status</label>
-                            <p style="font-weight: 900; color: var(--text-main); font-size: 1.1rem; margin-top: 2px;">${(b.status || 'PENDING').toUpperCase()}</p>
-                        </div>
-                    </div>
-
-                    <div style="height: 1px; background: var(--border); margin: 10px 0;"></div>
 
                     <!-- INSPECTION SECTION -->
-                    <div style="background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 5px;">
-                        <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
+                    <div style="border: 1px solid #00B14F; padding: 18px; border-radius: 12px; margin-top: 5px; background: white;">
+                        <h3 style="font-size: 1.1rem; color: #00B14F; font-weight: 800; margin-bottom: 15px;">Driver's License Details</h3>
                         <div id="bookingLicenseDetailsWrapper">
                             ${licenseHtml}
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800;">Vehicle Inspections</h3>
-                        <button id="mBtnAddInsp" style="padding: 8px 16px; background: #6366f1; border: none; color: white; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">+ New Inspection</button>
+                    <div style="margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="font-size: 1.1rem; color: #0f172a; font-weight: 800;">Vehicle Inspections</h3>
+                            <button id="mBtnAddInsp" style="padding: 8px 14px; background: #00B14F; border: none; color: white; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">+ New Inspection</button>
+                        </div>
+
+                        <div id="mInspList" style="min-height: 40px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
+                            <p style="font-size: 0.85rem; color: #94a3b8; text-align: center; margin: 20px 0;">No inspections yet.</p>
+                        </div>
                     </div>
 
-                    <div id="mInspList" style="min-height: 40px;">
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">No inspections recorded yet.</p>
-                    </div>
-
-                    <div id="mInspForm" style="display: none; background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3);">
-                        <!-- Form content... -->
+                    <div id="mInspForm" style="display: none; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                        <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 15px; font-weight: 800;">Add New Inspection</h4>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                            <select id="mfInspType" style="padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
+                            <select id="mfInspType" style="padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
                                 <option value="pickup">Pickup</option>
                                 <option value="return">Return</option>
                             </select>
-                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
+                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
                         </div>
-                        <select id="mfInspFuel" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; margin-bottom: 10px;">
+                        <select id="mfInspFuel" style="width: 100%; padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem;">
                             <option value="Full">Full Tank</option>
                             <option value="Empty">Empty</option>
                         </select>
-                        <input type="file" id="mfInspPhotos" multiple accept="image/*" style="font-size: 0.75rem; color: #94a3b8; width: 100%; margin-bottom: 10px;">
-                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 60px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.8rem; margin-bottom: 10px;"></textarea>
+                        <input type="file" id="mfInspPhotos" multiple accept="image/*" style="font-size: 0.8rem; color: #64748b; width: 100%; margin-bottom: 10px;">
+                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 70px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; padding: 12px; font-size: 0.85rem;"></textarea>
                         <div style="display: flex; gap: 10px;">
-                            <button id="mBtnCancelInsp" class="btn-outline" style="flex: 1; padding: 10px; font-size: 0.8rem;">Cancel</button>
-                            <button id="mBtnSaveInsp" class="btn-premium" style="flex: 1; padding: 10px; font-size: 0.8rem;">Save</button>
+                            <button id="mBtnCancelInsp" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.85rem; border-color: #cbd5e1; color: #64748b;">Cancel</button>
+                            <button id="mBtnSaveInsp" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.85rem; background: #00B14F; color: white; border: none;">Save</button>
                         </div>
                     </div>
 
-                    ${isApprovable ? `
-                        <button onclick="Bookings.approve(${b.id})" class="btn-premium" style="width: 100%; background: var(--success); margin-top: 10px;">Approve Booking</button>
-                        <button onclick="Bookings.reject(${b.id})" class="btn-premium" style="width: 100%; background: var(--danger); margin-top: 8px;">Reject Booking</button>
-                    ` : ''}
-
-                    ${b.status === 'Confirmed' || b.status === 'Approved' ? `
-                        <button onclick="Bookings.pickup(${b.id})" class="btn-premium" style="width: 100%; background: #7c3aed; margin-top: 10px;"><i class="fas fa-car"></i> Mark as Picked Up</button>
-                    ` : ''}
-
-                    ${b.status === 'Picked Up' ? `
-                        <button onclick="Bookings.complete(${b.id})" class="btn-premium" style="width: 100%; background: #059669; margin-top: 10px;"><i class="fas fa-flag-checkered"></i> Mark as Completed</button>
-                    ` : ''}
-
-                    <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr; gap: 10px; margin-top: 20px;">
-                        <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #1e293b;">Close</button>
-                        <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" class="btn-premium" style="padding: 12px 5px; font-size: 0.85rem; background: #6366f1;">Download Receipt</button>
-                        ${isCancellable ? `
-                            <button onclick="Bookings.cancel(${b.id})" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #475569; border: none; color: white;">Cancel Booking</button>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+                        ${isApprovable ? `
+                            <button onclick="Bookings.approve(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Approve Booking</button>
+                            <button onclick="Bookings.reject(${b.id})" style="width: 100%; background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Reject Booking</button>
                         ` : ''}
-                    </div>
 
-                    ${b.payment_status === 'Partially Paid' ? `
-                        <button onclick="Bookings.markPaid(${b.id})" class="btn-premium" style="width: 100%; background: #10b981; margin-top: 10px;">Mark as Fully Paid (Cash)</button>
-                    ` : ''}
+                        ${b.status === 'Confirmed' || b.status === 'Approved' ? `
+                            <button onclick="Bookings.pickup(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-car"></i> Mark as Picked Up</button>
+                        ` : ''}
+
+                        ${b.status === 'Picked Up' ? `
+                            <button onclick="Bookings.complete(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-check-circle"></i> Complete Booking (Returned)</button>
+                        ` : ''}
+
+                        ${b.payment_status === 'Partially Paid' ? `
+                            <button onclick="Bookings.markPaid(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Mark as Fully Paid</button>
+                        ` : ''}
+
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" style="flex: 1; padding: 14px; font-size: 0.85rem; background: white; border: 1px solid #00B14F; color: #00B14F; border-radius: 8px; font-weight: 600;">Download Receipt</button>
+                            ${isCancellable ? `
+                                <button onclick="Bookings.cancel(${b.id})" style="flex: 1; padding: 14px; font-size: 0.85rem; background: white; border: 1px solid #00B14F; color: #00B14F; border-radius: 8px; font-weight: 600;">Cancel Booking</button>
+                            ` : ''}
+                        </div>
+                    </div>
                 </div>
             `;
             document.getElementById('bookingDetailContent').innerHTML = content;
@@ -3302,6 +3312,10 @@
             btnSave.onclick = () => this.saveInspection(id);
 
             this.fetchInspections(id);
+          } catch(err) {
+            alert('VIEW ERROR: ' + err.message + '\n' + err.stack);
+            console.error('Bookings.view error:', err);
+          }
         },
 
         async uploadRefundProof(bookingId) {
@@ -3552,7 +3566,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
                         <div style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-phone" style="margin-right: 5px;"></i> ${d.contact_info}</div>
                         <div style="display: flex; gap: 8px;">
-                            ${d.license_document ? `<button onclick="window.open('${API_BASE}/uploads/${d.license_document}')" style="background: rgba(99,102,241,0.1); border: 1px solid var(--primary); color: var(--primary); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">License</button>` : ''}
+                            ${d.license_document ? `<button onclick="window.open('${API_BASE}/uploads/${d.license_document}')" style="background: rgba(0,177,79,0.1); border: 1px solid var(--primary); color: var(--primary); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">License</button>` : ''}
                             ${d.status === 'Pending' ? `
                                 <button onclick="Drivers.approve(${d.id})" style="background: var(--success); border: none; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Approve</button>
                                 <button onclick="Drivers.reject(${d.id})" style="background: var(--danger); border: none; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Reject</button>
@@ -3569,7 +3583,7 @@
         },
         getStatusColor(s) {
             if (s === 'Approved') return 'var(--success)';
-            if (s === 'Pending') return '#fbbf24';
+            if (s === 'Pending') return '#f59e0b';
             return 'var(--danger)';
         },
         async approve(id) {
@@ -3640,7 +3654,7 @@
                 // License detail rows
                 const hasDetails = v.license_number || v.license_type || v.license_expiry;
                 const detailsHtml = `
-                    <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+                    <div style="background:rgba(0,177,79,0.06);border:1px solid rgba(0,177,79,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
                         <div style="font-size:0.65rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;"><i class="fas fa-id-card" style="margin-right:5px;"></i>Declared License Details</div>
                         
                         <div style="display:flex;gap:10px;margin-bottom:12px;">
@@ -3708,7 +3722,7 @@
                 return `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
                     <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
-                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
+                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
                             ${initial}
                         </div>
                         <div style="flex: 1; min-width:0;">
@@ -3846,7 +3860,7 @@
                     <div style="flex: 1; padding-right: 15px;">
                         <p style="font-size: 0.85rem; line-height: 1.4;">${inst.instruction_text}</p>
                     </div>
-                    <span style="font-size: 0.55rem; padding: 3px 8px; border-radius: 8px; background: ${inst.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${inst.is_active ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800; text-transform: uppercase;">
+                    <span style="font-size: 0.55rem; padding: 3px 8px; border-radius: 8px; background: ${inst.is_active ? 'rgba(0,177,79,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${inst.is_active ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800; text-transform: uppercase;">
                         ${inst.is_active ? 'Active' : 'Inactive'}
                     </span>
                 </div>
@@ -3898,7 +3912,7 @@
                             <h4 style="font-size: 0.95rem;">${s.full_name} ${s.id === currentUser.id ? '<span style="color:var(--primary); font-size:0.75rem;">(You)</span>' : ''}</h4>
                             <p style="font-size: 0.75rem; color: var(--text-muted);">${s.email}</p>
                         </div>
-                        <span style="font-size: 0.6rem; padding: 4px 10px; border-radius: 10px; background: ${s.role === 'super_admin' ? 'rgba(255,255,255,0.1)' : 'rgba(251,191,36,0.1)'}; color: ${s.role === 'super_admin' ? 'white' : '#fbbf24'}; font-weight: 800; text-transform: uppercase;">
+                        <span style="font-size: 0.6rem; padding: 4px 10px; border-radius: 10px; background: ${s.role === 'super_admin' ? 'rgba(255,255,255,0.1)' : 'rgba(251,191,36,0.1)'}; color: ${s.role === 'super_admin' ? 'white' : '#f59e0b'}; font-weight: 800; text-transform: uppercase;">
                             ${s.role.replace('_', ' ')}
                         </span>
                     </div>
@@ -3907,7 +3921,7 @@
                             ${s.is_verified === 1 ? 'Enabled' : 'Disabled'}
                         </span>
                         <div style="display: flex; gap: 8px;">
-                            <button onclick="Staff.openModal(${s.id})" style="padding: 6px 12px; background: #334155; border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">Edit</button>
+                            <button onclick="Staff.openModal(${s.id})" style="padding: 6px 12px; background: var(--surface-container); border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">Edit</button>
                             ${s.id !== currentUser.id ? `
                                 <button onclick="Staff.toggleStatus(${s.id}, ${s.is_verified})" style="padding: 6px 12px; background: ${s.is_verified === 1 ? 'var(--danger)' : 'var(--success)'}; border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">
                                     ${s.is_verified === 1 ? 'Disable' : 'Enable'}
@@ -4023,7 +4037,7 @@
                 return;
             }
             list.innerHTML = this.data.map(d => `
-                <div style="background: rgba(99,102,241,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
+                <div style="background: rgba(0,177,79,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                         <strong style="font-size: 0.9rem;">${d.name} (${d.plate_number})</strong>
                         <span style="font-size: 0.6rem; color: ${this.isActive(d.last_gps_update) ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800;">
@@ -4056,11 +4070,11 @@
         data: [],
         _filter: 'all',
 
-        _colors: { login:'#6366f1', logout:'#94a3b8', approve:'#10b981', reject:'#ef4444', create:'#3b82f6', update:'#f59e0b', delete:'#ef4444', view:'#8b5cf6' },
+        _colors: { login:'#00B14F', logout:'#94a3b8', approve:'#00B14F', reject:'#ef4444', create:'#00B14F', update:'#f59e0b', delete:'#ef4444', view:'#5FDBE2' },
 
         _color(action) {
             const k = Object.keys(this._colors).find(k => action.toLowerCase().includes(k));
-            return k ? this._colors[k] : '#6366f1';
+            return k ? this._colors[k] : '#00B14F';
         },
 
         _icon(action) {
@@ -4204,16 +4218,16 @@
                 const dropoffDisplay = truncateLocation(dropoffLoc);
                 
                 return `
-                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #10b981;">
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #00B14F;">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <i class="fas fa-car" style="color:#10b981;font-size:1rem;"></i>
+                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-car" style="color:#00B14F;font-size:1rem;"></i>
                         </div>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:0.88rem;font-weight:800;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.car || (b.brand||'') + ' ' + (b.model||'')}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);">${b.customer_name || 'Customer'} &bull; #${b.id}</div>
                         </div>
-                        <span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
+                        <span style="background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
                     </div>
                     
                     <!-- Location Information -->
@@ -4246,7 +4260,7 @@
                         </div>
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
-                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#10b981;">�</div>
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">�</div>
                         </div>
                     </div>
                 </div>`;
@@ -4271,7 +4285,7 @@
                     el.textContent = d > 0
                         ? `${d}d ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
                         : `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-                    el.style.color = ms < 86400000 ? '#ef4444' : '#10b981';
+                    el.style.color = ms < 86400000 ? '#ef4444' : '#00B14F';
                 }, 1000);
             });
 
@@ -4634,13 +4648,13 @@
                     datasets: [{
                         label: 'Revenue',
                         data: trend.map(t => t.amount || t.revenue || 0),
-                        borderColor: '#6366f1',
+                        borderColor: '#00B14F',
                         borderWidth: 2,
-                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        backgroundColor: 'rgba(0,177,79,0.1)',
                         fill: true,
                         tension: 0.4,
                         pointRadius: 3,
-                        pointBackgroundColor: '#6366f1'
+                        pointBackgroundColor: '#00B14F'
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false,
@@ -4699,7 +4713,7 @@
                     labels: deduped.map(c => c.label),
                     datasets: [{
                         data: deduped.map(c => c.booking_count),
-                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6'],
+                        backgroundColor: ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F'],
                         borderWidth: 0
                     }]
                 },
@@ -4760,7 +4774,7 @@
             rows.push(['Top Vehicles by Revenue']);
             rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
             (data.topVehicles || []).forEach((c, i) => {
-                rows.push([i + 1, `${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]);
+                rows.push([i + 1, c.brand + " " + c.model, c.booking_count, c.revenue || 0]);
             });
             rows.push([]);
             rows.push(['Revenue Trend']);
@@ -4769,51 +4783,55 @@
                 rows.push([t.day || t.label || '', t.amount || 0]);
             });
 
-            const csv = rows.map(r => r.map(cell => {
-                const str = String(cell);
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return `"${str.replace(/"/g, '""')}"`;
-                }
-                return str;
-            }).join(',')).join('\n');
-
-            const BOM = '\uFEFF';
-            const csvContent = BOM + csv;
-            const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-
+            // Generate real Excel file using SheetJS
             try {
-                // Use Capacitor Filesystem to write to Downloads
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('Excel library not loaded');
+                }
+                
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                XLSX.utils.book_append_sheet(wb, ws, "Report");
+                
+                // Write as base64
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
+
                 const { Filesystem, Directory } = window.Capacitor.Plugins;
                 if (Filesystem) {
-                    // Write file to Downloads directory
                     const result = await Filesystem.writeFile({
                         path: filename,
-                        data: btoa(unescape(encodeURIComponent(csvContent))),
+                        data: wboutBase64,
                         directory: Directory ? Directory.Documents : 'DOCUMENTS',
                         recursive: true
                     });
                     
-                    // Share the saved file
                     const { Share } = window.Capacitor.Plugins;
                     if (Share) {
                         await Share.share({
                             title: 'Autoride Sales Report',
-                            text: 'Sales report from Autoride Admin',
                             url: result.uri,
-                            dialogTitle: 'Share Report'
+                            dialogTitle: 'Share Excel Report'
                         });
                     }
-                    showNotification('Report saved and ready to share!', 'success');
+                    showNotification('Excel Report saved and ready to share!', 'success');
                     return;
                 }
             } catch (err) {
-                console.error('Filesystem export failed:', err);
+                console.error('Excel generation/sharing failed:', err);
             }
 
-            // Fallback: Copy CSV to clipboard
+            // Fallback for web or if plugins fail
             try {
-                await navigator.clipboard.writeText(csv);
-                showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
+                if (typeof XLSX !== 'undefined') {
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    XLSX.utils.book_append_sheet(wb, ws, "Report");
+                    XLSX.writeFile(wb, 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx');
+                    showNotification('Excel file downloaded!', 'success');
+                } else {
+                    showNotification('Export failed. Excel library not available.', 'error');
+                }
             } catch (err) {
                 showNotification('Export failed. Please try again.', 'error');
             }
@@ -5058,13 +5076,13 @@
                 labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
                 datasets: [{
                     data: revTrend.length > 0 ? revTrend.map(t => t.amount) : [0],
-                    borderColor: '#818cf8',
+                    borderColor: '#00B14F',
                     borderWidth: 3,
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 4,
-                    pointBackgroundColor: '#818cf8',
+                    pointBackgroundColor: '#00B14F',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2
                 }]
@@ -5104,7 +5122,7 @@
                     labels: fleetDist.map(f => f.status),
                     datasets: [{
                         data: fleetDist.map(f => f.count),
-                        backgroundColor: ['#10b981','#f59e0b','#ef4444','#6366f1','#94a3b8'],
+                        backgroundColor: ['#00B14F','#f59e0b','#ef4444','#00B14F','#94a3b8'],
                         borderWidth: 0
                     }]
                 },
@@ -5130,7 +5148,7 @@
                         labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
                         datasets: [{
                             data: topVeh.map(c => c.booking_count || 0),
-                            backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                            backgroundColor: ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F','#5FDBE2'],
                             borderWidth: 0
                         }]
                     },
@@ -5335,7 +5353,7 @@
                     originalChartData.datasets[0].data = topVeh.map(c => c.booking_count || 0);
                 }
                 // Ensure enough colors
-                const pieColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9','#22d3ee'];
+                const pieColors = ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F','#5FDBE2','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9','#22d3ee'];
                 originalChartData.datasets[0].backgroundColor = pieColors.slice(0, topVeh.length);
             }
 
@@ -5764,7 +5782,7 @@
             }
             el.innerHTML = list.map(u => {
                 const verifiedBadge = u.is_verified === 2
-                    ? `<span style="background:rgba(16,185,129,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
+                    ? `<span style="background:rgba(0,177,79,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
                     : u.is_verified === 1
                     ? `<span style="background:rgba(245,158,11,0.15);color:var(--amber);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
                     : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
@@ -5775,7 +5793,7 @@
                 const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : '�';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
-                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
+                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-weight:800;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
@@ -5821,7 +5839,7 @@
             document.getElementById('umModalContent').innerHTML = `
             <!-- Avatar & Name -->
             <div style="text-align:center;margin-bottom:20px;">
-                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;">${avatar}</div>
+                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;">${avatar}</div>
                 <div style="font-size:1.1rem;font-weight:900;">${u.full_name || 'No Name'}</div>
                 <div style="font-size:0.8rem;color:var(--text-muted);">${u.email}</div>
                 <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
@@ -5848,7 +5866,7 @@
 
             <!-- License Details Section -->
             <div style="background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
-                <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
+                <h3 style="font-size: 1rem; color: #00B14F; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
                 ${lData && lData.license_number ? `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
                         <div><span style="color:var(--text-muted)">License #:</span> <span style="color:white;font-weight:600">${lData.license_number}</span></div>
@@ -5900,14 +5918,14 @@
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
                 <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-key" style="color:var(--primary-light);margin-right:6px;"></i>Reset Password</div>
                 <input id="umNewPass" type="password" placeholder="New password (min 8 chars)" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.9rem;margin-bottom:10px;">
-                <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(99,102,241,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
+                <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(0,177,79,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
             </div>
 
             <!-- Freeze / Unfreeze -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
                 <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}</div>
                 ${!u.is_frozen ? `<input id="umFreezeReason" type="text" placeholder="Reason for freezing..." style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;margin-bottom:10px;">` : `<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Reason: ${u.freeze_reason || 'No reason provided'}</p>`}
-                <button onclick="UserMgmt.toggleFreeze(${u.id}, ${u.is_frozen})" style="width:100%;padding:12px;background:${u.is_frozen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};border:1px solid ${u.is_frozen ? 'var(--success)' : 'var(--danger)'};border-radius:10px;color:${u.is_frozen ? 'var(--success)' : 'var(--danger)'};font-weight:700;font-size:0.85rem;">
+                <button onclick="UserMgmt.toggleFreeze(${u.id}, ${u.is_frozen})" style="width:100%;padding:12px;background:${u.is_frozen ? 'rgba(0,177,79,0.15)' : 'rgba(239,68,68,0.15)'};border:1px solid ${u.is_frozen ? 'var(--success)' : 'var(--danger)'};border-radius:10px;color:${u.is_frozen ? 'var(--success)' : 'var(--danger)'};font-weight:700;font-size:0.85rem;">
                     <i class="fas fa-${u.is_frozen ? 'unlock' : 'lock'}"></i> ${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}
                 </button>
             </div>
@@ -6102,7 +6120,7 @@
                         '</button>' +
                     '</div>' +
                     '<div class="search-results-count hidden" id="searchResultsCount"' +
-                        ' style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.1);border-radius:6px;text-align:center;">' +
+                        ' style="margin-top:0.5rem;padding:0.5rem;background:rgba(0,177,79,0.1);border-radius:6px;text-align:center;">' +
                         '<span id="resultsText" style="font-size:0.85rem;color:var(--primary);font-weight:600;"></span>' +
                     '</div>' +
                 '</div>' +
@@ -6316,7 +6334,7 @@
                 '<div style="display:flex;gap:10px;padding-top:10px;border-top:1px solid var(--border);">' +
                     '<input type="text" id="acInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')AdminChat.send()"' +
                         ' style="flex:1;padding:11px 16px;background:var(--surface);border:1px solid var(--border);border-radius:50px;color:var(--text-main);font-size:0.9rem;outline:none;">' +
-                    '<button onclick="AdminChat.send()" style="background:var(--primary);color:#fff;border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">' +
+                    '<button onclick="AdminChat.send()" style="background:var(--primary);color:#ffffff;border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">' +
                         '<i class="fas fa-paper-plane"></i>' +
                     '</button>' +
                 '</div>';
@@ -6380,7 +6398,7 @@
                         const ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                         if (isMe) {
                             return '<div style="display:flex;justify-content:flex-end;">' +
-                                '<div style="max-width:78%;background:var(--primary);color:#fff;padding:10px 14px;border-radius:18px 18px 4px 18px;font-size:0.875rem;line-height:1.4;">' +
+                                '<div style="max-width:78%;background:var(--primary);color:#ffffff;padding:10px 14px;border-radius:18px 18px 4px 18px;font-size:0.875rem;line-height:1.4;">' +
                                     _esc(m.message) +
                                     '<div style="font-size:0.62rem;color:rgba(255,255,255,0.6);margin-top:3px;text-align:right;">' + ts + '</div>' +
                                 '</div>' +
@@ -6489,7 +6507,7 @@
         if (existing) existing.remove();
         var banner = document.createElement('div');
         banner.id = 'adminChatPopup';
-        banner.style.cssText = 'position:fixed;top:72px;left:12px;right:12px;z-index:6000;background:var(--primary);color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;cursor:pointer;';
+        banner.style.cssText = 'position:fixed;top:72px;left:12px;right:12px;z-index:6000;background:var(--primary);color:#ffffff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;cursor:pointer;';
         banner.innerHTML =
             '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:0.9rem;">' + (senderName||'U').charAt(0).toUpperCase() + '</div>' +
             '<div style="flex:1;min-width:0;">' +
