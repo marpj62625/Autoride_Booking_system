@@ -344,7 +344,7 @@
 <!-- ???????????????????????????????????????????????????????????
      SPLASH SCREEN
 ??????????????????????????????????????????????????????????? -->
-<div id="page-splash" style="display:none;background:linear-gradient(160deg,#0052ff 0%,#0040CC 50%,#001a66 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
+<div id="page-splash" style="display:flex;background:linear-gradient(160deg,#0052ff 0%,#0040CC 50%,#001a66 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
   <div style="width:80px;height:80px;border-radius:24px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.2);">
     <i class="fas fa-car" style="font-size:2.5rem;color:var(--text-primary);"></i>
   </div>
@@ -356,7 +356,7 @@
 <!-- ???????????????????????????????????????????????????????????
      LOGIN
 ??????????????????????????????????????????????????????????? -->
-<div id="page-login" class="auth-page active">
+<div id="page-login" class="auth-page">
   <div class="auth-container">
     <div class="auth-logo">
       <i class="fas fa-car"></i>
@@ -1599,20 +1599,10 @@ function showPage(pageId) {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded - initializing app...');
+    console.log('DOM loaded - setting up navigation...');
     
-    // Force hide splash screen immediately
-    const splashScreen = document.getElementById('page-splash');
-    if (splashScreen) {
-        splashScreen.style.display = 'none';
-    }
-    
-    // Show login page immediately
-    const loginPage = document.getElementById('page-login');
-    if (loginPage) {
-        loginPage.classList.add('active');
-        console.log('Login page activated');
-    }
+    // Setup navigation immediately
+    setupNavigation();
     
     // Initialize payment page if it's the current page
     if (document.getElementById('page-payment')?.classList.contains('active')) {
@@ -1620,28 +1610,81 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Immediate execution - don't wait for DOM
-console.log('Script executing immediately...');
+// Setup navigation function
+function setupNavigation() {
+    console.log('Setting up navigation handlers...');
+    
+    // Remove existing onclick attributes and add proper event listeners
+    const navButtons = document.querySelectorAll('.bottom-nav button');
+    navButtons.forEach(button => {
+        // Remove onclick attribute
+        button.removeAttribute('onclick');
+        
+        // Add click event listener
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const buttonId = this.id;
+            console.log('Navigation clicked:', buttonId);
+            
+            switch(buttonId) {
+                case 'nav-home':
+                    showPage('page-home');
+                    break;
+                case 'nav-vehicles':
+                    showPage('page-vehicles');
+                    break;
+                case 'nav-bookings':
+                    showPage('page-bookings');
+                    break;
+                case 'nav-profile':
+                    showPage('page-profile');
+                    break;
+                case 'nav-more':
+                    showPage('page-more');
+                    break;
+                default:
+                    console.log('Unknown nav button:', buttonId);
+            }
+        });
+    });
+    
+    // Setup quick action buttons
+    const quickActionButtons = document.querySelectorAll('[onclick*="showPage"]');
+    quickActionButtons.forEach(button => {
+        const originalOnclick = button.getAttribute('onclick');
+        button.removeAttribute('onclick');
+        
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Quick action clicked:', originalOnclick);
+            
+            if (originalOnclick.includes('page-vehicles')) {
+                showPage('page-vehicles');
+            } else if (originalOnclick.includes('page-bookings')) {
+                showPage('page-bookings');
+            } else if (originalOnclick.includes('page-profile')) {
+                showPage('page-profile');
+            }
+        });
+    });
+    
+    // Setup overlay buttons
+    const overlayButtons = document.querySelectorAll('[onclick*="showOverlay"]');
+    overlayButtons.forEach(button => {
+        const originalOnclick = button.getAttribute('onclick');
+        button.removeAttribute('onclick');
+        
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Overlay button clicked:', originalOnclick);
+            alert('Feature coming soon!');
+        });
+    });
+    
+    console.log('Navigation setup complete');
+}
 
-// Force show login page right now
-setTimeout(function() {
-    console.log('Timeout fallback executing...');
-    
-    const splashScreen = document.getElementById('page-splash');
-    const loginPage = document.getElementById('page-login');
-    
-    if (splashScreen) {
-        splashScreen.style.display = 'none';
-        console.log('Splash hidden by timeout');
-    }
-    
-    if (loginPage) {
-        loginPage.classList.add('active');
-        console.log('Login activated by timeout');
-    }
-}, 50);
-
-// App initialization functions
+// Enhanced showPage function
 function showPage(pageId) {
     console.log('Showing page:', pageId);
     
@@ -1650,26 +1693,63 @@ function showPage(pageId) {
         page.classList.remove('active');
     });
     
-    // Show target page
+    // Show selected page
     const targetPage = document.getElementById(pageId);
     if (targetPage) {
         targetPage.classList.add('active');
+        console.log('Page activated:', pageId);
+        
+        // Initialize payment page if needed
+        if (pageId === 'page-payment') {
+            initPaymentPage();
+        }
+    } else {
+        console.error('Page not found:', pageId);
+    }
+    
+    // Update navigation
+    updateNavigation(pageId);
+}
+
+// Update navigation function
+function updateNavigation(pageId) {
+    document.querySelectorAll('.bottom-nav button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Set active nav button
+    const navMap = {
+        'page-home': 'nav-home',
+        'page-vehicles': 'nav-vehicles', 
+        'page-bookings': 'nav-bookings',
+        'page-profile': 'nav-profile',
+        'page-more': 'nav-more'
+    };
+    
+    if (navMap[pageId]) {
+        const navBtn = document.getElementById(navMap[pageId]);
+        if (navBtn) {
+            navBtn.classList.add('active');
+            console.log('Navigation updated for:', pageId);
+        }
     }
 }
 
+// Add missing functions
 function showMainApp() {
     console.log('Showing main app');
     
     const bottomNav = document.getElementById('bottomNav');
     if (bottomNav) {
         bottomNav.classList.remove('hidden');
+        console.log('Bottom navigation shown');
     }
     
     showPage('page-home');
 }
 
 function doLogin() {
-    console.log('Login attempted');
+    console.log('Login function called');
     
     const email = document.getElementById('loginEmail')?.value;
     const password = document.getElementById('loginPassword')?.value;
@@ -1686,7 +1766,18 @@ function doLogin() {
         name: email.split('@')[0]
     }));
     
+    console.log('Login successful, showing main app');
     showMainApp();
+}
+
+function doRegister() {
+    console.log('Register function called');
+    alert('Registration feature coming soon!');
+}
+
+function doGoogleLogin() {
+    console.log('Google login function called');
+    alert('Google login feature coming soon!');
 }
 
 function togglePasswordVisibility(inputId, button) {
