@@ -377,8 +377,6 @@ function showOverlay(id) {
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
   if (id === 'page-license-upload') openLicenseUpload();
-  if (id === 'page-split-payment') loadSplitPayment();
-  if (id === 'page-support') loadSupport();
   if (id === 'page-chatbot') loadChatbot();
   if (id === 'page-livechat') loadLiveChat();
   if (id === 'page-newsletter') loadNewsletter();
@@ -1825,7 +1823,6 @@ function autoSetReturnTime() {
 
 function openBookingForm(vehicleId) {
   bookingFormVehicle = currentVehicleDetail;
-  couponData = null;
   selectedAddons = [];
   selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
   var today = new Date().toISOString().split('T')[0];
@@ -1921,11 +1918,6 @@ function openBookingForm(vehicleId) {
     '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
     '</div><input type="hidden" id="bfPaymentType" value="Full"></div>' +
 
-    // Coupon
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Coupon Code</h4>' +
-    '<div class="coupon-row"><input type="text" id="bfCoupon" placeholder="Enter coupon code"><button onclick="applyCoupon()">Apply</button></div>' +
-    '<div id="couponMsg" style="font-size:0.8rem;margin-top:6px;"></div></div>' +
-
     // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
     '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:8px;">Available: <strong>' + (currentUser.loyaltyPoints || 0) + ' pts</strong></p>' +
@@ -1937,13 +1929,6 @@ function openBookingForm(vehicleId) {
 
     // Mileage notice
     '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;font-size:0.8rem;color:#084298;">Daily mileage limit: <strong>' + (appSettings.mileage_limit || 250) + ' km</strong></div>' +
-
-    // Split Bill
-    '<div class="card" style="border:2px dashed var(--primary);">' +
-    '<h4 style="font-weight:700;margin-bottom:8px;"><i class="fas fa-users" style="color:var(--primary);"></i> Split this Bill with a Friend?</h4>' +
-    '<p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">Enter your friend\'s email to split the cost after booking.</p>' +
-    '<div class="form-group"><label>Friend\'s Email (optional)</label><input type="email" id="bfSplitEmail" placeholder="friend@gmail.com"></div>' +
-    '</div>' +
 
     '<span class="field-error" id="bfErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
     '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitBooking()"><i class="fas fa-check"></i> Confirm Booking</button>' +
@@ -2055,12 +2040,11 @@ function updateBookingPrice() {
 
   var ptsEl = document.getElementById('bfPoints');
   var pts = ptsEl ? (parseInt(ptsEl.value) || 0) : 0;
-  var cpPct = couponData ? couponData.discount_percent : 0;
   var result = calculateBookingPrice(
     v.daily_rate, start, end, selectedAddons, insPrice,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
-    cpPct, pts
+    0, pts
   );
   var payTypeEl = document.getElementById('bfPaymentType');
   var payType = payTypeEl ? payTypeEl.value : 'Full';
@@ -2084,24 +2068,6 @@ function updateBookingPrice() {
     '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
 }
 
-function applyCoupon() {
-  var codeEl = document.getElementById('bfCoupon');
-  var code = codeEl ? codeEl.value.trim().toUpperCase() : '';
-  var msg = document.getElementById('couponMsg');
-  if (!code) { if (msg) msg.innerHTML = '<span style="color:var(--danger);">Enter a coupon code.</span>'; return; }
-  apiCall('/coupons/verify', { method: 'POST', body: JSON.stringify({ code: code }) })
-    .then(function(data) {
-      couponData = data;
-      if (msg) msg.innerHTML = '<span style="color:var(--success);">' + data.discount_percent + '% discount applied!</span>';
-      updateBookingPrice();
-    })
-    .catch(function(err) {
-      couponData = null;
-      if (msg) msg.innerHTML = '<span style="color:var(--danger);">' + err.message + '</span>';
-      updateBookingPrice();
-    });
-}
-
 function submitBooking() {
   var start = document.getElementById('bfStartDate').value;
   var end = document.getElementById('bfEndDate').value;
@@ -2115,12 +2081,11 @@ function submitBooking() {
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
-  var cpPct = couponData ? couponData.discount_percent : 0;
   var result = calculateBookingPrice(
     bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
-    cpPct, pts
+    0, pts
   );
   var payType = document.getElementById('bfPaymentType').value;
   var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
@@ -2163,8 +2128,8 @@ function submitBooking() {
     addon_price: result.addonPrice,
     total_price: result.total,
     payment_type: payType,
-    applied_coupon_id: couponData ? couponData.coupon_id : null,
-    discount_amount: result.couponDiscount + result.longTermDiscount,
+    applied_coupon_id: null,
+    discount_amount: result.longTermDiscount,
     points_redeemed: pts,
     points_earned: result.pointsEarned,
     service_type: serviceType,
@@ -3659,103 +3624,6 @@ function loadFavorites() {
         '</div>';
     })
     .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
-}
-
-// SPLIT PAYMENT
-function loadSplitPayment() {
-  var el = document.getElementById('splitPaymentContent');
-  if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-split-payment\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Split Payment</h2></div>' +
-    '<div class="scroll-content"><div class="card">' +
-    '<h4 style="font-weight:700;margin-bottom:14px;">Request Split</h4>' +
-    '<div class="form-group"><label>Partner Email</label><input type="email" id="splitEmail" placeholder="partner@gmail.com"><span class="field-error" id="splitEmailErr"></span></div>' +
-    '<div class="form-group"><label>Amount for Partner (PHP)</label><input type="number" id="splitAmount" placeholder="0.00"></div>' +
-    '<button class="btn-primary" onclick="requestSplit()"><i class="fas fa-users"></i> Request Split</button>' +
-    '</div>' +
-    '<div class="card" style="margin-top:16px;"><h4 style="font-weight:700;margin-bottom:14px;">Incoming Split Requests</h4>' +
-    '<div id="splitBillsList"><p style="color:var(--text-muted);font-size:0.875rem;">Loading...</p></div></div>' +
-    '</div>';
-  loadSplitBills();
-}
-
-function requestSplit() {
-  var emailEl = document.getElementById('splitEmail');
-  var amountEl = document.getElementById('splitAmount');
-  var errEl = document.getElementById('splitEmailErr');
-  var email = emailEl ? emailEl.value.trim() : '';
-  var amount = amountEl ? parseFloat(amountEl.value) : 0;
-  if (errEl) errEl.textContent = '';
-  if (!email) { if (errEl) errEl.textContent = 'Partner email is required.'; return; }
-  showLoading(true);
-  apiCall('/split-bill/request', { method: 'POST', body: JSON.stringify({ booking_id: activeBookingId, partner_email: email, amount: amount }) })
-    .then(function() { showToast('Split request sent! Awaiting partner confirmation.', 'success'); })
-    .catch(function(err) { if (errEl) errEl.textContent = err.message; })
-    .finally(function() { showLoading(false); });
-}
-
-function loadSplitBills() {
-  if (!currentUser.id) return;
-  apiCall('/split-bills?email=' + (currentUser.email || ''))
-    .then(function(data) {
-      var el = document.getElementById('splitBillsList');
-      if (!el) return;
-      if (!data.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">No incoming split requests</p>'; return; }
-      el.innerHTML = data.map(function(s) {
-        return '<div class="split-status">' +
-          '<strong>' + (s.initiator_name || 'Someone') + '</strong> wants to split Booking #' + s.booking_id + '<br>' +
-          '<small>' + (s.vehicle_brand || '') + ' ' + (s.vehicle_model || '') + ' | ' + s.start_date + ' to ' + s.end_date + '</small><br>' +
-          '<strong style="color:var(--primary);">Your share: ' + formatPHP(s.amount) + '</strong><br>' +
-          statusPill(s.status) +
-          (s.status !== 'Paid' ? '<button class="btn-primary btn-sm" style="margin-top:8px;" onclick="paySplit(' + s.id + ')">Pay My Share</button>' : '') +
-          '</div>';
-      }).join('');
-    }).catch(function() {});
-}
-
-function paySplit(splitId) {
-  showLoading(true);
-  apiCall('/split-bill/pay', { method: 'POST', body: JSON.stringify({ split_id: splitId, user_id: currentUser.id }) })
-    .then(function() { showToast('Split payment completed!', 'success'); loadSplitBills(); })
-    .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
-}
-
-// SUPPORT
-function loadSupport() {
-  var el = document.getElementById('supportContent');
-  if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-support\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Support</h2></div>' +
-    '<div class="scroll-content"><div class="card">' +
-    '<h4 style="font-weight:700;margin-bottom:14px;">Submit a Ticket</h4>' +
-    '<div class="form-group"><label>Name *</label><input type="text" id="suppName" value="' + (currentUser.fullName || '') + '"><span class="field-error" id="suppNameErr"></span></div>' +
-    '<div class="form-group"><label>Email</label><input type="email" id="suppEmail" placeholder="yourname@gmail.com"></div>' +
-    '<div class="form-group"><label>Subject *</label><input type="text" id="suppSubject" placeholder="Brief description"><span class="field-error" id="suppSubjectErr"></span></div>' +
-    '<div class="form-group"><label>Message *</label><textarea id="suppMessage" placeholder="Describe your issue..."></textarea><span class="field-error" id="suppMessageErr"></span></div>' +
-    '<span class="field-error" id="suppErr" style="display:block;margin-bottom:12px;"></span>' +
-    '<button class="btn-primary" onclick="submitSupport()"><i class="fas fa-paper-plane"></i> Submit Ticket</button>' +
-    '</div></div>';
-}
-
-function submitSupport() {
-  var name = sanitizeInput(document.getElementById('suppName').value.trim());
-  var email = sanitizeInput(document.getElementById('suppEmail').value.trim());
-  var subject = sanitizeInput(document.getElementById('suppSubject').value.trim());
-  var message = sanitizeInput(document.getElementById('suppMessage').value.trim());
-  ['suppNameErr','suppSubjectErr','suppMessageErr','suppErr'].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.textContent = '';
-  });
-  if (isBlank(name)) { document.getElementById('suppNameErr').textContent = 'Name is required.'; return; }
-  if (isBlank(subject)) { document.getElementById('suppSubjectErr').textContent = 'Subject is required.'; return; }
-  if (isBlank(message)) { document.getElementById('suppMessageErr').textContent = 'Message is required.'; return; }
-  showLoading(true);
-  apiCall('/support', { method: 'POST', body: JSON.stringify({ name: name, email: email, subject: subject, message: message }) })
-    .then(function() { showToast('Support ticket submitted successfully.', 'success'); closeOverlay('page-support'); })
-    .catch(function(err) { document.getElementById('suppErr').textContent = err.message; })
     .finally(function() { showLoading(false); });
 }
 

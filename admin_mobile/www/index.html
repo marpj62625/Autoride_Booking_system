@@ -1026,7 +1026,6 @@
         <a href="#" class="drawer-item" data-tab="verifications" onclick="navTo('verifications')"><i class="fas fa-user-check"></i> User Verifications</a>
         <a href="#" class="drawer-item" data-tab="users" onclick="navTo('users')"><i class="fas fa-users"></i> User Management</a>
         <a href="#" class="drawer-item" data-tab="reports" onclick="navTo('reports')"><i class="fas fa-chart-pie"></i> Reports</a>
-        <a href="#" class="drawer-item" data-tab="tickets" onclick="navTo('tickets')"><i class="fas fa-ticket-alt"></i> Support Tickets</a>
         <a href="#" class="drawer-item" data-tab="chat" onclick="navTo('chat')"><i class="fas fa-comments"></i> Live Chat</a>
         <a href="#" class="drawer-item" data-tab="instructions" onclick="navTo('instructions')"><i class="fas fa-book"></i> Instructions</a>
         <a href="#" class="drawer-item revenue-restricted" data-tab="staff" onclick="navTo('staff')"><i class="fas fa-users-cog"></i> Staff Management</a>
@@ -1645,29 +1644,6 @@
         </div>
         <div id="gpsDeviceList">
             <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading vehicles...</div>
-        </div>
-    </div>
-
-    <!-- SUPPORT TICKETS TAB -->
-    <div id="tickets" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h1 class="page-title" style="margin: 0;">Support Center</h1>
-            <button onclick="Tickets.refresh()" style="background: var(--surface); border: 1px solid var(--border); color: white; width: 40px; height: 40px; border-radius: 12px;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; display: grid;">
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Open Tickets</h5>
-                <div class="value" id="ticketOpenCount" style="font-size: 1.2rem; font-weight: 700; color: var(--danger);">0</div>
-            </div>
-            <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
-                <h5 style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">Resolved</h5>
-                <div class="value" id="ticketResolvedCount" style="font-size: 1.2rem; font-weight: 700; color: var(--success);">0</div>
-            </div>
-        </div>
-        
-        <div id="ticketsList">
-            <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading tickets...</div>
         </div>
     </div>
 
@@ -2898,7 +2874,6 @@
             if (tabId === 'bookings' && typeof Bookings !== 'undefined' && Bookings.data.length === 0) Bookings.refresh();
             if (tabId === 'drivers' && typeof Drivers !== 'undefined' && Drivers.data.length === 0) Drivers.refresh();
             if (tabId === 'verifications' && typeof Verifications !== 'undefined' && Verifications.data.length === 0) Verifications.refresh();
-            if (tabId === 'tickets' && typeof Tickets !== 'undefined' && Tickets.data.length === 0) Tickets.refresh();
             if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
             if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
             if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) {
@@ -3774,66 +3749,6 @@
                     alert(d.error || 'Failed to update');
                 }
             } catch (err) { alert('Network error: ' + err.message); }
-        }
-    };
-
-    // --- TICKETS MODULE ---
-    const Tickets = {
-        data: [],
-        async refresh() {
-            const list = document.getElementById('ticketsList');
-            try {
-                const res = await fetch(`${API_BASE}/api/admin/tickets`);
-                this.data = await res.json();
-                this.updateStats();
-                this.render();
-            } catch (err) {
-                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">No tickets found.</div>';
-            }
-        },
-        updateStats() {
-            const open = this.data.filter(t => t.status === 'open').length;
-            const resolved = this.data.filter(t => t.status === 'resolved').length;
-            document.getElementById('ticketOpenCount').textContent = open;
-            document.getElementById('ticketResolvedCount').textContent = resolved;
-        },
-        render() {
-            const list = document.getElementById('ticketsList');
-            if (this.data.length === 0) {
-                list.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
-                        <i class="fas fa-ticket-alt" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
-                        <p style="color: var(--text-muted); font-weight: 600;">No support tickets found.</p>
-                    </div>`;
-                return;
-            }
-            list.innerHTML = this.data.map(t => `
-                <div class="stat-card" style="padding: 20px; margin-bottom: 16px; ${t.status === 'resolved' ? 'opacity: 0.6;' : ''}">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                        <div>
-                            <h4 style="font-size: 1rem; font-weight: 800; color: var(--text-main);">${t.subject || 'No Subject'}</h4>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${t.user_name || t.email}</p>
-                        </div>
-                        <span class="pill ${t.status === 'open' ? 'danger' : 'success'}" style="font-size: 0.55rem; padding: 3px 10px;">
-                            ${t.status.toUpperCase()}
-                        </span>
-                    </div>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.6; background: var(--surface-container); padding: 12px; border-radius: 12px; border-left: 3px solid var(--primary);">${t.message}</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 15px;">
-                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600;">${new Date(t.created_at).toLocaleDateString()}</span>
-                        ${t.status === 'open' ? `
-                            <button onclick="Tickets.resolve(${t.id})" class="btn-premium" style="padding: 8px 16px; font-size: 0.75rem; border-radius: 10px; box-shadow: 0 4px 12px var(--primary-glow);">Resolve</button>
-                        ` : '<span style="font-size: 0.75rem; color: var(--success); font-weight: 800;"><i class="fas fa-check-circle"></i> RESOLVED</span>'}
-                    </div>
-                </div>
-            `).join('');
-        },
-        async resolve(id) {
-            if (!confirm('Mark ticket as resolved?')) return;
-            try {
-                const res = await fetch(`${API_BASE}/api/admin/tickets/${id}/resolve`, { method: 'PUT' });
-                if (res.ok) { this.refresh(); }
-            } catch (err) { alert('Action failed'); }
         }
     };
 
@@ -5710,7 +5625,6 @@
     window.Bookings = Bookings;
     window.Drivers = Drivers;
     window.Verifications = Verifications;
-    window.Tickets = Tickets;
     window.Instructions = Instructions;
     window.Staff = Staff;
     window.GPS = GPS;

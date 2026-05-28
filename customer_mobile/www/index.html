@@ -280,8 +280,6 @@
         .notif-btn-wrap { position:relative; display:inline-block; }
         /* Booking detail actions */
         .action-btn-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
-        /* Split payment */
-        .split-status { background:var(--bg-input); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; }
         /* Favorites */
         .fav-btn { background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted); transition:color 0.2s; }
         .fav-btn.active { color:#e63946; }
@@ -291,10 +289,6 @@
         .input-icon-wrap { position:relative; }
         .input-icon-wrap i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); }
         .input-icon-wrap input { padding-left:36px; }
-        /* Coupon row */
-        .coupon-row { display:flex; gap:8px; }
-        .coupon-row input { flex:1; }
-        .coupon-row button { padding:12px 16px; background:var(--primary); color:var(--text-primary); border:none; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; white-space:nowrap; }
         /* Rental type toggle */
         .toggle-group { display:flex; background:var(--bg-input); border-radius:var(--radius-sm); padding:4px; gap:4px; }
         .toggle-group button { flex:1; padding:10px; border:none; border-radius:6px; font-weight:600; font-size:0.875rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
@@ -570,12 +564,6 @@
           <i class="fas fa-calendar-check" style="color:var(--on-primary);font-size:1.2rem;"></i>
         </div>
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">My Bookings</span>
-      </button>
-      <button onclick="showOverlay('page-support')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
-          <i class="fas fa-headset" style="color:var(--on-primary);font-size:1.2rem;"></i>
-        </div>
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Support</span>
       </button>
       <button onclick="showOverlay('page-livechat')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
         <div style="position:relative;width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
@@ -926,11 +914,6 @@
 <div id="page-more" class="page">
   <div class="page-header"><h2>More</h2></div>
   <div class="scroll-content">
-    <div class="more-item" onclick="showOverlay('page-support')">
-      <div class="more-item-icon"><i class="fas fa-headset"></i></div>
-      <div class="more-item-text"><h4>Support</h4><p>Submit a support ticket</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-    </div>
     <div class="more-item" onclick="showOverlay('page-livechat')">
       <div class="more-item-icon"><i class="fas fa-comments"></i></div>
       <div class="more-item-text"><h4>Live Chat</h4><p>Chat with our support team</p></div>
@@ -987,8 +970,6 @@
 <div id="page-license-upload" class="overlay-page" onclick="openLicenseUpload()"><div id="licenseUploadContent"></div></div>
 <div id="page-saved-payments" class="overlay-page"><div id="savedPaymentsContent"></div></div>
 <div id="page-favorites" class="overlay-page"><div id="favoritesContent"></div></div>
-<div id="page-split-payment" class="overlay-page" onclick="loadSplitPayment()"><div id="splitPaymentContent"></div></div>
-<div id="page-support" class="overlay-page" onclick="loadSupport()"><div id="supportContent"></div></div>
 <div id="page-chatbot" class="overlay-page" onclick="loadChatbot()"><div id="chatbotContent"></div></div>
 <div id="page-livechat" class="overlay-page"><div id="liveChatContent"></div></div>
 <div id="page-notifications" class="overlay-page"><div id="notificationsContent"></div></div>
