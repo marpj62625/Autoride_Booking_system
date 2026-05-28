@@ -3128,7 +3128,14 @@ def user_bookings():
 
         # Fetch bookings with vehicle info and license/emergency contact details
         query = """
-            SELECT b.*, v.brand, v.model, v.plate_number, v.vehicle_image,
+            SELECT b.id, b.user_id, b.vehicle_id, b.start_date, b.end_date,
+                   b.pickup_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
+                   b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
+                   b.payment_type, b.amount_paid, b.balance_amount,
+                   b.applied_coupon_id, b.discount_amount, b.points_redeemed, b.points_earned,
+                   b.cancellation_reason, b.cancelled_by, b.created_at,
+                   b.pickup_time, b.return_time, b.driver_id,
+                   v.brand, v.model, v.plate_number, v.vehicle_image,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
                    COALESCE(ld.license_number, u.license_number) AS license_number,
                    COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
