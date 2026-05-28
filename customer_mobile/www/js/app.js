@@ -276,9 +276,34 @@ function uploadFile(endpoint, formData) {
 }
 
 // UI HELPERS
+// Progress bar loading — non-blocking, shows a thin bar at the top
+var _loadingCount = 0;
 function showLoading(show) {
-  var el = document.getElementById('loadingOverlay');
-  if (el) el.style.display = show ? 'flex' : 'none';
+  var bar = document.getElementById('progressBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'progressBar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--primary);z-index:99999;transition:width 0.3s ease,opacity 0.4s ease;width:0%;opacity:0;pointer-events:none;';
+    document.body.appendChild(bar);
+  }
+  if (show) {
+    _loadingCount++;
+    bar.style.opacity = '1';
+    bar.style.width = '70%';
+    // Animate to 90% to show progress
+    clearTimeout(bar._t);
+    bar._t = setTimeout(function() { bar.style.width = '90%'; }, 400);
+  } else {
+    _loadingCount = Math.max(0, _loadingCount - 1);
+    if (_loadingCount === 0) {
+      clearTimeout(bar._t);
+      bar.style.width = '100%';
+      bar._t = setTimeout(function() {
+        bar.style.opacity = '0';
+        bar._t2 = setTimeout(function() { bar.style.width = '0%'; }, 400);
+      }, 200);
+    }
+  }
 }
 
 function showToast(message, type) {
@@ -2610,27 +2635,46 @@ var _allBookingsData = [];
 
 function loadBookings() {
   if (!currentUser.id) return;
+  var el = document.getElementById('bookingsList');
+
+  // Show cached data instantly
+  try {
+    var cached = localStorage.getItem('autoride_bookings_' + currentUser.id);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      if (parsed.data && Date.now() - parsed.savedAt < 2 * 60 * 1000) {
+        _allBookingsData = parsed.data;
+        renderBookingsList(parsed.data);
+        updateBookingStats(parsed.data);
+      }
+    }
+  } catch(e) {}
+
+  // Fetch fresh in background
   showLoading(true);
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(data) {
       _allBookingsData = data;
-      // Update stats
-      var total = data.length;
-      var completed = data.filter(function(b) { return b.status === 'Completed'; }).length;
-      var spent = data.filter(function(b) { return b.payment_status === 'Paid'; }).reduce(function(s, b) { return s + parseFloat(b.total_price || 0); }, 0);
-      var statTotal = document.getElementById('bkStatTotal');
-      var statDone = document.getElementById('bkStatDone');
-      var statSpent = document.getElementById('bkStatSpent');
-      if (statTotal) statTotal.querySelector('div').textContent = total;
-      if (statDone) statDone.querySelector('div').textContent = completed;
-      if (statSpent) statSpent.querySelector('div').textContent = spent > 0 ? ('P' + (spent / 1000).toFixed(1) + 'k') : '-';
+      updateBookingStats(data);
       renderBookingsList(data);
+      try { localStorage.setItem('autoride_bookings_' + currentUser.id, JSON.stringify({ data: data, savedAt: Date.now() })); } catch(e) {}
     })
     .catch(function(err) {
-      var el = document.getElementById('bookingsList');
-      if (el) el.innerHTML = '<div class="empty-state"><p>' + err.message + '</p></div>';
+      if (!_allBookingsData.length && el) el.innerHTML = '<div class="empty-state"><p>' + err.message + '</p></div>';
     })
     .finally(function() { showLoading(false); });
+}
+
+function updateBookingStats(data) {
+  var total = data.length;
+  var completed = data.filter(function(b) { return b.status === 'Completed'; }).length;
+  var spent = data.filter(function(b) { return b.payment_status === 'Paid'; }).reduce(function(s, b) { return s + parseFloat(b.total_price || 0); }, 0);
+  var statTotal = document.getElementById('bkStatTotal');
+  var statDone = document.getElementById('bkStatDone');
+  var statSpent = document.getElementById('bkStatSpent');
+  if (statTotal) statTotal.querySelector('div').textContent = total;
+  if (statDone) statDone.querySelector('div').textContent = completed;
+  if (statSpent) statSpent.querySelector('div').textContent = spent > 0 ? ('P' + (spent / 1000).toFixed(1) + 'k') : '-';
 }
 
 function filterBookingsList(filter, btn) {

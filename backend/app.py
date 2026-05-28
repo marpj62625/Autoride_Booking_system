@@ -3133,7 +3133,7 @@ def user_bookings():
                    b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
                    b.payment_type, b.amount_paid, b.balance_amount,
                    b.applied_coupon_id, b.discount_amount, b.points_redeemed, b.points_earned,
-                   b.cancellation_reason, b.cancelled_by, b.created_at,
+                   b.cancellation_reason, b.cancelled_by,
                    b.pickup_time, b.return_time, b.driver_id,
                    v.brand, v.model, v.plate_number, v.vehicle_image,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
