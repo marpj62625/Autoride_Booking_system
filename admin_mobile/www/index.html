@@ -3158,7 +3158,7 @@
                 const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`);
                 if (licRes.ok) {
                     const lData = await licRes.json();
-                    if (lData && (lData.license_number || lData.full_name)) {
+                    if (lData && (lData.license_number || lData.full_name || lData.license_front_url)) {
                         licenseHtml = `
                             <div style="font-size: 0.95rem; line-height: 1.6; color: #1e293b; margin-bottom: 15px;">
                                 <div style="margin-bottom:6px;"><strong>Full Name:</strong> ${lData.full_name || '-'}</div>

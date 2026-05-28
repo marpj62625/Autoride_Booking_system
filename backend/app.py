@@ -8036,11 +8036,13 @@ def get_booking_license_details(booking_id):
             FROM users WHERE id = %s
         """, (user_id,))
         user = cur.fetchone()
-        if user and user.get('license_number'):
+        if user and (user.get('license_number') or user.get('license_front_url') or user.get('full_name')):
             result = dict(user)
             if result.get('expiry_date') and hasattr(result['expiry_date'], 'strftime'):
                 result['expiry_date'] = result['expiry_date'].strftime('%Y-%m-%d')
             result['emergency_contact_relation'] = '-'
+            result['emergency_contact_relationship'] = '-'
+            result['license_back_url'] = None
             return jsonify(result), 200
 
         return jsonify({}), 200
