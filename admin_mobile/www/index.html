@@ -3172,7 +3172,7 @@
                             </div>
                             </div> <!-- close license wrapper -->
                             
-                            <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.6; color: #1e293b;">
+                            <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.6; color: #1e293b; background: white; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
                                 <h3 style="font-size: 1.05rem; color: #0f172a; font-weight: 800; margin-bottom: 10px;">Emergency Contact</h3>
                                 <div>Name: ${lData.emergency_contact_name || '-'}</div>
                                 <div>Phone: ${lData.emergency_contact_phone || '-'}</div>
@@ -3218,7 +3218,7 @@
                         </div>
                         <div>
                             <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Total Price</label>
-                            <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 6px;">&#8369;${b.total_price ? b.total_price.toFixed(2) : '0.00'}</div>
+                            <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 6px;">&#8369;${b.total_price ? parseFloat(b.total_price).toFixed(2) : '0.00'}</div>
                         </div>
                         <div>
                             <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Booking Status</label>
@@ -3229,7 +3229,7 @@
                     </div>
 
                     <!-- INSPECTION SECTION -->
-                    <div style="border: 1px solid #00B14F; padding: 18px; border-radius: 12px; margin-top: 5px;">
+                    <div style="border: 1px solid #00B14F; padding: 18px; border-radius: 12px; margin-top: 5px; background: white;">
                         <h3 style="font-size: 1.1rem; color: #00B14F; font-weight: 800; margin-bottom: 15px;">Driver's License Details</h3>
                         <div id="bookingLicenseDetailsWrapper">
                             ${licenseHtml}
