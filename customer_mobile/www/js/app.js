@@ -1096,11 +1096,11 @@ function loadHome() {
                 '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
                 '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + (active.plate_number||'') + '</div>' +
               '</div>' +
-              '<span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
+              '<span style="background:rgba(16,185,129,0.1);color:var(--primary);border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
             '</div>' +
             '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
               '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
-              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:#10b981;">�</div>' +
+              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">�</div>' +
               '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + _fmtDate(endNorm) + '</strong></div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
@@ -2626,12 +2626,14 @@ function filterBookingsList(filter, btn) {
   // Update tab styles
   var tabs = document.querySelectorAll('#bookingFilterTabs button');
   for (var i = 0; i < tabs.length; i++) {
-    tabs[i].style.background = 'transparent';
-    tabs[i].style.color = '#52525b';
+    tabs[i].style.background = 'var(--bg-card)';
+    tabs[i].style.color = 'var(--text-secondary)';
+    tabs[i].style.borderColor = 'var(--border)';
   }
   if (btn) {
-    btn.style.background = 'linear-gradient(135deg,#dc2626,#9b1a1a)';
-    btn.style.color = '#fff';
+    btn.style.background = 'var(--primary)';
+    btn.style.color = 'var(--on-primary)';
+    btn.style.borderColor = 'var(--primary)';
   }
   var filtered = filter === 'all' ? _allBookingsData : _allBookingsData.filter(function(b) {
     if (filter === 'Confirmed') return b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up';

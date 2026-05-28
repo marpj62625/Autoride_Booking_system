@@ -94,7 +94,7 @@
         /* Cards */
         .card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:12px; }
         /* Buttons */
-        .btn-primary { background:var(--primary); color:var(--text-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .btn-primary { background:var(--primary); color:var(--on-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
         .btn-primary:active { background:var(--primary-dark); }
         .btn-secondary { background:var(--bg-input); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; transition:background 0.2s; }
         .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
@@ -125,15 +125,15 @@
         /* Status Pills */
         .pill { display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
         .pill-pending { background:#fff3cd; color:#856404; }
-        .pill-confirmed { background:#cfe2ff; color:#084298; }
-        .pill-approved { background:#d1e7dd; color:#0a3622; }
-        .pill-picked-up { background:#e2d9f3; color:#432874; }
-        .pill-completed { background:#d1e7dd; color:#0a3622; }
+        .pill-confirmed { background:var(--primary); color:var(--on-primary); }
+        .pill-approved { background:var(--primary); color:var(--on-primary); }
+        .pill-picked-up { background:var(--primary); color:var(--on-primary); }
+        .pill-completed { background:var(--primary); color:var(--on-primary); }
         .pill-cancelled { background:#f8d7da; color:#842029; }
         .pill-rejected { background:#f8d7da; color:#842029; }
         .pill-unpaid { background:#f8d7da; color:#842029; }
         .pill-partially-paid { background:#fff3cd; color:#856404; }
-        .pill-paid { background:#d1e7dd; color:#0a3622; }
+        .pill-paid { background:var(--primary); color:var(--on-primary); }
         .pill-refund-pending { background:#fff3cd; color:#856404; }
         .pill-refunded { background:#cfe2ff; color:#084298; }
         /* Auth screens */
@@ -176,20 +176,20 @@
         .vehicle-img-wrap img { width:100%; height:100%; object-fit:cover; }
         .vehicle-img-wrap::after { content:""; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 35%, rgba(249,249,255,0.9) 100%); }
         .badge-available { position:absolute; top:12px; right:12px; z-index:1; font-size:0.65rem; font-weight:800; padding:5px 10px; border-radius:20px; backdrop-filter:blur(8px); }
-        .badge-avail-yes { background:rgba(5,150,105,0.85); color:var(--text-primary); }
+        .badge-avail-yes { background:var(--primary); color:var(--on-primary); }
         .badge-avail-no { background:rgba(30,30,30,0.85); color:var(--text-muted); }
         .vehicle-info { padding:14px; }
         .vehicle-info h3 { font-size:1rem; font-weight:900; margin-bottom:6px; color:var(--text-primary); }
         .vehicle-meta { font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; }
         .vehicle-meta i { width:14px; color:#3f3f46; }
         .vehicle-location { font-size:0.75rem; color:var(--text-muted); margin-bottom:8px; }
-        .vehicle-rate { font-size:1.1rem; font-weight:900; color:#dc2626; }
+        .vehicle-rate { font-size:1.1rem; font-weight:900; color:var(--text-primary); }
         .vehicle-rate span { font-size:0.7rem; font-weight:500; color:var(--text-muted); }
         /* Filter chips */
         .filter-chips { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
         .filter-chips::-webkit-scrollbar { display:none; }
         .chip { background:var(--bg-card2); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:var(--text-muted); cursor:pointer; white-space:nowrap; transition:all 0.2s; }
-        .chip.active { background:var(--primary); color:var(--text-primary); border-color:transparent; }
+        .chip.active { background:var(--primary); color:var(--on-primary); border-color:transparent; }
         /* Booking list */
         .booking-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform 0.15s; }
         .booking-item:active { transform:scale(0.98); }
@@ -298,7 +298,7 @@
         /* Rental type toggle */
         .toggle-group { display:flex; background:var(--bg-input); border-radius:var(--radius-sm); padding:4px; gap:4px; }
         .toggle-group button { flex:1; padding:10px; border:none; border-radius:6px; font-weight:600; font-size:0.875rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
-        .toggle-group button.active { background:var(--primary); color:var(--text-primary); }
+        .toggle-group button.active { background:var(--primary); color:var(--on-primary); }
         /* Receipt */
         .receipt-card { background:var(--bg-card); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal); padding:24px; margin:16px; }
         .receipt-card .receipt-header { text-align:center; margin-bottom:20px; }
@@ -606,19 +606,22 @@
      VEHICLES BROWSE
 ??????????????????????????????????????????????????????????? -->
 <div id="page-vehicles" class="page" style="background:var(--bg-page);">
-  <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">Explore</p>
-      <h1 style="font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;">Vehicles</h1>
+  <div style="background:var(--primary); padding-bottom:16px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+    <div style="padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.8);font-weight:500;">Explore</p>
+        <h1 style="font-size:1.6rem;font-weight:900;color:var(--on-primary);letter-spacing:-0.5px;">Vehicles</h1>
+      </div>
+      <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:var(--on-primary);font-size:1rem;cursor:pointer;position:relative;">
+        <i class="fas fa-heart"></i>
+      </button>
     </div>
-    <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:var(--bg-card2);border:1px solid var(--border);color:#dc2626;font-size:1rem;cursor:pointer;position:relative;">
-      <i class="fas fa-heart"></i>
-    </button>
-  </div>
-  <div style="padding:0 16px 12px;position:relative;">
-    <i class="fas fa-search" style="position:absolute;left:28px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.875rem;"></i>
-    <input type="text" id="vehicleSearch" placeholder="Search cars, brands, types..." oninput="searchVehicles(this.value)"
-      style="width:100%;padding:12px 44px 12px 40px;background:var(--bg-card2);border:1px solid var(--border);border-radius:16px;color:var(--text-primary);font-size:0.875rem;outline:none;">
+    <div style="padding:0 16px;position:relative;">
+      <i class="fas fa-search" style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:1rem;"></i>
+      <input type="text" id="vehicleSearch" placeholder="Search for cars, locations..." oninput="searchVehicles(this.value)"
+        style="width:100%;padding:12px 44px 12px 44px;background:#ffffff;border:none;border-radius:12px;color:var(--text-primary);font-size:0.95rem;outline:none;box-shadow:0 4px 12px rgba(0,0,0,0.08); font-weight:500;">
+      <i class="fas fa-microphone" style="position:absolute;right:32px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:1rem;"></i>
+    </div>
   </div>
   <div class="filter-chips" id="vehicleFilters">
     <span class="chip active" onclick="filterVehicles('all',this)">All</span>
@@ -636,21 +639,20 @@
 </div>
 
 <div id="page-bookings" class="page" style="background:var(--bg-page);">
-  <div style="padding:16px 20px 8px;">
-    <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">Your</p>
-    <h1 style="font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;">Bookings</h1>
+  <div style="padding:16px 20px 12px; text-align:center;">
+    <h1 style="font-size:1.4rem;font-weight:800;color:var(--text-primary);">My Bookings</h1>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px 12px;">
-    <div id="bkStatTotal" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:var(--text-secondary);">0</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px 16px;">
+    <div id="bkStatTotal" style="background:var(--bg-card);border:1px solid var(--border);border-radius:50%;width:80px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="font-size:1.4rem;font-weight:900;color:var(--text-primary);">0</div>
       <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Total</div>
     </div>
-    <div id="bkStatDone" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:#a78bfa;">0</div>
+    <div id="bkStatDone" style="background:var(--bg-card);border:1px solid var(--border);border-radius:50%;width:80px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="font-size:1.4rem;font-weight:900;color:var(--text-primary);">0</div>
       <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Completed</div>
     </div>
-    <div id="bkStatSpent" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:#34d399;">-</div>
+    <div id="bkStatSpent" style="background:var(--bg-card);border:1px solid var(--border);border-radius:50%;width:80px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="font-size:1.2rem;font-weight:900;color:var(--primary);">-</div>
       <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Total Spent</div>
     </div>
   </div>
