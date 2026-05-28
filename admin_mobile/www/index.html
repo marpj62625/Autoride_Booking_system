@@ -600,9 +600,28 @@
         }
 
         .login-card input:focus {
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px var(--primary-glow);
+            border-color: #4f46e5;
+            background: rgba(79, 70, 229, 0.05);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        .login-card input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .login-card button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 30px rgba(79, 70, 229, 0.5);
+        }
+
+        .login-card button:active {
+            transform: translateY(0);
+        }
+
+        .password-toggle:hover {
+            color: white !important;
+            background: rgba(255, 255, 255, 0.1) !important;
         }
 
         .login-card button {
@@ -2016,20 +2035,24 @@
 <!-- Admin Login Overlay -->
 <div id="adminLoginOverlay">
     <div class="login-card">
-        <div class="logo-wrap" style="justify-content: center; margin-bottom: 25px;">
-            <i class="fas fa-car-side" style="color: #f87171; font-size: 2.5rem;"></i>
-            <span style="font-size: 2rem; font-weight: 800;">Autoride</span>
+        <div class="logo-wrap" style="justify-content: center; margin-bottom: 30px;">
+            <i class="fas fa-car-side" style="color: #f87171; font-size: 2.5rem; margin-right: 12px;"></i>
+            <span style="font-size: 2rem; font-weight: 800; color: white;">Autoride</span>
         </div>
-        <h1 style="font-size: 1.5rem; margin-bottom: 20px;">Admin Login</h1>
-        <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 15px;">
-        <div class="password-input-wrapper">
-            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 14px; padding-right: 45px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 0;">
-            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)">
-                <i class="fas fa-eye"></i>
+        <h1 style="font-size: 1.8rem; margin-bottom: 30px; color: white; font-weight: 600;">Admin Login</h1>
+        
+        <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 16px 20px; background: transparent; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; margin-bottom: 20px; font-size: 1rem; transition: all 0.3s ease;">
+        
+        <div class="password-input-wrapper" style="margin-bottom: 30px;">
+            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 16px 20px; padding-right: 55px; background: transparent; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; margin-bottom: 0; font-size: 1rem; transition: all 0.3s ease;">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s ease; z-index: 10; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-eye" style="font-size: 18px;"></i>
             </button>
         </div>
-        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px var(--primary-glow);">Login to Dashboard</button>
-        <p id="loginError" style="color: var(--danger); margin-top: 15px; font-size: 0.85rem; font-weight: 600;"></p>
+        
+        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1.1rem; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4); transition: all 0.2s ease; cursor: pointer;">Login to Dashboard</button>
+        
+        <p id="loginError" style="color: #ef4444; margin-top: 20px; font-size: 0.9rem; font-weight: 600; text-align: center;"></p>
     </div>
 </div>
 
