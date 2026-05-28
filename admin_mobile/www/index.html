@@ -869,6 +869,58 @@
             font-size: 0.8rem;
             outline: none;
         }
+
+        /* Enhanced Login Form Styles */
+        #adminLoginOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .login-card {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 48px 32px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(79, 70, 229, 0.1);
+        }
+
+        #loginEmail:focus, #loginPass:focus {
+            border-color: rgba(79, 70, 229, 0.6) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+            outline: none !important;
+        }
+
+        #loginEmail::placeholder, #loginPass::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+        }
+
+        .password-toggle:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        #loginBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 40px rgba(79, 70, 229, 0.5), 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        #loginBtn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -2035,19 +2087,26 @@
 <!-- Admin Login Overlay -->
 <div id="adminLoginOverlay">
     <div class="login-card">
-        <div class="logo-wrap" style="justify-content: center; margin-bottom: 30px;">
-            <i class="fas fa-car-side" style="color: #f87171; font-size: 2.5rem; margin-right: 12px;"></i>
-            <span style="font-size: 2rem; font-weight: 800; color: white;">Autoride</span>
+        <div class="logo-wrap" style="justify-content: center; margin-bottom: 40px; display: flex; align-items: center;">
+            <i class="fas fa-car-side" style="color: #f87171; font-size: 2.8rem; margin-right: 16px;"></i>
+            <span style="font-size: 2.2rem; font-weight: 800; color: white; letter-spacing: -0.02em;">Autoride</span>
         </div>
-        <h1 style="font-size: 1.8rem; margin-bottom: 30px; color: white; font-weight: 600;">Admin Login</h1>
+        <h1 style="font-size: 2rem; margin-bottom: 40px; color: white; font-weight: 700; text-align: center; letter-spacing: -0.01em;">Admin Login</h1>
         
-        <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 16px 20px; background: transparent; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; margin-bottom: 20px; font-size: 1rem; transition: all 0.3s ease;">
+        <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 18px 24px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 24px; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
         
-        <div class="password-input-wrapper" style="margin-bottom: 30px;">
-            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 16px 20px; padding-right: 55px; background: transparent; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; margin-bottom: 0; font-size: 1rem; transition: all 0.3s ease;">
-            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s ease; z-index: 10; display: flex; align-items: center; justify-content: center;">
+        <div class="password-input-wrapper" style="margin-bottom: 32px; position: relative;">
+            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 18px 24px; padding-right: 70px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 0; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)" style="position: absolute; right: 30px; top: 50%; transform: translateY(-50%); background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; padding: 8px; border-radius: 6px; transition: all 0.2s ease; z-index: 10; display: flex; align-items: center; justify-content: center;">
                 <i class="fas fa-eye" style="font-size: 18px;"></i>
             </button>
+        </div>
+        
+        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
+        
+        <p id="loginError" style="color: #ef4444; margin-top: 24px; font-size: 1rem; font-weight: 600; text-align: center; padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); display: none;"></p>
+    </div>
+</div>
         </div>
         
         <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1.1rem; box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4); transition: all 0.2s ease; cursor: pointer;">Login to Dashboard</button>
