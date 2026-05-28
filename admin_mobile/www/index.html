@@ -4714,7 +4714,7 @@
                     labels: deduped.map(c => c.label),
                     datasets: [{
                         data: deduped.map(c => c.booking_count),
-                        backgroundColor: ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F'],
+                        backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6'],
                         borderWidth: 0
                     }]
                 },
@@ -5123,7 +5123,7 @@
                     labels: fleetDist.map(f => f.status),
                     datasets: [{
                         data: fleetDist.map(f => f.count),
-                        backgroundColor: ['#00B14F','#f59e0b','#ef4444','#00B14F','#94a3b8'],
+                        backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#94a3b8'],
                         borderWidth: 0
                     }]
                 },
@@ -5149,7 +5149,7 @@
                         labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
                         datasets: [{
                             data: topVeh.map(c => c.booking_count || 0),
-                            backgroundColor: ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F','#5FDBE2'],
+                            backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899'],
                             borderWidth: 0
                         }]
                     },
