@@ -2722,44 +2722,178 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed';
-  var canModify = b.status === 'Pending' || b.status === 'Confirmed';
-  var canPreInspect = b.status === 'Confirmed' || b.status === 'Approved';
+  var canPickup = b.status === 'Confirmed' || b.status === 'Approved';
   var canPostInspect = b.status === 'Picked Up';
   var canTrack = b.status === 'Picked Up';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
-  var actions = '';
-  if (canPayBalance) actions += '<button class="btn-primary btn-sm" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance</button>';
-  if (canModify) actions += '<button class="btn-secondary btn-sm" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
-  if (canCancel) actions += '<button class="btn-danger btn-sm" onclick="promptCancelBooking(' + b.id + ')"><i class="fas fa-times"></i> Cancel</button>';
-  if (canPreInspect) actions += '<button class="btn-secondary btn-sm" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-clipboard-check"></i> Pre-Rental Check</button>';
-  if (canPostInspect) actions += '<button class="btn-secondary btn-sm" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-clipboard-check"></i> Post-Rental Check</button>';
-  if (canTrack) actions += '<button class="btn-outline btn-sm" onclick="openGpsMap(' + b.vehicle_id + ')"><i class="fas fa-map-marker-alt"></i> Track Vehicle</button>';
-  if (canReview) actions += '<button class="btn-outline btn-sm" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave Review</button>';
-  actions += '<button class="btn-secondary btn-sm" onclick="downloadReceipt(' + b.id + ')"><i class="fas fa-download"></i> Receipt PDF</button>';
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Booking #' + b.id + '</h2></div>' +
-    '<div class="scroll-content">' +
-    '<div class="card">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h4 style="font-weight:700;">' + (b.brand || '') + ' ' + (b.model || '') + '</h4>' + statusPill(b.status) + '</div>' +
-    '<div class="price-row"><span>Period</span><span>' + b.start_date + ' to ' + b.end_date + '</span></div>' +
-    (b.pickup_time ? '<div class="price-row"><span>Pickup Time</span><span>' + formatTime12h(b.pickup_time) + '</span></div>' : '') +
-    (b.return_time ? '<div class="price-row"><span>Return Time</span><span>' + formatTime12h(b.return_time) + '</span></div>' : '') +
-    '<div class="price-row"><span>Rental Type</span><span>' + (b.rental_type || '-') + '</span></div>' +
-    '<div class="price-row"><span>Insurance</span><span>' + (b.insurance_type || 'Basic') + '</span></div>' +
+
+  // Status colors
+  var statusColors = {
+    'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
+    'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+  };
+  var payColors = { 'Paid': '#00b14f', 'Partially Paid': '#fbbf24', 'Unpaid': '#f87171', 'Refund Pending': '#fbbf24' };
+  var sColor = statusColors[b.status] || '#a1a1aa';
+  var pColor = payColors[b.payment_status] || '#f87171';
+
+  // License section
+  var licenseHtml = '';
+  if (b.license_number || b.license_full_name || b.date_of_birth || b.license_expiry) {
+    var frontBtn = b.license_front_url
+      ? '<a href="' + b.license_front_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Front Image</a>'
+      : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Front Image</div>';
+    var backBtn = b.license_back_url
+      ? '<a href="' + b.license_back_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Back Image</a>'
+      : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Back Image</div>';
+    licenseHtml =
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:12px;">Driver\'s License Details</h4>' +
+        (b.license_full_name ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
+        (b.date_of_birth ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">DOB: ' + b.date_of_birth + '</p>' : '') +
+        (b.license_number ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">License #: ' + b.license_number + '</p>' : '') +
+        (b.license_expiry ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:12px;">Expiry: ' + b.license_expiry + '</p>' : '') +
+        '<div style="display:flex;gap:10px;">' + frontBtn + backBtn + '</div>' +
+      '</div>';
+  }
+
+  // Emergency contact section
+  var emergencyHtml = '';
+  if (b.emergency_contact_name || b.emergency_contact_phone) {
+    emergencyHtml =
+      '<div style="margin-bottom:16px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:10px;">Emergency Contact</h4>' +
+        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;">Name: ' + b.emergency_contact_name + '</p>' : '') +
+        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
+        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:var(--text-primary);">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
+      '</div>';
+  }
+
+  // Inspections section
+  var inspectBtn = '';
+  if (canPickup) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'pickup\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
+  else if (canPostInspect) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'return\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
+
+  // Primary action button
+  var primaryAction = '';
+  if (canPickup) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-car"></i> Mark as Picked Up</button>';
+  } else if (canPostInspect) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-flag-checkered"></i> Mark as Returned</button>';
+  } else if (canTrack) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openGpsMap(' + b.vehicle_id + ')"><i class="fas fa-map-marker-alt"></i> Track Vehicle</button>';
+  } else if (canPayBalance) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
+  } else if (canReview) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
+  }
+
+  // Secondary action buttons
+  var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
+  secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')">Download Receipt</button>';
+  if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
+  if (b.status === 'Pending' || b.status === 'Confirmed') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
+  else secondaryActions += '</div>';
+
+  var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
+  var plateInfo = b.plate_number ? ' (' + b.plate_number + ')' : '';
+
+  el.innerHTML =
+    '<div class="page-header">' +
+      '<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')"><i class="fas fa-times"></i></button>' +
+      '<h2 style="text-align:center;flex:1;">Booking Details</h2>' +
     '</div>' +
-    '<div class="card">' +
-    '<div class="price-row"><span>Total</span><span>' + formatPHP(b.total_price) + '</span></div>' +
-    '<div class="price-row"><span>Paid</span><span>' + formatPHP(b.amount_paid) + '</span></div>' +
-    (b.balance_amount > 0 ? '<div class="price-row"><span>Balance</span><span style="color:var(--danger);">' + formatPHP(b.balance_amount) + '</span></div>' : '') +
-    '<div class="price-row"><span>Payment Status</span><span>' + statusPill(b.payment_status) + '</span></div>' +
-    '</div>' +
-    (b.cancellation_reason ? '<div class="card" style="border-left:4px solid var(--danger);"><p style="font-size:0.875rem;"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
-    '<div class="action-btn-grid">' + actions + '</div>' +
+    '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
+
+      // Title
+      '<h2 style="font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-bottom:20px;">Booking Details #' + b.id + '</h2>' +
+
+      // Info grid: customer / vehicle / rental period
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Vehicle</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + vehicleName + plateInfo + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' to ' + formatBookingDate(b.end_date) + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Status grid: payment status / total price / booking status
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
+          '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + pColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">?' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
+          '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + sColor + ';color:#fff;">' + b.status.toUpperCase() + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      // Divider
+      '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
+
+      // Driver's License Details
+      licenseHtml +
+
+      // Emergency Contact
+      emergencyHtml +
+
+      // Divider
+      (emergencyHtml ? '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' : '') +
+
+      // Vehicle Inspections
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);">Vehicle Inspections</h4>' +
+        inspectBtn +
+      '</div>' +
+      '<div id="inspectionsList" style="margin-bottom:20px;"><p style="font-size:0.875rem;color:var(--text-muted);text-align:center;padding:8px 0;">No inspections yet.</p></div>' +
+
+      // Divider
+      '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
+
+      // Cancellation reason
+      (b.cancellation_reason ? '<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p style="font-size:0.875rem;color:var(--danger);"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
+
+      // Action buttons
+      primaryAction +
+      secondaryActions +
+
     '</div>';
+
+  // Load inspections async
+  loadInspectionsForDetail(b.id);
+}
+
+function loadInspectionsForDetail(bookingId) {
+  apiCall('/inspections/' + bookingId)
+    .then(function(data) {
+      var el = document.getElementById('inspectionsList');
+      if (!el) return;
+      if (!data || !data.length) return;
+      el.innerHTML = data.map(function(i) {
+        return '<div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+            '<strong style="font-size:0.875rem;">' + (i.inspection_type === 'pickup' ? 'Pre-Rental' : 'Post-Rental') + '</strong>' +
+            '<small style="color:var(--text-muted);">' + new Date(i.created_at).toLocaleDateString() + '</small>' +
+          '</div>' +
+          '<div style="font-size:0.8rem;color:var(--text-secondary);">Mileage: ' + i.mileage + ' km | Fuel: ' + i.fuel_level + '</div>' +
+          (i.notes ? '<div style="font-size:0.8rem;margin-top:4px;color:var(--text-secondary);">' + i.notes + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }).catch(function() {});
 }
 
 function promptCancelBooking(bookingId) {

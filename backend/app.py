@@ -3126,20 +3126,22 @@ def user_bookings():
 
         cur = get_cursor()
 
-        # Fetch bookings with vehicle info - Use LEFT JOIN to ensure booking shows even if vehicle data has issues
-
+        # Fetch bookings with vehicle info and license/emergency contact details
         query = """
-
-            SELECT b.*, v.brand, v.model, v.plate_number, v.vehicle_image
-
+            SELECT b.*, v.brand, v.model, v.plate_number, v.vehicle_image,
+                   COALESCE(ld.full_name, u.full_name) AS license_full_name,
+                   COALESCE(ld.license_number, u.license_number) AS license_number,
+                   COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
+                   CAST(ld.date_of_birth AS TEXT) AS date_of_birth,
+                   ld.license_front_url, ld.license_back_url,
+                   ld.emergency_contact_name, ld.emergency_contact_phone,
+                   ld.emergency_contact_relationship
             FROM bookings b
-
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
-
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN license_details ld ON b.user_id = ld.user_id
             WHERE b.user_id = %s
-
             ORDER BY b.id DESC
-
         """
 
         cur.execute(query, (user_id,))
@@ -3147,7 +3149,6 @@ def user_bookings():
         data = cur.fetchall()
 
         
-
         bookings_list = [dict(row) for row in data]
 
         return jsonify(bookings_list), 200

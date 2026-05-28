@@ -1096,11 +1096,11 @@ function loadHome() {
                 '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
                 '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + (active.plate_number||'') + '</div>' +
               '</div>' +
-              '<span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
+              '<span style="background:rgba(16,185,129,0.1);color:var(--primary);border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
             '</div>' +
             '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
               '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
-              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:#10b981;">�</div>' +
+              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">�</div>' +
               '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + _fmtDate(endNorm) + '</strong></div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
@@ -2258,9 +2258,14 @@ function openPaymentScreen(bookingId, priceResult, payType) {
 
   var breakdownHtml =
     '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
-    (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
-      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);"></i> ' + a.name + '</span><span>' + formatPHP(a.price) + '</span></div>';
-    }).join('') : '') +
+    // Render all available addons as toggleable on payment page
+    (ADDON_OPTIONS.map(function(opt, idx) {
+      var isSelected = selectedAddons.some(function(a) { return a.name === opt.name; });
+      var aPrice = opt.pricePerDay * priceResult.days;
+      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;" onclick="togglePaymentAddon(' + idx + ', ' + bookingId + ')">' +
+             '<span><i class="fas ' + (isSelected ? 'fa-check-square' : 'fa-square') + '" style="color:var(--' + (isSelected ? 'success' : 'border') + ');margin-right:6px;font-size:1.1em;vertical-align:middle;"></i> ' + opt.name + '</span>' +
+             '<span>' + formatPHP(aPrice) + '</span></div>';
+    }).join('')) +
     (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
     (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
     (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
@@ -2348,6 +2353,37 @@ function openPaymentScreen(bookingId, priceResult, payType) {
   if (gcashEl) gcashEl.classList.add('selected');
 
   showOverlay('page-payment');
+}
+
+
+function togglePaymentAddon(idx, bookingId) {
+  var opt = ADDON_OPTIONS[idx];
+  var days = _pendingPriceResult.days;
+  var existingIdx = selectedAddons.findIndex(function(a) { return a.name === opt.name; });
+  if (existingIdx >= 0) {
+    selectedAddons.splice(existingIdx, 1);
+  } else {
+    selectedAddons.push({ name: opt.name, price: opt.pricePerDay * days, pricePerDay: opt.pricePerDay });
+  }
+  
+  // Recalculate price
+  var v = bookingFormVehicle;
+  var cpPct = couponData ? couponData.discount_percent : 0;
+  var pts = parseInt(document.getElementById('bfPoints') ? document.getElementById('bfPoints').value : 0) || 0;
+  
+  _pendingPriceResult = calculateBookingPrice(
+    v.daily_rate, _pendingBookingPayload.start_date, _pendingBookingPayload.end_date, selectedAddons, selectedInsurance.price,
+    parseInt(appSettings.long_term_discount_days) || 7,
+    parseInt(appSettings.long_term_discount_percent) || 10,
+    cpPct, pts
+  );
+  
+  _pendingBookingPayload.addons = selectedAddons.map(function(a) { return a.name; });
+  _pendingBookingPayload.addon_price = _pendingPriceResult.addonPrice;
+  _pendingBookingPayload.total_price = _pendingPriceResult.total;
+  
+  // Re-render payment screen
+  openPaymentScreen(bookingId, _pendingPriceResult, _pendingPayType);
 }
 
 function selectPayMethod(method, el) {
@@ -2591,10 +2627,10 @@ function filterBookingsList(filter, btn) {
   var tabs = document.querySelectorAll('#bookingFilterTabs button');
   for (var i = 0; i < tabs.length; i++) {
     tabs[i].style.background = 'transparent';
-    tabs[i].style.color = '#52525b';
+    tabs[i].style.color = 'var(--text-secondary)';
   }
   if (btn) {
-    btn.style.background = 'linear-gradient(135deg,#dc2626,#9b1a1a)';
+    btn.style.background = 'var(--primary)';
     btn.style.color = '#fff';
   }
   var filtered = filter === 'all' ? _allBookingsData : _allBookingsData.filter(function(b) {
@@ -2612,48 +2648,54 @@ function renderBookingsList(data) {
     return;
   }
   var statusColors = {
-    'Pending': '#fbbf24', 'Confirmed': '#34d399', 'Approved': '#34d399',
-    'Picked Up': '#a78bfa', 'Completed': '#a78bfa', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+    'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
+    'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
   };
   el.innerHTML = data.map(function(b) {
     var color = statusColors[b.status] || '#a1a1aa';
-    var payColor = b.payment_status === 'Paid' ? '#34d399' : '#f87171';
+    var payColor = b.payment_status === 'Paid' ? '#00b14f' : '#f87171';
     var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
     var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' � ');
     var startFmt = formatBookingDate(b.start_date);
     var endFmt = formatBookingDate(b.end_date);
-    return '<div style="background:#2a2a2a;border:1px solid rgba(255,255,255,0.12);border-radius:20px;overflow:hidden;margin-bottom:14px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);" onclick="openBookingDetail(' + b.id + ')">' +
-      '<div style="height:4px;background:' + color + ';"></div>' +
+    return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin:0 16px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="openBookingDetail(' + b.id + ')">' +
       '<div style="padding:16px;">' +
-
+      
       /* Header row: icon + name + status badge */
-      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
-      '<div style="width:48px;height:48px;border-radius:14px;background:#3a3a3a;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-      '<i class="fas fa-car" style="color:#888;font-size:1.2rem;"></i></div>' +
-      '<div style="flex:1;min-width:0;">' +
-      '<div style="font-weight:700;font-size:0.95rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + vehicleName + '</div>' +
-      (vehicleSub ? '<div style="font-size:0.72rem;color:#999;margin-top:2px;">' + vehicleSub + '</div>' : '') +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">' +
+          '<div style="width:40px;height:40px;border-radius:50%;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<i class="fas fa-car" style="color:var(--primary);font-size:1.2rem;"></i>' +
+          '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + vehicleName + '</div>' +
+            (vehicleSub ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' + vehicleSub + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + color + ';color:#fff;flex-shrink:0;">' + b.status + '</span>' +
       '</div>' +
-      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;letter-spacing:0.3px;background:' + color + '33;color:' + color + ';flex-shrink:0;border:1px solid ' + color + '66;">' + b.status + '</span>' +
-      '</div>' +
+
+      '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
 
       /* Date row */
-      '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:14px;">' +
-      '<div style="background:#3a3a3a;border-radius:12px;padding:10px 12px;">' +
-      '<div style="font-size:0.58rem;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Pick-up</div>' +
-      '<div style="font-size:0.8rem;font-weight:700;color:#fff;">' + startFmt + '</div>' +
-      '</div>' +
-      '<div style="color:#666;font-size:0.8rem;font-weight:700;">-&gt;</div>' +
-      '<div style="background:#3a3a3a;border-radius:12px;padding:10px 12px;text-align:right;">' +
-      '<div style="font-size:0.58rem;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:3px;">Return</div>' +
-      '<div style="font-size:0.8rem;font-weight:700;color:#fff;">' + endFmt + '</div>' +
-      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:16px;">' +
+        '<div style="min-width:0;">' +
+          '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;white-space:nowrap;">Pick-up</div>' +
+          '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + startFmt + '</div>' +
+        '</div>' +
+        '<div style="color:var(--text-muted);font-size:0.9rem;font-weight:400;margin-top:14px;text-align:center;">&rarr;</div>' +
+        '<div style="min-width:0;">' +
+          '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;white-space:nowrap;">Return</div>' +
+          '<div style="display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span>' + endFmt + '</span><i class="fas fa-chevron-right" style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0;"></i></div>' +
+        '</div>' +
       '</div>' +
 
+      '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
+
       /* Footer row: payment badge + price */
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">' +
-      '<span style="padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:700;background:' + payColor + '33;color:' + payColor + ';border:1px solid ' + payColor + '66;">' + (b.payment_status || 'Unpaid') + '</span>' +
-      '<div style="font-weight:800;font-size:1rem;color:#fff;">' + formatPHP(b.total_price) + '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+        '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + payColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
+        '<div style="font-weight:800;font-size:1.1rem;color:var(--primary);">' + formatPHP(b.total_price) + '</div>' +
       '</div>' +
 
       '</div></div>';
@@ -2680,44 +2722,165 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed';
-  var canModify = b.status === 'Pending' || b.status === 'Confirmed';
-  var canPreInspect = b.status === 'Confirmed' || b.status === 'Approved';
+  var canPickup = b.status === 'Confirmed' || b.status === 'Approved';
   var canPostInspect = b.status === 'Picked Up';
   var canTrack = b.status === 'Picked Up';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
-  var actions = '';
-  if (canPayBalance) actions += '<button class="btn-primary btn-sm" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance</button>';
-  if (canModify) actions += '<button class="btn-secondary btn-sm" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
-  if (canCancel) actions += '<button class="btn-danger btn-sm" onclick="promptCancelBooking(' + b.id + ')"><i class="fas fa-times"></i> Cancel</button>';
-  if (canPreInspect) actions += '<button class="btn-secondary btn-sm" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-clipboard-check"></i> Pre-Rental Check</button>';
-  if (canPostInspect) actions += '<button class="btn-secondary btn-sm" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-clipboard-check"></i> Post-Rental Check</button>';
-  if (canTrack) actions += '<button class="btn-outline btn-sm" onclick="openGpsMap(' + b.vehicle_id + ')"><i class="fas fa-map-marker-alt"></i> Track Vehicle</button>';
-  if (canReview) actions += '<button class="btn-outline btn-sm" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave Review</button>';
-  actions += '<button class="btn-secondary btn-sm" onclick="downloadReceipt(' + b.id + ')"><i class="fas fa-download"></i> Receipt PDF</button>';
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Booking #' + b.id + '</h2></div>' +
-    '<div class="scroll-content">' +
-    '<div class="card">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h4 style="font-weight:700;">' + (b.brand || '') + ' ' + (b.model || '') + '</h4>' + statusPill(b.status) + '</div>' +
-    '<div class="price-row"><span>Period</span><span>' + b.start_date + ' to ' + b.end_date + '</span></div>' +
-    (b.pickup_time ? '<div class="price-row"><span>Pickup Time</span><span>' + formatTime12h(b.pickup_time) + '</span></div>' : '') +
-    (b.return_time ? '<div class="price-row"><span>Return Time</span><span>' + formatTime12h(b.return_time) + '</span></div>' : '') +
-    '<div class="price-row"><span>Rental Type</span><span>' + (b.rental_type || '-') + '</span></div>' +
-    '<div class="price-row"><span>Insurance</span><span>' + (b.insurance_type || 'Basic') + '</span></div>' +
+
+  // Status colors
+  var statusColors = {
+    'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
+    'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+  };
+  var payColors = { 'Paid': '#00b14f', 'Partially Paid': '#fbbf24', 'Unpaid': '#f87171', 'Refund Pending': '#fbbf24' };
+  var sColor = statusColors[b.status] || '#a1a1aa';
+  var pColor = payColors[b.payment_status] || '#f87171';
+
+  // License section
+  var licenseHtml = '';
+  if (b.license_number || b.license_full_name || b.date_of_birth || b.license_expiry) {
+    var frontBtn = b.license_front_url
+      ? '<a href="' + b.license_front_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Front Image</a>'
+      : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Front Image</div>';
+    var backBtn = b.license_back_url
+      ? '<a href="' + b.license_back_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Back Image</a>'
+      : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Back Image</div>';
+    licenseHtml =
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:12px;">Driver\'s License Details</h4>' +
+        (b.license_full_name ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
+        (b.date_of_birth ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">DOB: ' + b.date_of_birth + '</p>' : '') +
+        (b.license_number ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">License #: ' + b.license_number + '</p>' : '') +
+        (b.license_expiry ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:12px;">Expiry: ' + b.license_expiry + '</p>' : '') +
+        '<div style="display:flex;gap:10px;">' + frontBtn + backBtn + '</div>' +
+      '</div>';
+  }
+
+  // Emergency contact section
+  var emergencyHtml = '';
+  if (b.emergency_contact_name || b.emergency_contact_phone) {
+    emergencyHtml =
+      '<div style="margin-bottom:16px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:10px;">Emergency Contact</h4>' +
+        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;">Name: ' + b.emergency_contact_name + '</p>' : '') +
+        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
+        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:var(--text-primary);">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
+      '</div>';
+  }
+
+  // Inspections section
+  var inspectBtn = '';
+  if (canPickup) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'pickup\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
+  else if (canPostInspect) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'return\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
+
+  // Primary action button
+  var primaryAction = '';
+  if (canPickup) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-car"></i> Mark as Picked Up</button>';
+  } else if (canPostInspect) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-flag-checkered"></i> Mark as Returned</button>';
+  } else if (canTrack) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openGpsMap(' + b.vehicle_id + ')"><i class="fas fa-map-marker-alt"></i> Track Vehicle</button>';
+  } else if (canPayBalance) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
+  } else if (canReview) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
+  }
+
+  // Secondary action buttons
+  var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
+  secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')">Download Receipt</button>';
+  if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
+  if (b.status === 'Pending' || b.status === 'Confirmed') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
+  else secondaryActions += '</div>';
+
+  var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
+  var plateInfo = b.plate_number ? ' (' + b.plate_number + ')' : '';
+
+  el.innerHTML =
+    '<div class="page-header">' +
+      '<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')"><i class="fas fa-times"></i></button>' +
+      '<h2 style="text-align:center;flex:1;">Booking Details</h2>' +
     '</div>' +
-    '<div class="card">' +
-    '<div class="price-row"><span>Total</span><span>' + formatPHP(b.total_price) + '</span></div>' +
-    '<div class="price-row"><span>Paid</span><span>' + formatPHP(b.amount_paid) + '</span></div>' +
-    (b.balance_amount > 0 ? '<div class="price-row"><span>Balance</span><span style="color:var(--danger);">' + formatPHP(b.balance_amount) + '</span></div>' : '') +
-    '<div class="price-row"><span>Payment Status</span><span>' + statusPill(b.payment_status) + '</span></div>' +
-    '</div>' +
-    (b.cancellation_reason ? '<div class="card" style="border-left:4px solid var(--danger);"><p style="font-size:0.875rem;"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
-    '<div class="action-btn-grid">' + actions + '</div>' +
+    '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
+
+      '<h2 style="font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-bottom:20px;">Booking Details #' + b.id + '</h2>' +
+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Vehicle</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + vehicleName + plateInfo + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' to ' + formatBookingDate(b.end_date) + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
+          '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + pColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">&#8369;' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
+          '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + sColor + ';color:#fff;">' + b.status.toUpperCase() + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
+
+      licenseHtml +
+      emergencyHtml +
+
+      (emergencyHtml ? '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' : '') +
+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);">Vehicle Inspections</h4>' +
+        inspectBtn +
+      '</div>' +
+      '<div id="inspectionsList" style="margin-bottom:20px;"><p style="font-size:0.875rem;color:var(--text-muted);text-align:center;padding:8px 0;">No inspections yet.</p></div>' +
+
+      '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
+
+      (b.cancellation_reason ? '<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p style="font-size:0.875rem;color:var(--danger);"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
+
+      primaryAction +
+      secondaryActions +
+
     '</div>';
+
+  loadInspectionsForDetail(b.id);
+}
+
+function loadInspectionsForDetail(bookingId) {
+  apiCall('/inspections/' + bookingId)
+    .then(function(data) {
+      var el = document.getElementById('inspectionsList');
+      if (!el) return;
+      if (!data || !data.length) return;
+      el.innerHTML = data.map(function(i) {
+        return '<div style="background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+            '<strong style="font-size:0.875rem;">' + (i.inspection_type === 'pickup' ? 'Pre-Rental' : 'Post-Rental') + '</strong>' +
+            '<small style="color:var(--text-muted);">' + new Date(i.created_at).toLocaleDateString() + '</small>' +
+          '</div>' +
+          '<div style="font-size:0.8rem;color:var(--text-secondary);">Mileage: ' + i.mileage + ' km | Fuel: ' + i.fuel_level + '</div>' +
+          (i.notes ? '<div style="font-size:0.8rem;margin-top:4px;color:var(--text-secondary);">' + i.notes + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }).catch(function() {});
 }
 
 function promptCancelBooking(bookingId) {
