@@ -4,172 +4,243 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Autoride Customer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; }
         
-        .container { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; }
-        .header { background: #0052ff; color: white; padding: 20px; text-align: center; }
-        .content { padding: 20px; }
+        .app { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; }
         
-        .login-form { margin-top: 50px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .login-screen { padding: 50px 30px; text-align: center; }
+        .login-screen h1 { color: #0052ff; font-size: 32px; margin-bottom: 10px; }
+        .login-screen p { color: #666; margin-bottom: 40px; }
         
-        .btn { width: 100%; padding: 15px; background: #0052ff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        .btn:hover { background: #0040cc; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-group input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .form-group input:focus { border-color: #0052ff; outline: none; }
         
-        .page { display: none; }
+        .login-btn { width: 100%; padding: 18px; background: #0052ff; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .login-btn:hover { background: #0040cc; }
+        
+        .main-app { display: none; }
+        .main-app.show { display: block; }
+        
+        .header { background: #0052ff; color: white; padding: 25px 20px; text-align: center; }
+        .header h2 { font-size: 24px; }
+        .header p { opacity: 0.9; margin-top: 5px; }
+        
+        .content { padding: 30px 20px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .menu-item { background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 12px; padding: 25px 15px; text-align: center; cursor: pointer; transition: all 0.2s; }
+        .menu-item:hover { border-color: #0052ff; background: #f0f8ff; }
+        .menu-item i { font-size: 32px; color: #0052ff; margin-bottom: 10px; display: block; }
+        .menu-item span { font-weight: bold; color: #333; }
+        
+        .page { display: none; padding: 20px; }
         .page.active { display: block; }
+        .page h3 { color: #0052ff; margin-bottom: 20px; font-size: 24px; }
+        .page p { color: #666; line-height: 1.6; }
         
-        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ddd; display: flex; }
-        .nav.hidden { display: none; }
-        .nav button { flex: 1; padding: 15px 10px; border: none; background: none; color: #666; font-size: 12px; cursor: pointer; }
-        .nav button.active { color: #0052ff; }
-        .nav button i { display: block; font-size: 20px; margin-bottom: 5px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 400px; background: white; border-top: 2px solid #e9ecef; display: none; }
+        .bottom-nav.show { display: flex; }
+        .nav-item { flex: 1; padding: 15px 10px; text-align: center; cursor: pointer; border: none; background: none; color: #666; }
+        .nav-item.active { color: #0052ff; }
+        .nav-item i { display: block; font-size: 20px; margin-bottom: 5px; }
+        .nav-item span { font-size: 12px; font-weight: bold; }
         
-        .home-banner { background: linear-gradient(135deg, #0052ff, #0040cc); color: white; padding: 30px 20px; margin: -20px -20px 20px -20px; border-radius: 0 0 20px 20px; }
-        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .quick-btn { background: white; border: 1px solid #ddd; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; }
-        .quick-btn i { font-size: 24px; color: #0052ff; margin-bottom: 10px; }
-        
-        .page-header { background: #0052ff; color: white; padding: 20px; margin: -20px -20px 20px -20px; }
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; margin-top: 20px; }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-<div class="container">
-    <!-- LOGIN PAGE -->
-    <div id="login-page" class="page active">
-        <div class="header">
-            <i class="fas fa-car" style="font-size: 40px; margin-bottom: 10px;"></i>
-            <h1>Autoride</h1>
-            <p>Customer App</p>
+<div class="app">
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="login-screen">
+        <h1>?? Autoride</h1>
+        <p>Customer Mobile App</p>
+        
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="email-input" value="customer@test.com">
         </div>
-        <div class="content">
-            <div class="login-form">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email" value="customer@test.com">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" value="123456">
-                </div>
-                <button class="btn" onclick="login()">Login</button>
-            </div>
+        
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password-input" value="123456">
         </div>
+        
+        <button class="login-btn" onclick="doLogin()">LOGIN NOW</button>
+        
+        <p style="margin-top: 30px; font-size: 14px; color: #999;">
+            Click LOGIN NOW to continue<br>
+            (Credentials are pre-filled)
+        </p>
     </div>
 
-    <!-- HOME PAGE -->
-    <div id="home-page" class="page">
-        <div class="content">
-            <div class="home-banner">
-                <h2 id="welcome-text">Welcome!</h2>
+    <!-- MAIN APP -->
+    <div id="main-app" class="main-app">
+        <!-- HOME PAGE -->
+        <div id="home-page" class="page active">
+            <div class="header">
+                <h2 id="user-welcome">Welcome!</h2>
                 <p>Ready for your next ride?</p>
             </div>
-            <div class="quick-actions">
-                <div class="quick-btn" onclick="showPage('vehicles-page')">
-                    <i class="fas fa-car"></i>
-                    <div>Browse Cars</div>
+            <div class="content">
+                <div class="menu-grid">
+                    <div class="menu-item" onclick="showPage('vehicles')">
+                        <i class="fas fa-car"></i>
+                        <span>Browse Cars</span>
+                    </div>
+                    <div class="menu-item" onclick="showPage('bookings')">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>My Bookings</span>
+                    </div>
+                    <div class="menu-item" onclick="showPage('support')">
+                        <i class="fas fa-headset"></i>
+                        <span>Support</span>
+                    </div>
+                    <div class="menu-item" onclick="showPage('profile')">
+                        <i class="fas fa-user"></i>
+                        <span>My Profile</span>
+                    </div>
                 </div>
-                <div class="quick-btn" onclick="showPage('bookings-page')">
-                    <i class="fas fa-calendar"></i>
-                    <div>My Bookings</div>
-                </div>
-                <div class="quick-btn" onclick="alert('Support coming soon!')">
-                    <i class="fas fa-headset"></i>
-                    <div>Support</div>
-                </div>
-                <div class="quick-btn" onclick="alert('Chat coming soon!')">
-                    <i class="fas fa-comments"></i>
-                    <div>Live Chat</div>
-                </div>
+            </div>
+        </div>
+
+        <!-- VEHICLES PAGE -->
+        <div id="vehicles-page" class="page">
+            <h3>?? Browse Vehicles</h3>
+            <p>Here you can browse all available vehicles for rent.</p>
+            <p style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <strong>Coming Soon:</strong><br>
+                • Vehicle listings<br>
+                • Search and filters<br>
+                • Booking functionality
+            </p>
+        </div>
+
+        <!-- BOOKINGS PAGE -->
+        <div id="bookings-page" class="page">
+            <h3>?? My Bookings</h3>
+            <p>View and manage your vehicle bookings here.</p>
+            <p style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <strong>No bookings yet!</strong><br>
+                Start by browsing available vehicles.
+            </p>
+        </div>
+
+        <!-- SUPPORT PAGE -->
+        <div id="support-page" class="page">
+            <h3>?? Customer Support</h3>
+            <p>Get help with your Autoride experience.</p>
+            <p style="margin-top: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <strong>Support Options:</strong><br>
+                • Live chat (coming soon)<br>
+                • Email support<br>
+                • FAQ section
+            </p>
+        </div>
+
+        <!-- PROFILE PAGE -->
+        <div id="profile-page" class="page">
+            <h3>?? My Profile</h3>
+            <p>Manage your account settings and personal information.</p>
+            <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <p><strong>Account Info:</strong></p>
+                <p id="profile-email">Email: Loading...</p>
+                <p style="margin-top: 15px;">
+                    <button class="logout-btn" onclick="doLogout()">Logout</button>
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- VEHICLES PAGE -->
-    <div id="vehicles-page" class="page">
-        <div class="page-header">
-            <h2>Browse Vehicles</h2>
-        </div>
-        <div class="content">
-            <p style="text-align: center; color: #666; margin-top: 50px;">
-                Vehicle browsing feature<br>coming soon!
-            </p>
-        </div>
+    <!-- BOTTOM NAVIGATION -->
+    <div id="bottom-nav" class="bottom-nav">
+        <button class="nav-item active" onclick="showPage('home')">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="showPage('vehicles')">
+            <i class="fas fa-car"></i>
+            <span>Vehicles</span>
+        </button>
+        <button class="nav-item" onclick="showPage('bookings')">
+            <i class="fas fa-calendar-check"></i>
+            <span>Bookings</span>
+        </button>
+        <button class="nav-item" onclick="showPage('support')">
+            <i class="fas fa-headset"></i>
+            <span>Support</span>
+        </button>
+        <button class="nav-item" onclick="showPage('profile')">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </button>
     </div>
-
-    <!-- BOOKINGS PAGE -->
-    <div id="bookings-page" class="page">
-        <div class="page-header">
-            <h2>My Bookings</h2>
-        </div>
-        <div class="content">
-            <p style="text-align: center; color: #666; margin-top: 50px;">
-                No bookings yet.<br>Start by browsing vehicles!
-            </p>
-        </div>
-    </div>
-
-    <!-- PROFILE PAGE -->
-    <div id="profile-page" class="page">
-        <div class="page-header">
-            <h2>My Profile</h2>
-        </div>
-        <div class="content">
-            <p style="text-align: center; color: #666; margin-top: 50px;">
-                Profile management<br>coming soon!
-            </p>
-            <button class="btn" onclick="logout()" style="margin-top: 30px;">Logout</button>
-        </div>
-    </div>
-
-    <!-- MORE PAGE -->
-    <div id="more-page" class="page">
-        <div class="page-header">
-            <h2>More Options</h2>
-        </div>
-        <div class="content">
-            <p style="text-align: center; color: #666; margin-top: 50px;">
-                Additional features<br>coming soon!
-            </p>
-        </div>
-    </div>
-</div>
-
-<!-- NAVIGATION -->
-<div class="nav hidden" id="navigation">
-    <button onclick="showPage('home-page')" id="nav-home">
-        <i class="fas fa-home"></i>
-        Home
-    </button>
-    <button onclick="showPage('vehicles-page')" id="nav-vehicles">
-        <i class="fas fa-car"></i>
-        Vehicles
-    </button>
-    <button onclick="showPage('bookings-page')" id="nav-bookings">
-        <i class="fas fa-calendar"></i>
-        Bookings
-    </button>
-    <button onclick="showPage('profile-page')" id="nav-profile">
-        <i class="fas fa-user"></i>
-        Profile
-    </button>
-    <button onclick="showPage('more-page')" id="nav-more">
-        <i class="fas fa-ellipsis-h"></i>
-        More
-    </button>
 </div>
 
 <script>
-console.log('App starting...');
+console.log('?? Autoride Customer App Loading...');
 
-function showPage(pageId) {
-    console.log('Showing page:', pageId);
+// LOGIN FUNCTION
+function doLogin() {
+    console.log('?? LOGIN BUTTON CLICKED!');
+    
+    const email = document.getElementById('email-input').value;
+    const password = document.getElementById('password-input').value;
+    
+    console.log('?? Email:', email);
+    console.log('?? Password:', password);
+    
+    if (!email || !password) {
+        alert('? Please enter email and password!');
+        return;
+    }
+    
+    console.log('? FORCING LOGIN SUCCESS...');
+    
+    // Save user data
+    const userData = {
+        email: email,
+        name: email.split('@')[0],
+        loginTime: new Date().toISOString()
+    };
+    
+    localStorage.setItem('autoride_customer', JSON.stringify(userData));
+    console.log('?? User saved:', userData);
+    
+    // Hide login screen
+    document.getElementById('login-screen').style.display = 'none';
+    console.log('?? Login screen hidden');
+    
+    // Show main app
+    const mainApp = document.getElementById('main-app');
+    mainApp.classList.add('show');
+    console.log('? Main app shown');
+    
+    // Show bottom navigation
+    const bottomNav = document.getElementById('bottom-nav');
+    bottomNav.classList.add('show');
+    console.log('?? Bottom nav shown');
+    
+    // Update welcome message
+    const welcomeMsg = document.getElementById('user-welcome');
+    welcomeMsg.textContent = 'Hello, ' + userData.name + '!';
+    console.log('?? Welcome message updated');
+    
+    // Update profile email
+    const profileEmail = document.getElementById('profile-email');
+    profileEmail.textContent = 'Email: ' + userData.email;
+    console.log('?? Profile email updated');
+    
+    console.log('?? LOGIN COMPLETE!');
+}
+
+// SHOW PAGE FUNCTION
+function showPage(pageName) {
+    console.log('?? Showing page:', pageName);
     
     // Hide all pages
     const pages = document.querySelectorAll('.page');
@@ -178,114 +249,72 @@ function showPage(pageId) {
     });
     
     // Show target page
-    const targetPage = document.getElementById(pageId);
+    const targetPage = document.getElementById(pageName + '-page');
     if (targetPage) {
         targetPage.classList.add('active');
-        console.log('Page shown successfully:', pageId);
+        console.log('? Page shown:', pageName);
     } else {
-        console.error('Page not found:', pageId);
+        console.error('? Page not found:', pageName);
     }
     
     // Update navigation
-    const navButtons = document.querySelectorAll('.nav button');
-    navButtons.forEach(btn => btn.classList.remove('active'));
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active');
+    });
     
-    const navMap = {
-        'home-page': 'nav-home',
-        'vehicles-page': 'nav-vehicles',
-        'bookings-page': 'nav-bookings', 
-        'profile-page': 'nav-profile',
-        'more-page': 'nav-more'
-    };
-    
-    if (navMap[pageId]) {
-        const navBtn = document.getElementById(navMap[pageId]);
-        if (navBtn) {
-            navBtn.classList.add('active');
+    // Find and activate corresponding nav item
+    navItems.forEach(item => {
+        if (item.onclick.toString().includes("'" + pageName + "'")) {
+            item.classList.add('active');
         }
+    });
+}
+
+// LOGOUT FUNCTION
+function doLogout() {
+    console.log('?? LOGOUT CLICKED');
+    
+    if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('autoride_customer');
+        console.log('??? User data cleared');
+        
+        // Hide main app
+        document.getElementById('main-app').classList.remove('show');
+        document.getElementById('bottom-nav').classList.remove('show');
+        
+        // Show login screen
+        document.getElementById('login-screen').style.display = 'block';
+        
+        console.log('? Logged out successfully');
     }
 }
 
-function login() {
-    console.log('Login clicked');
-    
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    
-    if (!email || !password) {
-        alert('Please enter email and password');
-        return;
-    }
-    
-    console.log('Login successful');
-    
-    // Save user
-    localStorage.setItem('customer_user', JSON.stringify({
-        email: email,
-        name: email.split('@')[0]
-    }));
-    
-    // Update welcome text
-    const welcomeText = document.getElementById('welcome-text');
-    if (welcomeText) {
-        welcomeText.textContent = 'Hello, ' + email.split('@')[0] + '!';
-    }
-    
-    // Show navigation
-    const nav = document.getElementById('navigation');
-    if (nav) {
-        nav.classList.remove('hidden');
-    }
-    
-    // Show home page
-    showPage('home-page');
-}
-
-function logout() {
-    console.log('Logout clicked');
-    
-    localStorage.removeItem('customer_user');
-    
-    // Hide navigation
-    const nav = document.getElementById('navigation');
-    if (nav) {
-        nav.classList.add('hidden');
-    }
-    
-    // Show login page
-    showPage('login-page');
-}
-
-// Check if already logged in
+// CHECK IF ALREADY LOGGED IN
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded');
+    console.log('?? DOM Loaded - Checking login status...');
     
-    const user = localStorage.getItem('customer_user');
-    if (user) {
-        console.log('User found, auto-login');
-        const userData = JSON.parse(user);
+    const userData = localStorage.getItem('autoride_customer');
+    if (userData) {
+        console.log('?? User found - Auto login');
+        const user = JSON.parse(userData);
         
-        // Update welcome text
-        const welcomeText = document.getElementById('welcome-text');
-        if (welcomeText) {
-            welcomeText.textContent = 'Hello, ' + userData.name + '!';
-        }
+        // Auto login
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').classList.add('show');
+        document.getElementById('bottom-nav').classList.add('show');
         
-        // Show navigation
-        const nav = document.getElementById('navigation');
-        if (nav) {
-            nav.classList.remove('hidden');
-        }
+        // Update UI
+        document.getElementById('user-welcome').textContent = 'Hello, ' + user.name + '!';
+        document.getElementById('profile-email').textContent = 'Email: ' + user.email;
         
-        // Show home page
-        showPage('home-page');
+        console.log('? Auto login complete');
     } else {
-        console.log('No user found, show login');
-        showPage('login-page');
+        console.log('?? No user found - Show login');
     }
 });
 
-console.log('Script loaded');
+console.log('? Script loaded successfully!');
 </script>
 
 </body>
