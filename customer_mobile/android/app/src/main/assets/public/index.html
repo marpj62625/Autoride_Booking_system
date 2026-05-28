@@ -1,333 +1,291 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Autoride</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoride Customer</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
-        body { background:#f9f9ff; color:#1a1c1e; min-height:100vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
         
-        .auth-page { display:flex; flex-direction:column; min-height:100vh; }
-        .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; }
-        .auth-logo { text-align:center; margin-bottom:28px; }
-        .auth-logo i { font-size:2.5rem; color:#0052ff; }
-        .auth-logo h1 { font-size:2rem; font-weight:900; color:#1a1c1e; margin-top:8px; }
-        .auth-logo p { color:#6B6E75; font-size:0.875rem; margin-top:4px; }
-        .auth-card { background:#ffffff; border:1px solid:#d3daea; border-radius:28px; padding:28px 24px; width:100%; max-width:420px; }
-        .auth-card h2 { font-size:1.4rem; font-weight:900; margin-bottom:4px; }
-        .auth-card p.subtitle { color:#6B6E75; font-size:0.875rem; margin-bottom:24px; }
+        .container { max-width: 400px; margin: 0 auto; background: white; min-height: 100vh; }
+        .header { background: #0052ff; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; }
         
-        .form-group { margin-bottom:16px; }
-        .form-group label { display:block; font-size:0.85rem; font-weight:600; color:#44474e; margin-bottom:6px; }
-        .form-group input { width:100%; padding:12px 14px; background:#ffffff; border:1.5px solid:#d3daea; border-radius:12px; font-size:0.95rem; outline:none; }
-        .form-group input:focus { border-color:#0052ff; }
+        .login-form { margin-top: 50px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
         
-        .btn-primary { background:#0052ff; color:#ffffff; border:none; padding:14px 20px; border-radius:20px; font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; }
-        .btn-primary:hover { background:#0040CC; }
+        .btn { width: 100%; padding: 15px; background: #0052ff; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn:hover { background: #0040cc; }
         
-        .auth-link { text-align:center; margin-top:16px; font-size:0.875rem; color:#6B6E75; }
-        .auth-link a { color:#0052ff; font-weight:700; text-decoration:none; }
+        .page { display: none; }
+        .page.active { display: block; }
         
-        .page { display:none; min-height:100vh; padding:20px; padding-bottom:80px; background:#f9f9ff; }
-        .page.active { display:block; }
+        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ddd; display: flex; }
+        .nav.hidden { display: none; }
+        .nav button { flex: 1; padding: 15px 10px; border: none; background: none; color: #666; font-size: 12px; cursor: pointer; }
+        .nav button.active { color: #0052ff; }
+        .nav button i { display: block; font-size: 20px; margin-bottom: 5px; }
         
-        .bottom-nav { position:fixed; bottom:0; left:0; right:0; height:65px; background:#ffffff; border-top:1px solid:#d3daea; display:flex; justify-content:space-around; align-items:center; z-index:1000; }
-        .bottom-nav.hidden { display:none; }
-        .bottom-nav button { background:none; border:none; color:#6B6E75; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:0.65rem; font-weight:600; flex:1; padding:8px 0; cursor:pointer; }
-        .bottom-nav button i { font-size:1.3rem; }
-        .bottom-nav button.active { color:#0052ff; }
+        .home-banner { background: linear-gradient(135deg, #0052ff, #0040cc); color: white; padding: 30px 20px; margin: -20px -20px 20px -20px; border-radius: 0 0 20px 20px; }
+        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .quick-btn { background: white; border: 1px solid #ddd; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; }
+        .quick-btn i { font-size: 24px; color: #0052ff; margin-bottom: 10px; }
         
-        .home-banner { background:linear-gradient(135deg, #0052ff, #0040CC); color:#ffffff; padding:24px 20px; margin:-20px -20px 20px -20px; border-radius:0 0 20px 20px; }
-        .home-banner h2 { font-size:1.3rem; font-weight:800; }
-        .home-banner p { font-size:0.875rem; opacity:0.85; margin-top:4px; }
-        
-        .quick-actions { display:grid; grid-template-columns:repeat(2,1fr); gap:15px; margin-top:20px; }
-        .quick-action-btn { background:#ffffff; border:1px solid:#d3daea; border-radius:20px; padding:20px; display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; text-align:center; }
-        .quick-action-btn:hover { border-color:#0052ff; }
-        .quick-action-btn i { font-size:2rem; color:#0052ff; }
-        .quick-action-btn span { font-size:0.9rem; font-weight:600; color:#44474e; }
-        
-        .page-header { background:#ffffff; padding:20px; margin:-20px -20px 20px -20px; border-bottom:1px solid:#d3daea; }
-        .page-header h2 { font-size:1.5rem; font-weight:900; }
-        .page-content { padding:20px 0; }
+        .page-header { background: #0052ff; color: white; padding: 20px; margin: -20px -20px 20px -20px; }
     </style>
 </head>
 <body>
 
-<!-- LOGIN PAGE -->
-<div id="page-login" class="auth-page" style="display:flex;">
-  <div class="auth-container">
-    <div class="auth-logo">
-      <i class="fas fa-car"></i>
-      <h1>Autoride</h1>
-      <p>Book your perfect ride</p>
+<div class="container">
+    <!-- LOGIN PAGE -->
+    <div id="login-page" class="page active">
+        <div class="header">
+            <i class="fas fa-car" style="font-size: 40px; margin-bottom: 10px;"></i>
+            <h1>Autoride</h1>
+            <p>Customer App</p>
+        </div>
+        <div class="content">
+            <div class="login-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" value="customer@test.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" value="123456">
+                </div>
+                <button class="btn" onclick="login()">Login</button>
+            </div>
+        </div>
     </div>
-    <div class="auth-card">
-      <h2>Welcome back</h2>
-      <p class="subtitle">Sign in to your account</p>
-      <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" id="loginEmail" placeholder="yourname@gmail.com" value="test@gmail.com">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="loginPassword" placeholder="Enter your password" value="password">
-      </div>
-      <button class="btn-primary" onclick="doLogin()">Sign In</button>
-      <div class="auth-link">
-        Don't have an account? <a href="#" onclick="showRegister()">Register</a>
-      </div>
+
+    <!-- HOME PAGE -->
+    <div id="home-page" class="page">
+        <div class="content">
+            <div class="home-banner">
+                <h2 id="welcome-text">Welcome!</h2>
+                <p>Ready for your next ride?</p>
+            </div>
+            <div class="quick-actions">
+                <div class="quick-btn" onclick="showPage('vehicles-page')">
+                    <i class="fas fa-car"></i>
+                    <div>Browse Cars</div>
+                </div>
+                <div class="quick-btn" onclick="showPage('bookings-page')">
+                    <i class="fas fa-calendar"></i>
+                    <div>My Bookings</div>
+                </div>
+                <div class="quick-btn" onclick="alert('Support coming soon!')">
+                    <i class="fas fa-headset"></i>
+                    <div>Support</div>
+                </div>
+                <div class="quick-btn" onclick="alert('Chat coming soon!')">
+                    <i class="fas fa-comments"></i>
+                    <div>Live Chat</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <!-- VEHICLES PAGE -->
+    <div id="vehicles-page" class="page">
+        <div class="page-header">
+            <h2>Browse Vehicles</h2>
+        </div>
+        <div class="content">
+            <p style="text-align: center; color: #666; margin-top: 50px;">
+                Vehicle browsing feature<br>coming soon!
+            </p>
+        </div>
+    </div>
+
+    <!-- BOOKINGS PAGE -->
+    <div id="bookings-page" class="page">
+        <div class="page-header">
+            <h2>My Bookings</h2>
+        </div>
+        <div class="content">
+            <p style="text-align: center; color: #666; margin-top: 50px;">
+                No bookings yet.<br>Start by browsing vehicles!
+            </p>
+        </div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div id="profile-page" class="page">
+        <div class="page-header">
+            <h2>My Profile</h2>
+        </div>
+        <div class="content">
+            <p style="text-align: center; color: #666; margin-top: 50px;">
+                Profile management<br>coming soon!
+            </p>
+            <button class="btn" onclick="logout()" style="margin-top: 30px;">Logout</button>
+        </div>
+    </div>
+
+    <!-- MORE PAGE -->
+    <div id="more-page" class="page">
+        <div class="page-header">
+            <h2>More Options</h2>
+        </div>
+        <div class="content">
+            <p style="text-align: center; color: #666; margin-top: 50px;">
+                Additional features<br>coming soon!
+            </p>
+        </div>
+    </div>
 </div>
 
-<!-- HOME PAGE -->
-<div id="page-home" class="page">
-  <div class="home-banner">
-    <h2 id="homeUserName">Welcome</h2>
-    <p>Ready for your next adventure?</p>
-  </div>
-  <div class="quick-actions">
-    <button class="quick-action-btn" onclick="showPage('page-vehicles')">
-      <i class="fas fa-car"></i>
-      <span>Browse Cars</span>
+<!-- NAVIGATION -->
+<div class="nav hidden" id="navigation">
+    <button onclick="showPage('home-page')" id="nav-home">
+        <i class="fas fa-home"></i>
+        Home
     </button>
-    <button class="quick-action-btn" onclick="showPage('page-bookings')">
-      <i class="fas fa-calendar-check"></i>
-      <span>My Bookings</span>
+    <button onclick="showPage('vehicles-page')" id="nav-vehicles">
+        <i class="fas fa-car"></i>
+        Vehicles
     </button>
-    <button class="quick-action-btn" onclick="alert('Support feature coming soon!')">
-      <i class="fas fa-headset"></i>
-      <span>Support</span>
+    <button onclick="showPage('bookings-page')" id="nav-bookings">
+        <i class="fas fa-calendar"></i>
+        Bookings
     </button>
-    <button class="quick-action-btn" onclick="alert('Live chat coming soon!')">
-      <i class="fas fa-comments"></i>
-      <span>Live Chat</span>
+    <button onclick="showPage('profile-page')" id="nav-profile">
+        <i class="fas fa-user"></i>
+        Profile
     </button>
-  </div>
+    <button onclick="showPage('more-page')" id="nav-more">
+        <i class="fas fa-ellipsis-h"></i>
+        More
+    </button>
 </div>
-
-<!-- VEHICLES PAGE -->
-<div id="page-vehicles" class="page">
-  <div class="page-header">
-    <h2>Browse Vehicles</h2>
-  </div>
-  <div class="page-content">
-    <p style="text-align:center; color:#6B6E75;">Vehicle browsing feature coming soon!</p>
-    <p style="text-align:center; color:#6B6E75; margin-top:10px;">You can browse available cars here.</p>
-  </div>
-</div>
-
-<!-- BOOKINGS PAGE -->
-<div id="page-bookings" class="page">
-  <div class="page-header">
-    <h2>My Bookings</h2>
-  </div>
-  <div class="page-content">
-    <p style="text-align:center; color:#6B6E75;">No bookings yet.</p>
-    <p style="text-align:center; color:#6B6E75; margin-top:10px;">Start by browsing vehicles!</p>
-  </div>
-</div>
-
-<!-- PROFILE PAGE -->
-<div id="page-profile" class="page">
-  <div class="page-header">
-    <h2>My Profile</h2>
-  </div>
-  <div class="page-content">
-    <p style="text-align:center; color:#6B6E75;">Profile management coming soon!</p>
-    <button class="btn-primary" onclick="doLogout()" style="margin-top:20px; max-width:200px; margin-left:auto; margin-right:auto; display:block;">Logout</button>
-  </div>
-</div>
-
-<!-- MORE PAGE -->
-<div id="page-more" class="page">
-  <div class="page-header">
-    <h2>More Options</h2>
-  </div>
-  <div class="page-content">
-    <p style="text-align:center; color:#6B6E75;">Additional features coming soon!</p>
-  </div>
-</div>
-
-<!-- BOTTOM NAVIGATION -->
-<nav class="bottom-nav hidden" id="bottomNav">
-  <button id="nav-home"><i class="fas fa-home"></i><span>Home</span></button>
-  <button id="nav-vehicles"><i class="fas fa-car"></i><span>Browse</span></button>
-  <button id="nav-bookings"><i class="fas fa-calendar-check"></i><span>Bookings</span></button>
-  <button id="nav-profile"><i class="fas fa-user"></i><span>Profile</span></button>
-  <button id="nav-more"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
-</nav>
 
 <script>
-console.log('Autoride app starting...');
+console.log('App starting...');
 
-// Show page function
 function showPage(pageId) {
     console.log('Showing page:', pageId);
     
-    // Hide login page
-    const loginPage = document.getElementById('page-login');
-    if (loginPage) {
-        loginPage.style.display = 'none';
-    }
-    
-    // Hide all other pages
-    document.querySelectorAll('.page').forEach(page => {
-        page.style.display = 'none';
+    // Hide all pages
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(page => {
         page.classList.remove('active');
     });
     
     // Show target page
     const targetPage = document.getElementById(pageId);
     if (targetPage) {
-        targetPage.style.display = 'block';
         targetPage.classList.add('active');
-        console.log('Successfully showed page:', pageId);
+        console.log('Page shown successfully:', pageId);
     } else {
         console.error('Page not found:', pageId);
     }
     
     // Update navigation
-    updateNavigation(pageId);
-}
-
-// Update navigation
-function updateNavigation(pageId) {
-    document.querySelectorAll('.bottom-nav button').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    const navButtons = document.querySelectorAll('.nav button');
+    navButtons.forEach(btn => btn.classList.remove('active'));
     
     const navMap = {
-        'page-home': 'nav-home',
-        'page-vehicles': 'nav-vehicles', 
-        'page-bookings': 'nav-bookings',
-        'page-profile': 'nav-profile',
-        'page-more': 'nav-more'
+        'home-page': 'nav-home',
+        'vehicles-page': 'nav-vehicles',
+        'bookings-page': 'nav-bookings', 
+        'profile-page': 'nav-profile',
+        'more-page': 'nav-more'
     };
     
     if (navMap[pageId]) {
         const navBtn = document.getElementById(navMap[pageId]);
         if (navBtn) {
             navBtn.classList.add('active');
-            console.log('Navigation updated for:', pageId);
         }
     }
 }
 
-// Login function
-function doLogin() {
+function login() {
     console.log('Login clicked');
     
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
     
     if (!email || !password) {
         alert('Please enter email and password');
         return;
     }
     
-    console.log('Login successful, saving user data...');
+    console.log('Login successful');
     
-    // Save user data
-    localStorage.setItem('autoride_user', JSON.stringify({
-        id: 1,
+    // Save user
+    localStorage.setItem('customer_user', JSON.stringify({
         email: email,
         name: email.split('@')[0]
     }));
     
-    // Show main app
-    showMainApp();
-}
-
-// Show main app
-function showMainApp() {
-    console.log('Showing main app...');
-    
-    // Show navigation
-    const bottomNav = document.getElementById('bottomNav');
-    if (bottomNav) {
-        bottomNav.classList.remove('hidden');
-        console.log('Bottom navigation shown');
+    // Update welcome text
+    const welcomeText = document.getElementById('welcome-text');
+    if (welcomeText) {
+        welcomeText.textContent = 'Hello, ' + email.split('@')[0] + '!';
     }
     
-    // Update user name
-    const userData = JSON.parse(localStorage.getItem('autoride_user') || '{}');
-    const homeUserName = document.getElementById('homeUserName');
-    if (homeUserName && userData.name) {
-        homeUserName.textContent = 'Hello, ' + userData.name;
+    // Show navigation
+    const nav = document.getElementById('navigation');
+    if (nav) {
+        nav.classList.remove('hidden');
     }
     
     // Show home page
-    showPage('page-home');
+    showPage('home-page');
 }
 
-// Logout function
-function doLogout() {
+function logout() {
     console.log('Logout clicked');
     
-    localStorage.removeItem('autoride_user');
+    localStorage.removeItem('customer_user');
     
     // Hide navigation
-    const bottomNav = document.getElementById('bottomNav');
-    if (bottomNav) {
-        bottomNav.classList.add('hidden');
+    const nav = document.getElementById('navigation');
+    if (nav) {
+        nav.classList.add('hidden');
     }
-    
-    // Hide all pages
-    document.querySelectorAll('.page').forEach(page => {
-        page.style.display = 'none';
-    });
     
     // Show login page
-    const loginPage = document.getElementById('page-login');
-    if (loginPage) {
-        loginPage.style.display = 'flex';
-    }
+    showPage('login-page');
 }
 
-// Register function
-function showRegister() {
-    alert('Registration feature coming soon!');
-}
-
-// Setup navigation when DOM loads
+// Check if already logged in
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up navigation...');
+    console.log('DOM loaded');
     
-    // Setup bottom navigation
-    document.querySelectorAll('.bottom-nav button').forEach(button => {
-        button.addEventListener('click', function() {
-            const buttonId = this.id;
-            console.log('Nav clicked:', buttonId);
-            
-            switch(buttonId) {
-                case 'nav-home': showPage('page-home'); break;
-                case 'nav-vehicles': showPage('page-vehicles'); break;
-                case 'nav-bookings': showPage('page-bookings'); break;
-                case 'nav-profile': showPage('page-profile'); break;
-                case 'nav-more': showPage('page-more'); break;
-            }
-        });
-    });
-    
-    // Check if user is already logged in
-    const userData = localStorage.getItem('autoride_user');
-    if (userData) {
-        console.log('User found, showing main app');
-        showMainApp();
+    const user = localStorage.getItem('customer_user');
+    if (user) {
+        console.log('User found, auto-login');
+        const userData = JSON.parse(user);
+        
+        // Update welcome text
+        const welcomeText = document.getElementById('welcome-text');
+        if (welcomeText) {
+            welcomeText.textContent = 'Hello, ' + userData.name + '!';
+        }
+        
+        // Show navigation
+        const nav = document.getElementById('navigation');
+        if (nav) {
+            nav.classList.remove('hidden');
+        }
+        
+        // Show home page
+        showPage('home-page');
     } else {
-        console.log('No user found, showing login');
-        // Login page is already visible by default
+        console.log('No user found, show login');
+        showPage('login-page');
     }
-    
-    console.log('App initialization complete');
 });
 
-console.log('Script loaded successfully');
+console.log('Script loaded');
 </script>
 
 </body>
