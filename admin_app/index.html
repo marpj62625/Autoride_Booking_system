@@ -88,6 +88,85 @@
             margin-bottom: 1rem;
         }
 
+        /* Password Input Wrapper Styles */
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .password-input-wrapper input {
+            width: 100%;
+            padding-right: 45px;
+            margin-bottom: 0;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .password-toggle:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .password-toggle i {
+            font-size: 14px;
+        }
+
+        /* Password Requirements Styles */
+        .password-requirements {
+            margin-top: 8px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .requirement {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .requirement:last-child {
+            margin-bottom: 0;
+        }
+
+        .requirement i {
+            font-size: 12px;
+            width: 12px;
+        }
+
+        .requirement.valid {
+            color: #10b981;
+        }
+
+        .requirement.valid i {
+            color: #10b981;
+        }
+
+        .requirement.invalid {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .requirement.invalid i {
+            color: #ef4444;
+        }
+
         .modal {
             position: fixed;
             top: 0;
@@ -1158,7 +1237,12 @@
         <div class="login-card">
             <h1>Autoride Admin</h1>
             <input type="email" id="loginEmail" class="login-input" placeholder="Admin Email">
-            <input type="password" id="loginPass" class="login-input" placeholder="Password">
+            <div class="password-input-wrapper">
+                <input type="password" id="loginPass" class="login-input" placeholder="Password">
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
             <button class="btn-primary" onclick="adminAuth.login()" style="width: 100%;">Login to Dashboard</button>
             <p id="loginError" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem;"></p>
         </div>
@@ -4105,3 +4189,67 @@ void loop() {
 </body>
 
 </html>
+    <script>
+        // Password visibility toggle function
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Password validation function
+        function validatePassword(password, errorElementId) {
+            const requirements = {
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                length: password.length >= 8
+            };
+
+            // Update requirement indicators
+            const updateRequirement = (id, isValid) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const icon = element.querySelector('i');
+                    if (isValid) {
+                        element.classList.add('valid');
+                        element.classList.remove('invalid');
+                        icon.className = 'fas fa-check';
+                    } else {
+                        element.classList.add('invalid');
+                        element.classList.remove('valid');
+                        icon.className = 'fas fa-times';
+                    }
+                }
+            };
+
+            updateRequirement('req-uppercase', requirements.uppercase);
+            updateRequirement('req-lowercase', requirements.lowercase);
+            updateRequirement('req-number', requirements.number);
+            updateRequirement('req-length', requirements.length);
+
+            // Check if all requirements are met
+            const isValid = Object.values(requirements).every(req => req);
+            
+            // Update error message
+            const errorElement = document.getElementById(errorElementId);
+            if (errorElement) {
+                if (password.length > 0 && !isValid) {
+                    errorElement.textContent = 'Password does not meet all requirements';
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+    </script>

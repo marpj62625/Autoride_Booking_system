@@ -787,3 +787,80 @@ footer {
 .print-btn:hover {
     background: #000;
 }
+
+/* Password Input Wrapper Styles */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 45px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.password-toggle:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.password-toggle i {
+  font-size: 14px;
+}
+
+/* Password Requirements Styles */
+.password-requirements {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  transition: all 0.2s ease;
+}
+
+.requirement:last-child {
+  margin-bottom: 0;
+}
+
+.requirement i {
+  font-size: 12px;
+  width: 12px;
+}
+
+.requirement.valid {
+  color: var(--success);
+}
+
+.requirement.valid i {
+  color: var(--success);
+}
+
+.requirement.invalid {
+  color: var(--text-muted);
+}
+
+.requirement.invalid i {
+  color: var(--error);
+}

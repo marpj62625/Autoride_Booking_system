@@ -80,6 +80,42 @@
         .revenue-restricted { display: none; }
         @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
 
+        /* Password Input Wrapper Styles */
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .password-input-wrapper input {
+            width: 100%;
+            padding-right: 45px;
+            margin-bottom: 0;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .password-toggle:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .password-toggle i {
+            font-size: 14px;
+        }
+
         * { 
             margin: 0; padding: 0; box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent;
@@ -1951,7 +1987,12 @@
         </div>
         <h1 style="font-size: 1.5rem; margin-bottom: 20px;">Admin Login</h1>
         <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 15px;">
-        <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 20px;">
+        <div class="password-input-wrapper">
+            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 20px;">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
         <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px var(--primary-glow);">Login to Dashboard</button>
         <p id="loginError" style="color: var(--danger); margin-top: 15px; font-size: 0.85rem; font-weight: 600;"></p>
     </div>
@@ -4714,8 +4755,10 @@
                 if (e.name !== 'AbortError') showNotification('Share failed', 'error');
             }
         }
-    };
-
+    };
+
+
+
     // --- SETTINGS MODULE ---
     const Settings = {
         async fetch() {
@@ -6431,3 +6474,67 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
 </html>
 
 
+    <script>
+        // Password visibility toggle function
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Password validation function
+        function validatePassword(password, errorElementId) {
+            const requirements = {
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                length: password.length >= 8
+            };
+
+            // Update requirement indicators
+            const updateRequirement = (id, isValid) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const icon = element.querySelector('i');
+                    if (isValid) {
+                        element.classList.add('valid');
+                        element.classList.remove('invalid');
+                        icon.className = 'fas fa-check';
+                    } else {
+                        element.classList.add('invalid');
+                        element.classList.remove('valid');
+                        icon.className = 'fas fa-times';
+                    }
+                }
+            };
+
+            updateRequirement('req-uppercase', requirements.uppercase);
+            updateRequirement('req-lowercase', requirements.lowercase);
+            updateRequirement('req-number', requirements.number);
+            updateRequirement('req-length', requirements.length);
+
+            // Check if all requirements are met
+            const isValid = Object.values(requirements).every(req => req);
+            
+            // Update error message
+            const errorElement = document.getElementById(errorElementId);
+            if (errorElement) {
+                if (password.length > 0 && !isValid) {
+                    errorElement.textContent = 'Password does not meet all requirements';
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+    </script>
