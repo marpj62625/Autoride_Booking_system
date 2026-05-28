@@ -401,20 +401,28 @@
 ??????????????????????????????????????????????????????????? -->
 <div id="page-otp-verify" class="auth-page">
   <div class="auth-container">
+    <div class="auth-logo">
+      <i class="fas fa-envelope-open" style="color:var(--primary);"></i>
+      <h1 style="font-size:1.5rem;margin-top:12px;">Check your email</h1>
+    </div>
     <div class="auth-card">
       <h2>Verify Email</h2>
       <p class="subtitle">Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p>
       <div class="otp-inputs">
-        <input type="number" maxlength="1" id="otp0" oninput="otpNext(this,1)">
-        <input type="number" maxlength="1" id="otp1" oninput="otpNext(this,2)">
-        <input type="number" maxlength="1" id="otp2" oninput="otpNext(this,3)">
-        <input type="number" maxlength="1" id="otp3" oninput="otpNext(this,4)">
-        <input type="number" maxlength="1" id="otp4" oninput="otpNext(this,5)">
-        <input type="number" maxlength="1" id="otp5" oninput="otpNext(this,-1)">
+        <input type="number" maxlength="1" id="otp0" oninput="otpNext(this,1)" onkeydown="otpBackspace(event, this, -1)">
+        <input type="number" maxlength="1" id="otp1" oninput="otpNext(this,2)" onkeydown="otpBackspace(event, this, 0)">
+        <input type="number" maxlength="1" id="otp2" oninput="otpNext(this,3)" onkeydown="otpBackspace(event, this, 1)">
+        <input type="number" maxlength="1" id="otp3" oninput="otpNext(this,4)" onkeydown="otpBackspace(event, this, 2)">
+        <input type="number" maxlength="1" id="otp4" oninput="otpNext(this,5)" onkeydown="otpBackspace(event, this, 3)">
+        <input type="number" maxlength="1" id="otp5" oninput="otpNext(this,-1)" onkeydown="otpBackspace(event, this, 4)">
       </div>
       <span class="field-error" id="otpErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
-      <button class="btn-primary" onclick="doVerifyEmail()">Verify</button>
-      <div class="auth-link" style="margin-top:12px;"><a href="#" onclick="resendOtp()">Resend Code</a></div>
+      <button class="btn-primary" onclick="doVerifyEmail()"><i class="fas fa-check-circle"></i> Verify</button>
+      <button class="btn-secondary" onclick="openGmail()" style="margin-top:10px;"><i class="fas fa-envelope"></i> Open Gmail</button>
+      <div class="auth-link" style="margin-top:16px;">
+        <a href="#" id="resendLink" onclick="resendOtp()">Resend Code</a>
+        <span id="resendTimer" style="display:none;color:var(--text-muted);font-weight:600;">Resend in <span id="countdown">30</span>s</span>
+      </div>
     </div>
   </div>
 </div>

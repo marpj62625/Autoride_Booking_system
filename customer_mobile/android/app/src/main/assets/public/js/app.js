@@ -793,6 +793,12 @@ function doRegister() {
       document.getElementById('otpEmailDisplay').textContent = email;
       showToast('Verification code sent to your email!', 'success');
       showPage('page-otp-verify');
+      // Start countdown timer
+      startResendCountdown();
+      // Focus first OTP input
+      setTimeout(function() {
+        document.getElementById('otp0').focus();
+      }, 300);
     })
     .catch(function(err) {
       if (err.status === 409) {
@@ -827,9 +833,32 @@ function doVerifyEmail() {
   if (otp.length < 6) { document.getElementById('otpErr').textContent = 'Please enter the full 6-digit code.'; return; }
   showLoading(true);
   apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email: pendingOtpEmail, otp: otp }) })
-    .then(function() {
-      showToast('Email verified! Please log in.', 'success');
-      showPage('page-login');
+    .then(function(data) {
+      showToast('Email verified successfully!', 'success');
+      
+      // Auto-login after verification
+      if (data && data.user) {
+        currentUser = data.user;
+        Session.save(currentUser);
+        
+        // Initialize Supabase client and load notifications
+        if (typeof supabase !== 'undefined') {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        loadNotifications(data.user.id);
+        subscribeToNotifications(data.user.id);
+        
+        // Redirect to home page
+        setTimeout(function() {
+          loadHome();
+          showPage('page-home');
+        }, 500);
+      } else {
+        // Fallback to login page if no user data
+        setTimeout(function() {
+          showPage('page-login');
+        }, 1000);
+      }
     })
     .catch(function(err) {
       document.getElementById('otpErr').textContent = err.message || 'Invalid or expired verification code.';
@@ -837,9 +866,74 @@ function doVerifyEmail() {
     .finally(function() { showLoading(false); });
 }
 
+var resendCountdown = 0;
+var resendInterval = null;
+
+function startResendCountdown() {
+  resendCountdown = 30;
+  document.getElementById('resendLink').style.display = 'none';
+  document.getElementById('resendTimer').style.display = 'inline';
+  document.getElementById('countdown').textContent = resendCountdown;
+  
+  if (resendInterval) clearInterval(resendInterval);
+  
+  resendInterval = setInterval(function() {
+    resendCountdown--;
+    document.getElementById('countdown').textContent = resendCountdown;
+    
+    if (resendCountdown <= 0) {
+      clearInterval(resendInterval);
+      document.getElementById('resendLink').style.display = 'inline';
+      document.getElementById('resendTimer').style.display = 'none';
+    }
+  }, 1000);
+}
+
 function resendOtp() {
-  if (!pendingOtpEmail) return;
-  showToast('Resending code...', 'info');
+  if (!pendingOtpEmail || resendCountdown > 0) return;
+  
+  showLoading(true);
+  apiCall('/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email: pendingOtpEmail }) })
+    .then(function() {
+      showToast('Verification code sent!', 'success');
+      startResendCountdown();
+      // Clear OTP inputs
+      for (var i = 0; i < 6; i++) {
+        document.getElementById('otp' + i).value = '';
+      }
+      document.getElementById('otp0').focus();
+    })
+    .catch(function(err) {
+      showToast(err.message || 'Failed to resend code', 'error');
+    })
+    .finally(function() { showLoading(false); });
+}
+
+function openGmail() {
+  // Try to open Gmail app first, fallback to web
+  var gmailApp = 'googlegmail://';
+  var gmailWeb = 'https://mail.google.com';
+  
+  // For mobile apps, try to open Gmail app
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+    window.Capacitor.Plugins.App.openUrl({ url: gmailApp }).catch(function() {
+      // If Gmail app not installed, open web version
+      window.open(gmailWeb, '_system');
+    });
+  } else {
+    // For web, just open Gmail in new tab
+    window.open(gmailWeb, '_blank');
+  }
+}
+
+function otpBackspace(event, currentInput, prevIdx) {
+  if (event.key === 'Backspace' && currentInput.value === '' && prevIdx >= 0) {
+    var prev = document.getElementById('otp' + prevIdx);
+    if (prev) {
+      prev.focus();
+      prev.select();
+    }
+  }
 }
 
 function otpNextSms(el, nextIdx) {
