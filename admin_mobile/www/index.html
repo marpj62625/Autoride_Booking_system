@@ -1119,19 +1119,15 @@
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
             <div id="mobileSystemConfig" class="revenue-restricted">
-                <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 4px solid var(--primary); margin-top: 10px;">
+                <div class="stat-card" onclick="toggleSystemConfigModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                     <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-cogs" style="color: #818cf8;"></i>
+                        <i class="fas fa-cogs" style="color: var(--text-muted);"></i>
                     </div>
                     <div style="flex: 1;">
                         <h4 style="font-size: 0.95rem;">System Configuration</h4>
-                        <div id="mobileSettingsList" style="display: grid; gap: 8px; margin-top: 10px;">
-                            <p style="font-size: 0.7rem; color: var(--text-muted);">Loading settings...</p>
-                        </div>
-                        <button onclick="Settings.save()" style="width: 100%; margin-top: 15px; padding: 10px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.75rem;">
-                            Save Settings
-                        </button>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage system settings</p>
                     </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
             </div>
         </div>
@@ -1369,6 +1365,40 @@
             </div>
             <div style="margin-top: 20px;">
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="btn-premium" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--primary); border: none; color: white; font-weight: 800;">Close Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM CONFIGURATION MODAL -->
+    <div id="systemConfigModal" class="premium-modal" style="display: none;" onclick="closeSystemConfigModalBackdrop(event)">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-cogs" style="color: var(--primary);"></i>
+                    System Configuration
+                </h3>
+                <button onclick="closeSystemConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                    Configure system-wide settings and parameters.
+                </p>
+                
+                <div id="mobileSettingsList" style="display: grid; gap: 12px;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading settings...</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 24px;">
+                <button onclick="closeSystemConfigModal()" class="btn-outline" style="flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: white; border-radius: 10px;">
+                    Cancel
+                </button>
+                <button onclick="Settings.save(); closeSystemConfigModal();" class="btn-premium" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">
+                    Save Settings
+                </button>
             </div>
         </div>
     </div>
@@ -2220,6 +2250,32 @@
             localStorage.setItem('adminTheme', 'dark');
             if (icon) icon.className = 'fas fa-sun';
             if (label) label.textContent = 'Light Mode';
+        }
+    }
+
+    // --- SYSTEM CONFIG MODAL ---
+    function toggleSystemConfigModal() {
+        const modal = document.getElementById('systemConfigModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            // Load settings when modal opens
+            if (typeof Settings !== 'undefined' && Settings.fetch) {
+                Settings.fetch();
+            }
+        }
+    }
+
+    function closeSystemConfigModal() {
+        const modal = document.getElementById('systemConfigModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function closeSystemConfigModalBackdrop(event) {
+        // Only close if clicking on the backdrop (not the modal content)
+        if (event.target === event.currentTarget) {
+            closeSystemConfigModal();
         }
     }
 
@@ -5546,6 +5602,9 @@
     // Global Bindings for HTML Access
     window.adminAuth = adminAuth;
     window.toggleDarkMode = toggleDarkMode;
+    window.toggleSystemConfigModal = toggleSystemConfigModal;
+    window.closeSystemConfigModal = closeSystemConfigModal;
+    window.closeSystemConfigModalBackdrop = closeSystemConfigModalBackdrop;
     window.Vehicles = Vehicles;
     window.Bookings = Bookings;
     window.Drivers = Drivers;
