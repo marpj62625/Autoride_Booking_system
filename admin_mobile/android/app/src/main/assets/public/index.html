@@ -80,6 +80,47 @@
         .revenue-restricted { display: none; }
         @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.3)} }
 
+        /* Password Input Wrapper Styles */
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .password-input-wrapper input {
+            width: 100%;
+            padding-right: 45px !important;
+            margin-bottom: 0 !important;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .password-toggle:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .password-toggle i {
+            font-size: 16px;
+        }
+
         * { 
             margin: 0; padding: 0; box-sizing: border-box; 
             -webkit-tap-highlight-color: transparent;
@@ -1083,19 +1124,15 @@
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
             <div id="mobileSystemConfig" class="revenue-restricted">
-                <div class="stat-card" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 4px solid var(--primary); margin-top: 10px;">
+                <div class="stat-card" onclick="toggleSystemConfigModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                     <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-cogs" style="color: #818cf8;"></i>
+                        <i class="fas fa-cogs" style="color: var(--text-muted);"></i>
                     </div>
                     <div style="flex: 1;">
                         <h4 style="font-size: 0.95rem;">System Configuration</h4>
-                        <div id="mobileSettingsList" style="display: grid; gap: 8px; margin-top: 10px;">
-                            <p style="font-size: 0.7rem; color: var(--text-muted);">Loading settings...</p>
-                        </div>
-                        <button onclick="Settings.save()" style="width: 100%; margin-top: 15px; padding: 10px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; font-size: 0.75rem;">
-                            Save Settings
-                        </button>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage system settings</p>
                     </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
             </div>
         </div>
@@ -1333,6 +1370,40 @@
             </div>
             <div style="margin-top: 20px;">
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="btn-premium" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--primary); border: none; color: white; font-weight: 800;">Close Preview</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM CONFIGURATION MODAL -->
+    <div id="systemConfigModal" class="premium-modal" style="display: none;" onclick="closeSystemConfigModalBackdrop(event)">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-cogs" style="color: var(--primary);"></i>
+                    System Configuration
+                </h3>
+                <button onclick="closeSystemConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+                    Configure system-wide settings and parameters.
+                </p>
+                
+                <div id="mobileSettingsList" style="display: grid; gap: 12px;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading settings...</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 24px;">
+                <button onclick="closeSystemConfigModal()" class="btn-outline" style="flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: white; border-radius: 10px;">
+                    Cancel
+                </button>
+                <button onclick="Settings.save(); closeSystemConfigModal();" class="btn-premium" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">
+                    Save Settings
+                </button>
             </div>
         </div>
     </div>
@@ -1951,7 +2022,12 @@
         </div>
         <h1 style="font-size: 1.5rem; margin-bottom: 20px;">Admin Login</h1>
         <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 15px;">
-        <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 20px;">
+        <div class="password-input-wrapper">
+            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 14px; padding-right: 45px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: white; margin-bottom: 0;">
+            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPass', this)">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
         <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 15px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px var(--primary-glow);">Login to Dashboard</button>
         <p id="loginError" style="color: var(--danger); margin-top: 15px; font-size: 0.85rem; font-weight: 600;"></p>
     </div>
@@ -2179,6 +2255,32 @@
             localStorage.setItem('adminTheme', 'dark');
             if (icon) icon.className = 'fas fa-sun';
             if (label) label.textContent = 'Light Mode';
+        }
+    }
+
+    // --- SYSTEM CONFIG MODAL ---
+    function toggleSystemConfigModal() {
+        const modal = document.getElementById('systemConfigModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            // Load settings when modal opens
+            if (typeof Settings !== 'undefined' && Settings.fetch) {
+                Settings.fetch();
+            }
+        }
+    }
+
+    function closeSystemConfigModal() {
+        const modal = document.getElementById('systemConfigModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function closeSystemConfigModalBackdrop(event) {
+        // Only close if clicking on the backdrop (not the modal content)
+        if (event.target === event.currentTarget) {
+            closeSystemConfigModal();
         }
     }
 
@@ -4607,23 +4709,33 @@
             const csvContent = BOM + csv;
             const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
 
-            // Use Web Share API (native Android share sheet)
-            if (navigator.share && navigator.canShare) {
-                try {
-                    const file = new File([csvContent], filename, { type: 'text/csv' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
+            try {
+                // Use Capacitor Filesystem to write to Downloads
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                if (Filesystem) {
+                    // Write file to Downloads directory
+                    const result = await Filesystem.writeFile({
+                        path: filename,
+                        data: btoa(unescape(encodeURIComponent(csvContent))),
+                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
+                        recursive: true
+                    });
+                    
+                    // Share the saved file
+                    const { Share } = window.Capacitor.Plugins;
+                    if (Share) {
+                        await Share.share({
                             title: 'Autoride Sales Report',
-                            text: 'Sales report exported from Autoride Admin',
-                            files: [file]
+                            text: 'Sales report from Autoride Admin',
+                            url: result.uri,
+                            dialogTitle: 'Share Report'
                         });
-                        showNotification('Report shared successfully!', 'success');
-                        return;
                     }
-                } catch (err) {
-                    if (err.name === 'AbortError') return;
-                    console.log('Share failed, falling back to clipboard', err);
+                    showNotification('Report saved and ready to share!', 'success');
+                    return;
                 }
+            } catch (err) {
+                console.error('Filesystem export failed:', err);
             }
 
             // Fallback: Copy CSV to clipboard
@@ -4631,15 +4743,11 @@
                 await navigator.clipboard.writeText(csv);
                 showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
             } catch (err) {
-                const modal = document.createElement('div');
-                modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;padding:20px;';
-                modal.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><h3 style="color:white;margin:0;">Report Data (Copy Below)</h3><button onclick="this.parentElement.parentElement.remove()" style="background:#ef4444;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:700;">Close</button></div><textarea style="flex:1;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;" readonly>' + csv.replace(/</g, '&lt;') + '</textarea>';
-                document.body.appendChild(modal);
-                showNotification('Long-press the text to copy it', 'info');
+                showNotification('Export failed. Please try again.', 'error');
             }
         },
 
-        printReport() {
+        async printReport() {
             const data = this._rawData;
             if (!data) { showNotification('No data to print', 'error'); return; }
 
@@ -4649,82 +4757,67 @@
                 '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
             ).join('');
 
-            // Remove any existing overlay
-            const existing = document.getElementById('printOverlay');
-            if (existing) existing.remove();
+            // Build HTML report content
+            var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
+            htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
+            htmlReport += '</head><body>';
+            htmlReport += '<h1>Autoride Sales Report</h1>';
+            htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Bookings:</strong> ' + totalBook + '</p>';
+            htmlReport += '<table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead>';
+            htmlReport += '<tbody>' + tableRows + '</tbody></table>';
+            htmlReport += '</body></html>';
 
-            // Create fullscreen in-app overlay
-            const overlay = document.createElement('div');
-            overlay.id = 'printOverlay';
-            overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:99999;overflow-y:auto;padding:20px;';
+            try {
+                // Save HTML file and share it
+                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                if (Filesystem) {
+                    const filename = 'Autoride_Report_' + new Date().toISOString().split('T')[0] + '.html';
+                    const result = await Filesystem.writeFile({
+                        path: filename,
+                        data: btoa(unescape(encodeURIComponent(htmlReport))),
+                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
+                        recursive: true
+                    });
 
-            const styleTag = document.createElement('style');
-            styleTag.textContent = '@media print { body > *:not(#printOverlay) { display: none !important; } #printOverlay { position: static !important; } .no-print-btns { display: none !important; } }';
-            overlay.appendChild(styleTag);
+                    const { Share } = window.Capacitor.Plugins;
+                    if (Share) {
+                        await Share.share({
+                            title: 'Autoride Sales Report',
+                            url: result.uri,
+                            dialogTitle: 'Share or Print Report'
+                        });
+                    }
+                    showNotification('Report saved! Open it in Chrome to print.', 'success');
+                    return;
+                }
+            } catch (err) {
+                console.error('Print/share failed:', err);
+            }
 
-            const content = document.createElement('div');
-            content.innerHTML = '<h1 style="font-size:1.4rem;margin-bottom:10px;color:#000;">Autoride Sales Report</h1>' +
-                '<p style="color:#333;margin:5px 0;">Generated: ' + new Date().toLocaleString() + '</p>' +
-                '<p style="color:#000;margin:5px 0;"><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>' +
-                '<p style="color:#000;margin:5px 0;"><strong>Total Bookings:</strong> ' + totalBook + '</p>' +
-                '<table style="width:100%;border-collapse:collapse;margin-top:16px;"><thead><tr>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">#</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Vehicle</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Bookings</th>' +
-                '<th style="border:1px solid #ddd;padding:8px;text-align:left;background:#f4f4f4;color:#000;">Revenue</th>' +
-                '</tr></thead><tbody>' + tableRows + '</tbody></table>';
-            overlay.appendChild(content);
-
-            const btns = document.createElement('div');
-            btns.className = 'no-print-btns';
-            btns.style.cssText = 'margin-top:20px;display:flex;gap:10px;';
-
-            const printBtn = document.createElement('button');
-            printBtn.style.cssText = 'flex:1;background:#0052ff;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            printBtn.innerHTML = '&#128424; Share Report';
-            printBtn.onclick = async function() {
-                // Build plain text version of the report
+            // Fallback: share as text
+            try {
                 var reportText = 'AUTORIDE SALES REPORT\n';
                 reportText += 'Generated: ' + new Date().toLocaleString() + '\n\n';
                 reportText += 'Total Revenue: PHP ' + totalRev.toLocaleString() + '\n';
                 reportText += 'Total Bookings: ' + totalBook + '\n\n';
-                reportText += 'TOP VEHICLES BY REVENUE\n';
-                reportText += '------------------------\n';
+                reportText += 'TOP VEHICLES BY REVENUE\n------------------------\n';
                 (data.topVehicles || []).forEach(function(c, i) {
                     reportText += (i+1) + '. ' + c.brand + ' ' + c.model + ' - ' + c.booking_count + ' bookings - PHP ' + (c.revenue||0).toLocaleString() + '\n';
                 });
-
                 if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'Autoride Sales Report',
-                            text: reportText
-                        });
-                        return;
-                    } catch (err) {
-                        if (err.name === 'AbortError') return;
-                    }
-                }
-                // Fallback: copy to clipboard
-                try {
+                    await navigator.share({ title: 'Autoride Sales Report', text: reportText });
+                } else {
                     await navigator.clipboard.writeText(reportText);
-                    alert('Report copied to clipboard!');
-                } catch(e) {
-                    alert(reportText);
+                    showNotification('Report copied to clipboard!', 'success');
                 }
-            };
-
-            const closeBtn = document.createElement('button');
-            closeBtn.style.cssText = 'flex:1;background:#6b7080;color:white;border:none;padding:14px 24px;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;';
-            closeBtn.innerHTML = '&#10006; Close';
-            closeBtn.onclick = function() { document.getElementById('printOverlay').remove(); };
-
-            btns.appendChild(printBtn);
-            btns.appendChild(closeBtn);
-            overlay.appendChild(btns);
-            document.body.appendChild(overlay);
+            } catch(e) {
+                if (e.name !== 'AbortError') showNotification('Share failed', 'error');
+            }
         }
     };
+
 
 
     // --- SETTINGS MODULE ---
@@ -5514,6 +5607,9 @@
     // Global Bindings for HTML Access
     window.adminAuth = adminAuth;
     window.toggleDarkMode = toggleDarkMode;
+    window.toggleSystemConfigModal = toggleSystemConfigModal;
+    window.closeSystemConfigModal = closeSystemConfigModal;
+    window.closeSystemConfigModalBackdrop = closeSystemConfigModalBackdrop;
     window.Vehicles = Vehicles;
     window.Bookings = Bookings;
     window.Drivers = Drivers;
@@ -6442,3 +6538,67 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
 </html>
 
 
+    <script>
+        // Password visibility toggle function
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Password validation function
+        function validatePassword(password, errorElementId) {
+            const requirements = {
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                length: password.length >= 8
+            };
+
+            // Update requirement indicators
+            const updateRequirement = (id, isValid) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const icon = element.querySelector('i');
+                    if (isValid) {
+                        element.classList.add('valid');
+                        element.classList.remove('invalid');
+                        icon.className = 'fas fa-check';
+                    } else {
+                        element.classList.add('invalid');
+                        element.classList.remove('valid');
+                        icon.className = 'fas fa-times';
+                    }
+                }
+            };
+
+            updateRequirement('req-uppercase', requirements.uppercase);
+            updateRequirement('req-lowercase', requirements.lowercase);
+            updateRequirement('req-number', requirements.number);
+            updateRequirement('req-length', requirements.length);
+
+            // Check if all requirements are met
+            const isValid = Object.values(requirements).every(req => req);
+            
+            // Update error message
+            const errorElement = document.getElementById(errorElementId);
+            if (errorElement) {
+                if (password.length > 0 && !isValid) {
+                    errorElement.textContent = 'Password does not meet all requirements';
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+    </script>
