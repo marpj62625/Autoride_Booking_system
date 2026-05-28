@@ -1417,16 +1417,14 @@
     <!-- BOOKING DETAILS MODAL -->
     <div id="bookingDetailsModal" class="premium-modal">
         <div class="modal-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="font-size: 1.5rem; font-weight: 900; color: white; margin: 0; letter-spacing: -1px;">Booking Details</h2>
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="menu-btn"><i class="fas fa-times"></i></button>
+            <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" style="position: absolute; left: 0; background: transparent; border: none; color: var(--text-main); font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
+                <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0;">Booking Details</h2>
             </div>
             <div id="bookingDetailContent">
                 <!-- Content injected via JS -->
             </div>
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="width: 100%;">Close Details</button>
-            </div>
+
         </div>
     </div>
     
