@@ -4761,7 +4761,7 @@
             rows.push(['Top Vehicles by Revenue']);
             rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
             (data.topVehicles || []).forEach((c, i) => {
-                rows.push([i + 1, ${c.brand} , c.booking_count, c.revenue || 0]);
+                rows.push([i + 1, c.brand + " " + c.model, c.booking_count, c.revenue || 0]);
             });
             rows.push([]);
             rows.push(['Revenue Trend']);
@@ -4782,7 +4782,7 @@
                 
                 // Write as base64
                 const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-                const filename = utoride_report_.xlsx;
+                const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
 
                 const { Filesystem, Directory } = window.Capacitor.Plugins;
                 if (Filesystem) {
@@ -4814,7 +4814,7 @@
                     const wb = XLSX.utils.book_new();
                     const ws = XLSX.utils.aoa_to_sheet(rows);
                     XLSX.utils.book_append_sheet(wb, ws, "Report");
-                    XLSX.writeFile(wb, utoride_report_.xlsx);
+                    XLSX.writeFile(wb, 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx');
                     showNotification('Excel file downloaded!', 'success');
                 } else {
                     showNotification('Export failed. Excel library not available.', 'error');
@@ -4837,8 +4837,7 @@
             // Build HTML report content
             var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
             htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
-            htmlReport += '    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head><body>';
+            htmlReport += '</head><body>';
             htmlReport += '<h1>Autoride Sales Report</h1>';
             htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
             htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
