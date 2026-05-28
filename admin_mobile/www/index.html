@@ -4672,6 +4672,7 @@
         renderBookingsChart(trend) {
             const ctx = document.getElementById('reportsBookingsChart').getContext('2d');
             if (this.chartBookings) this.chartBookings.destroy();
+            const barPalette = ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#a855f7','#84cc16','#e11d48'];
             this.chartBookings = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -4679,7 +4680,7 @@
                     datasets: [{
                         label: 'Bookings',
                         data: trend.map(t => t.booking_count || t.count || t.bookings || 0),
-                        backgroundColor: 'rgba(0,82,255,0.6)',
+                        backgroundColor: trend.map((_, i) => barPalette[i % barPalette.length]),
                         borderRadius: 4
                     }]
                 },
@@ -5091,12 +5092,16 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Bookings Bar Chart ï¿½ use booking status breakdown
+        // Bookings Bar Chart — use booking status breakdown
         const bookCtx = document.getElementById('bookingsChart');
         if (bookCtx) {
             const bStatus = data.bookingsByStatus || {};
             const bLabels = Object.keys(bStatus).map(k => k.charAt(0).toUpperCase() + k.slice(1));
             const bData = Object.values(bStatus);
+            const barPalette = ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+            const bColors = bLabels.length
+                ? bLabels.map((_, i) => barPalette[i % barPalette.length])
+                : revTrend.map((_, i) => barPalette[i % barPalette.length]);
             charts.bookings = new Chart(bookCtx.getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -5104,7 +5109,7 @@
                     datasets: [{
                         label: 'Bookings',
                         data: bData.length ? bData : revTrend.map(() => 0),
-                        backgroundColor: 'rgba(0,82,255,0.6)',
+                        backgroundColor: bColors,
                         borderRadius: 4
                     }]
                 },
