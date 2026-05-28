@@ -2751,10 +2751,10 @@ function renderBookingDetail(b) {
     licenseHtml =
       '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">' +
         '<h4 style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:12px;">Driver\'s License Details</h4>' +
-        (b.license_full_name ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
-        (b.date_of_birth ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">DOB: ' + b.date_of_birth + '</p>' : '') +
-        (b.license_number ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:6px;">License #: ' + b.license_number + '</p>' : '') +
-        (b.license_expiry ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:12px;">Expiry: ' + b.license_expiry + '</p>' : '') +
+        (b.license_full_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
+        (b.date_of_birth ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">DOB: ' + b.date_of_birth + '</p>' : '') +
+        (b.license_number ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">License #: ' + b.license_number + '</p>' : '') +
+        (b.license_expiry ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:12px;">Expiry: ' + b.license_expiry + '</p>' : '') +
         '<div style="display:flex;gap:10px;">' + frontBtn + backBtn + '</div>' +
       '</div>';
   }
@@ -2764,10 +2764,10 @@ function renderBookingDetail(b) {
   if (b.emergency_contact_name || b.emergency_contact_phone) {
     emergencyHtml =
       '<div style="margin-bottom:16px;">' +
-        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);margin-bottom:10px;">Emergency Contact</h4>' +
-        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;">Name: ' + b.emergency_contact_name + '</p>' : '') +
-        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
-        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:var(--text-primary);">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
+        '<h4 style="font-weight:700;font-size:1rem;color:#1a1a1a;margin-bottom:10px;">Emergency Contact</h4>' +
+        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;">Name: ' + b.emergency_contact_name + '</p>' : '') +
+        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
+        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:#1a1a1a;">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
       '</div>';
   }
 
