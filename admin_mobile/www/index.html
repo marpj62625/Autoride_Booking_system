@@ -39,7 +39,7 @@
             --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,82,255,0.06);
             --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
             --shadow-premium: 0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,82,255,0.08);
-            --success: #059669;
+            --success: #005339;
             --danger: #dc2626;
             --amber: #d97706;
             --radius-lg: 20px;
@@ -178,7 +178,7 @@
         }
         .logo-wrap span { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; color: var(--text-main); }
         .admin-badge {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            background: linear-gradient(135deg, #00B14F, #005339);
             color: white;
             font-size: 0.58rem;
             font-weight: 800;
@@ -191,7 +191,7 @@
         .user-avatar {
             width: 32px;
             height: 32px;
-            background: linear-gradient(135deg, #00B14F, #8b5cf6);
+            background: linear-gradient(135deg, #00B14F, #5FDBE2);
             border-radius: 9px;
             display: flex;
             align-items: center;
@@ -600,7 +600,7 @@
         }
 
         .login-card input:focus {
-            border-color: #4f46e5;
+            border-color: #005339;
             background: rgba(79, 70, 229, 0.05);
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
             outline: none;
@@ -627,7 +627,7 @@
         .login-card button {
             width: 100%;
             padding: 18px;
-            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            background: linear-gradient(135deg, var(--primary), #005339);
             color: white;
             border: none;
             border-radius: 18px;
@@ -1156,7 +1156,7 @@
         
         <!-- Profile Card -->
         <div class="stat-card" style="padding: 25px; text-align: center; margin-bottom: 25px; border: 1px solid var(--primary-glow);">
-            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #818cf8, #6366f1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
+            <div id="settingsAvatar" style="width: 80px; height: 80px; background: linear-gradient(135deg, #00B14F, #00B14F); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; margin: 0 auto 15px; color: white; box-shadow: 0 10px 25px var(--primary-glow);">S</div>
             <h2 id="settingsName" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 5px;">Super Admin</h2>
             <p id="settingsRole" style="font-size: 0.75rem; color: var(--primary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">SUPER ADMIN</p>
             <p id="settingsEmail" style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">admin@autoride.com</p>
@@ -1261,7 +1261,7 @@
             </div>
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.65rem; color: var(--text-muted);">CONFIRMED</h5>
-                <div class="value" id="bookConfirmed" style="font-size: 1.4rem; font-weight: 700; color: #818cf8;">0</div>
+                <div class="value" id="bookConfirmed" style="font-size: 1.4rem; font-weight: 700; color: #00B14F;">0</div>
             </div>
             <div class="stat-card" style="padding: 15px; margin-bottom: 0;">
                 <h5 style="font-size: 0.65rem; color: var(--text-muted);">PENDING</h5>
@@ -1291,9 +1291,9 @@
             <div style="margin-bottom: 20px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                     <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block;box-shadow:0 0 0 3px rgba(16,185,129,0.25);animation:pulse 1.5s infinite;"></span>
+                        <span style="width:8px;height:8px;border-radius:50%;background:#00B14F;display:inline-block;box-shadow:0 0 0 3px rgba(0,177,79,0.25);animation:pulse 1.5s infinite;"></span>
                         <h3 style="font-size:1rem;font-weight:800;color:var(--text-main);">Active Rentals</h3>
-                        <span id="activeNowCount" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
+                        <span id="activeNowCount" style="background:rgba(0,177,79,0.12);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:800;">0</span>
                     </div>
                     <span style="font-size:0.65rem;color:var(--text-muted);" id="activeNowRefreshLabel">auto-refresh 30s</span>
                 </div>
@@ -1397,7 +1397,7 @@
             <button onclick="Verifications.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
         </div>
         
-        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(99,102,241,0.1), transparent);">
+        <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: linear-gradient(135deg, rgba(0,177,79,0.1), transparent);">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 45px; height: 45px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; box-shadow: 0 8px 16px var(--primary-glow);">
                     <i class="fas fa-user-shield"></i>
@@ -1585,7 +1585,7 @@
         <h1 class="page-title">Drivers</h1>
         
         <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary); background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px);">
-            <h3 style="font-size: 0.9rem; color: #818cf8; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <h3 style="font-size: 0.9rem; color: #00B14F; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-cog" style="font-size: 0.8rem;"></i> Driver Wage Settings
             </h3>
             <div style="display: flex; flex-direction: column; gap: 15px;">
@@ -1593,7 +1593,7 @@
                     <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 8px;">Default Wage (% or Flat Rate)</label>
                     <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.9rem;">
                 </div>
-                <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(99,102,241,0.2);">
+                <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(0,177,79,0.2);">
                     Apply Wage Settings
                 </button>
             </div>
@@ -1627,7 +1627,7 @@
     <div id="gps" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">GPS Tracking</h1>
-            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(16,185,129,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
+            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(0,177,79,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
         </div>
 
         <!-- Map iframe -->
@@ -1678,7 +1678,7 @@
         <h1 class="page-title">Instructions</h1>
         
         <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary);">
-            <h3 style="font-size: 0.95rem; color: #818cf8; margin-bottom: 15px;">Add New Instruction</h3>
+            <h3 style="font-size: 0.95rem; color: #00B14F; margin-bottom: 15px;">Add New Instruction</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white;">
                 <button onclick="Instructions.add()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Add Globally</button>
@@ -1699,7 +1699,7 @@
     <div id="staff" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
             <h1 class="page-title" style="margin: 0;">Staff</h1>
-            <button onclick="Staff.openModal()" style="background: var(--primary); border: none; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(99,102,241,0.3);">
+            <button onclick="Staff.openModal()" style="background: var(--primary); border: none; color: white; padding: 8px 16px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,177,79,0.3);">
                 <i class="fas fa-plus-circle" style="font-size: 0.9rem;"></i> New Staff
             </button>
         </div>
@@ -1909,7 +1909,7 @@
                 <!-- BUTTONS -->
                 <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;">
                     <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)"
-                        style="display:none;width:100%;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;">
+                        style="display:none;width:100%;padding:16px;background:#00B14F;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;">
                         Save &amp; Add Another
                     </button>
                     <div style="display:flex;gap:10px;">
@@ -1918,7 +1918,7 @@
                             Cancel
                         </button>
                         <button type="submit" id="submitBtnText"
-                            style="flex:2;padding:16px;background:#3b82f6;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,0.4);">
+                            style="flex:2;padding:16px;background:#00B14F;border:none;border-radius:14px;color:#fff;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,0.4);">
                             Add Vehicle
                         </button>
                     </div>
@@ -1993,7 +1993,7 @@
                     <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleaness issues..." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
                 </div>
 
-                <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(99,102,241,0.4); margin-bottom: 20px;">
+                <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,177,79,0.4); margin-bottom: 20px;">
                     Submit Inspection Report
                 </button>
             </form>
@@ -2026,7 +2026,7 @@
             <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
             <input type="text" id="umSearch" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 12px 12px 38px; background:var(--surface); border:1px solid var(--border); border-radius:50px; color:white; font-size:0.85rem;">
         </div>
-        <button onclick="UserMgmt.exportCSV()" style="background:rgba(16,185,129,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
+        <button onclick="UserMgmt.exportCSV()" style="background:rgba(0,177,79,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
     </div>
     <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
         <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
@@ -2100,7 +2100,7 @@
             <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 18px 24px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 0; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
         </div>
         
-        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
+        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #005339, #00B14F); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
         
         <p id="loginError" style="color: #ef4444; margin-top: 24px; font-size: 1rem; font-weight: 600; text-align: center; padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); display: none;"></p>
     </div>
@@ -2158,7 +2158,7 @@
             } else {
                 list.innerHTML = notifs.map(n => {
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #6366f1;padding-left:8px;background:rgba(99,102,241,0.08);';
+                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);';
                     return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
                         <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
                         <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
@@ -2504,8 +2504,8 @@
 
             const statusColor = s => {
                 switch ((s||'').toLowerCase()) {
-                    case 'available':   return '#10b981';
-                    case 'rented':      return '#6366f1';
+                    case 'available':   return '#00B14F';
+                    case 'rented':      return '#00B14F';
                     case 'maintenance': return '#f59e0b';
                     default:            return '#ef4444';
                 }
@@ -2818,10 +2818,10 @@
             }
             strip.innerHTML = this._items.map((item, i) => `
                 <div style="position: relative; flex-shrink: 0;">
-                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#6366f1' : 'rgba(255,255,255,0.1)'};">
+                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#00B14F' : 'rgba(255,255,255,0.1)'};">
                         <img src="${item.dataUrl}" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
-                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#818cf8' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#00B14F' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
                         ${item.label}
                     </div>
                     <button type="button" onclick="VehiclePhotos.remove(${i})"
@@ -3227,15 +3227,15 @@
 
                     <!-- INSPECTION SECTION -->
                     <div style="background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 5px;">
-                        <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
+                        <h3 style="font-size: 1rem; color: #00B14F; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
                         <div id="bookingLicenseDetailsWrapper">
                             ${licenseHtml}
                         </div>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800;">Vehicle Inspections</h3>
-                        <button id="mBtnAddInsp" style="padding: 8px 16px; background: #6366f1; border: none; color: white; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">+ New Inspection</button>
+                        <h3 style="font-size: 1rem; color: #00B14F; font-weight: 800;">Vehicle Inspections</h3>
+                        <button id="mBtnAddInsp" style="padding: 8px 16px; background: #00B14F; border: none; color: white; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">+ New Inspection</button>
                     </div>
 
                     <div id="mInspList" style="min-height: 40px;">
@@ -3273,19 +3273,19 @@
                     ` : ''}
 
                     ${b.status === 'Picked Up' ? `
-                        <button onclick="Bookings.complete(${b.id})" class="btn-premium" style="width: 100%; background: #059669; margin-top: 10px;"><i class="fas fa-flag-checkered"></i> Mark as Completed</button>
+                        <button onclick="Bookings.complete(${b.id})" class="btn-premium" style="width: 100%; background: #005339; margin-top: 10px;"><i class="fas fa-flag-checkered"></i> Mark as Completed</button>
                     ` : ''}
 
                     <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr; gap: 10px; margin-top: 20px;">
                         <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #1e293b;">Close</button>
-                        <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" class="btn-premium" style="padding: 12px 5px; font-size: 0.85rem; background: #6366f1;">Download Receipt</button>
+                        <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" class="btn-premium" style="padding: 12px 5px; font-size: 0.85rem; background: #00B14F;">Download Receipt</button>
                         ${isCancellable ? `
                             <button onclick="Bookings.cancel(${b.id})" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #475569; border: none; color: white;">Cancel Booking</button>
                         ` : ''}
                     </div>
 
                     ${b.payment_status === 'Partially Paid' ? `
-                        <button onclick="Bookings.markPaid(${b.id})" class="btn-premium" style="width: 100%; background: #10b981; margin-top: 10px;">Mark as Fully Paid (Cash)</button>
+                        <button onclick="Bookings.markPaid(${b.id})" class="btn-premium" style="width: 100%; background: #00B14F; margin-top: 10px;">Mark as Fully Paid (Cash)</button>
                     ` : ''}
                 </div>
             `;
@@ -3553,7 +3553,7 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05);">
                         <div style="font-size: 0.8rem; color: var(--text-muted);"><i class="fas fa-phone" style="margin-right: 5px;"></i> ${d.contact_info}</div>
                         <div style="display: flex; gap: 8px;">
-                            ${d.license_document ? `<button onclick="window.open('${API_BASE}/uploads/${d.license_document}')" style="background: rgba(99,102,241,0.1); border: 1px solid var(--primary); color: var(--primary); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">License</button>` : ''}
+                            ${d.license_document ? `<button onclick="window.open('${API_BASE}/uploads/${d.license_document}')" style="background: rgba(0,177,79,0.1); border: 1px solid var(--primary); color: var(--primary); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">License</button>` : ''}
                             ${d.status === 'Pending' ? `
                                 <button onclick="Drivers.approve(${d.id})" style="background: var(--success); border: none; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Approve</button>
                                 <button onclick="Drivers.reject(${d.id})" style="background: var(--danger); border: none; color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 600;">Reject</button>
@@ -3641,7 +3641,7 @@
                 // License detail rows
                 const hasDetails = v.license_number || v.license_type || v.license_expiry;
                 const detailsHtml = `
-                    <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+                    <div style="background:rgba(0,177,79,0.06);border:1px solid rgba(0,177,79,0.15);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
                         <div style="font-size:0.65rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;"><i class="fas fa-id-card" style="margin-right:5px;"></i>Declared License Details</div>
                         
                         <div style="display:flex;gap:10px;margin-bottom:12px;">
@@ -3709,7 +3709,7 @@
                 return `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
                     <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
-                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
+                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
                             ${initial}
                         </div>
                         <div style="flex: 1; min-width:0;">
@@ -3847,7 +3847,7 @@
                     <div style="flex: 1; padding-right: 15px;">
                         <p style="font-size: 0.85rem; line-height: 1.4;">${inst.instruction_text}</p>
                     </div>
-                    <span style="font-size: 0.55rem; padding: 3px 8px; border-radius: 8px; background: ${inst.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${inst.is_active ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800; text-transform: uppercase;">
+                    <span style="font-size: 0.55rem; padding: 3px 8px; border-radius: 8px; background: ${inst.is_active ? 'rgba(0,177,79,0.1)' : 'rgba(255,255,255,0.05)'}; color: ${inst.is_active ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800; text-transform: uppercase;">
                         ${inst.is_active ? 'Active' : 'Inactive'}
                     </span>
                 </div>
@@ -4024,7 +4024,7 @@
                 return;
             }
             list.innerHTML = this.data.map(d => `
-                <div style="background: rgba(99,102,241,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
+                <div style="background: rgba(0,177,79,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                         <strong style="font-size: 0.9rem;">${d.name} (${d.plate_number})</strong>
                         <span style="font-size: 0.6rem; color: ${this.isActive(d.last_gps_update) ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800;">
@@ -4057,11 +4057,11 @@
         data: [],
         _filter: 'all',
 
-        _colors: { login:'#6366f1', logout:'#94a3b8', approve:'#10b981', reject:'#ef4444', create:'#3b82f6', update:'#f59e0b', delete:'#ef4444', view:'#8b5cf6' },
+        _colors: { login:'#00B14F', logout:'#94a3b8', approve:'#00B14F', reject:'#ef4444', create:'#00B14F', update:'#f59e0b', delete:'#ef4444', view:'#5FDBE2' },
 
         _color(action) {
             const k = Object.keys(this._colors).find(k => action.toLowerCase().includes(k));
-            return k ? this._colors[k] : '#6366f1';
+            return k ? this._colors[k] : '#00B14F';
         },
 
         _icon(action) {
@@ -4205,16 +4205,16 @@
                 const dropoffDisplay = truncateLocation(dropoffLoc);
                 
                 return `
-                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #10b981;">
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #00B14F;">
                     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <i class="fas fa-car" style="color:#10b981;font-size:1rem;"></i>
+                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="fas fa-car" style="color:#00B14F;font-size:1rem;"></i>
                         </div>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:0.88rem;font-weight:800;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.car || (b.brand||'') + ' ' + (b.model||'')}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);">${b.customer_name || 'Customer'} &bull; #${b.id}</div>
                         </div>
-                        <span style="background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
+                        <span style="background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
                     </div>
                     
                     <!-- Location Information -->
@@ -4247,7 +4247,7 @@
                         </div>
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
-                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#10b981;">�</div>
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">�</div>
                         </div>
                     </div>
                 </div>`;
@@ -4272,7 +4272,7 @@
                     el.textContent = d > 0
                         ? `${d}d ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
                         : `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-                    el.style.color = ms < 86400000 ? '#ef4444' : '#10b981';
+                    el.style.color = ms < 86400000 ? '#ef4444' : '#00B14F';
                 }, 1000);
             });
 
@@ -4635,13 +4635,13 @@
                     datasets: [{
                         label: 'Revenue',
                         data: trend.map(t => t.amount || t.revenue || 0),
-                        borderColor: '#6366f1',
+                        borderColor: '#00B14F',
                         borderWidth: 2,
-                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        backgroundColor: 'rgba(0,177,79,0.1)',
                         fill: true,
                         tension: 0.4,
                         pointRadius: 3,
-                        pointBackgroundColor: '#6366f1'
+                        pointBackgroundColor: '#00B14F'
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false,
@@ -4700,7 +4700,7 @@
                     labels: deduped.map(c => c.label),
                     datasets: [{
                         data: deduped.map(c => c.booking_count),
-                        backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6'],
+                        backgroundColor: ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F'],
                         borderWidth: 0
                     }]
                 },
@@ -5063,13 +5063,13 @@
                 labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
                 datasets: [{
                     data: revTrend.length > 0 ? revTrend.map(t => t.amount) : [0],
-                    borderColor: '#818cf8',
+                    borderColor: '#00B14F',
                     borderWidth: 3,
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     fill: true,
                     tension: 0.4,
                     pointRadius: 4,
-                    pointBackgroundColor: '#818cf8',
+                    pointBackgroundColor: '#00B14F',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2
                 }]
@@ -5109,7 +5109,7 @@
                     labels: fleetDist.map(f => f.status),
                     datasets: [{
                         data: fleetDist.map(f => f.count),
-                        backgroundColor: ['#10b981','#f59e0b','#ef4444','#6366f1','#94a3b8'],
+                        backgroundColor: ['#00B14F','#f59e0b','#ef4444','#00B14F','#94a3b8'],
                         borderWidth: 0
                     }]
                 },
@@ -5135,7 +5135,7 @@
                         labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
                         datasets: [{
                             data: topVeh.map(c => c.booking_count || 0),
-                            backgroundColor: ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6'],
+                            backgroundColor: ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F','#5FDBE2'],
                             borderWidth: 0
                         }]
                     },
@@ -5340,7 +5340,7 @@
                     originalChartData.datasets[0].data = topVeh.map(c => c.booking_count || 0);
                 }
                 // Ensure enough colors
-                const pieColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9','#22d3ee'];
+                const pieColors = ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F','#5FDBE2','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9','#22d3ee'];
                 originalChartData.datasets[0].backgroundColor = pieColors.slice(0, topVeh.length);
             }
 
@@ -5769,7 +5769,7 @@
             }
             el.innerHTML = list.map(u => {
                 const verifiedBadge = u.is_verified === 2
-                    ? `<span style="background:rgba(16,185,129,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
+                    ? `<span style="background:rgba(0,177,79,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
                     : u.is_verified === 1
                     ? `<span style="background:rgba(245,158,11,0.15);color:var(--amber);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
                     : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
@@ -5780,7 +5780,7 @@
                 const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : '�';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
-                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
+                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-weight:800;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
@@ -5826,7 +5826,7 @@
             document.getElementById('umModalContent').innerHTML = `
             <!-- Avatar & Name -->
             <div style="text-align:center;margin-bottom:20px;">
-                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#4f46e5);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;">${avatar}</div>
+                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;">${avatar}</div>
                 <div style="font-size:1.1rem;font-weight:900;">${u.full_name || 'No Name'}</div>
                 <div style="font-size:0.8rem;color:var(--text-muted);">${u.email}</div>
                 <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
@@ -5853,7 +5853,7 @@
 
             <!-- License Details Section -->
             <div style="background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;">
-                <h3 style="font-size: 1rem; color: #6366f1; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
+                <h3 style="font-size: 1rem; color: #00B14F; font-weight: 800; margin-bottom: 10px;">Driver's License Details</h3>
                 ${lData && lData.license_number ? `
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
                         <div><span style="color:var(--text-muted)">License #:</span> <span style="color:white;font-weight:600">${lData.license_number}</span></div>
@@ -5905,14 +5905,14 @@
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
                 <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-key" style="color:var(--primary-light);margin-right:6px;"></i>Reset Password</div>
                 <input id="umNewPass" type="password" placeholder="New password (min 8 chars)" style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.9rem;margin-bottom:10px;">
-                <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(99,102,241,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
+                <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(0,177,79,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
             </div>
 
             <!-- Freeze / Unfreeze -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
                 <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}</div>
                 ${!u.is_frozen ? `<input id="umFreezeReason" type="text" placeholder="Reason for freezing..." style="width:100%;padding:11px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;color:white;font-size:0.85rem;margin-bottom:10px;">` : `<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;">Reason: ${u.freeze_reason || 'No reason provided'}</p>`}
-                <button onclick="UserMgmt.toggleFreeze(${u.id}, ${u.is_frozen})" style="width:100%;padding:12px;background:${u.is_frozen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};border:1px solid ${u.is_frozen ? 'var(--success)' : 'var(--danger)'};border-radius:10px;color:${u.is_frozen ? 'var(--success)' : 'var(--danger)'};font-weight:700;font-size:0.85rem;">
+                <button onclick="UserMgmt.toggleFreeze(${u.id}, ${u.is_frozen})" style="width:100%;padding:12px;background:${u.is_frozen ? 'rgba(0,177,79,0.15)' : 'rgba(239,68,68,0.15)'};border:1px solid ${u.is_frozen ? 'var(--success)' : 'var(--danger)'};border-radius:10px;color:${u.is_frozen ? 'var(--success)' : 'var(--danger)'};font-weight:700;font-size:0.85rem;">
                     <i class="fas fa-${u.is_frozen ? 'unlock' : 'lock'}"></i> ${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}
                 </button>
             </div>
@@ -6107,7 +6107,7 @@
                         '</button>' +
                     '</div>' +
                     '<div class="search-results-count hidden" id="searchResultsCount"' +
-                        ' style="margin-top:0.5rem;padding:0.5rem;background:rgba(99,102,241,0.1);border-radius:6px;text-align:center;">' +
+                        ' style="margin-top:0.5rem;padding:0.5rem;background:rgba(0,177,79,0.1);border-radius:6px;text-align:center;">' +
                         '<span id="resultsText" style="font-size:0.85rem;color:var(--primary);font-weight:600;"></span>' +
                     '</div>' +
                 '</div>' +
