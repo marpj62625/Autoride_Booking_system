@@ -2650,12 +2650,12 @@ function renderBookingsList(data) {
     return;
   }
   var statusColors = {
-    'Pending': '#fbbf24', 'Confirmed': '#34d399', 'Approved': '#34d399',
-    'Picked Up': '#a78bfa', 'Completed': '#a78bfa', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+    'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
+    'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
   };
   el.innerHTML = data.map(function(b) {
     var color = statusColors[b.status] || '#a1a1aa';
-    var payColor = b.payment_status === 'Paid' ? '#34d399' : '#f87171';
+    var payColor = b.payment_status === 'Paid' ? '#00b14f' : '#f87171';
     var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
     var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' � ');
     var startFmt = formatBookingDate(b.start_date);
