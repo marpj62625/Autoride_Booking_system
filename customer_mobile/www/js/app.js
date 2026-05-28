@@ -3330,13 +3330,49 @@ function loadLicenseDetailsForEdit() {
       var el;
       el = document.getElementById('editLicenseNumber'); if (el) el.value = data.license_number || '';
       el = document.getElementById('editLicenseExpiry'); if (el) el.value = data.expiry_date || '';
-      el = document.getElementById('editLicenseCountry'); if (el) el.value = data.issuing_country_state || '';
-      el = document.getElementById('editLicenseClass'); if (el) el.value = data.license_class || '';
+      // For select dropdowns, try exact match first, then partial match
+      el = document.getElementById('editLicenseCountry');
+      if (el) {
+        var countryVal = data.issuing_country_state || '';
+        el.value = countryVal;
+        if (!el.value && countryVal) {
+          // Try partial match (e.g. "Ph" -> "Philippines")
+          for (var i = 0; i < el.options.length; i++) {
+            if (el.options[i].value.toLowerCase().startsWith(countryVal.toLowerCase())) {
+              el.value = el.options[i].value; break;
+            }
+          }
+        }
+      }
+      el = document.getElementById('editLicenseClass');
+      if (el) {
+        var classVal = data.license_class || '';
+        el.value = classVal;
+        if (!el.value && classVal) {
+          // Try matching just the letter (e.g. "B" -> "B")
+          for (var j = 0; j < el.options.length; j++) {
+            if (el.options[j].value === classVal || el.options[j].value.startsWith(classVal + ' ')) {
+              el.value = el.options[j].value; break;
+            }
+          }
+        }
+      }
       el = document.getElementById('editLicenseName'); if (el) el.value = data.full_name || '';
       el = document.getElementById('editLicenseDob'); if (el) el.value = data.date_of_birth || '';
       el = document.getElementById('editLicenseEmName'); if (el) el.value = data.emergency_contact_name || '';
       el = document.getElementById('editLicenseEmPhone'); if (el) el.value = data.emergency_contact_phone || '';
-      el = document.getElementById('editLicenseEmRel'); if (el) el.value = data.emergency_contact_relationship || '';
+      el = document.getElementById('editLicenseEmRel');
+      if (el) {
+        var relVal = data.emergency_contact_relationship || '';
+        el.value = relVal;
+        if (!el.value && relVal) {
+          for (var k = 0; k < el.options.length; k++) {
+            if (el.options[k].value.toLowerCase() === relVal.toLowerCase()) {
+              el.value = el.options[k].value; break;
+            }
+          }
+        }
+      }
       // Show existing images in preview
       if (data.license_front_url) {
         var prevF = document.getElementById('licenseEditPreviewFront');
