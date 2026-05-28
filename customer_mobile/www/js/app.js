@@ -1146,18 +1146,64 @@ function searchVehicles(query) {
 }
 
 // VEHICLES - Step 1: Browse models
+// Vehicle cache key and TTL (5 minutes)
+var VEHICLE_CACHE_KEY = 'autoride_vehicles_cache';
+var VEHICLE_CACHE_TTL = 5 * 60 * 1000;
+
 function loadVehicles() {
-  showLoading(true);
+  var grid = document.getElementById('vehicleGrid');
+  var countEl = document.getElementById('vehicleCount');
+
+  // 1. Try to show cached data immediately (no spinner)
+  try {
+    var cached = localStorage.getItem(VEHICLE_CACHE_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      var age = Date.now() - (parsed.savedAt || 0);
+      if (parsed.data && parsed.data.length && age < VEHICLE_CACHE_TTL) {
+        allVehicles = parsed.data;
+        renderVehicles(parsed.data);
+        // Show subtle refresh indicator
+        if (countEl) countEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.7rem;"><i class="fas fa-sync-alt fa-spin" style="font-size:0.6rem;margin-right:4px;"></i>Refreshing...</span>';
+      }
+    }
+  } catch(e) {}
+
+  // 2. Always fetch fresh data in the background (no showLoading overlay)
+  if (!allVehicles.length && grid) {
+    // Only show skeleton if nothing cached
+    grid.innerHTML =
+      '<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+      [1,2,3,4].map(function() {
+        return '<div style="background:var(--bg-card);border-radius:16px;overflow:hidden;border:1px solid var(--border);">' +
+          '<div style="height:120px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div>' +
+          '<div style="padding:10px;">' +
+          '<div style="height:12px;background:var(--border);border-radius:6px;margin-bottom:8px;animation:shimmer 1.2s infinite;"></div>' +
+          '<div style="height:10px;background:var(--border);border-radius:6px;width:60%;animation:shimmer 1.2s infinite;"></div>' +
+          '</div></div>';
+      }).join('') + '</div>';
+  }
+
   apiCall('/vehicles/categories')
     .then(function(data) {
       allVehicles = data;
       renderVehicles(data);
+      // Cache the fresh data
+      try {
+        localStorage.setItem(VEHICLE_CACHE_KEY, JSON.stringify({ data: data, savedAt: Date.now() }));
+      } catch(e) {}
+      if (countEl) {
+        var available = data.filter(function(v) { return (parseInt(v.available_units) || 0) > 0; });
+        countEl.textContent = available.length + ' vehicle' + (available.length !== 1 ? 's' : '') + ' found';
+      }
     })
     .catch(function(err) {
-      var grid = document.getElementById('vehicleGrid');
-      if (grid) grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>' + err.message + '</p></div>';
-    })
-    .finally(function() { showLoading(false); });
+      // Only show error if nothing was cached
+      if (!allVehicles.length && grid) {
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>' + err.message + '</p></div>';
+      }
+      if (countEl && allVehicles.length) countEl.textContent = '';
+    });
 }
 
 function renderVehicles(list) {
