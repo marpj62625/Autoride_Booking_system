@@ -71,7 +71,8 @@ function isValidLastFour(s) {
  * @returns {string}
  */
 function formatPHP(value) {
-  const num = Number(value) || 0;
+  // Ensure value is a valid number, default to 0 if not
+  const num = (value !== null && value !== undefined && !isNaN(Number(value))) ? Number(value) : 0;
   return 'PHP ' + num.toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
