@@ -3145,8 +3145,9 @@
         },
 
         async view(id) {
+          try {
             const b = this.data.find(x => x.id === id);
-            if (!b) return;
+            if (!b) { alert('Booking not found for id: ' + id); return; }
             
             const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
             const isApprovable = (b.status === 'Pending');
@@ -3308,6 +3309,10 @@
             btnSave.onclick = () => this.saveInspection(id);
 
             this.fetchInspections(id);
+          } catch(err) {
+            alert('VIEW ERROR: ' + err.message + '\n' + err.stack);
+            console.error('Bookings.view error:', err);
+          }
         },
 
         async uploadRefundProof(bookingId) {
