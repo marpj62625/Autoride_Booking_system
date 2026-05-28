@@ -2777,9 +2777,6 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed';
-  var canPickup = b.status === 'Confirmed' || b.status === 'Approved';
-  var canPostInspect = b.status === 'Picked Up';
-  var canTrack = b.status === 'Picked Up';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
   var el = document.getElementById('bookingDetailContent');
@@ -2826,20 +2823,12 @@ function renderBookingDetail(b) {
       '</div>';
   }
 
-  // Inspections section
+  // Inspections section — no button for customers, admin-only action
   var inspectBtn = '';
-  if (canPickup) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'pickup\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
-  else if (canPostInspect) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'return\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
 
-  // Primary action button
+  // Primary action button — customer-relevant only
   var primaryAction = '';
-  if (canPickup) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-car"></i> Mark as Picked Up</button>';
-  } else if (canPostInspect) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-flag-checkered"></i> Mark as Returned</button>';
-  } else if (canTrack) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openGpsMap(' + b.vehicle_id + ')"><i class="fas fa-map-marker-alt"></i> Track Vehicle</button>';
-  } else if (canPayBalance) {
+  if (canPayBalance) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
   } else if (canReview) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
@@ -2909,14 +2898,7 @@ function renderBookingDetail(b) {
       // Divider
       (emergencyHtml ? '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' : '') +
 
-      // Vehicle Inspections
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
-        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);">Vehicle Inspections</h4>' +
-        inspectBtn +
-      '</div>' +
-      '<div id="inspectionsList" style="margin-bottom:20px;"><p style="font-size:0.875rem;color:var(--text-muted);text-align:center;padding:8px 0;">No inspections yet.</p></div>' +
-
-      // Divider
+      // Divider before actions
       '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
 
       // Cancellation reason
@@ -2927,9 +2909,6 @@ function renderBookingDetail(b) {
       secondaryActions +
 
     '</div>';
-
-  // Load inspections async
-  loadInspectionsForDetail(b.id);
 }
 
 function loadInspectionsForDetail(bookingId) {
