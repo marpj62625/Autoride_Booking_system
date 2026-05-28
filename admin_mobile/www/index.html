@@ -922,6 +922,7 @@
             transform: translateY(0);
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- Chart Popup Modal -->
@@ -4760,7 +4761,7 @@
             rows.push(['Top Vehicles by Revenue']);
             rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
             (data.topVehicles || []).forEach((c, i) => {
-                rows.push([i + 1, `${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]);
+                rows.push([i + 1, ${c.brand} , c.booking_count, c.revenue || 0]);
             });
             rows.push([]);
             rows.push(['Revenue Trend']);
@@ -4769,51 +4770,55 @@
                 rows.push([t.day || t.label || '', t.amount || 0]);
             });
 
-            const csv = rows.map(r => r.map(cell => {
-                const str = String(cell);
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return `"${str.replace(/"/g, '""')}"`;
-                }
-                return str;
-            }).join(',')).join('\n');
-
-            const BOM = '\uFEFF';
-            const csvContent = BOM + csv;
-            const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-
+            // Generate real Excel file using SheetJS
             try {
-                // Use Capacitor Filesystem to write to Downloads
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('Excel library not loaded');
+                }
+                
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                XLSX.utils.book_append_sheet(wb, ws, "Report");
+                
+                // Write as base64
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                const filename = utoride_report_.xlsx;
+
                 const { Filesystem, Directory } = window.Capacitor.Plugins;
                 if (Filesystem) {
-                    // Write file to Downloads directory
                     const result = await Filesystem.writeFile({
                         path: filename,
-                        data: btoa(unescape(encodeURIComponent(csvContent))),
+                        data: wboutBase64,
                         directory: Directory ? Directory.Documents : 'DOCUMENTS',
                         recursive: true
                     });
                     
-                    // Share the saved file
                     const { Share } = window.Capacitor.Plugins;
                     if (Share) {
                         await Share.share({
                             title: 'Autoride Sales Report',
-                            text: 'Sales report from Autoride Admin',
                             url: result.uri,
-                            dialogTitle: 'Share Report'
+                            dialogTitle: 'Share Excel Report'
                         });
                     }
-                    showNotification('Report saved and ready to share!', 'success');
+                    showNotification('Excel Report saved and ready to share!', 'success');
                     return;
                 }
             } catch (err) {
-                console.error('Filesystem export failed:', err);
+                console.error('Excel generation/sharing failed:', err);
             }
 
-            // Fallback: Copy CSV to clipboard
+            // Fallback for web or if plugins fail
             try {
-                await navigator.clipboard.writeText(csv);
-                showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
+                if (typeof XLSX !== 'undefined') {
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    XLSX.utils.book_append_sheet(wb, ws, "Report");
+                    XLSX.writeFile(wb, utoride_report_.xlsx);
+                    showNotification('Excel file downloaded!', 'success');
+                } else {
+                    showNotification('Export failed. Excel library not available.', 'error');
+                }
             } catch (err) {
                 showNotification('Export failed. Please try again.', 'error');
             }
@@ -4832,7 +4837,8 @@
             // Build HTML report content
             var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
             htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
-            htmlReport += '</head><body>';
+            htmlReport += '    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head><body>';
             htmlReport += '<h1>Autoride Sales Report</h1>';
             htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
             htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
