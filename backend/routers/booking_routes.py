@@ -78,7 +78,7 @@ def book_vehicle():
                 base_price, addon_price, total_price, 
                 applied_coupon_id, discount_amount, points_redeemed, points_earned,
                 status, payment_type, amount_paid, balance_amount
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             user_id, vehicle_id, start_date, end_date,
