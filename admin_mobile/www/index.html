@@ -568,7 +568,7 @@
         }
 
         .login-card {
-            background: #1e293b;
+            background: var(--surface-container);
             width: 100%;
             max-width: 400px;
             padding: 40px 30px;
@@ -721,7 +721,7 @@
 
         /* Modal content (dark background) */
         .modal-content {
-            background: #1e293b;
+            background: var(--surface-container);
             color: white;
         }
 
@@ -877,7 +877,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            background: linear-gradient(135deg, var(--surface-container) 0%, var(--surface) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -989,7 +989,7 @@
 
     <!-- Exit Confirmation Modal (Android Back Button) -->
     <div id="exitConfirmModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 99999; display: none; align-items: flex-end; justify-content: center; backdrop-filter: blur(6px);">
-        <div style="background: #1e293b; width: 100%; max-width: 500px; padding: 32px 24px 40px; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -20px 60px rgba(0,0,0,0.5);">
+        <div style="background: var(--surface-container); width: 100%; max-width: 500px; padding: 32px 24px 40px; border-radius: 28px 28px 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -20px 60px rgba(0,0,0,0.5);">
             <div style="text-align: center; margin-bottom: 24px;">
                 <div style="width: 60px; height: 60px; background: rgba(239,68,68,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 1px solid rgba(239,68,68,0.3);">
                     <i class="fas fa-sign-out-alt" style="color: #ef4444; font-size: 1.5rem;"></i>
@@ -1059,12 +1059,12 @@
 </header>
 
 <!-- Admin Notification Panel -->
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:#1e293b;border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
+<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h4 style="font-weight:700;font-size:0.95rem;color:#f1f5f9;">Notifications</h4>
         <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
     </div>
-    <div id="adminNotifList"><p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
+    <div id="adminNotifList"><p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
 </div>
 
 <main class="main-content">
@@ -1432,7 +1432,7 @@
     
     <!-- LICENSE PREVIEW MODAL -->
     <div id="licensePreviewModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);">
-        <div class="modal-content" style="max-width: 95%; padding: 15px; border-radius: 20px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="modal-content" style="max-width: 95%; padding: 15px; border-radius: 20px; background: var(--surface-container); border: 1px solid rgba(255,255,255,0.1);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="margin: 0; font-size: 1.1rem; color: white;">License Preview</h3>
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="menu-btn" style="width: 34px; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;"><i class="fas fa-times"></i></button>
@@ -1481,7 +1481,7 @@
     </div>
 
     <!-- <div id="assignDriverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+        <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
             <h2 style="margin-bottom: 15px; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-user-plus" style="color: var(--primary);"></i> Assign Driver
             </h2>
@@ -1493,7 +1493,7 @@
                 </select>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('assignDriverModal').style.display='none'" style="flex: 1; padding: 12px; background: #334155; border: none; border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <button onclick="document.getElementById('assignDriverModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
                 <button onclick="Bookings.saveAssign()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Assign</button>
             </div>
         </div>
@@ -1714,7 +1714,7 @@
 
     <!-- STAFF MODAL -->
     <div id="staffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+        <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
             <h2 id="staffFormTitle" style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Add New Staff</h2>
             <form id="staffForm">
                 <div style="margin-bottom: 15px;">
@@ -1738,7 +1738,7 @@
                     </select>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button type="button" onclick="Staff.closeModal()" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                    <button type="button" onclick="Staff.closeModal()" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
                     <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Save Account</button>
                 </div>
             </form>
@@ -1749,23 +1749,23 @@
     <div id="vehicleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2000;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="background:#fff;border-radius:24px 24px 0 0;padding:28px 20px 32px;max-width:520px;margin:60px auto 0;min-height:calc(100vh - 60px);box-shadow:0 -8px 40px rgba(0,0,0,0.18);">
 
-            <h2 id="modalTitle" style="font-size:1.6rem;font-weight:900;color:#0f172a;margin:0 0 22px;">Add New Vehicle</h2>
+            <h2 id="modalTitle" style="font-size:1.6rem;font-weight:900;color:var(--text-primary);margin:0 0 22px;">Add New Vehicle</h2>
             <form id="vehicleForm">
                 <input type="hidden" id="editId">
 
                 <!-- VEHICLE PHOTOS -->
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;font-size:0.78rem;font-weight:800;color:#0f172a;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
+                    <label style="display:block;font-size:0.78rem;font-weight:800;color:var(--text-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
                         Vehicle Photos <span style="color:#ef4444;">*</span>
-                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b;">(max 4 � first photo is Main)</span>
+                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);">(max 4 � first photo is Main)</span>
                     </label>
                     <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                         <button type="button" onclick="VehiclePhotos.takePhoto()"
-                            style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+                            style="padding:16px 8px;background:var(--surface-container);border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
                             <i class="fas fa-camera" style="font-size:1rem;"></i> Take Photo
                         </button>
-                        <label style="padding:16px 8px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
+                        <label style="padding:16px 8px;background:var(--surface-container);border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
                             <i class="fas fa-images" style="font-size:1rem;"></i> Upload from Gallery
                             <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
                         </label>
@@ -1774,8 +1774,8 @@
 
                 <!-- EXISTING GALLERY (edit mode) -->
                 <div id="vExistingGallery" style="display:none;margin-bottom:20px;">
-                    <label style="display:block;font-size:0.75rem;color:#64748b;margin-bottom:5px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
-                    <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;min-height:100px;"></div>
+                    <label style="display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:5px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
+                    <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:#f8fafc;border:1px solid var(--border);border-radius:12px;min-height:100px;"></div>
                 </div>
 
                 <!-- FIELDS GRID -->
@@ -1783,9 +1783,9 @@
 
                     <!-- Brand -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Brand</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Brand</label>
                         <select id="vBrand" required onchange="Vehicles.updateModels()"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="">Select Brand</option>
                             <option value="Toyota">Toyota</option>
                             <option value="Mitsubishi">Mitsubishi</option>
@@ -1800,25 +1800,25 @@
 
                     <!-- Model -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Model</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Model</label>
                         <input id="vModel" list="vModelList" required placeholder="Model"
                             onchange="Vehicles.applySpecs(this.value)"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         <datalist id="vModelList"></datalist>
                     </div>
 
                     <!-- Plate Number -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Plate Number</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Plate Number</label>
                         <input type="text" id="vPlate" placeholder="ABC-1234" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
                     <!-- Color -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Color</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Color</label>
                         <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         <datalist id="vColorList">
                             <option value="White"><option value="Black"><option value="Silver">
                             <option value="Gray"><option value="Red"><option value="Blue">
@@ -1829,9 +1829,9 @@
 
                     <!-- Vehicle Type -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Vehicle Type</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Vehicle Type</label>
                         <select id="vType" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="">Select type</option>
                             <option value="Sedan">Sedan</option>
                             <option value="SUV">SUV</option>
@@ -1844,9 +1844,9 @@
 
                     <!-- Transmission -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Transmission</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Transmission</label>
                         <select id="vTrans" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Manual">Manual</option>
                             <option value="Automatic">Automatic</option>
                         </select>
@@ -1854,9 +1854,9 @@
 
                     <!-- Fuel Type -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Fuel Type</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Fuel Type</label>
                         <select id="vFuel" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Diesel">Diesel</option>
                             <option value="Gasoline">Gasoline</option>
                         </select>
@@ -1864,9 +1864,9 @@
 
                     <!-- Seats -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Seats</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Seats</label>
                         <select id="vSeats" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="4">4 Seats</option>
                             <option value="5">5 Seats</option>
                             <option value="7">7 Seats</option>
@@ -1877,16 +1877,16 @@
 
                     <!-- Daily Rate � half width -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Daily Rate (&#8369;)</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (&#8369;)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;box-sizing:border-box;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
                     <!-- Location � full width -->
                     <div style="grid-column:span 2;">
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Location</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Location</label>
                         <select id="vLocation" required
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
                             <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
                         </select>
@@ -1894,9 +1894,9 @@
 
                     <!-- Status � full width -->
                     <div style="grid-column:span 2;">
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#334155;margin-bottom:6px;">Status</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Status</label>
                         <select id="vStatus"
-                            style="width:100%;padding:12px 14px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:12px;color:#0f172a;font-size:0.88rem;appearance:auto;">
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Available">Available</option>
                             <option value="Booked">Booked</option>
                             <option value="Maintenance">Maintenance</option>
@@ -1914,7 +1914,7 @@
                     </button>
                     <div style="display:flex;gap:10px;">
                         <button type="button" onclick="Vehicles.closeModal()"
-                            style="flex:1;padding:16px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:14px;color:#475569;font-size:1rem;font-weight:700;cursor:pointer;">
+                            style="flex:1;padding:16px;background:transparent;border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:1rem;font-weight:700;cursor:pointer;">
                             Cancel
                         </button>
                         <button type="submit" id="submitBtnText"
@@ -1930,7 +1930,7 @@
 
     <!-- CHANGE PASSWORD MODAL -->
     <div id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
-        <div style="background: #1e293b; border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
+        <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
             <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
@@ -1941,7 +1941,7 @@
                 <input id="confirmMobilePassword" type="password" placeholder="��������" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="display: flex; gap: 10px;">
-                <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: white; font-weight: 600;">Cancel</button>
+                <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
                 <button onclick="submitChangePassword()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Update</button>
             </div>
         </div>
@@ -2040,7 +2040,7 @@
 <!-- User Detail Modal -->
 <div id="umModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); overflow-y:auto;">
     <div style="min-height:100vh; display:flex; align-items:flex-end;">
-        <div style="width:100%; background:#1e293b; border-radius:28px 28px 0 0; padding:24px; max-height:92vh; overflow-y:auto;">
+        <div style="width:100%; background:var(--surface-container); border-radius:28px 28px 0 0; padding:24px; max-height:92vh; overflow-y:auto;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 style="font-size:1.1rem; font-weight:800;">User Details</h2>
                 <button onclick="UserMgmt.closeModal()" style="background:rgba(255,255,255,0.05); border:1px solid var(--border); color:white; width:36px; height:36px; border-radius:10px; font-size:1rem;"><i class="fas fa-times"></i></button>
@@ -2154,7 +2154,7 @@
             }
             const notifs = window.adminNotifList || [];
             if (!notifs.length) {
-                list.innerHTML = '<p style="color:#64748b;text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
+                list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p>';
             } else {
                 list.innerHTML = notifs.map(n => {
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
@@ -2162,7 +2162,7 @@
                     return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
                         <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
                         <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-                        <small style="color:#64748b;">${ts}</small>
+                        <small style="color:var(--text-muted);">${ts}</small>
                     </div>`;
                 }).join('');
             }
@@ -3245,18 +3245,18 @@
                     <div id="mInspForm" style="display: none; background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3);">
                         <!-- Form content... -->
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                            <select id="mfInspType" style="padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
+                            <select id="mfInspType" style="padding: 10px; background: var(--surface-container); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
                                 <option value="pickup">Pickup</option>
                                 <option value="return">Return</option>
                             </select>
-                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
+                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 10px; background: var(--surface-container); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem;">
                         </div>
-                        <select id="mfInspFuel" style="width: 100%; padding: 10px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; margin-bottom: 10px;">
+                        <select id="mfInspFuel" style="width: 100%; padding: 10px; background: var(--surface-container); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; margin-bottom: 10px;">
                             <option value="Full">Full Tank</option>
                             <option value="Empty">Empty</option>
                         </select>
                         <input type="file" id="mfInspPhotos" multiple accept="image/*" style="font-size: 0.75rem; color: #94a3b8; width: 100%; margin-bottom: 10px;">
-                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 60px; background: #0f172a; color: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.8rem; margin-bottom: 10px;"></textarea>
+                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 60px; background: var(--surface-container); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 0.8rem; margin-bottom: 10px;"></textarea>
                         <div style="display: flex; gap: 10px;">
                             <button id="mBtnCancelInsp" class="btn-outline" style="flex: 1; padding: 10px; font-size: 0.8rem;">Cancel</button>
                             <button id="mBtnSaveInsp" class="btn-premium" style="flex: 1; padding: 10px; font-size: 0.8rem;">Save</button>
@@ -3277,10 +3277,10 @@
                     ` : ''}
 
                     <div style="display: grid; grid-template-columns: 0.8fr 1.2fr 1.2fr; gap: 10px; margin-top: 20px;">
-                        <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #1e293b;">Close</button>
+                        <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: var(--surface-container);">Close</button>
                         <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" class="btn-premium" style="padding: 12px 5px; font-size: 0.85rem; background: #00B14F;">Download Receipt</button>
                         ${isCancellable ? `
-                            <button onclick="Bookings.cancel(${b.id})" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: #475569; border: none; color: white;">Cancel Booking</button>
+                            <button onclick="Bookings.cancel(${b.id})" class="btn-outline" style="padding: 12px 5px; font-size: 0.85rem; background: transparent; border: 1px solid var(--border); color: var(--text-secondary);">Cancel Booking</button>
                         ` : ''}
                     </div>
 
@@ -3908,7 +3908,7 @@
                             ${s.is_verified === 1 ? 'Enabled' : 'Disabled'}
                         </span>
                         <div style="display: flex; gap: 8px;">
-                            <button onclick="Staff.openModal(${s.id})" style="padding: 6px 12px; background: #334155; border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">Edit</button>
+                            <button onclick="Staff.openModal(${s.id})" style="padding: 6px 12px; background: var(--surface-container); border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">Edit</button>
                             ${s.id !== currentUser.id ? `
                                 <button onclick="Staff.toggleStatus(${s.id}, ${s.is_verified})" style="padding: 6px 12px; background: ${s.is_verified === 1 ? 'var(--danger)' : 'var(--success)'}; border: none; border-radius: 6px; color: white; font-size: 0.7rem; font-weight: 700;">
                                     ${s.is_verified === 1 ? 'Disable' : 'Enable'}
