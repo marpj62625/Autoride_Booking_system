@@ -702,13 +702,57 @@
         .main-content .value[style*="color:"],
         .main-content .value[style*="color: "] { color: inherit; }
 
-        /* ---- DARK OVERLAY PANELS � keep white text ---- */
+        /* ---- DARK OVERLAY PANELS - keep white text ---- */
         /* These elements have dark backgrounds and must stay white */
         #exitConfirmModal *,
         #adminNotifPanel *,
+        #adminNotifToast *,
         .premium-modal .modal-content,
         .premium-modal .modal-content * {
             color: white;
+        }
+
+        /* ---- ADMIN NOTIFICATION TOAST ---- */
+        #adminNotifToast {
+            position: fixed;
+            top: -120px;
+            left: 12px;
+            right: 12px;
+            z-index: 99999;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid rgba(0,177,79,0.4);
+            border-left: 4px solid #00B14F;
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            transition: top 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #adminNotifToast.show { top: 72px; }
+        #adminNotifToast .toast-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(0,177,79,0.15);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1rem; color: #00B14F;
+        }
+        #adminNotifToast .toast-body { flex: 1; min-width: 0; }
+        #adminNotifToast .toast-title {
+            font-weight: 700; font-size: 0.82rem;
+            color: #f1f5f9; margin-bottom: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #adminNotifToast .toast-msg {
+            font-size: 0.75rem; color: #94a3b8;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        #adminNotifToast .toast-close {
+            background: none; border: none; color: #64748b;
+            cursor: pointer; font-size: 0.9rem; padding: 0; flex-shrink: 0;
+            align-self: flex-start;
         }
         .premium-modal .modal-content input,
         .premium-modal .modal-content select,
@@ -1064,6 +1108,16 @@
         <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
     </div>
     <div id="adminNotifList"><p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
+</div>
+
+<!-- Admin Notification Toast Popup -->
+<div id="adminNotifToast" onclick="window._adminToastDismiss(); toggleAdminNotifPanel();">
+    <div class="toast-icon"><i class="fas fa-bell"></i></div>
+    <div class="toast-body">
+        <div class="toast-title" id="adminToastTitle">New Notification</div>
+        <div class="toast-msg" id="adminToastMsg"></div>
+    </div>
+    <button class="toast-close" id="adminToastClose" onclick="event.stopPropagation(); window._adminToastDismiss();"><i class="fas fa-times"></i></button>
 </div>
 
 <main class="main-content">
@@ -2084,14 +2138,47 @@
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
-    // Admin notification globals � defined early so initSession can call them
+    // Admin notification globals - defined early so initSession can call them
     window.adminNotifList = [];
+    window._adminNotifKnownIds = new Set();
+    window._adminToastTimer = null;
+
+    window._adminToastDismiss = function() {
+        const toast = document.getElementById('adminNotifToast');
+        if (toast) toast.classList.remove('show');
+        if (window._adminToastTimer) { clearTimeout(window._adminToastTimer); window._adminToastTimer = null; }
+    };
+
+    window._adminShowToast = function(title, msg) {
+        const toast = document.getElementById('adminNotifToast');
+        const titleEl = document.getElementById('adminToastTitle');
+        const msgEl = document.getElementById('adminToastMsg');
+        if (!toast || !titleEl || !msgEl) return;
+        titleEl.textContent = title || 'New Notification';
+        msgEl.textContent = msg || '';
+        toast.classList.add('show');
+        if (window._adminToastTimer) clearTimeout(window._adminToastTimer);
+        window._adminToastTimer = setTimeout(function() { window._adminToastDismiss(); }, 4500);
+    };
 
     window.loadAdminNotifications = function(adminId) {
         fetch(API_URL + '/admin/notifications?admin_id=' + adminId)
             .then(r => r.json())
             .then(data => {
-                window.adminNotifList = Array.isArray(data) ? data : [];
+                const list = Array.isArray(data) ? data : [];
+                // Detect new notifications (not seen in previous poll)
+                const isFirstLoad = window._adminNotifKnownIds.size === 0 && window.adminNotifList.length === 0;
+                if (!isFirstLoad) {
+                    const newOnes = list.filter(n => !window._adminNotifKnownIds.has(n.id) && !n.is_read);
+                    if (newOnes.length === 1) {
+                        window._adminShowToast(newOnes[0].title, newOnes[0].message);
+                    } else if (newOnes.length > 1) {
+                        window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
+                    }
+                }
+                // Update known IDs
+                list.forEach(n => window._adminNotifKnownIds.add(n.id));
+                window.adminNotifList = list;
                 if (typeof window.updateAdminNotifBadge === 'function') window.updateAdminNotifBadge();
             }).catch(() => {});
     };
