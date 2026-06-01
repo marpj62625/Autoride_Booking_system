@@ -8172,7 +8172,9 @@ def save_license_details():
 
 @app.route('/admin/fcm-token', methods=['POST'])
 def register_admin_fcm_token():
-    """Register or update an admin's FCM device token for push notifications."""
+    """Register or update an admin's FCM device token for push notifications.
+    Admin accounts are in the users table (role=admin/super_admin).
+    """
     data = request.get_json() or {}
     admin_id = data.get('admin_id')
     fcm_token = data.get('fcm_token')
@@ -8180,7 +8182,10 @@ def register_admin_fcm_token():
         return jsonify({'error': 'admin_id and fcm_token are required'}), 400
     try:
         cur = get_cursor()
-        cur.execute("UPDATE admins SET fcm_token = %s WHERE id = %s", (fcm_token, admin_id))
+        cur.execute(
+            "UPDATE users SET fcm_token = %s WHERE id = %s AND role IN ('admin', 'super_admin')",
+            (fcm_token, admin_id)
+        )
         commit_db()
         return jsonify({'message': 'Admin FCM token registered'}), 200
     except Exception as e:
@@ -8358,19 +8363,22 @@ def debug_admin_fcm_check():
 
 @app.route('/debug/test-push', methods=['POST'])
 def debug_test_push():
-    """Debug: send a test push notification to an admin by admin_id."""
+    """Debug: send a test push notification to an admin by admin_id (users.id)."""
     data = request.get_json() or {}
     admin_id = data.get('admin_id')
     if not admin_id:
         return jsonify({'error': 'admin_id required'}), 400
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, username, fcm_token FROM admins WHERE id = %s", (int(admin_id),))
+        cur.execute(
+            "SELECT id, full_name, fcm_token FROM users WHERE id = %s AND role IN ('admin', 'super_admin')",
+            (int(admin_id),)
+        )
         admin = cur.fetchone()
         if not admin:
-            return jsonify({'error': 'Admin not found'}), 404
+            return jsonify({'error': 'Admin not found in users table'}), 404
         if not admin.get('fcm_token'):
-            return jsonify({'error': 'No FCM token registered for this admin', 'admin': dict(admin)}), 400
+            return jsonify({'error': 'No FCM token registered for this admin', 'admin_id': admin_id}), 400
         from notifications import fcm_service
         ok = fcm_service.send_push(admin['fcm_token'], 'Test Notification', 'Push notifications are working!')
         return jsonify({'success': ok, 'admin_id': admin_id, 'token_prefix': admin['fcm_token'][:20] + '...'}), 200

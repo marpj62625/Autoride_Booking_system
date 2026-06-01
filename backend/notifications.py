@@ -500,6 +500,7 @@ class Notification_Service:
         Admin accounts are stored in the users table with role='admin'/'super_admin'.
         Inserts with user_id (not admin_id) so the FK constraint is satisfied and
         the GET /admin/notifications endpoint (which queries by user_id) can find them.
+        Also sends a native FCM push notification to each admin's device.
         """
         try:
             import psycopg
@@ -512,18 +513,20 @@ class Notification_Service:
 
                 # Admin accounts live in the users table with role admin/super_admin
                 conn.rollback()
-                cur.execute("SELECT id FROM users WHERE role IN ('admin', 'super_admin')")
+                cur.execute("SELECT id, fcm_token FROM users WHERE role IN ('admin', 'super_admin')")
                 rows = cur.fetchall()
-                admin_user_ids = [r['id'] for r in rows]
+                admins = rows if rows else []
 
-                if not admin_user_ids:
+                if not admins:
                     print("notify_admins_inapp: no admin users found in users table", file=sys.stderr)
                     return []
 
-                print(f"notify_admins_inapp: found {len(admin_user_ids)} admin(s) in users table", file=sys.stderr)
+                print(f"notify_admins_inapp: found {len(admins)} admin(s) in users table", file=sys.stderr)
 
                 results = []
-                for uid in admin_user_ids:
+                for admin in admins:
+                    uid = admin['id']
+                    # Save in-app notification
                     try:
                         conn.rollback()
                         cur.execute(
@@ -537,6 +540,15 @@ class Notification_Service:
                         conn.rollback()
                         print(f"notify_admins_inapp: insert failed for user_id={uid}: {exc}", file=sys.stderr)
                         results.append(False)
+
+                    # Send native push notification if FCM token available
+                    token = admin.get('fcm_token')
+                    if token:
+                        try:
+                            fcm_service.send_push(token, title, message)
+                            print(f"notify_admins_inapp: push sent to user_id={uid}", file=sys.stderr)
+                        except Exception as push_err:
+                            print(f"notify_admins_inapp: push failed for user_id={uid}: {push_err}", file=sys.stderr)
 
                 cur.close()
                 return results
