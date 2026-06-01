@@ -8790,7 +8790,7 @@ def get_admin_notifications():
     """Return all notifications for an admin ordered by created_at DESC.
     Admin accounts are stored in the users table (role=admin/super_admin),
     so notifications are keyed by user_id.
-    Query param: admin_id (int, required) — this is the users.id of the admin.
+    Query param: admin_id (int, required) - this is the users.id of the admin.
     """
     admin_id = request.args.get('admin_id')
     if not admin_id:
