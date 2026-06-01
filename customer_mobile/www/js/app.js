@@ -1075,7 +1075,14 @@ function _fmtDate(d) {
 
 function loadHome() {
   var nameEl = document.getElementById('homeUserName');
-  if (nameEl) nameEl.textContent = currentUser.fullName || 'there';
+  if (nameEl) {
+    var displayName = currentUser.fullName || 'there';
+    // Show first name only if full name is too long
+    if (displayName.length > 20) {
+      displayName = displayName.split(' ')[0];
+    }
+    nameEl.textContent = displayName;
+  }
   // Update chat unread badge
   updateChatUnreadBadge();
   apiCall('/user/points?user_id=' + currentUser.id)
