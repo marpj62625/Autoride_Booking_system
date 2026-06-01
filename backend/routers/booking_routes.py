@@ -109,24 +109,37 @@ def book_vehicle():
         customer_name = user_row['full_name'] if user_row else 'Customer'
 
         # Send SMS notifications
-        sms_service.notify_customer(
-            user_id,
-            compose_booking_created_sms(booking_id, brand, model, start_date, end_date, total_price)
-        )
-        sms_service.notify_admins(
-            compose_admin_new_booking_sms(booking_id, customer_name, brand, model, start_date, end_date)
-        )
-        notification_service.notify_user(
-            user_id,
-            "Booking Received",
-            f"Your booking #{booking_id} for {brand} {model} from {start_date} to {end_date} has been received. Total: PHP {total_price}.",
-            'booking_created'
-        )
-        notification_service.notify_admins_inapp(
-            "New Booking",
-            f"New booking #{booking_id} from {customer_name} for {brand} {model}, {start_date} to {end_date}.",
-            'admin_new_booking'
-        )
+        try:
+            sms_service.notify_customer(
+                user_id,
+                compose_booking_created_sms(booking_id, brand, model, start_date, end_date, total_price)
+            )
+        except Exception as sms_err:
+            print(f"DEBUG: SMS to customer failed: {sms_err}")
+        try:
+            sms_service.notify_admins(
+                compose_admin_new_booking_sms(booking_id, customer_name, brand, model, start_date, end_date)
+            )
+        except Exception as sms_err:
+            print(f"DEBUG: SMS to admins failed: {sms_err}")
+        try:
+            notification_service.notify_user(
+                user_id,
+                "Booking Received",
+                f"Your booking #{booking_id} for {brand} {model} from {start_date} to {end_date} has been received. Total: PHP {total_price}.",
+                'booking_created'
+            )
+        except Exception as notif_err:
+            print(f"DEBUG: notify_user failed: {notif_err}")
+        try:
+            notification_service.notify_admins_inapp(
+                "New Booking",
+                f"New booking #{booking_id} from {customer_name} for {brand} {model}, {start_date} to {end_date}.",
+                'admin_new_booking'
+            )
+            print(f"DEBUG: notify_admins_inapp called for booking {booking_id}")
+        except Exception as notif_err:
+            print(f"DEBUG: notify_admins_inapp failed: {notif_err}")
         
         print(f"DEBUG: Created booking {booking_id} for user {user_id}")
         return jsonify({
