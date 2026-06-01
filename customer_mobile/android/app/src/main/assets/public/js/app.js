@@ -276,9 +276,34 @@ function uploadFile(endpoint, formData) {
 }
 
 // UI HELPERS
+// Progress bar loading — non-blocking, shows a thin bar at the top
+var _loadingCount = 0;
 function showLoading(show) {
-  var el = document.getElementById('loadingOverlay');
-  if (el) el.style.display = show ? 'flex' : 'none';
+  var bar = document.getElementById('progressBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'progressBar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--primary);z-index:99999;transition:width 0.3s ease,opacity 0.4s ease;width:0%;opacity:0;pointer-events:none;';
+    document.body.appendChild(bar);
+  }
+  if (show) {
+    _loadingCount++;
+    bar.style.opacity = '1';
+    bar.style.width = '70%';
+    // Animate to 90% to show progress
+    clearTimeout(bar._t);
+    bar._t = setTimeout(function() { bar.style.width = '90%'; }, 400);
+  } else {
+    _loadingCount = Math.max(0, _loadingCount - 1);
+    if (_loadingCount === 0) {
+      clearTimeout(bar._t);
+      bar.style.width = '100%';
+      bar._t = setTimeout(function() {
+        bar.style.opacity = '0';
+        bar._t2 = setTimeout(function() { bar.style.width = '0%'; }, 400);
+      }, 200);
+    }
+  }
 }
 
 function showToast(message, type) {
@@ -377,8 +402,6 @@ function showOverlay(id) {
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
   if (id === 'page-license-upload') openLicenseUpload();
-  if (id === 'page-split-payment') loadSplitPayment();
-  if (id === 'page-support') loadSupport();
   if (id === 'page-chatbot') loadChatbot();
   if (id === 'page-livechat') loadLiveChat();
   if (id === 'page-newsletter') loadNewsletter();
@@ -1052,7 +1075,14 @@ function _fmtDate(d) {
 
 function loadHome() {
   var nameEl = document.getElementById('homeUserName');
-  if (nameEl) nameEl.textContent = currentUser.fullName || 'there';
+  if (nameEl) {
+    var displayName = currentUser.fullName || 'there';
+    // Show first name only if full name is too long
+    if (displayName.length > 20) {
+      displayName = displayName.split(' ')[0];
+    }
+    nameEl.textContent = displayName;
+  }
   // Update chat unread badge
   updateChatUnreadBadge();
   apiCall('/user/points?user_id=' + currentUser.id)
@@ -1148,18 +1178,64 @@ function searchVehicles(query) {
 }
 
 // VEHICLES - Step 1: Browse models
+// Vehicle cache key and TTL (5 minutes)
+var VEHICLE_CACHE_KEY = 'autoride_vehicles_cache';
+var VEHICLE_CACHE_TTL = 5 * 60 * 1000;
+
 function loadVehicles() {
-  showLoading(true);
+  var grid = document.getElementById('vehicleGrid');
+  var countEl = document.getElementById('vehicleCount');
+
+  // 1. Try to show cached data immediately (no spinner)
+  try {
+    var cached = localStorage.getItem(VEHICLE_CACHE_KEY);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      var age = Date.now() - (parsed.savedAt || 0);
+      if (parsed.data && parsed.data.length && age < VEHICLE_CACHE_TTL) {
+        allVehicles = parsed.data;
+        renderVehicles(parsed.data);
+        // Show subtle refresh indicator
+        if (countEl) countEl.innerHTML = '<span style="color:var(--text-muted);font-size:0.7rem;"><i class="fas fa-sync-alt fa-spin" style="font-size:0.6rem;margin-right:4px;"></i>Refreshing...</span>';
+      }
+    }
+  } catch(e) {}
+
+  // 2. Always fetch fresh data in the background (no showLoading overlay)
+  if (!allVehicles.length && grid) {
+    // Only show skeleton if nothing cached
+    grid.innerHTML =
+      '<div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+      [1,2,3,4].map(function() {
+        return '<div style="background:var(--bg-card);border-radius:16px;overflow:hidden;border:1px solid var(--border);">' +
+          '<div style="height:120px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div>' +
+          '<div style="padding:10px;">' +
+          '<div style="height:12px;background:var(--border);border-radius:6px;margin-bottom:8px;animation:shimmer 1.2s infinite;"></div>' +
+          '<div style="height:10px;background:var(--border);border-radius:6px;width:60%;animation:shimmer 1.2s infinite;"></div>' +
+          '</div></div>';
+      }).join('') + '</div>';
+  }
+
   apiCall('/vehicles/categories')
     .then(function(data) {
       allVehicles = data;
       renderVehicles(data);
+      // Cache the fresh data
+      try {
+        localStorage.setItem(VEHICLE_CACHE_KEY, JSON.stringify({ data: data, savedAt: Date.now() }));
+      } catch(e) {}
+      if (countEl) {
+        var available = data.filter(function(v) { return (parseInt(v.available_units) || 0) > 0; });
+        countEl.textContent = available.length + ' vehicle' + (available.length !== 1 ? 's' : '') + ' found';
+      }
     })
     .catch(function(err) {
-      var grid = document.getElementById('vehicleGrid');
-      if (grid) grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>' + err.message + '</p></div>';
-    })
-    .finally(function() { showLoading(false); });
+      // Only show error if nothing was cached
+      if (!allVehicles.length && grid) {
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>' + err.message + '</p></div>';
+      }
+      if (countEl && allVehicles.length) countEl.textContent = '';
+    });
 }
 
 function renderVehicles(list) {
@@ -1825,7 +1901,6 @@ function autoSetReturnTime() {
 
 function openBookingForm(vehicleId) {
   bookingFormVehicle = currentVehicleDetail;
-  couponData = null;
   selectedAddons = [];
   selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
   var today = new Date().toISOString().split('T')[0];
@@ -1921,11 +1996,6 @@ function openBookingForm(vehicleId) {
     '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
     '</div><input type="hidden" id="bfPaymentType" value="Full"></div>' +
 
-    // Coupon
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Coupon Code</h4>' +
-    '<div class="coupon-row"><input type="text" id="bfCoupon" placeholder="Enter coupon code"><button onclick="applyCoupon()">Apply</button></div>' +
-    '<div id="couponMsg" style="font-size:0.8rem;margin-top:6px;"></div></div>' +
-
     // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
     '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:8px;">Available: <strong>' + (currentUser.loyaltyPoints || 0) + ' pts</strong></p>' +
@@ -1937,13 +2007,6 @@ function openBookingForm(vehicleId) {
 
     // Mileage notice
     '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;font-size:0.8rem;color:#084298;">Daily mileage limit: <strong>' + (appSettings.mileage_limit || 250) + ' km</strong></div>' +
-
-    // Split Bill
-    '<div class="card" style="border:2px dashed var(--primary);">' +
-    '<h4 style="font-weight:700;margin-bottom:8px;"><i class="fas fa-users" style="color:var(--primary);"></i> Split this Bill with a Friend?</h4>' +
-    '<p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:10px;">Enter your friend\'s email to split the cost after booking.</p>' +
-    '<div class="form-group"><label>Friend\'s Email (optional)</label><input type="email" id="bfSplitEmail" placeholder="friend@gmail.com"></div>' +
-    '</div>' +
 
     '<span class="field-error" id="bfErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
     '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitBooking()"><i class="fas fa-check"></i> Confirm Booking</button>' +
@@ -2055,12 +2118,11 @@ function updateBookingPrice() {
 
   var ptsEl = document.getElementById('bfPoints');
   var pts = ptsEl ? (parseInt(ptsEl.value) || 0) : 0;
-  var cpPct = couponData ? couponData.discount_percent : 0;
   var result = calculateBookingPrice(
     v.daily_rate, start, end, selectedAddons, insPrice,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
-    cpPct, pts
+    0, pts
   );
   var payTypeEl = document.getElementById('bfPaymentType');
   var payType = payTypeEl ? payTypeEl.value : 'Full';
@@ -2084,24 +2146,6 @@ function updateBookingPrice() {
     '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
 }
 
-function applyCoupon() {
-  var codeEl = document.getElementById('bfCoupon');
-  var code = codeEl ? codeEl.value.trim().toUpperCase() : '';
-  var msg = document.getElementById('couponMsg');
-  if (!code) { if (msg) msg.innerHTML = '<span style="color:var(--danger);">Enter a coupon code.</span>'; return; }
-  apiCall('/coupons/verify', { method: 'POST', body: JSON.stringify({ code: code }) })
-    .then(function(data) {
-      couponData = data;
-      if (msg) msg.innerHTML = '<span style="color:var(--success);">' + data.discount_percent + '% discount applied!</span>';
-      updateBookingPrice();
-    })
-    .catch(function(err) {
-      couponData = null;
-      if (msg) msg.innerHTML = '<span style="color:var(--danger);">' + err.message + '</span>';
-      updateBookingPrice();
-    });
-}
-
 function submitBooking() {
   var start = document.getElementById('bfStartDate').value;
   var end = document.getElementById('bfEndDate').value;
@@ -2115,12 +2159,11 @@ function submitBooking() {
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
-  var cpPct = couponData ? couponData.discount_percent : 0;
   var result = calculateBookingPrice(
     bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
-    cpPct, pts
+    0, pts
   );
   var payType = document.getElementById('bfPaymentType').value;
   var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
@@ -2163,8 +2206,8 @@ function submitBooking() {
     addon_price: result.addonPrice,
     total_price: result.total,
     payment_type: payType,
-    applied_coupon_id: couponData ? couponData.coupon_id : null,
-    discount_amount: result.couponDiscount + result.longTermDiscount,
+    applied_coupon_id: null,
+    discount_amount: result.longTermDiscount,
     points_redeemed: pts,
     points_earned: result.pointsEarned,
     service_type: serviceType,
@@ -2551,7 +2594,8 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
     '<div class="scroll-content" style="padding-bottom:100px;">' +
     '<div class="receipt-card">' +
     '<div class="receipt-header">' +
-    '<i class="fas fa-check-circle" style="font-size:3.5rem;color:var(--success);"></i>' +
+    '<img src="Autoride-logo-nobg.png" alt="Autoride" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">' +
+    '<i class="fas fa-check-circle" style="font-size:2.5rem;color:var(--success);"></i>' +
     '<h2>Booking Confirmed!</h2>' +
     '<p style="color:var(--text-secondary);font-size:0.875rem;">Your receipt has been sent to your email</p>' +
     '</div>' +
@@ -2599,27 +2643,46 @@ var _allBookingsData = [];
 
 function loadBookings() {
   if (!currentUser.id) return;
+  var el = document.getElementById('bookingsList');
+
+  // Show cached data instantly
+  try {
+    var cached = localStorage.getItem('autoride_bookings_' + currentUser.id);
+    if (cached) {
+      var parsed = JSON.parse(cached);
+      if (parsed.data && Date.now() - parsed.savedAt < 2 * 60 * 1000) {
+        _allBookingsData = parsed.data;
+        renderBookingsList(parsed.data);
+        updateBookingStats(parsed.data);
+      }
+    }
+  } catch(e) {}
+
+  // Fetch fresh in background
   showLoading(true);
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(data) {
       _allBookingsData = data;
-      // Update stats
-      var total = data.length;
-      var completed = data.filter(function(b) { return b.status === 'Completed'; }).length;
-      var spent = data.filter(function(b) { return b.payment_status === 'Paid'; }).reduce(function(s, b) { return s + parseFloat(b.total_price || 0); }, 0);
-      var statTotal = document.getElementById('bkStatTotal');
-      var statDone = document.getElementById('bkStatDone');
-      var statSpent = document.getElementById('bkStatSpent');
-      if (statTotal) statTotal.querySelector('div').textContent = total;
-      if (statDone) statDone.querySelector('div').textContent = completed;
-      if (statSpent) statSpent.querySelector('div').textContent = spent > 0 ? ('P' + (spent / 1000).toFixed(1) + 'k') : '-';
+      updateBookingStats(data);
       renderBookingsList(data);
+      try { localStorage.setItem('autoride_bookings_' + currentUser.id, JSON.stringify({ data: data, savedAt: Date.now() })); } catch(e) {}
     })
     .catch(function(err) {
-      var el = document.getElementById('bookingsList');
-      if (el) el.innerHTML = '<div class="empty-state"><p>' + err.message + '</p></div>';
+      if (!_allBookingsData.length && el) el.innerHTML = '<div class="empty-state"><p>' + err.message + '</p></div>';
     })
     .finally(function() { showLoading(false); });
+}
+
+function updateBookingStats(data) {
+  var total = data.length;
+  var completed = data.filter(function(b) { return b.status === 'Completed'; }).length;
+  var spent = data.filter(function(b) { return b.payment_status === 'Paid'; }).reduce(function(s, b) { return s + parseFloat(b.total_price || 0); }, 0);
+  var statTotal = document.getElementById('bkStatTotal');
+  var statDone = document.getElementById('bkStatDone');
+  var statSpent = document.getElementById('bkStatSpent');
+  if (statTotal) statTotal.querySelector('div').textContent = total;
+  if (statDone) statDone.querySelector('div').textContent = completed;
+  if (statSpent) statSpent.querySelector('div').textContent = spent > 0 ? ('P' + (spent / 1000).toFixed(1) + 'k') : '-';
 }
 
 function filterBookingsList(filter, btn) {
@@ -2722,9 +2785,6 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed';
-  var canPickup = b.status === 'Confirmed' || b.status === 'Approved';
-  var canPostInspect = b.status === 'Picked Up';
-  var canTrack = b.status === 'Picked Up';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
   var el = document.getElementById('bookingDetailContent');
@@ -2771,20 +2831,12 @@ function renderBookingDetail(b) {
       '</div>';
   }
 
-  // Inspections section
+  // Inspections section — no button for customers, admin-only action
   var inspectBtn = '';
-  if (canPickup) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'pickup\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
-  else if (canPostInspect) inspectBtn = '<button onclick="openInspection(' + b.id + ',\'return\')" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;cursor:pointer;">+ New Inspection</button>';
 
-  // Primary action button
+  // Primary action button — customer-relevant only
   var primaryAction = '';
-  if (canPickup) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'pickup\')"><i class="fas fa-car"></i> Mark as Picked Up</button>';
-  } else if (canPostInspect) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openInspection(' + b.id + ',\'return\')"><i class="fas fa-flag-checkered"></i> Mark as Returned</button>';
-  } else if (canTrack) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openGpsMap(' + b.vehicle_id + ')"><i class="fas fa-map-marker-alt"></i> Track Vehicle</button>';
-  } else if (canPayBalance) {
+  if (canPayBalance) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
   } else if (canReview) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
@@ -2807,8 +2859,10 @@ function renderBookingDetail(b) {
     '</div>' +
     '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
 
+      // Title
       '<h2 style="font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-bottom:20px;">Booking Details #' + b.id + '</h2>' +
 
+      // Info grid: customer / vehicle / rental period
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
@@ -2824,6 +2878,7 @@ function renderBookingDetail(b) {
         '</div>' +
       '</div>' +
 
+      // Status grid: payment status / total price / booking status
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
@@ -2831,7 +2886,7 @@ function renderBookingDetail(b) {
         '</div>' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">&#8369;' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">?' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
         '</div>' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
@@ -2839,29 +2894,29 @@ function renderBookingDetail(b) {
         '</div>' +
       '</div>' +
 
+      // Divider
       '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
 
+      // Driver's License Details
       licenseHtml +
+
+      // Emergency Contact
       emergencyHtml +
 
+      // Divider
       (emergencyHtml ? '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' : '') +
 
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
-        '<h4 style="font-weight:700;font-size:1rem;color:var(--text-primary);">Vehicle Inspections</h4>' +
-        inspectBtn +
-      '</div>' +
-      '<div id="inspectionsList" style="margin-bottom:20px;"><p style="font-size:0.875rem;color:var(--text-muted);text-align:center;padding:8px 0;">No inspections yet.</p></div>' +
-
+      // Divider before actions
       '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
 
+      // Cancellation reason
       (b.cancellation_reason ? '<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p style="font-size:0.875rem;color:var(--danger);"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
 
+      // Action buttons
       primaryAction +
       secondaryActions +
 
     '</div>';
-
-  loadInspectionsForDetail(b.id);
 }
 
 function loadInspectionsForDetail(bookingId) {
@@ -3317,13 +3372,49 @@ function loadLicenseDetailsForEdit() {
       var el;
       el = document.getElementById('editLicenseNumber'); if (el) el.value = data.license_number || '';
       el = document.getElementById('editLicenseExpiry'); if (el) el.value = data.expiry_date || '';
-      el = document.getElementById('editLicenseCountry'); if (el) el.value = data.issuing_country_state || '';
-      el = document.getElementById('editLicenseClass'); if (el) el.value = data.license_class || '';
+      // For select dropdowns, try exact match first, then partial match
+      el = document.getElementById('editLicenseCountry');
+      if (el) {
+        var countryVal = data.issuing_country_state || '';
+        el.value = countryVal;
+        if (!el.value && countryVal) {
+          // Try partial match (e.g. "Ph" -> "Philippines")
+          for (var i = 0; i < el.options.length; i++) {
+            if (el.options[i].value.toLowerCase().startsWith(countryVal.toLowerCase())) {
+              el.value = el.options[i].value; break;
+            }
+          }
+        }
+      }
+      el = document.getElementById('editLicenseClass');
+      if (el) {
+        var classVal = data.license_class || '';
+        el.value = classVal;
+        if (!el.value && classVal) {
+          // Try matching just the letter (e.g. "B" -> "B")
+          for (var j = 0; j < el.options.length; j++) {
+            if (el.options[j].value === classVal || el.options[j].value.startsWith(classVal + ' ')) {
+              el.value = el.options[j].value; break;
+            }
+          }
+        }
+      }
       el = document.getElementById('editLicenseName'); if (el) el.value = data.full_name || '';
       el = document.getElementById('editLicenseDob'); if (el) el.value = data.date_of_birth || '';
       el = document.getElementById('editLicenseEmName'); if (el) el.value = data.emergency_contact_name || '';
       el = document.getElementById('editLicenseEmPhone'); if (el) el.value = data.emergency_contact_phone || '';
-      el = document.getElementById('editLicenseEmRel'); if (el) el.value = data.emergency_contact_relationship || '';
+      el = document.getElementById('editLicenseEmRel');
+      if (el) {
+        var relVal = data.emergency_contact_relationship || '';
+        el.value = relVal;
+        if (!el.value && relVal) {
+          for (var k = 0; k < el.options.length; k++) {
+            if (el.options[k].value.toLowerCase() === relVal.toLowerCase()) {
+              el.value = el.options[k].value; break;
+            }
+          }
+        }
+      }
       // Show existing images in preview
       if (data.license_front_url) {
         var prevF = document.getElementById('licenseEditPreviewFront');
@@ -3610,103 +3701,6 @@ function loadFavorites() {
         '</div>';
     })
     .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
-}
-
-// SPLIT PAYMENT
-function loadSplitPayment() {
-  var el = document.getElementById('splitPaymentContent');
-  if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-split-payment\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Split Payment</h2></div>' +
-    '<div class="scroll-content"><div class="card">' +
-    '<h4 style="font-weight:700;margin-bottom:14px;">Request Split</h4>' +
-    '<div class="form-group"><label>Partner Email</label><input type="email" id="splitEmail" placeholder="partner@gmail.com"><span class="field-error" id="splitEmailErr"></span></div>' +
-    '<div class="form-group"><label>Amount for Partner (PHP)</label><input type="number" id="splitAmount" placeholder="0.00"></div>' +
-    '<button class="btn-primary" onclick="requestSplit()"><i class="fas fa-users"></i> Request Split</button>' +
-    '</div>' +
-    '<div class="card" style="margin-top:16px;"><h4 style="font-weight:700;margin-bottom:14px;">Incoming Split Requests</h4>' +
-    '<div id="splitBillsList"><p style="color:var(--text-muted);font-size:0.875rem;">Loading...</p></div></div>' +
-    '</div>';
-  loadSplitBills();
-}
-
-function requestSplit() {
-  var emailEl = document.getElementById('splitEmail');
-  var amountEl = document.getElementById('splitAmount');
-  var errEl = document.getElementById('splitEmailErr');
-  var email = emailEl ? emailEl.value.trim() : '';
-  var amount = amountEl ? parseFloat(amountEl.value) : 0;
-  if (errEl) errEl.textContent = '';
-  if (!email) { if (errEl) errEl.textContent = 'Partner email is required.'; return; }
-  showLoading(true);
-  apiCall('/split-bill/request', { method: 'POST', body: JSON.stringify({ booking_id: activeBookingId, partner_email: email, amount: amount }) })
-    .then(function() { showToast('Split request sent! Awaiting partner confirmation.', 'success'); })
-    .catch(function(err) { if (errEl) errEl.textContent = err.message; })
-    .finally(function() { showLoading(false); });
-}
-
-function loadSplitBills() {
-  if (!currentUser.id) return;
-  apiCall('/split-bills?email=' + (currentUser.email || ''))
-    .then(function(data) {
-      var el = document.getElementById('splitBillsList');
-      if (!el) return;
-      if (!data.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.875rem;">No incoming split requests</p>'; return; }
-      el.innerHTML = data.map(function(s) {
-        return '<div class="split-status">' +
-          '<strong>' + (s.initiator_name || 'Someone') + '</strong> wants to split Booking #' + s.booking_id + '<br>' +
-          '<small>' + (s.vehicle_brand || '') + ' ' + (s.vehicle_model || '') + ' | ' + s.start_date + ' to ' + s.end_date + '</small><br>' +
-          '<strong style="color:var(--primary);">Your share: ' + formatPHP(s.amount) + '</strong><br>' +
-          statusPill(s.status) +
-          (s.status !== 'Paid' ? '<button class="btn-primary btn-sm" style="margin-top:8px;" onclick="paySplit(' + s.id + ')">Pay My Share</button>' : '') +
-          '</div>';
-      }).join('');
-    }).catch(function() {});
-}
-
-function paySplit(splitId) {
-  showLoading(true);
-  apiCall('/split-bill/pay', { method: 'POST', body: JSON.stringify({ split_id: splitId, user_id: currentUser.id }) })
-    .then(function() { showToast('Split payment completed!', 'success'); loadSplitBills(); })
-    .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
-}
-
-// SUPPORT
-function loadSupport() {
-  var el = document.getElementById('supportContent');
-  if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-support\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Support</h2></div>' +
-    '<div class="scroll-content"><div class="card">' +
-    '<h4 style="font-weight:700;margin-bottom:14px;">Submit a Ticket</h4>' +
-    '<div class="form-group"><label>Name *</label><input type="text" id="suppName" value="' + (currentUser.fullName || '') + '"><span class="field-error" id="suppNameErr"></span></div>' +
-    '<div class="form-group"><label>Email</label><input type="email" id="suppEmail" placeholder="yourname@gmail.com"></div>' +
-    '<div class="form-group"><label>Subject *</label><input type="text" id="suppSubject" placeholder="Brief description"><span class="field-error" id="suppSubjectErr"></span></div>' +
-    '<div class="form-group"><label>Message *</label><textarea id="suppMessage" placeholder="Describe your issue..."></textarea><span class="field-error" id="suppMessageErr"></span></div>' +
-    '<span class="field-error" id="suppErr" style="display:block;margin-bottom:12px;"></span>' +
-    '<button class="btn-primary" onclick="submitSupport()"><i class="fas fa-paper-plane"></i> Submit Ticket</button>' +
-    '</div></div>';
-}
-
-function submitSupport() {
-  var name = sanitizeInput(document.getElementById('suppName').value.trim());
-  var email = sanitizeInput(document.getElementById('suppEmail').value.trim());
-  var subject = sanitizeInput(document.getElementById('suppSubject').value.trim());
-  var message = sanitizeInput(document.getElementById('suppMessage').value.trim());
-  ['suppNameErr','suppSubjectErr','suppMessageErr','suppErr'].forEach(function(id) {
-    var el = document.getElementById(id); if (el) el.textContent = '';
-  });
-  if (isBlank(name)) { document.getElementById('suppNameErr').textContent = 'Name is required.'; return; }
-  if (isBlank(subject)) { document.getElementById('suppSubjectErr').textContent = 'Subject is required.'; return; }
-  if (isBlank(message)) { document.getElementById('suppMessageErr').textContent = 'Message is required.'; return; }
-  showLoading(true);
-  apiCall('/support', { method: 'POST', body: JSON.stringify({ name: name, email: email, subject: subject, message: message }) })
-    .then(function() { showToast('Support ticket submitted successfully.', 'success'); closeOverlay('page-support'); })
-    .catch(function(err) { document.getElementById('suppErr').textContent = err.message; })
     .finally(function() { showLoading(false); });
 }
 

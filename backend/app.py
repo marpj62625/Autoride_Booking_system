@@ -8162,6 +8162,20 @@ def save_license_details():
             
         cur.execute("UPDATE users SET is_verified = 1 WHERE id = %s", (user_id,))
         commit_db()
+
+        # Notify admins that a customer updated their license details
+        try:
+            cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
+            u = cur.fetchone()
+            uname = u['full_name'] if u else f'User #{user_id}'
+            notification_service.notify_admins_inapp(
+                "License Details Updated",
+                f"{uname} has submitted/updated their driver's license details and is awaiting verification.",
+                'admin_license_upload'
+            )
+        except Exception as notif_err:
+            print(f"License details admin notification error: {notif_err}")
+
         return jsonify({'message': 'License details saved successfully', 'is_verified': 1}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

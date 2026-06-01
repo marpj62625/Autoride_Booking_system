@@ -10,31 +10,31 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <style>
         :root {
-            /* Brand & Primary Actions */
-            --primary: #0052ff;
+            /* Brand & Primary Actions (Grab Theme) */
+            --primary: #00B14F;
             --on-primary: #ffffff;
-            --primary-dark: #0040CC;
-            --primary-light: #4D8FFF;
+            --primary-dark: #005339;
+            --primary-light: #7bdcb5;
             /* Backgrounds & Surfaces */
-            --surface: #f9f9ff;
-            --surface-container: #f0f3ff;
+            --surface: #f4f7f6;
+            --surface-container: #ffffff;
             --surface-bright: #ffffff;
             /* Typography & Outlines */
-            --on-surface: #1a1c1e;
-            --on-surface-variant: #44474e;
-            --outline: #d3daea;
+            --on-surface: #363a45;
+            --on-surface-variant: #5f6368;
+            --outline: #e0e0e0;
             /* Aliases */
-            --bg-page: #f9f9ff;
-            --bg-card: #f0f3ff;
+            --bg-page: #f4f7f6;
+            --bg-card: #ffffff;
             --bg-card2: #ffffff;
             --bg-input: #ffffff;
-            --text-primary: #1a1c1e;
-            --text-secondary: #44474e;
-            --text-muted: #6B6E75;
-            --border: #d3daea;
-            --border-light: #E0E5F0;
-            --shadow-card: 0 4px 24px rgba(0,82,255,0.06);
-            --shadow-modal: 0 8px 40px rgba(0,82,255,0.12);
+            --text-primary: #363a45;
+            --text-secondary: #5f6368;
+            --text-muted: #8c8c8c;
+            --border: #e0e0e0;
+            --border-light: #f0f0f0;
+            --shadow-card: 0 4px 24px rgba(0, 177, 79, 0.08);
+            --shadow-modal: 0 8px 40px rgba(0, 177, 79, 0.15);
             --success: #34d399;
             --warning: #fbbf24;
             --danger: #f87171;
@@ -44,10 +44,10 @@
             --radius-lg: 28px;
         }
         [data-theme="dark"] {
-            --primary: #4D8FFF;
+            --primary: #00B14F;
             --on-primary: #ffffff;
-            --primary-dark: #0052FF;
-            --primary-light: #80AFFF;
+            --primary-dark: #00B14F;
+            --primary-light: #005339;
             --surface: #0A0A0A;
             --surface-container: #141414;
             --surface-bright: #1a1a1a;
@@ -76,6 +76,7 @@
         #loadingOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:9999; display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px; }
         .spinner { width:40px; height:40px; border:4px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
         @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
         /* Toast */
         .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:var(--text-primary); padding:12px 20px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; white-space:nowrap; max-width:90vw; text-align:center; }
         .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
@@ -94,7 +95,7 @@
         /* Cards */
         .card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:12px; }
         /* Buttons */
-        .btn-primary { background:var(--primary); color:var(--text-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .btn-primary { background:var(--primary); color:var(--on-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
         .btn-primary:active { background:var(--primary-dark); }
         .btn-secondary { background:var(--bg-input); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; transition:background 0.2s; }
         .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
@@ -125,21 +126,21 @@
         /* Status Pills */
         .pill { display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; }
         .pill-pending { background:#fff3cd; color:#856404; }
-        .pill-confirmed { background:#cfe2ff; color:#084298; }
-        .pill-approved { background:#d1e7dd; color:#0a3622; }
-        .pill-picked-up { background:#e2d9f3; color:#432874; }
-        .pill-completed { background:#d1e7dd; color:#0a3622; }
+        .pill-confirmed { background:var(--primary); color:var(--on-primary); }
+        .pill-approved { background:var(--primary); color:var(--on-primary); }
+        .pill-picked-up { background:var(--primary); color:var(--on-primary); }
+        .pill-completed { background:var(--primary); color:var(--on-primary); }
         .pill-cancelled { background:#f8d7da; color:#842029; }
         .pill-rejected { background:#f8d7da; color:#842029; }
         .pill-unpaid { background:#f8d7da; color:#842029; }
         .pill-partially-paid { background:#fff3cd; color:#856404; }
-        .pill-paid { background:#d1e7dd; color:#0a3622; }
+        .pill-paid { background:var(--primary); color:var(--on-primary); }
         .pill-refund-pending { background:#fff3cd; color:#856404; }
         .pill-refunded { background:#cfe2ff; color:#084298; }
         /* Auth screens */
         .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; background:var(--bg-page); }
         .auth-logo { text-align:center; margin-bottom:28px; }
-        .auth-logo i { font-size:2.5rem; color:var(--primary); }
+        .auth-logo img { display:block; margin:0 auto 8px; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.15)); }
         .auth-logo h1 { font-size:2rem; font-weight:900; color:var(--text-primary); letter-spacing:-1.5px; margin-top:8px; }
         .auth-logo p { color:var(--text-muted); font-size:0.875rem; margin-top:4px; }
         .auth-card { background:var(--bg-card); border:1px solid var(--border); border-radius:28px; padding:28px 24px; width:100%; max-width:420px; }
@@ -156,7 +157,7 @@
         .otp-inputs input { width:44px; height:52px; text-align:center; font-size:1.4rem; font-weight:700; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); outline:none; }
         .otp-inputs input:focus { border-color:var(--primary); background:#fff; }
         /* Home screen */
-        .home-banner { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:var(--text-primary); padding:24px 20px; margin-bottom:0; }
+        .home-banner { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:var(--on-primary); padding:24px 20px; margin-bottom:0; }
         .home-banner h2 { font-size:1.3rem; font-weight:800; }
         .home-banner p { font-size:0.875rem; opacity:0.85; margin-top:4px; }
         .points-badge { background:rgba(255,255,255,0.2); border-radius:var(--radius-sm); padding:8px 14px; display:inline-flex; align-items:center; gap:8px; margin-top:12px; font-size:0.85rem; font-weight:600; }
@@ -176,20 +177,20 @@
         .vehicle-img-wrap img { width:100%; height:100%; object-fit:cover; }
         .vehicle-img-wrap::after { content:""; position:absolute; inset:0; background:linear-gradient(to bottom, transparent 35%, rgba(249,249,255,0.9) 100%); }
         .badge-available { position:absolute; top:12px; right:12px; z-index:1; font-size:0.65rem; font-weight:800; padding:5px 10px; border-radius:20px; backdrop-filter:blur(8px); }
-        .badge-avail-yes { background:rgba(5,150,105,0.85); color:var(--text-primary); }
+        .badge-avail-yes { background:var(--primary); color:var(--on-primary); }
         .badge-avail-no { background:rgba(30,30,30,0.85); color:var(--text-muted); }
         .vehicle-info { padding:14px; }
         .vehicle-info h3 { font-size:1rem; font-weight:900; margin-bottom:6px; color:var(--text-primary); }
         .vehicle-meta { font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; }
         .vehicle-meta i { width:14px; color:#3f3f46; }
         .vehicle-location { font-size:0.75rem; color:var(--text-muted); margin-bottom:8px; }
-        .vehicle-rate { font-size:1.1rem; font-weight:900; color:#dc2626; }
+        .vehicle-rate { font-size:1.1rem; font-weight:900; color:var(--text-primary); }
         .vehicle-rate span { font-size:0.7rem; font-weight:500; color:var(--text-muted); }
         /* Filter chips */
         .filter-chips { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none; }
         .filter-chips::-webkit-scrollbar { display:none; }
         .chip { background:var(--bg-card2); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:0.75rem; font-weight:700; color:var(--text-muted); cursor:pointer; white-space:nowrap; transition:all 0.2s; }
-        .chip.active { background:linear-gradient(135deg,#dc2626,#9b1a1a); color:var(--text-primary); border-color:transparent; }
+        .chip.active { background:var(--primary); color:var(--on-primary); border-color:transparent; }
         /* Booking list */
         .booking-item { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:10px; cursor:pointer; transition:transform 0.15s; }
         .booking-item:active { transform:scale(0.98); }
@@ -198,27 +199,6 @@
         .booking-item .booking-footer { display:flex; align-items:center; justify-content:space-between; }
         /* Profile */
         .profile-avatar { width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid var(--primary); }
-        
-        /* Payment Page Styles */
-        .addon-item { margin-bottom:12px; }
-        .addon-checkbox { position:relative; display:inline-block; width:20px; height:20px; cursor:pointer; }
-        .addon-checkbox input { position:absolute; opacity:0; cursor:pointer; height:0; width:0; }
-        .addon-checkbox .checkmark { position:absolute; top:0; left:0; height:20px; width:20px; background:var(--bg-input); border:2px solid var(--border); border-radius:4px; transition:all 0.2s; }
-        .addon-checkbox input:checked ~ .checkmark { background:#10b981; border-color:#10b981; }
-        .addon-checkbox .checkmark:after { content:""; position:absolute; display:none; left:6px; top:2px; width:5px; height:10px; border:solid white; border-width:0 2px 2px 0; transform:rotate(45deg); }
-        .addon-checkbox input:checked ~ .checkmark:after { display:block; }
-        .addon-item input:checked ~ * .addon-price { color:var(--text-primary) !important; }
-        .addon-item input:not(:checked) ~ * .addon-price { color:var(--text-muted) !important; }
-        .addon-item input:checked ~ * i { color:#10b981 !important; }
-        .addon-item input:not(:checked) ~ * i { color:#6b7280 !important; }
-        
-        .payment-type-btn { background:var(--bg-input); border:2px solid var(--border); border-radius:12px; padding:12px; cursor:pointer; text-align:center; transition:all 0.2s; }
-        .payment-type-btn.active { background:rgba(37,99,235,0.1); border-color:#2563eb; color:#2563eb; }
-        .payment-type-btn:not(.active) { color:var(--text-muted); }
-        
-        .payment-method { display:flex; align-items:center; justify-content:space-between; padding:12px; border:2px solid var(--border); border-radius:12px; margin-bottom:10px; cursor:pointer; transition:all 0.2s; }
-        .payment-method.active { border-color:#10b981; background:rgba(16,185,129,0.05); }
-        .payment-method:not(.active):hover { border-color:var(--primary); }
         .profile-avatar-placeholder { width:80px; height:80px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:2rem; font-weight:800; color:var(--text-primary); border:3px solid var(--primary-dark); }
         .verify-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:0.78rem; font-weight:700; }
         .verify-0 { background:#f8d7da; color:#842029; }
@@ -301,8 +281,6 @@
         .notif-btn-wrap { position:relative; display:inline-block; }
         /* Booking detail actions */
         .action-btn-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
-        /* Split payment */
-        .split-status { background:var(--bg-input); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; }
         /* Favorites */
         .fav-btn { background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--text-muted); transition:color 0.2s; }
         .fav-btn.active { color:#e63946; }
@@ -312,14 +290,10 @@
         .input-icon-wrap { position:relative; }
         .input-icon-wrap i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); }
         .input-icon-wrap input { padding-left:36px; }
-        /* Coupon row */
-        .coupon-row { display:flex; gap:8px; }
-        .coupon-row input { flex:1; }
-        .coupon-row button { padding:12px 16px; background:var(--primary); color:var(--text-primary); border:none; border-radius:var(--radius-sm); font-weight:700; cursor:pointer; white-space:nowrap; }
         /* Rental type toggle */
         .toggle-group { display:flex; background:var(--bg-input); border-radius:var(--radius-sm); padding:4px; gap:4px; }
         .toggle-group button { flex:1; padding:10px; border:none; border-radius:6px; font-weight:600; font-size:0.875rem; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s; }
-        .toggle-group button.active { background:var(--primary); color:var(--text-primary); }
+        .toggle-group button.active { background:var(--primary); color:var(--on-primary); }
         /* Receipt */
         .receipt-card { background:var(--bg-card); border-radius:var(--radius-lg); box-shadow:var(--shadow-modal); padding:24px; margin:16px; }
         .receipt-card .receipt-header { text-align:center; margin-bottom:20px; }
@@ -344,12 +318,9 @@
 <!-- ???????????????????????????????????????????????????????????
      SPLASH SCREEN
 ??????????????????????????????????????????????????????????? -->
-<div id="page-splash" style="display:flex;background:linear-gradient(160deg,#0052ff 0%,#0040CC 50%,#001a66 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
-  <div style="width:80px;height:80px;border-radius:24px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.2);">
-    <i class="fas fa-car" style="font-size:2.5rem;color:var(--text-primary);"></i>
-  </div>
-  <h1 style="color:var(--text-primary);font-size:2.8rem;font-weight:900;letter-spacing:-2px;">Autoride</h1>
-  <p style="color:rgba(255,255,255,0.6);font-size:0.875rem;font-weight:500;">Your ride, your way</p>
+<div id="page-splash" style="display:flex;background:linear-gradient(160deg,var(--primary-light) 0%,var(--primary) 50%,var(--primary-dark) 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:20px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
+  <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:220px;height:220px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.2));">
+  <p style="color:rgba(255,255,255,0.8);font-size:0.95rem;font-weight:600;letter-spacing:0.5px;">Your ride, your way</p>
   <div class="splash-spinner"></div>
 </div>
 
@@ -359,8 +330,7 @@
 <div id="page-login" class="auth-page">
   <div class="auth-container">
     <div class="auth-logo">
-      <i class="fas fa-car"></i>
-      <h1>Autoride</h1>
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:140px;height:140px;object-fit:contain;margin-bottom:4px;">
       <p>Book your perfect ride</p>
     </div>
     <div class="auth-card">
@@ -404,15 +374,14 @@
 <div id="page-register" class="auth-page">
   <div class="auth-container">
     <div class="auth-logo">
-      <i class="fas fa-car"></i>
-      <h1>Autoride</h1>
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:140px;height:140px;object-fit:contain;margin-bottom:4px;">
     </div>
     <div class="auth-card">
       <h2>Create Account</h2>
       <p class="subtitle">Join Autoride today</p>
       <div class="form-group">
         <label>Full Name</label>
-        <input type="text" id="regName" placeholder="Juan dela Cruz">
+        <input type="text" id="regName" placeholder="Juan dela Cruz" maxlength="40">
         <span class="field-error" id="regNameErr"></span>
       </div>
       <div class="form-group">
@@ -462,8 +431,8 @@
 <div id="page-otp-verify" class="auth-page">
   <div class="auth-container">
     <div class="auth-logo">
-      <i class="fas fa-envelope-open" style="color:var(--primary);"></i>
-      <h1 style="font-size:1.5rem;margin-top:12px;">Check your email</h1>
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:120px;height:120px;object-fit:contain;margin-bottom:4px;">
+      <h1 style="font-size:1.5rem;margin-top:8px;">Check your email</h1>
     </div>
     <div class="auth-card">
       <h2>Verify Email</h2>
@@ -492,13 +461,16 @@
 ??????????????????????????????????????????????????????????? -->
 <div id="page-phone-login" class="auth-page">
   <div class="auth-container">
+    <div class="auth-logo">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:120px;height:120px;object-fit:contain;margin-bottom:4px;">
+    </div>
     <div class="auth-card">
       <h2>Phone Login</h2>
       <p class="subtitle">Login with your phone number</p>
       <div id="phoneStep1">
         <div class="form-group">
           <label>Phone Number</label>
-          <input type="tel" id="phoneNumber" placeholder="09XXXXXXXXX">
+          <input type="tel" id="phoneNumber" placeholder="09XXXXXXXXX" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)">
           <span class="field-error" id="phoneErr"></span>
         </div>
         <button class="btn-primary" onclick="doRequestOtp()">Send OTP</button>
@@ -538,16 +510,19 @@
      HOME
 ??????????????????????????????????????????????????????????? -->
 <div id="page-home" class="page" style="background:var(--bg-page);">
-  <div id="homeBanner" style="background:linear-gradient(160deg,#0052ff 0%,#0040CC 60%,#001a66 100%);padding:20px 20px 32px;position:relative;overflow:hidden;">
+  <div id="homeBanner" style="background:linear-gradient(160deg,var(--primary-light) 0%,var(--primary) 60%,var(--primary-dark) 100%);padding:20px 20px 32px;position:relative;overflow:hidden;">
     <div style="position:absolute;top:0;right:0;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,107,0.15),transparent);transform:translate(30%,-30%);"></div>
     <div style="position:relative;z-index:1;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
-        <div>
-          <p style="color:rgba(255,200,200,0.8);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Good day</p>
-          <h2 id="homeUserName" style="font-size:1.5rem;font-weight:900;color:var(--text-primary);margin-top:2px;letter-spacing:-0.5px;">there</h2>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:64px;height:64px;object-fit:contain;">
+          <div>
+            <p style="color:rgba(255,255,255,0.8);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Good day</p>
+            <h2 id="homeUserName" style="font-size:1.5rem;font-weight:900;color:var(--on-primary);margin-top:2px;letter-spacing:-0.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">there</h2>
+          </div>
         </div>
         <div class="notif-btn-wrap">
-          <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.15);border:none;color:var(--text-primary);width:40px;height:40px;border-radius:14px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);">
+          <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.15);border:none;color:var(--on-primary);width:40px;height:40px;border-radius:14px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);">
             <i class="fas fa-bell"></i>
           </button>
           <span class="notif-badge hidden" id="notifBadge">0</span>
@@ -557,11 +532,11 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-award" style="color:var(--text-primary);font-size:1rem;"></i>
+              <i class="fas fa-award" style="color:#ffffff;font-size:1rem;"></i>
             </div>
             <div>
-              <div style="font-size:0.6rem;color:rgba(255,200,200,0.8);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Loyalty Points</div>
-              <div id="homePoints" style="font-size:1.6rem;font-weight:900;color:var(--text-primary);line-height:1;">0</div>
+              <div style="font-size:0.6rem;color:rgba(255,255,255,0.8);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Loyalty Points</div>
+              <div id="homePoints" style="font-size:1.6rem;font-weight:900;color:var(--on-primary);line-height:1;">0</div>
             </div>
           </div>
           <div style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:4px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;">SILVER</div>
@@ -581,29 +556,29 @@
     <p style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">Quick Actions</p>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
       <button onclick="showPage('page-vehicles')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="width:52px;height:52px;border-radius:18px;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#dc2626,#9b1a1a);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
+          <i class="fas fa-car" style="color:var(--on-primary);font-size:1.2rem;"></i>
         </div>
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Browse Cars</span>
       </button>
       <button onclick="showPage('page-bookings')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="width:52px;height:52px;border-radius:18px;background:rgba(37,99,235,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;"><i class="fas fa-calendar-check" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
+          <i class="fas fa-calendar-check" style="color:var(--on-primary);font-size:1.2rem;"></i>
         </div>
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">My Bookings</span>
       </button>
-      <button onclick="showOverlay('page-support')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="width:52px;height:52px;border-radius:18px;background:rgba(5,150,105,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;"><i class="fas fa-headset" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
-        </div>
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Support</span>
-      </button>
       <button onclick="showOverlay('page-livechat')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <div style="position:relative;width:52px;height:52px;border-radius:18px;background:rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:center;">
-          <div style="width:32px;height:32px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;"><i class="fas fa-comments" style="color:var(--text-primary);font-size:0.875rem;"></i></div>
-          <span id="chatUnreadBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;font-weight:700;align-items:center;justify-content:center;"></span>
+        <div style="position:relative;width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
+          <i class="fas fa-comments" style="color:var(--on-primary);font-size:1.2rem;"></i>
+          <span id="chatUnreadBadge" style="display:none;position:absolute;top:0;right:0;background:var(--danger);color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.55rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--bg-card);"></span>
         </div>
         <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Live Chat</span>
+      </button>
+      <button onclick="showOverlay('page-chatbot')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
+          <i class="fas fa-robot" style="color:var(--on-primary);font-size:1.2rem;"></i>
+        </div>
+        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">AI Assistant</span>
       </button>
     </div>
   </div>
@@ -627,19 +602,22 @@
      VEHICLES BROWSE
 ??????????????????????????????????????????????????????????? -->
 <div id="page-vehicles" class="page" style="background:var(--bg-page);">
-  <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;">
-    <div>
-      <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">Explore</p>
-      <h1 style="font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;">Vehicles</h1>
+  <div style="background:var(--primary); padding-bottom:16px; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+    <div style="padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <p style="font-size:0.75rem;color:rgba(255,255,255,0.8);font-weight:500;">Explore</p>
+        <h1 style="font-size:1.6rem;font-weight:900;color:var(--on-primary);letter-spacing:-0.5px;">Vehicles</h1>
+      </div>
+      <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:var(--on-primary);font-size:1rem;cursor:pointer;position:relative;">
+        <i class="fas fa-heart"></i>
+      </button>
     </div>
-    <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:var(--bg-card2);border:1px solid var(--border);color:#dc2626;font-size:1rem;cursor:pointer;position:relative;">
-      <i class="fas fa-heart"></i>
-    </button>
-  </div>
-  <div style="padding:0 16px 12px;position:relative;">
-    <i class="fas fa-search" style="position:absolute;left:28px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.875rem;"></i>
-    <input type="text" id="vehicleSearch" placeholder="Search cars, brands, types..." oninput="searchVehicles(this.value)"
-      style="width:100%;padding:12px 44px 12px 40px;background:var(--bg-card2);border:1px solid var(--border);border-radius:16px;color:var(--text-primary);font-size:0.875rem;outline:none;">
+    <div style="padding:0 16px;position:relative;">
+      <i class="fas fa-search" style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:1rem;"></i>
+      <input type="text" id="vehicleSearch" placeholder="Search for cars, locations..." oninput="searchVehicles(this.value)"
+        style="width:100%;padding:12px 44px 12px 44px;background:#ffffff;border:none;border-radius:12px;color:var(--text-primary);font-size:0.95rem;outline:none;box-shadow:0 4px 12px rgba(0,0,0,0.08); font-weight:500;">
+      <i class="fas fa-microphone" style="position:absolute;right:32px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:1rem;"></i>
+    </div>
   </div>
   <div class="filter-chips" id="vehicleFilters">
     <span class="chip active" onclick="filterVehicles('all',this)">All</span>
@@ -657,27 +635,27 @@
 </div>
 
 <div id="page-bookings" class="page" style="background:var(--bg-page);">
-  <div style="padding:16px 20px 8px;">
-    <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">Your</p>
-    <h1 style="font-size:1.6rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.5px;">Bookings</h1>
+  <div style="padding:16px 20px 12px; display:flex; align-items:center; justify-content:center; position:relative;">
+    <i class="fas fa-chevron-left" style="position:absolute; left:20px; color:var(--primary); font-size:1.2rem; cursor:pointer;" onclick="showPage('page-home')"></i>
+    <h1 style="font-size:1.2rem;font-weight:800;color:var(--text-primary);">My Bookings</h1>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px 12px;">
-    <div id="bkStatTotal" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:var(--text-secondary);">0</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px 16px;">
+    <div id="bkStatTotal" style="background:var(--bg-card);border:1px solid var(--border);border-radius:50%;width:80px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="font-size:1.4rem;font-weight:900;color:var(--text-primary);">0</div>
       <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Total</div>
     </div>
-    <div id="bkStatDone" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:#a78bfa;">0</div>
+    <div id="bkStatDone" style="background:var(--bg-card);border:1px solid var(--border);border-radius:50%;width:80px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="font-size:1.4rem;font-weight:900;color:var(--text-primary);">0</div>
       <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Completed</div>
     </div>
-    <div id="bkStatSpent" style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:12px;text-align:center;">
-      <div style="font-size:1.3rem;font-weight:900;color:#34d399;">-</div>
+    <div id="bkStatSpent" style="background:var(--bg-card);border:1px solid var(--border);border-radius:50%;width:80px;height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="font-size:1.2rem;font-weight:900;color:var(--primary);">-</div>
       <div style="font-size:0.65rem;color:var(--text-muted);font-weight:600;margin-top:2px;">Total Spent</div>
     </div>
   </div>
   <div style="padding:0 16px 12px;">
     <div style="display:flex;gap:6px;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:4px;" id="bookingFilterTabs">
-      <button onclick="filterBookingsList('all',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#9b1a1a);color:var(--text-primary);cursor:pointer;">All</button>
+      <button onclick="filterBookingsList('all',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:var(--primary);color:var(--text-primary);cursor:pointer;">All</button>
       <button onclick="filterBookingsList('Confirmed',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:var(--text-muted);cursor:pointer;">Active</button>
       <button onclick="filterBookingsList('Completed',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:var(--text-muted);cursor:pointer;">Done</button>
       <button onclick="filterBookingsList('Cancelled',this)" style="flex:1;padding:8px;border-radius:12px;border:none;font-size:0.65rem;font-weight:800;background:transparent;color:var(--text-muted);cursor:pointer;">Cancelled</button>
@@ -725,11 +703,11 @@
       </div>
       <div class="form-group">
         <label>Full Name</label>
-        <input type="text" id="editName" placeholder="Full Name">
+        <input type="text" id="editName" placeholder="Full Name" maxlength="40">
       </div>
       <div class="form-group">
         <label>Phone Number</label>
-        <input type="tel" id="editPhone" placeholder="09XXXXXXXXX">
+        <input type="tel" id="editPhone" placeholder="09XXXXXXXXX" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)">
         <span class="field-error" id="editPhoneErr"></span>
       </div>
       <div class="form-group">
@@ -826,12 +804,46 @@
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label>Country / State</label>
-            <input type="text" id="editLicenseCountry" placeholder="e.g. Philippines">
+            <select id="editLicenseCountry" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+              <option value="">Select Country</option>
+              <option value="Philippines">Philippines</option>
+              <option value="United States">United States</option>
+              <option value="United Kingdom">United Kingdom</option>
+              <option value="Canada">Canada</option>
+              <option value="Australia">Australia</option>
+              <option value="Japan">Japan</option>
+              <option value="South Korea">South Korea</option>
+              <option value="Singapore">Singapore</option>
+              <option value="Malaysia">Malaysia</option>
+              <option value="Indonesia">Indonesia</option>
+              <option value="Thailand">Thailand</option>
+              <option value="Vietnam">Vietnam</option>
+              <option value="Hong Kong">Hong Kong</option>
+              <option value="Taiwan">Taiwan</option>
+              <option value="China">China</option>
+              <option value="India">India</option>
+              <option value="UAE">UAE</option>
+              <option value="Saudi Arabia">Saudi Arabia</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
         <div class="form-group">
           <label>License Class / Category</label>
-          <input type="text" id="editLicenseClass" placeholder="e.g. Non-Professional, A, B, etc.">
+          <select id="editLicenseClass" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+            <option value="">Select Class</option>
+            <option value="A">A – Motorcycle</option>
+            <option value="A1">A1 – Motorcycle (restricted)</option>
+            <option value="B">B – Non-Professional (Light Vehicle)</option>
+            <option value="B1">B1 – Non-Professional (restricted)</option>
+            <option value="B2">B2 – Non-Professional (automatic)</option>
+            <option value="C">C – Professional (Light Vehicle)</option>
+            <option value="D">D – Professional (Heavy Vehicle)</option>
+            <option value="BE">BE – Non-Professional with trailer</option>
+            <option value="CE">CE – Professional with trailer</option>
+            <option value="Non-Professional">Non-Professional</option>
+            <option value="Professional">Professional</option>
+          </select>
         </div>
 
         <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
@@ -854,11 +866,23 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
           <div class="form-group" style="margin-bottom:0;">
             <label>Phone Number</label>
-            <input type="text" id="editLicenseEmPhone" placeholder="+63 900 000 0000">
+            <input type="tel" id="editLicenseEmPhone" placeholder="09XXXXXXXXX" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)">
           </div>
           <div class="form-group" style="margin-bottom:0;">
             <label>Relationship</label>
-            <input type="text" id="editLicenseEmRel" placeholder="Spouse, Parent, etc.">
+            <select id="editLicenseEmRel" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+              <option value="">Select Relationship</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Parent">Parent</option>
+              <option value="Child">Child</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Grandparent">Grandparent</option>
+              <option value="Relative">Relative</option>
+              <option value="Friend">Friend</option>
+              <option value="Colleague">Colleague</option>
+              <option value="Guardian">Guardian</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
 
@@ -893,225 +917,11 @@
 </div>
 
 <!-- ???????????????????????????????????????????????????????????
-     PAYMENT PAGE
-??????????????????????????????????????????????????????????? -->
-<div id="page-payment" class="page" style="background:var(--bg-page);">
-  <div class="page-header">
-    <button class="back-btn" onclick="showPage('page-vehicles')"><i class="fas fa-arrow-left"></i></button>
-    <h2>Payment</h2>
-  </div>
-  <div class="scroll-content">
-    <!-- Booking Summary Card -->
-    <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-        <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;">
-          <i class="fas fa-receipt" style="color:white;font-size:1rem;"></i>
-        </div>
-        <div>
-          <h3 style="font-size:1.1rem;font-weight:800;margin:0;color:var(--text-primary);">Booking #<span id="paymentBookingId">57</span> Summary</h3>
-        </div>
-      </div>
-      
-      <!-- Base Rate -->
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span style="font-size:0.95rem;color:var(--text-secondary);">Base Rate (<span id="paymentDays">2</span> days)</span>
-        <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span id="paymentBasePrice">4,398.00</span></span>
-      </div>
-      
-      <!-- Interactive Add-ons Section -->
-      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;">
-        <!-- Child Safety Seat -->
-        <div class="addon-item" data-addon="child_safety_seat" data-price="300">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <label class="addon-checkbox">
-                <input type="checkbox" onchange="toggleAddon(this)" checked>
-                <span class="checkmark"></span>
-              </label>
-              <div>
-                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
-                  <i class="fas fa-baby" style="color:#10b981;"></i>
-                  Child Safety Seat
-                </div>
-                <div style="font-size:0.8rem;color:var(--text-muted);">Safety seat for children under 12</div>
-              </div>
-            </div>
-            <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span class="addon-price">300.00</span></span>
-          </div>
-        </div>
-        
-        <!-- GPS Navigation -->
-        <div class="addon-item" data-addon="gps_navigation" data-price="400">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <label class="addon-checkbox">
-                <input type="checkbox" onchange="toggleAddon(this)" checked>
-                <span class="checkmark"></span>
-              </label>
-              <div>
-                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
-                  <i class="fas fa-map-marker-alt" style="color:#10b981;"></i>
-                  GPS Navigation
-                </div>
-                <div style="font-size:0.8rem;color:var(--text-muted);">Built-in GPS with real-time traffic</div>
-              </div>
-            </div>
-            <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span class="addon-price">400.00</span></span>
-          </div>
-        </div>
-        
-        <!-- Dashcam -->
-        <div class="addon-item" data-addon="dashcam" data-price="250">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <label class="addon-checkbox">
-                <input type="checkbox" onchange="toggleAddon(this)">
-                <span class="checkmark"></span>
-              </label>
-              <div>
-                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
-                  <i class="fas fa-video" style="color:#6b7280;"></i>
-                  Dashcam Recording
-                </div>
-                <div style="font-size:0.8rem;color:var(--text-muted);">Front and rear camera recording</div>
-              </div>
-            </div>
-            <span style="font-size:0.95rem;font-weight:700;color:var(--text-muted);">PHP <span class="addon-price">250.00</span></span>
-          </div>
-        </div>
-        
-        <!-- WiFi Hotspot -->
-        <div class="addon-item" data-addon="wifi_hotspot" data-price="150">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <label class="addon-checkbox">
-                <input type="checkbox" onchange="toggleAddon(this)">
-                <span class="checkmark"></span>
-              </label>
-              <div>
-                <div style="font-size:0.95rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;">
-                  <i class="fas fa-wifi" style="color:#6b7280;"></i>
-                  WiFi Hotspot
-                </div>
-                <div style="font-size:0.8rem;color:var(--text-muted);">Mobile internet access (5GB data)</div>
-              </div>
-            </div>
-            <span style="font-size:0.95rem;font-weight:700;color:var(--text-muted);">PHP <span class="addon-price">150.00</span></span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Insurance Section -->
-      <div style="border-top:1px solid var(--border);padding-top:12px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <i class="fas fa-shield-alt" style="color:#2563eb;"></i>
-            <span style="font-size:0.95rem;color:var(--text-secondary);">Standard Protection</span>
-          </div>
-          <span style="font-size:0.95rem;font-weight:700;color:var(--text-primary);">PHP <span id="paymentInsurancePrice">1,000.00</span></span>
-        </div>
-        <div style="font-size:0.8rem;color:var(--text-muted);margin-left:24px;">Covers damage, theft, and third-party liability</div>
-      </div>
-      
-      <!-- Total Section -->
-      <div style="border-top:2px solid var(--border);padding-top:16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <span style="font-size:1.2rem;font-weight:800;color:#2563eb;">Total</span>
-          <span style="font-size:1.2rem;font-weight:800;color:#2563eb;">PHP <span id="paymentTotalPrice">6,098.00</span></span>
-        </div>
-        
-        <!-- Amount Due Button -->
-        <div style="background:linear-gradient(135deg,#2563eb,#1d4ed8);border-radius:16px;padding:16px;text-align:center;margin-bottom:16px;">
-          <div style="font-size:0.9rem;color:rgba(255,255,255,0.8);margin-bottom:4px;">Amount Due Now</div>
-          <div style="font-size:1.8rem;font-weight:900;color:white;">PHP <span id="paymentAmountDue">6,098.00</span></div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Payment Method Selection -->
-    <div class="card">
-      <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:16px;">Select Payment Method</h3>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;text-align:center;">
-        <i class="fas fa-shield-alt" style="color:#10b981;margin-right:6px;"></i>
-        Secure payments powered by PayMongo
-      </div>
-      
-      <!-- Payment Type Selection -->
-      <div style="margin-bottom:20px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <button class="payment-type-btn active" data-type="full" onclick="selectPaymentType('full', this)">
-            <div style="font-size:0.8rem;font-weight:700;margin-bottom:4px;">Full Payment</div>
-            <div style="font-size:0.7rem;color:var(--text-muted);">Pay complete amount</div>
-          </button>
-          <button class="payment-type-btn" data-type="downpayment" onclick="selectPaymentType('downpayment', this)">
-            <div style="font-size:0.8rem;font-weight:700;margin-bottom:4px;">Downpayment</div>
-            <div style="font-size:0.7rem;color:var(--text-muted);">Pay 20% now</div>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Payment Methods -->
-      <div class="payment-methods">
-        <div class="payment-method active" data-method="gcash" onclick="selectPaymentMethod('gcash', this)">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:40px;height:40px;border-radius:8px;background:#007dff;display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-mobile-alt" style="color:white;"></i>
-            </div>
-            <div>
-              <div style="font-weight:700;font-size:0.9rem;">GCash</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);">Pay with GCash wallet</div>
-            </div>
-          </div>
-          <i class="fas fa-check-circle" style="color:#10b981;"></i>
-        </div>
-        
-        <div class="payment-method" data-method="paymaya" onclick="selectPaymentMethod('paymaya', this)">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:40px;height:40px;border-radius:8px;background:#00d4ff;display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-credit-card" style="color:white;"></i>
-            </div>
-            <div>
-              <div style="font-weight:700;font-size:0.9rem;">PayMaya</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);">Pay with PayMaya wallet</div>
-            </div>
-          </div>
-          <i class="fas fa-circle" style="color:var(--border);"></i>
-        </div>
-        
-        <div class="payment-method" data-method="card" onclick="selectPaymentMethod('card', this)">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:40px;height:40px;border-radius:8px;background:#6b7280;display:flex;align-items:center;justify-content:center;">
-              <i class="fas fa-credit-card" style="color:white;"></i>
-            </div>
-            <div>
-              <div style="font-weight:700;font-size:0.9rem;">Credit/Debit Card</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);">Visa, Mastercard, etc.</div>
-            </div>
-          </div>
-          <i class="fas fa-circle" style="color:var(--border);"></i>
-        </div>
-      </div>
-      
-      <!-- Confirm Payment Button -->
-      <button class="btn-primary" onclick="confirmPayment()" style="margin-top:20px;font-size:1.1rem;padding:16px;">
-        <i class="fas fa-lock" style="margin-right:8px;"></i>
-        Confirm & Pay PHP <span id="confirmButtonAmount">6,098.00</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ???????????????????????????????????????????????????????????
      MORE
 ??????????????????????????????????????????????????????????? -->
 <div id="page-more" class="page">
   <div class="page-header"><h2>More</h2></div>
   <div class="scroll-content">
-    <div class="more-item" onclick="showOverlay('page-support')">
-      <div class="more-item-icon"><i class="fas fa-headset"></i></div>
-      <div class="more-item-text"><h4>Support</h4><p>Submit a support ticket</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-    </div>
     <div class="more-item" onclick="showOverlay('page-livechat')">
       <div class="more-item-icon"><i class="fas fa-comments"></i></div>
       <div class="more-item-text"><h4>Live Chat</h4><p>Chat with our support team</p></div>
@@ -1168,8 +978,6 @@
 <div id="page-license-upload" class="overlay-page" onclick="openLicenseUpload()"><div id="licenseUploadContent"></div></div>
 <div id="page-saved-payments" class="overlay-page"><div id="savedPaymentsContent"></div></div>
 <div id="page-favorites" class="overlay-page"><div id="favoritesContent"></div></div>
-<div id="page-split-payment" class="overlay-page" onclick="loadSplitPayment()"><div id="splitPaymentContent"></div></div>
-<div id="page-support" class="overlay-page" onclick="loadSupport()"><div id="supportContent"></div></div>
 <div id="page-chatbot" class="overlay-page" onclick="loadChatbot()"><div id="chatbotContent"></div></div>
 <div id="page-livechat" class="overlay-page"><div id="liveChatContent"></div></div>
 <div id="page-notifications" class="overlay-page"><div id="notificationsContent"></div></div>
@@ -1339,272 +1147,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<script>
-// Payment Page Functionality
-let paymentData = {
-    basePrice: 4398.00,
-    insurancePrice: 1000.00,
-    selectedAddons: ['child_safety_seat', 'gps_navigation'], // Default selected
-    paymentType: 'full',
-    paymentMethod: 'gcash'
-};
-
-// Available add-ons with prices
-const availableAddons = {
-    'child_safety_seat': { name: 'Child Safety Seat', price: 300.00 },
-    'gps_navigation': { name: 'GPS Navigation', price: 400.00 },
-    'dashcam': { name: 'Dashcam Recording', price: 250.00 },
-    'wifi_hotspot': { name: 'WiFi Hotspot', price: 150.00 }
-};
-
-// Toggle add-on selection
-function toggleAddon(checkbox) {
-    const addonItem = checkbox.closest('.addon-item');
-    const addonId = addonItem.dataset.addon;
-    const addonPrice = parseFloat(addonItem.dataset.price);
-    
-    if (checkbox.checked) {
-        // Add addon if not already selected
-        if (!paymentData.selectedAddons.includes(addonId)) {
-            paymentData.selectedAddons.push(addonId);
-        }
-        // Update visual state
-        addonItem.style.opacity = '1';
-    } else {
-        // Remove addon from selection
-        paymentData.selectedAddons = paymentData.selectedAddons.filter(id => id !== addonId);
-        // Update visual state
-        addonItem.style.opacity = '0.6';
-    }
-    
-    // Recalculate total
-    updatePaymentTotal();
-}
-
-// Calculate and update payment total
-function updatePaymentTotal() {
-    let addonTotal = 0;
-    
-    // Calculate total add-on price
-    paymentData.selectedAddons.forEach(addonId => {
-        if (availableAddons[addonId]) {
-            addonTotal += availableAddons[addonId].price;
-        }
-    });
-    
-    // Calculate total price
-    const totalPrice = paymentData.basePrice + paymentData.insurancePrice + addonTotal;
-    
-    // Calculate amount due based on payment type
-    let amountDue = totalPrice;
-    if (paymentData.paymentType === 'downpayment') {
-        amountDue = totalPrice * 0.20; // 20% downpayment
-    }
-    
-    // Update display
-    document.getElementById('paymentTotalPrice').textContent = totalPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('paymentAmountDue').textContent = amountDue.toLocaleString('en-US', {minimumFractionDigits: 2});
-    document.getElementById('confirmButtonAmount').textContent = amountDue.toLocaleString('en-US', {minimumFractionDigits: 2});
-    
-    // Update add-on item visual states
-    document.querySelectorAll('.addon-item').forEach(item => {
-        const checkbox = item.querySelector('input[type="checkbox"]');
-        const addonId = item.dataset.addon;
-        
-        if (paymentData.selectedAddons.includes(addonId)) {
-            checkbox.checked = true;
-            item.style.opacity = '1';
-        } else {
-            checkbox.checked = false;
-            item.style.opacity = '0.6';
-        }
-    });
-}
-
-// Select payment type (full or downpayment)
-function selectPaymentType(type, button) {
-    paymentData.paymentType = type;
-    
-    // Update button states
-    document.querySelectorAll('.payment-type-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    button.classList.add('active');
-    
-    // Recalculate total
-    updatePaymentTotal();
-}
-
-// Select payment method
-function selectPaymentMethod(method, element) {
-    paymentData.paymentMethod = method;
-    
-    // Update visual states
-    document.querySelectorAll('.payment-method').forEach(item => {
-        item.classList.remove('active');
-        const icon = item.querySelector('i:last-child');
-        icon.className = 'fas fa-circle';
-        icon.style.color = 'var(--border)';
-    });
-    
-    element.classList.add('active');
-    const activeIcon = element.querySelector('i:last-child');
-    activeIcon.className = 'fas fa-check-circle';
-    activeIcon.style.color = '#10b981';
-}
-
-// Confirm payment and proceed
-function confirmPayment() {
-    // Show loading
-    showToast('Processing payment...', 'info');
-    
-    // Calculate final amounts
-    let addonTotal = 0;
-    paymentData.selectedAddons.forEach(addonId => {
-        if (availableAddons[addonId]) {
-            addonTotal += availableAddons[addonId].price;
-        }
-    });
-    
-    const totalPrice = paymentData.basePrice + paymentData.insurancePrice + addonTotal;
-    let amountDue = totalPrice;
-    if (paymentData.paymentType === 'downpayment') {
-        amountDue = totalPrice * 0.20;
-    }
-    
-    // Prepare booking data
-    const bookingData = {
-        vehicle_id: window.selectedVehicleId || 1, // This should be set when selecting a vehicle
-        user_id: window.currentUser?.id || 1, // Current logged in user
-        start_date: '2024-06-01', // These should be set from vehicle selection
-        end_date: '2024-06-03',
-        pickup_location: 'Manila, Philippines',
-        rental_type: 'Self-Drive',
-        base_price: paymentData.basePrice,
-        addon_price: addonTotal,
-        total_price: totalPrice,
-        addons: paymentData.selectedAddons,
-        insurance_type: 'Standard Protection',
-        insurance_price: paymentData.insurancePrice,
-        payment_type: paymentData.paymentType === 'full' ? 'Full' : 'Downpayment',
-        amount_paid: amountDue,
-        balance_amount: paymentData.paymentType === 'downpayment' ? (totalPrice - amountDue) : 0
-    };
-    
-    // Create booking first
-    fetch('/api/book', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.booking_id) {
-            // Now process payment
-            const paymentData = {
-                booking_id: data.booking_id,
-                amount: amountDue,
-                method: paymentData.paymentMethod,
-                reference_number: 'REF-' + Date.now() // Generate reference number
-            };
-            
-            return fetch('/api/payment', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(paymentData)
-            });
-        } else {
-            throw new Error(data.error || 'Failed to create booking');
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message === 'Payment successful') {
-            showToast('Payment successful! Booking confirmed.', 'success');
-            // Redirect to bookings page
-            setTimeout(() => {
-                showPage('page-bookings');
-            }, 2000);
-        } else {
-            throw new Error(data.error || 'Payment failed');
-        }
-    })
-    .catch(error => {
-        console.error('Payment error:', error);
-        showToast('Payment failed: ' + error.message, 'error');
-    });
-}
-
-// Initialize payment page
-function initPaymentPage() {
-    updatePaymentTotal();
-}
-
-// Show toast notification
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type} show`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 300);
-    }, 3000);
-}
-
-// Show page function (if not already defined)
-function showPage(pageId) {
-    // Hide all pages
-    document.querySelectorAll('.page, .auth-page').forEach(page => {
-        page.classList.remove('active');
-    });
-    
-    // Show selected page
-    const targetPage = document.getElementById(pageId);
-    if (targetPage) {
-        targetPage.classList.add('active');
-        
-        // Initialize payment page if needed
-        if (pageId === 'page-payment') {
-            initPaymentPage();
-        }
-    }
-    
-    // Update navigation
-    document.querySelectorAll('.bottom-nav button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Set active nav button
-    const navMap = {
-        'page-home': 'nav-home',
-        'page-vehicles': 'nav-vehicles', 
-        'page-bookings': 'nav-bookings',
-        'page-profile': 'nav-profile',
-        'page-more': 'nav-more'
-    };
-    
-    if (navMap[pageId]) {
-        document.getElementById(navMap[pageId])?.classList.add('active');
-    }
-}
-
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize payment page if it's the current page
-    if (document.getElementById('page-payment')?.classList.contains('active')) {
-        initPaymentPage();
-    }
-});
-</script>
-
-</body>
-</html>
