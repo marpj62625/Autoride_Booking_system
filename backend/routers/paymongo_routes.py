@@ -9,7 +9,7 @@ import hmac
 import json
 import requests
 from flask import Blueprint, request, jsonify
-from database import get_cursor, commit_db
+from database import get_cursor, commit_db, get_db
 from config import PAYMONGO_SECRET_KEY, PAYMONGO_PUBLIC_KEY, PAYMONGO_WEBHOOK_SECRET, APP_BASE_URL
 
 paymongo_bp = Blueprint('paymongo', __name__)
@@ -496,6 +496,11 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
                     )
         except Exception as notif_err:
             print(f'_confirm_payment notification error: {notif_err}')
+            # Rollback any aborted transaction state so email query can still run
+            try:
+                get_db().rollback()
+            except Exception:
+                pass
 
         # Send receipt email
         try:

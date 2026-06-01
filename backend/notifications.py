@@ -199,13 +199,13 @@ def send_notification(user_id, subject, message):
     """Sends notification to user via Email and SMS."""
     try:
         cur = get_cursor()
-        cur.execute("SELECT email, phone_number, full_name FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT email, phone, full_name FROM users WHERE id = %s", (user_id,))
         user = cur.fetchone()
         if not user:
             return False
             
         email = user['email']
-        phone = user['phone_number']
+        phone = user['phone']
         name = user['full_name']
 
         # 1. SEND EMAIL
@@ -361,7 +361,7 @@ class SMS_Service:
             cur = get_cursor()
             try:
                 cur.execute(
-                    "SELECT phone_number, sms_opt_out FROM users WHERE id = %s",
+                    "SELECT phone, sms_opt_out FROM users WHERE id = %s",
                     (user_id,)
                 )
                 user = cur.fetchone()
@@ -375,7 +375,7 @@ class SMS_Service:
                 )
                 return False
 
-            phone_number = user['phone_number']
+            phone_number = user['phone']
             sms_opt_out = user['sms_opt_out']
 
             if not phone_number:
