@@ -8540,6 +8540,29 @@ def debug_booking_info(booking_id):
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/debug/admin-users-check', methods=['GET'])
+def debug_admin_users_check():
+    """Debug: check which users have admin/super_admin role."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, email, role FROM users WHERE role IN ('admin', 'super_admin') ORDER BY id")
+        admins = [dict(r) for r in cur.fetchall()]
+        cur.execute("SELECT COUNT(*) as total FROM notifications WHERE admin_id IS NOT NULL")
+        admin_notif_count = cur.fetchone()['total']
+        cur.execute("SELECT COUNT(*) as total FROM notifications WHERE admin_id IS NULL")
+        user_notif_count = cur.fetchone()['total']
+        return jsonify({
+            'admin_users': admins,
+            'admin_user_count': len(admins),
+            'notifications_with_admin_id': admin_notif_count,
+            'notifications_with_null_admin_id': user_notif_count
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/debug/notifications-check', methods=['GET'])
 def debug_notifications_check():
     """Debug endpoint to check if notifications table exists and has rows."""
