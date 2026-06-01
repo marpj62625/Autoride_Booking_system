@@ -2594,7 +2594,8 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
     '<div class="scroll-content" style="padding-bottom:100px;">' +
     '<div class="receipt-card">' +
     '<div class="receipt-header">' +
-    '<i class="fas fa-check-circle" style="font-size:3.5rem;color:var(--success);"></i>' +
+    '<img src="Autoride-logo-nobg.png" alt="Autoride" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">' +
+    '<i class="fas fa-check-circle" style="font-size:2.5rem;color:var(--success);"></i>' +
     '<h2>Booking Confirmed!</h2>' +
     '<p style="color:var(--text-secondary);font-size:0.875rem;">Your receipt has been sent to your email</p>' +
     '</div>' +
