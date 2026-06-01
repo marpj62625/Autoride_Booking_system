@@ -496,7 +496,9 @@ class Notification_Service:
 
     def notify_admins_inapp(self, title: str, message: str, notif_type: str) -> list:
         """
-        Queries all admins and inserts one notification row per admin.
+        Finds all admin users and inserts one notification row per admin.
+        Queries the users table (role = admin/super_admin) since that's where
+        admin accounts are stored. Falls back to admins table if needed.
         Uses a single connection for all operations.
         """
         try:
@@ -508,50 +510,44 @@ class Notification_Service:
             try:
                 cur = conn.cursor(row_factory=dict_row)
 
-                # Get all admins — try multiple column combinations
-                admins = []
+                # Try users table first (admin accounts stored here)
+                admin_ids = []
                 for query in [
-                    "SELECT id, fcm_token FROM admins WHERE is_active = TRUE",
-                    "SELECT id, fcm_token FROM admins WHERE is_active IS NOT FALSE",
-                    "SELECT id, fcm_token FROM admins",
-                    "SELECT id, NULL as fcm_token FROM admins",
+                    "SELECT id FROM users WHERE role IN ('admin', 'super_admin')",
+                    "SELECT id FROM admins WHERE is_active = TRUE",
+                    "SELECT id FROM admins WHERE is_active IS NOT FALSE",
+                    "SELECT id FROM admins",
                 ]:
                     try:
                         conn.rollback()
                         cur.execute(query)
-                        admins = cur.fetchall()
-                        if admins:
+                        rows = cur.fetchall()
+                        if rows:
+                            admin_ids = [r['id'] for r in rows]
+                            print(f"notify_admins_inapp: found {len(admin_ids)} admins via '{query[:40]}...'", file=sys.stderr)
                             break
-                    except Exception:
+                    except Exception as qe:
+                        print(f"notify_admins_inapp: query failed '{query[:40]}': {qe}", file=sys.stderr)
                         continue
 
-                print(f"notify_admins_inapp: found {len(admins)} admins, title='{title}'", file=sys.stderr)
-
-                if not admins:
-                    print("notify_admins_inapp: no admins found", file=sys.stderr)
+                if not admin_ids:
+                    print("notify_admins_inapp: no admins found in any table", file=sys.stderr)
                     return []
 
                 results = []
-                for admin in admins:
+                for admin_id in admin_ids:
                     try:
                         conn.rollback()
                         cur.execute(
                             "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (NULL, %s, %s, %s, %s)",
-                            (admin['id'], title, message, notif_type)
+                            (admin_id, title, message, notif_type)
                         )
                         conn.commit()
-                        print(f"notify_admins_inapp: stored for admin {admin['id']}", file=sys.stderr)
-                        if admin.get('fcm_token'):
-                            try:
-                                global fcm_service
-                                if 'fcm_service' in globals():
-                                    fcm_service.send_push(admin['fcm_token'], title, message)
-                            except Exception:
-                                pass
+                        print(f"notify_admins_inapp: stored for admin_id={admin_id}", file=sys.stderr)
                         results.append(True)
                     except Exception as exc:
                         conn.rollback()
-                        print(f"notify_admins_inapp: failed for admin {admin['id']}: {exc}", file=sys.stderr)
+                        print(f"notify_admins_inapp: insert failed for admin_id={admin_id}: {exc}", file=sys.stderr)
                         results.append(False)
 
                 cur.close()
