@@ -8540,6 +8540,48 @@ def debug_booking_info(booking_id):
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/debug/fix-old-admin-notifications', methods=['POST'])
+def fix_old_admin_notifications():
+    """One-time fix: assign old notifications (admin_id=null, user_id=null) to all admin users."""
+    try:
+        cur = get_cursor()
+        # Get all admin user IDs
+        cur.execute("SELECT id FROM users WHERE role IN ('admin', 'super_admin')")
+        admin_ids = [r['id'] for r in cur.fetchall()]
+        if not admin_ids:
+            return jsonify({'error': 'No admin users found'}), 404
+
+        # Get all orphaned admin notifications (admin_id null, user_id null, type starts with admin_)
+        cur.execute("""
+            SELECT id, title, message, type, created_at
+            FROM notifications
+            WHERE admin_id IS NULL AND user_id IS NULL
+            AND type LIKE 'admin_%'
+        """)
+        orphaned = cur.fetchall()
+
+        inserted = 0
+        for notif in orphaned:
+            for admin_id in admin_ids:
+                cur.execute("""
+                    INSERT INTO notifications (user_id, admin_id, title, message, type, created_at)
+                    VALUES (NULL, %s, %s, %s, %s, %s)
+                """, (admin_id, notif['title'], notif['message'], notif['type'], notif['created_at']))
+                inserted += 1
+
+        commit_db()
+        return jsonify({
+            'orphaned_found': len(orphaned),
+            'admin_ids': admin_ids,
+            'notifications_inserted': inserted,
+            'message': f'Created {inserted} admin notification copies for {len(admin_ids)} admins'
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/debug/admin-users-check', methods=['GET'])
 def debug_admin_users_check():
     """Debug: check which users have admin/super_admin role."""
