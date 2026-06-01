@@ -496,59 +496,60 @@ class Notification_Service:
 
     def notify_admins_inapp(self, title: str, message: str, notif_type: str) -> list:
         """
-        Queries all active admins and inserts one notification row per admin
-        using fresh connections. Also sends FCM push to each admin.
-        Returns list of booleans (one per admin).
+        Queries all active admins and inserts one notification row per admin.
+        Uses a single connection for all operations to avoid connection pool issues.
         """
         try:
             import psycopg
             from config import SUPABASE_DB_URL
             from psycopg.rows import dict_row
 
-            # Fetch active admins — try is_active first, fall back to all admins
             conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
-            cur = conn.cursor(row_factory=dict_row)
             try:
-                cur.execute("SELECT id, fcm_token FROM admins WHERE is_active = TRUE")
-            except Exception:
-                conn.rollback()
-                cur.execute("SELECT id, fcm_token FROM admins")
-            admins = cur.fetchall()
-            cur.close()
-            conn.close()
+                cur = conn.cursor(row_factory=dict_row)
 
-            print(f"notify_admins_inapp: found {len(admins)} admins, title='{title}'", file=sys.stderr)
-
-            if not admins:
-                print("notify_admins_inapp: no admins found — notification not stored", file=sys.stderr)
-                return []
-
-            results = []
-            for admin in admins:
+                # Fetch admins — try is_active first, fall back to all admins
                 try:
-                    conn2 = psycopg.connect(conninfo=SUPABASE_DB_URL)
-                    cur2 = conn2.cursor(row_factory=dict_row)
-                    cur2.execute(
-                        "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (NULL, %s, %s, %s, %s)",
-                        (admin['id'], title, message, notif_type)
-                    )
-                    conn2.commit()
-                    cur2.close()
-                    conn2.close()
-                    print(f"notify_admins_inapp: stored notification for admin {admin['id']}", file=sys.stderr)
-                    # Send FCM push if token available
-                    if admin.get('fcm_token'):
-                        try:
-                            global fcm_service
-                            if 'fcm_service' in globals():
-                                fcm_service.send_push(admin['fcm_token'], title, message)
-                        except Exception:
-                            pass
-                    results.append(True)
-                except Exception as exc:
-                    print(f"Notification_Service.notify_admins_inapp: failed for admin {admin['id']}: {exc}", file=sys.stderr)
-                    results.append(False)
-            return results
+                    cur.execute("SELECT id, fcm_token FROM admins WHERE is_active = TRUE")
+                except Exception:
+                    conn.rollback()
+                    cur.execute("SELECT id, fcm_token FROM admins")
+
+                admins = cur.fetchall()
+                print(f"notify_admins_inapp: found {len(admins)} admins, title='{title}'", file=sys.stderr)
+
+                if not admins:
+                    print("notify_admins_inapp: no admins found", file=sys.stderr)
+                    conn.close()
+                    return []
+
+                results = []
+                for admin in admins:
+                    try:
+                        cur.execute(
+                            "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (NULL, %s, %s, %s, %s)",
+                            (admin['id'], title, message, notif_type)
+                        )
+                        conn.commit()
+                        print(f"notify_admins_inapp: stored for admin {admin['id']}", file=sys.stderr)
+                        # Send FCM push if token available
+                        if admin.get('fcm_token'):
+                            try:
+                                global fcm_service
+                                if 'fcm_service' in globals():
+                                    fcm_service.send_push(admin['fcm_token'], title, message)
+                            except Exception:
+                                pass
+                        results.append(True)
+                    except Exception as exc:
+                        conn.rollback()
+                        print(f"notify_admins_inapp: failed for admin {admin['id']}: {exc}", file=sys.stderr)
+                        results.append(False)
+
+                cur.close()
+                return results
+            finally:
+                conn.close()
 
         except Exception as exc:
             print(f"Notification_Service.notify_admins_inapp: DB error: {exc}", file=sys.stderr)
