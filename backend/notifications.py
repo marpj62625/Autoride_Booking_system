@@ -497,9 +497,9 @@ class Notification_Service:
     def notify_admins_inapp(self, title: str, message: str, notif_type: str) -> list:
         """
         Finds all admin users and inserts one notification row per admin.
-        Queries the users table (role = admin/super_admin) since that's where
-        admin accounts are stored. Falls back to admins table if needed.
-        Uses a single connection for all operations.
+        Admin accounts are stored in the users table with role='admin'/'super_admin'.
+        Inserts with user_id (not admin_id) so the FK constraint is satisfied and
+        the GET /admin/notifications endpoint (which queries by user_id) can find them.
         """
         try:
             import psycopg
@@ -510,44 +510,32 @@ class Notification_Service:
             try:
                 cur = conn.cursor(row_factory=dict_row)
 
-                # Try users table first (admin accounts stored here)
-                admin_ids = []
-                for query in [
-                    "SELECT id FROM users WHERE role IN ('admin', 'super_admin')",
-                    "SELECT id FROM admins WHERE is_active = TRUE",
-                    "SELECT id FROM admins WHERE is_active IS NOT FALSE",
-                    "SELECT id FROM admins",
-                ]:
-                    try:
-                        conn.rollback()
-                        cur.execute(query)
-                        rows = cur.fetchall()
-                        if rows:
-                            admin_ids = [r['id'] for r in rows]
-                            print(f"notify_admins_inapp: found {len(admin_ids)} admins via '{query[:40]}...'", file=sys.stderr)
-                            break
-                    except Exception as qe:
-                        print(f"notify_admins_inapp: query failed '{query[:40]}': {qe}", file=sys.stderr)
-                        continue
+                # Admin accounts live in the users table with role admin/super_admin
+                conn.rollback()
+                cur.execute("SELECT id FROM users WHERE role IN ('admin', 'super_admin')")
+                rows = cur.fetchall()
+                admin_user_ids = [r['id'] for r in rows]
 
-                if not admin_ids:
-                    print("notify_admins_inapp: no admins found in any table", file=sys.stderr)
+                if not admin_user_ids:
+                    print("notify_admins_inapp: no admin users found in users table", file=sys.stderr)
                     return []
 
+                print(f"notify_admins_inapp: found {len(admin_user_ids)} admin(s) in users table", file=sys.stderr)
+
                 results = []
-                for admin_id in admin_ids:
+                for uid in admin_user_ids:
                     try:
                         conn.rollback()
                         cur.execute(
-                            "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (NULL, %s, %s, %s, %s)",
-                            (admin_id, title, message, notif_type)
+                            "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (%s, NULL, %s, %s, %s)",
+                            (uid, title, message, notif_type)
                         )
                         conn.commit()
-                        print(f"notify_admins_inapp: stored for admin_id={admin_id}", file=sys.stderr)
+                        print(f"notify_admins_inapp: stored for user_id={uid}", file=sys.stderr)
                         results.append(True)
                     except Exception as exc:
                         conn.rollback()
-                        print(f"notify_admins_inapp: insert failed for admin_id={admin_id}: {exc}", file=sys.stderr)
+                        print(f"notify_admins_inapp: insert failed for user_id={uid}: {exc}", file=sys.stderr)
                         results.append(False)
 
                 cur.close()

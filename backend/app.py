@@ -8788,7 +8788,9 @@ def mark_notification_read(notif_id):
 @app.route('/admin/notifications', methods=['GET'])
 def get_admin_notifications():
     """Return all notifications for an admin ordered by created_at DESC.
-    Query param: admin_id (int, required)
+    Admin accounts are stored in the users table (role=admin/super_admin),
+    so notifications are keyed by user_id.
+    Query param: admin_id (int, required) — this is the users.id of the admin.
     """
     admin_id = request.args.get('admin_id')
     if not admin_id:
@@ -8803,7 +8805,7 @@ def get_admin_notifications():
             """
             SELECT id, title, message, type, is_read, created_at
             FROM notifications
-            WHERE admin_id = %s
+            WHERE user_id = %s AND type LIKE 'admin\\_%%'
             ORDER BY created_at DESC
             """,
             (admin_id,)
@@ -8838,7 +8840,7 @@ def mark_all_admin_notifications_read():
     try:
         cur = get_cursor()
         cur.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE admin_id = %s AND is_read = FALSE",
+            "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND type LIKE 'admin\\_%' AND is_read = FALSE",
             (admin_id,)
         )
         updated = cur.rowcount
@@ -8866,13 +8868,13 @@ def mark_admin_notification_read(notif_id):
     try:
         cur = get_cursor()
         cur.execute(
-            "SELECT id, admin_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
+            "SELECT id, user_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
             (notif_id,)
         )
         notif = cur.fetchone()
         if not notif:
             return jsonify({'error': 'Notification not found'}), 404
-        if notif['admin_id'] != admin_id:
+        if notif['user_id'] != admin_id:
             return jsonify({'error': 'Forbidden'}), 403
         cur.execute(
             "UPDATE notifications SET is_read = TRUE WHERE id = %s",

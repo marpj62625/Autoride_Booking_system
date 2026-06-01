@@ -2268,8 +2268,9 @@
                 // Register FCM token if available from native layer
                 if (window._adminFcmToken) saveAdminFcmToken(window._adminFcmToken);
 
-                // Load admin notifications
+                // Load admin notifications and poll every 30s for new ones
                 loadAdminNotifications(user.id);
+                setInterval(function() { loadAdminNotifications(user.id); }, 30000);
 
                 // Start chat badge polling every 30s
                 if (typeof AdminChat !== 'undefined') {
