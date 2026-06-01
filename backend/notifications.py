@@ -505,15 +505,22 @@ class Notification_Service:
             from config import SUPABASE_DB_URL
             from psycopg.rows import dict_row
 
-            # Fetch active admins with their FCM tokens
+            # Fetch active admins — try is_active first, fall back to all admins
             conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
             cur = conn.cursor(row_factory=dict_row)
-            cur.execute("SELECT id, fcm_token FROM admins WHERE is_active = TRUE")
+            try:
+                cur.execute("SELECT id, fcm_token FROM admins WHERE is_active = TRUE")
+            except Exception:
+                conn.rollback()
+                cur.execute("SELECT id, fcm_token FROM admins")
             admins = cur.fetchall()
             cur.close()
             conn.close()
 
+            print(f"notify_admins_inapp: found {len(admins)} admins, title='{title}'", file=sys.stderr)
+
             if not admins:
+                print("notify_admins_inapp: no admins found — notification not stored", file=sys.stderr)
                 return []
 
             results = []
@@ -528,6 +535,7 @@ class Notification_Service:
                     conn2.commit()
                     cur2.close()
                     conn2.close()
+                    print(f"notify_admins_inapp: stored notification for admin {admin['id']}", file=sys.stderr)
                     # Send FCM push if token available
                     if admin.get('fcm_token'):
                         try:
