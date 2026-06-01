@@ -496,8 +496,8 @@ class Notification_Service:
 
     def notify_admins_inapp(self, title: str, message: str, notif_type: str) -> list:
         """
-        Queries all active admins and inserts one notification row per admin.
-        Uses a single connection for all operations to avoid connection pool issues.
+        Queries all admins and inserts one notification row per admin.
+        Uses a single connection for all operations.
         """
         try:
             import psycopg
@@ -508,31 +508,39 @@ class Notification_Service:
             try:
                 cur = conn.cursor(row_factory=dict_row)
 
-                # Fetch admins — try is_active first, fall back to all admins
-                try:
-                    cur.execute("SELECT id, fcm_token FROM admins WHERE is_active = TRUE")
-                except Exception:
-                    conn.rollback()
-                    cur.execute("SELECT id, fcm_token FROM admins")
+                # Get all admins — try multiple column combinations
+                admins = []
+                for query in [
+                    "SELECT id, fcm_token FROM admins WHERE is_active = TRUE",
+                    "SELECT id, fcm_token FROM admins WHERE is_active IS NOT FALSE",
+                    "SELECT id, fcm_token FROM admins",
+                    "SELECT id, NULL as fcm_token FROM admins",
+                ]:
+                    try:
+                        conn.rollback()
+                        cur.execute(query)
+                        admins = cur.fetchall()
+                        if admins:
+                            break
+                    except Exception:
+                        continue
 
-                admins = cur.fetchall()
                 print(f"notify_admins_inapp: found {len(admins)} admins, title='{title}'", file=sys.stderr)
 
                 if not admins:
                     print("notify_admins_inapp: no admins found", file=sys.stderr)
-                    conn.close()
                     return []
 
                 results = []
                 for admin in admins:
                     try:
+                        conn.rollback()
                         cur.execute(
                             "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (NULL, %s, %s, %s, %s)",
                             (admin['id'], title, message, notif_type)
                         )
                         conn.commit()
                         print(f"notify_admins_inapp: stored for admin {admin['id']}", file=sys.stderr)
-                        # Send FCM push if token available
                         if admin.get('fcm_token'):
                             try:
                                 global fcm_service
