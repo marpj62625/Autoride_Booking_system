@@ -819,8 +819,11 @@ def send_receipt_email(email: str, details: dict):
         msg['From'] = EMAIL_USER
         msg['To'] = email
         msg.attach(MIMETextPart(html, 'html', 'utf-8'))
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        smtp_port = int(SMTP_PORT) if SMTP_PORT else 587
+        with smtplib.SMTP(SMTP_SERVER, smtp_port) as server:
+            server.ehlo()
             server.starttls()
+            server.ehlo()
             server.login(EMAIL_USER, EMAIL_PASS)
             server.send_message(msg)
         print('DEBUG: HTML receipt email sent to ' + email)

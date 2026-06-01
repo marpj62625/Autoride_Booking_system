@@ -157,9 +157,13 @@ def process_payment():
             receipt_data = cur.fetchone()
             if receipt_data:
                 from app import send_receipt_email
+                print(f"DEBUG: Sending receipt email to {receipt_data['email']} for booking #{booking_id}")
                 send_receipt_email(receipt_data['email'], dict(receipt_data))
+                print(f"DEBUG: Receipt email sent successfully to {receipt_data['email']}")
+            else:
+                print(f"DEBUG: No receipt data found for booking #{booking_id}, payment #{payment_id}")
         except Exception as email_err:
-            print(f"ERROR SENDING RECEIPT EMAIL: {email_err}")
+            print(f"ERROR SENDING RECEIPT EMAIL for booking #{booking_id}: {email_err}")
 
         print(f"DEBUG: Payment received for booking {booking_id}. Payment ID: {payment_id}")
         return jsonify({
