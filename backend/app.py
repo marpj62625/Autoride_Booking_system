@@ -5344,19 +5344,6 @@ def apply_driver():
 
         commit_db()
 
-        # Notify all active admins about the new driver application
-        try:
-            sms_service.notify_admins(
-                compose_admin_driver_application_sms(full_name)
-            )
-            notification_service.notify_admins_inapp(
-                "New Driver Application",
-                f"New driver application from {full_name}. Please review in the admin panel.",
-                'admin_driver_application'
-            )
-        except Exception as sms_err:
-            print(f"ERROR SENDING DRIVER APPLICATION SMS: {sms_err}")
-
         return jsonify({"message": "Application submitted"}), 201
 
     except Exception as e:
