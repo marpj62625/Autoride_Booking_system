@@ -29,7 +29,25 @@ from email.mime.text import MIMEText
 from config import SMTP_SERVER, SMTP_PORT, EMAIL_USER, EMAIL_PASS
 
 from datetime import datetime
+import datetime as _dt
+import decimal
+import dataclasses
+from flask.json.provider import DefaultJSONProvider
 
+
+class ISODateJSONProvider(DefaultJSONProvider):
+    """Custom JSON provider that serializes date/datetime as ISO 8601 strings
+    instead of Flask 2.3's default RFC 7231 HTTP-date format (e.g. 'Mon, 01 Jun 2026 00:00:00 GMT').
+    The HTTP-date format breaks JS Date parsing in the frontend."""
+
+    def default(self, o):
+        if isinstance(o, _dt.datetime):
+            return o.isoformat()
+        if isinstance(o, _dt.date):
+            return o.isoformat()  # always 'YYYY-MM-DD'
+        if isinstance(o, decimal.Decimal):
+            return float(o)
+        return super().default(o)
 
 
 app = Flask(__name__, 
@@ -37,6 +55,9 @@ app = Flask(__name__,
             static_folder='../frontend', 
 
             static_url_path='')
+
+app.json_provider_class = ISODateJSONProvider
+app.json = ISODateJSONProvider(app)
 
 app.url_map.strict_slashes = False
 
@@ -3166,15 +3187,7 @@ def user_bookings():
 
         data = cur.fetchall()
 
-        bookings_list = []
-        for row in data:
-            d = dict(row)
-            # Explicitly serialize date fields to ISO string to prevent serialization ambiguity
-            import datetime
-            for field in ('start_date', 'end_date'):
-                if isinstance(d.get(field), (datetime.date, datetime.datetime)):
-                    d[field] = d[field].isoformat()[:10]
-            bookings_list.append(d)
+        bookings_list = [dict(row) for row in data]
 
         return jsonify(bookings_list), 200
 
