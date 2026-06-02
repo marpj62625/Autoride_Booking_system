@@ -99,6 +99,179 @@ var Session = {
   }
 };
 
+// ?? BOOKING SESSION: save/restore in-progress booking state (1 minute TTL) ??
+var BOOKING_SESSION_KEY = 'autoride_booking_session';
+var BOOKING_SESSION_TTL = 60 * 1000; // 1 minute
+
+var BookingSession = {
+  save: function() {
+    // Only save if there's an active booking flow
+    var bookingFormOpen = document.getElementById('page-booking-form') &&
+      document.getElementById('page-booking-form').classList.contains('active');
+    var paymentOpen = document.getElementById('page-payment') &&
+      document.getElementById('page-payment').classList.contains('active');
+    var vehicleDetailOpen = document.getElementById('page-vehicle-detail') &&
+      document.getElementById('page-vehicle-detail').classList.contains('active');
+
+    if (!bookingFormOpen && !paymentOpen && !vehicleDetailOpen) return;
+
+    var data = {
+      savedAt: Date.now(),
+      // Which overlays were open
+      overlays: {
+        vehicleDetail: vehicleDetailOpen,
+        bookingForm: bookingFormOpen,
+        payment: paymentOpen
+      },
+      // Vehicle
+      vehicleId: bookingFormVehicle ? bookingFormVehicle.id : null,
+      vehicle: bookingFormVehicle,
+      currentVehicle: currentVehicleDetail,
+      // Booking form fields
+      startDate: (document.getElementById('bfStartDate') || {}).value || null,
+      endDate: (document.getElementById('bfEndDate') || {}).value || null,
+      pickupTime: (document.getElementById('bfPickupTime') || {}).value || '06:00',
+      returnTime: (document.getElementById('bfReturnTime') || {}).value || '06:00',
+      serviceType: (document.getElementById('bfServiceType') || {}).value || 'pickup',
+      pickupLocation: (document.getElementById('bfPickupLocation') || {}).value || null,
+      rentalType: (document.getElementById('bfRentalType') || {}).value || 'Self-Drive',
+      paymentType: (document.getElementById('bfPaymentType') || {}).value || 'Full',
+      points: (document.getElementById('bfPoints') || {}).value || '0',
+      // Selections
+      selectedAddons: JSON.parse(JSON.stringify(selectedAddons)),
+      selectedInsurance: JSON.parse(JSON.stringify(selectedInsurance)),
+      couponData: couponData ? JSON.parse(JSON.stringify(couponData)) : null,
+      // Payment state
+      bookingId: activeBookingId,
+      pendingPriceResult: _pendingPriceResult ? JSON.parse(JSON.stringify(_pendingPriceResult)) : null,
+      pendingPayType: _pendingPayType,
+      pendingPayload: _pendingBookingPayload ? JSON.parse(JSON.stringify(_pendingBookingPayload)) : null
+    };
+    try { localStorage.setItem(BOOKING_SESSION_KEY, JSON.stringify(data)); } catch(e) {}
+  },
+
+  load: function() {
+    try {
+      var raw = localStorage.getItem(BOOKING_SESSION_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (!data || !data.savedAt) return null;
+      var age = Date.now() - data.savedAt;
+      if (age > BOOKING_SESSION_TTL) {
+        localStorage.removeItem(BOOKING_SESSION_KEY);
+        return null;
+      }
+      return data;
+    } catch(e) { return null; }
+  },
+
+  clear: function() {
+    try { localStorage.removeItem(BOOKING_SESSION_KEY); } catch(e) {}
+  },
+
+  restore: function() {
+    var data = this.load();
+    if (!data) return false;
+
+    // Restore global state
+    if (data.vehicle) bookingFormVehicle = data.vehicle;
+    if (data.currentVehicle) currentVehicleDetail = data.currentVehicle;
+    if (data.selectedAddons) selectedAddons = data.selectedAddons;
+    if (data.selectedInsurance) selectedInsurance = data.selectedInsurance;
+    if (data.couponData !== undefined) couponData = data.couponData;
+    if (data.pendingPriceResult) _pendingPriceResult = data.pendingPriceResult;
+    if (data.pendingPayType) _pendingPayType = data.pendingPayType;
+    if (data.pendingPayload) _pendingBookingPayload = data.pendingPayload;
+    if (data.bookingId) activeBookingId = data.bookingId;
+
+    this.clear(); // consume the session
+
+    // Reopen to the deepest overlay that was open
+    if (data.overlays.payment && data.bookingId && data.pendingPriceResult) {
+      // Restore to payment screen
+      showToast('Restored your payment session.', 'info');
+      openPaymentScreen(data.bookingId, data.pendingPriceResult, data.pendingPayType || 'Full');
+      return true;
+    }
+
+    if (data.overlays.bookingForm && data.vehicle) {
+      // Reopen booking form - need to show vehicle detail first then form
+      showToast('Restored your booking session.', 'info');
+      openBookingFormWithData(data);
+      return true;
+    }
+
+    if (data.overlays.vehicleDetail && data.currentVehicle) {
+      showToast('Restored your last viewed vehicle.', 'info');
+      openVehicleDetail(data.currentVehicle);
+      return true;
+    }
+
+    return false;
+  }
+};
+
+function openBookingFormWithData(sessionData) {
+  // Open the booking form and restore field values after render
+  openBookingForm(sessionData.vehicleId || (sessionData.vehicle && sessionData.vehicle.id));
+  // Restore fields after a short delay (form renders async)
+  setTimeout(function() {
+    if (sessionData.startDate) {
+      var el = document.getElementById('bfStartDate');
+      if (el) { el.value = sessionData.startDate; }
+    }
+    if (sessionData.endDate) {
+      var el = document.getElementById('bfEndDate');
+      if (el) { el.value = sessionData.endDate; }
+    }
+    if (sessionData.pickupTime) {
+      var el = document.getElementById('bfPickupTime');
+      if (el) { el.value = sessionData.pickupTime; }
+    }
+    if (sessionData.returnTime) {
+      var el = document.getElementById('bfReturnTime');
+      if (el) { el.value = sessionData.returnTime; }
+    }
+    if (sessionData.serviceType) {
+      var el = document.getElementById('bfServiceType');
+      if (el) { el.value = sessionData.serviceType; }
+      setServiceType(sessionData.serviceType);
+    }
+    if (sessionData.pickupLocation) {
+      var el = document.getElementById('bfPickupLocation');
+      if (el) { el.value = sessionData.pickupLocation; }
+    }
+    if (sessionData.rentalType) {
+      var el = document.getElementById('bfRentalType');
+      if (el) { el.value = sessionData.rentalType; }
+    }
+    if (sessionData.paymentType) {
+      var el = document.getElementById('bfPaymentType');
+      if (el) { el.value = sessionData.paymentType; }
+    }
+    if (sessionData.points) {
+      var el = document.getElementById('bfPoints');
+      if (el) { el.value = sessionData.points; }
+    }
+    // Restore addon checkboxes
+    if (sessionData.selectedAddons && sessionData.selectedAddons.length > 0) {
+      sessionData.selectedAddons.forEach(function(addon) {
+        var ADDON_NAMES = (typeof ADDON_OPTIONS !== 'undefined') ? ADDON_OPTIONS.map(function(a) { return a.name; }) : [];
+        var idx = ADDON_NAMES.indexOf(addon.name);
+        if (idx >= 0) {
+          var chk = document.getElementById('addonChk_' + idx);
+          var card = document.getElementById('addon_' + idx);
+          if (chk) chk.checked = true;
+          if (card) card.classList.add('selected');
+        }
+      });
+    }
+    // Trigger price update
+    if (typeof updateBookingPrice === 'function') updateBookingPrice();
+  }, 300);
+}
+
+
 // NOTIFICATION STORE
 var NotifStore = {
   getAll: function() {
@@ -331,6 +504,9 @@ var NAV_MAP = {
 };
 
 function showPage(id) {
+  // Save booking session if user navigates away mid-booking
+  BookingSession.save();
+
   // Close ALL overlays first
   var overlays = document.querySelectorAll('.overlay-page');
   for (var i = 0; i < overlays.length; i++) {
@@ -387,8 +563,20 @@ function showPage(id) {
 
   // Page load hooks
   if (id === 'page-home') loadHome();
-  if (id === 'page-vehicles') loadVehicles();
-  if (id === 'page-bookings') loadBookings();
+  if (id === 'page-vehicles') {
+    // Check for saved booking session (1-min TTL)
+    var restored = BookingSession.restore();
+    if (!restored) loadVehicles();
+  }
+  if (id === 'page-bookings') {
+    // Check for saved payment session (1-min TTL)
+    var paySession = BookingSession.load();
+    if (paySession && paySession.overlays && paySession.overlays.payment) {
+      BookingSession.restore();
+    } else {
+      loadBookings();
+    }
+  }
   if (id === 'page-profile') loadProfile();
   if (id === 'page-more') loadMorePage();
 }
@@ -2281,6 +2469,7 @@ function confirmAndBook() {
   apiCall('/book', { method: 'POST', body: JSON.stringify(_pendingBookingPayload) })
     .then(function(data) {
       activeBookingId = data.booking_id;
+      BookingSession.clear(); // booking submitted - clear any stale session
       closeOverlay('page-booking-form');
       closeOverlay('page-vehicle-detail');
       NotifStore.add('Booking #' + data.booking_id + ' received! Our team will review it shortly.');
@@ -2482,6 +2671,7 @@ function submitPayment(bookingId, amount) {
     }
     promise
       .then(function(data) {
+        BookingSession.clear();
         closeOverlay('page-payment');
         NotifStore.add('Booking #' + bookingId + ' received! Pay at our office upon pickup.');
         showReceipt(bookingId, data, amount, 'Cash (Over the counter)', ref);
@@ -2560,6 +2750,7 @@ function checkPaymentStatus(bookingId, amount, method) {
     .then(function(data) {
       showLoading(false);
       if (data.paid) {
+        BookingSession.clear();
         closeOverlay('page-payment');
         showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
         loadNotifications(currentUser.id);
@@ -3627,7 +3818,7 @@ function submitLicense() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
       showLoading(false);
-      // Force logout after upload — user must wait for admin verification before re-logging in
+      // Force logout after upload ï¿½ user must wait for admin verification before re-logging in
       showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
       setTimeout(function() {
         Session.clear();
