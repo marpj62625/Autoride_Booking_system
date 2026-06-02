@@ -3274,33 +3274,48 @@
                 licenseHtml = `<p style="font-size:0.8rem;color:#ef4444;">Error loading license: ${e.message}</p>`;
             }
 
-            // Fetch payment proof for this booking
+            // Fetch payment proof images for this booking
             let paymentProofHtml = '';
             try {
                 const ppRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/payment-proof`);
                 const ppData = ppRes.ok ? await ppRes.json() : [];
                 const proofs = Array.isArray(ppData) ? ppData.filter(p => p.payment_proof_url) : [];
-                if (proofs.length > 0) {
-                    paymentProofHtml = `
-                        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:0;background:#f8fafc;">
-                            <h3 style="font-size:1rem;color:#0f172a;font-weight:800;margin:0 0 12px;">Payment Receipt${proofs.length > 1 ? 's' : ''}</h3>
-                            ${proofs.map((p, i) => `
-                                <div style="margin-bottom:${i < proofs.length-1 ? '14px' : '0'};border-bottom:${i < proofs.length-1 ? '1px solid #e2e8f0' : 'none'};padding-bottom:${i < proofs.length-1 ? '14px' : '0'};">
-                                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#64748b;margin-bottom:8px;">
-                                        <span><strong style="color:#0f172a;">${p.method || 'Payment'}</strong>${p.reference_number ? ' &bull; Ref: ' + p.reference_number : ''}</span>
-                                        <span style="color:#16a34a;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
-                                    </div>
-                                    <img src="${p.payment_proof_url}" alt="Payment Receipt"
-                                        onclick="window.open('${p.payment_proof_url}','_blank')"
-                                        style="width:100%;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;max-height:220px;object-fit:contain;background:#fff;">
-                                    <p style="font-size:0.7rem;color:#94a3b8;text-align:center;margin:4px 0 0;">Tap image to view full size</p>
+                const receiptUrl = `${API_BASE}/api/bookings/${id}/receipt`;
+
+                // Always show the receipt section
+                paymentProofHtml = `
+                    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:#f8fafc;margin-bottom:0;">
+                        <h3 style="font-size:1rem;color:#0f172a;font-weight:800;margin:0 0 12px;">
+                            <i class="fas fa-receipt" style="color:#00B14F;margin-right:6px;"></i>Booking Receipt
+                        </h3>
+                        <button onclick="window.open('${receiptUrl}','_blank')"
+                            style="width:100%;padding:12px;background:#00B14F;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;margin-bottom:${proofs.length > 0 ? '14px' : '0'};">
+                            <i class="fas fa-file-pdf" style="margin-right:6px;"></i>View / Download PDF Receipt
+                        </button>
+                        ${proofs.map((p, i) => `
+                            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                                <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#64748b;margin-bottom:8px;">
+                                    <span><strong style="color:#0f172a;">${p.method || 'Payment'}</strong>${p.reference_number ? ' &bull; Ref: ' + p.reference_number : ''}</span>
+                                    <span style="color:#16a34a;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
                                 </div>
-                            `).join('')}
-                        </div>
-                    `;
-                }
+                                <img src="${p.payment_proof_url}" alt="Payment Proof"
+                                    onclick="window.open('${p.payment_proof_url}','_blank')"
+                                    style="width:100%;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;max-height:220px;object-fit:contain;background:#fff;">
+                                <p style="font-size:0.7rem;color:#94a3b8;text-align:center;margin:4px 0 0;">Tap image to view full size</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
             } catch(e) {
                 console.error('Payment proof fetch error:', e);
+                paymentProofHtml = `
+                    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;background:#f8fafc;">
+                        <button onclick="window.open('${API_BASE}/api/bookings/${id}/receipt','_blank')"
+                            style="width:100%;padding:12px;background:#00B14F;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.9rem;cursor:pointer;">
+                            <i class="fas fa-file-pdf" style="margin-right:6px;"></i>View / Download PDF Receipt
+                        </button>
+                    </div>
+                `;
             }
 
             const paymentBg = b.payment_status === 'Paid' ? '#dcfce7' : '#fee2e2';
@@ -3405,12 +3420,9 @@
                             <button onclick="Bookings.markPaid(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Mark as Fully Paid</button>
                         ` : ''}
 
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" style="flex: 1; padding: 14px; font-size: 0.85rem; background: white; border: 1px solid #00B14F; color: #00B14F; border-radius: 8px; font-weight: 600;">Download Receipt</button>
-                            ${isCancellable ? `
-                                <button onclick="Bookings.cancel(${b.id})" style="flex: 1; padding: 14px; font-size: 0.85rem; background: white; border: 1px solid #00B14F; color: #00B14F; border-radius: 8px; font-weight: 600;">Cancel Booking</button>
-                            ` : ''}
-                        </div>
+                        ${isCancellable ? `
+                            <button onclick="Bookings.cancel(${b.id})" style="width:100%;padding:14px;font-size:0.85rem;background:white;border:1px solid #ef4444;color:#ef4444;border-radius:8px;font-weight:600;">Cancel Booking</button>
+                        ` : ''}
                     </div>
                 </div>
             `;
