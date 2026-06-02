@@ -1298,7 +1298,13 @@
     <div id="activity" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Activity Log</h1>
-            <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
+            <div style="display:flex;gap:8px;">
+                <!-- Export button — shown only for super_admin, toggled by JS on tab load -->
+                <button id="activityExportBtn" onclick="Activity.exportExcel()" style="display:none;padding:10px 14px;border-radius:12px;font-size:0.85rem;background:rgba(0,177,79,0.12);border:1px solid rgba(0,177,79,0.35);color:#00b14f;font-weight:700;gap:6px;align-items:center;">
+                    <i class="fas fa-file-excel"></i> Export
+                </button>
+                <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
+            </div>
         </div>
 
         <!-- Search -->
@@ -4494,6 +4500,15 @@
         async refresh() {
             const list = document.getElementById('activityList');
             if (!list) return;
+
+            // Show export button only for super_admin
+            const exportBtn = document.getElementById('activityExportBtn');
+            if (exportBtn) {
+                const user = adminAuth.getUser();
+                const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
+                exportBtn.style.display = isSuperAdmin ? 'flex' : 'none';
+            }
+
             list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
             try {
                 const res = await apiFetch(`admin/activity-logs`);
@@ -4516,6 +4531,94 @@
                 this._render(this.data);
             } catch (err) {
                 list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--danger);">Failed to load logs.</div>';
+            }
+        },
+
+        async exportExcel() {
+            // Double-check role before exporting
+            const user = adminAuth.getUser();
+            if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) {
+                showNotification('Only Super Admins can export activity logs.', 'error');
+                return;
+            }
+
+            const data = this.data || [];
+            if (!data.length) {
+                showNotification('No activity logs to export.', 'error');
+                return;
+            }
+
+            if (typeof XLSX === 'undefined') {
+                showNotification('Excel library not loaded. Please refresh.', 'error');
+                return;
+            }
+
+            // Build rows
+            const headers = ['#', 'Admin', 'Action', 'Target Type', 'Target ID', 'Details', 'IP Address', 'Timestamp'];
+            const rows = [headers];
+            data.forEach((log, i) => {
+                rows.push([
+                    i + 1,
+                    log.admin_name || '-',
+                    log.action || '-',
+                    log.target_type || '-',
+                    log.target_id || '-',
+                    log.details || '-',
+                    log.ip_address || '-',
+                    log.created_at ? new Date(log.created_at).toLocaleString() : '-'
+                ]);
+            });
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                // Auto-width columns
+                const colWidths = headers.map((h, i) => ({
+                    wch: Math.max(h.length, ...rows.slice(1).map(r => String(r[i] || '').length))
+                }));
+                ws['!cols'] = colWidths;
+                XLSX.utils.book_append_sheet(wb, ws, 'Activity Log');
+
+                const filename = 'autoride_activity_log_' + new Date().toISOString().split('T')[0] + '.xlsx';
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+                // ?? Try Capacitor Filesystem (save to Downloads) ??
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+                if (Filesystem) {
+                    try {
+                        const result = await Filesystem.writeFile({
+                            path: filename,
+                            data: wboutBase64,
+                            directory: 'DOWNLOADS',
+                            recursive: true
+                        });
+                        showNotification('Activity log saved to Downloads: ' + filename, 'success');
+                        try {
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+                            if (FileOpener) await FileOpener.open({ filePath: result.uri, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        } catch(e) {}
+                        return;
+                    } catch (fsErr) {
+                        try {
+                            await Filesystem.writeFile({ path: filename, data: wboutBase64, directory: 'DOCUMENTS', recursive: true });
+                            showNotification('Activity log saved to Documents: ' + filename, 'success');
+                            return;
+                        } catch(e) {}
+                    }
+                }
+
+                // Browser fallback
+                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                showNotification('Activity log downloaded!', 'success');
+
+            } catch (err) {
+                showNotification('Export failed: ' + err.message, 'error');
             }
         }
     };
