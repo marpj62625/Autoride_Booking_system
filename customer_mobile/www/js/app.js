@@ -3177,6 +3177,10 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   parts.push('</div>');
   parts.push('<div class="scroll-content" style="padding:20px;padding-bottom:60px;">');
 
+  // Hidden inputs for submit to access
+  parts.push('<input type="hidden" id="extOrigEnd" value="' + currentEndDate + '">');
+  parts.push('<input type="hidden" id="extDailyRate" value="' + rate + '">');
+
   // Current return date card
   parts.push('<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">');
   parts.push('<div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Current Return Date</div>');
@@ -3267,14 +3271,35 @@ function calcExtPrice(currentEndDate, dailyRate) {
 
 function submitExtension(bookingId) {
   var newEnd = (document.getElementById('extNewEnd') || {}).value;
-  var priceBox = document.getElementById('extPriceBox');
   var errEl = document.getElementById('extErr');
   if (errEl) errEl.textContent = '';
 
   if (!newEnd) { if (errEl) errEl.textContent = 'Please select a new return date.'; return; }
-  if (!priceBox || priceBox.style.display === 'none') { if (errEl) errEl.textContent = 'Please select a valid date.'; return; }
 
-  var price = priceBox.dataset.price || 0;
+  // Get stored currentEndDate from hidden input
+  var origEnd = (document.getElementById('extOrigEnd') || {}).value || '';
+  var rate = parseFloat((document.getElementById('extDailyRate') || {}).value || 0);
+
+  // Calculate price directly (don't rely on priceBox visibility)
+  var days = 0;
+  var price = 0;
+  if (origEnd) {
+    try {
+      var orig = new Date(origEnd + 'T00:00:00');
+      var next = new Date(newEnd + 'T00:00:00');
+      days = Math.round((next - orig) / (1000 * 60 * 60 * 24));
+      price = days * rate;
+    } catch(e) {}
+  }
+
+  // Try to get price from priceBox if available (user may have seen it)
+  var priceBox = document.getElementById('extPriceBox');
+  if (priceBox && priceBox.dataset.price && parseFloat(priceBox.dataset.price) > 0) {
+    price = parseFloat(priceBox.dataset.price);
+    days = parseInt(priceBox.dataset.days || days);
+  }
+
+  if (days <= 0) { if (errEl) errEl.textContent = 'New date must be after current return date.'; return; }
   var method = (document.getElementById('extMethod') || {}).value || 'cash';
   var ref = (document.getElementById('extRef') || {}).value || '';
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Cash (Over the counter)';
