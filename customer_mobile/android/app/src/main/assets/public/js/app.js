@@ -3019,7 +3019,7 @@ function renderBookingDetail(b) {
     'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
     'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
   };
-  var payColors = { 'Paid': '#00b14f', 'Partially Paid': '#fbbf24', 'Unpaid': '#f87171', 'Refund Pending': '#fbbf24' };
+  var payColors = { 'Paid': '#00b14f', 'Partially Paid': '#fbbf24', 'Unpaid': '#f87171', 'Refund Pending': '#f59e0b', 'Refunded': '#00b14f', 'Cancelled': '#a1a1aa' };
   var sColor = statusColors[b.status] || '#a1a1aa';
   var pColor = payColors[b.payment_status] || '#f87171';
 
@@ -3140,6 +3140,61 @@ function renderBookingDetail(b) {
 
       // Cancellation reason
       (b.cancellation_reason ? '<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p style="font-size:0.875rem;color:var(--danger);"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
+
+      // Refund status card (shown for cancelled bookings with payment)
+      (function() {
+        var ps = b.payment_status;
+        if (ps !== 'Refund Pending' && ps !== 'Refunded') return '';
+        var isRefunded = ps === 'Refunded';
+        var accentColor = isRefunded ? '#00b14f' : '#f59e0b';
+        var bgColor = isRefunded ? 'rgba(0,177,79,0.07)' : 'rgba(245,158,11,0.07)';
+        var borderColor = isRefunded ? 'rgba(0,177,79,0.3)' : 'rgba(245,158,11,0.3)';
+        var icon = isRefunded ? 'fa-check-circle' : 'fa-clock';
+        var statusLabel = isRefunded ? 'Refund Processed' : 'Refund Pending';
+        var refundAmt = parseFloat(b.refund_amount || 0);
+        var totalPaid = parseFloat(b.amount_paid || b.total_price || 0);
+        var nonRefundable = totalPaid - refundAmt;
+
+        var html = '<div style="background:' + bgColor + ';border:1.5px solid ' + borderColor + ';border-radius:14px;padding:16px;margin-bottom:16px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
+            '<i class="fas ' + icon + '" style="font-size:1.2rem;color:' + accentColor + ';"></i>' +
+            '<span style="font-size:0.95rem;font-weight:800;color:' + accentColor + ';">' + statusLabel + '</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:' + (b.refund_note ? '10px' : '0') + ';">' +
+            '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
+              '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Refund Amount</div>' +
+              '<div style="font-size:1rem;font-weight:800;color:' + accentColor + ';">' + formatPHP(refundAmt > 0 ? refundAmt : totalPaid) + '</div>' +
+            '</div>' +
+            (isRefunded && b.refund_method ? (
+              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Method</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_method + '</div>' +
+              '</div>'
+            ) : (
+              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Amount Paid</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(totalPaid) + '</div>' +
+              '</div>'
+            )) +
+          '</div>' +
+          (isRefunded && b.refund_ref ? (
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Reference: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
+          ) : '') +
+          (isRefunded && b.refunded_at ? (
+            '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Processed: ' + _fmtDate(_normDateStr(b.refunded_at)) + '</div>'
+          ) : '') +
+          (b.refund_note && nonRefundable > 0.01 ? (
+            '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
+              '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
+              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee — cancelled &lt;48h before pickup)' +
+            '</div>'
+          ) : '') +
+          (!isRefunded ? (
+            '<div style="margin-top:10px;font-size:0.75rem;color:var(--text-muted);">Our team will process your refund shortly. You will be notified once completed.</div>'
+          ) : '') +
+        '</div>';
+        return html;
+      }()) +
 
       // Action buttons
       primaryAction +
