@@ -629,6 +629,15 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
+  <!-- Active booking banner — shown by JS when user has an active booking -->
+  <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
+    <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
+    <div style="flex:1;">
+      <div style="font-size:0.8rem;font-weight:800;color:#92400e;">1 Booking Per Account</div>
+      <div style="font-size:0.72rem;color:#78350f;margin-top:2px;">You have an active booking. Complete or cancel it before booking again.</div>
+    </div>
+    <button onclick="showPage('page-bookings')" style="flex-shrink:0;padding:6px 10px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:0.7rem;font-weight:800;cursor:pointer;">View</button>
+  </div>
   <div id="vehicleGrid" class="vehicle-grid">
     <div class="empty-state"><i class="fas fa-car"></i><p>Loading vehicles...</p></div>
   </div>

@@ -673,6 +673,16 @@ function showPage(id) {
       var restored = BookingSession.restore();
       if (!restored) loadVehicles();
     } catch(e) { loadVehicles(); }
+
+    // Show banner if user has an active booking
+    setTimeout(function() {
+      var banner = document.getElementById('browseActiveBanner');
+      var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
+      var hasActive = _allBookingsData.some(function(b) {
+        return ACTIVE_STATUSES.indexOf(b.status) !== -1;
+      });
+      if (banner) banner.style.display = hasActive ? 'flex' : 'none';
+    }, 100);
   }
   if (id === 'page-bookings') {
     try {
@@ -2106,7 +2116,14 @@ function renderVehicleDetail(v) {
   var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
   var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
   var mileage = appSettings.mileage_limit || '250';
-  var canBook = parseInt(currentUser.isVerified) === 2;
+
+  // 1 booking per account — block if any active booking exists
+  var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
+  var hasActiveBooking = _allBookingsData.some(function(b) {
+    return ACTIVE_STATUSES.indexOf(b.status) !== -1;
+  });
+
+  var canBook = parseInt(currentUser.isVerified) === 2 && !hasActiveBooking;
   var el = document.getElementById('vehicleDetailContent');
   if (!el) return;
   var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
@@ -2120,9 +2137,15 @@ function renderVehicleDetail(v) {
       (r.comment ? '<p style="font-size:0.875rem;color:var(--text-secondary);">' + r.comment + '</p>' : '') +
       '</div>';
   }).join('') : '<div class="empty-state" style="padding:20px 0;"><p>No reviews yet</p></div>';
-  var bookBtn = canBook
-    ? '<button class="btn-primary" onclick="openBookingForm(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book Now</button>'
-    : '<div style="background:#f8d7da;border-radius:var(--radius-sm);padding:12px;text-align:center;font-size:0.875rem;color:#842029;margin-bottom:12px;"><i class="fas fa-lock"></i> License verification required before booking.</div>';
+
+  var bookBtn;
+  if (parseInt(currentUser.isVerified) !== 2) {
+    bookBtn = '<div style="background:#f8d7da;border-radius:var(--radius-sm);padding:12px;text-align:center;font-size:0.875rem;color:#842029;margin-bottom:12px;"><i class="fas fa-lock"></i> License verification required before booking.</div>';
+  } else if (hasActiveBooking) {
+    bookBtn = '<div style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);border-radius:var(--radius-sm);padding:14px;text-align:center;font-size:0.875rem;color:#92400e;margin-bottom:12px;"><i class="fas fa-calendar-check" style="margin-right:6px;color:#f59e0b;"></i><strong>1 booking per account.</strong><br><span style="font-size:0.8rem;">Complete or cancel your current booking before making a new one.</span></div>';
+  } else {
+    bookBtn = '<button class="btn-primary" onclick="openBookingForm(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book Now</button>';
+  }
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>' + v.brand + ' ' + v.model + '</h2>' +
@@ -2217,6 +2240,16 @@ function autoSetReturnTime() {
 }
 
 function openBookingForm(vehicleId) {
+  // 1 booking per account — hard block if active booking exists
+  var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
+  var hasActiveBooking = _allBookingsData.some(function(b) {
+    return ACTIVE_STATUSES.indexOf(b.status) !== -1;
+  });
+  if (hasActiveBooking) {
+    showToast('You already have an active booking. Please complete or cancel it first.', 'error');
+    return;
+  }
+
   bookingFormVehicle = currentVehicleDetail;
   selectedAddons = [];
   selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };

@@ -2853,6 +2853,25 @@ def book():
 
             }), 403
 
+        # 1 booking per account — reject if user already has an active booking
+
+        cur.execute("""
+            SELECT id, status FROM bookings
+            WHERE user_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+            LIMIT 1
+        """, (user_id,))
+
+        existing = cur.fetchone()
+
+        if existing:
+
+            return jsonify({
+                "error": "You already have an active booking (#{id}, status: {status}). "
+                         "Please complete or cancel it before making a new booking.".format(
+                             id=existing['id'], status=existing['status'])
+            }), 409
+
 
 
         # Category Auto-Assignment Logic
