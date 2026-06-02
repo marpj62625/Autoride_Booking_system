@@ -79,9 +79,17 @@ var Session = {
         } catch(e) { return null; }
       };
       if (prefs) {
+        var _prefsDone = false;
+        var _prefsTimer = setTimeout(function() {
+          if (!_prefsDone) { _prefsDone = true;
+            try { resolve(parse(localStorage.getItem('user'))); } catch(e) { resolve(null); }
+          }
+        }, 3000);
         prefs.get({ key: 'user' }).then(function(result) {
-          resolve(parse(result.value));
-        }).catch(function() { resolve(null); });
+          if (!_prefsDone) { _prefsDone = true; clearTimeout(_prefsTimer); resolve(parse(result.value)); }
+        }).catch(function() {
+          if (!_prefsDone) { _prefsDone = true; clearTimeout(_prefsTimer); resolve(null); }
+        });
       } else {
         try {
           resolve(parse(localStorage.getItem('user')));
