@@ -363,21 +363,47 @@ function subscribeToNotifications(userId) {
             if (payload && payload.new) {
                 notifList.unshift(payload.new);
                 updateNotifBadge();
-                // If license was approved or rejected, refresh verify status immediately
-                var type = payload.new.type || '';
+
+                var type  = payload.new.type  || '';
+                var title = payload.new.title || 'Autoride';
+                var msg   = payload.new.message || '';
+
+                // Show in-app popup toast for all actionable notification types
+                if (type === 'extension_approved') {
+                    _showNotifPopup(title, msg, '#00b14f', 'fa-calendar-check');
+                    // Refresh bookings so the new end date shows immediately
+                    if (typeof loadBookings === 'function') loadBookings();
+                } else if (type === 'extension_rejected') {
+                    _showNotifPopup(title, msg, '#f59e0b', 'fa-calendar-times');
+                    if (typeof loadBookings === 'function') loadBookings();
+                } else if (type === 'refund_processed') {
+                    _showNotifPopup(title, msg, '#00b14f', 'fa-undo-alt');
+                    if (typeof loadBookings === 'function') loadBookings();
+                } else if (type === 'booking_approved' || type === 'booking_confirmed') {
+                    _showNotifPopup(title, msg, '#00b14f', 'fa-check-circle');
+                } else if (type === 'booking_cancelled' || type === 'booking_cancelled_by_admin') {
+                    _showNotifPopup(title, msg, '#f87171', 'fa-times-circle');
+                } else if (type === 'payment_confirmed') {
+                    _showNotifPopup(title, msg, '#00b14f', 'fa-money-bill-wave');
+                }
+
+                // License status refresh
                 if (type === 'license_approved' || type === 'license_rejected') {
+                    if (type === 'license_approved') {
+                        _showNotifPopup(title, msg, '#00b14f', 'fa-id-card');
+                    } else {
+                        _showNotifPopup(title, msg, '#f87171', 'fa-id-card');
+                    }
                     apiCall('/user/verify-status?user_id=' + userId)
                         .then(function(v) {
                             currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
                             Session.save(currentUser);
-                            // Update badge if profile page is visible
                             var badge = document.getElementById('profileVerifyBadge');
                             if (badge) {
                                 var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
                                 badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
                                 badge.className = 'verify-badge verify-' + currentUser.isVerified;
                             }
-                            // Update license status field in view mode
                             var statusEl = document.getElementById('viewLicenseStatus');
                             if (statusEl) {
                                 var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
@@ -391,6 +417,76 @@ function subscribeToNotifications(userId) {
             }
         })
         .subscribe();
+}
+
+// In-app notification popup (shown when app is open and notification arrives)
+var _notifPopupTimer = null;
+function _showNotifPopup(title, message, color, iconClass) {
+    color = color || '#00b14f';
+    iconClass = iconClass || 'fa-bell';
+
+    // Remove existing popup
+    var existing = document.getElementById('_notifPopup');
+    if (existing) existing.remove();
+    if (_notifPopupTimer) clearTimeout(_notifPopupTimer);
+
+    var popup = document.createElement('div');
+    popup.id = '_notifPopup';
+    popup.style.cssText = [
+        'position:fixed',
+        'top:16px',
+        'left:50%',
+        'transform:translateX(-50%) translateY(-80px)',
+        'z-index:99999',
+        'background:var(--bg-card, #1e293b)',
+        'color:var(--text-primary, #f1f5f9)',
+        'border:1.5px solid ' + color,
+        'border-radius:16px',
+        'padding:12px 18px',
+        'min-width:280px',
+        'max-width:340px',
+        'box-shadow:0 8px 32px rgba(0,0,0,0.35)',
+        'display:flex',
+        'align-items:flex-start',
+        'gap:12px',
+        'transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s',
+        'opacity:0',
+        'cursor:pointer'
+    ].join(';');
+
+    popup.innerHTML =
+        '<div style="width:34px;height:34px;border-radius:50%;background:' + color + '22;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<i class="fas ' + iconClass + '" style="font-size:0.85rem;color:' + color + ';"></i>' +
+        '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:0.82rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (title || 'Autoride') + '</div>' +
+            '<div style="font-size:0.75rem;color:var(--text-muted,#94a3b8);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + (message || '') + '</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'_notifPopup\').remove()" style="background:none;border:none;color:var(--text-muted,#94a3b8);font-size:1rem;cursor:pointer;padding:0;line-height:1;flex-shrink:0;">&times;</button>';
+
+    // Tap to open notifications
+    popup.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'BUTTON') {
+            showOverlay('page-notifications');
+        }
+    });
+
+    document.body.appendChild(popup);
+
+    // Animate in
+    requestAnimationFrame(function() {
+        popup.style.opacity = '1';
+        popup.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    // Auto dismiss after 5s
+    _notifPopupTimer = setTimeout(function() {
+        if (popup.parentNode) {
+            popup.style.opacity = '0';
+            popup.style.transform = 'translateX(-50%) translateY(-80px)';
+            setTimeout(function() { if (popup.parentNode) popup.remove(); }, 300);
+        }
+    }, 5000);
 }
 
 function unsubscribeFromNotifications() {

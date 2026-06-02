@@ -2284,8 +2284,16 @@
                     const newOnes = list.filter(n => !window._adminNotifKnownIds.has(n.id) && !n.is_read);
                     if (newOnes.length === 1) {
                         window._adminShowToast(newOnes[0].title, newOnes[0].message);
+                        // Auto-refresh Extensions tab if it's an extension request
+                        if (newOnes[0].type === 'admin_extension_request') {
+                            if (typeof Extensions !== 'undefined') Extensions.load();
+                        }
                     } else if (newOnes.length > 1) {
                         window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
+                        // Refresh extensions if any are extension requests
+                        if (newOnes.some(n => n.type === 'admin_extension_request')) {
+                            if (typeof Extensions !== 'undefined') Extensions.load();
+                        }
                     }
                 }
                 // Update known IDs
