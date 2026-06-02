@@ -7274,7 +7274,7 @@ def get_vehicle_categories():
                 -- Use image from first AVAILABLE unit (not booked/maintenance/etc.)
                 -- Falls back to any unit image if none are available
                 COALESCE(
-                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN vehicle_image END),
+                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked','Rented') THEN vehicle_image END),
                     MIN(vehicle_image)
                 ) as vehicle_image,
 
@@ -7292,7 +7292,7 @@ def get_vehicle_categories():
 
                 COUNT(*) as total_units,
 
-                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN 1 ELSE 0 END) as available_units
+                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked','Rented') THEN 1 ELSE 0 END) as available_units
 
             FROM vehicles
 
@@ -8059,26 +8059,21 @@ def get_vehicle_units():
     if not brand or not model:
         return jsonify({'error': 'brand and model are required'}), 400
 
-    UNAVAILABLE = ('Maintenance', 'Repair', 'Service', 'Sold', 'Booked')
-
     try:
         cur = get_cursor()
+        # Exclude unavailable statuses using explicit placeholders (psycopg3 compatible)
+        unavailable = ['Maintenance', 'Repair', 'Service', 'Sold', 'Booked', 'Rented']
+        placeholders = ','.join(['%s'] * len(unavailable))
+
         if color and color != 'all' and color != 'Not Specified':
             cur.execute(
-                """SELECT * FROM vehicles
-                   WHERE brand = %s AND model = %s
-                     AND COALESCE(color, 'Not Specified') = %s
-                     AND status NOT IN %s
-                   ORDER BY id ASC""",
-                (brand, model, color, UNAVAILABLE)
+                f"SELECT * FROM vehicles WHERE brand = %s AND model = %s AND COALESCE(color, 'Not Specified') = %s AND status NOT IN ({placeholders}) ORDER BY id ASC",
+                [brand, model, color] + unavailable
             )
         else:
             cur.execute(
-                """SELECT * FROM vehicles
-                   WHERE brand = %s AND model = %s
-                     AND status NOT IN %s
-                   ORDER BY id ASC""",
-                (brand, model, UNAVAILABLE)
+                f"SELECT * FROM vehicles WHERE brand = %s AND model = %s AND status NOT IN ({placeholders}) ORDER BY id ASC",
+                [brand, model] + unavailable
             )
         units = cur.fetchall()
         result = []
@@ -8100,6 +8095,7 @@ def get_vehicle_units():
             result.append(d)
         return jsonify(result), 200
     except Exception as e:
+        import traceback; traceback.print_exc()
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
