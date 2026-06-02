@@ -8579,6 +8579,101 @@ def debug_test_push():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/debug/test-user-push', methods=['POST'])
+def debug_test_user_push():
+    """
+    Debug: send a test push notification to a customer by user_id.
+    Body: { "user_id": int, "title": "optional", "body": "optional" }
+    Also returns diagnostic info about token and FCM config.
+    """
+    data = request.get_json(silent=True) or {}
+    user_id = data.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+    try:
+        import os
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, fcm_token FROM users WHERE id = %s", (int(user_id),))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        token = user.get('fcm_token')
+        has_sa  = bool(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
+        has_key = bool(os.environ.get('FCM_SERVER_KEY') or getattr(__import__('config'), 'FCM_SERVER_KEY', None))
+
+        diag = {
+            'user_id': user_id,
+            'full_name': user.get('full_name'),
+            'has_token': bool(token),
+            'token_prefix': (token[:20] + '...') if token else None,
+            'has_firebase_service_account_env': has_sa,
+            'has_fcm_server_key': has_key,
+        }
+
+        if not token:
+            return jsonify({'error': 'No FCM token registered for this user', 'diag': diag}), 400
+
+        from notifications import fcm_service
+        title = data.get('title', 'Autoride Test')
+        body  = data.get('body',  'Push notifications are working! ??')
+        ok = fcm_service.send_push(token, title, body)
+        diag['push_sent'] = ok
+        return jsonify({'success': ok, 'diag': diag}), 200 if ok else 500
+    except Exception as e:
+        import traceback
+        return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/debug/fcm-config', methods=['GET'])
+def debug_fcm_config():
+    """
+    Check FCM configuration on the server without sending anything.
+    Returns which credentials are present and whether the service account is valid.
+    """
+    import os
+    sa_env = os.environ.get('FIREBASE_SERVICE_ACCOUNT', '')
+    server_key = os.environ.get('FCM_SERVER_KEY', '')
+
+    result = {
+        'has_service_account_env': bool(sa_env),
+        'service_account_length': len(sa_env),
+        'has_server_key_env': bool(server_key),
+        'server_key_prefix': (server_key[:10] + '...') if server_key else None,
+    }
+
+    # Try parsing the service account JSON
+    if sa_env:
+        try:
+            import json
+            sa = json.loads(sa_env)
+            result['sa_project_id']    = sa.get('project_id', 'missing')
+            result['sa_client_email']  = sa.get('client_email', 'missing')
+            result['sa_has_private_key'] = bool(sa.get('private_key'))
+            result['sa_valid_json']    = True
+        except Exception as e:
+            result['sa_valid_json']  = False
+            result['sa_parse_error'] = str(e)
+    else:
+        # Check for local file fallback
+        import os as _os
+        sa_path = _os.path.join(_os.path.dirname(__file__), 'firebase-service-account.json')
+        result['local_sa_file_exists'] = _os.path.exists(sa_path)
+
+    # Try getting an access token (no push sent)
+    try:
+        from notifications import fcm_service
+        token = fcm_service._get_access_token()
+        result['can_get_access_token'] = bool(token)
+    except Exception as e:
+        result['can_get_access_token'] = False
+        result['access_token_error']   = str(e)
+
+    return jsonify(result), 200
+
+
 @app.route('/debug/admins-schema-check', methods=['GET'])
 def debug_admins_schema_check():
     """
