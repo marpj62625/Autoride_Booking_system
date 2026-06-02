@@ -505,7 +505,7 @@ var NAV_MAP = {
 
 function showPage(id) {
   // Save booking session if user navigates away mid-booking
-  BookingSession.save();
+  try { BookingSession.save(); } catch(e) {}
 
   // Close ALL overlays first
   var overlays = document.querySelectorAll('.overlay-page');
@@ -565,17 +565,20 @@ function showPage(id) {
   if (id === 'page-home') loadHome();
   if (id === 'page-vehicles') {
     // Check for saved booking session (1-min TTL)
-    var restored = BookingSession.restore();
-    if (!restored) loadVehicles();
+    try {
+      var restored = BookingSession.restore();
+      if (!restored) loadVehicles();
+    } catch(e) { loadVehicles(); }
   }
   if (id === 'page-bookings') {
-    // Check for saved payment session (1-min TTL)
-    var paySession = BookingSession.load();
-    if (paySession && paySession.overlays && paySession.overlays.payment) {
-      BookingSession.restore();
-    } else {
-      loadBookings();
-    }
+    try {
+      var paySession = BookingSession.load();
+      if (paySession && paySession.overlays && paySession.overlays.payment) {
+        BookingSession.restore();
+      } else {
+        loadBookings();
+      }
+    } catch(e) { loadBookings(); }
   }
   if (id === 'page-profile') loadProfile();
   if (id === 'page-more') loadMorePage();
@@ -663,6 +666,9 @@ function initApp() {
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
+  // Clear stale booking session at every app start
+  try { BookingSession.clear(); } catch(e) {}
+
   Session.load().then(function(user) {
     if (user && user.id) {
       currentUser = user;
