@@ -7250,7 +7250,12 @@ def get_vehicle_categories():
 
                 model,
 
-                MIN(vehicle_image) as vehicle_image,
+                -- Use image from first AVAILABLE unit (not booked/maintenance/etc.)
+                -- Falls back to any unit image if none are available
+                COALESCE(
+                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN vehicle_image END),
+                    MIN(vehicle_image)
+                ) as vehicle_image,
 
                 MIN(daily_rate) as daily_rate,
 
@@ -8025,24 +8030,34 @@ def get_vehicle_colors():
 
 @app.route('/vehicles/units', methods=['GET'])
 def get_vehicle_units():
-    """Get all individual units for a brand+model, optionally filtered by color. Shows all statuses."""
+    """Get all individual units for a brand+model, optionally filtered by color. Only shows available units."""
     brand = request.args.get('brand', '')
     model = request.args.get('model', '')
     color = request.args.get('color', '')
     user_id = request.args.get('user_id', '')
     if not brand or not model:
         return jsonify({'error': 'brand and model are required'}), 400
+
+    UNAVAILABLE = ('Maintenance', 'Repair', 'Service', 'Sold', 'Booked')
+
     try:
         cur = get_cursor()
         if color and color != 'all' and color != 'Not Specified':
             cur.execute(
-                "SELECT * FROM vehicles WHERE brand = %s AND model = %s AND COALESCE(color, 'Not Specified') = %s ORDER BY status ASC, id ASC",
-                (brand, model, color)
+                """SELECT * FROM vehicles
+                   WHERE brand = %s AND model = %s
+                     AND COALESCE(color, 'Not Specified') = %s
+                     AND status NOT IN %s
+                   ORDER BY id ASC""",
+                (brand, model, color, UNAVAILABLE)
             )
         else:
             cur.execute(
-                "SELECT * FROM vehicles WHERE brand = %s AND model = %s ORDER BY status ASC, id ASC",
-                (brand, model)
+                """SELECT * FROM vehicles
+                   WHERE brand = %s AND model = %s
+                     AND status NOT IN %s
+                   ORDER BY id ASC""",
+                (brand, model, UNAVAILABLE)
             )
         units = cur.fetchall()
         result = []

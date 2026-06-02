@@ -1688,16 +1688,24 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
         imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/400x200?text=No+Image\'" style="width:100%;height:100%;object-fit:cover;">';
       }
       if (bookBtn) {
-        var canBook = parseInt(currentUser.isVerified) === 2;
+        var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
+        var hasActiveBooking = _allBookingsData.some(function(b) {
+          return ACTIVE_STATUSES.indexOf(b.status) !== -1;
+        });
+        var canBook = parseInt(currentUser.isVerified) === 2 && !hasActiveBooking;
         if (canBook) {
           bookBtn.removeAttribute('disabled');
           bookBtn.style.opacity = '1';
           bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Book';
           (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
-        } else {
+        } else if (parseInt(currentUser.isVerified) !== 2) {
           bookBtn.setAttribute('disabled', 'true');
           bookBtn.style.opacity = '0.5';
           bookBtn.innerHTML = '<i class="fas fa-lock"></i> Verify License';
+        } else {
+          bookBtn.setAttribute('disabled', 'true');
+          bookBtn.style.opacity = '0.5';
+          bookBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Active Booking';
         }
       }
       unitWrap.style.display = 'block';
