@@ -696,6 +696,7 @@ function initApp() {
     }
     updateNotifBadge();
   }).catch(function() {
+    clearTimeout(_initTimeout);
     showPage('page-login');
   });
 }
