@@ -531,6 +531,27 @@ with app.app_context():
     migrate_fcm_tokens()
 
 
+def migrate_refund_columns():
+    """Ensures refund tracking columns exist on bookings table."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12,2)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_method VARCHAR(100)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_ref VARCHAR(200)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_note TEXT")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_proof_url TEXT")
+        commit_db()
+        print("DEBUG: Refund Columns Migration Successful")
+    except Exception as e:
+        print(f"DEBUG: Refund Columns Migration Failed: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+with app.app_context():
+    migrate_refund_columns()
+
+
 
 @app.before_request
 
