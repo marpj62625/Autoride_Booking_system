@@ -8050,17 +8050,14 @@ def get_booking_payment_proof(booking_id):
     try:
         cur = get_cursor()
         cur.execute("""
-            SELECT id, amount, method, reference_number, payment_proof, status, created_at
+            SELECT id, amount, method, reference_number, payment_proof, status
             FROM payments
             WHERE booking_id = %s
-            ORDER BY created_at ASC
         """, (booking_id,))
         rows = cur.fetchall()
         result = []
         for row in rows:
             entry = dict(row)
-            if entry.get('created_at'):
-                entry['created_at'] = entry['created_at'].isoformat()
             proof = entry.get('payment_proof') or ''
             if proof and not proof.startswith('http'):
                 proof = f"https://autoride-booking-system.vercel.app/api/uploads/{proof}"

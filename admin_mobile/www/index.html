@@ -1490,7 +1490,7 @@
     <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
             <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" style="position: absolute; left: 0; background: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('bookingDetailsModal').style.display='none';modalClose();" style="position: absolute; left: 0; background: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
                 <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Booking Details</h2>
             </div>
             <div id="bookingDetailContent">
@@ -2001,7 +2001,7 @@
                 <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -6px auto 12px;"></div>
                 <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: white;">Vehicle Inspection</h3>
                 <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
-                <button onclick="document.getElementById('inspectionModal').style.display='none'" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
             </div>
             
             <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
@@ -2393,6 +2393,10 @@
         }
     };
     window.adminAuth = adminAuth;
+
+    // --- MODAL SCROLL LOCK ---
+    window.modalOpen = function() { document.body.style.overflow = 'hidden'; };
+    window.modalClose = function() { document.body.style.overflow = ''; };
 
     // --- DARK MODE TOGGLE ---
     function toggleDarkMode() {
@@ -3133,7 +3137,7 @@
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
                 if (res.ok) {
                     showNotification('Booking marked as Fully Paid!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3152,7 +3156,7 @@
                 });
                 if (res.ok) {
                     showNotification('Booking Cancelled!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3167,7 +3171,7 @@
                 const res = await fetch(`${API_URL}/bookings/${id}/approve`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Booking Approved!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3187,7 +3191,7 @@
                 });
                 if (res.ok) {
                     showNotification('Booking Rejected!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3202,7 +3206,7 @@
                 const res = await fetch(`${API_URL}/bookings/${id}/pickup`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Marked as Picked Up!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3217,7 +3221,7 @@
                 const res = await fetch(`${API_URL}/bookings/${id}/complete`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Booking Completed!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3412,6 +3416,7 @@
             `;
             document.getElementById('bookingDetailContent').innerHTML = content;
             document.getElementById('bookingDetailsModal').style.display = 'flex'; // Use flex for centering
+            modalOpen();
 
             // Attach Inspection Events
             const btnAdd = document.getElementById('mBtnAddInsp');
@@ -5447,7 +5452,7 @@
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
             document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
             
-            document.getElementById('inspectionModal').style.display = 'block';
+            document.getElementById('inspectionModal').style.display = 'flex'; modalOpen();
         },
 
         handlePhotoSelect(input) {
@@ -5494,7 +5499,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     showNotification('Inspection report submitted!', 'success');
-                    document.getElementById('inspectionModal').style.display = 'none';
+                    document.getElementById('inspectionModal').style.display = 'none'; modalClose();
                     Bookings.refresh();
                 } else {
                     showNotification(data.error || 'Submission failed', 'error');
