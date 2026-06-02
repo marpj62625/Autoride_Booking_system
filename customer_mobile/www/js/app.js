@@ -3236,6 +3236,60 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
 }
 
 
+function _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days) {
+  var container = document.getElementById('bookingDetailContent');
+  if (!container) return;
+  var parts = [];
+  parts.push('<div class="page-header">');
+  parts.push('<h2 style="text-align:center;flex:1;">Waiting for Payment</h2>');
+  parts.push('</div>');
+  parts.push('<div class="scroll-content" style="padding:20px;text-align:center;padding-top:40px;">');
+  parts.push('<div style="width:80px;height:80px;border-radius:50%;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">');
+  parts.push('<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>');
+  parts.push('<h3 style="font-size:1.1rem;font-weight:800;margin-bottom:8px;">Complete Payment in ' + methodLabel + '</h3>');
+  parts.push('<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">Complete your payment in ' + methodLabel + ', then return here.</p>');
+  parts.push('<div style="background:var(--bg-card);border-radius:12px;padding:16px;margin-bottom:24px;">');
+  parts.push('<div style="font-size:0.75rem;color:var(--text-secondary);">' + days + '-day extension fee</div>');
+  parts.push('<div style="font-size:1.4rem;font-weight:900;color:var(--primary);">' + formatPHP(price) + '</div></div>');
+  parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
+  parts.push('<button class="btn-secondary" onclick="closeOverlay(\'page-booking-detail\')" style="width:100%;">Cancel</button>');
+  parts.push('</div>');
+  container.innerHTML = parts.join('');
+}
+
+function _checkExtPayment(bookingId, newEnd, price, methodLabel, days) {
+  showLoading(true);
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    window.Capacitor.Plugins.Browser.close().catch(function() {});
+  }
+  apiCall('/paymongo/status/' + bookingId)
+    .then(function(data) {
+      showLoading(false);
+      if (data.paid) {
+        // Payment confirmed - now submit extension request
+        var fd = new FormData();
+        fd.append('new_end_date', newEnd);
+        fd.append('extension_price', price);
+        fd.append('payment_method', methodLabel);
+        fd.append('reference_number', '');
+        fetch(API_BASE + '/bookings/' + bookingId + '/extend', { method: 'POST', body: fd })
+          .then(function(r) { return r.json(); })
+          .then(function(extData) {
+            if (extData.error) { showToast(extData.error, 'error'); return; }
+            closeOverlay('page-booking-detail');
+            showToast('Extension request submitted! Awaiting admin approval.', 'success');
+            NotifStore.add('Extension request for Booking #' + bookingId + ' submitted.');
+            loadBookings();
+          }).catch(function() { showToast('Payment confirmed but extension submission failed. Please contact support.', 'error'); });
+      } else {
+        showToast('Payment not yet confirmed. Please wait and try again.', 'info');
+      }
+    }).catch(function() {
+      showLoading(false);
+      showToast('Could not verify payment. Please check your bookings.', 'error');
+    });
+}
+
 function pickExtProof() {
   var input = document.createElement('input');
   input.type = 'file';
@@ -3303,6 +3357,38 @@ function submitExtension(bookingId) {
   var method = (document.getElementById('extMethod') || {}).value || 'cash';
   var ref = (document.getElementById('extRef') || {}).value || '';
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Cash (Over the counter)';
+
+  // PayMongo for GCash / Maya
+  if (method === 'gcash' || method === 'maya') {
+    showLoading(true);
+    apiCall('/paymongo/create-payment', {
+      method: 'POST',
+      body: JSON.stringify({
+        booking_id: bookingId,
+        amount: price,
+        method: method,
+        description: 'Booking #' + bookingId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
+        customer_name: currentUser.fullName || '',
+        customer_email: currentUser.email || ''
+      })
+    }).then(function(data) {
+      showLoading(false);
+      if (data.checkout_url) {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
+        } else {
+          window.open(data.checkout_url, '_blank');
+        }
+        _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days);
+      } else {
+        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+      }
+    }).catch(function(err) {
+      showLoading(false);
+      if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+    });
+    return;
+  }
 
   showLoading(true);
 
