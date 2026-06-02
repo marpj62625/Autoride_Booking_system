@@ -2008,6 +2008,18 @@
                 <input type="hidden" id="inspectBookingId">
                 <input type="hidden" id="inspectType">
 
+                <!-- Receipt section — populated by openModal -->
+                <div id="inspectReceiptSection" style="margin-bottom:20px;padding:14px;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.3);border-radius:12px;">
+                    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;letter-spacing:0.05em;">
+                        <i class="fas fa-receipt" style="color:#00B14F;margin-right:5px;"></i>Customer Receipt
+                    </div>
+                    <button type="button" id="inspectReceiptBtn"
+                        style="width:100%;padding:11px;background:#00B14F;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;">
+                        <i class="fas fa-file-pdf" style="margin-right:6px;"></i>View Receipt / PDF
+                    </button>
+                    <div id="inspectProofImages" style="margin-top:10px;"></div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
@@ -5458,12 +5470,37 @@
             document.getElementById('inspectionForm').reset();
             this.currentPhotos = [];
             document.getElementById('inspectPhotoPreview').innerHTML = '';
+            document.getElementById('inspectProofImages').innerHTML = '';
 
             document.getElementById('inspectBookingId').value = bookingId;
             document.getElementById('inspectType').value = type;
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
             document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
-            
+
+            // Set receipt button
+            const receiptUrl = `${API_BASE}/api/bookings/${bookingId}/receipt`;
+            document.getElementById('inspectReceiptBtn').onclick = () => window.open(receiptUrl, '_blank');
+
+            // Load payment proof images asynchronously
+            fetch(`${API_BASE}/api/admin/bookings/${bookingId}/payment-proof`)
+                .then(r => r.json())
+                .then(data => {
+                    const proofs = Array.isArray(data) ? data.filter(p => p.payment_proof_url) : [];
+                    const container = document.getElementById('inspectProofImages');
+                    if (!container) return;
+                    if (proofs.length === 0) { container.innerHTML = ''; return; }
+                    container.innerHTML = proofs.map(p => `
+                        <div style="margin-top:8px;">
+                            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
+                                ${p.method || 'Payment'}${p.reference_number ? ' &bull; ' + p.reference_number : ''}
+                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
+                            </div>
+                            <img src="${p.payment_proof_url}" onclick="window.open('${p.payment_proof_url}','_blank')"
+                                style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;max-height:180px;object-fit:contain;background:rgba(0,0,0,0.3);">
+                        </div>
+                    `).join('');
+                }).catch(() => {});
+
             document.getElementById('inspectionModal').style.display = 'flex'; modalOpen();
         },
 
