@@ -1258,8 +1258,11 @@ function _normDateStr(d) {
   if (!d) return '';
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) return String(d);
-  // Parse via Date object and extract local date parts
-  var dt = new Date(d);
+  // Strip time component first
+  var s = String(d).split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Parse via Date object and extract LOCAL date parts (no UTC conversion)
+  var dt = new Date(s);
   if (isNaN(dt.getTime())) return String(d);
   var y = dt.getFullYear();
   var m = String(dt.getMonth() + 1).padStart(2, '0');
@@ -3144,10 +3147,13 @@ function openExtendBooking(bookingId, currentEndDate, dailyRate) {
       if (_allBookingsData[i].id === bookingId) { activeBookingData = _allBookingsData[i]; break; }
     }
   }
-  // Normalize date now, before passing to form
-  var endDate = (currentEndDate || '').toString().split('T')[0];
+  // Prefer activeBookingData.end_date as authoritative source (avoids attribute-escaping issues)
+  var endDate = '';
+  if (activeBookingData && activeBookingData.end_date) {
+    endDate = activeBookingData.end_date.toString().split('T')[0];
+  }
   if (!endDate || endDate === 'undefined') {
-    endDate = activeBookingData ? (activeBookingData.end_date || '').toString().split('T')[0] : '';
+    endDate = (currentEndDate || '').toString().split('T')[0];
   }
   var rate = parseFloat(dailyRate) || (activeBookingData ? parseFloat(activeBookingData.daily_rate || 0) : 0);
   var el = document.getElementById('bookingDetailContent');
@@ -3165,26 +3171,50 @@ function openExtendBooking(bookingId, currentEndDate, dailyRate) {
 
 function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isModal, prevHtml) {
   var rate = parseFloat(dailyRate) || 0;
-  // Normalize date — try multiple sources
-  var endDateNorm = (currentEndDate || '').toString().split('T')[0];
-  if (!endDateNorm || endDateNorm === 'undefined' || endDateNorm === '') {
-    // Try activeBookingData
-    if (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.end_date) {
-      endDateNorm = activeBookingData.end_date.toString().split('T')[0];
+
+  // Helper: extract YYYY-MM-DD from any date value without UTC conversion
+  function _toLocalDateStr(val) {
+    if (!val) return '';
+    var s = val.toString().split('T')[0];
+    // Validate YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Try parsing and extracting local parts
+    var dt = new Date(s);
+    if (!isNaN(dt.getTime())) {
+      var y = dt.getFullYear();
+      var mo = String(dt.getMonth() + 1).padStart(2, '0');
+      var dy = String(dt.getDate()).padStart(2, '0');
+      return y + '-' + mo + '-' + dy;
     }
+    return '';
   }
-  if (!endDateNorm || endDateNorm === 'undefined') endDateNorm = '';
+
+  // Normalize date — prefer activeBookingData as most reliable source
+  var endDateNorm = _toLocalDateStr(currentEndDate);
+  if (!endDateNorm && typeof activeBookingData !== 'undefined' && activeBookingData) {
+    endDateNorm = _toLocalDateStr(activeBookingData.end_date);
+  }
+  if (!endDateNorm) endDateNorm = '';
   currentEndDate = endDateNorm;
+
   // Also try to get daily_rate from activeBookingData if not provided
   if (!rate && typeof activeBookingData !== 'undefined' && activeBookingData) {
     rate = parseFloat(activeBookingData.daily_rate || 0);
   }
+
+  // Calculate minDate (day after current end) using LOCAL date arithmetic — no UTC conversion
   var minDate = currentEndDate;
-  try {
-    var d = new Date(currentEndDate + 'T00:00:00');
-    d.setDate(d.getDate() + 1);
-    minDate = d.toISOString().split('T')[0];
-  } catch(e) {}
+  if (currentEndDate) {
+    try {
+      var parts0 = currentEndDate.split('-');
+      var d = new Date(parseInt(parts0[0]), parseInt(parts0[1]) - 1, parseInt(parts0[2]));
+      d.setDate(d.getDate() + 1);
+      var y = d.getFullYear();
+      var mo = String(d.getMonth() + 1).padStart(2, '0');
+      var dy = String(d.getDate()).padStart(2, '0');
+      minDate = y + '-' + mo + '-' + dy;
+    } catch(e) {}
+  }
 
   // Build HTML using array join to avoid quote escaping issues
   var parts = [];

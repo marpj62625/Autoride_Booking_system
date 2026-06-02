@@ -3166,8 +3166,15 @@ def user_bookings():
 
         data = cur.fetchall()
 
-        
-        bookings_list = [dict(row) for row in data]
+        bookings_list = []
+        for row in data:
+            d = dict(row)
+            # Explicitly serialize date fields to ISO string to prevent serialization ambiguity
+            import datetime
+            for field in ('start_date', 'end_date'):
+                if isinstance(d.get(field), (datetime.date, datetime.datetime)):
+                    d[field] = d[field].isoformat()[:10]
+            bookings_list.append(d)
 
         return jsonify(bookings_list), 200
 
