@@ -2466,8 +2466,27 @@
     window.adminAuth = adminAuth;
 
     // --- MODAL SCROLL LOCK ---
-    window.modalOpen = function() { document.body.style.overflow = 'hidden'; };
-    window.modalClose = function() { document.body.style.overflow = ''; };
+    window.modalOpen = function() {
+        document.body.style.overflow = 'hidden';
+        document.documentElement.style.overflow = 'hidden';
+    };
+    window.modalClose = function() {
+        // Only release scroll lock if no other modals are currently visible
+        var openModals = document.querySelectorAll(
+            '#bookingDetailsModal, #inspectionModal, #vehicleModal, ' +
+            '#umModal, #licensePreviewModal, #receiptPreviewModal, ' +
+            '#changePasswordModal, #systemConfigModal, #staffModal'
+        );
+        var anyOpen = false;
+        for (var i = 0; i < openModals.length; i++) {
+            var s = openModals[i].style.display;
+            if (s && s !== 'none') { anyOpen = true; break; }
+        }
+        if (!anyOpen) {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        }
+    };
 
     // --- DARK MODE TOGGLE ---
     function toggleDarkMode() {
