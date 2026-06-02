@@ -712,6 +712,25 @@
             color: white;
         }
 
+        /* ---- INSPECTION MODAL BACKDROP ---- */
+        #inspectionModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 8000;
+            display: flex;
+            align-items: flex-end;
+        }
+        #inspectionModal .modal-content {
+            background: var(--surface-solid, #1e293b);
+            border-radius: 24px 24px 0 0;
+            max-height: 92vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
         /* ---- ADMIN NOTIFICATION TOAST ---- */
         #adminNotifToast {
             position: fixed;
@@ -1977,15 +1996,15 @@
 
     <!-- INSPECTION MODAL -->
     <div id="inspectionModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; animation: slideUp 0.3s ease-out;">
-            <div style="padding: 24px; background: linear-gradient(135deg, var(--surface), #1e293b); border-bottom: 1px solid var(--border); position: relative;">
-                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -10px auto 15px;"></div>
+        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out;">
+            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, var(--surface), #1e293b); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -6px auto 12px;"></div>
                 <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: white;">Vehicle Inspection</h3>
                 <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
                 <button onclick="document.getElementById('inspectionModal').style.display='none'" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
             </div>
             
-            <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; max-height: 70vh; overflow-y: auto;">
+            <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
                 <input type="hidden" id="inspectBookingId">
                 <input type="hidden" id="inspectType">
 
@@ -3244,12 +3263,40 @@
                         <div style="display:none">
                     `;
                 } else {
-                    // Show raw response for debugging
                     licenseHtml = `<p style="font-size:0.8rem;color:#64748b;">No license data found. (API returned: ${JSON.stringify(lData)})</p>`;
                 }
             } catch (e) {
                 console.error('License fetch error:', e);
                 licenseHtml = `<p style="font-size:0.8rem;color:#ef4444;">Error loading license: ${e.message}</p>`;
+            }
+
+            // Fetch payment proof for this booking
+            let paymentProofHtml = '';
+            try {
+                const ppRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/payment-proof`);
+                const ppData = ppRes.ok ? await ppRes.json() : [];
+                const proofs = Array.isArray(ppData) ? ppData.filter(p => p.payment_proof_url) : [];
+                if (proofs.length > 0) {
+                    paymentProofHtml = `
+                        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:0;background:#f8fafc;">
+                            <h3 style="font-size:1rem;color:#0f172a;font-weight:800;margin:0 0 12px;">Payment Receipt${proofs.length > 1 ? 's' : ''}</h3>
+                            ${proofs.map((p, i) => `
+                                <div style="margin-bottom:${i < proofs.length-1 ? '14px' : '0'};border-bottom:${i < proofs.length-1 ? '1px solid #e2e8f0' : 'none'};padding-bottom:${i < proofs.length-1 ? '14px' : '0'};">
+                                    <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#64748b;margin-bottom:8px;">
+                                        <span><strong style="color:#0f172a;">${p.method || 'Payment'}</strong>${p.reference_number ? ' &bull; Ref: ' + p.reference_number : ''}</span>
+                                        <span style="color:#16a34a;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
+                                    </div>
+                                    <img src="${p.payment_proof_url}" alt="Payment Receipt"
+                                        onclick="window.open('${p.payment_proof_url}','_blank')"
+                                        style="width:100%;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;max-height:220px;object-fit:contain;background:#fff;">
+                                    <p style="font-size:0.7rem;color:#94a3b8;text-align:center;margin:4px 0 0;">Tap image to view full size</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+            } catch(e) {
+                console.error('Payment proof fetch error:', e);
             }
 
             const paymentBg = b.payment_status === 'Paid' ? '#dcfce7' : '#fee2e2';
@@ -3336,6 +3383,7 @@
                     </div>
 
                     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+                        ${paymentProofHtml}
                         ${isApprovable ? `
                             <button onclick="Bookings.approve(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Approve Booking</button>
                             <button onclick="Bookings.reject(${b.id})" style="width: 100%; background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Reject Booking</button>

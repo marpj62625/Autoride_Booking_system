@@ -8044,6 +8044,34 @@ def get_booking_license_details(booking_id):
         print(f"Error fetching license details for booking {booking_id}:", e)
         return jsonify({'error': str(e)}), 500
 
+@app.route('/admin/bookings/<int:booking_id>/payment-proof', methods=['GET'])
+def get_booking_payment_proof(booking_id):
+    """Return all payment records (with proof images) for a booking."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, amount, method, reference_number, payment_proof, status, created_at
+            FROM payments
+            WHERE booking_id = %s
+            ORDER BY created_at ASC
+        """, (booking_id,))
+        rows = cur.fetchall()
+        result = []
+        for row in rows:
+            entry = dict(row)
+            if entry.get('created_at'):
+                entry['created_at'] = entry['created_at'].isoformat()
+            proof = entry.get('payment_proof') or ''
+            if proof and not proof.startswith('http'):
+                proof = f"https://autoride-booking-system.vercel.app/api/uploads/{proof}"
+            entry['payment_proof_url'] = proof
+            result.append(entry)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/admin/users/<int:user_id>/license-details', methods=['GET'])
 def get_user_license_details(user_id):
     try:
@@ -8060,6 +8088,8 @@ def get_user_license_details(user_id):
     except Exception as e:
         print(f"Error fetching license details for user {user_id}:", e)
         return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 @app.route('/user/license-details', methods=['GET'])
 def get_license_details():
