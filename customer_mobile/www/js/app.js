@@ -3152,6 +3152,14 @@ function openExtendBooking(bookingId, currentEndDate, dailyRate) {
 
 function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isModal, prevHtml) {
   var rate = parseFloat(dailyRate) || 0;
+  // Normalize date to YYYY-MM-DD
+  var endDateNorm = (currentEndDate || '').toString().split('T')[0];
+  if (!endDateNorm || endDateNorm === 'undefined') {
+    // Try to get from activeBookingData
+    var abd = typeof activeBookingData !== 'undefined' && activeBookingData;
+    endDateNorm = abd ? (abd.end_date || '').toString().split('T')[0] : '';
+  }
+  currentEndDate = endDateNorm;
   var minDate = currentEndDate;
   try {
     var d = new Date(currentEndDate + 'T00:00:00');
@@ -3242,8 +3250,10 @@ function calcExtPrice(currentEndDate, dailyRate) {
   var newEnd = (document.getElementById('extNewEnd') || {}).value;
   if (!newEnd) return;
   try {
-    var orig = new Date(currentEndDate + 'T00:00:00');
+    var origStr = (currentEndDate || '').toString().split('T')[0];
+    var orig = new Date(origStr + 'T00:00:00');
     var next = new Date(newEnd + 'T00:00:00');
+    if (isNaN(orig.getTime()) || isNaN(next.getTime())) return;
     var days = Math.round((next - orig) / (1000 * 60 * 60 * 24));
     if (days <= 0) { document.getElementById('extPriceBox').style.display = 'none'; return; }
     var price = days * (parseFloat(dailyRate) || 0);

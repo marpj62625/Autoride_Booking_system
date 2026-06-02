@@ -3146,7 +3146,7 @@ def user_bookings():
                    b.payment_type, b.amount_paid, b.balance_amount,
                    b.applied_coupon_id, b.discount_amount, b.points_redeemed, b.points_earned,
                    b.cancellation_reason, b.cancelled_by,
-                   v.brand, v.model, v.plate_number, v.vehicle_image,
+                   v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
                    COALESCE(ld.license_number, u.license_number) AS license_number,
                    COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
