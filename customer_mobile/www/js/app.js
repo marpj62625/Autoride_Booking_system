@@ -3135,31 +3135,47 @@ function renderBookingDetail(b) {
 }
 
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {
+  // Set activeBookingData from bookings cache if not already set
+  if ((!activeBookingData || activeBookingData.id !== bookingId) && typeof _allBookingsData !== 'undefined') {
+    for (var i = 0; i < _allBookingsData.length; i++) {
+      if (_allBookingsData[i].id === bookingId) { activeBookingData = _allBookingsData[i]; break; }
+    }
+  }
+  // Normalize date now, before passing to form
+  var endDate = (currentEndDate || '').toString().split('T')[0];
+  if (!endDate || endDate === 'undefined') {
+    endDate = activeBookingData ? (activeBookingData.end_date || '').toString().split('T')[0] : '';
+  }
+  var rate = parseFloat(dailyRate) || (activeBookingData ? parseFloat(activeBookingData.daily_rate || 0) : 0);
   var el = document.getElementById('bookingDetailContent');
   if (!el) {
-    // Fallback - open a simple modal
     var modal = document.createElement('div');
     modal.id = 'extendModal';
     modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
     document.body.appendChild(modal);
-    _renderExtendForm(modal, bookingId, currentEndDate, dailyRate, true);
+    _renderExtendForm(modal, bookingId, endDate, rate, true);
     return;
   }
-  // Replace page-booking-detail content with the extend form
   var prev = el.innerHTML;
-  _renderExtendForm(el, bookingId, currentEndDate, dailyRate, false, prev);
+  _renderExtendForm(el, bookingId, endDate, rate, false, prev);
 }
 
 function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isModal, prevHtml) {
   var rate = parseFloat(dailyRate) || 0;
-  // Normalize date to YYYY-MM-DD
+  // Normalize date — try multiple sources
   var endDateNorm = (currentEndDate || '').toString().split('T')[0];
-  if (!endDateNorm || endDateNorm === 'undefined') {
-    // Try to get from activeBookingData
-    var abd = typeof activeBookingData !== 'undefined' && activeBookingData;
-    endDateNorm = abd ? (abd.end_date || '').toString().split('T')[0] : '';
+  if (!endDateNorm || endDateNorm === 'undefined' || endDateNorm === '') {
+    // Try activeBookingData
+    if (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.end_date) {
+      endDateNorm = activeBookingData.end_date.toString().split('T')[0];
+    }
   }
+  if (!endDateNorm || endDateNorm === 'undefined') endDateNorm = '';
   currentEndDate = endDateNorm;
+  // Also try to get daily_rate from activeBookingData if not provided
+  if (!rate && typeof activeBookingData !== 'undefined' && activeBookingData) {
+    rate = parseFloat(activeBookingData.daily_rate || 0);
+  }
   var minDate = currentEndDate;
   try {
     var d = new Date(currentEndDate + 'T00:00:00');
@@ -3307,8 +3323,11 @@ function pickExtProof() {
 function calcExtPrice(currentEndDate, dailyRate) {
   var newEnd = (document.getElementById('extNewEnd') || {}).value;
   if (!newEnd) return;
+  // Always read from hidden input for reliability
+  var origStr = (document.getElementById('extOrigEnd') || {}).value || currentEndDate || '';
+  origStr = origStr.toString().split('T')[0];
+  var rate = parseFloat((document.getElementById('extDailyRate') || {}).value || dailyRate || 0);
   try {
-    var origStr = (currentEndDate || '').toString().split('T')[0];
     var orig = new Date(origStr + 'T00:00:00');
     var next = new Date(newEnd + 'T00:00:00');
     if (isNaN(orig.getTime()) || isNaN(next.getTime())) return;
