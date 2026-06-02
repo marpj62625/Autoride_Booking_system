@@ -3359,37 +3359,7 @@
                         </div>
                     </div>
 
-                    <div style="margin-top: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h3 style="font-size: 1.1rem; color: #0f172a; font-weight: 800;">Vehicle Inspections</h3>
-                            <button id="mBtnAddInsp" style="padding: 8px 14px; background: #00B14F; border: none; color: white; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">+ New Inspection</button>
-                        </div>
 
-                        <div id="mInspList" style="min-height: 40px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
-                            <p style="font-size: 0.85rem; color: #94a3b8; text-align: center; margin: 20px 0;">No inspections yet.</p>
-                        </div>
-                    </div>
-
-                    <div id="mInspForm" style="display: none; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-                        <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 15px; font-weight: 800;">Add New Inspection</h4>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                            <select id="mfInspType" style="padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
-                                <option value="pickup">Pickup</option>
-                                <option value="return">Return</option>
-                            </select>
-                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
-                        </div>
-                        <select id="mfInspFuel" style="width: 100%; padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem;">
-                            <option value="Full">Full Tank</option>
-                            <option value="Empty">Empty</option>
-                        </select>
-                        <input type="file" id="mfInspPhotos" multiple accept="image/*" style="font-size: 0.8rem; color: #64748b; width: 100%; margin-bottom: 10px;">
-                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 70px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; padding: 12px; font-size: 0.85rem;"></textarea>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="mBtnCancelInsp" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.85rem; border-color: #cbd5e1; color: #64748b;">Cancel</button>
-                            <button id="mBtnSaveInsp" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.85rem; background: #00B14F; color: white; border: none;">Save</button>
-                        </div>
-                    </div>
 
                     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
                         ${isApprovable ? `
@@ -3397,9 +3367,7 @@
                             <button onclick="Bookings.reject(${b.id})" style="width: 100%; background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Reject Booking</button>
                         ` : ''}
 
-                        ${b.status === 'Confirmed' || b.status === 'Approved' ? `
-                            <button onclick="Bookings.pickup(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-car"></i> Mark as Picked Up</button>
-                        ` : ''}
+                        
 
                         ${b.status === 'Picked Up' ? `
                             <button onclick="Bookings.complete(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-check-circle"></i> Complete Booking (Returned)</button>
@@ -3419,17 +3387,6 @@
             document.getElementById('bookingDetailsModal').style.display = 'flex'; // Use flex for centering
             modalOpen();
 
-            // Attach Inspection Events
-            const btnAdd = document.getElementById('mBtnAddInsp');
-            const form = document.getElementById('mInspForm');
-            const btnCancel = document.getElementById('mBtnCancelInsp');
-            const btnSave = document.getElementById('mBtnSaveInsp');
-
-            btnAdd.onclick = () => { form.style.display = 'block'; btnAdd.style.display = 'none'; };
-            btnCancel.onclick = () => { form.style.display = 'none'; btnAdd.style.display = 'block'; };
-            btnSave.onclick = () => this.saveInspection(id);
-
-            this.fetchInspections(id);
           } catch(err) {
             alert('VIEW ERROR: ' + err.message + '\n' + err.stack);
             console.error('Bookings.view error:', err);
@@ -3543,8 +3500,6 @@
 
                 if (res.ok) {
                     showNotification('Inspection saved!', 'success');
-                    document.getElementById('mInspForm').style.display = 'none';
-                    document.getElementById('mBtnAddInsp').style.display = 'block';
                     this.fetchInspections(bookingId);
                 } else {
                     alert('Failed to save inspection');
