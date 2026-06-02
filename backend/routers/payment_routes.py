@@ -69,11 +69,23 @@ def process_payment():
         if booking_info and booking_info['payment_type'] == 'Downpayment':
             new_payment_status = 'Partially Paid'
 
-        cur.execute("""
-            UPDATE bookings 
-            SET status = 'Confirmed', payment_status = %s
-            WHERE id = %s
-        """, (new_payment_status, booking_id,))
+        # Check if payment method is cash OTC
+        is_cash = 'cash' in (method or '').lower() or 'over the counter' in (method or '').lower()
+        
+        if is_cash:
+            # Cash OTC: Keep booking Pending, payment awaiting admin collection
+            cur.execute("""
+                UPDATE bookings 
+                SET status = 'Pending', payment_status = 'Pending Payment'
+                WHERE id = %s
+            """, (booking_id,))
+        else:
+            # Online payment: auto-confirm
+            cur.execute("""
+                UPDATE bookings 
+                SET status = 'Confirmed', payment_status = %s
+                WHERE id = %s
+            """, (new_payment_status, booking_id,))
 
         # 4. Update vehicle status to 'Booked'
         cur.execute("""

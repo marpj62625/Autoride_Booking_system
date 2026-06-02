@@ -3209,9 +3209,9 @@
                             </button>
                         </div>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            ${b.status?.toLowerCase() === 'pending' ? `
-                                <button onclick="Bookings.approve(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
-                                    <i class="fas fa-check" style="margin-right:4px;"></i>Approve
+                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
+                                <button onclick="Bookings.markCashReceived(${b.id})" style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
                                 </button>
                                 <button onclick="Bookings.reject(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
                                     <i class="fas fa-times" style="margin-right:4px;"></i>Reject
@@ -3397,6 +3397,21 @@
             } catch (err) { showNotification('Network error', 'error'); }
         },
 
+        async markCashReceived(id) {
+            if (!confirm('Confirm cash payment received for this booking?\n\nThis will confirm the booking and mark it as paid.')) return;
+            try {
+                const res = await fetch(`${API_URL}/bookings/${id}/approve`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Cash received! Booking confirmed.', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    showNotification(data.error || 'Failed to confirm', 'error');
+                }
+            } catch (err) { showNotification('Network error', 'error'); }
+        },
+
         async reject(id) {
             const reason = prompt('Enter rejection reason:');
             if (!reason) return;
@@ -3453,7 +3468,7 @@
             if (!b) { alert('Booking not found for id: ' + id); return; }
             
             const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
-            const isApprovable = (b.status === 'Pending');
+            const isApprovable = (b.status === 'Pending' && b.payment_status === 'Pending Payment');
 
             // Fetch license details for this booking
             let licenseHtml = '<p style="font-size: 0.85rem; color: #64748b;">No license details available.</p>';
@@ -3546,7 +3561,7 @@
 
                     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
                         ${isApprovable ? `
-                            <button onclick="Bookings.approve(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Approve Booking</button>
+                            <button onclick="Bookings.markCashReceived(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;"><i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Cash Received & Confirm</button>
                             <button onclick="Bookings.reject(${b.id})" style="width: 100%; background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Reject Booking</button>
                         ` : ''}
 

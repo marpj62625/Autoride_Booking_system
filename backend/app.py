@@ -4100,7 +4100,9 @@ def get_all_bookings():
 
                    b.pickup_location, b.rental_type, b.addons,
 
-                   b.driver_id, d.full_name AS driver_name
+                   b.driver_id, d.full_name AS driver_name,
+
+                   pm.method AS payment_method
 
             FROM bookings b
 
@@ -4109,6 +4111,12 @@ def get_all_bookings():
             JOIN vehicles v ON b.vehicle_id = v.id
 
             LEFT JOIN drivers d ON b.driver_id = d.id
+
+            LEFT JOIN (
+                SELECT booking_id, method
+                FROM payments
+                WHERE id IN (SELECT MAX(id) FROM payments GROUP BY booking_id)
+            ) pm ON pm.booking_id = b.id
 
         """
 
