@@ -2258,6 +2258,122 @@ def upload_refund_proof():
 # Legacy vehicle routes removed to resolve duplicate endpoint conflicts.
 
 
+@app.route('/admin/process-refund', methods=['POST'])
+def process_refund():
+    """
+    Record a manual refund (cash / GCash send-money / etc.) and notify the customer.
+    Accepts JSON or multipart (for optional proof screenshot upload).
+    """
+    import datetime as _dtmod
+
+    ct = request.content_type or ''
+    if 'multipart/form-data' in ct or 'application/x-www-form-urlencoded' in ct:
+        form = request.form
+        booking_id     = form.get('booking_id')
+        extension_id   = form.get('extension_id')   # optional — for extension refunds
+        admin_id       = form.get('admin_id')
+        refund_amount  = form.get('refund_amount')
+        refund_method  = form.get('refund_method', 'GCash')
+        refund_ref     = form.get('refund_ref', '')
+        refund_note    = form.get('refund_note', '')
+    else:
+        data = request.get_json(silent=True) or {}
+        booking_id     = data.get('booking_id')
+        extension_id   = data.get('extension_id')
+        admin_id       = data.get('admin_id')
+        refund_amount  = data.get('refund_amount')
+        refund_method  = data.get('refund_method', 'GCash')
+        refund_ref     = data.get('refund_ref', '')
+        refund_note    = data.get('refund_note', '')
+
+    if not booking_id or not admin_id or not refund_amount:
+        return jsonify({"error": "booking_id, admin_id, and refund_amount are required"}), 400
+
+    try:
+        cur = get_cursor()
+
+        # Ensure columns exist
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_proof_url TEXT")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12,2)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_method VARCHAR(100)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_ref VARCHAR(200)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_note TEXT")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ")
+        commit_db()
+
+        # Handle optional proof screenshot
+        proof_url = None
+        if 'proof' in request.files:
+            from werkzeug.utils import secure_filename as _sf
+            f = request.files['proof']
+            if f and f.filename:
+                fname = _sf(f"refund_{booking_id}_{int(_dtmod.datetime.now().timestamp())}_{f.filename}")
+                fpath = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+                f.save(fpath)
+                proof_url = f"/uploads/{fname}"
+
+        # If this is an extension refund, mark the extension row
+        if extension_id:
+            cur.execute(
+                "UPDATE booking_extensions SET admin_note = COALESCE(admin_note,'') || ' | Refunded: ' || %s WHERE id = %s",
+                (f"PHP {refund_amount} via {refund_method} ref#{refund_ref}", extension_id)
+            )
+
+        # Update booking — mark payment_status as Refunded
+        cur.execute("""
+            UPDATE bookings
+            SET payment_status   = 'Refunded',
+                refund_amount    = %s,
+                refund_method    = %s,
+                refund_ref       = %s,
+                refund_note      = %s,
+                refund_proof_url = COALESCE(%s, refund_proof_url),
+                refunded_at      = NOW()
+            WHERE id = %s
+        """, (float(refund_amount), refund_method, refund_ref or None,
+              refund_note or None, proof_url, booking_id))
+
+        # Get customer user_id for notification
+        cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+        bk = cur.fetchone()
+
+        # Log activity
+        cur.execute("SELECT username FROM admins WHERE id = %s", (admin_id,))
+        adm = cur.fetchone()
+        admin_name = adm['username'] if adm else f"Admin {admin_id}"
+        log_activity(admin_id, admin_name, "Processed refund", "booking", booking_id,
+                     f"PHP {refund_amount} via {refund_method}. Ref: {refund_ref}")
+
+        commit_db()
+
+        # Notify customer
+        if bk:
+            try:
+                from notifications import notification_service
+                ref_display = f" (Ref: {refund_ref})" if refund_ref else ""
+                notification_service.notify_user(
+                    bk['user_id'],
+                    "Refund Processed",
+                    f"Your refund of PHP {float(refund_amount):,.2f} has been sent via {refund_method}{ref_display}. Booking #{booking_id}.",
+                    'refund_processed'
+                )
+            except Exception:
+                pass
+
+        return jsonify({
+            "message": f"Refund of PHP {float(refund_amount):,.2f} recorded successfully.",
+            "booking_id": booking_id,
+            "refund_amount": float(refund_amount),
+            "refund_method": refund_method
+        }), 200
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 
 # --- GPS TRACKING ROUTES ---
 

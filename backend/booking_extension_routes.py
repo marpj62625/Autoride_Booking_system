@@ -211,7 +211,7 @@ def approve_extension(ext_id):
 def reject_extension(ext_id):
     try:
         data = request.get_json(silent=True) or {}
-        note = data.get('note', 'Extension rejected. Refund will be processed upon vehicle return.')
+        note = data.get('note', 'Extension rejected. Refund will be processed.')
         cur = get_cursor()
         cur.execute("SELECT * FROM booking_extensions WHERE id = %s", (ext_id,))
         ext = cur.fetchone()
@@ -219,14 +219,28 @@ def reject_extension(ext_id):
             return jsonify({"error": "Extension not found"}), 404
         cur.execute("UPDATE booking_extensions SET status = 'rejected', admin_note = %s, updated_at = NOW() WHERE id = %s",
                     (note, ext_id))
+
+        # Mark booking as Refund Pending so admin can process the refund
+        cur.execute("""
+            UPDATE bookings
+            SET payment_status = 'Refund Pending'
+            WHERE id = %s AND payment_status NOT IN ('Refunded', 'Unpaid')
+        """, (ext['booking_id'],))
+
         commit_db()
         try:
             from notifications import notification_service
             notification_service.notify_user(ext['requested_by'], "Extension Rejected",
-                "Your extension for Booking #" + str(ext['booking_id']) + " was not approved. PHP " + str(float(ext['extension_price'])) + " will be refunded upon return.",
+                f"Your extension request for Booking #{ext['booking_id']} was not approved. "
+                f"A refund of PHP {float(ext['extension_price']):,.2f} will be processed by our team.",
                 'extension_rejected')
         except Exception:
             pass
-        return jsonify({"message": "Extension rejected. Refund noted."}), 200
+        return jsonify({
+            "message": "Extension rejected. Booking marked for refund.",
+            "refund_amount": float(ext['extension_price']),
+            "booking_id": ext['booking_id'],
+            "extension_id": ext_id
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -3613,6 +3613,48 @@
                         ${isCancellable ? `
                             <button onclick="Bookings.cancel(${b.id})" style="width:100%;padding:14px;font-size:0.85rem;background:white;border:1px solid #ef4444;color:#ef4444;border-radius:8px;font-weight:600;">Cancel Booking</button>
                         ` : ''}
+
+                        ${(b.payment_status === 'Refund Pending' || b.payment_status === 'Refund Pending') ? `
+                        <div id="refundPanel_${b.id}" style="margin-top:4px;border:1.5px solid #f59e0b;border-radius:14px;padding:16px;background:rgba(245,158,11,0.05);">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                                <i class="fas fa-undo-alt" style="color:#f59e0b;font-size:1rem;"></i>
+                                <span style="font-size:0.9rem;font-weight:800;color:#f59e0b;">Process Refund</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Amount (PHP)</label>
+                                    <input id="rfAmount_${b.id}" type="number" step="0.01" min="0" value="${parseFloat(b.amount_paid||b.total_price||0).toFixed(2)}"
+                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;font-weight:700;color:#0f172a;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Refund Method</label>
+                                    <select id="rfMethod_${b.id}" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
+                                        <option value="GCash">GCash</option>
+                                        <option value="Maya">Maya</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Reference # (optional)</label>
+                                    <input id="rfRef_${b.id}" type="text" placeholder="e.g. GCash ref number"
+                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Note (optional)</label>
+                                    <input id="rfNote_${b.id}" type="text" placeholder="e.g. Refunded via GCash send money"
+                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Proof Screenshot (optional)</label>
+                                    <input id="rfProof_${b.id}" type="file" accept="image/*" style="font-size:0.8rem;color:#64748b;">
+                                </div>
+                                <button onclick="Bookings.processRefund(${b.id})" style="width:100%;padding:13px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:800;cursor:pointer;">
+                                    <i class="fas fa-paper-plane" style="margin-right:6px;"></i>Confirm Refund Sent
+                                </button>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -3633,9 +3675,10 @@
                 return;
             }
 
+            const user = adminAuth.getUser();
             const formData = new FormData();
             formData.append('booking_id', bookingId);
-            formData.append('admin_id', 1); // Mock admin_id
+            formData.append('admin_id', user ? user.id : 1);
             formData.append('proof', fileInput.files[0]);
 
             const btn = event.target;
@@ -3651,13 +3694,59 @@
                 if (!res.ok) throw new Error(data.error || 'Upload failed');
 
                 showNotification('Refund proof uploaded!', 'success');
-                this.refresh(); // Refresh main list
-                this.view(bookingId); // Refresh modal
+                this.refresh();
+                this.view(bookingId);
             } catch (err) {
                 alert(err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Submit Proof';
+            }
+        },
+
+        async processRefund(bookingId, extensionId = null) {
+            const user = adminAuth.getUser();
+            const amount  = (document.getElementById(`rfAmount_${bookingId}`) || {}).value;
+            const method  = (document.getElementById(`rfMethod_${bookingId}`) || {}).value || 'GCash';
+            const ref     = (document.getElementById(`rfRef_${bookingId}`)    || {}).value || '';
+            const note    = (document.getElementById(`rfNote_${bookingId}`)   || {}).value || '';
+            const proofEl = document.getElementById(`rfProof_${bookingId}`);
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('Please enter a valid refund amount.', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const fd = new FormData();
+                fd.append('booking_id', bookingId);
+                fd.append('admin_id', user ? user.id : 1);
+                fd.append('refund_amount', amount);
+                fd.append('refund_method', method);
+                fd.append('refund_ref', ref);
+                fd.append('refund_note', note);
+                if (extensionId) fd.append('extension_id', extensionId);
+                if (proofEl && proofEl.files && proofEl.files[0]) {
+                    fd.append('proof', proofEl.files[0]);
+                }
+
+                const res = await fetch(`${API_URL}/admin/process-refund`, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Refund failed');
+
+                showNotification(`Refund of ?${parseFloat(amount).toLocaleString()} recorded. Customer notified.`, 'success');
+                document.getElementById('bookingDetailsModal').style.display = 'none';
+                modalClose();
+                this.refresh();
+                if (typeof Extensions !== 'undefined') Extensions.load();
+            } catch (err) {
+                showNotification(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:6px;"></i>Confirm Refund Sent';
             }
         },
 
@@ -4809,7 +4898,7 @@
                 if (tabBadge) { tabBadge.textContent = data.length; tabBadge.style.display = data.length > 0 ? 'inline-flex' : 'none'; }
                 if (!data.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">No pending extension requests.</div>'; return; }
                 list.innerHTML = data.map(e => `
-                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
+                    <div data-ext-id="${e.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
                             <div>
                                 <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;">Booking #${e.booking_id}</div>
@@ -4828,7 +4917,7 @@
                             <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);">Method: <span style="color:var(--text-main);font-weight:600;">${e.payment_method || 'N/A'}</span>${e.reference_number ? ' &bull; Ref: ' + e.reference_number : ''}</div>
                             ${e.payment_proof_url ? `<img src="${e.payment_proof_url}" style="width:100%;border-radius:8px;margin-top:8px;max-height:150px;object-fit:contain;background:rgba(0,0,0,0.2);">` : ''}
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="ext-action-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                             <button onclick="Extensions.approve(${e.id})" style="padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;">
                                 <i class="fas fa-check" style="margin-right:4px;"></i>Approve
                             </button>
@@ -4857,20 +4946,102 @@
         },
 
         async reject(extId) {
-            const note = prompt('Reason for rejection (customer will be notified of refund-upon-return):');
+            const note = prompt('Reason for rejection (customer will be notified):');
             if (note === null) return;
             try {
                 const res = await fetch(`${API_URL}/admin/extensions/${extId}/reject`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ note: note || 'Extension rejected. Refund upon vehicle return.' })
+                    body: JSON.stringify({ note: note || 'Extension rejected. Refund will be processed.' })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    showNotification('Extension rejected. Customer notified of refund.', 'success');
+                if (!res.ok) { showNotification(data.error || 'Failed to reject', 'error'); return; }
+
+                showNotification('Extension rejected. Customer notified.', 'success');
+
+                // Show inline refund form for this extension
+                const refundAmount = data.refund_amount || 0;
+                const bookingId    = data.booking_id;
+                const extensionId  = data.extension_id || extId;
+
+                // Find the card and replace action buttons with refund panel
+                const card = document.querySelector(`[data-ext-id="${extId}"]`);
+                if (card) {
+                    const actionDiv = card.querySelector('.ext-action-btns');
+                    if (actionDiv) {
+                        actionDiv.innerHTML = `
+                            <div style="border:1.5px solid #f59e0b;border-radius:12px;padding:14px;background:rgba(245,158,11,0.06);margin-top:4px;">
+                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                                    <i class="fas fa-undo-alt" style="color:#f59e0b;"></i>
+                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund — ?${parseFloat(refundAmount).toLocaleString()}</span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                    <input id="extRfAmt_${extensionId}" type="number" step="0.01" value="${parseFloat(refundAmount).toFixed(2)}"
+                                        placeholder="Amount (PHP)"
+                                        style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+                                    <select id="extRfMethod_${extensionId}" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+                                        <option value="GCash">GCash</option>
+                                        <option value="Maya">Maya</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                    <input id="extRfRef_${extensionId}" type="text" placeholder="Reference # (optional)"
+                                        style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+                                    <input id="extRfProof_${extensionId}" type="file" accept="image/*" style="font-size:0.75rem;color:#64748b;">
+                                    <button onclick="Extensions.processExtRefund(${extensionId}, ${bookingId})"
+                                        style="width:100%;padding:11px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.85rem;font-weight:800;cursor:pointer;">
+                                        <i class="fas fa-paper-plane" style="margin-right:5px;"></i>Confirm Refund Sent
+                                    </button>
+                                </div>
+                            </div>`;
+                    }
+                } else {
+                    // Fallback: reload the list
                     this.load();
-                } else { showNotification(data.error || 'Failed to reject', 'error'); }
+                }
+                Bookings.refresh();
             } catch(err) { showNotification('Network error', 'error'); }
+        },
+
+        async processExtRefund(extensionId, bookingId) {
+            const user   = adminAuth.getUser();
+            const amount = (document.getElementById(`extRfAmt_${extensionId}`)    || {}).value;
+            const method = (document.getElementById(`extRfMethod_${extensionId}`) || {}).value || 'GCash';
+            const ref    = (document.getElementById(`extRfRef_${extensionId}`)    || {}).value || '';
+            const proofEl = document.getElementById(`extRfProof_${extensionId}`);
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('Please enter a valid amount.', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const fd = new FormData();
+                fd.append('booking_id', bookingId);
+                fd.append('extension_id', extensionId);
+                fd.append('admin_id', user ? user.id : 1);
+                fd.append('refund_amount', amount);
+                fd.append('refund_method', method);
+                fd.append('refund_ref', ref);
+                fd.append('refund_note', `Extension #${extensionId} refund`);
+                if (proofEl && proofEl.files && proofEl.files[0]) fd.append('proof', proofEl.files[0]);
+
+                const res  = await fetch(`${API_URL}/admin/process-refund`, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Refund failed');
+
+                showNotification(`Refund of ?${parseFloat(amount).toLocaleString()} confirmed. Customer notified.`, 'success');
+                this.load();
+                Bookings.refresh();
+            } catch(err) {
+                showNotification(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:5px;"></i>Confirm Refund Sent';
+            }
         }
     };
 
