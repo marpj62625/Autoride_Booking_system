@@ -1014,8 +1014,13 @@ def login():
 
                 return jsonify({"error": "Account Frozen", "reason": reason}), 403
 
+            # Block login if license is pending verification
+            if user.get('is_verified') == 1:
+                return jsonify({
+                    "error": "License pending verification",
+                    "reason": "Your license is currently under review. Please wait for admin verification before logging in."
+                }), 403
                 
-
             return jsonify({
 
                 "message": "login success", 

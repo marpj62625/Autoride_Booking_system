@@ -3626,13 +3626,18 @@ function submitLicense() {
     .then(function() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
-      showToast('Your license has been submitted for review.', 'success');
-      NotifStore.add('Your license has been submitted for review.');
-      closeOverlay('page-license-upload');
-      loadProfile();
+      showLoading(false);
+      // Force logout after upload — user must wait for admin verification before re-logging in
+      showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
+      setTimeout(function() {
+        Session.clear();
+        showPage('page-login');
+      }, 2500);
     })
-    .catch(function(err) { if (errEl) errEl.textContent = err.message; })
-    .finally(function() { showLoading(false); });
+    .catch(function(err) {
+      if (errEl) errEl.textContent = err.message;
+      showLoading(false);
+    });
 }
 
 // SAVED PAYMENTS
