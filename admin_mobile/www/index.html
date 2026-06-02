@@ -3620,10 +3620,12 @@
                                 <i class="fas fa-undo-alt" style="color:#f59e0b;font-size:1rem;"></i>
                                 <span style="font-size:0.9rem;font-weight:800;color:#f59e0b;">Process Refund</span>
                             </div>
+                            ${b.refund_note ? `<div style="font-size:0.75rem;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 10px;margin-bottom:10px;"><i class="fas fa-info-circle" style="margin-right:4px;"></i>${b.refund_note}</div>` : ''}
                             <div style="display:flex;flex-direction:column;gap:10px;">
                                 <div>
-                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Amount (PHP)</label>
-                                    <input id="rfAmount_${b.id}" type="number" step="0.01" min="0" value="${parseFloat(b.amount_paid||b.total_price||0).toFixed(2)}"
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Refund Amount (PHP)</label>
+                                    <input id="rfAmount_${b.id}" type="number" step="0.01" min="0"
+                                        value="${b.refund_amount ? parseFloat(b.refund_amount).toFixed(2) : parseFloat(b.amount_paid||b.total_price||0).toFixed(2)}"
                                         style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;font-weight:700;color:#0f172a;">
                                 </div>
                                 <div>

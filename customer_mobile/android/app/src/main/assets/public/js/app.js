@@ -3507,10 +3507,45 @@ function loadInspectionsForDetail(bookingId) {
 function promptCancelBooking(bookingId) {
   var reason = prompt('Please provide a reason for cancellation:');
   if (!reason) return;
+
+  // Find booking data to compute 48h warning
+  var b = null;
+  for (var i = 0; i < _allBookingsData.length; i++) {
+    if (_allBookingsData[i].id === bookingId) { b = _allBookingsData[i]; break; }
+  }
+
+  // Warn about 20% fee if < 48h before pickup
+  if (b && b.start_date && (b.status === 'Confirmed' || b.status === 'Approved')) {
+    var startRaw = _normDateStr(b.start_date);
+    if (startRaw) {
+      var parts = startRaw.split('-');
+      var pickupDt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 6, 0, 0);
+      var hoursLeft = (pickupDt - new Date()) / (1000 * 60 * 60);
+      var amountPaid = parseFloat(b.amount_paid || b.total_price || 0);
+      if (hoursLeft < 48 && amountPaid > 0) {
+        var fee = Math.round(amountPaid * 0.20 * 100) / 100;
+        var refund = Math.round((amountPaid - fee) * 100) / 100;
+        var msg = 'WARNING: Cancellation Policy\n\n' +
+          'You are cancelling less than 48 hours before pickup.\n\n' +
+          '• Non-refundable fee: ' + formatPHP(fee) + ' (20%)\n' +
+          '• Refundable amount: ' + formatPHP(refund) + '\n\n' +
+          'Do you still want to cancel?';
+        if (!confirm(msg)) return;
+      }
+    }
+  }
+
   showLoading(true);
   apiCall('/cancel-booking', { method: 'POST', body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, reason: reason }) })
-    .then(function() {
-      showToast('Booking cancelled successfully.', 'success');
+    .then(function(data) {
+      var msg = 'Booking cancelled.';
+      if (data.refund_amount > 0) {
+        msg = 'Booking cancelled. Refund of ' + formatPHP(data.refund_amount) + ' will be processed.';
+        if (data.non_refundable_fee > 0) {
+          msg += ' (' + formatPHP(data.non_refundable_fee) + ' non-refundable fee applied)';
+        }
+      }
+      showToast(msg, 'success');
       NotifStore.add('Booking #' + bookingId + ' has been cancelled.');
       closeOverlay('page-booking-detail');
       loadBookings();

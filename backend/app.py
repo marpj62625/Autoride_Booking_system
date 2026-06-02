@@ -4672,101 +4672,108 @@ def get_inspections(booking_id):
 
 def user_cancel_booking():
 
-    """Allow a user to cancel their own booking."""
+    """Allow a user to cancel their own booking. Applies 20% non-refundable fee if < 48h before pickup."""
 
     try:
 
-        data = request.json
-
+        data = request.get_json(silent=True) or {}
         booking_id = data.get('booking_id')
-
-        user_id = data.get('user_id') # Optional but good for validation
-
-        
+        user_id    = data.get('user_id')
+        reason     = data.get('reason', 'No reason provided')
 
         cur = get_cursor()
-
-        # Verify ownership and status
-
-        cur.execute("SELECT user_id, status, vehicle_id FROM bookings WHERE id=%s", (booking_id,))
-
+        cur.execute("""
+            SELECT user_id, status, vehicle_id, start_date,
+                   amount_paid, total_price, payment_status
+            FROM bookings WHERE id = %s
+        """, (booking_id,))
         booking = cur.fetchone()
 
-        
-
         if not booking:
-
             return jsonify({"error": "Booking not found"}), 404
 
-            
-
-        # Security: Only the owner (or admin) can cancel
-
-        # If user_id is provided, verify it matches
-
         if user_id and int(booking['user_id']) != int(user_id):
-
             return jsonify({"error": "Unauthorized. You can only cancel your own bookings."}), 403
 
-
-
         if booking['status'] not in ['Pending', 'Confirmed']:
-
             return jsonify({"error": f"Cannot cancel a booking that is '{booking['status']}'"}), 400
 
+        # ?? 48-hour cancellation policy ??????????????????????????????????
+        import datetime as _dtm
+        amount_paid = float(booking.get('amount_paid') or booking.get('total_price') or 0)
+        refund_amount = 0.0
+        non_refundable_fee = 0.0
+        new_payment_status = 'Cancelled'
 
+        if booking['status'] == 'Confirmed' and amount_paid > 0:
+            # Parse pickup date
+            start_raw = booking['start_date']
+            if isinstance(start_raw, (_dtm.date, _dtm.datetime)):
+                pickup_dt = _dtm.datetime.combine(start_raw if isinstance(start_raw, _dtm.date) else start_raw.date(),
+                                                   _dtm.time(6, 0))
+            else:
+                pickup_dt = _dtm.datetime.strptime(str(start_raw)[:10], '%Y-%m-%d').replace(hour=6)
 
-        # Determine if refund is needed
+            hours_until_pickup = (pickup_dt - _dtm.datetime.now()).total_seconds() / 3600
 
-        # If status was 'Confirmed' (Paid), set to Refund Pending
+            if hours_until_pickup >= 48:
+                # Full refund
+                refund_amount = amount_paid
+                non_refundable_fee = 0.0
+                new_payment_status = 'Refund Pending'
+            else:
+                # 20% non-refundable reservation fee
+                non_refundable_fee = round(amount_paid * 0.20, 2)
+                refund_amount = round(amount_paid - non_refundable_fee, 2)
+                new_payment_status = 'Refund Pending' if refund_amount > 0 else 'Cancelled'
+        # ?????????????????????????????????????????????????????????????????
 
-        # If it was 'Pending' (Unpaid), set to N/A or Cancelled
-
-        new_payment_status = 'Refund Pending' if booking['status'] == 'Confirmed' else 'Cancelled'
-
-
-
-        # Update booking status
+        # Ensure refund columns exist
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12,2)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_note TEXT")
+        commit_db()
 
         cur.execute("""
-
-            UPDATE bookings 
-
-            SET status='Cancelled', payment_status=%s 
-
-            WHERE id=%s
-
-        """, (new_payment_status, booking_id))
-
-        
-
-        # Reset vehicle status to 'Available'
+            UPDATE bookings
+            SET status = 'Cancelled',
+                payment_status = %s,
+                cancellation_reason = %s,
+                cancelled_by = 'customer',
+                refund_amount = %s,
+                refund_note = %s
+            WHERE id = %s
+        """, (new_payment_status, reason,
+              refund_amount if refund_amount > 0 else None,
+              f"Non-refundable fee: PHP {non_refundable_fee:.2f} (cancelled < 48h before pickup)" if non_refundable_fee > 0 else None,
+              booking_id))
 
         if booking['vehicle_id']:
-
-            cur.execute("UPDATE vehicles SET status='Available' WHERE id=%s", (booking['vehicle_id'],))
-
-        
+            cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (booking['vehicle_id'],))
 
         commit_db()
 
-        
+        # Notifications
+        try:
+            sms_service.notify_customer(booking['user_id'], compose_customer_cancel_sms(booking_id, reason))
+        except Exception:
+            pass
+        try:
+            if refund_amount > 0:
+                notif_msg = (f"Booking #{booking_id} cancelled. "
+                             f"Refund of PHP {refund_amount:,.2f} will be processed."
+                             + (f" Note: 20% reservation fee (PHP {non_refundable_fee:,.2f}) is non-refundable as cancelled < 48h before pickup." if non_refundable_fee > 0 else ""))
+            else:
+                notif_msg = f"Booking #{booking_id} cancelled. No refund applicable."
+            notification_service.notify_user(booking['user_id'], "Booking Cancelled", notif_msg, 'booking_cancelled')
+        except Exception:
+            pass
 
-        # Send SMS notification
-
-        reason = (request.json or {}).get('reason', 'No reason provided')
-
-        sms_service.notify_customer(
-
-            booking['user_id'],
-
-            compose_customer_cancel_sms(booking_id, reason)
-
-        )
-
-
-
-        return jsonify({"message": "Booking cancelled successfully"}), 200
+        return jsonify({
+            "message": "Booking cancelled successfully.",
+            "refund_amount": refund_amount,
+            "non_refundable_fee": non_refundable_fee,
+            "refund_status": new_payment_status
+        }), 200
 
     except Exception as e:
 
