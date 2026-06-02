@@ -1311,6 +1311,9 @@ function loadHome() {
           active = bookings[i]; break;
         }
       }
+      // Store for use by other functions (e.g. extend booking)
+      _allBookingsData = bookings;
+      if (active) { activeBookingData = active; }
       var monitor = document.getElementById('activeBookingMonitor');
       var card    = document.getElementById('activeBookingCard');
       if (active && monitor && card) {
