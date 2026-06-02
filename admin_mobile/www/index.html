@@ -674,7 +674,7 @@
         .main-content input::placeholder,
         .main-content textarea::placeholder { color: var(--text-muted); }
 
-        /* Buttons with colored backgrounds ï¿½ keep white text */
+        /* Buttons with colored backgrounds - keep white text */
         .main-content .btn-primary,
         .main-content .btn-premium,
         .main-content button[style*="background: var(--primary)"],
@@ -684,7 +684,7 @@
             color: white;
         }
 
-        /* Badges / pills / colored icon containers ï¿½ keep white */
+        /* Badges / pills / colored icon containers - keep white */
         .main-content .admin-badge,
         .main-content .user-avatar,
         .main-content [style*="background: var(--primary)"] > i,
@@ -769,11 +769,11 @@
             color: white;
         }
 
-        /* Settings tab ï¿½ stat-card items that are on white bg need dark text */
+        /* Settings tab - stat-card items that are on white bg need dark text */
         #settings .stat-card h4 { color: var(--text-main); }
         #settings .stat-card p  { color: var(--text-muted); }
 
-        /* Dark theme overrides ï¿½ restore white text everywhere */
+        /* Dark theme overrides - restore white text everywhere */
         [data-theme="dark"] .main-content,
         [data-theme="dark"] .main-content * {
             color: var(--text-main); /* resolves to #FFFFFF in dark theme */
@@ -1134,11 +1134,11 @@
         <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
             <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
                 <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">REVENUE</h5>
-                <div id="dashTotalRevenue" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">ï¿½</div>
+                <div id="dashTotalRevenue" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">-</div>
             </div>
             <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
                 <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">BOOKINGS</h5>
-                <div id="dashTotalBookings" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">ï¿½</div>
+                <div id="dashTotalBookings" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">-</div>
             </div>
         </div>
 
@@ -1184,7 +1184,7 @@
         <!-- Search -->
         <div style="position:relative; margin-bottom: 12px;">
             <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plateï¿½"
+            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
                 oninput="Vehicles.applyFilters()"
                 style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
         </div>
@@ -1283,7 +1283,7 @@
         <!-- Search -->
         <div style="position:relative; margin-bottom: 12px;">
             <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="activitySearch" type="text" placeholder="Search by name, action or detailsï¿½"
+            <input id="activitySearch" type="text" placeholder="Search by name, action or details..."
                 oninput="Activity.applyFilters()"
                 style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
         </div>
@@ -1755,7 +1755,7 @@
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Password</label>
-                    <input id="staffPass" type="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                    <input id="staffPass" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
                     <small id="staffPassHint" style="font-size: 0.65rem; color: var(--text-muted); display: none;">Leave blank to keep current password</small>
                 </div>
                 <div style="margin-bottom: 25px;">
@@ -1785,7 +1785,7 @@
                 <div style="margin-bottom:20px;">
                     <label style="display:block;font-size:0.78rem;font-weight:800;color:var(--text-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
                         Vehicle Photos <span style="color:#ef4444;">*</span>
-                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);">(max 4 ï¿½ first photo is Main)</span>
+                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);">(max 4 - first photo is Main)</span>
                     </label>
                     <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1903,14 +1903,14 @@
                         </select>
                     </div>
 
-                    <!-- Daily Rate ï¿½ half width -->
+                    <!-- Daily Rate - half width -->
                     <div>
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (&#8369;)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" required
                             style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
-                    <!-- Location ï¿½ full width -->
+                    <!-- Location - full width -->
                     <div style="grid-column:span 2;">
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Location</label>
                         <select id="vLocation" required
@@ -1920,7 +1920,7 @@
                         </select>
                     </div>
 
-                    <!-- Status ï¿½ full width -->
+                    <!-- Status - full width -->
                     <div style="grid-column:span 2;">
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Status</label>
                         <select id="vStatus"
@@ -1962,11 +1962,11 @@
             <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
-                <input id="newMobilePassword" type="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="newMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Confirm New Password</label>
-                <input id="confirmMobilePassword" type="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="confirmMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
@@ -2037,15 +2037,15 @@
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ï¿½</div>
+            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">-</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ï¿½</div>
+            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">-</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ï¿½</div>
+            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">-</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
         </div>
     </div>
@@ -2322,7 +2322,7 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
-                // Load saved theme preference ï¿½ default to LIGHT
+                // Load saved theme preference - default to LIGHT
                 var savedAdminTheme = localStorage.getItem('adminTheme');
                 if (savedAdminTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
@@ -2749,7 +2749,7 @@
                     showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
                     this.refresh();
                     if (addAnother) {
-                        // Reset form but keep modal open ï¿½ clear photos completely
+                        // Reset form but keep modal open - clear photos completely
                         document.getElementById('vehicleForm').reset();
                         this.updateModels();
                         document.getElementById('vExistingGallery').style.display = 'none';
@@ -2806,7 +2806,7 @@
             input.value = ''; // allow re-picking same file
         },
 
-        // Called by "Take Photo" button ï¿½ uses Capacitor Camera if available,
+        // Called by "Take Photo" button - uses Capacitor Camera if available,
         // falls back to a hidden file input with capture="environment"
         async takePhoto() {
             const Camera = window.Capacitor?.Plugins?.Camera;
@@ -4204,7 +4204,7 @@
 
             list.innerHTML = active.map((b, i) => {
                 const endDate = b.end_date ? new Date(b.end_date) : null;
-                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'ï¿½';
+                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'N/A';
                 const cdId    = 'anCountdown_' + b.id;
                 
                 // Location handling
@@ -4264,7 +4264,7 @@
                         </div>
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
-                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">ï¿½</div>
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">-</div>
                         </div>
                     </div>
                 </div>`;
@@ -4297,7 +4297,7 @@
             if (this._timer) clearInterval(this._timer);
             this._timer = setInterval(() => {
                 const label = document.getElementById('activeNowRefreshLabel');
-                if (label) label.textContent = 'refreshingï¿½';
+                if (label) label.textContent = 'refreshing...';
                 Bookings.refresh().then(() => {
                     if (label) label.textContent = 'auto-refresh 30s';
                 }).catch(() => {
@@ -5012,8 +5012,8 @@
             if (typeof Chart !== 'undefined') initCharts(data);
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
-            document.getElementById('dashTotalRevenue').textContent = '\u20B1ï¿½';
-            document.getElementById('dashTotalBookings').textContent = 'ï¿½';
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1-';
+            document.getElementById('dashTotalBookings').textContent = '-';
         }
     }
 
@@ -5095,7 +5095,7 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Bookings Bar Chart — use booking status breakdown
+        // Bookings Bar Chart - use booking status breakdown
         const bookCtx = document.getElementById('bookingsChart');
         if (bookCtx) {
             const bStatus = data.bookingsByStatus || {};
@@ -5636,7 +5636,7 @@
                 return;
             }
 
-            // 7. On root tab ï¿½ show exit confirmation
+            // 7. On root tab - show exit confirmation
             showExitConfirm();
         };
 
@@ -5798,7 +5798,7 @@
                     ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ï¿½';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
                     <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
@@ -5841,7 +5841,7 @@
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ï¿½';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'N/A';
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `
@@ -5901,7 +5901,7 @@
 
             <!-- Info -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ï¿½'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'N/A'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
