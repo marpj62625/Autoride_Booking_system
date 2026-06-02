@@ -1256,18 +1256,26 @@ function _startActiveBookingCountdown(endDateStr) {
 // Normalize any date value to YYYY-MM-DD string
 function _normDateStr(d) {
   if (!d) return '';
+  var s = String(d).trim();
   // Already YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) return String(d);
-  // Strip time component first
-  var s = String(d).split('T')[0];
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Parse via Date object and extract LOCAL date parts (no UTC conversion)
+  // Has a T — strip time component (ISO datetime)
+  if (s.indexOf('T') !== -1) {
+    var iso = s.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  }
+  // Parse as date string
   var dt = new Date(s);
-  if (isNaN(dt.getTime())) return String(d);
-  var y = dt.getFullYear();
-  var m = String(dt.getMonth() + 1).padStart(2, '0');
-  var day = String(dt.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + day;
+  if (!isNaN(dt.getTime())) {
+    // HTTP-date format ends in 'GMT' and represents UTC midnight — use UTC date parts
+    // to avoid timezone shift (e.g. UTC+8 would shift "01 Jun 00:00 GMT" to May 31 local)
+    var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
+    var y  = useUTC ? dt.getUTCFullYear()            : dt.getFullYear();
+    var m  = useUTC ? dt.getUTCMonth() + 1           : dt.getMonth() + 1;
+    var dy = useUTC ? dt.getUTCDate()                : dt.getDate();
+    return y + '-' + String(m).padStart(2, '0') + '-' + String(dy).padStart(2, '0');
+  }
+  return '';
 }
 
 // Format a normalized date for display: "May 22, 2026"
@@ -3175,16 +3183,23 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   // Helper: extract YYYY-MM-DD from any date value without UTC conversion
   function _toLocalDateStr(val) {
     if (!val) return '';
-    var s = val.toString().split('T')[0];
-    // Validate YYYY-MM-DD
+    var s = val.toString().trim();
+    // Already YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-    // Try parsing and extracting local parts
+    // Strip ISO time component
+    if (s.indexOf('T') !== -1) {
+      var iso = s.split('T')[0];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+    }
+    // Parse any format (including HTTP-date "Mon, 01 Jun 2026 00:00:00 GMT")
     var dt = new Date(s);
     if (!isNaN(dt.getTime())) {
-      var y = dt.getFullYear();
-      var mo = String(dt.getMonth() + 1).padStart(2, '0');
-      var dy = String(dt.getDate()).padStart(2, '0');
-      return y + '-' + mo + '-' + dy;
+      // HTTP-date is UTC midnight — use UTC parts to avoid timezone shift
+      var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
+      var y  = useUTC ? dt.getUTCFullYear()  : dt.getFullYear();
+      var mo = useUTC ? dt.getUTCMonth() + 1 : dt.getMonth() + 1;
+      var dy = useUTC ? dt.getUTCDate()      : dt.getDate();
+      return y + '-' + String(mo).padStart(2, '0') + '-' + String(dy).padStart(2, '0');
     }
     return '';
   }
