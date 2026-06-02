@@ -1724,10 +1724,7 @@
         <!-- Export buttons -->
         <div style="display:flex;gap:10px;margin-bottom:30px;">
             <button onclick="Reports.exportExcel()" class="btn-primary" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </button>
-            <button onclick="Reports.printReport()" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <i class="fas fa-print"></i> Print
+                <i class="fas fa-file-excel"></i> Download Excel
             </button>
         </div>
     </div>
@@ -5359,115 +5356,68 @@
                 const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
                 const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
 
-                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                // ?? Try Capacitor Filesystem (Android native download) ??
+                const { Filesystem } = window.Capacitor?.Plugins || {};
                 if (Filesystem) {
-                    const result = await Filesystem.writeFile({
-                        path: filename,
-                        data: wboutBase64,
-                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
-                        recursive: true
-                    });
-                    
-                    const { Share } = window.Capacitor.Plugins;
-                    if (Share) {
-                        await Share.share({
-                            title: 'Autoride Sales Report',
-                            url: result.uri,
-                            dialogTitle: 'Share Excel Report'
+                    try {
+                        // Write to Downloads directory
+                        const result = await Filesystem.writeFile({
+                            path: filename,
+                            data: wboutBase64,
+                            directory: 'DOWNLOADS',
+                            recursive: true
                         });
-                    }
-                    showNotification('Excel Report saved and ready to share!', 'success');
-                    return;
-                }
-            } catch (err) {
-                console.error('Excel generation/sharing failed:', err);
-            }
+                        showNotification('Excel saved to Downloads: ' + filename, 'success');
 
-            // Fallback for web or if plugins fail
-            try {
-                if (typeof XLSX !== 'undefined') {
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.aoa_to_sheet(rows);
-                    XLSX.utils.book_append_sheet(wb, ws, "Report");
-                    XLSX.writeFile(wb, 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx');
-                    showNotification('Excel file downloaded!', 'success');
-                } else {
-                    showNotification('Export failed. Excel library not available.', 'error');
+                        // Try to open it with a file viewer
+                        try {
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+                            if (FileOpener) {
+                                await FileOpener.open({
+                                    filePath: result.uri,
+                                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                                });
+                            }
+                        } catch (openErr) {
+                            // FileOpener not available — that's OK, file is still saved
+                        }
+                        return;
+                    } catch (fsErr) {
+                        console.warn('Downloads directory failed, trying Documents:', fsErr);
+                        // Fallback to Documents directory
+                        try {
+                            const result = await Filesystem.writeFile({
+                                path: filename,
+                                data: wboutBase64,
+                                directory: 'DOCUMENTS',
+                                recursive: true
+                            });
+                            showNotification('Excel saved to Documents: ' + filename, 'success');
+                            return;
+                        } catch (docErr) {
+                            console.warn('Documents also failed, using browser download:', docErr);
+                        }
+                    }
                 }
+
+                // ?? Browser / web fallback: trigger download via blob URL ??
+                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                showNotification('Excel file downloaded!', 'success');
+
             } catch (err) {
-                showNotification('Export failed. Please try again.', 'error');
+                console.error('Excel export failed:', err);
+                showNotification('Export failed: ' + err.message, 'error');
             }
         },
-
-        async printReport() {
-            const data = this._rawData;
-            if (!data) { showNotification('No data to print', 'error'); return; }
-
-            const totalRev = data.totalRevenue || 0;
-            const totalBook = data.totalBookings || 0;
-            const tableRows = (data.topVehicles || []).map((c, i) =>
-                '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
-            ).join('');
-
-            // Build HTML report content
-            var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
-            htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
-            htmlReport += '</head><body>';
-            htmlReport += '<h1>Autoride Sales Report</h1>';
-            htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
-            htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
-            htmlReport += '<p><strong>Total Bookings:</strong> ' + totalBook + '</p>';
-            htmlReport += '<table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead>';
-            htmlReport += '<tbody>' + tableRows + '</tbody></table>';
-            htmlReport += '</body></html>';
-
-            try {
-                // Save HTML file and share it
-                const { Filesystem, Directory } = window.Capacitor.Plugins;
-                if (Filesystem) {
-                    const filename = 'Autoride_Report_' + new Date().toISOString().split('T')[0] + '.html';
-                    const result = await Filesystem.writeFile({
-                        path: filename,
-                        data: btoa(unescape(encodeURIComponent(htmlReport))),
-                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
-                        recursive: true
-                    });
-
-                    const { Share } = window.Capacitor.Plugins;
-                    if (Share) {
-                        await Share.share({
-                            title: 'Autoride Sales Report',
-                            url: result.uri,
-                            dialogTitle: 'Share or Print Report'
-                        });
-                    }
-                    showNotification('Report saved! Open it in Chrome to print.', 'success');
-                    return;
-                }
-            } catch (err) {
-                console.error('Print/share failed:', err);
-            }
-
-            // Fallback: share as text
-            try {
-                var reportText = 'AUTORIDE SALES REPORT\n';
-                reportText += 'Generated: ' + new Date().toLocaleString() + '\n\n';
-                reportText += 'Total Revenue: PHP ' + totalRev.toLocaleString() + '\n';
-                reportText += 'Total Bookings: ' + totalBook + '\n\n';
-                reportText += 'TOP VEHICLES BY REVENUE\n------------------------\n';
-                (data.topVehicles || []).forEach(function(c, i) {
-                    reportText += (i+1) + '. ' + c.brand + ' ' + c.model + ' - ' + c.booking_count + ' bookings - PHP ' + (c.revenue||0).toLocaleString() + '\n';
-                });
-                if (navigator.share) {
-                    await navigator.share({ title: 'Autoride Sales Report', text: reportText });
-                } else {
-                    await navigator.clipboard.writeText(reportText);
-                    showNotification('Report copied to clipboard!', 'success');
-                }
-            } catch(e) {
-                if (e.name !== 'AbortError') showNotification('Share failed', 'error');
-            }
-        }
     };
 
 
