@@ -47,8 +47,6 @@ def extend_booking(booking_id):
         payment_method  = data.get('payment_method', 'Cash (Over the counter)')
         reference_number= data.get('reference_number', '')
 
-        print(f"[EXTEND] booking_id={booking_id} new_end_date={repr(new_end_date)} price={repr(extension_price)} method={repr(payment_method)} ct={repr(ct)}")
-
         if not new_end_date or not extension_price:
             return jsonify({"error": "new_end_date and extension_price are required"}), 400
 
@@ -58,20 +56,12 @@ def extend_booking(booking_id):
             pass  # already good
         elif 'T' in new_end_date:
             new_end_date = new_end_date.split('T')[0]
-        else:
-            # Try parsing any format (e.g. HTTP-date)
-            try:
-                from datetime import datetime as _parse_dt
-                parsed = _parse_dt.strptime(new_end_date, '%a, %d %b %Y %H:%M:%S %Z')
-                new_end_date = parsed.strftime('%Y-%m-%d')
-            except Exception:
-                pass
 
         cur = get_cursor()
         _ensure_extensions_table(cur)
-        commit_db()  # commit DDL so table is visible before INSERT
+        commit_db()  # commit DDL so table exists before INSERT
 
-        cur = get_cursor()  # fresh cursor after DDL commit
+        cur = get_cursor()
         cur.execute("SELECT id, user_id, end_date, status FROM bookings WHERE id = %s", (booking_id,))
         booking = cur.fetchone()
         if not booking:
@@ -92,27 +82,17 @@ def extend_booking(booking_id):
                 f_file.save(os.path.join(upload_dir, fname))
                 payment_proof_url = 'https://autoride-booking-system.vercel.app/api/uploads/' + fname
 
-        # Calculate extension days — orig_end may be a date object or string
-        orig_end = booking['end_date']
+        # Calculate extension days — handle date object, datetime, or string
         import datetime as _datetime_mod
-        if isinstance(orig_end, str):
-            # Handle both ISO 'YYYY-MM-DD' and HTTP-date formats
-            if re.match(r'^\d{4}-\d{2}-\d{2}$', orig_end):
-                orig_end = _datetime_mod.datetime.strptime(orig_end, '%Y-%m-%d').date()
-            elif 'T' in orig_end:
-                orig_end = _datetime_mod.datetime.strptime(orig_end.split('T')[0], '%Y-%m-%d').date()
-            else:
-                try:
-                    orig_end = _datetime_mod.datetime.strptime(orig_end, '%a, %d %b %Y %H:%M:%S %Z').date()
-                except Exception:
-                    orig_end = _datetime_mod.datetime.strptime(orig_end[:10], '%Y-%m-%d').date()
-        elif isinstance(orig_end, _datetime_mod.datetime):
+        orig_end = booking['end_date']
+        if isinstance(orig_end, _datetime_mod.datetime):
             orig_end = orig_end.date()
-        # else: already a date object (psycopg2 native)
+        elif isinstance(orig_end, str):
+            orig_end = _datetime_mod.datetime.strptime(orig_end[:10], '%Y-%m-%d').date()
+        # else already a date object from psycopg2
 
         new_end_obj = _datetime_mod.datetime.strptime(new_end_date, '%Y-%m-%d').date()
         ext_days = (new_end_obj - orig_end).days
-        print(f"[EXTEND] orig_end={orig_end} new_end_obj={new_end_obj} ext_days={ext_days}")
         if ext_days <= 0:
             return jsonify({"error": "New end date must be after current end date"}), 400
 
