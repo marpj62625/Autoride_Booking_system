@@ -3294,10 +3294,10 @@
                         <!-- Contextual action buttons -->
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
 
-                            ${b.status?.toLowerCase() === 'pending' ? `
-                                <button onclick="Bookings.approve(${b.id})"
-                                    style="flex:1; min-width:100px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-                                    <i class="fas fa-check" style="margin-right:4px;"></i>Approve
+                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
+                                <button onclick="Bookings.markCashReceived(${b.id})"
+                                    style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
                                 </button>
                                 <button onclick="Bookings.reject(${b.id})"
                                     style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
