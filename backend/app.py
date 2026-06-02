@@ -5725,7 +5725,7 @@ def download_receipt(booking_id):
 
             mimetype='application/pdf',
 
-            as_attachment=True,
+            as_attachment=False,
 
             download_name=f'Autoride_Receipt_{booking_id}.pdf'
 

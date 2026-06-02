@@ -5479,7 +5479,16 @@
 
             // Set receipt button
             const receiptUrl = `${API_BASE}/api/bookings/${bookingId}/receipt`;
-            document.getElementById('inspectReceiptBtn').onclick = () => window.open(receiptUrl, '_blank');
+            document.getElementById('inspectReceiptBtn').onclick = () => {
+                // Capacitor WebView: use _system target to open in device browser
+                const a = document.createElement('a');
+                a.href = receiptUrl;
+                a.target = '_system';
+                a.rel = 'noopener';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
 
             // Load payment proof images asynchronously
             fetch(`${API_BASE}/api/admin/bookings/${bookingId}/payment-proof`)
