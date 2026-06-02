@@ -35,7 +35,12 @@ def _ensure_extensions_table(cur):
 @ext_bp.route('/bookings/<int:booking_id>/extend', methods=['POST'])
 def extend_booking(booking_id):
     try:
-        data = request.form if request.files else (request.get_json() or {})
+        # Accept both multipart/form-data (with or without file upload) and application/json
+        ct = request.content_type or ''
+        if 'multipart/form-data' in ct or 'application/x-www-form-urlencoded' in ct:
+            data = request.form
+        else:
+            data = request.get_json(silent=True) or {}
         new_end_date    = (data.get('new_end_date') or '').strip()
         extension_price = data.get('extension_price')
         payment_method  = data.get('payment_method', 'Cash (Over the counter)')
@@ -190,7 +195,7 @@ def approve_extension(ext_id):
 @ext_bp.route('/admin/extensions/<int:ext_id>/reject', methods=['PUT'])
 def reject_extension(ext_id):
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
         note = data.get('note', 'Extension rejected. Refund will be processed upon vehicle return.')
         cur = get_cursor()
         cur.execute("SELECT * FROM booking_extensions WHERE id = %s", (ext_id,))

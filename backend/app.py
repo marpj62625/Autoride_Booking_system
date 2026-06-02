@@ -1450,7 +1450,7 @@ def admin_user_detail(user_id):
 @app.route('/admin/users/<int:user_id>/freeze', methods=['POST'])
 def admin_freeze_user(user_id):
     """Freeze or unfreeze a user account."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     freeze = data.get('freeze', True)
     reason = data.get('reason', '')
     try:
@@ -1469,7 +1469,7 @@ def admin_freeze_user(user_id):
 @app.route('/admin/users/<int:user_id>/edit', methods=['PUT'])
 def admin_edit_user(user_id):
     """Edit user basic info."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     full_name = data.get('full_name', '').strip()
     phone = data.get('phone', '').strip()
     if not full_name:
@@ -1489,7 +1489,7 @@ def admin_edit_user(user_id):
 @app.route('/admin/users/<int:user_id>/loyalty', methods=['PUT'])
 def admin_set_loyalty(user_id):
     """Set loyalty points for a user."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     points = data.get('points')
     if points is None or not str(points).lstrip('-').isdigit():
         return jsonify({"error": "Valid points value required"}), 400
@@ -1505,7 +1505,7 @@ def admin_set_loyalty(user_id):
 @app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
 def admin_reset_password(user_id):
     """Reset user password to a new value."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     new_password = data.get('new_password', '').strip()
     if len(new_password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
@@ -8239,7 +8239,7 @@ def register_admin_fcm_token():
     """Register or update an admin's FCM device token for push notifications.
     Admin accounts are in the users table (role=admin/super_admin).
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
     fcm_token = data.get('fcm_token')
     if not admin_id or not fcm_token:
@@ -8263,7 +8263,7 @@ def register_fcm_token():
     """Register or update a user's FCM device token for push notifications.
     Request body: { "user_id": int, "fcm_token": str }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     fcm_token = data.get('fcm_token')
     if not user_id or not fcm_token:
@@ -8290,7 +8290,7 @@ def update_sms_preference():
     Returns 200 with { "user_id": int, "sms_opt_out": bool } on success.
     Returns 400 on missing/invalid params, 404 if user not found.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     sms_opt_out = data.get('sms_opt_out')
 
@@ -8428,7 +8428,7 @@ def debug_admin_fcm_check():
 @app.route('/debug/test-push', methods=['POST'])
 def debug_test_push():
     """Debug: send a test push notification to an admin by admin_id (users.id)."""
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
     if not admin_id:
         return jsonify({'error': 'admin_id required'}), 400
@@ -8528,7 +8528,7 @@ def debug_fix_admin_fcm():
 
     Returns the updated admin row (password redacted).
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     fcm_token = (data.get('fcm_token') or '').strip()
     admin_id  = data.get('admin_id')
     username  = (data.get('username') or '').strip()
@@ -8711,7 +8711,7 @@ def debug_test_notification():
     """Debug endpoint to directly test inserting a notification row."""
     try:
         # Get user_id from query param, body, or auto-detect from DB
-        user_id = request.args.get('user_id') or (request.get_json() or {}).get('user_id')
+        user_id = request.args.get('user_id') or (request.get_json(silent=True) or {}).get('user_id')
         cur = get_cursor()
         if not user_id:
             # Auto-detect: use the first user in the DB
@@ -8781,7 +8781,7 @@ def mark_all_notifications_read():
     """Mark all notifications as read for a customer.
     Request body: { "user_id": int }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     if user_id is None:
         return jsonify({'error': 'user_id is required'}), 400
@@ -8809,7 +8809,7 @@ def mark_notification_read(notif_id):
     """Mark a single notification as read.
     Request body: { "user_id": int }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     user_id = data.get('user_id')
     if user_id is None:
         return jsonify({'error': 'user_id is required'}), 400
@@ -8888,7 +8888,7 @@ def mark_all_admin_notifications_read():
     """Mark all notifications as read for an admin.
     Request body: { "admin_id": int }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
     if admin_id is None:
         return jsonify({'error': 'admin_id is required'}), 400
@@ -8916,7 +8916,7 @@ def mark_admin_notification_read(notif_id):
     """Mark a single admin notification as read.
     Request body: { "admin_id": int }
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
     if admin_id is None:
         return jsonify({'error': 'admin_id is required'}), 400
@@ -8984,7 +8984,7 @@ def chat_send():
     import psycopg as _psycopg
     from config import SUPABASE_DB_URL as _DB_URL
     from psycopg.rows import dict_row as _dict_row
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     sender_type   = data.get('sender_type')    # 'user' or 'admin'
     sender_id     = data.get('sender_id')
     receiver_type = data.get('receiver_type')  # 'user' or 'admin'
@@ -9279,7 +9279,7 @@ def chat_inbox():
 @app.route('/chat/mark-read', methods=['POST'])
 def chat_mark_read():
     """Mark all messages in a conversation as read for the receiver."""
-    data          = request.get_json() or {}
+    data          = request.get_json(silent=True) or {}
     receiver_type = data.get('receiver_type')
     receiver_id   = data.get('receiver_id')
     sender_type   = data.get('sender_type')

@@ -30,7 +30,7 @@ def create_payment():
     Create a PayMongo payment link for GCash, Maya, or Card.
     Returns a checkout_url to redirect the user to.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     booking_id = data.get('booking_id')
     amount = data.get('amount')          # in PHP (e.g. 2500.00)
     method = data.get('method')          # 'gcash', 'paymaya', 'card'
