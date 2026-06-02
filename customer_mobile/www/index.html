@@ -78,7 +78,7 @@
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
         /* Toast */
-        .toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:var(--text-primary); padding:12px 20px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; white-space:nowrap; max-width:90vw; text-align:center; }
+        .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:#fff; padding:12px 24px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; max-width:88vw; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.25); }
         .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
         .toast.toast-success { background:var(--success); }
         .toast.toast-error { background:var(--danger); }
@@ -997,7 +997,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- ??? DEBUG OVERLAY ??? -->
+<!-- DEBUG OVERLAY — disabled in production -->
+<!-- To re-enable for debugging, uncomment the block below -->
+<!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
   <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#111;border-top:2px solid #e63946;">
     <span style="color:#e63946;font-weight:bold;font-size:12px;">&#x1F41E; DEBUG LOG</span>
@@ -1010,64 +1012,15 @@
 </div>
 <button id="__debugBtn" onclick="var d=document.getElementById('__debug');d.style.display=d.style.display==='none'?'flex':'none';"
   style="position:fixed;bottom:70px;right:10px;width:36px;height:36px;background:#e63946;color:var(--text-primary);border:none;border-radius:50%;font-size:16px;z-index:99998;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);">&#x1F41E;</button>
+-->
 
 <script>
 (function() {
-  // Global error catcher
-  window.onerror = function(msg, src, line) {
-    dbg('ERROR: ' + msg + ' [' + (src||'').split('/').pop() + ':' + line + ']', '#ff4444');
-    return false;
-  };
-  window.onunhandledrejection = function(e) {
-    dbg('PROMISE REJECT: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)), '#ff8800');
-  };
-
-  function dbg(msg, color) {
-    var list = document.getElementById('__dbgList');
-    if (!list) return;
-    var d = document.createElement('div');
-    d.style.color = color || '#00ff88';
-    d.style.borderBottom = '1px solid #222';
-    d.style.paddingBottom = '2px';
-    var t = new Date().toLocaleTimeString();
-    d.textContent = '[' + t + '] ' + msg;
-    list.appendChild(d);
-    list.scrollTop = list.scrollHeight;
-  }
+  // Debug overlay disabled in production.
+  // All dbg() calls are no-ops. Global errors are silently ignored.
+  function dbg() {}
   window.__dbg = dbg;
-
-  // Intercept all fetch calls to log API requests/responses
-  var origFetch = window.fetch;
-  window.fetch = function(url, opts) {
-    var method = (opts && opts.method) || 'GET';
-    var shortUrl = String(url).replace('https://autoride-booking-system.vercel.app/api', '');
-    dbg(method + ' ' + shortUrl, '#88ccff');
-    return origFetch.apply(this, arguments).then(function(res) {
-      var color = res.ok ? '#00ff88' : '#ff4444';
-      dbg(res.status + ' ' + shortUrl, color);
-      return res;
-    }).catch(function(err) {
-      dbg('FETCH FAIL: ' + shortUrl + ' - ' + err.message, '#ff4444');
-      throw err;
-    });
-  };
-
-  // Log all button clicks
-  document.addEventListener('click', function(e) {
-    var el = e.target;
-    // Walk up to find button or clickable
-    while (el && el !== document.body) {
-      if (el.tagName === 'BUTTON' || el.tagName === 'A' || el.getAttribute('onclick')) {
-        var label = el.textContent.trim().substring(0, 40) || el.id || el.tagName;
-        var handler = el.getAttribute('onclick') || '';
-        dbg('CLICK: ' + label + (handler ? ' [' + handler.substring(0,30) + ']' : ''), '#ffff00');
-        break;
-      }
-      el = el.parentElement;
-    }
-  }, true);
-
-  dbg('Debug overlay ready. API: ' + (typeof API_BASE !== 'undefined' ? API_BASE : 'NOT SET'), '#aaaaaa');
+  // Keep fetch interception removed — no debug overhead in production
 })();
 </script>
 </body>
