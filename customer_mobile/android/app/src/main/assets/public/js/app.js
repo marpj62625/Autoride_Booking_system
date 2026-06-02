@@ -48,7 +48,7 @@ function getCamera() {
   return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) || null;
 }
 
-// SESSION ï¿½ expires after 8 hours of inactivity
+// SESSION - expires after 8 hours of inactivity
 var SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 var Session = {
@@ -69,7 +69,7 @@ var Session = {
         try {
           var parsed = JSON.parse(raw);
           // Support old format (plain user object without savedAt)
-          if (parsed && parsed.id) return parsed; // old format ï¿½ no expiry check
+          if (parsed && parsed.id) return parsed; // old format - no expiry check
           if (parsed && parsed.user && parsed.savedAt) {
             var age = Date.now() - parsed.savedAt;
             if (age > SESSION_TTL_MS) return null; // expired
@@ -202,7 +202,7 @@ function subscribeToNotifications(userId) {
                                 var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
                                 var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
                                 var v2 = currentUser.isVerified;
-                                statusEl.textContent = statusMap[v2] || 'ï¿½';
+                                statusEl.textContent = statusMap[v2] || '-';
                                 statusEl.style.color = statusColor[v2] || 'var(--text-main)';
                             }
                         }).catch(function() {});
@@ -276,7 +276,7 @@ function uploadFile(endpoint, formData) {
 }
 
 // UI HELPERS
-// Progress bar loading — non-blocking, shows a thin bar at the top
+// Progress bar loading - non-blocking, shows a thin bar at the top
 var _loadingCount = 0;
 function showLoading(show) {
   var bar = document.getElementById('progressBar');
@@ -463,7 +463,7 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
-  // Load theme ï¿½ default to LIGHT
+  // Load theme - default to LIGHT
   var savedTheme = null;
   try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
   if (savedTheme === 'dark') {
@@ -574,7 +574,7 @@ function handleBackButton() {
     return;
   }
 
-  // 3. On auth pages ï¿½ do nothing (can't go back from login/register)
+  // 3. On auth pages - do nothing (can't go back from login/register)
   var authPages = document.querySelectorAll('.auth-page.active');
   if (authPages.length > 0) {
     // On register/otp pages, go back to login
@@ -582,7 +582,7 @@ function handleBackButton() {
     if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify' || activeAuth.id === 'page-phone-login') {
       showPage('page-login');
     }
-    // On login page itself ï¿½ double-back to exit
+    // On login page itself - double-back to exit
     else {
       if (_backPressedOnce) {
         clearTimeout(_backPressTimer);
@@ -598,7 +598,7 @@ function handleBackButton() {
     return;
   }
 
-  // 4. On main pages ï¿½ double-back to exit (with logout)
+  // 4. On main pages - double-back to exit (with logout)
   if (_backPressedOnce) {
     clearTimeout(_backPressTimer);
     // Logout then exit
@@ -616,7 +616,7 @@ function handleBackButton() {
   }
 }
 
-// Register back button ï¿½ always register immediately, also re-register on deviceready
+// Register back button - always register immediately, also re-register on deviceready
 (function() {
   function _backListener(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -634,7 +634,7 @@ function handleBackButton() {
       window.Capacitor.Plugins.App.addListener('backButton', function() {
         handleBackButton();
       });
-      // Deep link handler ï¿½ fires when PayMongo success page redirects back
+      // Deep link handler - fires when PayMongo success page redirects back
       window.Capacitor.Plugins.App.addListener('appUrlOpen', function(event) {
         var url = event.url || '';
         // com.autoride.customer://payment-success?booking_id=123
@@ -1043,7 +1043,7 @@ function _startActiveBookingCountdown(endDateStr) {
     if (result.urgent && !_activeBookingNotified) {
       _activeBookingNotified = true;
       showToast('?? Your rental ends in less than 24 hours!', 'error');
-      NotifStore.add('Your rental is ending soon ï¿½ less than 24 hours remaining.');
+      NotifStore.add('Your rental is ending soon - less than 24 hours remaining.');
     }
   }
   tick();
@@ -1130,7 +1130,7 @@ function loadHome() {
             '</div>' +
             '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
               '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
-              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">ï¿½</div>' +
+              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
               '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + _fmtDate(endNorm) + '</strong></div>' +
             '</div>' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
@@ -1615,7 +1615,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<h4 style="font-weight:800;font-size:1rem;">' + brand + ' ' + model + '</h4>' +
         '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
         '</div>' +
-        // Specs grid ï¿½ Transmission and Color are dropdowns
+        // Specs grid - Transmission and Color are dropdowns
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
 
         // Transmission dropdown
@@ -1676,7 +1676,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
     .finally(function() { showLoading(false); });
 }
 
-// Called when transmission dropdown changes ï¿½ repopulate colors and update card
+// Called when transmission dropdown changes - repopulate colors and update card
 function onVdTransChange() {
   var trans = document.getElementById('vd-trans').value;
   var availUnits = (window._vdUnits || []).filter(function(u) {
@@ -1697,7 +1697,7 @@ function onVdTransChange() {
   onVdColorChange();
 }
 
-// Called when color dropdown changes ï¿½ update plate, image, book button
+// Called when color dropdown changes - update plate, image, book button
 function onVdColorChange() {
   var trans = document.getElementById('vd-trans') ? document.getElementById('vd-trans').value : '';
   var color = document.getElementById('vd-color') ? document.getElementById('vd-color').value : '';
@@ -2130,13 +2130,13 @@ function updateBookingPrice() {
   var el = document.getElementById('priceBreakdown');
   if (!el) return;
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
-    '<div class="price-row"><span>Base Rate (' + result.days + ' days ï¿½ ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
+    '<div class="price-row"><span>Base Rate (' + result.days + ' days - ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
     // Individual add-ons
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
-      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days ï¿½ ?' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
+      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days - ?' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
     }).join('') : '') +
     // Insurance detail
-    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days ï¿½ ?' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
+    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days - ?' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
     (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Long-term Discount (' + (appSettings.long_term_discount_percent || 10) + '%)</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
     (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-ticket-alt"></i> Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
@@ -2293,7 +2293,7 @@ function confirmAndBook() {
     .finally(function() { showLoading(false); });
 }
 
-// PAYMENT ï¿½ PayMongo Integration
+// PAYMENT - PayMongo Integration
 function openPaymentScreen(bookingId, priceResult, payType) {
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
@@ -2463,7 +2463,7 @@ function submitPayment(bookingId, amount) {
   var errEl = document.getElementById('payErr');
   if (errEl) errEl.textContent = '';
 
-  // Cash payment ï¿½ use existing manual flow
+  // Cash payment - use existing manual flow
   if (method === 'cash') {
     var refEl = document.getElementById('payRef');
     var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
@@ -2493,7 +2493,7 @@ function submitPayment(bookingId, amount) {
     return;
   }
 
-  // Online payment ï¿½ redirect to PayMongo
+  // Online payment - redirect to PayMongo
   showLoading(true);
   apiCall('/paymongo/create-payment', {
     method: 'POST',
@@ -2718,7 +2718,7 @@ function renderBookingsList(data) {
     var color = statusColors[b.status] || '#a1a1aa';
     var payColor = b.payment_status === 'Paid' ? '#00b14f' : '#f87171';
     var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
-    var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' ï¿½ ');
+    var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' - ');
     var startFmt = formatBookingDate(b.start_date);
     var endFmt = formatBookingDate(b.end_date);
     return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin:0 16px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="openBookingDetail(' + b.id + ')">' +
@@ -2831,10 +2831,10 @@ function renderBookingDetail(b) {
       '</div>';
   }
 
-  // Inspections section — no button for customers, admin-only action
+  // Inspections section - no button for customers, admin-only action
   var inspectBtn = '';
 
-  // Primary action button — customer-relevant only
+  // Primary action button - customer-relevant only
   var primaryAction = '';
   if (canPayBalance) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
@@ -4123,7 +4123,7 @@ function showChatPopup(senderName, message) {
   setTimeout(function() { if (banner.parentNode) banner.remove(); }, 5000);
 }
 
-// Background chat polling ï¿½ checks for new messages even when chat is closed
+// Background chat polling - checks for new messages even when chat is closed
 var _bgChatPollTimer = null;
 var _bgChatLastId = 0;
 
