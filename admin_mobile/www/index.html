@@ -325,6 +325,8 @@
             flex: 1;
             padding: 80px 16px 88px;
             width: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .page-title { 
@@ -2466,26 +2468,19 @@
     window.adminAuth = adminAuth;
 
     // --- MODAL SCROLL LOCK ---
+    // NOTE: Do NOT lock body overflow - fixed modals don't need it
+    // and Android WebView does not reliably restore scroll after overflow:hidden
     window.modalOpen = function() {
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
+        // No body lock needed - modal is position:fixed and covers the screen
     };
     window.modalClose = function() {
-        // Only release scroll lock if no other modals are currently visible
-        var openModals = document.querySelectorAll(
-            '#bookingDetailsModal, #inspectionModal, #vehicleModal, ' +
-            '#umModal, #licensePreviewModal, #receiptPreviewModal, ' +
-            '#changePasswordModal, #systemConfigModal, #staffModal'
-        );
-        var anyOpen = false;
-        for (var i = 0; i < openModals.length; i++) {
-            var s = openModals[i].style.display;
-            if (s && s !== 'none') { anyOpen = true; break; }
-        }
-        if (!anyOpen) {
-            document.body.style.overflow = '';
-            document.documentElement.style.overflow = '';
-        }
+        // Ensure scroll is always fully restored on close
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.overflowY = '';
+        // Force a reflow to make Android WebView re-enable touch scroll
+        document.body.getBoundingClientRect();
     };
 
     // --- DARK MODE TOGGLE ---
