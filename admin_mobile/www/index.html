@@ -1456,6 +1456,17 @@
                     <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
                 </div>
             </div>
+            <!-- Booking Status Filter Chips -->
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
+                <button class="bk-chip bk-chip-active" data-filter="all" onclick="Bookings.setFilter('all',this)" style="flex-shrink:0;padding:8px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+                <button class="bk-chip" data-filter="pending" onclick="Bookings.setFilter('pending',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">New</button>
+                <button class="bk-chip" data-filter="confirmed" onclick="Bookings.setFilter('confirmed',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Confirmed</button>
+                <button class="bk-chip" data-filter="approved" onclick="Bookings.setFilter('approved',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Approved</button>
+                <button class="bk-chip" data-filter="picked_up" onclick="Bookings.setFilter('picked_up',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Picked Up</button>
+                <button class="bk-chip" data-filter="completed" onclick="Bookings.setFilter('completed',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Completed</button>
+                <button class="bk-chip" data-filter="cancelled" onclick="Bookings.setFilter('cancelled',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Cancelled</button>
+            </div>
+
             <div id="bookingsList">
                 <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>
             </div>
@@ -3059,6 +3070,7 @@
 
     const Bookings = {
         data: [],
+        _filter: 'all',
         async refresh() {
             const list = document.getElementById('bookingsList');
             if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
@@ -3093,9 +3105,23 @@
                 list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
             }
         },
+        setFilter(filter, btn) {
+            this._filter = filter;
+            document.querySelectorAll('.bk-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color       = active ? 'white' : 'var(--text-main)';
+                b.classList.toggle('bk-chip-active', active);
+            });
+            this.render();
+        },
         render() {
             const list = document.getElementById('bookingsList');
-            if (this.data.length === 0) {
+            // Apply status filter
+            const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up', completed: 'Completed', cancelled: 'Cancelled' };
+            const filtered = this._filter === 'all' ? this.data : this.data.filter(b => { const s = (b.status||'').toLowerCase().replace(' ', '_'); return s === this._filter || (b.status||'') === statusMap[this._filter]; });
+            if (filtered.length === 0) {
                 list.innerHTML = `
                     <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
                         <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
@@ -3103,7 +3129,7 @@
                     </div>`;
                 return;
             }
-            list.innerHTML = this.data.map(b => `
+            list.innerHTML = filtered.map(b => `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
                         <div>
