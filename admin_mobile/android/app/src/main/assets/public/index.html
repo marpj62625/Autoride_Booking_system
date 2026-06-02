@@ -325,6 +325,8 @@
             flex: 1;
             padding: 80px 16px 88px;
             width: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .page-title { 
@@ -674,7 +676,7 @@
         .main-content input::placeholder,
         .main-content textarea::placeholder { color: var(--text-muted); }
 
-        /* Buttons with colored backgrounds ï¿½ keep white text */
+        /* Buttons with colored backgrounds - keep white text */
         .main-content .btn-primary,
         .main-content .btn-premium,
         .main-content button[style*="background: var(--primary)"],
@@ -684,7 +686,7 @@
             color: white;
         }
 
-        /* Badges / pills / colored icon containers ï¿½ keep white */
+        /* Badges / pills / colored icon containers - keep white */
         .main-content .admin-badge,
         .main-content .user-avatar,
         .main-content [style*="background: var(--primary)"] > i,
@@ -702,13 +704,76 @@
         .main-content .value[style*="color:"],
         .main-content .value[style*="color: "] { color: inherit; }
 
-        /* ---- DARK OVERLAY PANELS ï¿½ keep white text ---- */
+        /* ---- DARK OVERLAY PANELS - keep white text ---- */
         /* These elements have dark backgrounds and must stay white */
         #exitConfirmModal *,
         #adminNotifPanel *,
+        #adminNotifToast *,
         .premium-modal .modal-content,
         .premium-modal .modal-content * {
             color: white;
+        }
+
+        /* ---- INSPECTION MODAL BACKDROP ---- */
+        #inspectionModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 8000;
+            display: flex;
+            align-items: flex-end;
+        }
+        #inspectionModal .modal-content {
+            background: var(--surface-solid, #1e293b);
+            border-radius: 24px 24px 0 0;
+            max-height: 92vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ---- ADMIN NOTIFICATION TOAST ---- */
+        #adminNotifToast {
+            position: fixed;
+            top: -120px;
+            left: 12px;
+            right: 12px;
+            z-index: 99999;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid rgba(0,177,79,0.4);
+            border-left: 4px solid #00B14F;
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+            transition: top 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #adminNotifToast.show { top: 72px; }
+        #adminNotifToast .toast-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(0,177,79,0.15);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 1rem; color: #00B14F;
+        }
+        #adminNotifToast .toast-body { flex: 1; min-width: 0; }
+        #adminNotifToast .toast-title {
+            font-weight: 700; font-size: 0.82rem;
+            color: #f1f5f9; margin-bottom: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        #adminNotifToast .toast-msg {
+            font-size: 0.75rem; color: #94a3b8;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        #adminNotifToast .toast-close {
+            background: none; border: none; color: #64748b;
+            cursor: pointer; font-size: 0.9rem; padding: 0; flex-shrink: 0;
+            align-self: flex-start;
         }
         .premium-modal .modal-content input,
         .premium-modal .modal-content select,
@@ -725,11 +790,11 @@
             color: white;
         }
 
-        /* Settings tab ï¿½ stat-card items that are on white bg need dark text */
+        /* Settings tab - stat-card items that are on white bg need dark text */
         #settings .stat-card h4 { color: var(--text-main); }
         #settings .stat-card p  { color: var(--text-muted); }
 
-        /* Dark theme overrides ï¿½ restore white text everywhere */
+        /* Dark theme overrides - restore white text everywhere */
         [data-theme="dark"] .main-content,
         [data-theme="dark"] .main-content * {
             color: var(--text-main); /* resolves to #FFFFFF in dark theme */
@@ -1066,6 +1131,16 @@
     <div id="adminNotifList"><p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
 </div>
 
+<!-- Admin Notification Toast Popup -->
+<div id="adminNotifToast" onclick="window._adminToastDismiss(); toggleAdminNotifPanel();">
+    <div class="toast-icon"><i class="fas fa-bell"></i></div>
+    <div class="toast-body">
+        <div class="toast-title" id="adminToastTitle">New Notification</div>
+        <div class="toast-msg" id="adminToastMsg"></div>
+    </div>
+    <button class="toast-close" id="adminToastClose" onclick="event.stopPropagation(); window._adminToastDismiss();"><i class="fas fa-times"></i></button>
+</div>
+
 <main class="main-content">
     
     <!-- DASHBOARD TAB -->
@@ -1080,11 +1155,11 @@
         <div style="display:-webkit-flex;display:flex;gap:12px;margin-bottom:12px;">
             <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
                 <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">REVENUE</h5>
-                <div id="dashTotalRevenue" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">ï¿½</div>
+                <div id="dashTotalRevenue" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">-</div>
             </div>
             <div class="stat-card" style="flex:1;padding:16px;margin-bottom:0;">
                 <h5 style="font-size:0.6rem;color:var(--text-muted);margin-bottom:6px;">BOOKINGS</h5>
-                <div id="dashTotalBookings" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">ï¿½</div>
+                <div id="dashTotalBookings" style="font-size:1.1rem;font-weight:800;color:var(--text-main);">-</div>
             </div>
         </div>
 
@@ -1130,7 +1205,7 @@
         <!-- Search -->
         <div style="position:relative; margin-bottom: 12px;">
             <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plateï¿½"
+            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
                 oninput="Vehicles.applyFilters()"
                 style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
         </div>
@@ -1229,7 +1304,7 @@
         <!-- Search -->
         <div style="position:relative; margin-bottom: 12px;">
             <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="activitySearch" type="text" placeholder="Search by name, action or detailsï¿½"
+            <input id="activitySearch" type="text" placeholder="Search by name, action or details..."
                 oninput="Activity.applyFilters()"
                 style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
         </div>
@@ -1280,8 +1355,16 @@
             <button onclick="switchBookingTab('past')" id="tabBtnPast" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
                 <i class="fas fa-check-circle" style="font-size: 0.75rem; margin-right: 6px;"></i> Past Bookings
             </button>
+            <button onclick="switchBookingTab('new')" id="tabBtnNew" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-weight: 700; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-bell" style="font-size: 0.75rem; margin-right: 6px;"></i> New Bookings
+                <span id="newBookingsBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;"></span>
+            </button>
             <button onclick="switchBookingTab('all')" id="tabBtnAll" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
                 <i class="fas fa-list" style="font-size: 0.75rem; margin-right: 6px;"></i> All Bookings
+            </button>
+            <button onclick="switchBookingTab('extensions')" id="tabBtnExtensions" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-weight: 700; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-calendar-plus" style="font-size: 0.75rem;"></i> Extensions
+                <span id="extTabBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;"></span>
             </button>
         </div>
 
@@ -1375,6 +1458,44 @@
             </div>
         </div>
 
+
+        <!-- NEW BOOKINGS TAB CONTENT -->
+        <div id="tabNew" class="booking-tab-content" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">New Bookings</h3>
+                <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-muted); padding: 7px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <!-- Status filter chips for new bookings tab -->
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
+                <button class="nb-chip nb-chip-active" data-filter="all" onclick="Bookings.setNewFilter('all',this)" style="flex-shrink:0;padding:7px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All Pending</button>
+                <button class="nb-chip" data-filter="pending" onclick="Bookings.setNewFilter('pending',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">New</button>
+                <button class="nb-chip" data-filter="confirmed" onclick="Bookings.setNewFilter('confirmed',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Confirmed</button>
+                <button class="nb-chip" data-filter="approved" onclick="Bookings.setNewFilter('approved',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Approved</button>
+                <button class="nb-chip" data-filter="picked_up" onclick="Bookings.setNewFilter('picked_up',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Picked Up</button>
+            </div>
+            <div id="newBookingsList">
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading...</div>
+            </div>
+        </div>
+
+        <!-- EXTENSIONS TAB CONTENT -->
+        <div id="tabExtensions" class="booking-tab-content" style="display: none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:1.1rem;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-calendar-plus" style="color:var(--primary);"></i> Extension Requests
+                    <span id="extReqBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;min-width:20px;height:20px;padding:0 5px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;border-radius:10px;"></span>
+                </h3>
+                <button onclick="Extensions.load()" style="background:var(--surface-container);border:1px solid var(--border);color:var(--text-muted);padding:7px 12px;border-radius:10px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div id="extensionRequestsList">
+                <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.8rem;">No pending extension requests.</div>
+            </div>
+        </div>
+
         <!-- ALL BOOKINGS TAB CONTENT -->
         <div id="tabAll" class="booking-tab-content" style="display: none;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1383,6 +1504,17 @@
                     <button onclick="Bookings.refresh()" style="background: var(--surface-container); border: 1px solid var(--border); color: var(--text-secondary); padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">Refresh</button>
                 </div>
             </div>
+            <!-- Booking Status Filter Chips -->
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
+                <button class="bk-chip bk-chip-active" data-filter="all" onclick="Bookings.setFilter('all',this)" style="flex-shrink:0;padding:8px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All</button>
+                <button class="bk-chip" data-filter="pending" onclick="Bookings.setFilter('pending',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">New</button>
+                <button class="bk-chip" data-filter="confirmed" onclick="Bookings.setFilter('confirmed',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Confirmed</button>
+                <button class="bk-chip" data-filter="approved" onclick="Bookings.setFilter('approved',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Approved</button>
+                <button class="bk-chip" data-filter="picked_up" onclick="Bookings.setFilter('picked_up',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Picked Up</button>
+                <button class="bk-chip" data-filter="completed" onclick="Bookings.setFilter('completed',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Completed</button>
+                <button class="bk-chip" data-filter="cancelled" onclick="Bookings.setFilter('cancelled',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Cancelled</button>
+            </div>
+
             <div id="bookingsList">
                 <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>
             </div>
@@ -1417,7 +1549,7 @@
     <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
             <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none'" style="position: absolute; left: 0; background: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('bookingDetailsModal').style.display='none';modalClose();" style="position: absolute; left: 0; background: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
                 <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Booking Details</h2>
             </div>
             <div id="bookingDetailContent">
@@ -1440,6 +1572,28 @@
             <div style="margin-top: 20px;">
                 <button onclick="document.getElementById('licensePreviewModal').style.display='none'" class="btn-premium" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--primary); border: none; color: white; font-weight: 800;">Close Preview</button>
             </div>
+        </div>
+    </div>
+
+
+    <div id="receiptPreviewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10001; align-items:flex-start; justify-content:center; overflow-y:auto;">
+        <div style="width:100%; max-width:480px; margin:0 auto; padding:16px; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-top:16px;">
+                <h3 style="margin:0; font-size:1.1rem; color:white; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-receipt" style="color:#00B14F;"></i> Customer Receipt
+                </h3>
+                <button onclick="document.getElementById('receiptPreviewModal').style.display='none'" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); color:white; width:34px; height:34px; border-radius:10px; font-size:1rem; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="receiptPreviewContent" style="background:#1e293b; border-radius:16px; border:1px solid rgba(255,255,255,0.08); overflow:hidden;">
+                <div style="text-align:center; padding:20px 16px; background:#0f172a;">
+                    <div style="font-size:1.3rem; font-weight:900; color:white; letter-spacing:0.05em;">AUTORIDE SYSTEM</div>
+                    <div style="font-size:0.72rem; color:rgba(255,255,255,0.5); margin-top:2px;">Official Electronic Receipt</div>
+                </div>
+                <div style="padding:16px;" id="receiptBody">
+                    <div style="text-align:center; color:rgba(255,255,255,0.4); padding:30px;"><i class="fas fa-spinner fa-spin"></i> Loading receipt...</div>
+                </div>
+            </div>
+            <button onclick="document.getElementById('receiptPreviewModal').style.display='none'" style="width:100%; margin-top:16px; padding:14px; background:#00B14F; border:none; border-radius:12px; color:white; font-weight:800; font-size:0.9rem; cursor:pointer;">Close</button>
         </div>
     </div>
 
@@ -1701,7 +1855,7 @@
                 </div>
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Password</label>
-                    <input id="staffPass" type="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                    <input id="staffPass" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
                     <small id="staffPassHint" style="font-size: 0.65rem; color: var(--text-muted); display: none;">Leave blank to keep current password</small>
                 </div>
                 <div style="margin-bottom: 25px;">
@@ -1731,7 +1885,7 @@
                 <div style="margin-bottom:20px;">
                     <label style="display:block;font-size:0.78rem;font-weight:800;color:var(--text-primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px;">
                         Vehicle Photos <span style="color:#ef4444;">*</span>
-                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);">(max 4 ï¿½ first photo is Main)</span>
+                        <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);">(max 4 - first photo is Main)</span>
                     </label>
                     <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1849,14 +2003,14 @@
                         </select>
                     </div>
 
-                    <!-- Daily Rate ï¿½ half width -->
+                    <!-- Daily Rate - half width -->
                     <div>
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (&#8369;)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" required
                             style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
-                    <!-- Location ï¿½ full width -->
+                    <!-- Location - full width -->
                     <div style="grid-column:span 2;">
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Location</label>
                         <select id="vLocation" required
@@ -1866,7 +2020,7 @@
                         </select>
                     </div>
 
-                    <!-- Status ï¿½ full width -->
+                    <!-- Status - full width -->
                     <div style="grid-column:span 2;">
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Status</label>
                         <select id="vStatus"
@@ -1908,11 +2062,11 @@
             <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
-                <input id="newMobilePassword" type="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="newMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Confirm New Password</label>
-                <input id="confirmMobilePassword" type="password" placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="confirmMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
             </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
@@ -1923,17 +2077,29 @@
 
     <!-- INSPECTION MODAL -->
     <div id="inspectionModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; animation: slideUp 0.3s ease-out;">
-            <div style="padding: 24px; background: linear-gradient(135deg, var(--surface), #1e293b); border-bottom: 1px solid var(--border); position: relative;">
-                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -10px auto 15px;"></div>
+        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out;">
+            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, var(--surface), #1e293b); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -6px auto 12px;"></div>
                 <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: white;">Vehicle Inspection</h3>
                 <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
-                <button onclick="document.getElementById('inspectionModal').style.display='none'" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
             </div>
             
-            <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; max-height: 70vh; overflow-y: auto;">
+            <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
                 <input type="hidden" id="inspectBookingId">
                 <input type="hidden" id="inspectType">
+
+                <!-- Receipt section — populated by openModal -->
+                <div id="inspectReceiptSection" style="margin-bottom:20px;padding:14px;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.3);border-radius:12px;">
+                    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;letter-spacing:0.05em;">
+                        <i class="fas fa-receipt" style="color:#00B14F;margin-right:5px;"></i>Customer Receipt
+                    </div>
+                    <button type="button" id="inspectReceiptBtn"
+                        style="width:100%;padding:11px;background:#00B14F;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;">
+                        <i class="fas fa-file-pdf" style="margin-right:6px;"></i>View Receipt / PDF
+                    </button>
+                    <div id="inspectProofImages" style="margin-top:10px;"></div>
+                </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div>
@@ -1983,15 +2149,15 @@
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">ï¿½</div>
+            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">-</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">ï¿½</div>
+            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">-</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
         </div>
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">ï¿½</div>
+            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">-</div>
             <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
         </div>
     </div>
@@ -2084,14 +2250,47 @@
     const API_BASE = 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
-    // Admin notification globals ï¿½ defined early so initSession can call them
+    // Admin notification globals - defined early so initSession can call them
     window.adminNotifList = [];
+    window._adminNotifKnownIds = new Set();
+    window._adminToastTimer = null;
+
+    window._adminToastDismiss = function() {
+        const toast = document.getElementById('adminNotifToast');
+        if (toast) toast.classList.remove('show');
+        if (window._adminToastTimer) { clearTimeout(window._adminToastTimer); window._adminToastTimer = null; }
+    };
+
+    window._adminShowToast = function(title, msg) {
+        const toast = document.getElementById('adminNotifToast');
+        const titleEl = document.getElementById('adminToastTitle');
+        const msgEl = document.getElementById('adminToastMsg');
+        if (!toast || !titleEl || !msgEl) return;
+        titleEl.textContent = title || 'New Notification';
+        msgEl.textContent = msg || '';
+        toast.classList.add('show');
+        if (window._adminToastTimer) clearTimeout(window._adminToastTimer);
+        window._adminToastTimer = setTimeout(function() { window._adminToastDismiss(); }, 4500);
+    };
 
     window.loadAdminNotifications = function(adminId) {
         fetch(API_URL + '/admin/notifications?admin_id=' + adminId)
             .then(r => r.json())
             .then(data => {
-                window.adminNotifList = Array.isArray(data) ? data : [];
+                const list = Array.isArray(data) ? data : [];
+                // Detect new notifications (not seen in previous poll)
+                const isFirstLoad = window._adminNotifKnownIds.size === 0 && window.adminNotifList.length === 0;
+                if (!isFirstLoad) {
+                    const newOnes = list.filter(n => !window._adminNotifKnownIds.has(n.id) && !n.is_read);
+                    if (newOnes.length === 1) {
+                        window._adminShowToast(newOnes[0].title, newOnes[0].message);
+                    } else if (newOnes.length > 1) {
+                        window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
+                    }
+                }
+                // Update known IDs
+                list.forEach(n => window._adminNotifKnownIds.add(n.id));
+                window.adminNotifList = list;
                 if (typeof window.updateAdminNotifBadge === 'function') window.updateAdminNotifBadge();
             }).catch(() => {});
     };
@@ -2235,7 +2434,7 @@
         initSession: function() {
             const user = this.getUser();
             if (user) {
-                // Load saved theme preference ï¿½ default to LIGHT
+                // Load saved theme preference - default to LIGHT
                 var savedAdminTheme = localStorage.getItem('adminTheme');
                 if (savedAdminTheme === 'dark') {
                     document.documentElement.setAttribute('data-theme', 'dark');
@@ -2268,8 +2467,9 @@
                 // Register FCM token if available from native layer
                 if (window._adminFcmToken) saveAdminFcmToken(window._adminFcmToken);
 
-                // Load admin notifications
+                // Load admin notifications and poll every 30s for new ones
                 loadAdminNotifications(user.id);
+                setInterval(function() { loadAdminNotifications(user.id); }, 30000);
 
                 // Start chat badge polling every 30s
                 if (typeof AdminChat !== 'undefined') {
@@ -2286,6 +2486,22 @@
         }
     };
     window.adminAuth = adminAuth;
+
+    // --- MODAL SCROLL LOCK ---
+    // NOTE: Do NOT lock body overflow - fixed modals don't need it
+    // and Android WebView does not reliably restore scroll after overflow:hidden
+    window.modalOpen = function() {
+        // No body lock needed - modal is position:fixed and covers the screen
+    };
+    window.modalClose = function() {
+        // Ensure scroll is always fully restored on close
+        document.body.style.overflow = '';
+        document.body.style.overflowY = '';
+        document.documentElement.style.overflow = '';
+        document.documentElement.style.overflowY = '';
+        // Force a reflow to make Android WebView re-enable touch scroll
+        document.body.getBoundingClientRect();
+    };
 
     // --- DARK MODE TOGGLE ---
     function toggleDarkMode() {
@@ -2661,7 +2877,7 @@
                     showNotification(isEdit ? 'Vehicle updated!' : 'Vehicle added!', 'success');
                     this.refresh();
                     if (addAnother) {
-                        // Reset form but keep modal open ï¿½ clear photos completely
+                        // Reset form but keep modal open - clear photos completely
                         document.getElementById('vehicleForm').reset();
                         this.updateModels();
                         document.getElementById('vExistingGallery').style.display = 'none';
@@ -2718,7 +2934,7 @@
             input.value = ''; // allow re-picking same file
         },
 
-        // Called by "Take Photo" button ï¿½ uses Capacitor Camera if available,
+        // Called by "Take Photo" button - uses Capacitor Camera if available,
         // falls back to a hidden file input with capture="environment"
         async takePhoto() {
             const Camera = window.Capacitor?.Plugins?.Camera;
@@ -2914,6 +3130,7 @@
 
     const Bookings = {
         data: [],
+        _filter: 'all',
         async refresh() {
             const list = document.getElementById('bookingsList');
             if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
@@ -2942,15 +3159,126 @@
                 if (!listRes.ok) throw new Error(`Server error: ${listRes.status}`);
                 this.data = await listRes.json();
                 this.render();
+                this.renderNew();
                 ActiveNow.render(this.data);
+                if (typeof Extensions !== 'undefined') Extensions.load();
             } catch (err) {
                 console.error('Bookings Error:', err);
                 list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
             }
         },
+        setFilter(filter, btn) {
+            this._filter = filter;
+            document.querySelectorAll('.bk-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color       = active ? 'white' : 'var(--text-main)';
+                b.classList.toggle('bk-chip-active', active);
+            });
+            this.render();
+        },
+        _newFilter: 'all',
+        setNewFilter(filter, btn) {
+            this._newFilter = filter;
+            document.querySelectorAll('.nb-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color       = active ? 'white' : 'var(--text-main)';
+            });
+            this.renderNew();
+        },
+        renderNew() {
+            const list = document.getElementById('newBookingsList');
+            if (!list) return;
+            // Show pending + confirmed + approved + picked up
+            const activeStatuses = ['pending', 'confirmed', 'approved', 'picked up', 'ongoing'];
+            const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up' };
+            let filtered = this.data.filter(b => activeStatuses.includes((b.status||'').toLowerCase()));
+            if (this._newFilter !== 'all') {
+                filtered = filtered.filter(b => {
+                    const s = (b.status||'').toLowerCase().replace(' ', '_');
+                    return s === this._newFilter || (b.status||'') === statusMap[this._newFilter];
+                });
+            }
+            // Update badge count
+            const pendingCount = this.data.filter(b => (b.status||'').toLowerCase() === 'pending').length;
+            const badge = document.getElementById('newBookingsBadge');
+            if (badge) {
+                badge.textContent = pendingCount;
+                badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+            }
+            if (filtered.length === 0) {
+                list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
+                    <i class="fas fa-inbox" style="font-size:2.5rem;opacity:0.3;margin-bottom:12px;display:block;"></i>
+                    <p style="font-weight:600;">No bookings in this queue.</p></div>`;
+                return;
+            }
+            list.innerHTML = filtered.map(b => `
+                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">#${b.id}</span>
+                            <h4 style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">${b.customer_name || 'Guest User'}</h4>
+                        </div>
+                        <span class="pill ${this.getPillClass(b.status)}">${b.status || 'PENDING'}</span>
+                    </div>
+                    <div style="display: flex; gap: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
+                        <div style="width: 44px; height: 44px; background: rgba(99,102,241,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">${b.car || 'Unknown Vehicle'}</p>
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">
+                                <i class="far fa-calendar-alt" style="margin-right:4px;"></i>
+                                ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
+                            </p>
+                        </div>
+                    </div>
+                    <div style="padding-top: 16px; border-top: 1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">&#8369;${parseFloat(b.total_price||0).toLocaleString()}</div>
+                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; font-weight: 700; border-radius: 10px;">
+                                <i class="fas fa-eye" style="margin-right:4px;"></i>Details
+                            </button>
+                        </div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
+                                <button onclick="Bookings.markCashReceived(${b.id})" style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
+                                </button>
+                                <button onclick="Bookings.reject(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-times" style="margin-right:4px;"></i>Reject
+                                </button>
+                            ` : ''}
+                            ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? `
+                                <button onclick="Inspections.openModal(${b.id}, 'pickup')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
+                                </button>
+                                <button onclick="Bookings.pickup(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-car" style="margin-right:4px;"></i>Mark Picked Up
+                                </button>
+                            ` : ''}
+                            ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
+                                <button onclick="Inspections.openModal(${b.id}, 'return')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
+                                </button>
+                                <button onclick="Bookings.complete(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                    <i class="fas fa-flag-checkered" style="margin-right:4px;"></i>Mark Returned
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        },
         render() {
             const list = document.getElementById('bookingsList');
-            if (this.data.length === 0) {
+            // Apply status filter
+            const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up', completed: 'Completed', cancelled: 'Cancelled' };
+            const filtered = this._filter === 'all' ? this.data : this.data.filter(b => { const s = (b.status||'').toLowerCase().replace(' ', '_'); return s === this._filter || (b.status||'') === statusMap[this._filter]; });
+            if (filtered.length === 0) {
                 list.innerHTML = `
                     <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
                         <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
@@ -2958,7 +3286,7 @@
                     </div>`;
                 return;
             }
-            list.innerHTML = this.data.map(b => `
+            list.innerHTML = filtered.map(b => `
                 <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
                         <div>
@@ -2989,23 +3317,58 @@
                         </div>
                     </div>
  
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 12px; min-width: 70px;">Details</button>
-                            
-                            <!-- Inspection Buttons -->
-                            ${b.status?.toLowerCase() === 'confirmed' ? `
-                                <button onclick="Inspections.openModal(${b.id}, 'pickup')" class="btn-premium" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 12px; background: var(--amber); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); display: flex; align-items: center; gap: 5px;">
-                                    <i class="fas fa-search-plus"></i> Pickup Inspect
+                    <div style="padding-top: 16px; border-top: 1px solid var(--border);">
+                        <!-- Price row -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${parseFloat(b.total_price || 0).toLocaleString()}</div>
+                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; border-radius: 10px; font-weight: 700;">
+                                <i class="fas fa-eye" style="margin-right:4px;"></i>Details
+                            </button>
+                        </div>
+
+                        <!-- Contextual action buttons -->
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
+                                <button onclick="Bookings.markCashReceived(${b.id})"
+                                    style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
+                                </button>
+                                <button onclick="Bookings.reject(${b.id})"
+                                    style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-times" style="margin-right:4px;"></i>Reject
                                 </button>
                             ` : ''}
-                            
+
+                            ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? `
+                                <button onclick="Inspections.openModal(${b.id}, 'pickup')"
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
+                                </button>
+                                <button onclick="Bookings.pickup(${b.id})"
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-car" style="margin-right:4px;"></i>Mark Picked Up
+                                </button>
+                            ` : ''}
+
                             ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
-                                <button onclick="Inspections.openModal(${b.id}, 'return')" class="btn-premium" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 12px; background: var(--success); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 5px;">
-                                    <i class="fas fa-clipboard-check"></i> Return Inspect
+                                <button onclick="Inspections.openModal(${b.id}, 'return')"
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
+                                </button>
+                                <button onclick="Bookings.complete(${b.id})"
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-flag-checkered" style="margin-right:4px;"></i>Mark Returned
                                 </button>
                             ` : ''}
+
+                            ${b.payment_status === 'Partially Paid' ? `
+                                <button onclick="Bookings.markPaid(${b.id})"
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Mark Fully Paid
+                                </button>
+                            ` : ''}
+
                         </div>
                     </div>
                 </div>
@@ -3026,7 +3389,7 @@
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
                 if (res.ok) {
                     showNotification('Booking marked as Fully Paid!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3045,7 +3408,7 @@
                 });
                 if (res.ok) {
                     showNotification('Booking Cancelled!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3060,11 +3423,26 @@
                 const res = await fetch(`${API_URL}/bookings/${id}/approve`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Booking Approved!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
                     showNotification(data.error || 'Failed to approve', 'error');
+                }
+            } catch (err) { showNotification('Network error', 'error'); }
+        },
+
+        async markCashReceived(id) {
+            if (!confirm('Confirm cash payment received for this booking?\n\nThis will confirm the booking and mark it as paid.')) return;
+            try {
+                const res = await fetch(`${API_URL}/bookings/${id}/approve`, { method: 'PUT' });
+                if (res.ok) {
+                    showNotification('Cash received! Booking confirmed.', 'success');
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
+                    this.refresh();
+                } else {
+                    const data = await res.json();
+                    showNotification(data.error || 'Failed to confirm', 'error');
                 }
             } catch (err) { showNotification('Network error', 'error'); }
         },
@@ -3080,7 +3458,7 @@
                 });
                 if (res.ok) {
                     showNotification('Booking Rejected!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3095,7 +3473,7 @@
                 const res = await fetch(`${API_URL}/bookings/${id}/pickup`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Marked as Picked Up!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3110,7 +3488,7 @@
                 const res = await fetch(`${API_URL}/bookings/${id}/complete`, { method: 'PUT' });
                 if (res.ok) {
                     showNotification('Booking Completed!', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
                     this.refresh();
                 } else {
                     const data = await res.json();
@@ -3125,7 +3503,7 @@
             if (!b) { alert('Booking not found for id: ' + id); return; }
             
             const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
-            const isApprovable = (b.status === 'Pending');
+            const isApprovable = (b.status === 'Pending' && b.payment_status === 'Pending Payment');
 
             // Fetch license details for this booking
             let licenseHtml = '<p style="font-size: 0.85rem; color: #64748b;">No license details available.</p>';
@@ -3156,7 +3534,6 @@
                         <div style="display:none">
                     `;
                 } else {
-                    // Show raw response for debugging
                     licenseHtml = `<p style="font-size:0.8rem;color:#64748b;">No license data found. (API returned: ${JSON.stringify(lData)})</p>`;
                 }
             } catch (e) {
@@ -3215,47 +3592,15 @@
                         </div>
                     </div>
 
-                    <div style="margin-top: 10px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h3 style="font-size: 1.1rem; color: #0f172a; font-weight: 800;">Vehicle Inspections</h3>
-                            <button id="mBtnAddInsp" style="padding: 8px 14px; background: #00B14F; border: none; color: white; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">+ New Inspection</button>
-                        </div>
 
-                        <div id="mInspList" style="min-height: 40px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;">
-                            <p style="font-size: 0.85rem; color: #94a3b8; text-align: center; margin: 20px 0;">No inspections yet.</p>
-                        </div>
-                    </div>
-
-                    <div id="mInspForm" style="display: none; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-                        <h4 style="font-size: 0.95rem; color: #0f172a; margin-bottom: 15px; font-weight: 800;">Add New Inspection</h4>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                            <select id="mfInspType" style="padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
-                                <option value="pickup">Pickup</option>
-                                <option value="return">Return</option>
-                            </select>
-                            <input type="number" id="mfInspMileage" placeholder="Mileage (km)" style="padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
-                        </div>
-                        <select id="mfInspFuel" style="width: 100%; padding: 12px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem;">
-                            <option value="Full">Full Tank</option>
-                            <option value="Empty">Empty</option>
-                        </select>
-                        <input type="file" id="mfInspPhotos" multiple accept="image/*" style="font-size: 0.8rem; color: #64748b; width: 100%; margin-bottom: 10px;">
-                        <textarea id="mfInspNotes" placeholder="Condition Notes..." style="width: 100%; height: 70px; background: white; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 10px; padding: 12px; font-size: 0.85rem;"></textarea>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="mBtnCancelInsp" class="btn-outline" style="flex: 1; padding: 12px; font-size: 0.85rem; border-color: #cbd5e1; color: #64748b;">Cancel</button>
-                            <button id="mBtnSaveInsp" class="btn-premium" style="flex: 1; padding: 12px; font-size: 0.85rem; background: #00B14F; color: white; border: none;">Save</button>
-                        </div>
-                    </div>
 
                     <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
                         ${isApprovable ? `
-                            <button onclick="Bookings.approve(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Approve Booking</button>
+                            <button onclick="Bookings.markCashReceived(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;"><i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Cash Received & Confirm</button>
                             <button onclick="Bookings.reject(${b.id})" style="width: 100%; background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Reject Booking</button>
                         ` : ''}
 
-                        ${b.status === 'Confirmed' || b.status === 'Approved' ? `
-                            <button onclick="Bookings.pickup(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-car"></i> Mark as Picked Up</button>
-                        ` : ''}
+                        
 
                         ${b.status === 'Picked Up' ? `
                             <button onclick="Bookings.complete(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-check-circle"></i> Complete Booking (Returned)</button>
@@ -3265,29 +3610,16 @@
                             <button onclick="Bookings.markPaid(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Mark as Fully Paid</button>
                         ` : ''}
 
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="window.open('${API_BASE}/api/bookings/${b.id}/receipt', '_blank')" style="flex: 1; padding: 14px; font-size: 0.85rem; background: white; border: 1px solid #00B14F; color: #00B14F; border-radius: 8px; font-weight: 600;">Download Receipt</button>
-                            ${isCancellable ? `
-                                <button onclick="Bookings.cancel(${b.id})" style="flex: 1; padding: 14px; font-size: 0.85rem; background: white; border: 1px solid #00B14F; color: #00B14F; border-radius: 8px; font-weight: 600;">Cancel Booking</button>
-                            ` : ''}
-                        </div>
+                        ${isCancellable ? `
+                            <button onclick="Bookings.cancel(${b.id})" style="width:100%;padding:14px;font-size:0.85rem;background:white;border:1px solid #ef4444;color:#ef4444;border-radius:8px;font-weight:600;">Cancel Booking</button>
+                        ` : ''}
                     </div>
                 </div>
             `;
             document.getElementById('bookingDetailContent').innerHTML = content;
             document.getElementById('bookingDetailsModal').style.display = 'flex'; // Use flex for centering
+            modalOpen();
 
-            // Attach Inspection Events
-            const btnAdd = document.getElementById('mBtnAddInsp');
-            const form = document.getElementById('mInspForm');
-            const btnCancel = document.getElementById('mBtnCancelInsp');
-            const btnSave = document.getElementById('mBtnSaveInsp');
-
-            btnAdd.onclick = () => { form.style.display = 'block'; btnAdd.style.display = 'none'; };
-            btnCancel.onclick = () => { form.style.display = 'none'; btnAdd.style.display = 'block'; };
-            btnSave.onclick = () => this.saveInspection(id);
-
-            this.fetchInspections(id);
           } catch(err) {
             alert('VIEW ERROR: ' + err.message + '\n' + err.stack);
             console.error('Bookings.view error:', err);
@@ -3401,8 +3733,6 @@
 
                 if (res.ok) {
                     showNotification('Inspection saved!', 'success');
-                    document.getElementById('mInspForm').style.display = 'none';
-                    document.getElementById('mBtnAddInsp').style.display = 'block';
                     this.fetchInspections(bookingId);
                 } else {
                     alert('Failed to save inspection');
@@ -4116,7 +4446,7 @@
 
             list.innerHTML = active.map((b, i) => {
                 const endDate = b.end_date ? new Date(b.end_date) : null;
-                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'ï¿½';
+                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'N/A';
                 const cdId    = 'anCountdown_' + b.id;
                 
                 // Location handling
@@ -4169,15 +4499,23 @@
                         </div>
                     </div>
                     
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Return By</div>
                             <div style="font-size:0.78rem;font-weight:700;color:var(--text-main);">${endStr}</div>
                         </div>
                         <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
                             <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
-                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">ï¿½</div>
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">-</div>
                         </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <button onclick="Bookings.view(${b.id})" style="padding:9px 8px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:0.72rem;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-eye" style="margin-right:4px;"></i>View Details
+                        </button>
+                        <button onclick="AdminChatWithUser(${b.id})" style="padding:9px 8px;background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);border-radius:10px;font-size:0.72rem;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-comments" style="margin-right:4px;"></i>Chat
+                        </button>
                     </div>
                 </div>`;
             }).join('');
@@ -4209,7 +4547,7 @@
             if (this._timer) clearInterval(this._timer);
             this._timer = setInterval(() => {
                 const label = document.getElementById('activeNowRefreshLabel');
-                if (label) label.textContent = 'refreshingï¿½';
+                if (label) label.textContent = 'refreshing...';
                 Bookings.refresh().then(() => {
                     if (label) label.textContent = 'auto-refresh 30s';
                 }).catch(() => {
@@ -4436,6 +4774,106 @@
         }
     };
 
+    // --- EXTENSIONS MODULE ---
+    window.AdminChatWithUser = function(bookingId) {
+        // Find user info from Bookings.data, then open chat
+        const b = (Bookings.data || []).find(x => x.id === bookingId);
+        const name = b ? (b.customer_name || "Customer") : "Customer";
+        // We need user_id - fetch it via booking detail or use booking_id as fallback
+        fetch(`${API_BASE}/api/admin/bookings/${bookingId}/license-details`)
+            .then(r => r.json()).then(d => {
+                // license-details has user_id indirectly; use booking endpoint
+                return fetch(`${API_URL}/bookings?admin_id=`);
+            }).catch(() => {});
+        // Simpler: open chat tab and show user search pre-filled
+        switchTab("chat");
+        setTimeout(() => {
+            AdminChat.showUserSearch();
+            const inp = document.getElementById("acUserSearchInput");
+            if (inp) { inp.value = name; AdminChat.searchUsers(name); }
+        }, 300);
+    };
+
+    const Extensions = {
+        async load() {
+            const list = document.getElementById('extensionRequestsList');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div>';
+            try {
+                const res = await fetch(`${API_URL}/admin/extensions`);
+                const data = res.ok ? await res.json() : [];
+                const badge = document.getElementById('extReqBadge');
+                if (badge) { badge.textContent = data.length; badge.style.display = data.length > 0 ? 'inline-flex' : 'none'; }
+                // Also update the tab button badge
+                const tabBadge = document.getElementById('extTabBadge');
+                if (tabBadge) { tabBadge.textContent = data.length; tabBadge.style.display = data.length > 0 ? 'inline-flex' : 'none'; }
+                if (!data.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">No pending extension requests.</div>'; return; }
+                list.innerHTML = data.map(e => `
+                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;">Booking #${e.booking_id}</div>
+                                <div style="font-size:0.88rem;font-weight:800;color:var(--text-main);">${e.customer_name || 'Customer'}</div>
+                                <div style="font-size:0.75rem;color:var(--text-muted);">${e.car || ''}</div>
+                            </div>
+                            <span style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);padding:3px 8px;border-radius:20px;font-size:0.62rem;font-weight:800;">PENDING</span>
+                        </div>
+                        <div style="background:var(--surface-container);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Current End</div><div style="font-weight:700;color:var(--text-main);">${e.original_end_date}</div></div>
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Requested End</div><div style="font-weight:700;color:#f59e0b;">${e.new_end_date}</div></div>
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Extension</div><div style="font-weight:700;color:var(--text-main);">${e.extension_days} day${e.extension_days !== 1 ? 's' : ''}</div></div>
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Amount Paid</div><div style="font-weight:800;color:#00B14F;">&#8369;${parseFloat(e.extension_price||0).toLocaleString()}</div></div>
+                            </div>
+                            <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);">Method: <span style="color:var(--text-main);font-weight:600;">${e.payment_method || 'N/A'}</span>${e.reference_number ? ' &bull; Ref: ' + e.reference_number : ''}</div>
+                            ${e.payment_proof_url ? `<img src="${e.payment_proof_url}" style="width:100%;border-radius:8px;margin-top:8px;max-height:150px;object-fit:contain;background:rgba(0,0,0,0.2);">` : ''}
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <button onclick="Extensions.approve(${e.id})" style="padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                                <i class="fas fa-check" style="margin-right:4px;"></i>Approve
+                            </button>
+                            <button onclick="Extensions.reject(${e.id})" style="padding:10px;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                                <i class="fas fa-times" style="margin-right:4px;"></i>Reject
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(err) {
+                if (list) list.innerHTML = '<div style="color:var(--danger);text-align:center;padding:12px;">Failed to load extensions.</div>';
+            }
+        },
+
+        async approve(extId) {
+            if (!confirm('Approve this extension request?\n\nThis will update the booking end date.')) return;
+            try {
+                const res = await fetch(`${API_URL}/admin/extensions/${extId}/approve`, { method: 'PUT' });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification('Extension approved! Booking end date updated.', 'success');
+                    this.load();
+                    Bookings.refresh();
+                } else { showNotification(data.error || 'Failed to approve', 'error'); }
+            } catch(err) { showNotification('Network error', 'error'); }
+        },
+
+        async reject(extId) {
+            const note = prompt('Reason for rejection (customer will be notified of refund-upon-return):');
+            if (note === null) return;
+            try {
+                const res = await fetch(`${API_URL}/admin/extensions/${extId}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note: note || 'Extension rejected. Refund upon vehicle return.' })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification('Extension rejected. Customer notified of refund.', 'success');
+                    this.load();
+                } else { showNotification(data.error || 'Failed to reject', 'error'); }
+            } catch(err) { showNotification('Network error', 'error'); }
+        }
+    };
+
     window.switchBookingTab = function(tab) {
         // Hide all tab contents
         const tabContents = document.querySelectorAll('.booking-tab-content');
@@ -4476,6 +4914,21 @@
             }
             // Load past bookings
             PastBookings.load();
+        } else if (tab === 'new') {
+            const newTab = document.getElementById('tabNew');
+            if (newTab) newTab.style.display = 'block';
+            const newBtn = document.getElementById('tabBtnNew');
+            if (newBtn) {
+                newBtn.style.border = '1px solid var(--primary)';
+                newBtn.style.background = 'var(--primary)';
+                newBtn.style.color = 'white';
+            }
+            if (typeof Bookings !== 'undefined') {
+                Bookings.renderNew();
+            }
+            if (typeof Extensions !== 'undefined') {
+                Extensions.load();
+            }
         } else if (tab === 'all') {
             const allTab = document.getElementById('tabAll');
             if (allTab) allTab.style.display = 'block';
@@ -4485,9 +4938,20 @@
                 allBtn.style.background = 'var(--primary)';
                 allBtn.style.color = 'white';
             }
-            // Refresh all bookings
             if (typeof Bookings !== 'undefined') {
                 Bookings.render();
+            }
+        } else if (tab === 'extensions') {
+            const extTab = document.getElementById('tabExtensions');
+            if (extTab) extTab.style.display = 'block';
+            const extBtn = document.getElementById('tabBtnExtensions');
+            if (extBtn) {
+                extBtn.style.border = '1px solid var(--primary)';
+                extBtn.style.background = 'var(--primary)';
+                extBtn.style.color = 'white';
+            }
+            if (typeof Extensions !== 'undefined') {
+                Extensions.load();
             }
         }
     };
@@ -4924,8 +5388,8 @@
             if (typeof Chart !== 'undefined') initCharts(data);
         } catch (err) { 
             console.error('Dashboard Refresh Error:', err); 
-            document.getElementById('dashTotalRevenue').textContent = '\u20B1ï¿½';
-            document.getElementById('dashTotalBookings').textContent = 'ï¿½';
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1-';
+            document.getElementById('dashTotalBookings').textContent = '-';
         }
     }
 
@@ -5007,7 +5471,7 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
         });
 
-        // Bookings Bar Chart — use booking status breakdown
+        // Bookings Bar Chart - use booking status breakdown
         const bookCtx = document.getElementById('bookingsChart');
         if (bookCtx) {
             const bStatus = data.bookingsByStatus || {};
@@ -5305,13 +5769,40 @@
             document.getElementById('inspectionForm').reset();
             this.currentPhotos = [];
             document.getElementById('inspectPhotoPreview').innerHTML = '';
+            document.getElementById('inspectProofImages').innerHTML = '';
 
             document.getElementById('inspectBookingId').value = bookingId;
             document.getElementById('inspectType').value = type;
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
             document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
-            
-            document.getElementById('inspectionModal').style.display = 'block';
+
+            // Set receipt button
+            const receiptUrl = `${API_BASE}/api/bookings/${bookingId}/receipt`;
+            document.getElementById('inspectReceiptBtn').onclick = () => {
+                Inspections.showReceiptModal(bookingId);
+            };
+
+            // Load payment proof images asynchronously
+            fetch(`${API_BASE}/api/admin/bookings/${bookingId}/payment-proof`)
+                .then(r => r.json())
+                .then(data => {
+                    const proofs = Array.isArray(data) ? data.filter(p => p.payment_proof_url) : [];
+                    const container = document.getElementById('inspectProofImages');
+                    if (!container) return;
+                    if (proofs.length === 0) { container.innerHTML = ''; return; }
+                    container.innerHTML = proofs.map(p => `
+                        <div style="margin-top:8px;">
+                            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
+                                ${p.method || 'Payment'}${p.reference_number ? ' &bull; ' + p.reference_number : ''}
+                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
+                            </div>
+                            <img src="${p.payment_proof_url}" onclick="window.open('${p.payment_proof_url}','_blank')"
+                                style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;max-height:180px;object-fit:contain;background:rgba(0,0,0,0.3);">
+                        </div>
+                    `).join('');
+                }).catch(() => {});
+
+            document.getElementById('inspectionModal').style.display = 'flex'; modalOpen();
         },
 
         handlePhotoSelect(input) {
@@ -5358,7 +5849,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     showNotification('Inspection report submitted!', 'success');
-                    document.getElementById('inspectionModal').style.display = 'none';
+                    document.getElementById('inspectionModal').style.display = 'none'; modalClose();
                     Bookings.refresh();
                 } else {
                     showNotification(data.error || 'Submission failed', 'error');
@@ -5369,7 +5860,100 @@
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
+        },
+
+        async showReceiptModal(bookingId) {
+            const modal = document.getElementById('receiptPreviewModal');
+            const body = document.getElementById('receiptBody');
+            if (!modal || !body) return;
+
+            // Use already-loaded booking data from Bookings.data
+            const b = Bookings.data.find(x => x.id === bookingId);
+            if (!b) {
+                modal.style.display = 'flex';
+                body.innerHTML = '<div style="text-align:center;color:#f87171;padding:20px;"><i class="fas fa-exclamation-circle"></i> Booking not found</div>';
+                return;
+            }
+
+            modal.style.display = 'flex';
+            body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+            // Fetch payment proofs using correct API_URL
+            let proofs = [];
+            try {
+                const pRes = await fetch(`${API_URL}/admin/bookings/${bookingId}/payment-proof`);
+                if (pRes.ok) proofs = await pRes.json();
+                if (!Array.isArray(proofs)) proofs = [];
+            } catch(e) { proofs = []; }
+
+            const fmt = n => parseFloat(n||0).toLocaleString('en-PH', {minimumFractionDigits:2});
+            const fmtD = d => {
+                if (!d) return 'N/A';
+                try { return new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}); }
+                catch(e) { return String(d).split('T')[0]; }
+            };
+
+            // Build proof images HTML
+            const proofItems = proofs.filter(p => p.payment_proof_url);
+            const proofsHtml = proofItems.length ? `
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);">
+                    <div style="font-size:0.68rem;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:10px;">Payment Proof</div>
+                    ${proofItems.map(p => `
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
+                                ${p.method||'Payment'}${p.reference_number?' &bull; '+p.reference_number:''}
+                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+                            </div>
+                            <img src="${p.payment_proof_url}" style="width:100%;border-radius:8px;max-height:200px;object-fit:contain;background:rgba(0,0,0,0.3);">
+                        </div>
+                    `).join('')}
+                </div>` : '';
+
+            body.innerHTML = `
+                <div style="padding:4px 0 14px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:14px;">
+                    <div style="font-size:1rem;font-weight:900;color:white;">RECEIPT #${String(b.id).padStart(6,'0')}</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:2px;">Status: <span style="color:#00B14F;font-weight:700;">${(b.status||'').toUpperCase()}</span></div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                    <div>
+                        <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:4px;">Billed To</div>
+                        <div style="font-size:0.85rem;color:white;font-weight:600;">${b.customer_name||'N/A'}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:4px;">Rental Period</div>
+                        <div style="font-size:0.8rem;color:white;">${fmtD(b.start_date)}</div>
+                        <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);">to ${fmtD(b.end_date)}</div>
+                    </div>
+                </div>
+                <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:14px;">
+                    <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px;">Vehicle</div>
+                    <div style="font-size:0.85rem;color:white;font-weight:600;">${b.car||'N/A'}</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">${b.rental_type||''}</div>
+                </div>
+                <div>
+                    <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px;">Payment</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.3);border-radius:10px;">
+                        <span style="font-weight:800;color:white;">Total Amount</span>
+                        <span style="font-weight:900;color:#00B14F;font-size:1.1rem;">&#8369;${fmt(b.total_price)}</span>
+                    </div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span>Payment: <span style="color:${b.payment_status==='paid'?'#4ade80':'#fbbf24'};font-weight:700;">${(b.payment_status||'pending').toUpperCase()}</span></span>
+                    </div>
+                    ${proofs.length > 0 ? proofs.map(p => `
+                        <div style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                                <span style="font-size:0.72rem;color:rgba(255,255,255,0.5);">${p.method||'Payment'}</span>
+                                <span style="font-size:0.75rem;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+                            </div>
+                            ${p.reference_number ? `<div style="font-size:0.78rem;color:white;font-weight:600;">Ref #: <span style="color:#a5f3fc;font-family:monospace;">${p.reference_number}</span></div>` : ''}
+                            <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-top:2px;">Status: ${(p.status||'pending').toUpperCase()}</div>
+                        </div>
+                    `).join('') : ''}
+                </div>
+                ${proofsHtml}
+            `;
         }
+
     };
 
     function openChangePasswordModal() {
@@ -5548,7 +6132,7 @@
                 return;
             }
 
-            // 7. On root tab ï¿½ show exit confirmation
+            // 7. On root tab - show exit confirmation
             showExitConfirm();
         };
 
@@ -5710,7 +6294,7 @@
                     ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'ï¿½';
+                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
                     <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
@@ -5753,7 +6337,7 @@
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'ï¿½';
+            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'N/A';
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `
@@ -5813,7 +6397,7 @@
 
             <!-- Info -->
             <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
-                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'ï¿½'}</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Phone</span><span>${u.phone || 'N/A'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Loyalty Points</span><span style="color:var(--amber);font-weight:700;">${u.loyalty_points || 0} pts</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;"><span style="color:var(--text-muted);">Auth Provider</span><span>${u.auth_provider || 'Email'}</span></div>
                 <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.8rem;"><span style="color:var(--text-muted);">Joined</span><span>${joined}</span></div>
