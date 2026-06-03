@@ -6,10 +6,14 @@
 // CONFIG — auto-detect API URL for web vs APK
 var API_BASE = (function() {
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
+  // Always use production URL on native Capacitor APK
+  if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
-    if ((h === 'localhost' || h === '127.0.0.1') && !(window.Capacitor && window.Capacitor.isNative)) return 'http://localhost:5000/api';
-    if (window.location.protocol === 'https:' && !h.includes('capacitor')) {
+    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
+    if (window.location.protocol === 'https:') {
       return window.location.origin + '/api';
     }
   }
