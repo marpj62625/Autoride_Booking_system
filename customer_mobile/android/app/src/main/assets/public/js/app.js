@@ -1022,62 +1022,69 @@ function doLogin() {
 function doGoogleLogin() {
   var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
-  // ?? Web browser: use Google Identity Services (GSI) popup ??
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
-  var hasGoogleAuthPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth;
+  var GoogleAuthPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth;
 
-  if (!isCapacitorNative && !hasGoogleAuthPlugin) {
-    // Web flow via GSI
-    if (typeof google === 'undefined' || !google.accounts) {
-      showToast('Google Sign-In not loaded. Please refresh the page.', 'error');
-      return;
-    }
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: function(response) {
-        if (!response.credential) {
-          showToast('Google Sign-In failed. Please try again.', 'error');
-          return;
+  // Native APK with GoogleAuth plugin registered
+  if (isCapacitorNative && GoogleAuthPlugin) {
+    showLoading(true);
+    GoogleAuthPlugin.signIn()
+      .then(function(result) {
+        var idToken = (result.authentication && result.authentication.idToken)
+          || result.idToken || result.credential || result.serverAuthCode;
+        var email = result.email;
+        var name = result.name || result.displayName || 'User';
+        if (!idToken) throw new Error('No ID token received from Google');
+        return _finishGoogleLogin(idToken, email, name);
+      })
+      .catch(function(err) {
+        showLoading(false);
+        if (err.message && err.message.includes('cancel')) {
+          showToast('Sign-in cancelled', 'info');
+        } else {
+          // Plugin failed — fall back to OAuth2 popup
+          _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
         }
-        showLoading(true);
-        _finishGoogleLogin(response.credential, null, null);
-      },
-      auto_select: false,
-      cancel_on_tap_outside: true
-    });
-    google.accounts.id.prompt(function(notification) {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // Fallback: show popup
-        google.accounts.id.renderButton(
-          document.getElementById('googleSignInBtnContainer') || document.body,
-          { theme: 'outline', size: 'large', type: 'standard' }
-        );
-        google.accounts.id.prompt();
-      }
-    });
+      });
     return;
   }
 
-  // ?? Native APK: use Capacitor GoogleAuth plugin ??
-  showLoading(true);
-  var GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
-  GoogleAuth.signIn()
-    .then(function(result) {
-      var idToken = (result.authentication && result.authentication.idToken)
-        || result.idToken || result.credential || result.serverAuthCode;
-      var email = result.email;
-      var name = result.name || result.displayName || 'User';
-      if (!idToken) throw new Error('No ID token received from Google');
-      return _finishGoogleLogin(idToken, email, name);
-    })
-    .catch(function(err) {
-      showLoading(false);
-      if (err.message && err.message.includes('cancel')) {
-        showToast('Sign-in cancelled', 'info');
-      } else {
-        showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+  // Web browser OR native APK without plugin — use OAuth2 popup
+  _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
+}
+
+function _doGoogleOAuth2Popup(clientId) {
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    showToast('Google Sign-In not available. Please try again.', 'error');
+    return;
+  }
+  var tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'email profile openid',
+    callback: function(tokenResponse) {
+      if (tokenResponse.error) {
+        showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+        return;
       }
-    });
+      showLoading(true);
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(userInfo) {
+          return _finishGoogleLogin(
+            tokenResponse.access_token,
+            userInfo.email,
+            userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
+          );
+        })
+        .catch(function(err) {
+          showLoading(false);
+          showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+        });
+    }
+  });
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function _finishGoogleLogin(idToken, email, name) {
