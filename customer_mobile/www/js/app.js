@@ -1023,34 +1023,15 @@ function doGoogleLogin() {
   var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
-  var GoogleAuthPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth;
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  // Native APK with GoogleAuth plugin registered
-  if (isCapacitorNative && GoogleAuthPlugin) {
-    showLoading(true);
-    GoogleAuthPlugin.signIn()
-      .then(function(result) {
-        var idToken = (result.authentication && result.authentication.idToken)
-          || result.idToken || result.credential || result.serverAuthCode;
-        var email = result.email;
-        var name = result.name || result.displayName || 'User';
-        if (!idToken) throw new Error('No ID token received from Google');
-        return _finishGoogleLogin(idToken, email, name);
-      })
-      .catch(function(err) {
-        showLoading(false);
-        if (err.message && err.message.includes('cancel')) {
-          showToast('Sign-in cancelled', 'info');
-        } else {
-          // Plugin failed — fall back to OAuth2 popup
-          _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
-        }
-      });
-    return;
-  }
-
-  // Web browser OR native APK without plugin — use OAuth2 popup
-  _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
+  // DEBUG — show exactly what Capacitor sees
+  var debugInfo = 'Native:' + (isCapacitorNative ? 'YES' : 'NO') +
+    ' | Plugins:' + (plugins ? Object.keys(plugins).join(',') : 'NONE') +
+    ' | GoogleAuth:' + (GoogleAuthPlugin ? 'YES' : 'NO');
+  console.log('[GoogleLogin]', debugInfo);
+  showToast(debugInfo, 'info');
 }
 
 function _doGoogleOAuth2Popup(clientId) {
