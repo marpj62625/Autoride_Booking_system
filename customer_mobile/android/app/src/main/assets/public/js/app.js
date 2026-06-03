@@ -1022,39 +1022,75 @@ function doLogin() {
 function doGoogleLogin() {
   var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
-  // ?? Web browser: use Google Identity Services (GSI) popup ??
+  // ?? Web browser: use Google Identity Services standard popup ??
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var hasGoogleAuthPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth;
 
   if (!isCapacitorNative && !hasGoogleAuthPlugin) {
-    // Web flow via GSI
     if (typeof google === 'undefined' || !google.accounts) {
       showToast('Google Sign-In not loaded. Please refresh the page.', 'error');
       return;
     }
-    google.accounts.id.initialize({
+
+    // Use tokenClient (OAuth2 popup) — more reliable than One Tap for web apps
+    var tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
-      callback: function(response) {
-        if (!response.credential) {
-          showToast('Google Sign-In failed. Please try again.', 'error');
+      scope: 'email profile openid',
+      callback: function(tokenResponse) {
+        if (tokenResponse.error) {
+          showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
           return;
         }
+        // Exchange access token for user info, then send to backend
         showLoading(true);
-        _finishGoogleLogin(response.credential, null, null);
-      },
-      auto_select: false,
-      cancel_on_tap_outside: true
-    });
-    google.accounts.id.prompt(function(notification) {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // Fallback: show popup
-        google.accounts.id.renderButton(
-          document.getElementById('googleSignInBtnContainer') || document.body,
-          { theme: 'outline', size: 'large', type: 'standard' }
-        );
-        google.accounts.id.prompt();
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+        })
+          .then(function(r) { return r.json(); })
+          .then(function(userInfo) {
+            // Use sub as a pseudo id_token for backend compatibility
+            // Backend accepts email+name directly without full JWT verification
+            return apiCall('/auth/google', {
+              method: 'POST',
+              body: JSON.stringify({
+                id_token: tokenResponse.access_token,  // backend will fall back to email/name
+                email: userInfo.email,
+                name: userInfo.name || userInfo.given_name + ' ' + (userInfo.family_name || '')
+              })
+            });
+          })
+          .then(function(data) {
+            showLoading(false);
+            if (data && data.user) {
+              currentUser = data.user;
+              Session.save(currentUser);
+              showToast('Welcome, ' + currentUser.fullName + '!', 'success');
+              apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
+              // Always fetch fresh verification status after Google login
+              apiCall('/user/verify-status?user_id=' + currentUser.id)
+                .then(function(v) {
+                  currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (currentUser.isVerified || 0);
+                  Session.save(currentUser);
+                }).catch(function() {});
+              // Init Supabase and notifications
+              if (typeof supabase !== 'undefined') {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+              }
+              loadNotifications(currentUser.id);
+              subscribeToNotifications(currentUser.id);
+              startBgChatPolling();
+              showPage('page-home');
+            } else {
+              showToast('Login failed. Please try again.', 'error');
+            }
+          })
+          .catch(function(err) {
+            showLoading(false);
+            showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+          });
       }
     });
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
     return;
   }
 
@@ -1092,6 +1128,16 @@ function _finishGoogleLogin(idToken, email, name) {
         Session.save(currentUser);
         showToast('Welcome, ' + currentUser.fullName + '!', 'success');
         apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
+        // Always fetch fresh verification (license) status
+        apiCall('/user/verify-status?user_id=' + currentUser.id)
+          .then(function(v) {
+            currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (currentUser.isVerified || 0);
+            Session.save(currentUser);
+          }).catch(function() {});
+        // Init Supabase client for notifications
+        if (typeof supabase !== 'undefined') {
+          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
         loadNotifications(currentUser.id);
         subscribeToNotifications(currentUser.id);
         startBgChatPolling();

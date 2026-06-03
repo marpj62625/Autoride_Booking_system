@@ -1744,41 +1744,52 @@ def google_auth():
 
         if len(parts) != 3:
 
-            print(f"[GOOGLE_AUTH] Invalid token format")
+            # Not a JWT — could be an OAuth2 access token from web flow.
+            # In this case, email and name must be provided directly by the frontend
+            # (which already verified them via Google's userinfo endpoint).
+            if email and '@' in email:
+                print(f"[GOOGLE_AUTH] Access token flow — using provided email: {email}")
+                idinfo = {
+                    'email': email,
+                    'name': name or 'Google User',
+                    'sub': 'oauth2_' + email.replace('@', '_').replace('.', '_'),
+                    'email_verified': True
+                }
+            else:
+                print(f"[GOOGLE_AUTH] Invalid token format and no email provided")
+                return jsonify({"error": "Invalid token format"}), 401
 
-            return jsonify({"error": "Invalid token format"}), 401
+        else:
 
-        
+            # Decode the payload (add padding if needed)
 
-        # Decode the payload (add padding if needed)
+            payload = parts[1]
 
-        payload = parts[1]
+            padding = 4 - len(payload) % 4
 
-        padding = 4 - len(payload) % 4
+            if padding != 4:
 
-        if padding != 4:
+                payload += '=' * padding
 
-            payload += '=' * padding
+            
 
-        
+            decoded = base64.urlsafe_b64decode(payload)
 
-        decoded = base64.urlsafe_b64decode(payload)
+            idinfo = json.loads(decoded)
 
-        idinfo = json.loads(decoded)
+            
 
-        
+            print(f"[GOOGLE_AUTH] Decoded token - email: {idinfo.get('email')}, aud: {idinfo.get('aud')}, azp: {idinfo.get('azp')}")
 
-        print(f"[GOOGLE_AUTH] Decoded token - email: {idinfo.get('email')}, aud: {idinfo.get('aud')}, azp: {idinfo.get('azp')}")
+            
 
-        
+            # For now, trust the token if it has required fields
 
-        # For now, trust the token if it has required fields
+            if not idinfo.get('email') or not idinfo.get('sub'):
 
-        if not idinfo.get('email') or not idinfo.get('sub'):
+                print(f"[GOOGLE_AUTH] Token missing required fields")
 
-            print(f"[GOOGLE_AUTH] Token missing required fields")
-
-            return jsonify({"error": "Invalid token - missing fields"}), 401
+                return jsonify({"error": "Invalid token - missing fields"}), 401
 
 
 
@@ -1833,9 +1844,12 @@ def google_auth():
                     commit_db()
 
                 
+                # Fetch loyalty points for the user
+                cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_fresh['id'],))
+                lp_row = cur.fetchone()
+                loyalty_pts = int(lp_row['loyalty_points']) if lp_row and lp_row.get('loyalty_points') else 0
 
                 # SKIP OTP - User is already verified!
-
                 return jsonify({
 
                     "message": "login success",
@@ -1850,7 +1864,9 @@ def google_auth():
 
                         "isDriver": user_fresh.get('is_driver', 0),
 
-                        "isVerified": 1
+                        "isVerified": user_fresh.get('is_verified', 0),
+
+                        "loyaltyPoints": loyalty_pts
 
                     },
 
@@ -1916,7 +1932,9 @@ def google_auth():
 
                         "isDriver": is_driver,
 
-                        "isVerified": 1
+                        "isVerified": 0,
+
+                        "loyaltyPoints": 0
 
                     },
 

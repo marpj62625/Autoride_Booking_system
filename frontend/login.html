@@ -62,22 +62,10 @@
                 
                 <button type="button" class="btn-outline" style="margin-bottom: 1.25rem;" onclick="toggleOTP()">Login with Phone (OTP)</button>
                 
-                <div style="display: flex; justify-content: center; width: 100%; overflow: hidden;">
-                    <div id="g_id_onload"
-                         data-client_id="632685261969-pak4g39l46krdnufu49h576eo5ainddl.apps.googleusercontent.com"
-                         data-callback="handleCredentialResponse"
-                         data-auto_prompt="false">
-                    </div>
-                    <div class="g_id_signin"
-                         data-type="standard"
-                         data-size="large"
-                         data-theme="outline"
-                         data-text="continue_with"
-                         data-shape="rectangular"
-                         data-logo_alignment="left"
-                         data-width="320">
-                    </div>
-                </div>
+                <button type="button" id="btnGoogleLogin" onclick="doGoogleLogin()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 20px;background:#fff;color:#3c4043;border:1px solid #dadce0;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='none'">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;">
+                    Continue with Google
+                </button>
             </div>
 
             <!-- Phone OTP Login -->
@@ -281,20 +269,16 @@
         }
 
         async function handleCredentialResponse(response) {
-            console.log('Google credential received. Sending to backend...');
+            // Legacy One Tap callback — kept for safety, but not triggered anymore
+            console.log('Google credential received (legacy). Sending to backend...');
             showMessage('Verifying Google account...');
             try {
                 const res = await fetch(`${window.API_BASE}/api/auth/google`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        credential: response.credential
-                    })
+                    body: JSON.stringify({ credential: response.credential })
                 });
-                console.log('Backend response status:', res.status);
                 const data = await res.json();
-                console.log('Backend response data:', data);
-
                 if (res.ok) {
                     if (data.verification_required) {
                         unverifiedEmail = data.email;
@@ -308,15 +292,74 @@
                     showMessage('Google Login Error: ' + (data.error || 'Unknown error'), true);
                 }
             } catch (err) {
-                console.error('Fetch error:', err);
                 showMessage('Server connection error.', true);
             }
+        }
+
+        function doGoogleLogin() {
+            var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                showMessage('Google Sign-In not loaded yet. Please refresh and try again.', true);
+                return;
+            }
+            var tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'email profile openid',
+                callback: function(tokenResponse) {
+                    if (tokenResponse.error) {
+                        showMessage('Google Sign-In failed: ' + tokenResponse.error, true);
+                        return;
+                    }
+                    showMessage('Verifying Google account...');
+                    // Fetch user info from Google then authenticate with backend
+                    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(userInfo) {
+                        return fetch(window.API_BASE + '/api/auth/google', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id_token: tokenResponse.access_token,
+                                email: userInfo.email,
+                                name: userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
+                            })
+                        });
+                    })
+                    .then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
+                    .then(function(result) {
+                        if (result.ok) {
+                            if (result.data.verification_required) {
+                                unverifiedEmail = result.data.email;
+                                displayEmail.textContent = result.data.email;
+                                authContainer.classList.add('verification-active');
+                                showMessage(result.data.message || 'Please verify your email.');
+                            } else {
+                                finalizeLogin(result.data);
+                            }
+                        } else {
+                            showMessage('Google Login Error: ' + (result.data.error || 'Unknown error'), true);
+                        }
+                    })
+                    .catch(function(err) {
+                        showMessage('Server connection error.', true);
+                        console.error('Google login error:', err);
+                    });
+                }
+            });
+            tokenClient.requestAccessToken({ prompt: 'select_account' });
         }
         
         function finalizeLogin(data) {
             showMessage('Login successful!');
-            localStorage.setItem('user_id', data.user_id);
-            localStorage.setItem('full_name', data.full_name);
+            // Support both response shapes:
+            // - old /login: { user_id, full_name }
+            // - new /auth/google: { user: { id, fullName, ... } }
+            var userId   = data.user_id   || (data.user && data.user.id);
+            var fullName = data.full_name  || (data.user && data.user.fullName);
+            localStorage.setItem('user_id', userId);
+            localStorage.setItem('full_name', fullName);
             setTimeout(() => window.location.href = redirectUrl, 1000);
         }
 
