@@ -1020,7 +1020,6 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
-function doGoogleLogin() {
   var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
   // ?? Web browser: use Google Identity Services (GSI) popup ??
