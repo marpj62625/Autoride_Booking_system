@@ -8,7 +8,7 @@ var API_BASE = (function() {
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
-    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
+    if ((h === 'localhost' || h === '127.0.0.1') && !(window.Capacitor && window.Capacitor.isNative)) return 'http://localhost:5000/api';
     if (window.location.protocol === 'https:' && !h.includes('capacitor')) {
       return window.location.origin + '/api';
     }
