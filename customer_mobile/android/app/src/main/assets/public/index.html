@@ -302,6 +302,17 @@
         .receipt-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.875rem; }
         .receipt-row:last-child { border-bottom:none; }
         .receipt-row strong { font-weight:700; }
+        /* Responsive vehicle grid for wide screens (web browser) */
+        @media (min-width: 640px) {
+          .vehicle-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 960px) {
+          .vehicle-grid { grid-template-columns: repeat(3, 1fr); }
+          .page { max-width: 1200px; margin: 0 auto; }
+        }
+        @media (min-width: 1280px) {
+          .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
+        }
     </style>
 </head>
 <body>
