@@ -1026,12 +1026,37 @@ function doGoogleLogin() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  // DEBUG — show exactly what Capacitor sees
-  var debugInfo = 'Native:' + (isCapacitorNative ? 'YES' : 'NO') +
-    ' | Plugins:' + (plugins ? Object.keys(plugins).join(',') : 'NONE') +
-    ' | GoogleAuth:' + (GoogleAuthPlugin ? 'YES' : 'NO');
-  console.log('[GoogleLogin]', debugInfo);
-  showToast(debugInfo, 'info');
+  // Native APK — use Capacitor GoogleAuth plugin
+  if (isCapacitorNative && GoogleAuthPlugin) {
+    showLoading(true);
+    GoogleAuthPlugin.signIn()
+      .then(function(result) {
+        showLoading(false);
+        var idToken = (result.authentication && result.authentication.idToken)
+          || result.idToken || result.credential || result.serverAuthCode;
+        var email = result.email;
+        var name = result.name || result.displayName || 'User';
+        if (!idToken && !email) throw new Error('No account info received from Google');
+        return _finishGoogleLogin(idToken || ('oauth_' + Date.now()), email, name);
+      })
+      .catch(function(err) {
+        showLoading(false);
+        var msg = (err && (err.message || err.errorMessage || JSON.stringify(err))) || 'Unknown error';
+        if (msg.includes('12501') || msg.toLowerCase().includes('cancel')) {
+          showToast('Sign-in cancelled', 'info');
+        } else if (msg.includes('12500')) {
+          showToast('Google account not found on this device. Add a Google account in Settings first.', 'error');
+        } else if (msg.includes('10')) {
+          showToast('Developer config error (code 10). Contact support.', 'error');
+        } else {
+          showToast('Google Sign-In failed: ' + msg, 'error');
+        }
+      });
+    return;
+  }
+
+  // Web browser — use OAuth2 popup
+  _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
 function _doGoogleOAuth2Popup(clientId) {
