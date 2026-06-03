@@ -1019,6 +1019,31 @@ function doLogin() {
     .finally(function() { showLoading(false); });
 }
 
+// ===== DEBUG LOG OVERLAY =====
+var _dbgLines = [];
+function _dbgLog(msg) {
+  var ts = new Date().toLocaleTimeString();
+  _dbgLines.push('[' + ts + '] ' + msg);
+  var panel = document.getElementById('_debugPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = '_debugPanel';
+    panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:55vh;overflow-y:auto;background:rgba(0,0,0,0.92);color:#0f0;font-size:11px;font-family:monospace;padding:8px;z-index:999999;border-top:2px solid #0f0;';
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '? Close Debug';
+    closeBtn.style.cssText = 'background:#333;color:#fff;border:none;padding:4px 10px;margin-bottom:6px;cursor:pointer;width:100%;font-size:12px;';
+    closeBtn.onclick = function() { panel.remove(); _dbgLines = []; };
+    panel.appendChild(closeBtn);
+    document.body.appendChild(panel);
+  }
+  var line = document.createElement('div');
+  line.textContent = _dbgLines[_dbgLines.length - 1];
+  line.style.borderBottom = '1px solid #1a1a1a';
+  line.style.padding = '2px 0';
+  panel.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+}
+
 function doGoogleLogin() {
   var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
@@ -1026,12 +1051,22 @@ function doGoogleLogin() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
+  _dbgLog('doGoogleLogin called');
+  _dbgLog('isNative=' + isCapacitorNative + ' hasPlugin=' + !!GoogleAuthPlugin);
+
   // Native APK — use Capacitor GoogleAuth plugin
   if (isCapacitorNative && GoogleAuthPlugin) {
     showLoading(true);
+    _dbgLog('Calling GoogleAuthPlugin.signIn()...');
     GoogleAuthPlugin.signIn()
       .then(function(result) {
         showLoading(false);
+        _dbgLog('signIn SUCCESS');
+        _dbgLog('result keys: ' + Object.keys(result).join(','));
+        _dbgLog('email: ' + result.email);
+        _dbgLog('name: ' + result.name);
+        _dbgLog('authentication: ' + JSON.stringify(result.authentication));
+
         var idToken = (result.authentication && result.authentication.idToken)
           || result.idToken || result.credential || null;
         var accessToken = (result.authentication && result.authentication.accessToken)
@@ -1040,34 +1075,38 @@ function doGoogleLogin() {
         var name = result.name || result.displayName
           || (result.profile && result.profile.name) || 'User';
 
+        _dbgLog('idToken=' + (idToken ? idToken.substring(0, 30) + '...' : 'NULL'));
+        _dbgLog('accessToken=' + (accessToken ? accessToken.substring(0, 30) + '...' : 'NULL'));
+        _dbgLog('email=' + email + ' name=' + name);
+
         if (!email) throw new Error('No email received from Google');
 
-        // Always send email + name. Use idToken if available, otherwise accessToken.
         return _finishGoogleLogin(idToken || accessToken || ('ga_' + Date.now()), email, name);
       })
       .catch(function(err) {
         showLoading(false);
-        // Show the full raw error for diagnosis
         var rawMsg = '';
         try { rawMsg = JSON.stringify(err); } catch(e) { rawMsg = String(err); }
+        _dbgLog('signIn FAILED: ' + rawMsg);
         var msg = (err && (err.message || err.errorMessage || rawMsg)) || 'Unknown';
         var code = (err && (err.errorCode || err.code || '')) || '';
 
         if (msg.includes('12501') || msg.toLowerCase().includes('cancel')) {
           showToast('Sign-in cancelled', 'info');
         } else if (msg.includes('12500')) {
-          showToast('No Google account on device. Go to Settings > Accounts > Add Google account first.', 'error');
+          showToast('No Google account on device.', 'error');
         } else if (msg.includes('10') || code === '10') {
-          showToast('SHA-1 mismatch (code 10). APK signing key not registered in Google Cloud Console.', 'error');
+          showToast('SHA-1 mismatch (code 10)', 'error');
         } else if (msg.includes('7') || code === '7') {
-          showToast('Google Play Services network error (code 7). Check internet and Google Play Services is updated.', 'error');
+          showToast('Google Play Services error (code 7)', 'error');
         } else {
-          showToast('Google error: ' + msg.substring(0, 120), 'error');
+          showToast('Google error: ' + msg.substring(0, 80), 'error');
         }
       });
     return;
   }
 
+  _dbgLog('Using web OAuth2 popup (not native or no plugin)');
   // Web browser — use OAuth2 popup
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
@@ -1107,12 +1146,17 @@ function _doGoogleOAuth2Popup(clientId) {
 }
 
 function _finishGoogleLogin(idToken, email, name) {
+  _dbgLog('_finishGoogleLogin called');
+  _dbgLog('email=' + email + ' name=' + name);
+  _dbgLog('token prefix=' + (idToken ? idToken.substring(0, 20) : 'NULL'));
+  _dbgLog('API_BASE=' + API_BASE);
   showLoading(true);
   return apiCall('/auth/google', {
     method: 'POST',
     body: JSON.stringify({ id_token: idToken, email: email, name: name })
   })
     .then(function(data) {
+      _dbgLog('backend response: ' + JSON.stringify(data).substring(0, 100));
       if (data && data.user) {
         currentUser = data.user;
         Session.save(currentUser);
@@ -1123,10 +1167,13 @@ function _finishGoogleLogin(idToken, email, name) {
         startBgChatPolling();
         showPage('page-home');
       } else {
+        _dbgLog('ERROR: no user in response');
         showToast('Login failed. Please try again.', 'error');
       }
     })
     .catch(function(err) {
+      _dbgLog('apiCall ERROR: ' + (err.message || JSON.stringify(err)));
+      _dbgLog('err.status=' + err.status);
       showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
     })
     .finally(function() { showLoading(false); });
