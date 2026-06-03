@@ -309,17 +309,46 @@
         }
         @media (min-width: 960px) {
           .vehicle-grid { grid-template-columns: repeat(3, 1fr); }
-          .page { max-width: 900px; margin: 0 auto; }
-          .overlay-page { max-width: 900px; margin: 0 auto; left: 50%; transform: translateX(-50%); }
-          .bottom-nav { max-width: 900px; left: 50%; transform: translateX(-50%); right: auto; width: 900px; }
-          body { background: var(--border); }
+          body {
+            background: #d1d5db;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+          }
+          #app-shell {
+            position: relative;
+            width: 480px;
+            max-width: 480px;
+            min-height: 100vh;
+            background: var(--bg-page);
+            box-shadow: 0 0 60px rgba(0,0,0,0.25);
+            overflow-x: hidden;
+          }
+          /* Fix fixed elements to stay inside app-shell */
+          .bottom-nav {
+            position: absolute !important;
+            width: 100%;
+            left: 0 !important;
+            right: 0 !important;
+          }
+          #loadingOverlay {
+            position: absolute !important;
+            width: 100%;
+          }
+          .overlay-page {
+            position: absolute !important;
+            width: 100%;
+          }
+          .page { padding-bottom: 80px; }
         }
         @media (min-width: 1280px) {
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
+          #app-shell { width: 520px; max-width: 520px; }
         }
     </style>
 </head>
 <body>
+<div id="app-shell">
 <noscript><div style="color:white;padding:20px;font-size:1.2rem;">JavaScript is disabled or failed to load.</div></noscript>
 
 <!-- ???????????????????????????????????????????????????????????
