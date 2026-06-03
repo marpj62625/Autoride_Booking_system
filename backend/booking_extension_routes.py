@@ -82,7 +82,7 @@ def extend_booking(booking_id):
                 f_file.save(os.path.join(upload_dir, fname))
                 payment_proof_url = 'https://autoride-booking-system.vercel.app/api/uploads/' + fname
 
-        # Calculate extension days — handle date object, datetime, or string
+        # Calculate extension days - handle date object, datetime, or string
         import datetime as _datetime_mod
         orig_end = booking['end_date']
         if isinstance(orig_end, _datetime_mod.datetime):

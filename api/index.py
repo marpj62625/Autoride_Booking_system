@@ -7,7 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 from app import app  # v2026.05.12
 
 # This middleware strips the /api prefix before passing to Flask
-# Vercel receives /api/vehicles/categories → middleware strips → Flask sees /vehicles/categories
+# Vercel receives /api/vehicles/categories -> middleware strips -> Flask sees /vehicles/categories
 class PrefixMiddleware(object):
     def __init__(self, app, prefix=''):
         self.app = app
