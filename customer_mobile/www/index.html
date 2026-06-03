@@ -302,16 +302,33 @@
         .receipt-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.875rem; }
         .receipt-row:last-child { border-bottom:none; }
         .receipt-row strong { font-weight:700; }
-        /* Responsive vehicle grid for wide screens (web browser) */
+
+        /* ===== WIDE SCREEN RESPONSIVE LAYOUT ===== */
         @media (min-width: 640px) {
+          /* Vehicle grid: 2 cols on tablet */
           .vehicle-grid { grid-template-columns: repeat(2, 1fr); }
+          /* Contain page content */
+          body { background: #0f0f0f; }
+          .page, .auth-page { max-width: 720px; margin: 0 auto; background: var(--bg-page); }
+          .overlay-page { max-width: 720px; left: 50% !important; transform: translateX(-50%); }
+          #bottomNav { max-width: 720px; left: 50%; transform: translateX(-50%); }
+          #progressBar { max-width: 720px; left: 50%; transform: translateX(-50%); }
         }
         @media (min-width: 960px) {
+          /* Vehicle grid: 3 cols on desktop */
           .vehicle-grid { grid-template-columns: repeat(3, 1fr); }
-          .page { max-width: 1200px; margin: 0 auto; }
+          .page, .auth-page { max-width: 900px; }
+          .overlay-page { max-width: 900px; }
+          #bottomNav { max-width: 900px; }
+          #progressBar { max-width: 900px; }
         }
         @media (min-width: 1280px) {
+          /* Vehicle grid: 4 cols on large desktop */
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
+          .page, .auth-page { max-width: 1100px; }
+          .overlay-page { max-width: 1100px; }
+          #bottomNav { max-width: 1100px; }
+          #progressBar { max-width: 1100px; }
         }
     </style>
 </head>
