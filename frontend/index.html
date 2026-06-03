@@ -302,33 +302,20 @@
         .receipt-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.875rem; }
         .receipt-row:last-child { border-bottom:none; }
         .receipt-row strong { font-weight:700; }
-
-        /* ===== WIDE SCREEN RESPONSIVE LAYOUT ===== */
+        /* Responsive vehicle grid for wide screens (web browser) */
         @media (min-width: 640px) {
-          /* Vehicle grid: 2 cols on tablet */
           .vehicle-grid { grid-template-columns: repeat(2, 1fr); }
-          /* Contain page content */
-          body { background: #0f0f0f; }
-          .page, .auth-page { max-width: 720px; margin: 0 auto; background: var(--bg-page); }
-          .overlay-page { max-width: 720px; left: 50% !important; transform: translateX(-50%); }
-          #bottomNav { max-width: 720px; left: 50%; transform: translateX(-50%); }
-          #progressBar { max-width: 720px; left: 50%; transform: translateX(-50%); }
+          .vehicle-img-wrap { height: auto; aspect-ratio: 16/9; }
         }
         @media (min-width: 960px) {
-          /* Vehicle grid: 3 cols on desktop */
           .vehicle-grid { grid-template-columns: repeat(3, 1fr); }
-          .page, .auth-page { max-width: 900px; }
-          .overlay-page { max-width: 900px; }
-          #bottomNav { max-width: 900px; }
-          #progressBar { max-width: 900px; }
+          .page { max-width: 900px; margin: 0 auto; }
+          .overlay-page { max-width: 900px; margin: 0 auto; left: 50%; transform: translateX(-50%); }
+          .bottom-nav { max-width: 900px; left: 50%; transform: translateX(-50%); right: auto; width: 900px; }
+          body { background: var(--border); }
         }
         @media (min-width: 1280px) {
-          /* Vehicle grid: 4 cols on large desktop */
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
-          .page, .auth-page { max-width: 1100px; }
-          .overlay-page { max-width: 1100px; }
-          #bottomNav { max-width: 1100px; }
-          #progressBar { max-width: 1100px; }
         }
     </style>
 </head>
@@ -657,7 +644,7 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
-  <!-- Active booking banner ó shown by JS when user has an active booking -->
+  <!-- Active booking banner ù shown by JS when user has an active booking -->
   <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
     <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
     <div style="flex:1;">
@@ -1026,7 +1013,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- DEBUG OVERLAY ó disabled in production -->
+<!-- DEBUG OVERLAY ù disabled in production -->
 <!-- To re-enable for debugging, uncomment the block below -->
 <!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
@@ -1049,7 +1036,7 @@
   // All dbg() calls are no-ops. Global errors are silently ignored.
   function dbg() {}
   window.__dbg = dbg;
-  // Keep fetch interception removed ó no debug overhead in production
+  // Keep fetch interception removed ù no debug overhead in production
 })();
 </script>
 </body>

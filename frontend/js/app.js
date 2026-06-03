@@ -1474,8 +1474,8 @@ function loadHome() {
         var startNorm = _normDateStr(active.start_date);
         var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
         var imgHtml = imgSrc
-          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:140px;object-fit:cover;">'
-          : '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:200px;object-fit:cover;display:block;">'
+          : '<div style="width:100%;height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
         card.innerHTML =
           imgHtml +
           '<div style="padding:14px;">' +
