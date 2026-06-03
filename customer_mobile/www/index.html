@@ -309,46 +309,13 @@
         }
         @media (min-width: 960px) {
           .vehicle-grid { grid-template-columns: repeat(3, 1fr); }
-          body {
-            background: #d1d5db;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-          }
-          #app-shell {
-            position: relative;
-            width: 480px;
-            max-width: 480px;
-            min-height: 100vh;
-            background: var(--bg-page);
-            box-shadow: 0 0 60px rgba(0,0,0,0.25);
-            overflow-x: hidden;
-          }
-          /* Fix fixed elements to stay inside app-shell */
-          .bottom-nav {
-            position: absolute !important;
-            width: 100%;
-            left: 0 !important;
-            right: 0 !important;
-          }
-          #loadingOverlay {
-            position: absolute !important;
-            width: 100%;
-          }
-          .overlay-page {
-            position: absolute !important;
-            width: 100%;
-          }
-          .page { padding-bottom: 80px; }
         }
         @media (min-width: 1280px) {
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
-          #app-shell { width: 520px; max-width: 520px; }
         }
     </style>
 </head>
 <body>
-<div id="app-shell">
 <noscript><div style="color:white;padding:20px;font-size:1.2rem;">JavaScript is disabled or failed to load.</div></noscript>
 
 <!-- ???????????????????????????????????????????????????????????
@@ -673,7 +640,7 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
-  <!-- Active booking banner ù shown by JS when user has an active booking -->
+  <!-- Active booking banner ÔøΩ shown by JS when user has an active booking -->
   <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
     <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
     <div style="flex:1;">
@@ -1042,7 +1009,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- DEBUG OVERLAY ù disabled in production -->
+<!-- DEBUG OVERLAY ÔøΩ disabled in production -->
 <!-- To re-enable for debugging, uncomment the block below -->
 <!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
@@ -1065,7 +1032,7 @@
   // All dbg() calls are no-ops. Global errors are silently ignored.
   function dbg() {}
   window.__dbg = dbg;
-  // Keep fetch interception removed ù no debug overhead in production
+  // Keep fetch interception removed ÔøΩ no debug overhead in production
 })();
 </script>
 </body>
