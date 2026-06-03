@@ -301,9 +301,11 @@ def migrate_payment_cancellation():
 
 
 
-with app.app_context():
-
-    migrate_payment_cancellation()
+try:
+    with app.app_context():
+        migrate_payment_cancellation()
+except Exception as _e:
+    print(f"DEBUG: migrate_payment_cancellation startup failed: {_e}")
 
 
 
@@ -377,9 +379,11 @@ def migrate_sms_notification():
 
 
 
-with app.app_context():
-
-    migrate_sms_notification()
+try:
+    with app.app_context():
+        migrate_sms_notification()
+except Exception as _e:
+    print(f"DEBUG: migrate_sms_notification startup failed: {_e}")
 
 
 
@@ -441,9 +445,11 @@ def migrate_notifications():
 
 
 
-with app.app_context():
-
-    migrate_notifications()
+try:
+    with app.app_context():
+        migrate_notifications()
+except Exception as _e:
+    print(f"DEBUG: migrate_notifications startup failed: {_e}")
 
 def migrate_chat():
 
@@ -510,9 +516,11 @@ def migrate_chat():
 
 
 
-with app.app_context():
-
-    migrate_chat()
+try:
+    with app.app_context():
+        migrate_chat()
+except Exception as _e:
+    print(f"DEBUG: migrate_chat startup failed: {_e}")
 
 def migrate_fcm_tokens():
     """Adds fcm_token column to users and admins tables for push notifications."""
@@ -527,8 +535,11 @@ def migrate_fcm_tokens():
     finally:
         if 'cur' in locals(): cur.close()
 
-with app.app_context():
-    migrate_fcm_tokens()
+try:
+    with app.app_context():
+        migrate_fcm_tokens()
+except Exception as _e:
+    print(f"DEBUG: migrate_fcm_tokens startup failed: {_e}")
 
 
 def migrate_refund_columns():
@@ -548,8 +559,11 @@ def migrate_refund_columns():
     finally:
         if 'cur' in locals(): cur.close()
 
-with app.app_context():
-    migrate_refund_columns()
+try:
+    with app.app_context():
+        migrate_refund_columns()
+except Exception as _e:
+    print(f"DEBUG: migrate_refund_columns startup failed: {_e}")
 
 
 
