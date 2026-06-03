@@ -835,10 +835,8 @@ document.addEventListener('deviceready', function() {
   
   // Initialize Google Auth with explicit configuration
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-            console.log('Google Auth plugin available');
-            if (!window.Capacitor.isNative) {
-                console.log('Initializing GoogleAuth for Web');
-                window.Capacitor.Plugins.GoogleAuth.initialize({
+            console.log('Google Auth plugin available - initializing with config');
+            window.Capacitor.Plugins.GoogleAuth.initialize({
       clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true
@@ -847,7 +845,6 @@ document.addEventListener('deviceready', function() {
     }).catch(function(err) {
       console.error('[GoogleAuth] Initialization error:', err);
             });
-            }
         } else {
     console.warn('[GoogleAuth] Plugin not available');
   }
