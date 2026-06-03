@@ -4,4 +4,5 @@
     <string name="title_activity_main">Autoride</string>
     <string name="package_name">com.autoride.customer</string>
     <string name="custom_url_scheme">com.autoride.customer</string>
+    <string name="server_client_id">857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com</string>
 </resources>
