@@ -1758,11 +1758,11 @@ def google_auth():
 
         if len(parts) != 3:
 
-            # Not a JWT — could be an OAuth2 access token from web flow.
+            # Not a JWT - could be an OAuth2 access token from web flow.
             # In this case, email and name must be provided directly by the frontend
             # (which already verified them via Google's userinfo endpoint).
             if email and '@' in email:
-                print(f"[GOOGLE_AUTH] Access token flow — using provided email: {email}")
+                print(f"[GOOGLE_AUTH] Access token flow - using provided email: {email}")
                 idinfo = {
                     'email': email,
                     'name': name or 'Google User',
@@ -2323,7 +2323,7 @@ def process_refund():
     if 'multipart/form-data' in ct or 'application/x-www-form-urlencoded' in ct:
         form = request.form
         booking_id     = form.get('booking_id')
-        extension_id   = form.get('extension_id')   # optional — for extension refunds
+        extension_id   = form.get('extension_id')   # optional - for extension refunds
         admin_id       = form.get('admin_id')
         refund_amount  = form.get('refund_amount')
         refund_method  = form.get('refund_method', 'GCash')
@@ -2372,7 +2372,7 @@ def process_refund():
                 (f"PHP {refund_amount} via {refund_method} ref#{refund_ref}", extension_id)
             )
 
-        # Update booking — mark payment_status as Refunded
+        # Update booking - mark payment_status as Refunded
         cur.execute("""
             UPDATE bookings
             SET payment_status   = 'Refunded',
@@ -2906,7 +2906,7 @@ def book():
 
             }), 403
 
-        # 1 booking per account — reject if user already has an active booking
+        # 1 booking per account - reject if user already has an active booking
 
         cur.execute("""
             SELECT id, status FROM bookings
