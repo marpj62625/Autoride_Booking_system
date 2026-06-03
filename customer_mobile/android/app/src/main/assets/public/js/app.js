@@ -1033,11 +1033,17 @@ function doGoogleLogin() {
       .then(function(result) {
         showLoading(false);
         var idToken = (result.authentication && result.authentication.idToken)
-          || result.idToken || result.credential || result.serverAuthCode;
-        var email = result.email;
-        var name = result.name || result.displayName || 'User';
-        if (!idToken && !email) throw new Error('No account info received from Google');
-        return _finishGoogleLogin(idToken || ('oauth_' + Date.now()), email, name);
+          || result.idToken || result.credential || null;
+        var accessToken = (result.authentication && result.authentication.accessToken)
+          || result.accessToken || null;
+        var email = result.email || (result.profile && result.profile.email);
+        var name = result.name || result.displayName
+          || (result.profile && result.profile.name) || 'User';
+
+        if (!email) throw new Error('No email received from Google');
+
+        // Always send email + name. Use idToken if available, otherwise accessToken.
+        return _finishGoogleLogin(idToken || accessToken || ('ga_' + Date.now()), email, name);
       })
       .catch(function(err) {
         showLoading(false);
