@@ -5,7 +5,10 @@
   "server": {
     "cleartext": true,
     "allowNavigation": [
-      "autoride-booking-system.vercel.app"
+      "autoride-booking-system.vercel.app",
+      "*.googleapis.com",
+      "*.google.com",
+      "accounts.google.com"
     ],
     "androidScheme": "https",
     "iosScheme": "https"
