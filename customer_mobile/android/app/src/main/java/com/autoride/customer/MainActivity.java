@@ -12,6 +12,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class MainActivity extends BridgeActivity {
@@ -22,6 +23,9 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Register GoogleAuth plugin
+        registerPlugin(GoogleAuth.class);
 
         requestNotificationPermission();
         fetchAndForwardFcmToken();
