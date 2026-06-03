@@ -1020,7 +1020,7 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
-  var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
+  var GOOGLE_CLIENT_ID = '632685261969-pak4g39l46krdnufu49h576eo5ainddl.apps.googleusercontent.com';
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;
