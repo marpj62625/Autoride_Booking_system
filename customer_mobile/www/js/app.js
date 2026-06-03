@@ -1041,15 +1041,22 @@ function doGoogleLogin() {
       })
       .catch(function(err) {
         showLoading(false);
-        var msg = (err && (err.message || err.errorMessage || JSON.stringify(err))) || 'Unknown error';
+        // Show the full raw error for diagnosis
+        var rawMsg = '';
+        try { rawMsg = JSON.stringify(err); } catch(e) { rawMsg = String(err); }
+        var msg = (err && (err.message || err.errorMessage || rawMsg)) || 'Unknown';
+        var code = (err && (err.errorCode || err.code || '')) || '';
+
         if (msg.includes('12501') || msg.toLowerCase().includes('cancel')) {
           showToast('Sign-in cancelled', 'info');
         } else if (msg.includes('12500')) {
-          showToast('Google account not found on this device. Add a Google account in Settings first.', 'error');
-        } else if (msg.includes('10')) {
-          showToast('Developer config error (code 10). Contact support.', 'error');
+          showToast('No Google account on device. Go to Settings > Accounts > Add Google account first.', 'error');
+        } else if (msg.includes('10') || code === '10') {
+          showToast('SHA-1 mismatch (code 10). APK signing key not registered in Google Cloud Console.', 'error');
+        } else if (msg.includes('7') || code === '7') {
+          showToast('Google Play Services network error (code 7). Check internet and Google Play Services is updated.', 'error');
         } else {
-          showToast('Google Sign-In failed: ' + msg, 'error');
+          showToast('Google error: ' + msg.substring(0, 120), 'error');
         }
       });
     return;
