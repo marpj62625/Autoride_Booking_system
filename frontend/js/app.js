@@ -1020,93 +1020,91 @@ function doLogin() {
 }
 
 function doGoogleLogin() {
-  console.log('[doGoogleLogin] Starting Google Sign-In...');
-  
-  if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.GoogleAuth) {
-    console.error('[doGoogleLogin] Google Auth plugin not available');
-    showToast('Google Sign-In is only available in the mobile app', 'info');
+function doGoogleLogin() {
+  var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
+
+  // ?? Web browser: use Google Identity Services (GSI) popup ??
+  var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
+  var hasGoogleAuthPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth;
+
+  if (!isCapacitorNative && !hasGoogleAuthPlugin) {
+    // Web flow via GSI
+    if (typeof google === 'undefined' || !google.accounts) {
+      showToast('Google Sign-In not loaded. Please refresh the page.', 'error');
+      return;
+    }
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: function(response) {
+        if (!response.credential) {
+          showToast('Google Sign-In failed. Please try again.', 'error');
+          return;
+        }
+        showLoading(true);
+        _finishGoogleLogin(response.credential, null, null);
+      },
+      auto_select: false,
+      cancel_on_tap_outside: true
+    });
+    google.accounts.id.prompt(function(notification) {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // Fallback: show popup
+        google.accounts.id.renderButton(
+          document.getElementById('googleSignInBtnContainer') || document.body,
+          { theme: 'outline', size: 'large', type: 'standard' }
+        );
+        google.accounts.id.prompt();
+      }
+    });
     return;
   }
 
+  // ?? Native APK: use Capacitor GoogleAuth plugin ??
   showLoading(true);
-  const GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
-  
-  console.log('[doGoogleLogin] Calling GoogleAuth.signIn()...');
+  var GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
   GoogleAuth.signIn()
     .then(function(result) {
-      console.log('[doGoogleLogin] Google Sign-In success - Full result:', JSON.stringify(result));
-      console.log('[doGoogleLogin] result.authentication:', JSON.stringify(result.authentication));
-      console.log('[doGoogleLogin] result.idToken:', result.idToken);
-      console.log('[doGoogleLogin] result.credential:', result.credential);
-      
-      // Extract token - try different possible locations
-      var idToken = null;
-      if (result.authentication && result.authentication.idToken) {
-        idToken = result.authentication.idToken;
-        console.log('[doGoogleLogin] ? Token from result.authentication.idToken');
-      } else if (result.idToken) {
-        idToken = result.idToken;
-        console.log('[doGoogleLogin] ? Token from result.idToken');
-      } else if (result.credential) {
-        idToken = result.credential;
-        console.log('[doGoogleLogin] ? Token from result.credential');
-      } else if (result.serverAuthCode) {
-        idToken = result.serverAuthCode;
-        console.log('[doGoogleLogin] ? Token from result.serverAuthCode');
-      }
-      
+      var idToken = (result.authentication && result.authentication.idToken)
+        || result.idToken || result.credential || result.serverAuthCode;
       var email = result.email;
-      var name = result.name || result.displayName || (result.givenName && result.familyName ? result.givenName + ' ' + result.familyName : 'User');
-      
-      console.log('[doGoogleLogin] Extracted - email:', email, 'name:', name, 'hasToken:', !!idToken, 'tokenLength:', idToken ? idToken.length : 0);
-      
-      if (!idToken) {
-        console.error('[doGoogleLogin] ? No ID token found in result! Available keys:', Object.keys(result));
-        throw new Error('No ID token received from Google');
-      }
-      
-      // Send to backend for verification and user creation/login
-      return apiCall('/auth/google', {
-        method: 'POST',
-        body: JSON.stringify({
-          id_token: idToken,
-          email: email,
-          name: name
-        })
-      });
+      var name = result.name || result.displayName || 'User';
+      if (!idToken) throw new Error('No ID token received from Google');
+      return _finishGoogleLogin(idToken, email, name);
     })
-    .then(function(data) {
-      console.log('[doGoogleLogin] Backend response:', JSON.stringify(data));
-      if (data && data.user) {
-        console.log('[doGoogleLogin] ? User data received:', data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        currentUser = data.user;
-        console.log('[doGoogleLogin] ? User saved to localStorage and currentUser');
-        showToast('Welcome, ' + currentUser.fullName + '!', 'success');
-        console.log('[doGoogleLogin] ? Toast shown, closing overlay...');
-        closeOverlay('page-login');
-        console.log('[doGoogleLogin] ? Overlay closed, loading home...');
-        loadHome();
-        console.log('[doGoogleLogin] ? loadHome() called');
-        showPage('page-home');
-        console.log('[doGoogleLogin] ? showPage(page-home) called - SUCCESS!');
+    .catch(function(err) {
+      showLoading(false);
+      if (err.message && err.message.includes('cancel')) {
+        showToast('Sign-in cancelled', 'info');
       } else {
-        console.error('[doGoogleLogin] No user data in response');
+        showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+      }
+    });
+}
+
+function _finishGoogleLogin(idToken, email, name) {
+  showLoading(true);
+  return apiCall('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ id_token: idToken, email: email, name: name })
+  })
+    .then(function(data) {
+      if (data && data.user) {
+        currentUser = data.user;
+        Session.save(currentUser);
+        showToast('Welcome, ' + currentUser.fullName + '!', 'success');
+        apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
+        loadNotifications(currentUser.id);
+        subscribeToNotifications(currentUser.id);
+        startBgChatPolling();
+        showPage('page-home');
+      } else {
         showToast('Login failed. Please try again.', 'error');
       }
     })
     .catch(function(err) {
-      console.error('[doGoogleLogin] Error:', err);
-      console.error('[doGoogleLogin] Error details:', JSON.stringify(err));
-      if (err.message && err.message.includes('cancel')) {
-        showToast('Sign-in cancelled', 'info');
-      } else {
-        showToast('Google Sign-In failed: ' + (err.message || err.error || 'Unknown error'), 'error');
-      }
+      showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
     })
-    .finally(function() {
-      showLoading(false);
-    });
+    .finally(function() { showLoading(false); });
 }
 
 function doLogout() {
