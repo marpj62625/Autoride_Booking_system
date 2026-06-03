@@ -3,8 +3,18 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
-// CONFIG
-var API_BASE = 'https://autoride-booking-system.vercel.app/api';
+// CONFIG — auto-detect API URL for web vs APK
+var API_BASE = (function() {
+  if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
+  if (typeof window !== 'undefined') {
+    var h = window.location.hostname;
+    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
+    if (window.location.protocol === 'https:' && !h.includes('capacitor')) {
+      return window.location.origin + '/api';
+    }
+  }
+  return 'https://autoride-booking-system.vercel.app/api';
+}());
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
