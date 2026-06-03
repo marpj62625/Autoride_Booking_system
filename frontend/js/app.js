@@ -6,10 +6,14 @@
 // CONFIG — auto-detect API URL for web vs APK
 var API_BASE = (function() {
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
+  // Always use production URL on native Capacitor APK
+  if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
-    if (window.location.protocol === 'https:' && !h.includes('capacitor')) {
+    if (window.location.protocol === 'https:') {
       return window.location.origin + '/api';
     }
   }
@@ -835,8 +839,8 @@ document.addEventListener('deviceready', function() {
   
   // Initialize Google Auth with explicit configuration
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-    console.log('Google Auth plugin available - initializing with config');
-    window.Capacitor.Plugins.GoogleAuth.initialize({
+            console.log('Google Auth plugin available - initializing with config');
+            window.Capacitor.Plugins.GoogleAuth.initialize({
       clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true
@@ -844,8 +848,8 @@ document.addEventListener('deviceready', function() {
       console.log('[GoogleAuth] Initialized successfully');
     }).catch(function(err) {
       console.error('[GoogleAuth] Initialization error:', err);
-    });
-  } else {
+            });
+        } else {
     console.warn('[GoogleAuth] Plugin not available');
   }
 });
@@ -1022,98 +1026,83 @@ function doLogin() {
 function doGoogleLogin() {
   var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
-  // ?? Web browser: use Google Identity Services standard popup ??
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
-  var hasGoogleAuthPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth;
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  if (!isCapacitorNative && !hasGoogleAuthPlugin) {
-    if (typeof google === 'undefined' || !google.accounts) {
-      showToast('Google Sign-In not loaded. Please refresh the page.', 'error');
-      return;
-    }
+  // Native APK — use Capacitor GoogleAuth plugin
+  if (isCapacitorNative && GoogleAuthPlugin) {
+    showLoading(true);
+    GoogleAuthPlugin.signIn()
+      .then(function(result) {
+        showLoading(false);
+        var idToken = (result.authentication && result.authentication.idToken)
+          || result.idToken || result.credential || null;
+        var accessToken = (result.authentication && result.authentication.accessToken)
+          || result.accessToken || null;
+        var email = result.email || (result.profile && result.profile.email);
+        var name = result.name || result.displayName
+          || (result.profile && result.profile.name) || 'User';
 
-    // Use tokenClient (OAuth2 popup) — more reliable than One Tap for web apps
-    var tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'email profile openid',
-      callback: function(tokenResponse) {
-        if (tokenResponse.error) {
-          showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
-          return;
+        if (!email) throw new Error('No email received from Google');
+        return _finishGoogleLogin(idToken || accessToken || ('ga_' + Date.now()), email, name);
+      })
+      .catch(function(err) {
+        showLoading(false);
+        var rawMsg = '';
+        try { rawMsg = JSON.stringify(err); } catch(e) { rawMsg = String(err); }
+        var msg = (err && (err.message || err.errorMessage || rawMsg)) || 'Unknown';
+        var code = (err && (err.errorCode || err.code || '')) || '';
+
+        if (msg.includes('12501') || msg.toLowerCase().includes('cancel')) {
+          showToast('Sign-in cancelled', 'info');
+        } else if (msg.includes('12500')) {
+          showToast('No Google account on device. Add a Google account in Settings first.', 'error');
+        } else if (msg.includes('10') || code === '10') {
+          showToast('Google Sign-In configuration error. Please contact support.', 'error');
+        } else {
+          showToast('Google Sign-In failed. Please try again.', 'error');
         }
-        // Exchange access token for user info, then send to backend
-        showLoading(true);
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
-        })
-          .then(function(r) { return r.json(); })
-          .then(function(userInfo) {
-            // Use sub as a pseudo id_token for backend compatibility
-            // Backend accepts email+name directly without full JWT verification
-            return apiCall('/auth/google', {
-              method: 'POST',
-              body: JSON.stringify({
-                id_token: tokenResponse.access_token,  // backend will fall back to email/name
-                email: userInfo.email,
-                name: userInfo.name || userInfo.given_name + ' ' + (userInfo.family_name || '')
-              })
-            });
-          })
-          .then(function(data) {
-            showLoading(false);
-            if (data && data.user) {
-              currentUser = data.user;
-              Session.save(currentUser);
-              showToast('Welcome, ' + currentUser.fullName + '!', 'success');
-              apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
-              // Always fetch fresh verification status after Google login
-              apiCall('/user/verify-status?user_id=' + currentUser.id)
-                .then(function(v) {
-                  currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (currentUser.isVerified || 0);
-                  Session.save(currentUser);
-                }).catch(function() {});
-              // Init Supabase and notifications
-              if (typeof supabase !== 'undefined') {
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-              }
-              loadNotifications(currentUser.id);
-              subscribeToNotifications(currentUser.id);
-              startBgChatPolling();
-              showPage('page-home');
-            } else {
-              showToast('Login failed. Please try again.', 'error');
-            }
-          })
-          .catch(function(err) {
-            showLoading(false);
-            showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
-          });
-      }
-    });
-    tokenClient.requestAccessToken({ prompt: 'select_account' });
+      });
     return;
   }
 
-  // ?? Native APK: use Capacitor GoogleAuth plugin ??
-  showLoading(true);
-  var GoogleAuth = window.Capacitor.Plugins.GoogleAuth;
-  GoogleAuth.signIn()
-    .then(function(result) {
-      var idToken = (result.authentication && result.authentication.idToken)
-        || result.idToken || result.credential || result.serverAuthCode;
-      var email = result.email;
-      var name = result.name || result.displayName || 'User';
-      if (!idToken) throw new Error('No ID token received from Google');
-      return _finishGoogleLogin(idToken, email, name);
-    })
-    .catch(function(err) {
-      showLoading(false);
-      if (err.message && err.message.includes('cancel')) {
-        showToast('Sign-in cancelled', 'info');
-      } else {
-        showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+  // Web browser — use OAuth2 popup
+  _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
+}
+
+function _doGoogleOAuth2Popup(clientId) {
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    showToast('Google Sign-In not available. Please try again.', 'error');
+    return;
+  }
+  var tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'email profile openid',
+    callback: function(tokenResponse) {
+      if (tokenResponse.error) {
+        showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+        return;
       }
-    });
+      showLoading(true);
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(userInfo) {
+          return _finishGoogleLogin(
+            tokenResponse.access_token,
+            userInfo.email,
+            userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
+          );
+        })
+        .catch(function(err) {
+          showLoading(false);
+          showToast('Google Sign-In failed. Please try again.', 'error');
+        });
+    }
+  });
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function _finishGoogleLogin(idToken, email, name) {
@@ -1128,13 +1117,6 @@ function _finishGoogleLogin(idToken, email, name) {
         Session.save(currentUser);
         showToast('Welcome, ' + currentUser.fullName + '!', 'success');
         apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
-        // Always fetch fresh verification (license) status
-        apiCall('/user/verify-status?user_id=' + currentUser.id)
-          .then(function(v) {
-            currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (currentUser.isVerified || 0);
-            Session.save(currentUser);
-          }).catch(function() {});
-        // Init Supabase client for notifications
         if (typeof supabase !== 'undefined') {
           supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
@@ -1147,7 +1129,7 @@ function _finishGoogleLogin(idToken, email, name) {
       }
     })
     .catch(function(err) {
-      showToast('Google Sign-In failed: ' + (err.message || 'Unknown error'), 'error');
+      showToast('Google Sign-In failed. Please try again.', 'error');
     })
     .finally(function() { showLoading(false); });
 }
