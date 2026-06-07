@@ -325,3 +325,141 @@
 @media (min-width: 1100px) {
     #reports .chart-container { height: 320px !important; }
 }
+
+/* =================================================================
+   VEHICLES GRID  (desktop 769px+)
+   JS adds .veh-desktop-grid to the <ul> and .veh-card-desktop to <li>
+================================================================= */
+@media (min-width: 769px) {
+
+    /* Grid container */
+    ul.veh-desktop-grid {
+        list-style: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 18px !important;
+    }
+
+    /* Each vehicle becomes a proper card */
+    li.veh-card-desktop {
+        display: flex !important;
+        flex-direction: column !important;
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 16px !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        transition: box-shadow 0.18s, transform 0.18s !important;
+        cursor: default;
+    }
+    li.veh-card-desktop:hover {
+        box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* Image takes full width at top of card */
+    li.veh-card-desktop > div:first-child {
+        width: 100% !important;
+        height: 160px !important;
+        border-radius: 0 !important;
+        background: var(--surface-container) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: hidden !important;
+        flex-shrink: 0 !important;
+    }
+    li.veh-card-desktop > div:first-child img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        border-radius: 0 !important;
+    }
+    li.veh-card-desktop > div:first-child i {
+        font-size: 3rem !important;
+        color: var(--primary) !important;
+        opacity: 0.35 !important;
+    }
+
+    /* Info section */
+    li.veh-card-desktop > div:nth-child(2) {
+        flex: 1 !important;
+        padding: 14px 16px !important;
+        min-width: 0 !important;
+    }
+    li.veh-card-desktop > div:nth-child(2) > div:first-child {
+        font-size: 1.1rem !important;
+        margin-bottom: 4px !important;
+    }
+    li.veh-card-desktop > div:nth-child(2) > div:nth-child(2) {
+        font-size: 0.92rem !important;
+        margin-bottom: 3px !important;
+        white-space: normal !important;
+    }
+    li.veh-card-desktop > div:nth-child(2) > div:nth-child(3) {
+        font-size: 0.75rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Action buttons row at bottom of card */
+    li.veh-card-desktop > div:last-child {
+        flex-direction: row !important;
+        justify-content: flex-end !important;
+        gap: 6px !important;
+        padding: 10px 14px !important;
+        border-top: 1px solid var(--border) !important;
+        background: var(--surface-container) !important;
+    }
+    li.veh-card-desktop > div:last-child button {
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        background: var(--surface) !important;
+        border: 1px solid var(--border) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.88rem !important;
+        color: var(--text-secondary) !important;
+        cursor: pointer !important;
+        transition: all 0.15s !important;
+    }
+    li.veh-card-desktop > div:last-child button:first-child:hover {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: white !important;
+    }
+    li.veh-card-desktop > div:last-child button:last-child:hover {
+        background: #dc2626 !important;
+        border-color: #dc2626 !important;
+        color: white !important;
+    }
+
+    /* Dark theme */
+    [data-theme="dark"] li.veh-card-desktop {
+        background: var(--bg-card) !important;
+    }
+    [data-theme="dark"] li.veh-card-desktop > div:last-child {
+        background: var(--bg-card2) !important;
+    }
+    [data-theme="dark"] li.veh-card-desktop > div:last-child button {
+        background: var(--bg-card) !important;
+    }
+}
+
+/* 3-column on wider screens */
+@media (min-width: 1100px) {
+    ul.veh-desktop-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* 4-column on very wide */
+@media (min-width: 1400px) {
+    ul.veh-desktop-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
