@@ -1077,7 +1077,7 @@
 <div class="side-drawer" id="sideDrawer">
     <div class="drawer-header">
         <div class="logo-wrap" style="margin-bottom: 10px;">
-            <i class="fas fa-car-side" style="color: #f87171; font-size: 1.5rem;"></i>
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:40px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.15));">
             <span style="font-size: 1.2rem; font-weight: 800;">Autoride</span>
         </div>
         <p style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Admin Console Mobile</p>
@@ -1106,7 +1106,7 @@
     <div class="header-left">
         <button class="menu-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
         <div class="logo-wrap">
-            <i class="fas fa-car-side"></i>
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:32px;height:32px;object-fit:contain;">
             <span>Autoride</span>
             <span class="admin-badge">ADMIN</span>
         </div>
@@ -1298,7 +1298,13 @@
     <div id="activity" class="tab-content" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Activity Log</h1>
-            <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
+            <div style="display:flex;gap:8px;">
+                <!-- Export button — shown only for super_admin, toggled by JS on tab load -->
+                <button id="activityExportBtn" onclick="Activity.exportExcel()" style="display:none;padding:10px 14px;border-radius:12px;font-size:0.85rem;background:rgba(0,177,79,0.12);border:1px solid rgba(0,177,79,0.35);color:#00b14f;font-weight:700;gap:6px;align-items:center;">
+                    <i class="fas fa-file-excel"></i> Export
+                </button>
+                <button onclick="Activity.refresh()" class="btn-primary" style="padding: 10px 15px; border-radius: 12px; font-size: 0.9rem;"><i class="fas fa-sync-alt"></i></button>
+            </div>
         </div>
 
         <!-- Search -->
@@ -1724,10 +1730,7 @@
         <!-- Export buttons -->
         <div style="display:flex;gap:10px;margin-bottom:30px;">
             <button onclick="Reports.exportExcel()" class="btn-primary" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </button>
-            <button onclick="Reports.printReport()" style="flex:1;padding:12px;border-radius:12px;font-size:0.85rem;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
-                <i class="fas fa-print"></i> Print
+                <i class="fas fa-file-excel"></i> Download Excel
             </button>
         </div>
     </div>
@@ -2228,8 +2231,8 @@
 <!-- Admin Login Overlay -->
 <div id="adminLoginOverlay">
     <div class="login-card">
-        <div class="logo-wrap" style="justify-content: center; margin-bottom: 40px; display: flex; align-items: center;">
-            <i class="fas fa-car-side" style="color: #f87171; font-size: 2.8rem; margin-right: 16px;"></i>
+        <div class="logo-wrap" style="justify-content: center; margin-bottom: 40px; display: flex; align-items: center; flex-direction: column; gap: 8px;">
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:100px;height:100px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.2));">
             <span style="font-size: 2.2rem; font-weight: 800; color: white; letter-spacing: -0.02em;">Autoride</span>
         </div>
         <h1 style="font-size: 2rem; margin-bottom: 40px; color: white; font-weight: 700; text-align: center; letter-spacing: -0.01em;">Admin Login</h1>
@@ -2247,7 +2250,15 @@
 </div>
 
 <script>
-    const API_BASE = 'https://autoride-booking-system.vercel.app';
+    // API URL: auto-detect — works on Vercel (web) and Android APK (hardcoded)
+    const isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
+    const API_BASE = isCapacitorNative
+        ? 'https://autoride-booking-system.vercel.app'
+        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5000'
+            : (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
+                ? window.location.origin
+                : 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
     // Admin notification globals - defined early so initSession can call them
@@ -2284,8 +2295,16 @@
                     const newOnes = list.filter(n => !window._adminNotifKnownIds.has(n.id) && !n.is_read);
                     if (newOnes.length === 1) {
                         window._adminShowToast(newOnes[0].title, newOnes[0].message);
+                        // Auto-refresh Extensions tab if it's an extension request
+                        if (newOnes[0].type === 'admin_extension_request') {
+                            if (typeof Extensions !== 'undefined') Extensions.load();
+                        }
                     } else if (newOnes.length > 1) {
                         window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
+                        // Refresh extensions if any are extension requests
+                        if (newOnes.some(n => n.type === 'admin_extension_request')) {
+                            if (typeof Extensions !== 'undefined') Extensions.load();
+                        }
                     }
                 }
                 // Update known IDs
@@ -3613,6 +3632,50 @@
                         ${isCancellable ? `
                             <button onclick="Bookings.cancel(${b.id})" style="width:100%;padding:14px;font-size:0.85rem;background:white;border:1px solid #ef4444;color:#ef4444;border-radius:8px;font-weight:600;">Cancel Booking</button>
                         ` : ''}
+
+                        ${(b.payment_status === 'Refund Pending' || b.payment_status === 'Refund Pending') ? `
+                        <div id="refundPanel_${b.id}" style="margin-top:4px;border:1.5px solid #f59e0b;border-radius:14px;padding:16px;background:rgba(245,158,11,0.05);">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                                <i class="fas fa-undo-alt" style="color:#f59e0b;font-size:1rem;"></i>
+                                <span style="font-size:0.9rem;font-weight:800;color:#f59e0b;">Process Refund</span>
+                            </div>
+                            ${b.refund_note ? `<div style="font-size:0.75rem;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 10px;margin-bottom:10px;"><i class="fas fa-info-circle" style="margin-right:4px;"></i>${b.refund_note}</div>` : ''}
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Refund Amount (PHP)</label>
+                                    <input id="rfAmount_${b.id}" type="number" step="0.01" min="0"
+                                        value="${b.refund_amount ? parseFloat(b.refund_amount).toFixed(2) : parseFloat(b.amount_paid||b.total_price||0).toFixed(2)}"
+                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;font-weight:700;color:#0f172a;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Refund Method</label>
+                                    <select id="rfMethod_${b.id}" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
+                                        <option value="GCash">GCash</option>
+                                        <option value="Maya">Maya</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Reference # (optional)</label>
+                                    <input id="rfRef_${b.id}" type="text" placeholder="e.g. GCash ref number"
+                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Note (optional)</label>
+                                    <input id="rfNote_${b.id}" type="text" placeholder="e.g. Refunded via GCash send money"
+                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Proof Screenshot (optional)</label>
+                                    <input id="rfProof_${b.id}" type="file" accept="image/*" style="font-size:0.8rem;color:#64748b;">
+                                </div>
+                                <button onclick="Bookings.processRefund(${b.id})" style="width:100%;padding:13px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:800;cursor:pointer;">
+                                    <i class="fas fa-paper-plane" style="margin-right:6px;"></i>Confirm Refund Sent
+                                </button>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -3633,9 +3696,10 @@
                 return;
             }
 
+            const user = adminAuth.getUser();
             const formData = new FormData();
             formData.append('booking_id', bookingId);
-            formData.append('admin_id', 1); // Mock admin_id
+            formData.append('admin_id', user ? user.id : 1);
             formData.append('proof', fileInput.files[0]);
 
             const btn = event.target;
@@ -3651,13 +3715,59 @@
                 if (!res.ok) throw new Error(data.error || 'Upload failed');
 
                 showNotification('Refund proof uploaded!', 'success');
-                this.refresh(); // Refresh main list
-                this.view(bookingId); // Refresh modal
+                this.refresh();
+                this.view(bookingId);
             } catch (err) {
                 alert(err.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Submit Proof';
+            }
+        },
+
+        async processRefund(bookingId, extensionId = null) {
+            const user = adminAuth.getUser();
+            const amount  = (document.getElementById(`rfAmount_${bookingId}`) || {}).value;
+            const method  = (document.getElementById(`rfMethod_${bookingId}`) || {}).value || 'GCash';
+            const ref     = (document.getElementById(`rfRef_${bookingId}`)    || {}).value || '';
+            const note    = (document.getElementById(`rfNote_${bookingId}`)   || {}).value || '';
+            const proofEl = document.getElementById(`rfProof_${bookingId}`);
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('Please enter a valid refund amount.', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const fd = new FormData();
+                fd.append('booking_id', bookingId);
+                fd.append('admin_id', user ? user.id : 1);
+                fd.append('refund_amount', amount);
+                fd.append('refund_method', method);
+                fd.append('refund_ref', ref);
+                fd.append('refund_note', note);
+                if (extensionId) fd.append('extension_id', extensionId);
+                if (proofEl && proofEl.files && proofEl.files[0]) {
+                    fd.append('proof', proofEl.files[0]);
+                }
+
+                const res = await fetch(`${API_URL}/admin/process-refund`, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Refund failed');
+
+                showNotification(`Refund of ?${parseFloat(amount).toLocaleString()} recorded. Customer notified.`, 'success');
+                document.getElementById('bookingDetailsModal').style.display = 'none';
+                modalClose();
+                this.refresh();
+                if (typeof Extensions !== 'undefined') Extensions.load();
+            } catch (err) {
+                showNotification(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:6px;"></i>Confirm Refund Sent';
             }
         },
 
@@ -4398,6 +4508,15 @@
         async refresh() {
             const list = document.getElementById('activityList');
             if (!list) return;
+
+            // Show export button only for super_admin
+            const exportBtn = document.getElementById('activityExportBtn');
+            if (exportBtn) {
+                const user = adminAuth.getUser();
+                const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
+                exportBtn.style.display = isSuperAdmin ? 'flex' : 'none';
+            }
+
             list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
             try {
                 const res = await apiFetch(`admin/activity-logs`);
@@ -4420,6 +4539,94 @@
                 this._render(this.data);
             } catch (err) {
                 list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--danger);">Failed to load logs.</div>';
+            }
+        },
+
+        async exportExcel() {
+            // Double-check role before exporting
+            const user = adminAuth.getUser();
+            if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) {
+                showNotification('Only Super Admins can export activity logs.', 'error');
+                return;
+            }
+
+            const data = this.data || [];
+            if (!data.length) {
+                showNotification('No activity logs to export.', 'error');
+                return;
+            }
+
+            if (typeof XLSX === 'undefined') {
+                showNotification('Excel library not loaded. Please refresh.', 'error');
+                return;
+            }
+
+            // Build rows
+            const headers = ['#', 'Admin', 'Action', 'Target Type', 'Target ID', 'Details', 'IP Address', 'Timestamp'];
+            const rows = [headers];
+            data.forEach((log, i) => {
+                rows.push([
+                    i + 1,
+                    log.admin_name || '-',
+                    log.action || '-',
+                    log.target_type || '-',
+                    log.target_id || '-',
+                    log.details || '-',
+                    log.ip_address || '-',
+                    log.created_at ? new Date(log.created_at).toLocaleString() : '-'
+                ]);
+            });
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                // Auto-width columns
+                const colWidths = headers.map((h, i) => ({
+                    wch: Math.max(h.length, ...rows.slice(1).map(r => String(r[i] || '').length))
+                }));
+                ws['!cols'] = colWidths;
+                XLSX.utils.book_append_sheet(wb, ws, 'Activity Log');
+
+                const filename = 'autoride_activity_log_' + new Date().toISOString().split('T')[0] + '.xlsx';
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+                // ?? Try Capacitor Filesystem (save to Downloads) ??
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+                if (Filesystem) {
+                    try {
+                        const result = await Filesystem.writeFile({
+                            path: filename,
+                            data: wboutBase64,
+                            directory: 'DOWNLOADS',
+                            recursive: true
+                        });
+                        showNotification('Activity log saved to Downloads: ' + filename, 'success');
+                        try {
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+                            if (FileOpener) await FileOpener.open({ filePath: result.uri, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        } catch(e) {}
+                        return;
+                    } catch (fsErr) {
+                        try {
+                            await Filesystem.writeFile({ path: filename, data: wboutBase64, directory: 'DOCUMENTS', recursive: true });
+                            showNotification('Activity log saved to Documents: ' + filename, 'success');
+                            return;
+                        } catch(e) {}
+                    }
+                }
+
+                // Browser fallback
+                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                showNotification('Activity log downloaded!', 'success');
+
+            } catch (err) {
+                showNotification('Export failed: ' + err.message, 'error');
             }
         }
     };
@@ -4809,7 +5016,7 @@
                 if (tabBadge) { tabBadge.textContent = data.length; tabBadge.style.display = data.length > 0 ? 'inline-flex' : 'none'; }
                 if (!data.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">No pending extension requests.</div>'; return; }
                 list.innerHTML = data.map(e => `
-                    <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
+                    <div data-ext-id="${e.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
                             <div>
                                 <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;">Booking #${e.booking_id}</div>
@@ -4828,7 +5035,7 @@
                             <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);">Method: <span style="color:var(--text-main);font-weight:600;">${e.payment_method || 'N/A'}</span>${e.reference_number ? ' &bull; Ref: ' + e.reference_number : ''}</div>
                             ${e.payment_proof_url ? `<img src="${e.payment_proof_url}" style="width:100%;border-radius:8px;margin-top:8px;max-height:150px;object-fit:contain;background:rgba(0,0,0,0.2);">` : ''}
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="ext-action-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                             <button onclick="Extensions.approve(${e.id})" style="padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;">
                                 <i class="fas fa-check" style="margin-right:4px;"></i>Approve
                             </button>
@@ -4857,20 +5064,102 @@
         },
 
         async reject(extId) {
-            const note = prompt('Reason for rejection (customer will be notified of refund-upon-return):');
+            const note = prompt('Reason for rejection (customer will be notified):');
             if (note === null) return;
             try {
                 const res = await fetch(`${API_URL}/admin/extensions/${extId}/reject`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ note: note || 'Extension rejected. Refund upon vehicle return.' })
+                    body: JSON.stringify({ note: note || 'Extension rejected. Refund will be processed.' })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    showNotification('Extension rejected. Customer notified of refund.', 'success');
+                if (!res.ok) { showNotification(data.error || 'Failed to reject', 'error'); return; }
+
+                showNotification('Extension rejected. Customer notified.', 'success');
+
+                // Show inline refund form for this extension
+                const refundAmount = data.refund_amount || 0;
+                const bookingId    = data.booking_id;
+                const extensionId  = data.extension_id || extId;
+
+                // Find the card and replace action buttons with refund panel
+                const card = document.querySelector(`[data-ext-id="${extId}"]`);
+                if (card) {
+                    const actionDiv = card.querySelector('.ext-action-btns');
+                    if (actionDiv) {
+                        actionDiv.innerHTML = `
+                            <div style="border:1.5px solid #f59e0b;border-radius:12px;padding:14px;background:rgba(245,158,11,0.06);margin-top:4px;">
+                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                                    <i class="fas fa-undo-alt" style="color:#f59e0b;"></i>
+                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund — ?${parseFloat(refundAmount).toLocaleString()}</span>
+                                </div>
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                    <input id="extRfAmt_${extensionId}" type="number" step="0.01" value="${parseFloat(refundAmount).toFixed(2)}"
+                                        placeholder="Amount (PHP)"
+                                        style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+                                    <select id="extRfMethod_${extensionId}" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+                                        <option value="GCash">GCash</option>
+                                        <option value="Maya">Maya</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                    <input id="extRfRef_${extensionId}" type="text" placeholder="Reference # (optional)"
+                                        style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+                                    <input id="extRfProof_${extensionId}" type="file" accept="image/*" style="font-size:0.75rem;color:#64748b;">
+                                    <button onclick="Extensions.processExtRefund(${extensionId}, ${bookingId})"
+                                        style="width:100%;padding:11px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.85rem;font-weight:800;cursor:pointer;">
+                                        <i class="fas fa-paper-plane" style="margin-right:5px;"></i>Confirm Refund Sent
+                                    </button>
+                                </div>
+                            </div>`;
+                    }
+                } else {
+                    // Fallback: reload the list
                     this.load();
-                } else { showNotification(data.error || 'Failed to reject', 'error'); }
+                }
+                Bookings.refresh();
             } catch(err) { showNotification('Network error', 'error'); }
+        },
+
+        async processExtRefund(extensionId, bookingId) {
+            const user   = adminAuth.getUser();
+            const amount = (document.getElementById(`extRfAmt_${extensionId}`)    || {}).value;
+            const method = (document.getElementById(`extRfMethod_${extensionId}`) || {}).value || 'GCash';
+            const ref    = (document.getElementById(`extRfRef_${extensionId}`)    || {}).value || '';
+            const proofEl = document.getElementById(`extRfProof_${extensionId}`);
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showNotification('Please enter a valid amount.', 'error');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                const fd = new FormData();
+                fd.append('booking_id', bookingId);
+                fd.append('extension_id', extensionId);
+                fd.append('admin_id', user ? user.id : 1);
+                fd.append('refund_amount', amount);
+                fd.append('refund_method', method);
+                fd.append('refund_ref', ref);
+                fd.append('refund_note', `Extension #${extensionId} refund`);
+                if (proofEl && proofEl.files && proofEl.files[0]) fd.append('proof', proofEl.files[0]);
+
+                const res  = await fetch(`${API_URL}/admin/process-refund`, { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Refund failed');
+
+                showNotification(`Refund of ?${parseFloat(amount).toLocaleString()} confirmed. Customer notified.`, 'success');
+                this.load();
+                Bookings.refresh();
+            } catch(err) {
+                showNotification(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:5px;"></i>Confirm Refund Sent';
+            }
         }
     };
 
@@ -5178,115 +5467,68 @@
                 const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
                 const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
 
-                const { Filesystem, Directory } = window.Capacitor.Plugins;
+                // ?? Try Capacitor Filesystem (Android native download) ??
+                const { Filesystem } = window.Capacitor?.Plugins || {};
                 if (Filesystem) {
-                    const result = await Filesystem.writeFile({
-                        path: filename,
-                        data: wboutBase64,
-                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
-                        recursive: true
-                    });
-                    
-                    const { Share } = window.Capacitor.Plugins;
-                    if (Share) {
-                        await Share.share({
-                            title: 'Autoride Sales Report',
-                            url: result.uri,
-                            dialogTitle: 'Share Excel Report'
+                    try {
+                        // Write to Downloads directory
+                        const result = await Filesystem.writeFile({
+                            path: filename,
+                            data: wboutBase64,
+                            directory: 'DOWNLOADS',
+                            recursive: true
                         });
-                    }
-                    showNotification('Excel Report saved and ready to share!', 'success');
-                    return;
-                }
-            } catch (err) {
-                console.error('Excel generation/sharing failed:', err);
-            }
+                        showNotification('Excel saved to Downloads: ' + filename, 'success');
 
-            // Fallback for web or if plugins fail
-            try {
-                if (typeof XLSX !== 'undefined') {
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.aoa_to_sheet(rows);
-                    XLSX.utils.book_append_sheet(wb, ws, "Report");
-                    XLSX.writeFile(wb, 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx');
-                    showNotification('Excel file downloaded!', 'success');
-                } else {
-                    showNotification('Export failed. Excel library not available.', 'error');
+                        // Try to open it with a file viewer
+                        try {
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+                            if (FileOpener) {
+                                await FileOpener.open({
+                                    filePath: result.uri,
+                                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                                });
+                            }
+                        } catch (openErr) {
+                            // FileOpener not available — that's OK, file is still saved
+                        }
+                        return;
+                    } catch (fsErr) {
+                        console.warn('Downloads directory failed, trying Documents:', fsErr);
+                        // Fallback to Documents directory
+                        try {
+                            const result = await Filesystem.writeFile({
+                                path: filename,
+                                data: wboutBase64,
+                                directory: 'DOCUMENTS',
+                                recursive: true
+                            });
+                            showNotification('Excel saved to Documents: ' + filename, 'success');
+                            return;
+                        } catch (docErr) {
+                            console.warn('Documents also failed, using browser download:', docErr);
+                        }
+                    }
                 }
+
+                // ?? Browser / web fallback: trigger download via blob URL ??
+                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                showNotification('Excel file downloaded!', 'success');
+
             } catch (err) {
-                showNotification('Export failed. Please try again.', 'error');
+                console.error('Excel export failed:', err);
+                showNotification('Export failed: ' + err.message, 'error');
             }
         },
-
-        async printReport() {
-            const data = this._rawData;
-            if (!data) { showNotification('No data to print', 'error'); return; }
-
-            const totalRev = data.totalRevenue || 0;
-            const totalBook = data.totalBookings || 0;
-            const tableRows = (data.topVehicles || []).map((c, i) =>
-                '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
-            ).join('');
-
-            // Build HTML report content
-            var htmlReport = '<html><head><meta charset="UTF-8"><title>Autoride Report</title>';
-            htmlReport += '<style>body{font-family:Arial,sans-serif;padding:20px;margin:0;}h1{font-size:1.4rem;}table{width:100%;border-collapse:collapse;margin-top:16px;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#f4f4f4;font-weight:bold;}</style>';
-            htmlReport += '</head><body>';
-            htmlReport += '<h1>Autoride Sales Report</h1>';
-            htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
-            htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
-            htmlReport += '<p><strong>Total Bookings:</strong> ' + totalBook + '</p>';
-            htmlReport += '<table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead>';
-            htmlReport += '<tbody>' + tableRows + '</tbody></table>';
-            htmlReport += '</body></html>';
-
-            try {
-                // Save HTML file and share it
-                const { Filesystem, Directory } = window.Capacitor.Plugins;
-                if (Filesystem) {
-                    const filename = 'Autoride_Report_' + new Date().toISOString().split('T')[0] + '.html';
-                    const result = await Filesystem.writeFile({
-                        path: filename,
-                        data: btoa(unescape(encodeURIComponent(htmlReport))),
-                        directory: Directory ? Directory.Documents : 'DOCUMENTS',
-                        recursive: true
-                    });
-
-                    const { Share } = window.Capacitor.Plugins;
-                    if (Share) {
-                        await Share.share({
-                            title: 'Autoride Sales Report',
-                            url: result.uri,
-                            dialogTitle: 'Share or Print Report'
-                        });
-                    }
-                    showNotification('Report saved! Open it in Chrome to print.', 'success');
-                    return;
-                }
-            } catch (err) {
-                console.error('Print/share failed:', err);
-            }
-
-            // Fallback: share as text
-            try {
-                var reportText = 'AUTORIDE SALES REPORT\n';
-                reportText += 'Generated: ' + new Date().toLocaleString() + '\n\n';
-                reportText += 'Total Revenue: PHP ' + totalRev.toLocaleString() + '\n';
-                reportText += 'Total Bookings: ' + totalBook + '\n\n';
-                reportText += 'TOP VEHICLES BY REVENUE\n------------------------\n';
-                (data.topVehicles || []).forEach(function(c, i) {
-                    reportText += (i+1) + '. ' + c.brand + ' ' + c.model + ' - ' + c.booking_count + ' bookings - PHP ' + (c.revenue||0).toLocaleString() + '\n';
-                });
-                if (navigator.share) {
-                    await navigator.share({ title: 'Autoride Sales Report', text: reportText });
-                } else {
-                    await navigator.clipboard.writeText(reportText);
-                    showNotification('Report copied to clipboard!', 'success');
-                }
-            } catch(e) {
-                if (e.name !== 'AbortError') showNotification('Share failed', 'error');
-            }
-        }
     };
 
 
