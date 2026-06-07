@@ -1,454 +1,338 @@
 /* ============================================================
-   Autoride Admin — Desktop / Wide-Screen Layout
-   Responsive overrides for screens >= 769px
+   Autoride Admin — Desktop Responsive Layout
+   All overrides scoped to min-width: 769px
+   Mobile layout is completely unchanged.
    ============================================================ */
 
-/* ?? 1. DESKTOP LAYOUT SKELETON ????????????????????????????? */
+/* ?????????????????????????????????????????????????????????????
+   CORE LAYOUT  (769px+)
+????????????????????????????????????????????????????????????? */
 @media (min-width: 769px) {
 
-    /* Allow zoom/scale on desktop */
-    /* (viewport meta can't be changed via CSS, but we allow all scaling) */
-
-    /* Body: horizontal split instead of flex-column */
     body {
-        flex-direction: row;
-        overflow: hidden;
-        height: 100vh;
+        flex-direction: row !important;
+        overflow: hidden !important;
+        height: 100vh !important;
     }
 
-    /* ?? SIDEBAR (was off-canvas drawer) ?? */
+    /* ?? PERSISTENT SIDEBAR ??????????????????????????????? */
     .side-drawer {
         position: fixed !important;
         left: 0 !important;
         top: 0 !important;
-        width: 240px !important;
+        width: 248px !important;
         height: 100vh !important;
-        transform: none !important;
+        transform: translateX(0) !important;
         box-shadow: none !important;
         border-right: 1px solid var(--border) !important;
-        z-index: 100 !important;
+        z-index: 300 !important;
         transition: none !important;
-        display: flex;
-        flex-direction: column;
+        display: flex !important;
+        flex-direction: column !important;
         background: var(--surface) !important;
-        overflow-y: auto;
+        overflow: hidden !important;
     }
 
-    /* Hide the dark overlay (never needed on desktop) */
-    .drawer-overlay {
-        display: none !important;
-    }
+    .drawer-overlay { display: none !important; }
 
-    /* Sidebar brand header */
     .drawer-header {
         padding: 20px 18px 16px !important;
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
+        border-bottom: 1px solid var(--border) !important;
+        flex-shrink: 0 !important;
     }
 
-    /* Sidebar nav items */
+    /* Hide "Admin Console" subtitle in sidebar on desktop */
+    .drawer-header > p { display: none !important; }
+
+    .drawer-content {
+        flex: 1 !important;
+        padding: 8px 8px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+    .drawer-content::-webkit-scrollbar { width: 4px; }
+    .drawer-content::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1); border-radius: 2px;
+    }
+
     .drawer-item {
         display: flex !important;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        border-radius: 10px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text-secondary);
-        text-decoration: none;
-        transition: all 0.15s;
-        margin-bottom: 2px;
-        cursor: pointer;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 9px 14px !important;
+        border-radius: 10px !important;
+        font-size: 0.84rem !important;
+        font-weight: 600 !important;
+        color: var(--text-secondary) !important;
+        text-decoration: none !important;
+        margin-bottom: 1px !important;
+        cursor: pointer !important;
+        border: 1px solid transparent !important;
+        transition: background 0.12s, color 0.12s !important;
     }
     .drawer-item:hover {
-        background: var(--surface-container);
-        color: var(--text-main);
+        background: var(--surface-container) !important;
+        color: var(--text-main) !important;
     }
     .drawer-item.active {
-        background: rgba(0, 177, 79, 0.1);
-        color: var(--primary);
-        border: 1px solid rgba(0, 177, 79, 0.2);
+        background: rgba(0, 177, 79, 0.1) !important;
+        color: var(--primary) !important;
+        border-color: rgba(0, 177, 79, 0.2) !important;
     }
     .drawer-item i {
-        width: 18px;
-        text-align: center;
-        font-size: 0.95rem;
-        flex-shrink: 0;
-    }
-    .drawer-content {
-        flex: 1;
-        padding: 12px 8px;
-        overflow-y: auto;
+        width: 16px !important;
+        font-size: 0.88rem !important;
+        text-align: center !important;
+        flex-shrink: 0 !important;
     }
 
-    /* ?? TOP HEADER ?? */
+    /* ?? TOP HEADER ??????????????????????????????????????? */
     .mobile-header {
-        left: 240px !important;
-        width: calc(100% - 240px) !important;
-        background: rgba(var(--surface-rgb, 255, 255, 255), 0.95) !important;
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
-        z-index: 200;
+        left: 248px !important;
+        width: calc(100% - 248px) !important;
+        height: 60px !important;
+        background: var(--surface) !important;
+        border-bottom: 1px solid var(--border) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+        z-index: 200 !important;
+        padding: 0 28px !important;
     }
+    .menu-btn { display: none !important; }
 
-    /* Hide the hamburger menu button on desktop */
-    .menu-btn {
-        display: none !important;
-    }
+    /* ?? BOTTOM NAV HIDDEN ???????????????????????????????? */
+    .bottom-nav { display: none !important; }
 
-    /* ?? BOTTOM NAV — HIDDEN ON DESKTOP ?? */
-    .bottom-nav {
-        display: none !important;
-    }
-
-    /* ?? MAIN CONTENT ?? */
+    /* ?? MAIN CONTENT ????????????????????????????????????? */
     .main-content {
-        margin-left: 240px !important;
-        padding: 80px 28px 32px !important;  /* 80px clears the fixed header */
-        height: 100vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-        -webkit-overflow-scrolling: auto;
-        flex: 1;
+        margin-left: 248px !important;
+        padding: 72px 32px 32px !important;
+        height: 100vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        flex: 1 !important;
+        -webkit-overflow-scrolling: auto !important;
+    }
+    .main-content::-webkit-scrollbar { width: 6px; }
+    .main-content::-webkit-scrollbar-track { background: transparent; }
+    .main-content::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.13); border-radius: 3px;
+    }
+    .main-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(0,0,0,0.24);
     }
 
-    /* ?? NOTIFICATION PANEL — position relative to content area ?? */
+    /* Cap content width on ultrawide */
+    .main-content > .tab-content {
+        max-width: 1440px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    /* ?? NOTIFICATION PANEL ??????????????????????????????? */
     #adminNotifPanel {
         left: auto !important;
-        right: 20px !important;
-        top: 70px !important;
-        width: 360px !important;
+        right: 24px !important;
+        top: 68px !important;
+        width: 380px !important;
+    }
+    #adminNotifToast {
+        left: calc(248px + 16px) !important;
+        right: 16px !important;
+        top: 68px !important;
     }
 
-    /* ?? PAGE TITLE AREA ?? */
+    /* ?? PAGE TITLES ?????????????????????????????????????? */
     .page-title {
         font-size: 1.6rem !important;
-        font-weight: 800;
-        margin-bottom: 4px;
+        font-weight: 800 !important;
+        margin-bottom: 2px !important;
     }
-    .page-subtitle {
-        margin-bottom: 20px !important;
-    }
+    .page-subtitle { margin-bottom: 20px !important; }
 
-    /* ?? STAT CARDS GRID ?? */
-    /* Dashboard 2-column inline stat rows ? 4-column grid */
-    #dashboard > div[style*="display:-webkit-flex"],
-    #dashboard > div[style*="display:flex"] {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
-        gap: 16px !important;
-    }
-
+    /* ?? CARDS / LISTS ???????????????????????????????????? */
     .stat-card {
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-        box-shadow: var(--shadow-card);
-        transition: box-shadow 0.2s, transform 0.2s;
-        background: var(--surface);
+        transition: box-shadow 0.18s, transform 0.18s !important;
+        cursor: default;
     }
     .stat-card:hover {
-        box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
+        box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px) !important;
     }
+    .list-item { transition: box-shadow 0.15s !important; }
+    .list-item:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.08) !important; }
 
-    /* ?? CHART CARDS ?? */
-    .chart-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-card);
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-    .chart-container { height: 260px !important; }
+    /* ?? MODALS ??????????????????????????????????????????? */
+    .premium-modal { padding: 32px !important; }
+    .modal-content { max-width: 540px !important; border-radius: 20px !important; }
+    .chart-popup-container { max-width: 680px !important; }
+    #adminLoginOverlay .login-card { max-width: 460px !important; }
 
-    /* ?? LIST ITEMS ?? */
-    .list-item {
-        border-radius: var(--radius-md);
-        transition: box-shadow 0.15s;
+    /* ?? BUTTON HOVER ????????????????????????????????????? */
+    .btn-primary:hover, .btn-premium:hover {
+        opacity: 0.88; transform: translateY(-1px);
     }
-    .list-item:hover {
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    }
-
-    /* ?? MODALS ?? */
-    .premium-modal {
-        padding: 40px !important;
-    }
-    .modal-content {
-        max-width: 520px !important;
-        border-radius: 24px !important;
-    }
-
-    /* ?? BOOKINGS TABLE AREA ?? */
-    #bookings .booking-card-item {
-        display: grid;
-        grid-template-columns: 80px 1fr 1fr 120px 100px 80px;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 18px;
-    }
-
-    /* ?? LOGIN OVERLAY — centered card, wider ?? */
-    #adminLoginOverlay .login-card {
-        max-width: 480px !important;
-        border-radius: 24px !important;
-    }
-
-    /* ?? SETTINGS PAGE ?? */
-    #settings .stat-card {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0;
-    }
-
-    /* ?? GPS MAP ?? */
-    #gps {
-        height: calc(100vh - 120px);
-    }
-
-    /* ?? CHAT ?? */
-    .ac-chat-wrap {
-        height: calc(100vh - 140px) !important;
-    }
-
-    /* ?? REPORTS ?? */
-    #reports {
-        max-width: 1400px;
-    }
-
-    /* ?? USER MANAGEMENT TABLE ?? */
-    #users table,
-    #verifications table,
-    #staff table,
-    #activity table {
-        font-size: 0.875rem;
-    }
-
-    /* ?? PILLS / BADGES ?? */
-    .pill {
-        font-size: 0.7rem !important;
-    }
+    .btn-outline:hover { background: var(--surface-container) !important; }
 }
 
-/* ?? 2. MEDIUM DESKTOP (1024px+) ???????????????????????????? */
-@media (min-width: 1024px) {
-
-    .side-drawer {
-        width: 256px !important;
-    }
-    .mobile-header {
-        left: 256px !important;
-        width: calc(100% - 256px) !important;
-    }
-    .main-content {
-        margin-left: 256px !important;
-        padding: 80px 36px 32px !important;
-    }
-
-    /* Dashboard: 4-column stat row */
-    #dashboard > div[style*="display:-webkit-flex"],
-    #dashboard > div[style*="display:flex"] {
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-
-    .chart-container { height: 300px !important; }
-
-    /* Two-column layout for main content sections */
-    #dashboard .dash-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-}
-
-/* ?? 3. LARGE DESKTOP (1280px+) ????????????????????????????? */
-@media (min-width: 1280px) {
-
-    .side-drawer {
-        width: 272px !important;
-    }
-    .mobile-header {
-        left: 272px !important;
-        width: calc(100% - 272px) !important;
-    }
-    .main-content {
-        margin-left: 272px !important;
-        padding: 80px 40px 32px !important;
-    }
-
-    .page-title {
-        font-size: 1.8rem !important;
-    }
-
-    .chart-container { height: 320px !important; }
-
-    /* 3-column for vehicle/booking cards */
-    #vehicles .vehicles-list,
-    #bookings .bookings-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-    }
-}
-
-/* ?? 4. CHAT DESKTOP TWO-PANE LAYOUT ???????????????????????? */
+/* ?????????????????????????????????????????????????????????????
+   DASHBOARD GRID  (769px+)
+   Uses the .dash-desktop-grid class injected by JS below
+????????????????????????????????????????????????????????????? */
 @media (min-width: 769px) {
-    /* Chat: inbox list left + conversation right */
-    #chat > div {
-        max-height: calc(100vh - 120px);
+
+    /* JS adds .dash-desktop-grid to #dashboard */
+    #dashboard.dash-desktop-grid {
+        display: block !important;  /* let inner wrappers handle grid */
     }
 
-    /* If chat has a split layout container */
-    .ac-chat-split {
+    /* KPI row: Revenue + Bookings as large tiles */
+    .dash-kpi-row {
         display: grid !important;
-        grid-template-columns: 300px 1fr !important;
-        gap: 0 !important;
-        height: calc(100vh - 120px) !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important;
+        margin-bottom: 18px !important;
+    }
+    .dash-kpi-row .stat-card {
+        padding: 28px 32px !important;
+        margin-bottom: 0 !important;
+    }
+    .dash-kpi-row .stat-card h5 {
+        font-size: 0.65rem !important;
+        letter-spacing: 1.2px !important;
+        margin-bottom: 10px !important;
+    }
+    .dash-kpi-row .stat-card > div[id] {
+        font-size: 2.2rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -1.5px !important;
+        line-height: 1 !important;
+    }
+
+    /* Chart rows: 2 equal columns */
+    .dash-chart-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important;
+        margin-bottom: 18px !important;
+    }
+    .dash-chart-row .stat-card {
+        margin-bottom: 0 !important;
+        padding: 18px 20px !important;
+    }
+
+    /* Chart canvases: taller on desktop */
+    .dash-chart-row div[style*="height:110px"],
+    .dash-chart-row div[style*="height: 110px"] {
+        height: 200px !important;
+    }
+
+    /* Pie chart row */
+    .dash-pie-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important;
+        margin-bottom: 18px !important;
+    }
+    .dash-pie-row .stat-card {
+        margin-bottom: 0 !important;
+        padding: 18px 20px !important;
+    }
+
+    /* Full-width rows */
+    .dash-full-row {
+        margin-bottom: 18px !important;
+    }
+    .dash-full-row .stat-card {
+        margin-bottom: 0 !important;
+    }
+}
+
+/* ?????????????????????????????????????????????????????????????
+   1100px+ — wider layout
+????????????????????????????????????????????????????????????? */
+@media (min-width: 1100px) {
+
+    .side-drawer { width: 260px !important; }
+    .mobile-header {
+        left: 260px !important;
+        width: calc(100% - 260px) !important;
+        padding: 0 32px !important;
+    }
+    .main-content { margin-left: 260px !important; padding: 72px 36px 32px !important; }
+    #adminNotifToast { left: calc(260px + 16px) !important; }
+
+    /* 4-col KPI on wide screens */
+    .dash-kpi-row { grid-template-columns: 1fr 1fr 1fr 1fr !important; }
+    .dash-kpi-row .stat-card { padding: 24px 20px !important; }
+    .dash-kpi-row .stat-card > div[id] { font-size: 1.9rem !important; }
+
+    .dash-chart-row div[style*="height:110px"],
+    .dash-chart-row div[style*="height: 110px"] { height: 220px !important; }
+
+    .page-title { font-size: 1.75rem !important; }
+}
+
+/* ?????????????????????????????????????????????????????????????
+   1400px+ — large screens
+????????????????????????????????????????????????????????????? */
+@media (min-width: 1400px) {
+
+    .side-drawer { width: 272px !important; }
+    .mobile-header { left: 272px !important; width: calc(100% - 272px) !important; }
+    .main-content { margin-left: 272px !important; padding: 72px 44px 32px !important; }
+    #adminNotifToast { left: calc(272px + 16px) !important; }
+
+    .dash-kpi-row .stat-card > div[id] { font-size: 2rem !important; }
+    .dash-chart-row div[style*="height:110px"],
+    .dash-chart-row div[style*="height: 110px"] { height: 240px !important; }
+
+    /* 3-col for pie/other rows */
+    .dash-pie-row { grid-template-columns: 1fr 1fr 1fr !important; }
+}
+
+/* ?????????????????????????????????????????????????????????????
+   DARK THEME OVERRIDES
+????????????????????????????????????????????????????????????? */
+@media (min-width: 769px) {
+    [data-theme="dark"] .side-drawer {
+        background: #0f0f0f !important;
+        border-right-color: rgba(255,255,255,0.07) !important;
+    }
+    [data-theme="dark"] .mobile-header {
+        background: #0f0f0f !important;
+        border-bottom-color: rgba(255,255,255,0.07) !important;
+    }
+    [data-theme="dark"] .drawer-item:hover {
+        background: rgba(255,255,255,0.05) !important;
+        color: #fff !important;
+    }
+    [data-theme="dark"] .drawer-item.active {
+        background: rgba(0,177,79,0.13) !important;
+        border-color: rgba(0,177,79,0.28) !important;
+        color: #00B14F !important;
+    }
+    [data-theme="dark"] .main-content::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+    }
+}
+
+/* ?????????????????????????????????????????????????????????????
+   GPS / CHAT / REPORTS
+????????????????????????????????????????????????????????????? */
+@media (min-width: 769px) {
+    #gps { height: calc(100vh - 110px) !important; }
+
+    .ac-chat-wrap { height: calc(100vh - 110px) !important; }
+    #chat .ac-chat-wrap {
         border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        overflow: hidden;
-        background: var(--surface);
-    }
-    .ac-inbox-panel {
-        border-right: 1px solid var(--border);
-        overflow-y: auto;
-    }
-    .ac-convo-panel {
-        display: flex;
-        flex-direction: column;
+        border-radius: 16px;
         overflow: hidden;
     }
-}
 
-/* ?? 5. DARK THEME FIXES ????????????????????????????????????? */
-[data-theme="dark"] .side-drawer {
-    background: #141414 !important;
-    border-right-color: rgba(255,255,255,0.08) !important;
+    #reports .chart-container { height: 280px !important; }
 }
-[data-theme="dark"] .mobile-header {
-    background: rgba(10,10,10,0.95) !important;
-    border-bottom-color: rgba(255,255,255,0.08) !important;
-}
-[data-theme="dark"] .drawer-item:hover {
-    background: rgba(255,255,255,0.05) !important;
-}
-[data-theme="dark"] .drawer-item.active {
-    background: rgba(0,177,79,0.12) !important;
-    border-color: rgba(0,177,79,0.25) !important;
-}
-
-/* ?? 6. SCROLLBAR STYLING FOR DESKTOP ??????????????????????? */
-@media (min-width: 769px) {
-    .main-content::-webkit-scrollbar,
-    .drawer-content::-webkit-scrollbar {
-        width: 6px;
-    }
-    .main-content::-webkit-scrollbar-track,
-    .drawer-content::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .main-content::-webkit-scrollbar-thumb,
-    .drawer-content::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.15);
-        border-radius: 3px;
-    }
-    [data-theme="dark"] .main-content::-webkit-scrollbar-thumb,
-    [data-theme="dark"] .drawer-content::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.12);
-    }
-    .main-content::-webkit-scrollbar-thumb:hover,
-    .drawer-content::-webkit-scrollbar-thumb:hover {
-        background: rgba(0,0,0,0.28);
-    }
-}
-
-/* ?? 7. CONTENT MAX-WIDTH CONTAINER ????????????????????????? */
-@media (min-width: 769px) {
-    .main-content > .tab-content {
-        max-width: 1500px;
-        margin: 0 auto;
-    }
-}
-
-/* ?? 8. BOOKINGS DESKTOP TABLE ?????????????????????????????? */
-@media (min-width: 769px) {
-    /* Show a proper data table instead of mobile cards */
-    .bk-table-desktop {
-        display: table !important;
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .bk-table-desktop th {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: var(--text-muted);
-        padding: 10px 14px;
-        border-bottom: 2px solid var(--border);
-        text-align: left;
-        white-space: nowrap;
-    }
-    .bk-table-desktop td {
-        padding: 12px 14px;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.875rem;
-        vertical-align: middle;
-    }
-    .bk-table-desktop tbody tr:hover {
-        background: var(--surface-container);
-    }
-
-    /* Desktop: wider search bars */
-    input[type="search"],
-    input[type="text"][placeholder*="Search"] {
-        min-width: 280px;
-    }
-
-    /* Toolbar / filter bar */
-    .filter-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
-    }
-}
-
-/* ?? 9. HEADER RIGHT: show admin name on desktop ??????????? */
-@media (min-width: 769px) {
-    .header-right {
-        gap: 16px !important;
-    }
-    /* Show the admin name that's hidden on mobile */
-    .admin-name-label {
-        display: inline !important;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text-secondary);
-    }
-}
-
-/* ?? 10. BUTTON / FORM IMPROVEMENTS ON DESKTOP ????????????? */
-@media (min-width: 769px) {
-    .btn-primary,
-    .btn-premium {
-        cursor: pointer;
-    }
-    .btn-primary:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
-    }
-    .btn-outline:hover {
-        background: var(--border);
-    }
-
-    /* Form inputs: remove mobile-only touch styles */
-    input, select, textarea {
-        -webkit-tap-highlight-color: transparent;
-        font-size: 0.9rem !important;
-    }
+@media (min-width: 1100px) {
+    #reports .chart-container { height: 320px !important; }
 }
