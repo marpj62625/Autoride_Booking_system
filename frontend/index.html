@@ -315,17 +315,18 @@
         }
 
         /* ============================================================
-           DESKTOP LAYOUT � kicks in at 768px+
+           DESKTOP LAYOUT  kicks in at 768px+
            Left sidebar + constrained content area
            ============================================================ */
         @media (min-width: 768px) {
 
-          /* ?? Sidebar: replaces fixed bottom nav ?? */
+          /* Sidebar: replaces fixed bottom nav */
           .bottom-nav {
             position: fixed;
             top: 0; left: 0; bottom: 0; right: auto;
             width: 220px;
             height: 100vh;
+            display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: stretch;
@@ -381,6 +382,12 @@
             background: rgba(0, 177, 79, 0.09);
             border-left: 3px solid var(--primary);
             padding-left: 17px;
+          }
+
+          /* Logout button: visible in sidebar, pushed to bottom */
+          #nav-logout {
+            display: flex !important;
+            margin-top: auto;
           }
 
           /* ?? All pages/auth-pages: push right of sidebar ?? */
@@ -720,6 +727,7 @@
   <button onclick="showPage('page-bookings')" id="nav-bookings"><i class="fas fa-calendar-check"></i><span>Bookings</span></button>
   <button onclick="showPage('page-profile')" id="nav-profile"><i class="fas fa-user"></i><span>Profile</span></button>
   <button onclick="showPage('page-more')" id="nav-more"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
+  <button id="nav-logout" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="display:none;margin-top:auto;color:var(--danger);border-top:1px solid var(--border);"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button>
 </nav>
 
 <!-- ???????????????????????????????????????????????????????????
@@ -845,7 +853,7 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
-  <!-- Active booking banner � shown by JS when user has an active booking -->
+  <!-- Active booking banner ï¿½ shown by JS when user has an active booking -->
   <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
     <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
     <div style="flex:1;">
@@ -1167,6 +1175,10 @@
       <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
     </div>
+    <div class="more-item" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="margin-top:8px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.05);">
+      <div class="more-item-icon" style="background:rgba(248,113,113,0.12);color:var(--danger);"><i class="fas fa-sign-out-alt"></i></div>
+      <div class="more-item-text"><h4 style="color:var(--danger);">Sign Out</h4><p>Log out of your account</p></div>
+    </div>
   </div>
 </div>
 
@@ -1195,7 +1207,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- DEBUG OVERLAY � disabled in production -->
+<!-- DEBUG OVERLAY ï¿½ disabled in production -->
 <!-- To re-enable for debugging, uncomment the block below -->
 <!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
@@ -1218,7 +1230,7 @@
   // All dbg() calls are no-ops. Global errors are silently ignored.
   function dbg() {}
   window.__dbg = dbg;
-  // Keep fetch interception removed � no debug overhead in production
+  // Keep fetch interception removed ï¿½ no debug overhead in production
 })();
 </script>
 </body>
