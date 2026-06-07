@@ -20,23 +20,17 @@
             <span class="brand-tag">Admin</span>
         </div>
         <nav class="sidebar-nav">
-            <a href="#" class="nav-link">
+            <a href="index.html" class="nav-link">
                 <span class="nav-icon">📊</span> Dashboard
             </a>
             <a href="booking-management.html" class="nav-link active">
                 <span class="nav-icon">📋</span> Bookings
             </a>
-            <a href="#" class="nav-link">
+            <a href="vehicle-management.html" class="nav-link">
                 <span class="nav-icon">🚘</span> Vehicles
             </a>
-            <a href="#" class="nav-link">
-                <span class="nav-icon">👤</span> Drivers
-            </a>
-            <a href="#" class="nav-link">
+            <a href="reports.html" class="nav-link">
                 <span class="nav-icon">📈</span> Reports
-            </a>
-            <a href="#" class="nav-link">
-                <span class="nav-icon">📝</span> GPS Tracking
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -110,7 +104,7 @@
             <!-- Toolbar -->
             <section class="toolbar">
                 <div class="search-box">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔝</span>
                     <input type="text" id="searchInput" placeholder="Search by customer name or car..." autocomplete="off">
                 </div>
                 <div class="filter-group">
@@ -163,7 +157,7 @@
         <div class="tab-content hidden" id="tabActive">
             <section class="toolbar">
                 <div class="search-box">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔝</span>
                     <input type="text" id="searchActiveInput" placeholder="Search active bookings..." autocomplete="off">
                 </div>
                 <div class="filter-group">
@@ -205,7 +199,7 @@
         <div class="tab-content hidden" id="tabPast">
             <section class="toolbar">
                 <div class="search-box">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔝</span>
                     <input type="text" id="searchPastInput" placeholder="Search past bookings..." autocomplete="off">
                 </div>
                 <div class="filter-group">
@@ -268,7 +262,7 @@
         <div class="tab-content hidden" id="tabCancelled">
             <section class="toolbar">
                 <div class="search-box">
-                    <span class="search-icon">🔍</span>
+                    <span class="search-icon">🔝</span>
                     <input type="text" id="searchCancelledInput" placeholder="Search cancelled bookings..." autocomplete="off">
                 </div>
                 <div class="filter-group">
@@ -454,6 +448,12 @@
         <span class="toast-msg" id="toastMsg"></span>
     </div>
 
+    <script>
+        // API base URL - works on localhost and production (Vercel)
+        window.API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5000/api'
+            : window.location.origin + '/api';
+    </script>
     <script src="shared-utils.js"></script>
     <script src="booking-management.js"></script>
 </body>

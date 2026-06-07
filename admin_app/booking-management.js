@@ -150,7 +150,7 @@ function renderTable(bookings) {
             <td class="customer-cell">${escapeHtml(b.customer_name)}</td>
             <td>${escapeHtml(b.car)}</td>
             <td>${formatRentalDates(b.start_date, b.end_date)}</td>
-            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="price-cell">₱${formatPriceNum(b.total_price)}</td>
             <td>${statusBadge(b.status)}</td>
             <td class="actions-cell">
                 <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
@@ -263,12 +263,12 @@ async function viewDetails(id) {
                 <strong class="info-label">Customer:</strong> 
                 <span class="info-value">${escapeHtml(b.customer_name)}</span>
                 <button class="btn-view-profile" onclick="viewCustomerProfile(${b.user_id})" aria-label="View ${escapeHtml(b.customer_name)}'s profile">
-                    ?? View Profile
+                    👁 View Profile
                 </button>
             </div>
             <div class="info-item" role="listitem"><strong class="info-label">Vehicle:</strong> <span class="info-value">${escapeHtml(b.car)}</span></div>
             <div class="info-item" role="listitem"><strong class="info-label">Period:</strong> <span class="info-value">${formatRentalDates(b.start_date, b.end_date)}</span></div>
-            <div class="info-item" role="listitem"><strong class="info-label">Total:</strong> <span class="info-value">?${formatPrice(b.total_price)}</span></div>
+            <div class="info-item" role="listitem"><strong class="info-label">Total:</strong> <span class="info-value">₱${formatPriceNum(b.total_price)}</span></div>
             <div class="info-item" role="listitem"><strong class="info-label">Status:</strong> ${statusBadge(b.status)}</div>
             <div class="info-item" role="listitem"><strong class="info-label">Payment:</strong> <span class="payment-status ${b.payment_status?.toLowerCase()}">${b.payment_status || 'Unpaid'}</span></div>
         </div>
@@ -431,22 +431,7 @@ async function uploadRefundProof(bookingId) {
     }
 }
 
-// ==================== TOAST ====================
-let _toastTimeout = null;
-
-function showToast(type, message) {
-    const toast = document.getElementById('toast');
-    const toastIcon = document.getElementById('toastIcon');
-    const toastMsg  = document.getElementById('toastMsg');
-
-    toast.className = `toast ${type}`;
-    toastIcon.textContent = type === 'success' ? '✅' : '❌';
-    toastMsg.textContent = message;
-
-    clearTimeout(_toastTimeout);
-    _toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4000);
-}
-
+// ==================== HELPERS ====================
 // ==================== HELPERS ====================
 function showLoading(show) {
     loadingState.classList.toggle('hidden', !show);
@@ -491,26 +476,11 @@ function cancelBooking(id) {
     });
 }
 
-function formatDate(dateStr) {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
-function formatRentalDates(startDate, endDate) {
-    return `${formatDate(startDate)} - ${formatDate(endDate)}`;
-}
 
-function formatPrice(price) {
+function formatPriceNum(price) {
     if (price == null) return '0.00';
     return parseFloat(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
 }
 
 // Pop-in animation for stats (CSS)
@@ -594,7 +564,7 @@ function renderCancelledBookingsTable() {
             <td class="reason-cell">${escapeHtml(b.cancellation_reason || 'N/A')}</td>
             <td>${escapeHtml(b.cancelled_by || 'N/A')}</td>
             <td class="actions-cell">
-                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">?? View</button>
+                <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👁 View</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -715,10 +685,10 @@ async function viewCustomerProfile(userId) {
                 // Warning indicator for expiring/expired licenses
                 if (daysUntilExpiry < 0) {
                     expiryElement.classList.add('expired');
-                    expiryElement.innerHTML += ' <span class="warning-badge">?? EXPIRED</span>';
+                    expiryElement.innerHTML += ' <span class="warning-badge">⚠️ EXPIRED</span>';
                 } else if (daysUntilExpiry <= 30) {
                     expiryElement.classList.add('expiring-soon');
-                    expiryElement.innerHTML += ` <span class="warning-badge expiring">?? Expires in ${daysUntilExpiry} days</span>`;
+                    expiryElement.innerHTML += ` <span class="warning-badge expiring">⚠️ Expires in ${daysUntilExpiry} days</span>`;
                 }
             } else {
                 expiryElement.textContent = 'N/A';
@@ -849,12 +819,12 @@ function renderActiveBookingsTable() {
             <td>${escapeHtml(b.car)}</td>
             <td class="location-cell">
                 <div class="location-info">
-                    <span class="location-icon">📍</span>
+                    <span class="location-icon">📝</span>
                     <div class="location-text">${locationDisplay}</div>
                 </div>
             </td>
             <td>${formatRentalDates(b.start_date, b.end_date)}</td>
-            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="price-cell">₱${formatPriceNum(b.total_price)}</td>
             <td>${statusBadge(b.status)}</td>
             <td class="actions-cell">
                 <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
@@ -911,12 +881,12 @@ function applyActiveFilters() {
             <td>${escapeHtml(b.car)}</td>
             <td class="location-cell">
                 <div class="location-info">
-                    <span class="location-icon">📍</span>
+                    <span class="location-icon">📝</span>
                     <div class="location-text">${locationDisplay}</div>
                 </div>
             </td>
             <td>${formatRentalDates(b.start_date, b.end_date)}</td>
-            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="price-cell">₱${formatPriceNum(b.total_price)}</td>
             <td>${statusBadge(b.status)}</td>
             <td class="actions-cell">
                 <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
@@ -1003,7 +973,7 @@ function renderPastBookingsTable() {
             <td>${escapeHtml(b.car)}</td>
             <td>${formatRentalDates(b.start_date, b.end_date)}</td>
             <td>${formatDate(b.completion_date)}</td>
-            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="price-cell">₱${formatPriceNum(b.total_price)}</td>
             <td class="actions-cell">
                 <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
             </td>
@@ -1066,7 +1036,7 @@ function applyPastFilters() {
             <td>${escapeHtml(b.car)}</td>
             <td>${formatRentalDates(b.start_date, b.end_date)}</td>
             <td>${formatDate(b.completion_date)}</td>
-            <td class="price-cell">₱${formatPrice(b.total_price)}</td>
+            <td class="price-cell">₱${formatPriceNum(b.total_price)}</td>
             <td class="actions-cell">
                 <button class="btn-details" onclick="viewDetails(${b.id})" title="View full details">👝 View</button>
             </td>
