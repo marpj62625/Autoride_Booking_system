@@ -1488,7 +1488,8 @@ function loadHome() {
 }
 
 function buildImgUrl(path) {
-  if (!path) return 'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E';
+  var _noImg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E';
+  if (!path) return _noImg;
   if (path.startsWith('http')) return path;
   return API_BASE.replace('/api', '') + '/' + path;
 }
@@ -1582,7 +1583,7 @@ function renderVehicles(list) {
     var mEnc = encodeURIComponent(v.model);
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
@@ -1684,7 +1685,7 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
       if (plateEl) plateEl.textContent = unit.plate_number || 'N/A';
       if (imgWrap) {
         var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
-        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'" style="width:100%;height:100%;object-fit:cover;">';
+        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'" style="width:100%;height:100%;object-fit:cover;">';
       }
       if (bookBtn) {
         var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
@@ -1796,7 +1797,7 @@ function renderVehicleUnits(brand, model, color, units) {
     var imgSrc = (v.gallery && v.gallery.length) ? buildImgUrl(v.gallery[0]) : buildImgUrl(v.vehicle_image);
     return '<div class="card" style="margin-bottom:14px;">' +
       '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
-      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'">' +
+      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
       (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
       '</div>' +
@@ -1942,7 +1943,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<div class="card" style="margin-bottom:16px;">' +
         // Gallery image
         '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'">' +
+        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
         '</div>' +
         // Title + status
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
@@ -2135,7 +2136,7 @@ function renderVehicleDetail(v) {
   if (!el) return;
   var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
   var galleryHtml = galleryImgs.map(function(img) {
-    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'" alt="Vehicle">';
+    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'" alt="Vehicle">';
   }).join('');
   var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
     return '<div class="review-item"><div class="reviewer">' +
@@ -4490,7 +4491,7 @@ function loadFavorites() {
         '<div class="vehicle-grid" style="padding:16px;">' +
         (data.length ? data.map(function(v) {
           return '<div class="vehicle-card" onclick="openVehicleDetail(' + v.id + ')">' +
-            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'"></div>' +
+            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'"></div>' +
             '<div class="vehicle-info"><h3>' + v.brand + ' ' + v.model + '</h3>' +
             '<div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
             '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div></div></div>';
