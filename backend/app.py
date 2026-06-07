@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, make_response
+import bcrypt
 
 from flask_cors import CORS
 
@@ -888,12 +889,11 @@ def register():
 
 
         import random
-        import bcrypt as _bcrypt
 
         otp = str(random.randint(100000, 999999))
         temp_email_otps[email] = otp
 
-        hashed_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+        hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         cur.execute("""
             INSERT INTO users(full_name, email, password, is_email_verified, is_verified, license_image_url, role)
@@ -981,18 +981,17 @@ def login():
 
         cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified FROM users WHERE email=%s", (email,))
         user_row = cur.fetchone()
-        import bcrypt as _bcrypt
         user = None
         if user_row:
             stored = user_row['password'] or ''
             # Support legacy plain-text passwords (auto-upgrade on next login)
             try:
-                pw_ok = _bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8'))
+                pw_ok = bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8'))
             except Exception:
                 pw_ok = (stored == password)
                 if pw_ok:
                     # Upgrade to bcrypt hash
-                    new_hash = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+                    new_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_hash, user_row['id']))
                     commit_db()
             if pw_ok:
@@ -1492,8 +1491,7 @@ def admin_reset_password(user_id):
     new_password = data.get('new_password', '').strip()
     if len(new_password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
-    import bcrypt as _bcrypt
-    hashed = _bcrypt.hashpw(new_password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+    hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     try:
         cur = get_cursor()
         cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, user_id))
@@ -6401,16 +6399,15 @@ def admin_login():
 
         cur.execute("SELECT id, full_name, role, assigned_location, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin')", (email,))
         admin_row = cur.fetchone()
-        import bcrypt as _bcrypt
         user = None
         if admin_row:
             stored = admin_row['password'] or ''
             try:
-                pw_ok = _bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8'))
+                pw_ok = bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8'))
             except Exception:
                 pw_ok = (stored == password)
                 if pw_ok:
-                    new_hash = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+                    new_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_hash, admin_row['id']))
                     commit_db()
             if pw_ok:
@@ -6537,8 +6534,7 @@ def update_admin(user_id):
 
 
         if password:
-            import bcrypt as _bcrypt
-            hashed_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+            hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             cur.execute("UPDATE users SET full_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (name, email, hashed_pw, role, assigned_location, user_id))
 
         else:
@@ -6739,8 +6735,7 @@ def create_admin():
 
 
 
-        import bcrypt as _bcrypt
-        hashed_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+        hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cur.execute("""
             INSERT INTO users (full_name, email, password, role, assigned_location, is_email_verified, is_verified)
             VALUES (%s, %s, %s, %s, %s, True, 1)
@@ -7432,8 +7427,7 @@ def change_admin_password():
 
 
 
-        import bcrypt as _bcrypt
-        hashed_pw = _bcrypt.hashpw(new_password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+        hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed_pw, user_id))
         commit_db()
         return jsonify({"message": "Password updated successfully"}), 200
