@@ -139,6 +139,8 @@
         .pill-refunded { background:#cfe2ff; color:#084298; }
         /* Auth screens */
         .auth-container { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; background:var(--bg-page); }
+        /* Hero panel: hidden on mobile, shown on desktop via media query */
+        .auth-hero-panel { display:none; }
         .auth-logo { text-align:center; margin-bottom:28px; }
         .auth-logo img { display:block; margin:0 auto 8px; filter:drop-shadow(0 2px 8px rgba(0,0,0,0.15)); }
         .auth-logo h1 { font-size:2rem; font-weight:900; color:var(--text-primary); letter-spacing:-1.5px; margin-top:8px; }
@@ -483,19 +485,54 @@
             max-width: 640px;
           }
 
-          /* ?? Auth pages: centered card ?? */
+          /* ?? Auth pages: split-screen layout on desktop ?? */
           #page-login.auth-page.active,
           #page-register.auth-page.active,
           #page-otp-verify.auth-page.active {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row;
+            align-items: stretch;
             background: var(--bg-page);
+            min-height: 100vh;
+            padding: 0;
           }
 
+          /* Left hero panel: show on desktop */
+          .auth-hero-panel {
+            display: flex;
+            flex: 1 1 55%;
+            min-height: 100vh;
+            background: linear-gradient(160deg, var(--primary-light) 0%, var(--primary) 55%, var(--primary-dark) 100%);
+            align-items: center;
+            justify-content: center;
+            padding: 48px 40px;
+          }
+
+          .auth-hero-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            max-width: 380px;
+          }
+
+          /* Right form panel */
           .auth-container {
-            max-width: 480px;
-            width: 100%;
+            flex: 0 0 auto;
+            width: 45%;
+            max-width: 520px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 40px;
+            background: var(--bg-page);
+            overflow-y: auto;
+          }
+
+          /* Hide auth-logo inside form on desktop (hero panel shows it) */
+          .auth-hero-panel ~ .auth-container .auth-logo {
+            display: none;
           }
 
           /* ?? Action grid: 3 cols on desktop ?? */
@@ -593,6 +630,28 @@
      LOGIN
 ??????????????????????????????????????????????????????????? -->
 <div id="page-login" class="auth-page">
+  <!-- Desktop hero panel (hidden on mobile via CSS) -->
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:180px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,0.25));">
+      <h1 style="font-size:2.8rem;font-weight:900;color:#fff;letter-spacing:-1px;margin-top:16px;">Autoride</h1>
+      <p style="color:rgba(255,255,255,0.85);font-size:1.1rem;margin-top:8px;font-weight:500;">Your ride, your way</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:40px;max-width:280px;">
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car"></i></div>
+          <span style="font-size:0.9rem;">Browse and book vehicles instantly</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt"></i></div>
+          <span style="font-size:0.9rem;">Safe, verified, and insured rides</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-award"></i></div>
+          <span style="font-size:0.9rem;">Earn loyalty points every booking</span>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="auth-container">
     <div class="auth-logo">
       <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:140px;height:140px;object-fit:contain;margin-bottom:4px;">
@@ -634,6 +693,27 @@
      REGISTER
 ??????????????????????????????????????????????????????????? -->
 <div id="page-register" class="auth-page">
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:180px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,0.25));">
+      <h1 style="font-size:2.8rem;font-weight:900;color:#fff;letter-spacing:-1px;margin-top:16px;">Join Autoride</h1>
+      <p style="color:rgba(255,255,255,0.85);font-size:1.1rem;margin-top:8px;font-weight:500;">Start your journey today</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:40px;max-width:280px;">
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user-check"></i></div>
+          <span style="font-size:0.9rem;">Quick and easy account setup</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-calendar-check"></i></div>
+          <span style="font-size:0.9rem;">Manage all your bookings in one place</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
+          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star"></i></div>
+          <span style="font-size:0.9rem;">Exclusive promos and loyalty rewards</span>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="auth-container">
     <div class="auth-logo">
       <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:140px;height:140px;object-fit:contain;margin-bottom:4px;">
