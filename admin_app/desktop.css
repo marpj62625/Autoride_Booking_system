@@ -1,0 +1,454 @@
+/* ============================================================
+   Autoride Admin — Desktop / Wide-Screen Layout
+   Responsive overrides for screens >= 769px
+   ============================================================ */
+
+/* ?? 1. DESKTOP LAYOUT SKELETON ????????????????????????????? */
+@media (min-width: 769px) {
+
+    /* Allow zoom/scale on desktop */
+    /* (viewport meta can't be changed via CSS, but we allow all scaling) */
+
+    /* Body: horizontal split instead of flex-column */
+    body {
+        flex-direction: row;
+        overflow: hidden;
+        height: 100vh;
+    }
+
+    /* ?? SIDEBAR (was off-canvas drawer) ?? */
+    .side-drawer {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 240px !important;
+        height: 100vh !important;
+        transform: none !important;
+        box-shadow: none !important;
+        border-right: 1px solid var(--border) !important;
+        z-index: 100 !important;
+        transition: none !important;
+        display: flex;
+        flex-direction: column;
+        background: var(--surface) !important;
+        overflow-y: auto;
+    }
+
+    /* Hide the dark overlay (never needed on desktop) */
+    .drawer-overlay {
+        display: none !important;
+    }
+
+    /* Sidebar brand header */
+    .drawer-header {
+        padding: 20px 18px 16px !important;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+    /* Sidebar nav items */
+    .drawer-item {
+        display: flex !important;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: all 0.15s;
+        margin-bottom: 2px;
+        cursor: pointer;
+    }
+    .drawer-item:hover {
+        background: var(--surface-container);
+        color: var(--text-main);
+    }
+    .drawer-item.active {
+        background: rgba(0, 177, 79, 0.1);
+        color: var(--primary);
+        border: 1px solid rgba(0, 177, 79, 0.2);
+    }
+    .drawer-item i {
+        width: 18px;
+        text-align: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+    .drawer-content {
+        flex: 1;
+        padding: 12px 8px;
+        overflow-y: auto;
+    }
+
+    /* ?? TOP HEADER ?? */
+    .mobile-header {
+        left: 240px !important;
+        width: calc(100% - 240px) !important;
+        background: rgba(var(--surface-rgb, 255, 255, 255), 0.95) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+        z-index: 200;
+    }
+
+    /* Hide the hamburger menu button on desktop */
+    .menu-btn {
+        display: none !important;
+    }
+
+    /* ?? BOTTOM NAV — HIDDEN ON DESKTOP ?? */
+    .bottom-nav {
+        display: none !important;
+    }
+
+    /* ?? MAIN CONTENT ?? */
+    .main-content {
+        margin-left: 240px !important;
+        padding: 80px 28px 32px !important;  /* 80px clears the fixed header */
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: auto;
+        flex: 1;
+    }
+
+    /* ?? NOTIFICATION PANEL — position relative to content area ?? */
+    #adminNotifPanel {
+        left: auto !important;
+        right: 20px !important;
+        top: 70px !important;
+        width: 360px !important;
+    }
+
+    /* ?? PAGE TITLE AREA ?? */
+    .page-title {
+        font-size: 1.6rem !important;
+        font-weight: 800;
+        margin-bottom: 4px;
+    }
+    .page-subtitle {
+        margin-bottom: 20px !important;
+    }
+
+    /* ?? STAT CARDS GRID ?? */
+    /* Dashboard 2-column inline stat rows ? 4-column grid */
+    #dashboard > div[style*="display:-webkit-flex"],
+    #dashboard > div[style*="display:flex"] {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+        gap: 16px !important;
+    }
+
+    .stat-card {
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-card);
+        transition: box-shadow 0.2s, transform 0.2s;
+        background: var(--surface);
+    }
+    .stat-card:hover {
+        box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+
+    /* ?? CHART CARDS ?? */
+    .chart-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .chart-container { height: 260px !important; }
+
+    /* ?? LIST ITEMS ?? */
+    .list-item {
+        border-radius: var(--radius-md);
+        transition: box-shadow 0.15s;
+    }
+    .list-item:hover {
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    /* ?? MODALS ?? */
+    .premium-modal {
+        padding: 40px !important;
+    }
+    .modal-content {
+        max-width: 520px !important;
+        border-radius: 24px !important;
+    }
+
+    /* ?? BOOKINGS TABLE AREA ?? */
+    #bookings .booking-card-item {
+        display: grid;
+        grid-template-columns: 80px 1fr 1fr 120px 100px 80px;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+    }
+
+    /* ?? LOGIN OVERLAY — centered card, wider ?? */
+    #adminLoginOverlay .login-card {
+        max-width: 480px !important;
+        border-radius: 24px !important;
+    }
+
+    /* ?? SETTINGS PAGE ?? */
+    #settings .stat-card {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+    }
+
+    /* ?? GPS MAP ?? */
+    #gps {
+        height: calc(100vh - 120px);
+    }
+
+    /* ?? CHAT ?? */
+    .ac-chat-wrap {
+        height: calc(100vh - 140px) !important;
+    }
+
+    /* ?? REPORTS ?? */
+    #reports {
+        max-width: 1400px;
+    }
+
+    /* ?? USER MANAGEMENT TABLE ?? */
+    #users table,
+    #verifications table,
+    #staff table,
+    #activity table {
+        font-size: 0.875rem;
+    }
+
+    /* ?? PILLS / BADGES ?? */
+    .pill {
+        font-size: 0.7rem !important;
+    }
+}
+
+/* ?? 2. MEDIUM DESKTOP (1024px+) ???????????????????????????? */
+@media (min-width: 1024px) {
+
+    .side-drawer {
+        width: 256px !important;
+    }
+    .mobile-header {
+        left: 256px !important;
+        width: calc(100% - 256px) !important;
+    }
+    .main-content {
+        margin-left: 256px !important;
+        padding: 80px 36px 32px !important;
+    }
+
+    /* Dashboard: 4-column stat row */
+    #dashboard > div[style*="display:-webkit-flex"],
+    #dashboard > div[style*="display:flex"] {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    .chart-container { height: 300px !important; }
+
+    /* Two-column layout for main content sections */
+    #dashboard .dash-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+}
+
+/* ?? 3. LARGE DESKTOP (1280px+) ????????????????????????????? */
+@media (min-width: 1280px) {
+
+    .side-drawer {
+        width: 272px !important;
+    }
+    .mobile-header {
+        left: 272px !important;
+        width: calc(100% - 272px) !important;
+    }
+    .main-content {
+        margin-left: 272px !important;
+        padding: 80px 40px 32px !important;
+    }
+
+    .page-title {
+        font-size: 1.8rem !important;
+    }
+
+    .chart-container { height: 320px !important; }
+
+    /* 3-column for vehicle/booking cards */
+    #vehicles .vehicles-list,
+    #bookings .bookings-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+}
+
+/* ?? 4. CHAT DESKTOP TWO-PANE LAYOUT ???????????????????????? */
+@media (min-width: 769px) {
+    /* Chat: inbox list left + conversation right */
+    #chat > div {
+        max-height: calc(100vh - 120px);
+    }
+
+    /* If chat has a split layout container */
+    .ac-chat-split {
+        display: grid !important;
+        grid-template-columns: 300px 1fr !important;
+        gap: 0 !important;
+        height: calc(100vh - 120px) !important;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--surface);
+    }
+    .ac-inbox-panel {
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+    }
+    .ac-convo-panel {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+}
+
+/* ?? 5. DARK THEME FIXES ????????????????????????????????????? */
+[data-theme="dark"] .side-drawer {
+    background: #141414 !important;
+    border-right-color: rgba(255,255,255,0.08) !important;
+}
+[data-theme="dark"] .mobile-header {
+    background: rgba(10,10,10,0.95) !important;
+    border-bottom-color: rgba(255,255,255,0.08) !important;
+}
+[data-theme="dark"] .drawer-item:hover {
+    background: rgba(255,255,255,0.05) !important;
+}
+[data-theme="dark"] .drawer-item.active {
+    background: rgba(0,177,79,0.12) !important;
+    border-color: rgba(0,177,79,0.25) !important;
+}
+
+/* ?? 6. SCROLLBAR STYLING FOR DESKTOP ??????????????????????? */
+@media (min-width: 769px) {
+    .main-content::-webkit-scrollbar,
+    .drawer-content::-webkit-scrollbar {
+        width: 6px;
+    }
+    .main-content::-webkit-scrollbar-track,
+    .drawer-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .main-content::-webkit-scrollbar-thumb,
+    .drawer-content::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.15);
+        border-radius: 3px;
+    }
+    [data-theme="dark"] .main-content::-webkit-scrollbar-thumb,
+    [data-theme="dark"] .drawer-content::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.12);
+    }
+    .main-content::-webkit-scrollbar-thumb:hover,
+    .drawer-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(0,0,0,0.28);
+    }
+}
+
+/* ?? 7. CONTENT MAX-WIDTH CONTAINER ????????????????????????? */
+@media (min-width: 769px) {
+    .main-content > .tab-content {
+        max-width: 1500px;
+        margin: 0 auto;
+    }
+}
+
+/* ?? 8. BOOKINGS DESKTOP TABLE ?????????????????????????????? */
+@media (min-width: 769px) {
+    /* Show a proper data table instead of mobile cards */
+    .bk-table-desktop {
+        display: table !important;
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .bk-table-desktop th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        padding: 10px 14px;
+        border-bottom: 2px solid var(--border);
+        text-align: left;
+        white-space: nowrap;
+    }
+    .bk-table-desktop td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+    .bk-table-desktop tbody tr:hover {
+        background: var(--surface-container);
+    }
+
+    /* Desktop: wider search bars */
+    input[type="search"],
+    input[type="text"][placeholder*="Search"] {
+        min-width: 280px;
+    }
+
+    /* Toolbar / filter bar */
+    .filter-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+}
+
+/* ?? 9. HEADER RIGHT: show admin name on desktop ??????????? */
+@media (min-width: 769px) {
+    .header-right {
+        gap: 16px !important;
+    }
+    /* Show the admin name that's hidden on mobile */
+    .admin-name-label {
+        display: inline !important;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+}
+
+/* ?? 10. BUTTON / FORM IMPROVEMENTS ON DESKTOP ????????????? */
+@media (min-width: 769px) {
+    .btn-primary,
+    .btn-premium {
+        cursor: pointer;
+    }
+    .btn-primary:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);
+    }
+    .btn-outline:hover {
+        background: var(--border);
+    }
+
+    /* Form inputs: remove mobile-only touch styles */
+    input, select, textarea {
+        -webkit-tap-highlight-color: transparent;
+        font-size: 0.9rem !important;
+    }
+}
