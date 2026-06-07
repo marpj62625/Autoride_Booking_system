@@ -317,7 +317,7 @@
         }
 
         /* ============================================================
-           DESKTOP LAYOUT ÃÂ kicks in at 768px+
+           DESKTOP LAYOUT ÃÂÃÂ kicks in at 768px+
            Left sidebar + constrained content area
            ============================================================ */
         @media (min-width: 768px) {
@@ -401,7 +401,7 @@
             overflow-y: auto;
           }
 
-          /* Auth pages: full-screen, ignore sidebar Â they overlay everything */
+          /* Auth pages: full-screen, ignore sidebar ÃÂ they overlay everything */
           .auth-page.active {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -536,12 +536,56 @@
             object-fit: cover;
           }
 
-          /* ?? More: constrain width ?? */
+          /* More page: desktop grid layout */
           #page-more .scroll-content {
-            max-width: 640px;
+            max-width: none;
+            padding: 32px 36px;
           }
 
-          /* Auth pages: full-viewport split-screen on desktop */
+          /* Greeting banner */
+          .more-greeting-banner {
+            display: flex;
+            align-items: center;
+            padding: 28px 32px;
+            background: linear-gradient(135deg, rgba(0,177,79,0.06), rgba(0,177,79,0.02));
+            border: 1px solid rgba(0,177,79,0.12);
+            border-radius: 20px;
+            margin-bottom: 28px;
+          }
+
+          /* 2x2 grid */
+          .more-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+          }
+
+          /* Desktop card: vertical */
+          .more-card {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 28px 24px 24px;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            gap: 16px;
+            margin-bottom: 0;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+          }
+
+          .more-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+          }
+
+          .more-card-icon { width: 56px; height: 56px; border-radius: 16px; }
+          .more-card-body h4 { font-size: 1.05rem; font-weight: 800; }
+          .more-card-body p { font-size: 0.85rem; line-height: 1.4; }
+          .more-card-arrow { display: none; }
+          .more-signout-mobile { display: none !important; }
+
+                    /* Auth pages: full-viewport split-screen on desktop */
           /* Auth pages override the sidebar offset - they cover the full screen */
           #page-login.auth-page.active,
           #page-register.auth-page.active,
@@ -811,6 +855,36 @@
             grid-template-columns: repeat(4, 1fr);
           }
         }
+        /* ?? More page components ?? */
+        /* Mobile: more-card looks identical to more-item */
+        .more-card {
+          background: var(--bg-card);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-card);
+          padding: 16px;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          cursor: pointer;
+          transition: transform 0.15s;
+        }
+        .more-card:active { transform: scale(0.98); }
+        .more-card-icon {
+          width: 48px; height: 48px;
+          border-radius: var(--radius-sm);
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .more-card-body { flex: 1; }
+        .more-card-body h4 { font-size: 0.95rem; font-weight: 700; }
+        .more-card-body p { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+        .more-card-arrow { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
+        /* Greeting banner: hidden on mobile */
+        .more-greeting-banner { display: none; }
+        /* Sign out mobile item: visible on mobile only */
+        .more-signout-mobile { display: flex; }
+
         /* Active Rental card base (mobile: stacked) */
         .active-rental-card { display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; }
         .active-rental-img { width: 100%; height: 200px; overflow: hidden; }
@@ -1236,7 +1310,7 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
-  <!-- Active booking banner ÃÂ¯ÃÂ¿ÃÂ½ shown by JS when user has an active booking -->
+  <!-- Active booking banner ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ shown by JS when user has an active booking -->
   <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
     <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
     <div style="flex:1;">
@@ -1537,31 +1611,71 @@
 ??????????????????????????????????????????????????????????? -->
 <div id="page-more" class="page">
   <div class="page-header"><h2>More</h2></div>
-  <div class="scroll-content">
-    <div class="more-item" onclick="showOverlay('page-livechat')">
-      <div class="more-item-icon"><i class="fas fa-comments"></i></div>
-      <div class="more-item-text"><h4>Live Chat</h4><p>Chat with our support team</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+  <div class="scroll-content" id="moreScrollContent">
+
+    <!-- Desktop: greeting banner -->
+    <div class="more-greeting-banner">
+      <div>
+        <h2 id="moreGreetName" style="font-size:1.5rem;font-weight:900;color:var(--text-primary);margin-bottom:4px;">Hello there ??</h2>
+        <p style="color:var(--text-muted);font-size:0.9rem;">What can we help you with today?</p>
+      </div>
     </div>
-    <div class="more-item" onclick="showOverlay('page-chatbot')">
-      <div class="more-item-icon"><i class="fas fa-robot"></i></div>
-      <div class="more-item-text"><h4>AI Assistant</h4><p>Get quick automated answers</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+
+    <!-- Grid of action cards (desktop) / list items (mobile) -->
+    <div class="more-grid">
+
+      <div class="more-card" onclick="showOverlay('page-livechat')">
+        <div class="more-card-icon" style="background:rgba(0,177,79,0.1);">
+          <i class="fas fa-comments" style="color:var(--primary);font-size:1.6rem;"></i>
+        </div>
+        <div class="more-card-body">
+          <h4>Live Chat</h4>
+          <p>Chat with our support team in real time</p>
+        </div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+
+      <div class="more-card" onclick="showOverlay('page-chatbot')">
+        <div class="more-card-icon" style="background:rgba(96,165,250,0.1);">
+          <i class="fas fa-robot" style="color:#60a5fa;font-size:1.6rem;"></i>
+        </div>
+        <div class="more-card-body">
+          <h4>AI Assistant</h4>
+          <p>Get instant automated answers 24/7</p>
+        </div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+
+      <div class="more-card" onclick="showOverlay('page-notifications')">
+        <div class="more-card-icon" style="background:rgba(251,191,36,0.1);">
+          <i class="fas fa-bell" style="color:#fbbf24;font-size:1.6rem;"></i>
+        </div>
+        <div class="more-card-body">
+          <h4>Notifications</h4>
+          <p>View all your booking and account alerts</p>
+        </div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+
+      <div class="more-card" onclick="showOverlay('page-newsletter')">
+        <div class="more-card-icon" style="background:rgba(167,139,250,0.1);">
+          <i class="fas fa-envelope" style="color:#a78bfa;font-size:1.6rem;"></i>
+        </div>
+        <div class="more-card-body">
+          <h4>Newsletter</h4>
+          <p>Subscribe for exclusive promos and updates</p>
+        </div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+
     </div>
-    <div class="more-item" onclick="showOverlay('page-notifications')">
-      <div class="more-item-icon"><i class="fas fa-bell"></i></div>
-      <div class="more-item-text"><h4>Notifications</h4><p>View all alerts</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-    </div>
-    <div class="more-item" onclick="showOverlay('page-newsletter')">
-      <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
-      <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-    </div>
-    <div class="more-item" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="margin-top:8px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.05);">
+
+    <!-- Sign out: only visible on mobile (sidebar has it on desktop) -->
+    <div class="more-item more-signout-mobile" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="margin-top:8px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.05);">
       <div class="more-item-icon" style="background:rgba(248,113,113,0.12);color:var(--danger);"><i class="fas fa-sign-out-alt"></i></div>
       <div class="more-item-text"><h4 style="color:var(--danger);">Sign Out</h4><p>Log out of your account</p></div>
     </div>
+
   </div>
 </div>
 
@@ -1590,7 +1704,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- DEBUG OVERLAY ÃÂ¯ÃÂ¿ÃÂ½ disabled in production -->
+<!-- DEBUG OVERLAY ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ disabled in production -->
 <!-- To re-enable for debugging, uncomment the block below -->
 <!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
@@ -1613,7 +1727,7 @@
   // All dbg() calls are no-ops. Global errors are silently ignored.
   function dbg() {}
   window.__dbg = dbg;
-  // Keep fetch interception removed ÃÂ¯ÃÂ¿ÃÂ½ no debug overhead in production
+  // Keep fetch interception removed ÃÂÃÂ¯ÃÂÃÂ¿ÃÂÃÂ½ no debug overhead in production
 })();
 </script>
 </body>

@@ -4658,6 +4658,11 @@ function doSubscribeNewsletter() {
 // ============================================================
 function loadMorePage() {
   if (!currentUser.id) return;
+  // Update greeting name on desktop banner
+  var greetEl = document.getElementById('moreGreetName');
+  if (greetEl && currentUser.fullName) {
+    greetEl.textContent = 'Hello, ' + currentUser.fullName.split(' ')[0] + ' \uD83D\uDC4B';
+  }
 }
 
 // ============================================================
