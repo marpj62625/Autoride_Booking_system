@@ -20,8 +20,6 @@ _config_patch = _mock.patch.dict(
     "sys.modules",
     {
         "config": _mock.MagicMock(
-            SEMAPHORE_API_KEY="test-key",
-            SEMAPHORE_SENDER_NAME="TESTRIDE",
             SMTP_SERVER="localhost",
             SMTP_PORT=25,
             EMAIL_USER="test@test.com",
@@ -67,7 +65,7 @@ def _make_notif_rows(n, user_id=1):
 def flask_test_client():
     """
     Create a Flask test client with all external dependencies mocked so the
-    app can be imported and exercised without a live DB or Semaphore API.
+    app can be imported and exercised without a live DB.
     """
     db_mock = MagicMock()
     db_mock.get_connection.return_value = MagicMock()

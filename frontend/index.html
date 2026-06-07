@@ -369,9 +369,6 @@
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
         Sign in with Google
       </button>
-      <div class="auth-link" style="margin-top:12px;">
-        <a href="#" onclick="showPage('page-phone-login')"><i class="fas fa-phone"></i> Login with Phone</a>
-      </div>
       <div class="auth-link">
         Don't have an account? <a href="#" onclick="showPage('page-register')">Register</a>
       </div>
@@ -463,45 +460,6 @@
         <a href="#" id="resendLink" onclick="resendOtp()">Resend Code</a>
         <span id="resendTimer" style="display:none;color:var(--text-muted);font-weight:600;">Resend in <span id="countdown">30</span>s</span>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ???????????????????????????????????????????????????????????
-     PHONE LOGIN
-??????????????????????????????????????????????????????????? -->
-<div id="page-phone-login" class="auth-page">
-  <div class="auth-container">
-    <div class="auth-logo">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:120px;height:120px;object-fit:contain;margin-bottom:4px;">
-    </div>
-    <div class="auth-card">
-      <h2>Phone Login</h2>
-      <p class="subtitle">Login with your phone number</p>
-      <div id="phoneStep1">
-        <div class="form-group">
-          <label>Phone Number</label>
-          <input type="tel" id="phoneNumber" placeholder="09XXXXXXXXX" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)">
-          <span class="field-error" id="phoneErr"></span>
-        </div>
-        <button class="btn-primary" onclick="doRequestOtp()">Send OTP</button>
-      </div>
-      <div id="phoneStep2" class="hidden">
-        <div class="form-group">
-          <label>Enter OTP</label>
-          <div class="otp-inputs">
-            <input type="number" maxlength="1" id="smsOtp0" oninput="otpNextSms(this,1)">
-            <input type="number" maxlength="1" id="smsOtp1" oninput="otpNextSms(this,2)">
-            <input type="number" maxlength="1" id="smsOtp2" oninput="otpNextSms(this,3)">
-            <input type="number" maxlength="1" id="smsOtp3" oninput="otpNextSms(this,4)">
-            <input type="number" maxlength="1" id="smsOtp4" oninput="otpNextSms(this,5)">
-            <input type="number" maxlength="1" id="smsOtp5" oninput="otpNextSms(this,-1)">
-          </div>
-          <span class="field-error" id="smsOtpErr"></span>
-        </div>
-        <button class="btn-primary" onclick="doVerifyPhone()">Verify OTP</button>
-      </div>
-      <div class="auth-link"><a href="#" onclick="showPage('page-login')"><i class="fas fa-arrow-left"></i> Back to Login</a></div>
     </div>
   </div>
 </div>
@@ -961,25 +919,6 @@
       <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
       <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
       <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-    </div>
-    <div class="more-item" style="cursor:default;">
-      <div class="more-item-icon"><i class="fas fa-sms"></i></div>
-      <div class="more-item-text"><h4>SMS Notifications</h4><p>Receive booking updates via SMS</p></div>
-      <label style="position:relative;display:inline-block;width:44px;height:24px;margin-left:auto;flex-shrink:0;">
-        <input type="checkbox" id="smsOptOutToggle" onchange="toggleSmsOptOut(this)" style="opacity:0;width:0;height:0;">
-        <span id="smsToggleSlider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;border-radius:24px;transition:.3s;">
-          <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;display:block;" id="smsToggleKnob"></span>
-        </span>
-      </label>
-    </div>
-    <div class="more-item" onclick="toggleDarkMode()" id="darkModeToggleItem">
-      <div class="more-item-icon"><i class="fas fa-moon" id="darkModeIcon"></i></div>
-      <div class="more-item-text"><h4 id="darkModeLabel">Dark Mode</h4><p>Switch appearance</p></div>
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-    </div>
-    <div class="more-item" onclick="doLogout()" style="margin-top:20px;">
-      <div class="more-item-icon" style="background:rgba(230,57,70,0.1);"><i class="fas fa-sign-out-alt" style="color:var(--danger);"></i></div>
-      <div class="more-item-text"><h4 style="color:var(--danger);">Log Out</h4><p>Sign out of your account</p></div>
     </div>
   </div>
 </div>

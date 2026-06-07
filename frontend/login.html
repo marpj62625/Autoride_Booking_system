@@ -44,7 +44,7 @@
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="password-input-wrapper">
-                            <input type="password" id="password" class="form-input" required placeholder="••••••••">
+                            <input type="password" id="password" class="form-input" required placeholder="â¢â¢â¢â¢â¢â¢â¢â¢">
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -60,40 +60,11 @@
                     <div style="flex:1; border-bottom:1px solid var(--border-color); margin-left: 1rem;"></div>
                 </div>
                 
-                <button type="button" class="btn-outline" style="margin-bottom: 1.25rem;" onclick="toggleOTP()">Login with Phone (OTP)</button>
-                
                 <button type="button" id="btnGoogleLogin" onclick="doGoogleLogin()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 20px;background:#fff;color:#3c4043;border:1px solid #dadce0;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='none'">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;">
                     Continue with Google
                 </button>
             </div>
-
-            <!-- Phone OTP Login -->
-            <div id="otpAuthSection" style="display:none;">
-                <form id="otpRequestForm">
-                    <div class="form-group">
-                        <label>Phone Number</label>
-                        <input type="tel" id="mobilePhone" class="form-input" required placeholder="+63 912 345 6789">
-                    </div>
-                    <button type="submit" class="btn">Send Verification Code</button>
-                </form>
-                
-                <form id="otpVerifyForm" style="display:none; margin-top:1.5rem;">
-                    <div class="form-group">
-                        <label>Enter 6-digit Code (See Terminal)</label>
-                        <input type="text" id="otpCode" class="form-input" required maxlength="6" placeholder="123456">
-                    </div>
-                    <button type="submit" class="btn">Verify & Sign In</button>
-                </form>
-                
-                <div class="divider" style="display:flex; align-items:center; text-align:center; margin: 2rem 0; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;">
-                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-right: 1rem;"></div>
-                    OR
-                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-left: 1rem;"></div>
-                </div>
-                <button type="button" class="btn-outline" onclick="toggleOTP()">Back to Email</button>
-            </div>
-        </div>
 
         <!-- STEP 2: Email Verification (Hidden by default) -->
         <div class="verification-step" id="stepVerification">
@@ -256,20 +227,8 @@
             messageEl.style.color = isError ? '#dc2626' : '#16a34a';
         }
 
-        function toggleOTP() {
-            const emailSec = document.getElementById('emailAuthSection');
-            const otpSec = document.getElementById('otpAuthSection');
-            if (emailSec.style.display !== 'none') {
-                emailSec.style.display = 'none';
-                otpSec.style.display = 'block';
-            } else {
-                emailSec.style.display = 'block';
-                otpSec.style.display = 'none';
-            }
-        }
-
         async function handleCredentialResponse(response) {
-            // Legacy One Tap callback � kept for safety, but not triggered anymore
+            // Legacy One Tap callback  kept for safety, but not triggered anymore
             console.log('Google credential received (legacy). Sending to backend...');
             showMessage('Verifying Google account...');
             try {
@@ -422,54 +381,7 @@
             }
         });
 
-        // Phone OTP Flow
-        let currentPhone = "";
-        document.getElementById('otpRequestForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const phone = document.getElementById('mobilePhone').value;
-            try {
-                const res = await fetch(`${API_BASE_URL}/auth/request-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    currentPhone = phone;
-                    showMessage("OTP Sent! Check console.");
-                    document.getElementById('otpRequestForm').style.display = 'none';
-                    document.getElementById('otpVerifyForm').style.display = 'block';
-                } else {
-                    showMessage(data.error, true);
-                }
-            } catch (err) {
-                 showMessage('Server connection error.', true);
-            }
-        });
-        
-        document.getElementById('otpVerifyForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const otp = document.getElementById('otpCode').value;
-            try {
-                const res = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: currentPhone, otp })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    finalizeLogin(data);
-                } else {
-                    showMessage('Error: ' + data.error, true);
-                }
-            } catch (err) {
-                 showMessage('Server connection error.', true);
-            }
-        });
     </script>
-    <script src="chat.js"></script>
-</body>
-</html>
     <script src="chat.js"></script>
 </body>
 </html>

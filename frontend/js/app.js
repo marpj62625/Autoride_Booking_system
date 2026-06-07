@@ -31,7 +31,6 @@ var profilePicBlob = null;
 var licenseBlob = null;
 var inspectionPhotos = [];
 var pendingOtpEmail = '';
-var pendingOtpPhone = '';
 var appSettings = {
   mileage_limit: '250',
   long_term_discount_days: '7',
@@ -902,7 +901,7 @@ function handleBackButton() {
   if (authPages.length > 0) {
     // On register/otp pages, go back to login
     var activeAuth = authPages[0];
-    if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify' || activeAuth.id === 'page-phone-login') {
+    if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify') {
       showPage('page-login');
     }
     // On login page itself - double-back to exit
@@ -1301,55 +1300,6 @@ function otpBackspace(event, currentInput, prevIdx) {
       prev.select();
     }
   }
-}
-
-function otpNextSms(el, nextIdx) {
-  if (el.value.length >= 1 && nextIdx >= 0) {
-    var next = document.getElementById('smsOtp' + nextIdx);
-    if (next) next.focus();
-  }
-}
-
-function doRequestOtp() {
-  var raw = document.getElementById('phoneNumber').value.trim();
-  document.getElementById('phoneErr').textContent = '';
-  if (isBlank(raw)) { document.getElementById('phoneErr').textContent = 'Phone number is required.'; return; }
-  var phone = normalizePhone(raw);
-  pendingOtpPhone = phone;
-  showLoading(true);
-  apiCall('/auth/request-otp', { method: 'POST', body: JSON.stringify({ phone: phone }) })
-    .then(function() {
-      document.getElementById('phoneStep1').classList.add('hidden');
-      document.getElementById('phoneStep2').classList.remove('hidden');
-      showToast('OTP sent to your phone!', 'success');
-    })
-    .catch(function(err) {
-      document.getElementById('phoneErr').textContent = err.message || 'Failed to send OTP.';
-    })
-    .finally(function() { showLoading(false); });
-}
-
-function doVerifyPhone() {
-  var otp = getOtpValue('smsOtp');
-  document.getElementById('smsOtpErr').textContent = '';
-  if (otp.length < 6) { document.getElementById('smsOtpErr').textContent = 'Please enter the full 6-digit code.'; return; }
-  showLoading(true);
-  apiCall('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ phone: pendingOtpPhone, otp: otp }) })
-    .then(function(data) {
-      currentUser = { id: data.user_id, fullName: data.full_name, isVerified: 0 };
-      Session.save(currentUser);
-      // Initialise Supabase client and load notifications
-      if (typeof supabase !== 'undefined') {
-          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-      loadNotifications(data.user_id);
-      subscribeToNotifications(data.user_id);
-      showPage('page-home');
-    })
-    .catch(function(err) {
-      document.getElementById('smsOtpErr').textContent = err.message || 'Invalid or expired OTP.';
-    })
-    .finally(function() { showLoading(false); });
 }
 
 // HOME
@@ -4688,43 +4638,6 @@ function doSubscribeNewsletter() {
 // ============================================================
 function loadMorePage() {
   if (!currentUser.id) return;
-  // Load SMS preference
-  apiCall('/user/profile-full?user_id=' + currentUser.id)
-    .then(function(profile) {
-      var toggle = document.getElementById('smsOptOutToggle');
-      var slider = document.getElementById('smsToggleSlider');
-      var knob = document.getElementById('smsToggleKnob');
-      if (!toggle) return;
-      var enabled = !profile.sms_opt_out; // sms_opt_out=false means SMS is ON
-      toggle.checked = enabled;
-      if (slider) slider.style.background = enabled ? 'var(--primary)' : '#ccc';
-      if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
-    })
-    .catch(function() {});
-}
-
-function toggleSmsOptOut(checkbox) {
-  var enabled = checkbox.checked;
-  var slider = document.getElementById('smsToggleSlider');
-  var knob = document.getElementById('smsToggleKnob');
-  if (slider) slider.style.background = enabled ? 'var(--primary)' : '#ccc';
-  if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
-
-  if (!currentUser.id) return;
-  apiCall('/user/sms-preference', {
-    method: 'POST',
-    body: JSON.stringify({ user_id: currentUser.id, sms_opt_out: !enabled })
-  })
-    .then(function() {
-      showToast(enabled ? 'SMS notifications enabled' : 'SMS notifications disabled', 'info');
-    })
-    .catch(function(err) {
-      showToast(err.message || 'Failed to update preference', 'error');
-      // Revert toggle on error
-      checkbox.checked = !enabled;
-      if (slider) slider.style.background = !enabled ? 'var(--primary)' : '#ccc';
-      if (knob) knob.style.transform = !enabled ? 'translateX(20px)' : 'translateX(0)';
-    });
 }
 
 // ============================================================

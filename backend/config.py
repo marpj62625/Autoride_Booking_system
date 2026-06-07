@@ -13,9 +13,6 @@ DEBUG = os.getenv('DEBUG', True)
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', "857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com")
 
-# Semaphore SMS Configuration
-SEMAPHORE_API_KEY = os.getenv('SEMAPHORE_API_KEY', 'ed4e2a40f128550a21e44978605c171d')
-SEMAPHORE_SENDER_NAME = os.getenv('SEMAPHORE_SENDER_NAME', 'SEMAPHORE')
 
 # Supabase API Configuration (for Storage)
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://fydfsgjrlowrrtlmefwq.supabase.co')

@@ -2250,15 +2250,14 @@
 </div>
 
 <script>
-    // API URL: auto-detect — works on Vercel (web) and Android APK (hardcoded)
-    const isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
-    const API_BASE = isCapacitorNative
-        ? 'https://autoride-booking-system.vercel.app'
-        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000'
-            : (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
-                ? window.location.origin
-                : 'https://autoride-booking-system.vercel.app';
+    // API URL: auto-detect — works on Vercel (web) and Android APK
+    // NOTE: On native APK, window.Capacitor may not yet be defined at script parse time.
+    // Use hostname check: Capacitor APK runs on https://localhost, NOT http://localhost:5000.
+    // So: https://localhost ? APK ? use Vercel. http://localhost:5000 ? local dev only.
+    const _isLocalDev = window.location.hostname === 'localhost' && window.location.protocol === 'http:';
+    const API_BASE = _isLocalDev
+        ? 'http://localhost:5000'
+        : 'https://autoride-booking-system.vercel.app';
     const API_URL = API_BASE + '/api';
 
     // Admin notification globals - defined early so initSession can call them

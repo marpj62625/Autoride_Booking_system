@@ -8,7 +8,7 @@ import os
 
 from werkzeug.utils import secure_filename
 
-from config import DEBUG, GOOGLE_CLIENT_ID, SEMAPHORE_API_KEY, SEMAPHORE_SENDER_NAME, SUPABASE_URL, SUPABASE_KEY
+from config import DEBUG, GOOGLE_CLIENT_ID, SUPABASE_URL, SUPABASE_KEY
 
 from google.oauth2 import id_token
 
@@ -308,85 +308,6 @@ except Exception as _e:
     print(f"DEBUG: migrate_payment_cancellation startup failed: {_e}")
 
 
-
-def migrate_sms_notification():
-
-    """Adds SMS notification columns and tables: sms_opt_out on users, phone/is_active on admins, sms_logs table with indexes."""
-
-    try:
-
-        cur = get_cursor()
-
-        # 1.1 users.sms_opt_out
-
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS sms_opt_out BOOLEAN NOT NULL DEFAULT FALSE")
-
-        # 1.2 admins.phone and admins.is_active
-
-        cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS phone VARCHAR(20)")
-
-        cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE")
-
-        # Ensure existing admins have is_active = TRUE (in case they were added before this column)
-
-        cur.execute("UPDATE admins SET is_active = TRUE WHERE is_active IS NULL OR is_active = FALSE")
-
-        # 1.3 sms_logs table
-
-        cur.execute("""
-
-            CREATE TABLE IF NOT EXISTS sms_logs (
-
-                id                      SERIAL PRIMARY KEY,
-
-                recipient_phone         TEXT NOT NULL,
-
-                recipient_type          TEXT NOT NULL CHECK (recipient_type IN ('customer', 'admin')),
-
-                recipient_id            INTEGER,
-
-                message_body            TEXT NOT NULL,
-
-                status                  TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'retried')),
-
-                semaphore_response_code INTEGER,
-
-                error_message           TEXT,
-
-                created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
-
-            )
-
-        """)
-
-        # 1.4 indexes
-
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_sms_logs_created_at ON sms_logs (created_at DESC)")
-
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_sms_logs_recipient_type ON sms_logs (recipient_type)")
-
-        commit_db()
-
-        print("DEBUG: SMS Notification Migration Successful")
-
-    except Exception as e:
-
-        print(f"DEBUG: SMS Notification Migration Failed: {e}")
-
-    finally:
-
-        if 'cur' in locals(): cur.close()
-
-
-
-try:
-    with app.app_context():
-        migrate_sms_notification()
-except Exception as _e:
-    print(f"DEBUG: migrate_sms_notification startup failed: {_e}")
-
-
-
 def migrate_notifications():
 
     """Creates the notifications table for in-app notifications."""
@@ -669,7 +590,7 @@ def is_gmail(email: str) -> bool:
 
 
 
-from notifications import sms_service, notification_service, compose_booking_approved_sms, compose_booking_rejected_sms, compose_admin_cancel_sms, compose_pickup_sms, compose_completed_sms, compose_license_approved_sms, compose_license_rejected_sms, compose_customer_cancel_sms, compose_full_payment_sms, compose_downpayment_sms, compose_admin_payment_proof_sms, compose_modify_booking_sms, compose_split_request_sms, compose_split_paid_sms, compose_otp_sms
+from notifications import notification_service
 
 
 
@@ -967,22 +888,18 @@ def register():
 
 
         import random
+        import bcrypt as _bcrypt
 
         otp = str(random.randint(100000, 999999))
-
         temp_email_otps[email] = otp
 
-
+        hashed_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
         cur.execute("""
-
             INSERT INTO users(full_name, email, password, is_email_verified, is_verified, license_image_url, role)
-
             VALUES(%s, %s, %s, False, %s, %s, 'customer')
-
             RETURNING id
-
-        """, (name, email, password, is_verified, license_url))
+        """, (name, email, hashed_pw, is_verified, license_url))
 
         
 
@@ -1044,9 +961,24 @@ def login():
 
         cur = get_cursor()
 
-        cur.execute("SELECT id, full_name, email, is_frozen, freeze_reason, is_email_verified, is_verified FROM users WHERE email=%s AND password=%s", (email, password))
-
-        user = cur.fetchone()
+        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified FROM users WHERE email=%s", (email,))
+        user_row = cur.fetchone()
+        import bcrypt as _bcrypt
+        user = None
+        if user_row:
+            stored = user_row['password'] or ''
+            # Support legacy plain-text passwords (auto-upgrade on next login)
+            try:
+                pw_ok = _bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8'))
+            except Exception:
+                pw_ok = (stored == password)
+                if pw_ok:
+                    # Upgrade to bcrypt hash
+                    new_hash = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+                    cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_hash, user_row['id']))
+                    commit_db()
+            if pw_ok:
+                user = user_row
 
         
 
@@ -1178,7 +1110,6 @@ def admin_verify_user():
 
         # Send notifications
         if status == 2:
-            sms_service.notify_customer(user_id, compose_license_approved_sms())
             notification_service.notify_user(
                 user_id,
                 "License Approved",
@@ -1186,7 +1117,6 @@ def admin_verify_user():
                 'license_approved'
             )
         elif status == 0:
-            sms_service.notify_customer(user_id, compose_license_rejected_sms())
             notification_service.notify_user(
                 user_id,
                 "License Rejected",
@@ -1544,8 +1474,8 @@ def admin_reset_password(user_id):
     new_password = data.get('new_password', '').strip()
     if len(new_password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
-    import hashlib
-    hashed = hashlib.sha256(new_password.encode()).hexdigest()
+    import bcrypt as _bcrypt
+    hashed = _bcrypt.hashpw(new_password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
     try:
         cur = get_cursor()
         cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, user_id))
@@ -1636,9 +1566,6 @@ def get_user_points():
 
 
 
-# Mock temporary store for OTPs
-
-temp_otps = {}
 
 temp_email_otps = {}
 
@@ -1997,142 +1924,6 @@ def google_auth():
         if 'cur' in locals():
 
             cur.close()
-
-
-
-@app.route('/auth/request-otp', methods=['POST'])
-
-def request_otp():
-
-    data = request.json
-
-    phone = data.get('phone')
-
-    
-
-    if not phone:
-
-        return jsonify({"error": "Phone number is required"}), 400
-
-        
-
-    try:
-
-        # Check if phone exists (for login)
-
-        cur = get_cursor()
-
-        cur.execute("SELECT id FROM users WHERE phone=%s", (phone,))
-
-        user_row = cur.fetchone()
-
-        if not user_row:
-
-            return jsonify({"error": "No account found with this phone number. Please register normally first."}), 404
-
-        user_id = user_row[0]
-
-            
-
-        import random
-
-        otp = str(random.randint(100000, 999999))
-
-        temp_otps[phone] = otp
-
-        
-
-        # Ensure number is in 11-digit local format for Semaphore (09XXXXXXXXX)
-
-        formatted_phone = phone
-
-        if phone.startswith('+63'):
-
-            formatted_phone = '0' + phone[3:]
-
-        elif not phone.startswith('0'):
-
-            formatted_phone = '0' + phone
-
-        
-
-        # Send OTP via SMS_Service abstraction
-
-        sent = sms_service.notify_phone(formatted_phone, compose_otp_sms(otp), 'customer', user_id)
-
-        
-
-        if not sent:
-
-            return jsonify({"error": "Failed to send OTP. Please try again."}), 500
-
-        
-
-        return jsonify({"message": "OTP sent successfully to your mobile phone"}), 200
-
-            
-
-    except Exception as e:
-
-        return jsonify({"error": str(e)}), 500
-
-    finally:
-
-        if 'cur' in locals():
-
-            cur.close()
-
-
-
-@app.route('/auth/verify-otp', methods=['POST'])
-
-def verify_otp():
-
-    data = request.json
-
-    phone = data.get('phone')
-
-    otp = data.get('otp')
-
-    
-
-    if temp_otps.get(phone) == str(otp):
-
-        # Successful verification
-
-        try:
-
-            cur = get_cursor()
-
-            cur.execute("SELECT id, full_name FROM users WHERE phone=%s", (phone,))
-
-            user = cur.fetchone()
-
-            temp_otps.pop(phone, None) # Clear the OTP
-
-            if user:
-
-                return jsonify({"message": "login success", "user_id": user['id'], "full_name": user['full_name']}), 200
-
-            else:
-
-                return jsonify({"error": "User not found during OTP verification."}), 404
-
-        except Exception as e:
-
-            return jsonify({"error": str(e)}), 500
-
-        finally:
-
-            if 'cur' in locals():
-
-                cur.close()
-
-    else:
-
-        return jsonify({"error": "Invalid or expired OTP"}), 401
-
-
 
 
 
@@ -3217,7 +3008,7 @@ def legacy_payment():
 
             commit_db()
 
-            # Send SMS notifications after successful commit
+            # Send in-app notifications after successful commit
             try:
                 user_id_sms = details_dict.get('user_id') or (booking_row['user_id'] if booking_row else None)
                 if not user_id_sms:
@@ -3225,22 +3016,6 @@ def legacy_payment():
                     bk_row = cur.fetchone()
                     user_id_sms = bk_row['user_id'] if bk_row else None
                 if user_id_sms:
-                    payment_type = details_dict.get('payment_type', 'Full')
-                    if payment_type == 'Downpayment':
-                        sms_msg = compose_downpayment_sms(
-                            booking_id,
-                            float(details_dict.get('amount_paid') or amount or 0),
-                            float(details_dict.get('balance_amount') or 0),
-                            details_dict.get('reference_number', reference_number),
-                        )
-                    else:
-                        sms_msg = compose_full_payment_sms(
-                            booking_id,
-                            float(details_dict.get('amount_paid') or amount or 0),
-                            details_dict.get('method', method or ''),
-                            details_dict.get('reference_number', reference_number),
-                        )
-                    sms_service.notify_customer(user_id_sms, sms_msg)
                     notification_service.notify_user(
                         user_id_sms,
                         "Payment Confirmed",
@@ -3248,16 +3023,13 @@ def legacy_payment():
                         'payment_confirmed'
                     )
                 customer_name = details_dict.get('full_name', 'Customer')
-                sms_service.notify_admins(
-                    compose_admin_payment_proof_sms(booking_id, customer_name, float(amount or 0))
-                )
                 notification_service.notify_admins_inapp(
                     "Payment Proof Uploaded",
                     f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
                     'admin_payment_proof'
                 )
-            except Exception as sms_err:
-                print(f"ERROR SENDING LEGACY PAYMENT SMS: {sms_err}")
+            except Exception as notif_err:
+                print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
 
             return jsonify({
 
@@ -3292,31 +3064,28 @@ def legacy_payment():
         
 
         commit_db()
-        # Send admin payment proof alert when receipt details are unavailable
+        # Send in-app notification after successful commit
         try:
-            cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
-            bk_row = cur.fetchone()
-            if bk_row:
-                sms_service.notify_customer(
-                    bk_row['user_id'],
-                    compose_full_payment_sms(booking_id, float(amount or 0), method or '', reference_number)
-                )
+            user_id_sms = details_dict.get('user_id') or (booking_row['user_id'] if booking_row else None)
+            if not user_id_sms:
+                cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+                bk_row = cur.fetchone()
+                user_id_sms = bk_row['user_id'] if bk_row else None
+            if user_id_sms:
                 notification_service.notify_user(
-                    bk_row['user_id'],
+                    user_id_sms,
                     "Payment Confirmed",
                     f"Payment proof received for booking #{booking_id}. Amount: PHP {float(amount or 0)}.",
                     'payment_confirmed'
                 )
-            sms_service.notify_admins(
-                compose_admin_payment_proof_sms(booking_id, 'Customer', float(amount or 0))
-            )
+            customer_name = details_dict.get('full_name', 'Customer')
             notification_service.notify_admins_inapp(
                 "Payment Proof Uploaded",
-                f"Payment proof uploaded for booking #{booking_id} by Customer. Amount: PHP {float(amount or 0)}.",
+                f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
                 'admin_payment_proof'
             )
-        except Exception as sms_err:
-            print(f"ERROR SENDING LEGACY PAYMENT SMS: {sms_err}")
+        except Exception as notif_err:
+            print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
         return jsonify({"message": "Payment successful"}), 201
 
     except Exception as e:
@@ -3576,30 +3345,13 @@ def cancel_booking():
 
             commit_db()
 
-            
-
-            # Send SMS notification
-
             reason = (data or {}).get('reason', 'No reason provided')
-
-            sms_service.notify_customer(
-
-                bk['user_id'],
-
-                compose_customer_cancel_sms(booking_id, reason)
-
-            )
-
+            # Send in-app notification
             notification_service.notify_user(
-
                 bk['user_id'],
-
                 "Booking Cancelled",
-
                 f"Your booking #{booking_id} has been cancelled. Reason: {reason}.",
-
                 'booking_cancelled'
-
             )
 
             
@@ -4006,23 +3758,19 @@ def modify_booking():
 
         commit_db()
 
-        # Send SMS notification to customer
+        # Send in-app notification to customer
         try:
             cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
             bk_row = cur.fetchone()
             if bk_row:
-                sms_service.notify_customer(
-                    bk_row['user_id'],
-                    compose_modify_booking_sms(booking_id, new_start, new_end, round(new_total, 2))
-                )
                 notification_service.notify_user(
                     bk_row['user_id'],
                     "Booking Updated",
                     f"Your booking #{booking_id} dates have been updated: {new_start} to {new_end}. New total: PHP {round(new_total, 2)}.",
                     'booking_modified'
                 )
-        except Exception as sms_err:
-            print(f"ERROR SENDING MODIFY BOOKING SMS: {sms_err}")
+        except Exception as notif_err:
+            print(f"ERROR SENDING MODIFY BOOKING NOTIFICATION: {notif_err}")
 
         return jsonify({"message": "Booking modified", "new_total": float(f"{new_total:.2f}")}), 200
 
@@ -4103,18 +3851,14 @@ def request_split_bill():
             initiator_row = cur.fetchone()
             initiator_name = initiator_row['full_name'] if initiator_row else 'A user'
             if partner_row:
-                sms_service.notify_customer(
-                    partner_row['id'],
-                    compose_split_request_sms(booking_id, initiator_name, float(amount))
-                )
                 notification_service.notify_user(
                     partner_row['id'],
                     "Split Payment Request",
                     f"{initiator_name} has requested a split payment for booking #{booking_id}. Your share: PHP {float(amount)}.",
                     'split_request'
                 )
-        except Exception as sms_err:
-            print(f"ERROR SENDING SPLIT REQUEST SMS: {sms_err}")
+        except Exception as notif_err:
+            print(f"ERROR SENDING SPLIT REQUEST NOTIFICATION: {notif_err}")
 
         return jsonify({"message": "Split bill request sent successfully."}), 201
 
@@ -4243,18 +3987,14 @@ def pay_split_bill():
                 )
                 bk_row = cur.fetchone()
                 if sp_row and bk_row:
-                    sms_service.notify_customer(
-                        bk_row['user_id'],
-                        compose_split_paid_sms(b_id['booking_id'], float(sp_row['amount']))
-                    )
                     notification_service.notify_user(
                         bk_row['user_id'],
                         "Split Payment Received",
                         f"Your split payment partner has paid PHP {float(sp_row['amount'])} for booking #{b_id['booking_id']}.",
                         'split_paid'
                     )
-        except Exception as sms_err:
-            print(f"ERROR SENDING SPLIT PAID SMS: {sms_err}")
+        except Exception as notif_err:
+            print(f"ERROR SENDING SPLIT PAID NOTIFICATION: {notif_err}")
 
         return jsonify({"message": "Split bill paid successfully."}), 200
 
@@ -4547,10 +4287,6 @@ def approve_booking(booking_id):
         )
         b_data = cur.fetchone()
         if b_data:
-            sms_service.notify_customer(
-                b_data['user_id'],
-                compose_booking_approved_sms(booking_id, b_data['brand'], b_data['model'], b_data['start_date'])
-            )
             notification_service.notify_user(
                 b_data['user_id'],
                 "Booking Approved",
@@ -4830,10 +4566,6 @@ def user_cancel_booking():
 
         # Notifications
         try:
-            sms_service.notify_customer(booking['user_id'], compose_customer_cancel_sms(booking_id, reason))
-        except Exception:
-            pass
-        try:
             if refund_amount > 0:
                 notif_msg = (f"Booking #{booking_id} cancelled. "
                              f"Refund of PHP {refund_amount:,.2f} will be processed."
@@ -4893,26 +4625,12 @@ def reject_booking(booking_id):
 
         
 
-        # Send SMS notification
-
-        sms_service.notify_customer(
-
-            row['user_id'],
-
-            compose_booking_rejected_sms(booking_id)
-
-        )
-
+        # Send in-app notification
         notification_service.notify_user(
-
             row['user_id'],
-
             "Booking Rejected",
-
             f"Booking #{booking_id} has been rejected. Please contact our support team for assistance.",
-
             'booking_rejected'
-
         )
 
             
@@ -4989,17 +4707,7 @@ def admin_cancel_booking(booking_id):
 
 
 
-        # Send SMS notification
-
         reason = (request.json or {}).get('reason', 'No reason provided')
-
-        sms_service.notify_customer(
-
-            booking['user_id'],
-
-            compose_admin_cancel_sms(booking_id, reason)
-
-        )
 
         # Insert notification using a fresh connection to avoid transaction conflicts
         notif_error = None
@@ -5068,42 +4776,21 @@ def pickup_booking(booking_id):
 
         
 
-        # Send SMS notification
-
         cur.execute(
-
             """SELECT b.user_id, v.brand, v.model, b.end_date
-
                FROM bookings b
-
                JOIN vehicles v ON b.vehicle_id = v.id
-
                WHERE b.id = %s""",
-
             (booking_id,)
-
         )
 
         b_data = cur.fetchone()
 
         if b_data:
-
-            sms_service.notify_customer(
-
-                b_data['user_id'],
-
-                compose_pickup_sms(booking_id, b_data['brand'], b_data['model'], b_data['end_date'])
-
-            )
-
             notification_service.notify_user(
-
                 b_data['user_id'],
-
                 "Vehicle Picked Up",
-
                 f"Drive safely! Booking #{booking_id} for {b_data['brand']} {b_data['model']} is now active. Return by {b_data['end_date']}.",
-
                 'booking_picked_up'
 
             )
@@ -5168,30 +4855,13 @@ def complete_booking(booking_id):
 
         
 
-        # Send SMS notification
-
         cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
-
         b_data = cur.fetchone()
-
         if b_data:
-
-            sms_service.notify_customer(
-
-                b_data['user_id'],
-
-                compose_completed_sms(booking_id)
-
-            )
-
             notification_service.notify_user(
-
                 b_data['user_id'],
-
                 "Booking Completed",
-
                 f"Thank you for choosing Autoride! Booking #{booking_id} is now completed. We hope to see you again.",
-
                 'booking_completed'
 
             )
@@ -5375,23 +5045,10 @@ def approve_driver(driver_id):
         d_data = cur.fetchone()
 
         if d_data:
-
-            sms_service.notify_customer(
-
-                d_data['user_id'],
-
-                compose_driver_approved_sms(d_data['full_name'])
-
-            )
-
             notification_service.notify_user(
-
                 d_data['user_id'],
-
                 "Driver Application Approved",
-
                 f"Congratulations, {d_data['full_name']}! Your driver application has been approved. You can now start accepting bookings.",
-
                 'driver_approved'
 
             )
@@ -5453,23 +5110,10 @@ def reject_driver(driver_id):
         d_data = cur.fetchone()
 
         if d_data:
-
-            sms_service.notify_customer(
-
-                d_data['user_id'],
-
-                compose_driver_rejected_sms(reason)
-
-            )
-
             notification_service.notify_user(
-
                 d_data['user_id'],
-
                 "Driver Application Rejected",
-
                 f"Your driver application was not approved. Reason: {reason}. You may re-apply once the issues are resolved.",
-
                 'driver_rejected'
 
             )
@@ -6740,9 +6384,22 @@ def admin_login():
 
         # Only allow is_verified = 1 (Active)
 
-        cur.execute("SELECT id, full_name, role, assigned_location FROM users WHERE email=%s AND password=%s AND role IN ('admin', 'super_admin')", (email, password))
-
-        user = cur.fetchone()
+        cur.execute("SELECT id, full_name, role, assigned_location, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin')", (email,))
+        admin_row = cur.fetchone()
+        import bcrypt as _bcrypt
+        user = None
+        if admin_row:
+            stored = admin_row['password'] or ''
+            try:
+                pw_ok = _bcrypt.checkpw(password.encode('utf-8'), stored.encode('utf-8'))
+            except Exception:
+                pw_ok = (stored == password)
+                if pw_ok:
+                    new_hash = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+                    cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_hash, admin_row['id']))
+                    commit_db()
+            if pw_ok:
+                user = admin_row
 
         
 
@@ -6863,8 +6520,9 @@ def update_admin(user_id):
 
 
         if password:
-
-            cur.execute("UPDATE users SET full_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (name, email, password, role, assigned_location, user_id))
+            import bcrypt as _bcrypt
+            hashed_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+            cur.execute("UPDATE users SET full_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (name, email, hashed_pw, role, assigned_location, user_id))
 
         else:
 
@@ -7064,15 +6722,13 @@ def create_admin():
 
 
 
+        import bcrypt as _bcrypt
+        hashed_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
         cur.execute("""
-
             INSERT INTO users (full_name, email, password, role, assigned_location, is_email_verified, is_verified)
-
             VALUES (%s, %s, %s, %s, %s, True, 1)
-
             RETURNING id
-
-        """, (name, email, password, role, assigned_location))
+        """, (name, email, hashed_pw, role, assigned_location))
 
         new_id = cur.fetchone()['id']
 
@@ -7759,18 +7415,14 @@ def change_admin_password():
 
 
 
-        cur.execute("UPDATE users SET password=%s WHERE id=%s", (new_password, user_id))
-
+        import bcrypt as _bcrypt
+        hashed_pw = _bcrypt.hashpw(new_password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
+        cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed_pw, user_id))
         commit_db()
-
         return jsonify({"message": "Password updated successfully"}), 200
-
     except Exception as e:
-
         return jsonify({"error": str(e)}), 400
-
     finally:
-
         if 'cur' in locals(): cur.close()
 
         
@@ -8144,8 +7796,7 @@ def get_full_profile():
         cur.execute(
             """SELECT id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points,
-                      license_number, license_expiry, license_type,
-                      COALESCE(sms_opt_out, FALSE) AS sms_opt_out
+                      license_number, license_expiry, license_type
                FROM users WHERE id = %s""",
             (user_id,)
         )
@@ -8486,126 +8137,6 @@ def register_fcm_token():
         )
         commit_db()
         return jsonify({'message': 'FCM token registered'}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
-
-
-@app.route('/user/sms-preference', methods=['POST'])
-def update_sms_preference():
-    """Update a user's SMS opt-out preference.
-
-    Request body: { "user_id": int, "sms_opt_out": bool }
-    Returns 200 with { "user_id": int, "sms_opt_out": bool } on success.
-    Returns 400 on missing/invalid params, 404 if user not found.
-    """
-    data = request.get_json(silent=True) or {}
-    user_id = data.get('user_id')
-    sms_opt_out = data.get('sms_opt_out')
-
-    # Validate required parameters
-    if user_id is None or sms_opt_out is None:
-        return jsonify({'error': 'user_id and sms_opt_out are required'}), 400
-    if not isinstance(sms_opt_out, bool):
-        return jsonify({'error': 'sms_opt_out must be a boolean'}), 400
-
-    try:
-        cur = get_cursor()
-        # Check user exists
-        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
-        if not cur.fetchone():
-            return jsonify({'error': 'User not found'}), 404
-        # Update preference
-        cur.execute(
-            "UPDATE users SET sms_opt_out = %s WHERE id = %s",
-            (sms_opt_out, user_id)
-        )
-        commit_db()
-        return jsonify({'user_id': user_id, 'sms_opt_out': sms_opt_out}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
-
-
-@app.route('/admin/sms-logs', methods=['GET'])
-def get_sms_logs():
-    """Return paginated SMS delivery logs ordered by created_at DESC.
-
-    Query params:
-      page          (int, default 1)
-      per_page      (int, default 50)
-      recipient_type (str, optional: 'customer' | 'driver' | 'admin')
-
-    Response 200:
-      { "logs": [...], "page": int, "per_page": int, "total": int }
-    """
-    try:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 50))
-        recipient_type = request.args.get('recipient_type')
-
-        if page < 1:
-            page = 1
-        if per_page < 1:
-            per_page = 50
-
-        offset = (page - 1) * per_page
-
-        cur = get_cursor()
-
-        if recipient_type:
-            cur.execute(
-                "SELECT COUNT(*) AS total FROM sms_logs WHERE recipient_type = %s",
-                (recipient_type,)
-            )
-        else:
-            cur.execute("SELECT COUNT(*) AS total FROM sms_logs")
-
-        total = cur.fetchone()['total']
-
-        if recipient_type:
-            cur.execute(
-                """
-                SELECT id, recipient_phone, recipient_type, recipient_id,
-                       message_body, status, semaphore_response_code,
-                       error_message, created_at
-                FROM sms_logs
-                WHERE recipient_type = %s
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-                """,
-                (recipient_type, per_page, offset)
-            )
-        else:
-            cur.execute(
-                """
-                SELECT id, recipient_phone, recipient_type, recipient_id,
-                       message_body, status, semaphore_response_code,
-                       error_message, created_at
-                FROM sms_logs
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s
-                """,
-                (per_page, offset)
-            )
-
-        rows = cur.fetchall()
-        logs = []
-        for row in rows:
-            entry = dict(row)
-            # Serialize datetime to ISO string for JSON
-            if entry.get('created_at'):
-                entry['created_at'] = entry['created_at'].isoformat()
-            logs.append(entry)
-
-        return jsonify({
-            'logs': logs,
-            'page': page,
-            'per_page': per_page,
-            'total': total
-        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:

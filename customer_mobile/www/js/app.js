@@ -3,7 +3,7 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
-// CONFIG — auto-detect API URL for web vs APK
+// CONFIG Â— auto-detect API URL for web vs APK
 var API_BASE = (function() {
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
   // Always use production URL on native Capacitor APK
@@ -31,7 +31,6 @@ var profilePicBlob = null;
 var licenseBlob = null;
 var inspectionPhotos = [];
 var pendingOtpEmail = '';
-var pendingOtpPhone = '';
 var appSettings = {
   mileage_limit: '250',
   long_term_discount_days: '7',
@@ -902,7 +901,7 @@ function handleBackButton() {
   if (authPages.length > 0) {
     // On register/otp pages, go back to login
     var activeAuth = authPages[0];
-    if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify' || activeAuth.id === 'page-phone-login') {
+    if (activeAuth.id === 'page-register' || activeAuth.id === 'page-otp-verify') {
       showPage('page-login');
     }
     // On login page itself - double-back to exit
@@ -1030,7 +1029,7 @@ function doGoogleLogin() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  // Native APK — use Capacitor GoogleAuth plugin
+  // Native APK Â— use Capacitor GoogleAuth plugin
   if (isCapacitorNative && GoogleAuthPlugin) {
     showLoading(true);
     GoogleAuthPlugin.signIn()
@@ -1067,7 +1066,7 @@ function doGoogleLogin() {
     return;
   }
 
-  // Web browser — use OAuth2 popup
+  // Web browser Â— use OAuth2 popup
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
@@ -1302,42 +1301,7 @@ function otpBackspace(event, currentInput, prevIdx) {
     }
   }
 }
-
-function otpNextSms(el, nextIdx) {
-  if (el.value.length >= 1 && nextIdx >= 0) {
-    var next = document.getElementById('smsOtp' + nextIdx);
-    if (next) next.focus();
-  }
 }
-
-function doRequestOtp() {
-  var raw = document.getElementById('phoneNumber').value.trim();
-  document.getElementById('phoneErr').textContent = '';
-  if (isBlank(raw)) { document.getElementById('phoneErr').textContent = 'Phone number is required.'; return; }
-  var phone = normalizePhone(raw);
-  pendingOtpPhone = phone;
-  showLoading(true);
-  apiCall('/auth/request-otp', { method: 'POST', body: JSON.stringify({ phone: phone }) })
-    .then(function() {
-      document.getElementById('phoneStep1').classList.add('hidden');
-      document.getElementById('phoneStep2').classList.remove('hidden');
-      showToast('OTP sent to your phone!', 'success');
-    })
-    .catch(function(err) {
-      document.getElementById('phoneErr').textContent = err.message || 'Failed to send OTP.';
-    })
-    .finally(function() { showLoading(false); });
-}
-
-function doVerifyPhone() {
-  var otp = getOtpValue('smsOtp');
-  document.getElementById('smsOtpErr').textContent = '';
-  if (otp.length < 6) { document.getElementById('smsOtpErr').textContent = 'Please enter the full 6-digit code.'; return; }
-  showLoading(true);
-  apiCall('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ phone: pendingOtpPhone, otp: otp }) })
-    .then(function(data) {
-      currentUser = { id: data.user_id, fullName: data.full_name, isVerified: 0 };
-      Session.save(currentUser);
       // Initialise Supabase client and load notifications
       if (typeof supabase !== 'undefined') {
           supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1400,7 +1364,7 @@ function _normDateStr(d) {
   var s = String(d).trim();
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Has a T — strip time component (ISO datetime)
+  // Has a T Â— strip time component (ISO datetime)
   if (s.indexOf('T') !== -1) {
     var iso = s.split('T')[0];
     if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -1408,7 +1372,7 @@ function _normDateStr(d) {
   // Parse as date string
   var dt = new Date(s);
   if (!isNaN(dt.getTime())) {
-    // HTTP-date format ends in 'GMT' and represents UTC midnight — use UTC date parts
+    // HTTP-date format ends in 'GMT' and represents UTC midnight Â— use UTC date parts
     // to avoid timezone shift (e.g. UTC+8 would shift "01 Jun 00:00 GMT" to May 31 local)
     var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
     var y  = useUTC ? dt.getUTCFullYear()            : dt.getFullYear();
@@ -2160,7 +2124,7 @@ function renderVehicleDetail(v) {
   var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
   var mileage = appSettings.mileage_limit || '250';
 
-  // 1 booking per account — block if any active booking exists
+  // 1 booking per account Â— block if any active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -2283,7 +2247,7 @@ function autoSetReturnTime() {
 }
 
 function openBookingForm(vehicleId) {
-  // 1 booking per account — hard block if active booking exists
+  // 1 booking per account Â— hard block if active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -3358,7 +3322,7 @@ function renderBookingDetail(b) {
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
               '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
-              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee — cancelled &lt;48h before pickup)' +
+              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee Â— cancelled &lt;48h before pickup)' +
             '</div>'
           ) : '') +
           (!isRefunded ? (
@@ -3421,7 +3385,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     // Parse any format (including HTTP-date "Mon, 01 Jun 2026 00:00:00 GMT")
     var dt = new Date(s);
     if (!isNaN(dt.getTime())) {
-      // HTTP-date is UTC midnight — use UTC parts to avoid timezone shift
+      // HTTP-date is UTC midnight Â— use UTC parts to avoid timezone shift
       var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
       var y  = useUTC ? dt.getUTCFullYear()  : dt.getFullYear();
       var mo = useUTC ? dt.getUTCMonth() + 1 : dt.getMonth() + 1;
@@ -3431,7 +3395,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     return '';
   }
 
-  // Normalize date — prefer activeBookingData as most reliable source
+  // Normalize date Â— prefer activeBookingData as most reliable source
   var endDateNorm = _toLocalDateStr(currentEndDate);
   if (!endDateNorm && typeof activeBookingData !== 'undefined' && activeBookingData) {
     endDateNorm = _toLocalDateStr(activeBookingData.end_date);
@@ -3444,7 +3408,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     rate = parseFloat(activeBookingData.daily_rate || 0);
   }
 
-  // Calculate minDate (day after current end) using LOCAL date arithmetic — no UTC conversion
+  // Calculate minDate (day after current end) using LOCAL date arithmetic Â— no UTC conversion
   var minDate = currentEndDate;
   if (currentEndDate) {
     try {
@@ -3754,8 +3718,8 @@ function promptCancelBooking(bookingId) {
         var refund = Math.round((amountPaid - fee) * 100) / 100;
         var msg = 'WARNING: Cancellation Policy\n\n' +
           'You are cancelling less than 48 hours before pickup.\n\n' +
-          '• Non-refundable fee: ' + formatPHP(fee) + ' (20%)\n' +
-          '• Refundable amount: ' + formatPHP(refund) + '\n\n' +
+          'Â• Non-refundable fee: ' + formatPHP(fee) + ' (20%)\n' +
+          'Â• Refundable amount: ' + formatPHP(refund) + '\n\n' +
           'Do you still want to cancel?';
         if (!confirm(msg)) return;
       }
@@ -4455,7 +4419,7 @@ function submitLicense() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
       showLoading(false);
-      // Force logout after upload ï¿½ user must wait for admin verification before re-logging in
+      // Force logout after upload Ã¯Â¿Â½ user must wait for admin verification before re-logging in
       showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
       setTimeout(function() {
         Session.clear();
@@ -4688,43 +4652,6 @@ function doSubscribeNewsletter() {
 // ============================================================
 function loadMorePage() {
   if (!currentUser.id) return;
-  // Load SMS preference
-  apiCall('/user/profile-full?user_id=' + currentUser.id)
-    .then(function(profile) {
-      var toggle = document.getElementById('smsOptOutToggle');
-      var slider = document.getElementById('smsToggleSlider');
-      var knob = document.getElementById('smsToggleKnob');
-      if (!toggle) return;
-      var enabled = !profile.sms_opt_out; // sms_opt_out=false means SMS is ON
-      toggle.checked = enabled;
-      if (slider) slider.style.background = enabled ? 'var(--primary)' : '#ccc';
-      if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
-    })
-    .catch(function() {});
-}
-
-function toggleSmsOptOut(checkbox) {
-  var enabled = checkbox.checked;
-  var slider = document.getElementById('smsToggleSlider');
-  var knob = document.getElementById('smsToggleKnob');
-  if (slider) slider.style.background = enabled ? 'var(--primary)' : '#ccc';
-  if (knob) knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)';
-
-  if (!currentUser.id) return;
-  apiCall('/user/sms-preference', {
-    method: 'POST',
-    body: JSON.stringify({ user_id: currentUser.id, sms_opt_out: !enabled })
-  })
-    .then(function() {
-      showToast(enabled ? 'SMS notifications enabled' : 'SMS notifications disabled', 'info');
-    })
-    .catch(function(err) {
-      showToast(err.message || 'Failed to update preference', 'error');
-      // Revert toggle on error
-      checkbox.checked = !enabled;
-      if (slider) slider.style.background = !enabled ? 'var(--primary)' : '#ccc';
-      if (knob) knob.style.transform = !enabled ? 'translateX(20px)' : 'translateX(0)';
-    });
 }
 
 // ============================================================

@@ -38,23 +38,10 @@ def migrate_remove_drivers():
             DROP TABLE IF EXISTS drivers CASCADE
         """)
 
-        # 4. Update recipient_type check constraint in sms_logs (if exists)
-        print("Updating sms_logs recipient_type constraint...")
-        cursor.execute("""
-            ALTER TABLE sms_logs 
-            DROP CONSTRAINT IF EXISTS sms_logs_recipient_type_check
-        """)
-        cursor.execute("""
-            ALTER TABLE sms_logs 
-            ADD CONSTRAINT sms_logs_recipient_type_check 
-            CHECK (recipient_type IN ('customer', 'admin'))
-        """)
-
         conn.commit()
         print("? Driver removal migration completed successfully!")
         print("  - Dropped drivers table")
         print("  - Removed driver_id column from bookings")
-        print("  - Updated sms_logs constraints")
 
     except Exception as e:
         if conn:

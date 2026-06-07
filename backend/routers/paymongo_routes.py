@@ -466,9 +466,9 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
 
         commit_db()
 
-        # Send notifications (SMS + in-app)
+        # Send notifications (in-app)
         try:
-            from notifications import sms_service, notification_service, compose_full_payment_sms, compose_downpayment_sms
+            from notifications import notification_service
             cur.execute(
                 "SELECT user_id, total_price, amount_paid, balance_amount FROM bookings WHERE id = %s",
                 (booking_id,)
@@ -479,7 +479,6 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
                 amt = float(bk2['amount_paid'] or amount)
                 bal = float(bk2['balance_amount'] or 0)
                 if payment_type == 'Downpayment':
-                    sms_service.notify_customer(uid, compose_downpayment_sms(booking_id, amt, method, ref_num, bal))
                     notification_service.notify_user(
                         uid,
                         'Downpayment Received',
@@ -487,7 +486,6 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
                         'payment_downpayment'
                     )
                 else:
-                    sms_service.notify_customer(uid, compose_full_payment_sms(booking_id, amt, method, ref_num))
                     notification_service.notify_user(
                         uid,
                         'Payment Confirmed',
