@@ -3012,18 +3012,48 @@ function loadBookings() {
   if (!currentUser.id) return;
   var el = document.getElementById('bookingsList');
 
-  // Show cached data instantly
+  // Show skeleton loading cards immediately (unless we have cached data)
+  var hasCached = false;
   try {
     var cached = localStorage.getItem('autoride_bookings_' + currentUser.id);
     if (cached) {
       var parsed = JSON.parse(cached);
       if (parsed.data && Date.now() - parsed.savedAt < 2 * 60 * 1000) {
+        hasCached = true;
         _allBookingsData = parsed.data;
         renderBookingsList(parsed.data);
         updateBookingStats(parsed.data);
       }
     }
   } catch(e) {}
+
+  // Show skeleton only if no cache
+  if (!hasCached && el) {
+    var skeletonCard = (
+      '<div class="bk-card-item bk-skeleton" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin:0 0 0 0;padding:16px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">' +
+          '<div class="skel-box" style="width:40px;height:40px;border-radius:50%;flex-shrink:0;"></div>' +
+          '<div style="flex:1;">' +
+            '<div class="skel-box" style="height:14px;width:60%;border-radius:6px;margin-bottom:6px;"></div>' +
+            '<div class="skel-box" style="height:10px;width:35%;border-radius:6px;"></div>' +
+          '</div>' +
+          '<div class="skel-box" style="width:80px;height:26px;border-radius:6px;"></div>' +
+        '</div>' +
+        '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
+        '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;margin-bottom:16px;">' +
+          '<div><div class="skel-box" style="height:10px;width:40%;border-radius:4px;margin-bottom:6px;"></div><div class="skel-box" style="height:13px;width:70%;border-radius:4px;"></div></div>' +
+          '<div style="display:flex;align-items:flex-end;padding-bottom:2px;"><div class="skel-box" style="width:16px;height:10px;border-radius:4px;"></div></div>' +
+          '<div><div class="skel-box" style="height:10px;width:40%;border-radius:4px;margin-bottom:6px;"></div><div class="skel-box" style="height:13px;width:70%;border-radius:4px;"></div></div>' +
+        '</div>' +
+        '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<div class="skel-box" style="width:70px;height:26px;border-radius:6px;"></div>' +
+          '<div class="skel-box" style="width:90px;height:18px;border-radius:6px;"></div>' +
+        '</div>' +
+      '</div>'
+    );
+    el.innerHTML = '<div id="bookingsSkeletonGrid" style="display:contents;">' + skeletonCard + skeletonCard + skeletonCard + skeletonCard + '</div>';
+  }
 
   // Fetch fresh in background
   showLoading(true);
