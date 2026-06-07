@@ -29511,18 +29511,10 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
         document.addEventListener('DOMContentLoaded', applyDesktopClasses);
         window.addEventListener('resize', applyDesktopClasses);
 
-        // Also re-run when switching to dashboard tab
-        var origSwitchTab = window.switchTab;
-        document.addEventListener('DOMContentLoaded', function() {
-            var origST = window.switchTab;
-            if (typeof origST === 'function') {
-                window.switchTab = function(tabId) {
-                    origST(tabId);
-                    if (tabId === 'dashboard') {
-                        setTimeout(applyDesktopClasses, 50);
-                    }
-                };
-            }
+        // Re-apply when switching back to dashboard tab (safe, no monkey-patching)
+        document.addEventListener('click', function(e) {
+            var el = e.target.closest('[data-tab="dashboard"], [onclick*="dashboard"]');
+            if (el) setTimeout(applyDesktopClasses, 150);
         });
     })();
     </script>
