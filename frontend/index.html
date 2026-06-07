@@ -316,19 +316,11 @@
 
         /* ============================================================
            DESKTOP LAYOUT — kicks in at 768px+
-           Converts bottom-nav ? left sidebar, constrains content width
+           Left sidebar + constrained content area
            ============================================================ */
         @media (min-width: 768px) {
 
-          /* ?? Body becomes a flex row: sidebar + main ?? */
-          body {
-            display: flex;
-            flex-direction: row;
-            min-height: 100vh;
-            overflow: hidden;
-          }
-
-          /* ?? Left Sidebar replaces bottom-nav ?? */
+          /* ?? Sidebar: replaces fixed bottom nav ?? */
           .bottom-nav {
             position: fixed;
             top: 0; left: 0; bottom: 0; right: auto;
@@ -341,11 +333,12 @@
             border-top: none;
             border-right: 1px solid var(--border);
             box-shadow: 2px 0 16px rgba(0,0,0,0.06);
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             z-index: 1000;
           }
 
-          /* Sidebar brand header */
+          /* Brand logo in sidebar */
           .bottom-nav::before {
             content: 'Autoride';
             display: block;
@@ -356,9 +349,10 @@
             letter-spacing: -0.5px;
             border-bottom: 1px solid var(--border);
             margin-bottom: 8px;
+            flex-shrink: 0;
           }
 
-          /* Sidebar nav items */
+          /* Sidebar nav items: horizontal icon + label */
           .bottom-nav button {
             flex-direction: row;
             justify-content: flex-start;
@@ -369,6 +363,7 @@
             border-radius: 0;
             width: 100%;
             text-align: left;
+            min-height: 52px;
           }
 
           .bottom-nav button i {
@@ -378,184 +373,158 @@
             flex-shrink: 0;
           }
 
+          .bottom-nav button span {
+            font-size: 0.9rem;
+          }
+
           .bottom-nav button.active {
-            background: rgba(0, 177, 79, 0.08);
+            background: rgba(0, 177, 79, 0.09);
             border-left: 3px solid var(--primary);
             padding-left: 17px;
           }
 
-          /* ?? Main content area: offset by sidebar width ?? */
-          .page, .auth-page {
+          /* ?? All pages/auth-pages: push right of sidebar ?? */
+          /* Only apply to active (visible) pages to avoid layout bleed */
+          .page.active, .auth-page.active {
             margin-left: 220px;
             width: calc(100% - 220px);
-            max-width: 100%;
             min-height: 100vh;
-            padding-bottom: 32px; /* no bottom nav needed */
+            padding-bottom: 40px;
+            overflow-y: auto;
           }
 
-          /* ?? Content constraint wrapper ?? */
-          .page > *:not(#homeBanner):not(.filter-chips):not([id="vehicleFilters"]):not([id="vehicleCount"]):not([id="browseActiveBanner"]):not([id="vehicleGrid"]) {
-            max-width: 900px;
+          /* Overlay pages also respect sidebar */
+          .overlay-page {
+            left: 220px;
+            width: calc(100% - 220px);
           }
 
-          /* ?? Home page: two-column layout ?? */
-          #page-home {
-            display: grid;
-            grid-template-columns: 1fr 360px;
-            grid-template-rows: auto auto 1fr;
-            align-items: start;
-            column-gap: 0;
+          /* ?? Loading overlay: only cover content area ?? */
+          #loadingOverlay {
+            left: 220px;
+            width: calc(100% - 220px);
           }
 
-          /* Banner spans full width */
-          #homeBanner {
-            grid-column: 1 / -1;
-            border-radius: 0;
+          /* ?? Toast: re-center relative to content area ?? */
+          .toast {
+            left: calc(220px + (100% - 220px) / 2);
           }
 
-          /* Quick actions card — left column */
-          #page-home > div:nth-child(2) {
-            grid-column: 1;
-            margin: 20px 0 20px 24px;
+          /* ?? Page headers: more breathing room ?? */
+          .page-header {
+            padding: 20px 28px;
           }
 
-          /* Active booking monitor — left column */
-          #page-home > div:nth-child(3) {
-            grid-column: 1;
-            padding: 0 0 0 24px;
+          /* ?? Scroll content: better padding on desktop ?? */
+          .scroll-content {
+            padding: 20px 28px;
+            max-width: 820px;
           }
 
-          /* ?? Vehicles page: full-width header, grid below ?? */
-          #page-vehicles > div:first-child {
-            border-radius: 0;
-          }
-
+          /* ?? Vehicle grid: better padding ?? */
           .vehicle-grid {
             grid-template-columns: repeat(2, 1fr);
-            padding: 20px 24px;
+            padding: 20px 28px;
             gap: 20px;
           }
 
           .filter-chips {
-            padding: 14px 24px;
+            padding: 14px 28px;
           }
 
           #vehicleCount {
-            padding: 0 24px 8px;
+            padding: 0 28px 8px;
           }
 
           #browseActiveBanner {
-            margin: 0 24px 12px;
+            margin: 0 28px 12px;
           }
 
-          /* ?? Bookings page ?? */
-          #page-bookings > div:first-child {
-            padding: 20px 24px;
+          /* ?? Home: fix negative margin overlap on desktop ?? */
+          #page-home > div:nth-child(2) {
+            margin-left: 28px;
+            margin-right: 28px;
+            border-radius: 20px;
           }
 
+          #page-home > div:nth-child(3) {
+            padding-left: 28px;
+            padding-right: 28px;
+          }
+
+          /* ?? Bookings: wider stats and list ?? */
           #page-bookings > div:nth-child(2) {
-            display: flex;
-            gap: 20px;
-            justify-content: flex-start;
-            padding: 0 24px 16px;
-          }
-
-          #page-bookings > div:nth-child(2) > div {
-            width: 100px;
-            height: 100px;
-            flex-shrink: 0;
+            padding: 0 28px 16px;
           }
 
           #page-bookings > div:nth-child(3) {
-            padding: 0 24px 12px;
+            padding: 0 28px 12px;
           }
 
           #bookingsList {
-            padding: 0 24px 24px;
-            max-width: 760px;
+            padding: 0 28px 24px;
+            max-width: 820px;
           }
 
-          /* ?? Profile page ?? */
+          /* ?? Profile: constrain width ?? */
           #page-profile .scroll-content {
             max-width: 720px;
-            padding: 24px;
           }
 
-          /* ?? More page ?? */
+          /* ?? More: constrain width ?? */
           #page-more .scroll-content {
             max-width: 640px;
-            padding: 24px;
           }
 
-          /* ?? Auth pages: centered card layout ?? */
-          .auth-page {
+          /* ?? Auth pages: centered card ?? */
+          #page-login.auth-page.active,
+          #page-register.auth-page.active,
+          #page-otp-verify.auth-page.active {
+            display: flex;
             align-items: center;
             justify-content: center;
             background: var(--bg-page);
           }
 
           .auth-container {
-            max-width: 460px;
+            max-width: 480px;
             width: 100%;
           }
 
-          /* ?? Overlay pages: slide in from right as a panel ?? */
-          .overlay-page {
-            margin-left: 220px;
-            width: calc(100% - 220px);
-          }
-
-          /* ?? Toast: adjust for sidebar ?? */
-          .toast {
-            left: calc(50% + 110px);
-          }
-
-          /* ?? Page headers: consistent padding ?? */
-          .page-header {
-            padding: 20px 24px;
-          }
-
-          /* ?? Scroll content: better padding ?? */
-          .scroll-content {
-            padding: 20px 24px;
-          }
-
-          /* ?? Cards in detail views ?? */
-          .card {
-            margin-bottom: 16px;
-          }
-
-          /* ?? Action button grid: wider on desktop ?? */
+          /* ?? Action grid: 3 cols on desktop ?? */
           .action-btn-grid {
             grid-template-columns: repeat(3, 1fr);
           }
 
-          /* ?? Loading overlay: account for sidebar ?? */
-          #loadingOverlay {
-            left: 220px;
-            width: calc(100% - 220px);
+          /* ?? Cards: slightly more margin ?? */
+          .card {
+            margin-bottom: 16px;
           }
         }
 
-        /* ?? Larger desktop (1024px+): wider content areas ?? */
+        /* ?? 1024px: slightly wider sidebar ?? */
         @media (min-width: 1024px) {
-          .bottom-nav { width: 240px; }
+          .bottom-nav {
+            width: 240px;
+          }
 
-          .page, .auth-page {
+          .page.active, .auth-page.active {
             margin-left: 240px;
             width: calc(100% - 240px);
           }
 
           .overlay-page {
-            margin-left: 240px;
+            left: 240px;
             width: calc(100% - 240px);
           }
-
-          .toast { left: calc(50% + 120px); }
 
           #loadingOverlay {
             left: 240px;
             width: calc(100% - 240px);
+          }
+
+          .toast {
+            left: calc(240px + (100% - 240px) / 2);
           }
 
           .vehicle-grid {
@@ -564,33 +533,31 @@
             gap: 24px;
           }
 
-          #page-home {
-            grid-template-columns: 1fr 400px;
-          }
+          .filter-chips { padding: 14px 32px; }
+          #vehicleCount { padding: 0 32px 8px; }
+          #browseActiveBanner { margin: 0 32px 12px; }
+
+          .scroll-content { padding: 24px 32px; max-width: 900px; }
+          .page-header { padding: 20px 32px; }
 
           #page-home > div:nth-child(2) {
-            margin: 24px 0 24px 32px;
+            margin-left: 32px;
+            margin-right: 32px;
           }
 
           #page-home > div:nth-child(3) {
-            padding: 0 0 0 32px;
+            padding-left: 32px;
+            padding-right: 32px;
           }
 
-          #bookingsList,
-          #page-profile .scroll-content,
-          #page-more .scroll-content {
-            max-width: 820px;
-          }
+          #bookingsList { padding: 0 32px 24px; max-width: 900px; }
+          #page-profile .scroll-content { max-width: 800px; }
         }
 
-        /* ?? Wide desktop (1280px+): 4 vehicle columns ?? */
+        /* ?? 1280px: 4-column vehicle grid ?? */
         @media (min-width: 1280px) {
           .vehicle-grid {
             grid-template-columns: repeat(4, 1fr);
-          }
-
-          #page-home {
-            grid-template-columns: 1fr 440px;
           }
         }
     </style>
