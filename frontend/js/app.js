@@ -3,7 +3,7 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
-// CONFIG — auto-detect API URL for web vs APK
+// CONFIG Â— auto-detect API URL for web vs APK
 var API_BASE = (function() {
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
   // Always use production URL on native Capacitor APK
@@ -1029,7 +1029,7 @@ function doGoogleLogin() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  // Native APK — use Capacitor GoogleAuth plugin
+  // Native APK Â— use Capacitor GoogleAuth plugin
   if (isCapacitorNative && GoogleAuthPlugin) {
     showLoading(true);
     GoogleAuthPlugin.signIn()
@@ -1066,7 +1066,7 @@ function doGoogleLogin() {
     return;
   }
 
-  // Web browser — use OAuth2 popup
+  // Web browser Â— use OAuth2 popup
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
@@ -1350,7 +1350,7 @@ function _normDateStr(d) {
   var s = String(d).trim();
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Has a T — strip time component (ISO datetime)
+  // Has a T Â— strip time component (ISO datetime)
   if (s.indexOf('T') !== -1) {
     var iso = s.split('T')[0];
     if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -1358,7 +1358,7 @@ function _normDateStr(d) {
   // Parse as date string
   var dt = new Date(s);
   if (!isNaN(dt.getTime())) {
-    // HTTP-date format ends in 'GMT' and represents UTC midnight — use UTC date parts
+    // HTTP-date format ends in 'GMT' and represents UTC midnight Â— use UTC date parts
     // to avoid timezone shift (e.g. UTC+8 would shift "01 Jun 00:00 GMT" to May 31 local)
     var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
     var y  = useUTC ? dt.getUTCFullYear()            : dt.getFullYear();
@@ -1494,7 +1494,7 @@ function loadHome() {
 }
 
 function buildImgUrl(path) {
-  if (!path) return 'https://via.placeholder.com/400x200?text=No+Image';
+  if (!path) return 'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E';
   if (path.startsWith('http')) return path;
   return API_BASE.replace('/api', '') + '/' + path;
 }
@@ -1588,7 +1588,7 @@ function renderVehicles(list) {
     var mEnc = encodeURIComponent(v.model);
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'">' +
       '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
@@ -1690,7 +1690,7 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
       if (plateEl) plateEl.textContent = unit.plate_number || 'N/A';
       if (imgWrap) {
         var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
-        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/400x200?text=No+Image\'" style="width:100%;height:100%;object-fit:cover;">';
+        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'" style="width:100%;height:100%;object-fit:cover;">';
       }
       if (bookBtn) {
         var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
@@ -1802,7 +1802,7 @@ function renderVehicleUnits(brand, model, color, units) {
     var imgSrc = (v.gallery && v.gallery.length) ? buildImgUrl(v.gallery[0]) : buildImgUrl(v.vehicle_image);
     return '<div class="card" style="margin-bottom:14px;">' +
       '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
-      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/400x180?text=No+Image\'">' +
+      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'">' +
       '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
       (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
       '</div>' +
@@ -1948,7 +1948,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<div class="card" style="margin-bottom:16px;">' +
         // Gallery image
         '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/400x200?text=No+Image\'">' +
+        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'">' +
         '</div>' +
         // Title + status
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
@@ -2130,7 +2130,7 @@ function renderVehicleDetail(v) {
   var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
   var mileage = appSettings.mileage_limit || '250';
 
-  // 1 booking per account — block if any active booking exists
+  // 1 booking per account Â— block if any active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -2141,7 +2141,7 @@ function renderVehicleDetail(v) {
   if (!el) return;
   var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
   var galleryHtml = galleryImgs.map(function(img) {
-    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/200x130?text=No+Image\'" alt="Vehicle">';
+    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'" alt="Vehicle">';
   }).join('');
   var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
     return '<div class="review-item"><div class="reviewer">' +
@@ -2253,7 +2253,7 @@ function autoSetReturnTime() {
 }
 
 function openBookingForm(vehicleId) {
-  // 1 booking per account — hard block if active booking exists
+  // 1 booking per account Â— hard block if active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -3328,7 +3328,7 @@ function renderBookingDetail(b) {
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
               '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
-              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee — cancelled &lt;48h before pickup)' +
+              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee Â— cancelled &lt;48h before pickup)' +
             '</div>'
           ) : '') +
           (!isRefunded ? (
@@ -3391,7 +3391,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     // Parse any format (including HTTP-date "Mon, 01 Jun 2026 00:00:00 GMT")
     var dt = new Date(s);
     if (!isNaN(dt.getTime())) {
-      // HTTP-date is UTC midnight — use UTC parts to avoid timezone shift
+      // HTTP-date is UTC midnight Â— use UTC parts to avoid timezone shift
       var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
       var y  = useUTC ? dt.getUTCFullYear()  : dt.getFullYear();
       var mo = useUTC ? dt.getUTCMonth() + 1 : dt.getMonth() + 1;
@@ -3401,7 +3401,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     return '';
   }
 
-  // Normalize date — prefer activeBookingData as most reliable source
+  // Normalize date Â— prefer activeBookingData as most reliable source
   var endDateNorm = _toLocalDateStr(currentEndDate);
   if (!endDateNorm && typeof activeBookingData !== 'undefined' && activeBookingData) {
     endDateNorm = _toLocalDateStr(activeBookingData.end_date);
@@ -3414,7 +3414,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     rate = parseFloat(activeBookingData.daily_rate || 0);
   }
 
-  // Calculate minDate (day after current end) using LOCAL date arithmetic — no UTC conversion
+  // Calculate minDate (day after current end) using LOCAL date arithmetic Â— no UTC conversion
   var minDate = currentEndDate;
   if (currentEndDate) {
     try {
@@ -3724,8 +3724,8 @@ function promptCancelBooking(bookingId) {
         var refund = Math.round((amountPaid - fee) * 100) / 100;
         var msg = 'WARNING: Cancellation Policy\n\n' +
           'You are cancelling less than 48 hours before pickup.\n\n' +
-          '• Non-refundable fee: ' + formatPHP(fee) + ' (20%)\n' +
-          '• Refundable amount: ' + formatPHP(refund) + '\n\n' +
+          'Â• Non-refundable fee: ' + formatPHP(fee) + ' (20%)\n' +
+          'Â• Refundable amount: ' + formatPHP(refund) + '\n\n' +
           'Do you still want to cancel?';
         if (!confirm(msg)) return;
       }
@@ -4425,7 +4425,7 @@ function submitLicense() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
       showLoading(false);
-      // Force logout after upload ï¿½ user must wait for admin verification before re-logging in
+      // Force logout after upload Ã¯Â¿Â½ user must wait for admin verification before re-logging in
       showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
       setTimeout(function() {
         Session.clear();
@@ -4496,7 +4496,7 @@ function loadFavorites() {
         '<div class="vehicle-grid" style="padding:16px;">' +
         (data.length ? data.map(function(v) {
           return '<div class="vehicle-card" onclick="openVehicleDetail(' + v.id + ')">' +
-            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'https://via.placeholder.com/400x200?text=No+Image\'"></div>' +
+            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f3f4f6'/%3E%3Ctext x='200' y='90' font-family='Arial' font-size='36' text-anchor='middle' fill='%23d1d5db'%3E%F0%9F%9A%97%3C/text%3E%3Ctext x='200' y='130' font-family='Arial' font-size='13' text-anchor='middle' fill='%239ca3af'%3ENo Image%3C/text%3E%3C/svg%3E\'"></div>' +
             '<div class="vehicle-info"><h3>' + v.brand + ' ' + v.model + '</h3>' +
             '<div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
             '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div></div></div>';
