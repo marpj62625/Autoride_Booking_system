@@ -1424,44 +1424,64 @@ function loadHome() {
         var startNorm = _normDateStr(active.start_date);
         var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
         var imgHtml = imgSrc
-          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:200px;object-fit:cover;display:block;">'
-          : '<div style="width:100%;height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:100%;object-fit:cover;display:block;">'
+          : '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:4rem;color:var(--text-muted);opacity:0.2;"></i></div>';
+
         card.innerHTML =
-          imgHtml +
-          '<div style="padding:14px;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
-              '<div>' +
-                '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
-                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + (active.plate_number||'') + '</div>' +
-              '</div>' +
-              '<span style="background:rgba(16,185,129,0.1);color:var(--primary);border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
+          // Desktop: side-by-side. Mobile: stacked (via class)
+          '<div class="active-rental-card">' +
+            // Left: vehicle image
+            '<div class="active-rental-img">' +
+              imgHtml +
             '</div>' +
-            '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
-              '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
-              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
-              '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + _fmtDate(endNorm) + '</strong></div>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
-              '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Start Date</div>' +
-                '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + '</div>' +
+            // Right: info panel
+            '<div class="active-rental-info">' +
+              // Top row: name + status badge
+              '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">' +
+                '<div>' +
+                  '<div style="font-size:1.25rem;font-weight:900;color:var(--text-primary);letter-spacing:-0.3px;">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
+                  '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px;display:flex;align-items:center;gap:6px;">' +
+                    '<i class="fas fa-id-card" style="font-size:0.7rem;"></i>' + (active.plate_number||'') +
+                  '</div>' +
+                '</div>' +
+                '<span style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:5px 12px;border-radius:20px;font-size:0.7rem;font-weight:800;letter-spacing:0.3px;">? LIVE</span>' +
               '</div>' +
-              '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Booking #</div>' +
-                '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
+
+              // Countdown block
+              '<div style="background:linear-gradient(135deg,rgba(0,177,79,0.08),rgba(0,177,79,0.03));border:1px solid rgba(0,177,79,0.15);border-radius:14px;padding:16px 20px;margin-bottom:16px;">' +
+                '<div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Time Remaining</div>' +
+                '<div id="activeBookingCountdown" style="font-size:2.2rem;font-weight:900;letter-spacing:-1px;color:#10b981;line-height:1;">-</div>' +
+                '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:5px;">' +
+                  '<i class="fas fa-calendar-check" style="color:var(--primary);font-size:0.72rem;"></i>' +
+                  'Return by <strong style="color:var(--text-primary);margin-left:3px;">' + _fmtDate(endNorm) + '</strong>' +
+                '</div>' +
               '</div>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-              '<button onclick="openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
-              '<button onclick="showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
+
+              // Date + booking# row
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">' +
+                '<div style="background:var(--bg-card2);border-radius:12px;padding:12px 14px;">' +
+                  '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;">Start Date</div>' +
+                  '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + '</div>' +
+                '</div>' +
+                '<div style="background:var(--bg-card2);border-radius:12px;padding:12px 14px;">' +
+                  '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;">Booking #</div>' +
+                  '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
+                '</div>' +
+              '</div>' +
+
+              // Action buttons
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+                '<button onclick="openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:12px 16px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-calendar-plus"></i>Extend</button>' +
+                '<button onclick="showOverlay(\'page-livechat\')" style="padding:12px 16px;background:var(--bg-card2);color:var(--text-primary);border:1.5px solid var(--border);border-radius:12px;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><i class="fas fa-comments"></i>Chat</button>' +
+              '</div>' +
             '</div>' +
           '</div>';
         monitor.style.display = '';
-        // Attach onerror after DOM insertion to avoid escaping issues
-        var imgEl = document.getElementById('activeRentalImg');
+        // Attach onerror after DOM insertion
+        var imgEl = card.querySelector('img');
         if (imgEl) {
           imgEl.onerror = function() {
-            this.parentNode.innerHTML = '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+            this.parentNode.innerHTML = '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:4rem;color:var(--text-muted);opacity:0.2;"></i></div>';
           };
         }
         _startActiveBookingCountdown(endNorm);
