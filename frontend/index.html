@@ -317,7 +317,7 @@
         }
 
         /* ============================================================
-           DESKTOP LAYOUT Â kicks in at 768px+
+           DESKTOP LAYOUT ÃÂ kicks in at 768px+
            Left sidebar + constrained content area
            ============================================================ */
         @media (min-width: 768px) {
@@ -401,7 +401,7 @@
             overflow-y: auto;
           }
 
-          /* Auth pages: full-screen, ignore sidebar  they overlay everything */
+          /* Auth pages: full-screen, ignore sidebar Â they overlay everything */
           .auth-page.active {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -486,9 +486,54 @@
             max-width: 820px;
           }
 
-          /* ?? Profile: constrain width ?? */
+          /* Profile page: two-column layout on desktop */
           #page-profile .scroll-content {
-            max-width: 720px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            align-items: start;
+          }
+
+          /* Avatar/summary card: left sticky column */
+          #page-profile .scroll-content > .card:first-child {
+            position: sticky;
+            top: 20px;
+            overflow: hidden;
+          }
+
+          /* Green banner header behind avatar */
+          #page-profile .scroll-content > .card:first-child #profileAvatarWrap {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary), var(--primary-dark));
+            padding: 28px 24px 24px;
+          }
+
+          #page-profile .scroll-content > .card:first-child .profile-avatar-placeholder,
+          #page-profile .scroll-content > .card:first-child .profile-avatar {
+          }
+
+          /* Left-align name/email/phone with padding */
+          #page-profile .scroll-content > .card:first-child > h3,
+          #page-profile .scroll-content > .card:first-child > p,
+          #page-profile .scroll-content > .card:first-child > div {
+          }
+
+          #page-profile .scroll-content > .card:first-child > h3 {
+            margin-top: 16px;
+          }
+
+          #page-profile .scroll-content > .card:first-child .points-badge {
+          }
+
+          /* Right column: edit + license cards */
+          #page-profile #profileEditCard,
+          #page-profile .scroll-content > .card:not(:first-child) {
+            grid-column: 2;
+          }
+
+          /* License images: side-by-side, taller on desktop */
+          #profileLicenseThumb img {
+            flex: 1;
+            object-fit: cover;
           }
 
           /* ?? More: constrain width ?? */
@@ -743,7 +788,7 @@
           }
 
           #bookingsList { padding: 0 32px 24px; max-width: none; }
-          #page-profile .scroll-content { max-width: 800px; }
+          #page-profile .scroll-content { grid-template-columns: 340px 1fr; gap: 28px; padding: 32px !important; }
 
           /* 1024px: keep 2-col bookings grid */
           #bookingsList {
@@ -1191,7 +1236,7 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
-  <!-- Active booking banner Ã¯Â¿Â½ shown by JS when user has an active booking -->
+  <!-- Active booking banner ÃÂ¯ÃÂ¿ÃÂ½ shown by JS when user has an active booking -->
   <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
     <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
     <div style="flex:1;">
@@ -1545,7 +1590,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- DEBUG OVERLAY Ã¯Â¿Â½ disabled in production -->
+<!-- DEBUG OVERLAY ÃÂ¯ÃÂ¿ÃÂ½ disabled in production -->
 <!-- To re-enable for debugging, uncomment the block below -->
 <!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
@@ -1568,7 +1613,7 @@
   // All dbg() calls are no-ops. Global errors are silently ignored.
   function dbg() {}
   window.__dbg = dbg;
-  // Keep fetch interception removed Ã¯Â¿Â½ no debug overhead in production
+  // Keep fetch interception removed ÃÂ¯ÃÂ¿ÃÂ½ no debug overhead in production
 })();
 </script>
 </body>
