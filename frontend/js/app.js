@@ -3067,7 +3067,7 @@ function renderBookingsList(data) {
     var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' - ');
     var startFmt = formatBookingDate(b.start_date);
     var endFmt = formatBookingDate(b.end_date);
-    return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin:0 16px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="openBookingDetail(' + b.id + ')">' +
+    return '<div class="bk-card-item" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin:0 16px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="openBookingDetail(' + b.id + ')">' +
       '<div style="padding:16px;">' +
       
       /* Header row: icon + name + status badge */

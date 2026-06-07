@@ -632,6 +632,66 @@
           .card {
             margin-bottom: 16px;
           }
+
+          /* ?? Bookings page desktop improvements ?? */
+
+          /* Hide back-button on desktop (sidebar handles navigation) */
+          #page-bookings .back-btn,
+          #page-bookings .fas.fa-chevron-left {
+            display: none !important;
+          }
+
+          /* Stats row: wide horizontal cards instead of tiny circles */
+          #bkStatTotal, #bkStatDone, #bkStatSpent {
+            border-radius: 16px !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 20px 24px !important;
+            flex-direction: row !important;
+            justify-content: flex-start !important;
+            gap: 16px !important;
+            margin: 0 !important;
+          }
+
+          #bkStatTotal > div:first-child,
+          #bkStatDone > div:first-child,
+          #bkStatSpent > div:first-child {
+            font-size: 2rem !important;
+          }
+
+          /* Stats grid: 3 equal columns with proper padding */
+          #page-bookings > div:nth-child(2) {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 16px !important;
+            padding: 24px 28px 20px !important;
+          }
+
+          /* Filter tabs: don't stretch full width */
+          #bookingFilterTabs {
+            display: inline-flex !important;
+            width: auto !important;
+            border-radius: 12px !important;
+            background: var(--bg-card) !important;
+          }
+
+          /* Filter tabs wrapper: left-aligned */
+          #page-bookings > div:nth-child(3) {
+            padding: 0 28px 16px !important;
+          }
+
+          /* Booking list: 2-column grid */
+          #bookingsList {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 16px !important;
+            padding: 0 28px 32px !important;
+            max-width: none !important;
+          }
+
+          /* Booking cards inside grid: no side margins (grid handles spacing) */
+          #bookingsList .bk-card-item {
+            margin: 0 !important;
+          }
         }
 
         /* ?? 1024px: slightly wider sidebar ?? */
@@ -682,14 +742,37 @@
             padding-right: 32px;
           }
 
-          #bookingsList { padding: 0 32px 24px; max-width: 900px; }
+          #bookingsList { padding: 0 32px 24px; max-width: none; }
           #page-profile .scroll-content { max-width: 800px; }
+
+          /* 1024px: keep 2-col bookings grid */
+          #bookingsList {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 20px !important;
+          }
+
+          #page-bookings > div:nth-child(2) {
+            padding: 24px 32px 20px !important;
+          }
+
+          #page-bookings > div:nth-child(3) {
+            padding: 0 32px 16px !important;
+          }
         }
 
         /* ?? 1280px: 4-column vehicle grid ?? */
         @media (min-width: 1280px) {
           .vehicle-grid {
             grid-template-columns: repeat(4, 1fr);
+          }
+        }
+        /* Booking cards - hover on desktop */
+        @media (min-width: 768px) {
+          .bk-card-item:hover {
+            border-color: var(--primary) !important;
+            box-shadow: 0 4px 20px rgba(0,177,79,0.12) !important;
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
           }
         }
     </style>
