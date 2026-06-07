@@ -317,7 +317,7 @@
         }
 
         /* ============================================================
-           DESKTOP LAYOUT  kicks in at 768px+
+           DESKTOP LAYOUT Â kicks in at 768px+
            Left sidebar + constrained content area
            ============================================================ */
         @media (min-width: 768px) {
@@ -392,14 +392,25 @@
             margin-top: auto;
           }
 
-          /* ?? All pages/auth-pages: push right of sidebar ?? */
-          /* Only apply to active (visible) pages to avoid layout bleed */
-          .page.active, .auth-page.active {
+          /* ?? All pages: push right of sidebar ?? */
+          .page.active {
             margin-left: 220px;
             width: calc(100% - 220px);
             min-height: 100vh;
             padding-bottom: 40px;
             overflow-y: auto;
+          }
+
+          /* Auth pages: full-screen, ignore sidebar  they overlay everything */
+          .auth-page.active {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            z-index: 900;
+            margin-left: 0;
+            padding-bottom: 0;
           }
 
           /* Overlay pages also respect sidebar */
@@ -485,49 +496,79 @@
             max-width: 640px;
           }
 
-          /* ?? Auth pages: split-screen layout on desktop ?? */
+          /* Auth pages: full-viewport split-screen on desktop */
+          /* Auth pages override the sidebar offset - they cover the full screen */
           #page-login.auth-page.active,
           #page-register.auth-page.active,
           #page-otp-verify.auth-page.active {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 900;
+            margin-left: 0;
             display: flex;
             flex-direction: row;
             align-items: stretch;
-            background: var(--bg-page);
-            min-height: 100vh;
             padding: 0;
           }
 
-          /* Left hero panel: show on desktop */
+          /* Left hero panel */
           .auth-hero-panel {
             display: flex;
-            flex: 1 1 55%;
+            flex: 1 1 0%;
             min-height: 100vh;
             background: linear-gradient(160deg, var(--primary-light) 0%, var(--primary) 55%, var(--primary-dark) 100%);
             align-items: center;
             justify-content: center;
-            padding: 48px 40px;
+            padding: 60px 56px;
+            position: relative;
+            overflow: hidden;
+          }
+
+          /* Decorative blur circles */
+          .auth-hero-panel::before {
+            content: '';
+            position: absolute;
+            top: -100px; right: -100px;
+            width: 380px; height: 380px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            pointer-events: none;
+          }
+
+          .auth-hero-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -80px;
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            background: rgba(0,83,57,0.3);
+            pointer-events: none;
           }
 
           .auth-hero-inner {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            max-width: 380px;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
           }
 
           /* Right form panel */
           .auth-container {
-            flex: 0 0 auto;
-            width: 45%;
-            max-width: 520px;
+            flex: 0 0 440px;
+            width: 440px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 48px 40px;
-            background: var(--bg-page);
+            padding: 52px 48px;
+            background: #ffffff;
             overflow-y: auto;
+            box-shadow: -8px 0 40px rgba(0,0,0,0.10);
           }
 
           /* Hide auth-logo inside form on desktop (hero panel shows it) */
@@ -535,12 +576,59 @@
             display: none;
           }
 
-          /* ?? Action grid: 3 cols on desktop ?? */
+          /* Auth card: borderless inside the white panel */
+          .auth-hero-panel ~ .auth-container .auth-card {
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            border-radius: 0;
+            max-width: 100%;
+            background: transparent;
+          }
+
+          .auth-hero-panel ~ .auth-container .auth-card h2 {
+            font-size: 2rem;
+            color: #1a1a2e;
+          }
+
+          .auth-hero-panel ~ .auth-container .auth-card p.subtitle {
+            color: #6b7280;
+            margin-bottom: 32px;
+          }
+
+          .auth-hero-panel ~ .auth-container .form-group input,
+          .auth-hero-panel ~ .auth-container .form-group select {
+            border: 1.5px solid #e5e7eb;
+            background: #f9fafb;
+            color: #111827;
+          }
+
+          .auth-hero-panel ~ .auth-container .form-group input:focus,
+          .auth-hero-panel ~ .auth-container .form-group select:focus {
+            border-color: var(--primary);
+            background: #ffffff;
+          }
+
+          .auth-hero-panel ~ .auth-container .divider {
+            color: #9ca3af;
+          }
+
+          .auth-hero-panel ~ .auth-container .btn-google {
+            border: 1.5px solid #e5e7eb;
+            background: #ffffff;
+            color: #374151;
+          }
+
+          .auth-hero-panel ~ .auth-container .auth-link {
+            color: #6b7280;
+          }
+
+          /* Action grid: 3 cols on desktop */
           .action-btn-grid {
             grid-template-columns: repeat(3, 1fr);
           }
 
-          /* ?? Cards: slightly more margin ?? */
+          /* Cards: slightly more margin */
           .card {
             margin-bottom: 16px;
           }
@@ -633,22 +721,40 @@
   <!-- Desktop hero panel (hidden on mobile via CSS) -->
   <div class="auth-hero-panel">
     <div class="auth-hero-inner">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:180px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,0.25));">
-      <h1 style="font-size:2.8rem;font-weight:900;color:#fff;letter-spacing:-1px;margin-top:16px;">Autoride</h1>
-      <p style="color:rgba(255,255,255,0.85);font-size:1.1rem;margin-top:8px;font-weight:500;">Your ride, your way</p>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:40px;max-width:280px;">
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car"></i></div>
-          <span style="font-size:0.9rem;">Browse and book vehicles instantly</span>
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:72px;height:72px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 2px 12px rgba(0,0,0,0.2));">
+      <h1 style="font-size:3rem;font-weight:900;color:#ffffff;letter-spacing:-1.5px;line-height:1.1;margin-bottom:12px;">Autoride</h1>
+      <p style="color:rgba(255,255,255,0.8);font-size:1.1rem;font-weight:400;margin-bottom:48px;line-height:1.5;">Your ride, your way.<br>Fast. Safe. Affordable.</p>
+      <div style="display:flex;flex-direction:column;gap:20px;width:100%;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-car" style="color:#ffffff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Wide Vehicle Selection</div>
+            <div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Sedans, SUVs, vans and more</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt"></i></div>
-          <span style="font-size:0.9rem;">Safe, verified, and insured rides</span>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-shield-alt" style="color:#ffffff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Safe &amp; Insured</div>
+            <div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Verified vehicles with full coverage</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-award"></i></div>
-          <span style="font-size:0.9rem;">Earn loyalty points every booking</span>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-award" style="color:#ffffff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Loyalty Rewards</div>
+            <div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Earn points and unlock exclusive deals</div>
+          </div>
         </div>
+      </div>
+      <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.15);width:100%;">
+        <p style="color:rgba(255,255,255,0.5);font-size:0.78rem;">Trusted by hundreds of customers across the region</p>
       </div>
     </div>
   </div>
@@ -695,22 +801,40 @@
 <div id="page-register" class="auth-page">
   <div class="auth-hero-panel">
     <div class="auth-hero-inner">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:180px;object-fit:contain;filter:drop-shadow(0 4px 24px rgba(0,0,0,0.25));">
-      <h1 style="font-size:2.8rem;font-weight:900;color:#fff;letter-spacing:-1px;margin-top:16px;">Join Autoride</h1>
-      <p style="color:rgba(255,255,255,0.85);font-size:1.1rem;margin-top:8px;font-weight:500;">Start your journey today</p>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:40px;max-width:280px;">
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user-check"></i></div>
-          <span style="font-size:0.9rem;">Quick and easy account setup</span>
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:72px;height:72px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 2px 12px rgba(0,0,0,0.2));">
+      <h1 style="font-size:3rem;font-weight:900;color:#ffffff;letter-spacing:-1.5px;line-height:1.1;margin-bottom:12px;">Join Autoride</h1>
+      <p style="color:rgba(255,255,255,0.8);font-size:1.1rem;font-weight:400;margin-bottom:48px;line-height:1.5;">Create your account.<br>Start booking in minutes.</p>
+      <div style="display:flex;flex-direction:column;gap:20px;width:100%;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-user-check" style="color:#ffffff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Quick Setup</div>
+            <div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Register and verify in under 2 minutes</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-calendar-check"></i></div>
-          <span style="font-size:0.9rem;">Manage all your bookings in one place</span>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-calendar-check" style="color:#ffffff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Easy Booking Management</div>
+            <div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Track all your rentals in one place</div>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;color:rgba(255,255,255,0.9);">
-          <div style="width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star"></i></div>
-          <span style="font-size:0.9rem;">Exclusive promos and loyalty rewards</span>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-tag" style="color:#ffffff;font-size:1.1rem;"></i>
+          </div>
+          <div>
+            <div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Exclusive Promos</div>
+            <div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Members-only deals and discounts</div>
+          </div>
         </div>
+      </div>
+      <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.15);width:100%;">
+        <p style="color:rgba(255,255,255,0.5);font-size:0.78rem;">Trusted by hundreds of customers across the region</p>
       </div>
     </div>
   </div>
@@ -933,7 +1057,7 @@
     <span class="chip" onclick="filterVehicles('Manual',this)">Manual</span>
   </div>
   <div id="vehicleCount" style="padding:0 16px 8px;font-size:0.75rem;color:var(--text-muted);"></div>
-  <!-- Active booking banner ï¿½ shown by JS when user has an active booking -->
+  <!-- Active booking banner Ã¯Â¿Â½ shown by JS when user has an active booking -->
   <div id="browseActiveBanner" style="display:none;margin:0 16px 12px;padding:12px 14px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.35);border-radius:12px;align-items:center;gap:10px;">
     <i class="fas fa-calendar-check" style="color:#f59e0b;font-size:1rem;flex-shrink:0;"></i>
     <div style="flex:1;">
@@ -1287,7 +1411,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/app.js"></script>
 
-<!-- DEBUG OVERLAY ï¿½ disabled in production -->
+<!-- DEBUG OVERLAY Ã¯Â¿Â½ disabled in production -->
 <!-- To re-enable for debugging, uncomment the block below -->
 <!--
 <div id="__debug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
@@ -1310,7 +1434,7 @@
   // All dbg() calls are no-ops. Global errors are silently ignored.
   function dbg() {}
   window.__dbg = dbg;
-  // Keep fetch interception removed ï¿½ no debug overhead in production
+  // Keep fetch interception removed Ã¯Â¿Â½ no debug overhead in production
 })();
 </script>
 </body>
