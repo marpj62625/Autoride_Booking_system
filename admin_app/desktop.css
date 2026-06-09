@@ -1,916 +1,295 @@
 /* ============================================================
-   Autoride Admin - Desktop Responsive Layout
-   All overrides scoped to min-width: 769px
-   Mobile layout is completely unchanged.
+   Autoride Admin -- Desktop Responsive Layout
+   Single clean file. All overrides scoped to min-width: 769px.
+   Mobile layout unchanged.
    ============================================================ */
 
-/* ?????????????????????????????????????????????????????????????
-   CORE LAYOUT  (769px+)
-????????????????????????????????????????????????????????????? */
-@media (min-width: 769px) {
-
-    body {
-        flex-direction: row !important;
-        overflow: hidden !important;
-        height: 100vh !important;
-    }
-
-    /* ?? PERSISTENT SIDEBAR ??????????????????????????????? */
-    .side-drawer {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 248px !important;
-        height: 100vh !important;
-        transform: translateX(0) !important;
-        box-shadow: none !important;
-        border-right: 1px solid var(--border) !important;
-        z-index: 300 !important;
-        transition: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        background: var(--surface) !important;
-        overflow: hidden !important;
-    }
-
-    .drawer-overlay { display: none !important; }
-
-    .drawer-header {
-        padding: 20px 18px 16px !important;
-        border-bottom: 1px solid var(--border) !important;
-        flex-shrink: 0 !important;
-    }
-
-    /* Hide "Admin Console" subtitle in sidebar on desktop */
-    .drawer-header > p { display: none !important; }
-
-    .drawer-content {
-        flex: 1 !important;
-        padding: 8px 8px !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-    }
-    .drawer-content::-webkit-scrollbar { width: 4px; }
-    .drawer-content::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.1); border-radius: 2px;
-    }
-
-    .drawer-item {
-        display: flex !important;
-        align-items: center !important;
-        gap: 10px !important;
-        padding: 9px 14px !important;
-        border-radius: 10px !important;
-        font-size: 0.84rem !important;
-        font-weight: 600 !important;
-        color: var(--text-secondary) !important;
-        text-decoration: none !important;
-        margin-bottom: 1px !important;
-        cursor: pointer !important;
-        border: 1px solid transparent !important;
-        transition: background 0.12s, color 0.12s !important;
-    }
-    .drawer-item:hover {
-        background: var(--surface-container) !important;
-        color: var(--text-main) !important;
-    }
-    .drawer-item.active {
-        background: rgba(0, 177, 79, 0.1) !important;
-        color: var(--primary) !important;
-        border-color: rgba(0, 177, 79, 0.2) !important;
-    }
-    .drawer-item i {
-        width: 16px !important;
-        font-size: 0.88rem !important;
-        text-align: center !important;
-        flex-shrink: 0 !important;
-    }
-
-    /* ?? TOP HEADER ??????????????????????????????????????? */
-    .mobile-header {
-        left: 248px !important;
-        width: calc(100% - 248px) !important;
-        height: 60px !important;
-        background: var(--surface) !important;
-        border-bottom: 1px solid var(--border) !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        box-shadow: none !important;
-        z-index: 200 !important;
-        padding: 0 28px !important;
-    }
-    .menu-btn { display: none !important; }
-
-    /* ?? BOTTOM NAV HIDDEN ???????????????????????????????? */
-    .bottom-nav { display: none !important; }
-
-    /* ?? MAIN CONTENT ????????????????????????????????????? */
-    .main-content {
-        margin-left: 248px !important;
-        padding: 72px 32px 32px !important;
-        height: 100vh !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        flex: 1 !important;
-        -webkit-overflow-scrolling: auto !important;
-    }
-    .main-content::-webkit-scrollbar { width: 6px; }
-    .main-content::-webkit-scrollbar-track { background: transparent; }
-    .main-content::-webkit-scrollbar-thumb {
-        background: rgba(0,0,0,0.13); border-radius: 3px;
-    }
-    .main-content::-webkit-scrollbar-thumb:hover {
-        background: rgba(0,0,0,0.24);
-    }
-
-    /* Cap content width on ultrawide */
-    .main-content > .tab-content {
-        max-width: 1440px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
-    }
-
-    /* ?? NOTIFICATION PANEL ??????????????????????????????? */
-    #adminNotifPanel {
-        left: auto !important;
-        right: 24px !important;
-        top: 68px !important;
-        width: 380px !important;
-    }
-
-    /* ?? PAGE TITLES ?????????????????????????????????????? */
-    .page-title {
-        font-size: 1.6rem !important;
-        font-weight: 800 !important;
-        margin-bottom: 2px !important;
-    }
-    .page-subtitle { margin-bottom: 20px !important; }
-
-    /* ?? CARDS / LISTS ???????????????????????????????????? */
-    .stat-card {
-        transition: box-shadow 0.18s, transform 0.18s !important;
-        cursor: default;
-    }
-    .stat-card:hover {
-        box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px) !important;
-    }
-    .list-item { transition: box-shadow 0.15s !important; }
-    .list-item:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.08) !important; }
-
-    /* ?? MODALS ??????????????????????????????????????????? */
-    .premium-modal { padding: 32px !important; }
-    .modal-content { max-width: 540px !important; border-radius: 20px !important; }
-    .chart-popup-container { max-width: 680px !important; }
-    #adminLoginOverlay .login-card { max-width: 460px !important; }
-
-    /* ?? BUTTON HOVER ????????????????????????????????????? */
-    .btn-primary:hover, .btn-premium:hover {
-        opacity: 0.88; transform: translateY(-1px);
-    }
-    .btn-outline:hover { background: var(--surface-container) !important; }
-}
-
-/* ?????????????????????????????????????????????????????????????
-   DASHBOARD GRID  (769px+)
-   Uses the .dash-desktop-grid class injected by JS below
-????????????????????????????????????????????????????????????? */
-@media (min-width: 769px) {
-    /* #dashboard.dash-desktop-grid: display is controlled by switchTab() - do NOT override here */
-
-    /* KPI row: Revenue + Bookings as large tiles */
-    .dash-kpi-row {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 18px !important;
-        margin-bottom: 18px !important;
-    }
-    .dash-kpi-row .stat-card {
-        padding: 28px 32px !important;
-        margin-bottom: 0 !important;
-    }
-    .dash-kpi-row .stat-card h5 {
-        font-size: 0.65rem !important;
-        letter-spacing: 1.2px !important;
-        margin-bottom: 10px !important;
-    }
-    .dash-kpi-row .stat-card > div[id] {
-        font-size: 2.2rem !important;
-        font-weight: 800 !important;
-        letter-spacing: -1.5px !important;
-        line-height: 1 !important;
-    }
-
-    /* Chart rows: 2 equal columns */
-    .dash-chart-row {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 18px !important;
-        margin-bottom: 18px !important;
-    }
-    .dash-chart-row .stat-card {
-        margin-bottom: 0 !important;
-        padding: 18px 20px !important;
-    }
-
-    /* Chart canvases: taller on desktop */
-    .dash-chart-row div[style*="height:110px"],
-    .dash-chart-row div[style*="height: 110px"] {
-        height: 200px !important;
-    }
-
-    /* Pie chart row */
-    .dash-pie-row {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 18px !important;
-        margin-bottom: 18px !important;
-    }
-    .dash-pie-row .stat-card {
-        margin-bottom: 0 !important;
-        padding: 18px 20px !important;
-    }
-
-    /* Full-width rows */
-    .dash-full-row {
-        margin-bottom: 18px !important;
-    }
-    .dash-full-row .stat-card {
-        margin-bottom: 0 !important;
-    }
-}
-
-/* ?????????????????????????????????????????????????????????????
-   1100px+ - wider layout
-????????????????????????????????????????????????????????????? */
-@media (min-width: 1100px) {
-
-    .side-drawer { width: 260px !important; }
-    .mobile-header {
-        left: 260px !important;
-        width: calc(100% - 260px) !important;
-        padding: 0 32px !important;
-    }
-    .main-content { margin-left: 260px !important; padding: 72px 36px 32px !important; }
-
-    /* 4-col KPI on wide screens */
-    .dash-kpi-row { grid-template-columns: 1fr 1fr 1fr 1fr !important; }
-    .dash-kpi-row .stat-card { padding: 24px 20px !important; }
-    .dash-kpi-row .stat-card > div[id] { font-size: 1.9rem !important; }
-
-    .dash-chart-row div[style*="height:110px"],
-    .dash-chart-row div[style*="height: 110px"] { height: 220px !important; }
-
-    .page-title { font-size: 1.75rem !important; }
-}
-
-/* ?????????????????????????????????????????????????????????????
-   1400px+ - large screens
-????????????????????????????????????????????????????????????? */
-@media (min-width: 1400px) {
-
-    .side-drawer { width: 272px !important; }
-    .mobile-header { left: 272px !important; width: calc(100% - 272px) !important; }
-    .main-content { margin-left: 272px !important; padding: 72px 44px 32px !important; }
-
-    .dash-kpi-row .stat-card > div[id] { font-size: 2rem !important; }
-    .dash-chart-row div[style*="height:110px"],
-    .dash-chart-row div[style*="height: 110px"] { height: 240px !important; }
-
-    /* 3-col for pie/other rows */
-    .dash-pie-row { grid-template-columns: 1fr 1fr 1fr !important; }
-}
-
-/* ?????????????????????????????????????????????????????????????
-   DARK THEME OVERRIDES
-????????????????????????????????????????????????????????????? */
-@media (min-width: 769px) {
-    [data-theme="dark"] .side-drawer {
-        background: #0f0f0f !important;
-        border-right-color: rgba(255,255,255,0.07) !important;
-    }
-    [data-theme="dark"] .mobile-header {
-        background: #0f0f0f !important;
-        border-bottom-color: rgba(255,255,255,0.07) !important;
-    }
-    [data-theme="dark"] .drawer-item:hover {
-        background: rgba(255,255,255,0.05) !important;
-        color: #fff !important;
-    }
-    [data-theme="dark"] .drawer-item.active {
-        background: rgba(0,177,79,0.13) !important;
-        border-color: rgba(0,177,79,0.28) !important;
-        color: #00B14F !important;
-    }
-    [data-theme="dark"] .main-content::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.1);
-    }
-}
-
-/* ?????????????????????????????????????????????????????????????
-   GPS / CHAT / REPORTS
-????????????????????????????????????????????????????????????? */
-@media (min-width: 769px) {
-    #gps { height: calc(100vh - 110px) !important; }
-
-    .ac-chat-wrap { height: calc(100vh - 110px) !important; }
-    #chat .ac-chat-wrap {
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-    }
-
-    #reports .chart-container { height: 280px !important; }
-}
-@media (min-width: 1100px) {
-    #reports .chart-container { height: 320px !important; }
-}
-
 /* =================================================================
-   VEHICLES GRID  (desktop 769px+)
-   JS adds .veh-desktop-grid to the <ul> and .veh-card-desktop to <li>
+   CORE LAYOUT  (769px+)
 ================================================================= */
 @media (min-width: 769px) {
 
-    /* Grid container */
+    body { flex-direction: row !important; overflow: hidden !important; height: 100vh !important; }
+
+    /* ---- SIDEBAR ---- */
+    .side-drawer {
+        position: fixed !important; left: 0 !important; top: 0 !important;
+        width: 248px !important; height: 100vh !important;
+        transform: translateX(0) !important; box-shadow: none !important;
+        border-right: 1px solid var(--border) !important; z-index: 300 !important;
+        transition: none !important; display: flex !important;
+        flex-direction: column !important; background: var(--surface) !important;
+        overflow: hidden !important;
+    }
+    .drawer-overlay { display: none !important; }
+    .drawer-header { padding: 20px 18px 16px !important; border-bottom: 1px solid var(--border) !important; flex-shrink: 0 !important; }
+    .drawer-header > p { display: none !important; }
+    .drawer-content { flex: 1 !important; padding: 8px 8px !important; overflow-y: auto !important; overflow-x: hidden !important; }
+    .drawer-content::-webkit-scrollbar { width: 4px; }
+    .drawer-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+    .drawer-item {
+        display: flex !important; align-items: center !important; gap: 10px !important;
+        padding: 9px 14px !important; border-radius: 10px !important; font-size: 0.84rem !important;
+        font-weight: 600 !important; color: var(--text-secondary) !important;
+        text-decoration: none !important; margin-bottom: 1px !important;
+        cursor: pointer !important; border: 1px solid transparent !important;
+        transition: background 0.12s, color 0.12s !important;
+    }
+    .drawer-item:hover { background: var(--surface-container) !important; color: var(--text-main) !important; }
+    .drawer-item.active { background: rgba(0,177,79,0.1) !important; color: var(--primary) !important; border-color: rgba(0,177,79,0.2) !important; }
+    .drawer-item i { width: 16px !important; font-size: 0.88rem !important; text-align: center !important; flex-shrink: 0 !important; }
+
+    /* ---- HEADER ---- */
+    .mobile-header {
+        left: 248px !important; width: calc(100% - 248px) !important; height: 60px !important;
+        background: var(--surface) !important; border-bottom: 1px solid var(--border) !important;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        box-shadow: none !important; z-index: 200 !important; padding: 0 28px !important;
+    }
+    .menu-btn { display: none !important; }
+
+    /* ---- BOTTOM NAV HIDDEN ---- */
+    .bottom-nav { display: none !important; }
+
+    /* ---- MAIN CONTENT ---- */
+    .main-content {
+        margin-left: 248px !important; padding: 72px 32px 32px !important;
+        height: 100vh !important; overflow-y: auto !important; overflow-x: hidden !important;
+        flex: 1 !important; -webkit-overflow-scrolling: auto !important;
+    }
+    .main-content::-webkit-scrollbar { width: 6px; }
+    .main-content::-webkit-scrollbar-track { background: transparent; }
+    .main-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.13); border-radius: 3px; }
+    .main-content::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
+
+    /* Tab content: cap width but stay left-aligned (not centered) */
+    .main-content > .tab-content { max-width: 1440px !important; }
+
+    /* ---- NOTIFICATIONS ---- */
+    #adminNotifPanel { left: auto !important; right: 24px !important; top: 68px !important; width: 380px !important; }
+
+    /* ---- PAGE TITLES ---- */
+    .page-title { font-size: 1.6rem !important; font-weight: 800 !important; margin-bottom: 2px !important; }
+    .page-subtitle { margin-bottom: 20px !important; }
+
+    /* ---- HOVER STATES ---- */
+    .stat-card { transition: box-shadow 0.18s, transform 0.18s !important; }
+    .stat-card:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important; transform: translateY(-2px) !important; }
+    .list-item:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.08) !important; }
+    .btn-primary:hover, .btn-premium:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-outline:hover { background: var(--surface-container) !important; }
+
+    /* ---- MODALS ---- */
+    .premium-modal { padding: 32px !important; }
+    .modal-content { max-width: 540px !important; border-radius: 20px !important; }
+    #adminLoginOverlay .login-card { max-width: 460px !important; }
+}
+
+@media (min-width: 1100px) {
+    .side-drawer { width: 260px !important; }
+    .mobile-header { left: 260px !important; width: calc(100% - 260px) !important; padding: 0 32px !important; }
+    .main-content { margin-left: 260px !important; padding: 72px 36px 32px !important; }
+    .page-title { font-size: 1.75rem !important; }
+}
+
+@media (min-width: 1400px) {
+    .side-drawer { width: 272px !important; }
+    .mobile-header { left: 272px !important; width: calc(100% - 272px) !important; }
+    .main-content { margin-left: 272px !important; padding: 72px 44px 32px !important; }
+}
+
+/* =================================================================
+   DARK THEME
+================================================================= */
+@media (min-width: 769px) {
+    [data-theme="dark"] .side-drawer { background: #0f0f0f !important; border-right-color: rgba(255,255,255,0.07) !important; }
+    [data-theme="dark"] .mobile-header { background: #0f0f0f !important; border-bottom-color: rgba(255,255,255,0.07) !important; }
+    [data-theme="dark"] .drawer-item:hover { background: rgba(255,255,255,0.05) !important; color: #fff !important; }
+    [data-theme="dark"] .drawer-item.active { background: rgba(0,177,79,0.13) !important; border-color: rgba(0,177,79,0.28) !important; color: #00B14F !important; }
+    [data-theme="dark"] .main-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+}
+
+/* =================================================================
+   DASHBOARD GRID  (769px+)
+================================================================= */
+@media (min-width: 769px) {
+    .dash-kpi-row {
+        display: grid !important; grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important; margin-bottom: 18px !important;
+    }
+    .dash-kpi-row .stat-card { padding: 28px 32px !important; margin-bottom: 0 !important; }
+    .dash-kpi-row .stat-card h5 { font-size: 0.65rem !important; letter-spacing: 1.2px !important; margin-bottom: 10px !important; }
+    .dash-kpi-row .stat-card > div[id] { font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -1.5px !important; line-height: 1 !important; }
+    .dash-chart-row {
+        display: grid !important; grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important; margin-bottom: 18px !important;
+    }
+    .dash-chart-row .stat-card { margin-bottom: 0 !important; padding: 18px 20px !important; }
+    .dash-chart-row div[style*="height:110px"], .dash-chart-row div[style*="height: 110px"] { height: 200px !important; }
+    .dash-pie-row {
+        display: grid !important; grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important; margin-bottom: 18px !important;
+    }
+    .dash-pie-row .stat-card { margin-bottom: 0 !important; padding: 18px 20px !important; }
+    .dash-full-row { margin-bottom: 18px !important; }
+}
+@media (min-width: 1100px) {
+    .dash-kpi-row { grid-template-columns: 1fr 1fr 1fr 1fr !important; }
+    .dash-chart-row div[style*="height:110px"], .dash-chart-row div[style*="height: 110px"] { height: 220px !important; }
+}
+@media (min-width: 1400px) {
+    .dash-pie-row { grid-template-columns: 1fr 1fr 1fr !important; }
+    .dash-chart-row div[style*="height:110px"], .dash-chart-row div[style*="height: 110px"] { height: 240px !important; }
+}
+
+/* =================================================================
+   VEHICLES GRID  (769px+)
+================================================================= */
+@media (min-width: 769px) {
     ul.veh-desktop-grid {
-        list-style: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
+        list-style: none !important; margin: 0 !important; padding: 0 !important;
         display: grid !important;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
         gap: 18px !important;
     }
-
-    /* Each vehicle becomes a proper card */
     li.veh-card-desktop {
-        display: flex !important;
-        flex-direction: column !important;
-        background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        border-radius: 16px !important;
-        overflow: hidden !important;
-        padding: 0 !important;
-        gap: 0 !important;
+        display: flex !important; flex-direction: column !important;
+        background: var(--surface) !important; border: 1px solid var(--border) !important;
+        border-radius: 16px !important; overflow: hidden !important;
+        padding: 0 !important; gap: 0 !important;
         transition: box-shadow 0.18s, transform 0.18s !important;
-        cursor: default;
     }
-    li.veh-card-desktop:hover {
-        box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px) !important;
-    }
-
-    /* Image takes full width at top of card */
+    li.veh-card-desktop:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important; transform: translateY(-2px) !important; }
     li.veh-card-desktop > div:first-child {
-        width: 100% !important;
-        height: 160px !important;
-        border-radius: 0 !important;
-        background: var(--surface-container) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        overflow: hidden !important;
-        flex-shrink: 0 !important;
+        width: 100% !important; height: 160px !important; border-radius: 0 !important;
+        background: var(--surface-container) !important; display: flex !important;
+        align-items: center !important; justify-content: center !important;
+        overflow: hidden !important; flex-shrink: 0 !important;
     }
-    li.veh-card-desktop > div:first-child img {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover !important;
-        border-radius: 0 !important;
-    }
-    li.veh-card-desktop > div:first-child i {
-        font-size: 3rem !important;
-        color: var(--primary) !important;
-        opacity: 0.35 !important;
-    }
-
-    /* Info section */
-    li.veh-card-desktop > div:nth-child(2) {
-        flex: 1 !important;
-        padding: 14px 16px !important;
-        min-width: 0 !important;
-    }
-    li.veh-card-desktop > div:nth-child(2) > div:first-child {
-        font-size: 1.1rem !important;
-        margin-bottom: 4px !important;
-    }
-    li.veh-card-desktop > div:nth-child(2) > div:nth-child(2) {
-        font-size: 0.92rem !important;
-        margin-bottom: 3px !important;
-        white-space: normal !important;
-    }
-    li.veh-card-desktop > div:nth-child(2) > div:nth-child(3) {
-        font-size: 0.75rem !important;
-        margin-bottom: 8px !important;
-    }
-
-    /* Action buttons row at bottom of card */
+    li.veh-card-desktop > div:first-child img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 0 !important; }
+    li.veh-card-desktop > div:first-child i { font-size: 3rem !important; color: var(--primary) !important; opacity: 0.35 !important; }
+    li.veh-card-desktop > div:nth-child(2) { flex: 1 !important; padding: 14px 16px !important; min-width: 0 !important; }
+    li.veh-card-desktop > div:nth-child(2) > div:first-child { font-size: 1.1rem !important; margin-bottom: 4px !important; }
+    li.veh-card-desktop > div:nth-child(2) > div:nth-child(2) { font-size: 0.92rem !important; margin-bottom: 3px !important; white-space: normal !important; }
+    li.veh-card-desktop > div:nth-child(2) > div:nth-child(3) { font-size: 0.75rem !important; margin-bottom: 8px !important; }
     li.veh-card-desktop > div:last-child {
-        flex-direction: row !important;
-        justify-content: flex-end !important;
-        gap: 6px !important;
-        padding: 10px 14px !important;
+        flex-direction: row !important; justify-content: flex-end !important;
+        gap: 6px !important; padding: 10px 14px !important;
         border-top: 1px solid var(--border) !important;
         background: var(--surface-container) !important;
     }
     li.veh-card-desktop > div:last-child button {
-        width: 34px !important;
-        height: 34px !important;
-        border-radius: 8px !important;
-        background: var(--surface) !important;
-        border: 1px solid var(--border) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 0.88rem !important;
-        color: var(--text-secondary) !important;
-        cursor: pointer !important;
-        transition: all 0.15s !important;
+        width: 34px !important; height: 34px !important; border-radius: 8px !important;
+        background: var(--surface) !important; border: 1px solid var(--border) !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        font-size: 0.88rem !important; color: var(--text-secondary) !important;
+        cursor: pointer !important; transition: all 0.15s !important;
     }
-    li.veh-card-desktop > div:last-child button:first-child:hover {
-        background: var(--primary) !important;
-        border-color: var(--primary) !important;
-        color: white !important;
-    }
-    li.veh-card-desktop > div:last-child button:last-child:hover {
-        background: #dc2626 !important;
-        border-color: #dc2626 !important;
-        color: white !important;
-    }
-
-    /* Dark theme */
-    [data-theme="dark"] li.veh-card-desktop {
-        background: var(--bg-card) !important;
-    }
-    [data-theme="dark"] li.veh-card-desktop > div:last-child {
-        background: var(--bg-card2) !important;
-    }
-    [data-theme="dark"] li.veh-card-desktop > div:last-child button {
-        background: var(--bg-card) !important;
-    }
+    li.veh-card-desktop > div:last-child button:first-child:hover { background: var(--primary) !important; border-color: var(--primary) !important; color: white !important; }
+    li.veh-card-desktop > div:last-child button:last-child:hover { background: #dc2626 !important; border-color: #dc2626 !important; color: white !important; }
 }
-
-/* 3-column on wider screens */
-@media (min-width: 1100px) {
-    ul.veh-desktop-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-}
-
-/* 4-column on very wide */
-@media (min-width: 1400px) {
-    ul.veh-desktop-grid {
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-}
+@media (min-width: 1100px) { ul.veh-desktop-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (min-width: 1400px) { ul.veh-desktop-grid { grid-template-columns: repeat(4, 1fr) !important; } }
 
 /* =================================================================
-   USER VERIFICATIONS - Desktop Layout  (769px+)
-   JS adds .veri-desktop-list to #verificationsList
-   and .veri-desktop-card to each stat-card child
+   USER VERIFICATIONS  (769px+)
 ================================================================= */
 @media (min-width: 769px) {
-
-    /* Container: 2-column grid of verification cards */
-    #verificationsList.veri-desktop-list {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 20px !important;
-        align-items: start !important;
-    }
-
-    /* Card: better padding and no margin-bottom (grid handles spacing) */
-    #verificationsList .veri-desktop-card {
-        margin-bottom: 0 !important;
-        padding: 22px !important;
-    }
-
-    /* License images: side by side, taller */
-    #verificationsList .veri-desktop-card img {
-        border-radius: 10px !important;
-        max-height: 200px !important;
-        object-fit: cover !important;
-        width: 100% !important;
-    }
-
-    /* User header row: bigger avatar */
-    #verificationsList .veri-desktop-card > div:first-child > div:first-child {
-        width: 60px !important;
-        height: 60px !important;
-        font-size: 1.3rem !important;
-    }
-    /* Name: bigger text */
-    #verificationsList .veri-desktop-card > div:first-child h4 {
-        font-size: 1.1rem !important;
-    }
-
-    /* Action buttons: full width, better size */
-    #verificationsList .veri-desktop-card > div:last-child {
-        margin-top: 14px !important;
-        gap: 10px !important;
-    }
-    #verificationsList .veri-desktop-card > div:last-child .btn-premium {
-        padding: 13px 16px !important;
-        font-size: 0.875rem !important;
-        border-radius: 12px !important;
-    }
-
-    /* Dark theme */
-    [data-theme="dark"] #verificationsList .veri-desktop-card {
-        background: var(--bg-card) !important;
-    }
+    #verificationsList.veri-desktop-list { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 20px !important; align-items: start !important; }
+    #verificationsList .veri-desktop-card { margin-bottom: 0 !important; padding: 22px !important; }
+    #verificationsList .veri-desktop-card img { border-radius: 10px !important; max-height: 200px !important; object-fit: cover !important; width: 100% !important; }
+    #verificationsList .veri-desktop-card > div:first-child > div:first-child { width: 60px !important; height: 60px !important; font-size: 1.3rem !important; }
+    #verificationsList .veri-desktop-card > div:first-child h4 { font-size: 1.1rem !important; }
+    #verificationsList .veri-desktop-card > div:last-child { margin-top: 14px !important; gap: 10px !important; }
+    #verificationsList .veri-desktop-card > div:last-child .btn-premium { padding: 13px 16px !important; font-size: 0.875rem !important; border-radius: 12px !important; }
 }
-
-/* Single column on medium screens, 3-col on very wide */
 @media (min-width: 769px) and (max-width: 1099px) {
-    #verificationsList.veri-desktop-list {
-        grid-template-columns: 1fr !important;
-        max-width: 900px !important;
-        margin: 0 auto !important;
-    }
+    #verificationsList.veri-desktop-list { grid-template-columns: 1fr !important; max-width: 900px !important; }
 }
-@media (min-width: 1400px) {
-    #verificationsList.veri-desktop-list {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-}
+@media (min-width: 1400px) { #verificationsList.veri-desktop-list { grid-template-columns: repeat(3, 1fr) !important; } }
+
 /* =================================================================
-   USER MANAGEMENT -- Desktop Layout  (769px+)
+   USER MANAGEMENT  (769px+)
+   NOTE: #users tab has inline style="padding: 20px; padding-bottom: 100px"
+   We only remove the bottom padding. All other padding stays.
 ================================================================= */
 @media (min-width: 769px) {
 
-    /* Fix tab container - remove mobile bottom padding */
-    #users.users-desktop-tab {
-        padding: 0 !important;
-    }
+    /* Remove mobile bottom padding only - title and side padding remain */
+    #users.users-desktop-tab { padding-bottom: 24px !important; }
 
-    /* Page header row */
-    #users > div:first-child,
-    #users.users-desktop-tab > div:first-child {
-        padding: 0 0 20px 0 !important;
-        margin-bottom: 0 !important;
-    }
-
-    /* Stats row: 3 larger KPI cards */
+    /* Stats row: fixed-width columns, left-aligned */
     #users > div[style*="grid-template-columns:1fr 1fr 1fr"],
     #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
-        gap: 16px !important;
-        margin-bottom: 20px !important;
-    }
-    #users > div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
-    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] > div {
-        padding: 20px !important;
-        border-radius: 16px !important;
-    }
-    #users #umTotalCount,
-    #users #umVerifiedCount,
-    #users #umFrozenCount {
-        font-size: 2rem !important;
-        font-weight: 900 !important;
-    }
-
-    /* Search bar + export button row */
-    #users > div[style*="display:flex"][style*="gap:10px"] {
-        margin-bottom: 14px !important;
-    }
-    #users #umSearch {
-        font-size: 0.9rem !important;
-        padding: 13px 13px 13px 42px !important;
-    }
-
-    /* User list: 2-column grid of cards */
-    #umList.um-desktop-list {
         display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 12px !important;
-    }
-
-    /* Individual user card */
-    .um-desktop-card {
-        margin-bottom: 0 !important;
-        padding: 18px !important;
-        border-radius: 16px !important;
-        transition: box-shadow 0.18s, transform 0.15s !important;
-    }
-    .um-desktop-card:hover {
-        box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px) !important;
-    }
-
-    /* Avatar: bigger */
-    .um-desktop-card > div:first-child {
-        width: 52px !important;
-        height: 52px !important;
-        font-size: 1.2rem !important;
-    }
-
-    /* Name text: larger */
-    .um-desktop-card > div:nth-child(2) > div:first-child {
-        font-size: 0.95rem !important;
-        font-weight: 800 !important;
-    }
-    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
-        font-size: 0.78rem !important;
-    }
-
-    /* Right meta column: slightly larger */
-    .um-desktop-card > div:last-child > div:first-child {
-        font-size: 0.72rem !important;
-    }
-    .um-desktop-card > div:last-child > div:last-child {
-        font-size: 0.78rem !important;
-    }
-
-    /* User detail modal: center on desktop, not bottom-sheet */
-    #umModal {
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 32px !important;
-    }
-    #umModal > div {
-        min-height: unset !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    #umModal > div > div {
-        border-radius: 20px !important;
-        max-width: 560px !important;
-        width: 100% !important;
-        max-height: 85vh !important;
-        padding: 28px !important;
-    }
-}
-
-/* 3-column on wider screens */
-@media (min-width: 1100px) {
-    #umList.um-desktop-list {
-        grid-template-columns: repeat(3, 1fr) !important;
-    }
-}
-
-/* 4-column on very wide */
-@media (min-width: 1400px) {
-    #umList.um-desktop-list {
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-}
-/* =================================================================
-   USER MANAGEMENT -- Desktop Layout  (769px+)
-================================================================= */
-@media (min-width: 769px) {
-
-    /* Tab: remove only the bottom padding (100px mobile nav clearance).
-       Keep left/right/top padding so title shows and content isn't edge-to-edge. */
-    #users.users-desktop-tab {
-        padding-bottom: 32px !important;
-    }
-
-    /* Stats row: 3 equal columns with max-width so they don't stretch too wide */
-    #users > div[style*="grid-template-columns:1fr 1fr 1fr"],
-    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
-        gap: 16px !important;
-        margin-bottom: 20px !important;
-        max-width: 600px !important;
+        grid-template-columns: repeat(3, 160px) !important;
+        gap: 14px !important; margin-bottom: 20px !important;
+        width: max-content !important;
     }
     #users > div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
     #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] > div {
-        padding: 20px 16px !important;
-        border-radius: 14px !important;
+        padding: 18px 16px !important; border-radius: 14px !important; text-align: center !important;
     }
-    #users #umTotalCount,
-    #users #umVerifiedCount,
-    #users #umFrozenCount {
-        font-size: 1.8rem !important;
-        font-weight: 900 !important;
+    #users #umTotalCount, #users #umVerifiedCount, #users #umFrozenCount {
+        font-size: 1.8rem !important; font-weight: 900 !important; letter-spacing: -1px !important;
     }
 
-    /* Search bar row */
+    /* Search + export row */
     #users > div[style*="display:flex"][style*="gap:10px"],
     #users > div[style*="display: flex"][style*="gap: 10px"] {
-        margin-bottom: 14px !important;
-        max-width: 600px !important;
+        width: 100% !important; max-width: 100% !important; margin-bottom: 12px !important;
     }
+    #users #umSearch { font-size: 0.9rem !important; }
 
     /* Filter chips row */
     #users > div[style*="overflow-x:auto"],
-    #users > div[style*="overflow-x: auto"] {
-        margin-bottom: 18px !important;
-    }
+    #users > div[style*="overflow-x: auto"] { width: 100% !important; margin-bottom: 18px !important; }
 
-    /* User list: 3-column grid */
+    /* User list grid */
     #umList.um-desktop-list {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 12px !important;
+        display: grid !important; grid-template-columns: repeat(3, 1fr) !important;
+        gap: 12px !important; width: 100% !important;
     }
 
-    /* Individual user card */
+    /* User card */
     .um-desktop-card {
-        margin-bottom: 0 !important;
-        padding: 16px !important;
-        border-radius: 14px !important;
-        transition: box-shadow 0.18s, transform 0.15s !important;
-        overflow: hidden !important;
+        margin-bottom: 0 !important; padding: 14px 16px !important;
+        border-radius: 14px !important; overflow: hidden !important;
+        transition: box-shadow 0.18s, transform 0.15s !important; cursor: pointer !important;
+        min-width: 0 !important;
     }
-    .um-desktop-card:hover {
-        box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px) !important;
-    }
+    .um-desktop-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important; transform: translateY(-2px) !important; }
+    .um-desktop-card > div:first-child { flex-shrink: 0 !important; width: 44px !important; height: 44px !important; min-width: 44px !important; }
+    .um-desktop-card > div:nth-child(2) { min-width: 0 !important; flex: 1 !important; overflow: hidden !important; }
+    .um-desktop-card > div:nth-child(2) > div:first-child { font-size: 0.88rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .um-desktop-card > div:nth-child(2) > div:nth-child(2) { font-size: 0.72rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .um-desktop-card > div:last-child { flex-shrink: 0 !important; text-align: right !important; min-width: 55px !important; }
 
-    /* Avatar */
-    .um-desktop-card > div:first-child {
-        width: 48px !important;
-        height: 48px !important;
-        min-width: 48px !important;
-        font-size: 1.1rem !important;
-        flex-shrink: 0 !important;
-    }
-
-    /* Name: truncate properly */
-    .um-desktop-card > div:nth-child(2) > div:first-child {
-        font-size: 0.88rem !important;
-        font-weight: 800 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        max-width: 140px !important;
-    }
-    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
-        font-size: 0.72rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        max-width: 140px !important;
-    }
-
-    /* Right meta: no overflow */
-    .um-desktop-card > div:last-child {
-        flex-shrink: 0 !important;
-        min-width: 60px !important;
-    }
-
-    /* User detail modal: centered dialog on desktop */
-    #umModal {
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 32px !important;
-    }
-    #umModal > div {
-        min-height: unset !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    #umModal > div > div {
-        border-radius: 20px !important;
-        max-width: 560px !important;
-        width: 100% !important;
-        max-height: 85vh !important;
-        padding: 28px !important;
-    }
+    /* User detail modal: centered on desktop */
+    #umModal { align-items: center !important; justify-content: center !important; padding: 32px !important; }
+    #umModal > div { min-height: unset !important; align-items: center !important; justify-content: center !important; }
+    #umModal > div > div { border-radius: 20px !important; max-width: 560px !important; width: 100% !important; max-height: 85vh !important; padding: 28px !important; }
 }
-
-/* 4-column on very wide screens only */
 @media (min-width: 1400px) {
-    #umList.um-desktop-list {
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
-    .um-desktop-card > div:nth-child(2) > div:first-child,
-    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
-        max-width: 160px !important;
-    }
+    #umList.um-desktop-list { grid-template-columns: repeat(4, 1fr) !important; }
 }
+
 /* =================================================================
-   USER MANAGEMENT -- Desktop Layout  (769px+)
-   Strategy: full-width layout, proper page header, grid user cards
+   GPS / CHAT / REPORTS
 ================================================================= */
 @media (min-width: 769px) {
-
-    /* Remove the 100px bottom padding from mobile (was for bottom nav).
-       The 20px padding on all other sides is kept intact. */
-    #users.users-desktop-tab {
-        padding-bottom: 24px !important;
-    }
-
-    /* Page header row: full width */
-    #users > div:first-child {
-        width: 100% !important;
-        margin-bottom: 20px !important;
-    }
-
-    /* Stats row: inline-flex so it stays LEFT-aligned, not stretched */
-    #users > div[style*="grid-template-columns:1fr 1fr 1fr"],
-    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
-        display: inline-grid !important;
-        grid-template-columns: repeat(3, 180px) !important;
-        gap: 14px !important;
-        margin-bottom: 20px !important;
-        width: auto !important;
-    }
-    #users > div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
-    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] > div {
-        padding: 18px 16px !important;
-        border-radius: 14px !important;
-        text-align: center !important;
-    }
-    #users #umTotalCount,
-    #users #umVerifiedCount,
-    #users #umFrozenCount {
-        font-size: 1.8rem !important;
-        font-weight: 900 !important;
-        letter-spacing: -1px !important;
-    }
-
-    /* Search + export row: full width */
-    #users > div[style*="display:flex"][style*="gap:10px"],
-    #users > div[style*="display: flex"][style*="gap: 10px"] {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin-bottom: 12px !important;
-    }
-
-    /* Filter chips row: full width */
-    #users > div[style*="overflow-x:auto"],
-    #users > div[style*="overflow-x: auto"] {
-        width: 100% !important;
-        margin-bottom: 18px !important;
-    }
-
-    /* User list container: full width grid */
-    #umList.um-desktop-list {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 12px !important;
-        width: 100% !important;
-    }
-
-    /* Individual user card */
-    .um-desktop-card {
-        margin-bottom: 0 !important;
-        padding: 14px 16px !important;
-        border-radius: 14px !important;
-        overflow: hidden !important;
-        transition: box-shadow 0.18s, transform 0.15s !important;
-        cursor: pointer !important;
-        min-width: 0 !important;
-    }
-    .um-desktop-card:hover {
-        box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important;
-        transform: translateY(-2px) !important;
-    }
-
-    /* Card inner elements: prevent overflow */
-    .um-desktop-card > div:first-child {
-        flex-shrink: 0 !important;
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-    }
-    .um-desktop-card > div:nth-child(2) {
-        min-width: 0 !important;
-        flex: 1 !important;
-        overflow: hidden !important;
-    }
-    .um-desktop-card > div:nth-child(2) > div:first-child {
-        font-size: 0.88rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
-        font-size: 0.72rem !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-    .um-desktop-card > div:last-child {
-        flex-shrink: 0 !important;
-        text-align: right !important;
-        min-width: 55px !important;
-    }
-
-    /* User detail modal: centered dialog */
-    #umModal {
-        align-items: center !important;
-        justify-content: center !important;
-        padding: 32px !important;
-    }
-    #umModal > div {
-        min-height: unset !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    #umModal > div > div {
-        border-radius: 20px !important;
-        max-width: 560px !important;
-        width: 100% !important;
-        max-height: 85vh !important;
-        padding: 28px !important;
-    }
+    #gps { height: calc(100vh - 110px) !important; }
+    .ac-chat-wrap { height: calc(100vh - 110px) !important; }
+    #chat .ac-chat-wrap { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    #reports .chart-container { height: 280px !important; }
 }
+@media (min-width: 1100px) { #reports .chart-container { height: 320px !important; } }
 
-/* 4-column on very wide screens */
-@media (min-width: 1400px) {
-    #umList.um-desktop-list {
-        grid-template-columns: repeat(4, 1fr) !important;
-    }
+/* =================================================================
+   SCROLLBARS
+================================================================= */
+@media (min-width: 769px) {
+    .drawer-content::-webkit-scrollbar { width: 4px; }
+    .drawer-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+    [data-theme="dark"] .drawer-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
 }
