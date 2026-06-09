@@ -5870,7 +5870,8 @@ function checkPaymentStatus(bookingId, amount, method) {
 
       } else {
 
-        showToast('Payment not yet confirmed. Please wait a moment and try again.', 'info');
+        // Payment not yet confirmed - show failure screen with Try Again option
+        showPaymentFailed(bookingId, amount, method, 'Payment not yet confirmed. You can try again to create a new payment link.');
 
       }
 
@@ -5880,7 +5881,121 @@ function checkPaymentStatus(bookingId, amount, method) {
 
       showLoading(false);
 
-      showToast('Could not verify payment. Please check your bookings.', 'error');
+      showPaymentFailed(bookingId, amount, method, 'Could not verify payment. Please try again.');
+
+    });
+
+}
+
+function showPaymentFailed(bookingId, amount, method, message) {
+
+  var el = document.getElementById('paymentContent');
+
+  if (!el) return;
+
+  var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : method === 'card' ? 'Card' : 'Online';
+
+  el.innerHTML =
+
+    '<div class="page-header">' +
+
+    '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
+
+    '<h2>Payment</h2></div>' +
+
+    '<div class="scroll-content" style="padding-bottom:100px;text-align:center;padding-top:40px;">' +
+
+    '<div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">' +
+
+    '<i class="fas fa-exclamation-circle" style="font-size:2.5rem;color:var(--danger);"></i></div>' +
+
+    '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;color:var(--danger);">Payment Incomplete</h3>' +
+
+    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:8px;">' + (message || 'Your payment was not completed.') + '</p>' +
+
+    '<p style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:24px;">Tap <strong>Try Again</strong> to open a new ' + methodLabel + ' payment link.</p>' +
+
+    '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
+
+    '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
+
+    '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
+
+    '</div>' +
+
+    '<button class="btn-primary" style="margin-bottom:12px;" onclick="retryPayment(' + bookingId + ',' + amount + ',\'' + method + '\')">' +
+
+    '<i class="fas fa-redo"></i> Try Again</button>' +
+
+    '<button class="btn-secondary" onclick="closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
+
+    '</div>';
+
+}
+
+function retryPayment(bookingId, amount, method) {
+
+  // Re-select the payment method and re-call submitPayment
+
+  // This creates a fresh PayMongo payment link
+
+  var errEl = document.getElementById('payErr');
+
+  showLoading(true);
+
+  apiCall('/paymongo/create-payment', {
+
+    method: 'POST',
+
+    body: JSON.stringify({
+
+      booking_id: bookingId,
+
+      amount: amount,
+
+      method: method,
+
+      description: 'Autoride Booking #' + bookingId,
+
+      customer_name: currentUser.fullName || currentUser.full_name || '',
+
+      customer_email: currentUser.email || ''
+
+    })
+
+  })
+
+    .then(function(data) {
+
+      showLoading(false);
+
+      if (data.checkout_url) {
+
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+
+          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
+
+        } else {
+
+          window.open(data.checkout_url, '_blank');
+
+        }
+
+        showPaymentWaiting(bookingId, amount, method);
+
+      } else {
+
+        showPaymentFailed(bookingId, amount, method, data.error || 'Failed to create payment. Please try again.');
+
+      }
+
+    })
+
+    .catch(function(err) {
+
+      showLoading(false);
+
+      showPaymentFailed(bookingId, amount, method, (err && err.message) || 'Network error. Please check your connection and try again.');
 
     });
 
