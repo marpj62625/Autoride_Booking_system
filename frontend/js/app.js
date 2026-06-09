@@ -1336,7 +1336,7 @@ function _startActiveBookingCountdown(endDateStr) {
     el.style.color = result.urgent ? '#ef4444' : '#10b981';
     if (result.urgent && !_activeBookingNotified) {
       _activeBookingNotified = true;
-      showToast('?? Your rental ends in less than 24 hours!', 'error');
+      showToast('⚠️ Your rental ends in less than 24 hours!', 'error');
       NotifStore.add('Your rental is ending soon - less than 24 hours remaining.');
     }
   }
