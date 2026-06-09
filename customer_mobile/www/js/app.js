@@ -575,7 +575,7 @@ function showLoading(show) {
     overlay.style.display = show ? 'flex' : 'none';
   }
   // Also lock body scroll while loading
-  document.body.style.overflow = show ? 'hidden' : '';
+  // body scroll: not locked (non-blocking background indicator)
   var bar = document.getElementById('progressBar');
   if (!bar) {
     bar = document.createElement('div');

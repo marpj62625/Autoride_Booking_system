@@ -992,9 +992,8 @@
 </head>
 <body>
     <!-- Global blocking loading overlay -->
-    <div id="adminLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.82);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(3px);">
-      <div style="width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;"></div>
-      <p style="color:#374151;font-size:0.9rem;font-weight:600;">Please wait...</p>
+    <div id="adminLoadingOverlay" style="display:none;position:fixed;bottom:24px;right:24px;width:auto;height:auto;background:transparent;z-index:99999;align-items:center;justify-content:center;flex-direction:row;gap:8px;pointer-events:none;">
+      <div style="width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.12);"></div>
     </div>
     <style>@keyframes adminSpin{to{transform:rotate(360deg)}}</style>
 

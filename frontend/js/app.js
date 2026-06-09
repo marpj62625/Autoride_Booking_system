@@ -1146,7 +1146,7 @@ function showLoading(show) {
     overlay.style.display = show ? 'flex' : 'none';
   }
   // Also lock body scroll while loading
-  document.body.style.overflow = show ? 'hidden' : '';
+  // body scroll: not locked (non-blocking background indicator)
   // Keep a counter so nested showLoading calls work correctly
   if (show) { _loadingCount++; } else { _loadingCount = Math.max(0, _loadingCount - 1); if (_loadingCount > 0) return; }
 
