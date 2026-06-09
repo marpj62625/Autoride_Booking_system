@@ -10,15 +10,6 @@
 @media (min-width: 769px) {
 
     body { flex-direction: row !important; overflow: hidden !important; height: 100vh !important; }
-    /* #users and #chat tabs are OUTSIDE <main> - apply sidebar offset directly */
-    #users.tab-content, #chat.tab-content {
-    }
-    #users.tab-content[style*="display: block"],
-    #users.tab-content[style*="display:block"],
-    #chat.tab-content[style*="display: block"],
-    #chat.tab-content[style*="display:block"] {
-    }
-
 
 
     /* ---- SIDEBAR ---- */
