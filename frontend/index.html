@@ -1039,6 +1039,31 @@
           .veh-detail-info-col { padding: 32px 32px 40px 20px; }
           .veh-detail-info-col .vehicle-rate { font-size: 1.8rem; }
         }
+
+        /* Vehicle units desktop grid */
+        @media (min-width: 768px) {
+          #page-vehicle-units .scroll-content,
+          #page-color-selection .scroll-content {
+          }
+          #vehicleUnitsContent .scroll-content {
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+          /* Units grid: 2 columns */
+          #vehicleUnitsContent .scroll-content > .card,
+          #vehicleUnitsContent .scroll-content > div > .card {
+            display: inline-block;
+            width: calc(50% - 8px);
+            vertical-align: top;
+            margin: 0 8px 16px 0;
+          }
+        }
+        @media (min-width: 1024px) {
+          #vehicleUnitsContent .scroll-content > .card,
+          #vehicleUnitsContent .scroll-content > div > .card {
+            width: calc(33.33% - 12px);
+          }
+        }
 </style>
 </head>
 <body>
@@ -1777,6 +1802,8 @@
      OVERLAY PAGES
 ??????????????????????????????????????????????????????????? -->
 <div id="page-vehicle-detail" class="overlay-page"><div id="vehicleDetailContent"></div></div>
+<div id="page-vehicle-units" class="overlay-page"><div id="vehicleUnitsContent"></div></div>
+<div id="page-color-selection" class="overlay-page"><div id="colorSelectionContent"></div></div>
 <div id="page-booking-form" class="overlay-page"><div id="bookingFormContent"></div></div>
 <div id="page-payment" class="overlay-page"><div id="paymentContent"></div></div>
 <div id="page-receipt" class="overlay-page"><div id="receiptContent"></div></div>
