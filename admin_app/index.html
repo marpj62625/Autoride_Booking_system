@@ -29285,37 +29285,27 @@
 
     };
 
-
-
-
-
-
-
-
-    // === Blocking UI utility ===
+    // === Blocking UI - auto-wraps all fetch calls ===
     var _adminFetchCount = 0;
     function showAdminLoading(show) {
         var el = document.getElementById('adminLoadingOverlay');
         if (el) el.style.display = show ? 'flex' : 'none';
         document.body.style.overflow = show ? 'hidden' : '';
     }
-
-    // Auto-wrap global fetch: show overlay on every network request
-    // Excludes polling/notification URLs to avoid constant blocking
     (function() {
-        var _origFetch = window.fetch;
+        var _orig = window.fetch;
         var _SKIP = ['/notifications', '/fcm-token', '/gps', '/chat/messages', '/paymongo/status'];
         window.fetch = function(url, opts) {
-            var urlStr = typeof url === 'string' ? url : (url.url || '');
-            var isPolling = _SKIP.some(function(s) { return urlStr.indexOf(s) >= 0; });
-                _adminFetchCount++;
-                showAdminLoading(true);
-            }
-            return _origFetch.apply(this, arguments).finally(function() {
-                    _adminFetchCount = Math.max(0, _adminFetchCount - 1);
-                    if (_adminFetchCount === 0) showAdminLoading(false);
-                }
+            var us = typeof url === 'string' ? url : '';
+            var skip = _SKIP.some(function(s) { return us.indexOf(s) >= 0; });
+            if (!skip) { _adminFetchCount++; showAdminLoading(true); }
+            var p = _orig.apply(this, arguments);
+            p.then(function() {
+                if (!skip) { _adminFetchCount = Math.max(0, _adminFetchCount - 1); if (_adminFetchCount === 0) showAdminLoading(false); }
+            }, function() {
+                if (!skip) { _adminFetchCount = Math.max(0, _adminFetchCount - 1); if (_adminFetchCount === 0) showAdminLoading(false); }
             });
+            return p;
         };
     })();
 </script>
