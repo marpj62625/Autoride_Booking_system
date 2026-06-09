@@ -990,6 +990,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+    <!-- Global blocking loading overlay -->
+    <div id="adminLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.82);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:14px;backdrop-filter:blur(3px);">
+      <div style="width:48px;height:48px;border:4px solid #e2e8f0;border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;"></div>
+      <p style="color:#374151;font-size:0.9rem;font-weight:600;">Please wait...</p>
+    </div>
+    <style>@keyframes adminSpin{to{transform:rotate(360deg)}}</style>
+
     <!-- Chart Popup Modal -->
     <div id="chartPopupModal" class="chart-popup-overlay" onclick="closeChartPopupOverlay(event)">
         <div class="chart-popup-container">
@@ -1299,7 +1306,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Activity Log</h1>
             <div style="display:flex;gap:8px;">
-                <!-- Export button — shown only for super_admin, toggled by JS on tab load -->
+                <!-- Export button ï¿½ shown only for super_admin, toggled by JS on tab load -->
                 <button id="activityExportBtn" onclick="Activity.exportExcel()" style="display:none;padding:10px 14px;border-radius:12px;font-size:0.85rem;background:rgba(0,177,79,0.12);border:1px solid rgba(0,177,79,0.35);color:#00b14f;font-weight:700;gap:6px;align-items:center;">
                     <i class="fas fa-file-excel"></i> Export
                 </button>
@@ -2092,7 +2099,7 @@
                 <input type="hidden" id="inspectBookingId">
                 <input type="hidden" id="inspectType">
 
-                <!-- Receipt section — populated by openModal -->
+                <!-- Receipt section ï¿½ populated by openModal -->
                 <div id="inspectReceiptSection" style="margin-bottom:20px;padding:14px;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.3);border-radius:12px;">
                     <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;letter-spacing:0.05em;">
                         <i class="fas fa-receipt" style="color:#00B14F;margin-right:5px;"></i>Customer Receipt
@@ -2250,7 +2257,7 @@
 </div>
 
 <script>
-    // API URL: auto-detect — works on Vercel (web) and Android APK
+    // API URL: auto-detect ï¿½ works on Vercel (web) and Android APK
     // NOTE: On native APK, window.Capacitor may not yet be defined at script parse time.
     // Use hostname check: Capacitor APK runs on https://localhost, NOT http://localhost:5000.
     // So: https://localhost ? APK ? use Vercel. http://localhost:5000 ? local dev only.
@@ -5090,7 +5097,7 @@
                             <div style="border:1.5px solid #f59e0b;border-radius:12px;padding:14px;background:rgba(245,158,11,0.06);margin-top:4px;">
                                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
                                     <i class="fas fa-undo-alt" style="color:#f59e0b;"></i>
-                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund — ?${parseFloat(refundAmount).toLocaleString()}</span>
+                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund ï¿½ ?${parseFloat(refundAmount).toLocaleString()}</span>
                                 </div>
                                 <div style="display:flex;flex-direction:column;gap:8px;">
                                     <input id="extRfAmt_${extensionId}" type="number" step="0.01" value="${parseFloat(refundAmount).toFixed(2)}"
@@ -5489,7 +5496,7 @@
                                 });
                             }
                         } catch (openErr) {
-                            // FileOpener not available — that's OK, file is still saved
+                            // FileOpener not available ï¿½ that's OK, file is still saved
                         }
                         return;
                     } catch (fsErr) {
@@ -7325,6 +7332,27 @@
         });
     };
 
+
+    // === Blocking UI utility ===
+    var _adminFetchCount = 0;
+    function showAdminLoading(show) {
+        var el = document.getElementById('adminLoadingOverlay');
+        if (el) el.style.display = show ? 'flex' : 'none';
+        document.body.style.overflow = show ? 'hidden' : '';
+    }
+    (function() {
+        var _origFetch = window.fetch;
+        var _SKIP = ['/notifications', '/fcm-token', '/gps', '/chat/messages', '/paymongo/status'];
+        window.fetch = function(url, opts) {
+            var urlStr = typeof url === 'string' ? url : (url.url || '');
+            var isPolling = _SKIP.some(function(s) { return urlStr.indexOf(s) >= 0; });
+            return _origFetch.apply(this, arguments).finally(function() {
+                    _adminFetchCount = Math.max(0, _adminFetchCount - 1);
+                    if (_adminFetchCount === 0) showAdminLoading(false);
+                }
+            });
+        };
+    })();
 </script>
 
 <!-- DEBUG PANEL -->
