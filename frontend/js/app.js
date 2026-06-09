@@ -2164,8 +2164,9 @@ function renderVehicleDetail(v) {
     '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>' + v.brand + ' ' + v.model + '</h2>' +
     '</div>' +
-    '<div class="gallery-scroll">' + galleryHtml + '</div>' +
-    '<div class="scroll-content">' +
+    '<div class="veh-detail-desktop">' +
+    '<div class="veh-detail-gallery-col"><div class="gallery-scroll">' + galleryHtml + '</div></div>' +
+    '<div class="veh-detail-info-col"><div class="scroll-content">' +
     '<div class="card">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
     '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
@@ -2180,7 +2181,7 @@ function renderVehicleDetail(v) {
     '</div>' +
     bookBtn +
     '<div style="margin-top:20px;"><h4 style="font-weight:700;margin-bottom:12px;">Customer Reviews</h4>' + reviewsHtml + '</div>' +
-    '</div>';
+    '</div></div></div>';
 }
 
 // BOOKING FORM
