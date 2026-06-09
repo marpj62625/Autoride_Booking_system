@@ -29537,22 +29537,51 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
             observer.observe(container, { childList: true, subtree: false });
         }
 
+        /* ?? VERIFICATIONS: add desktop class to cards ?? */
+        function applyVerificationsLayout() {
+            if (!IS_DESKTOP) return;
+            var list = document.getElementById('verificationsList');
+            if (!list) return;
+            // Remove inline display/grid to let CSS handle it
+            list.style.removeProperty('display');
+            list.style.removeProperty('gap');
+            list.classList.add('veri-desktop-list');
+            // Tag each stat-card child
+            Array.from(list.children).forEach(function(card) {
+                if (card.classList.contains('veri-desktop-card')) return;
+                card.classList.add('veri-desktop-card');
+            });
+        }
+
+        function watchVerificationsList() {
+            var container = document.getElementById('verificationsList');
+            if (!container) return;
+            var observer = new MutationObserver(function() {
+                setTimeout(applyVerificationsLayout, 50);
+            });
+            observer.observe(container, { childList: true, subtree: false });
+        }
+
         /* ?? INIT ?? */
         document.addEventListener('DOMContentLoaded', function() {
             applyDashboardGrid();
             watchVehiclesList();
+            watchVerificationsList();
         });
         window.addEventListener('resize', function() {
             applyDashboardGrid();
             applyVehiclesGrid();
+            applyVerificationsLayout();
         });
 
-        // Re-apply when clicking dashboard nav item
+        // Re-apply when clicking nav items
         document.addEventListener('click', function(e) {
             var el = e.target.closest('[data-tab="dashboard"], [onclick*="dashboard"]');
             if (el) setTimeout(applyDashboardGrid, 150);
             var vel = e.target.closest('[data-tab="vehicles"], [onclick*="vehicles"]');
             if (vel) setTimeout(applyVehiclesGrid, 300);
+            var verl = e.target.closest('[data-tab="verifications"], [onclick*="verifications"]');
+            if (verl) setTimeout(applyVerificationsLayout, 300);
         });
     })();
     </script>

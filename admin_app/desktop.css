@@ -463,3 +463,74 @@
         grid-template-columns: repeat(4, 1fr) !important;
     }
 }
+
+/* =================================================================
+   USER VERIFICATIONS - Desktop Layout  (769px+)
+   JS adds .veri-desktop-list to #verificationsList
+   and .veri-desktop-card to each stat-card child
+================================================================= */
+@media (min-width: 769px) {
+
+    /* Container: 2-column grid of verification cards */
+    #verificationsList.veri-desktop-list {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 20px !important;
+        align-items: start !important;
+    }
+
+    /* Card: better padding and no margin-bottom (grid handles spacing) */
+    #verificationsList .veri-desktop-card {
+        margin-bottom: 0 !important;
+        padding: 22px !important;
+    }
+
+    /* License images: side by side, taller */
+    #verificationsList .veri-desktop-card img {
+        border-radius: 10px !important;
+        max-height: 200px !important;
+        object-fit: cover !important;
+        width: 100% !important;
+    }
+
+    /* User header row: bigger avatar */
+    #verificationsList .veri-desktop-card > div:first-child > div:first-child {
+        width: 60px !important;
+        height: 60px !important;
+        font-size: 1.3rem !important;
+    }
+    /* Name: bigger text */
+    #verificationsList .veri-desktop-card > div:first-child h4 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Action buttons: full width, better size */
+    #verificationsList .veri-desktop-card > div:last-child {
+        margin-top: 14px !important;
+        gap: 10px !important;
+    }
+    #verificationsList .veri-desktop-card > div:last-child .btn-premium {
+        padding: 13px 16px !important;
+        font-size: 0.875rem !important;
+        border-radius: 12px !important;
+    }
+
+    /* Dark theme */
+    [data-theme="dark"] #verificationsList .veri-desktop-card {
+        background: var(--bg-card) !important;
+    }
+}
+
+/* Single column on medium screens, 3-col on very wide */
+@media (min-width: 769px) and (max-width: 1099px) {
+    #verificationsList.veri-desktop-list {
+        grid-template-columns: 1fr !important;
+        max-width: 900px !important;
+        margin: 0 auto !important;
+    }
+}
+@media (min-width: 1400px) {
+    #verificationsList.veri-desktop-list {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
