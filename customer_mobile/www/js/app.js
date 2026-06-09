@@ -4292,12 +4292,7 @@ function loadLicenseDetailsForEdit() {
 
 function loadProfile() {
   if (!currentUser.id) return;
-  // Show profile skeleton while loading
-  var _psc = document.getElementById('profileScrollContent') || document.getElementById('page-profile');
-  if (_psc) { var _pc = _psc.querySelector ? _psc.querySelector('.scroll-content') : null;
-    if (_pc) _pc.innerHTML = '<div style="padding:20px;text-align:center;">' + '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin:0 auto 12px;"></div>' + '<div style="height:16px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div>' + '<div style="height:12px;width:35%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:20px;"></div></div>'; }
-
-  // Load main profile
+    // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
   // Load license details from new table
   var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id).catch(function() { return {}; });
