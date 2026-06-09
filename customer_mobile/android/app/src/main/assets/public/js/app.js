@@ -569,7 +569,7 @@ function uploadFile(endpoint, formData) {
 // Progress bar loading - also shows full-screen blocking overlay
 var _loadingCount = 0;
 function showLoading(show) {
-  // Full-screen blocking overlay — prevents all interaction during API calls
+  // Full-screen blocking overlay ï¿½ prevents all interaction during API calls
   var overlay = document.getElementById('loadingOverlay');
   if (overlay) {
     overlay.style.display = show ? 'flex' : 'none';
@@ -2116,15 +2116,15 @@ function toggleFav(vehicleId, btn) {
 }
 
 function openVehicleDetail(vehicleId) {
-  showLoading(true);
+  showOverlay('page-vehicle-detail');
+  var vdEl = document.getElementById('vehicleDetailContent');
+  if (vdEl) vdEl.innerHTML = '<div style=\"padding:20px;\"><div style=\"width:100%;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;\"></div><div style=\"background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;\"><div style=\"height:22px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;\"></div><div style=\"height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div></div></div>';
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
     .then(function(v) {
       currentVehicleDetail = v;
       renderVehicleDetail(v);
-      showOverlay('page-vehicle-detail');
     })
-    .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
+    .catch(function(err) { showToast(err.message, 'error'); closeOverlay('page-vehicle-detail'); });
 }
 
 function renderVehicleDetail(v) {
@@ -4286,7 +4286,10 @@ function loadLicenseDetailsForEdit() {
 
 function loadProfile() {
   if (!currentUser.id) return;
-  showLoading(true);
+  // Show profile skeleton while loading
+  var _psc = document.getElementById('profileScrollContent') || document.getElementById('page-profile');
+  if (_psc) { var _pc = _psc.querySelector ? _psc.querySelector('.scroll-content') : null;
+    if (_pc) _pc.innerHTML = '<div style="padding:20px;text-align:center;">' + '<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin:0 auto 12px;"></div>' + '<div style="height:16px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div>' + '<div style="height:12px;width:35%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:20px;"></div></div>'; }
 
   // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);

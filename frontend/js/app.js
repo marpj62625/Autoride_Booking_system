@@ -1140,13 +1140,15 @@ var _loadingCount = 0;
 
 function showLoading(show) {
 
-  // Full-screen blocking overlay — prevents all interaction during API calls
+  // Full-screen blocking overlay ï¿½ prevents all interaction during API calls
   var overlay = document.getElementById('loadingOverlay');
   if (overlay) {
     overlay.style.display = show ? 'flex' : 'none';
   }
   // Also lock body scroll while loading
   document.body.style.overflow = show ? 'hidden' : '';
+  // Keep a counter so nested showLoading calls work correctly
+  if (show) { _loadingCount++; } else { _loadingCount = Math.max(0, _loadingCount - 1); if (_loadingCount > 0) return; }
 
   var bar = document.getElementById('progressBar');
 
@@ -3714,7 +3716,7 @@ function openColorSelection(brandEnc, modelEnc) {
 
   showOverlay('page-vehicle-detail');
 
-  showLoading(true);
+  var vdEl = document.getElementById('vehicleDetailContent'); if (vdEl) vdEl.innerHTML = '<div class="veh-detail-desktop" style="padding:20px;"><div class="veh-detail-gallery-col"><div style="width:100%;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div></div><div class="veh-detail-info-col" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;"><div style="height:22px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;"></div><div style="height:14px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;"></div><div style="height:12px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div>';
 
   apiCall('/vehicles/colors?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model))
 
@@ -3804,7 +3806,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
   showOverlay('page-vehicle-detail');
 
-  showLoading(true);
+  var vdEl = document.getElementById('vehicleDetailContent'); if (vdEl) vdEl.innerHTML = '<div class="veh-detail-desktop" style="padding:20px;"><div class="veh-detail-gallery-col"><div style="width:100%;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div></div><div class="veh-detail-info-col" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;"><div style="height:22px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;"></div><div style="height:14px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;"></div><div style="height:12px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div>';
 
 
 
@@ -4240,7 +4242,10 @@ function toggleFav(vehicleId, btn) {
 
 function openVehicleDetail(vehicleId) {
 
-  showLoading(true);
+  // Show skeleton immediately in the detail overlay
+  showOverlay('page-vehicle-detail');
+  var vdEl = document.getElementById('vehicleDetailContent');
+  if (vdEl) vdEl.innerHTML = '<div style="padding:20px;"><div style="width:100%;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;"></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;"><div style="height:22px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;"></div><div style="height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div></div></div>';
 
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
 
@@ -4250,13 +4255,9 @@ function openVehicleDetail(vehicleId) {
 
       renderVehicleDetail(v);
 
-      showOverlay('page-vehicle-detail');
-
     })
 
-    .catch(function(err) { showToast(err.message, 'error'); })
-
-    .finally(function() { showLoading(false); });
+    .catch(function(err) { showToast(err.message, 'error'); closeOverlay('page-vehicle-detail'); });
 
 }
 
@@ -6455,7 +6456,7 @@ function openBookingDetail(bookingId) {
 
   if (!currentUser.id) return;
 
-  showLoading(true);
+  var bdEl = document.getElementById('bookingDetailContent'); if (bdEl) bdEl.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin:16px;"><div style="height:18px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;"></div><div style="height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;"></div><div style="height:12px;width:90%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:75%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div>';
 
   apiCall('/user-bookings?user_id=' + currentUser.id)
 
@@ -8645,7 +8646,9 @@ function loadProfile() {
 
   if (!currentUser.id) return;
 
-  showLoading(true);
+  // Show skeleton in profile scroll area
+  var profEl = document.getElementById('profileScrollContent') || document.getElementById('page-profile');
+  if (profEl && profEl.querySelector) { var pc = profEl.querySelector('.scroll-content'); if (pc) pc.innerHTML = '<div style="padding:20px;text-align:center;"><div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin:0 auto 12px;"></div><div style="height:16px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:35%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:20px;"></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:left;margin-bottom:12px;"><div style="height:12px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:90%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:left;"><div style="height:12px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;"></div><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div>'; }
 
 
 
@@ -9071,7 +9074,7 @@ function loadSavedPayments() {
 
   if (!currentUser.id) return;
 
-  showLoading(true);
+  var spEl = document.getElementById('savedPaymentsList'); if (spEl) spEl.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div>';
 
   apiCall('/saved-payments?user_id=' + currentUser.id)
 
@@ -9159,7 +9162,7 @@ function loadFavorites() {
 
   if (!currentUser.id) return;
 
-  showLoading(true);
+  var favEl = document.getElementById('favoritesList'); if (favEl) favEl.innerHTML = '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div><div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;"><div style="height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;"></div><div style="height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div></div></div>';
 
   apiCall('/favorites?user_id=' + currentUser.id)
 
