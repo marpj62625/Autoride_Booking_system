@@ -779,3 +779,138 @@
         max-width: 160px !important;
     }
 }
+/* =================================================================
+   USER MANAGEMENT -- Desktop Layout  (769px+)
+   Strategy: full-width layout, proper page header, grid user cards
+================================================================= */
+@media (min-width: 769px) {
+
+    /* Remove the 100px bottom padding from mobile (was for bottom nav).
+       The 20px padding on all other sides is kept intact. */
+    #users.users-desktop-tab {
+        padding-bottom: 24px !important;
+    }
+
+    /* Page header row: full width */
+    #users > div:first-child {
+        width: 100% !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Stats row: inline-flex so it stays LEFT-aligned, not stretched */
+    #users > div[style*="grid-template-columns:1fr 1fr 1fr"],
+    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+        display: inline-grid !important;
+        grid-template-columns: repeat(3, 180px) !important;
+        gap: 14px !important;
+        margin-bottom: 20px !important;
+        width: auto !important;
+    }
+    #users > div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
+    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] > div {
+        padding: 18px 16px !important;
+        border-radius: 14px !important;
+        text-align: center !important;
+    }
+    #users #umTotalCount,
+    #users #umVerifiedCount,
+    #users #umFrozenCount {
+        font-size: 1.8rem !important;
+        font-weight: 900 !important;
+        letter-spacing: -1px !important;
+    }
+
+    /* Search + export row: full width */
+    #users > div[style*="display:flex"][style*="gap:10px"],
+    #users > div[style*="display: flex"][style*="gap: 10px"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-bottom: 12px !important;
+    }
+
+    /* Filter chips row: full width */
+    #users > div[style*="overflow-x:auto"],
+    #users > div[style*="overflow-x: auto"] {
+        width: 100% !important;
+        margin-bottom: 18px !important;
+    }
+
+    /* User list container: full width grid */
+    #umList.um-desktop-list {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    /* Individual user card */
+    .um-desktop-card {
+        margin-bottom: 0 !important;
+        padding: 14px 16px !important;
+        border-radius: 14px !important;
+        overflow: hidden !important;
+        transition: box-shadow 0.18s, transform 0.15s !important;
+        cursor: pointer !important;
+        min-width: 0 !important;
+    }
+    .um-desktop-card:hover {
+        box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* Card inner elements: prevent overflow */
+    .um-desktop-card > div:first-child {
+        flex-shrink: 0 !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+    }
+    .um-desktop-card > div:nth-child(2) {
+        min-width: 0 !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+    }
+    .um-desktop-card > div:nth-child(2) > div:first-child {
+        font-size: 0.88rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
+        font-size: 0.72rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .um-desktop-card > div:last-child {
+        flex-shrink: 0 !important;
+        text-align: right !important;
+        min-width: 55px !important;
+    }
+
+    /* User detail modal: centered dialog */
+    #umModal {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 32px !important;
+    }
+    #umModal > div {
+        min-height: unset !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    #umModal > div > div {
+        border-radius: 20px !important;
+        max-width: 560px !important;
+        width: 100% !important;
+        max-height: 85vh !important;
+        padding: 28px !important;
+    }
+}
+
+/* 4-column on very wide screens */
+@media (min-width: 1400px) {
+    #umList.um-desktop-list {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+}
