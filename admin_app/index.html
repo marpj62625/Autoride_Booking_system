@@ -29562,16 +29562,47 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
             observer.observe(container, { childList: true, subtree: false });
         }
 
+        /* ---- USER MANAGEMENT: grid layout for user cards ---- */
+        function applyUserMgmtLayout() {
+            if (!IS_DESKTOP) return;
+            var umList = document.getElementById('umList');
+            if (!umList) return;
+            umList.classList.add('um-desktop-list');
+            Array.from(umList.children).forEach(function(card) {
+                if (card.style && card.style.display !== 'none') {
+                    card.classList.add('um-desktop-card');
+                }
+            });
+            // Fix tab padding - remove 100px bottom padding (was for mobile nav)
+            var tab = document.getElementById('users');
+            if (tab) {
+                tab.style.removeProperty('padding-bottom');
+                tab.style.padding = '0';
+                tab.classList.add('users-desktop-tab');
+            }
+        }
+
+        function watchUserList() {
+            var container = document.getElementById('umList');
+            if (!container) return;
+            var observer = new MutationObserver(function() {
+                setTimeout(applyUserMgmtLayout, 50);
+            });
+            observer.observe(container, { childList: true, subtree: false });
+        }
+
         /* ?? INIT ?? */
         document.addEventListener('DOMContentLoaded', function() {
             applyDashboardGrid();
             watchVehiclesList();
             watchVerificationsList();
+            watchUserList();
         });
         window.addEventListener('resize', function() {
             applyDashboardGrid();
             applyVehiclesGrid();
             applyVerificationsLayout();
+            applyUserMgmtLayout();
         });
 
         // Re-apply when clicking nav items
@@ -29582,6 +29613,8 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
             if (vel) setTimeout(applyVehiclesGrid, 300);
             var verl = e.target.closest('[data-tab="verifications"], [onclick*="verifications"]');
             if (verl) setTimeout(applyVerificationsLayout, 300);
+            var uml = e.target.closest('[data-tab="users"], [onclick*="users"]');
+            if (uml) setTimeout(applyUserMgmtLayout, 300);
         });
     })();
     </script>
