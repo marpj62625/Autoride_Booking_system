@@ -566,9 +566,14 @@ function uploadFile(endpoint, formData) {
 }
 
 // UI HELPERS
-// Progress bar loading - non-blocking, shows a thin bar at the top
+// Progress bar loading - also shows full-screen blocking overlay
 var _loadingCount = 0;
 function showLoading(show) {
+  // Full-screen blocking overlay — prevents all interaction during API calls
+  var overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.style.display = show ? 'flex' : 'none';
+  }
   var bar = document.getElementById('progressBar');
   if (!bar) {
     bar = document.createElement('div');

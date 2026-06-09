@@ -1140,6 +1140,12 @@ var _loadingCount = 0;
 
 function showLoading(show) {
 
+  // Full-screen blocking overlay — prevents all interaction during API calls
+  var overlay = document.getElementById('loadingOverlay');
+  if (overlay) {
+    overlay.style.display = show ? 'flex' : 'none';
+  }
+
   var bar = document.getElementById('progressBar');
 
   if (!bar) {
