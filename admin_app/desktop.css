@@ -10,6 +10,16 @@
 @media (min-width: 769px) {
 
     body { flex-direction: row !important; overflow: hidden !important; height: 100vh !important; }
+    /* #users and #chat tabs are OUTSIDE <main> - apply sidebar offset directly */
+    #users.tab-content, #chat.tab-content {
+    }
+    #users.tab-content[style*="display: block"],
+    #users.tab-content[style*="display:block"],
+    #chat.tab-content[style*="display: block"],
+    #chat.tab-content[style*="display:block"] {
+    }
+
+
 
     /* ---- SIDEBAR ---- */
     .side-drawer {
@@ -90,12 +100,20 @@
     .mobile-header { left: 260px !important; width: calc(100% - 260px) !important; padding: 0 32px !important; }
     .main-content { margin-left: 260px !important; padding: 72px 36px 32px !important; }
     .page-title { font-size: 1.75rem !important; }
+    #users.tab-content[style*="display: block"], #users.tab-content[style*="display:block"],
+    #chat.tab-content[style*="display: block"], #chat.tab-content[style*="display:block"] {
+    }
+
 }
 
 @media (min-width: 1400px) {
     .side-drawer { width: 272px !important; }
     .mobile-header { left: 272px !important; width: calc(100% - 272px) !important; }
     .main-content { margin-left: 272px !important; padding: 72px 44px 32px !important; }
+    #users.tab-content[style*="display: block"], #users.tab-content[style*="display:block"],
+    #chat.tab-content[style*="display: block"], #chat.tab-content[style*="display:block"] {
+    }
+
 }
 
 /* =================================================================
