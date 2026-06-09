@@ -10940,6 +10940,10 @@
 
 
 
+                            <button onclick="Vehicles.view(${v.id})" style="background:none;border:none;color:var(--primary);font-size:1.05rem;padding:4px;cursor:pointer;" title="View Details"><i class="fas fa-eye"></i></button>
+
+
+
                             <button onclick="Vehicles.edit(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-pen-to-square"></i></button>
 
 
@@ -29735,5 +29739,17 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
         });
     })();
     </script>
+
+
+<!-- Vehicle Detail Modal -->
+<div id="vehicleDetailModal" class="premium-modal" style="display:none;background:rgba(15,23,42,0.85);align-items:center;justify-content:center;padding:20px;">
+  <div class="modal-content" style="background:var(--surface,#fff);color:var(--text-main,#0f1117);padding:0;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.3);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
+    <div style="position:relative;display:flex;justify-content:center;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <h2 id="vdModalTitle" style="font-size:1.05rem;font-weight:700;margin:0;">Vehicle Details</h2>
+      <button onclick="document.getElementById('vehicleDetailModal').style.display='none';" style="position:absolute;right:16px;background:rgba(0,0,0,0.06);border:none;color:#374151;font-size:1rem;padding:7px 9px;border-radius:8px;cursor:pointer;"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="vehicleDetailContent" style="padding:0;"></div>
+  </div>
+</div>
 
 </body>
