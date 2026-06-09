@@ -1722,7 +1722,9 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
 
 // VEHICLES - Step 2: Color selection
 function openColorSelection(brand, model) {
-  showLoading(true);
+  showOverlay('page-color-selection');
+  var csel = document.getElementById('colorSelectionContent');
+  if (csel) csel.innerHTML = '<div style=\"padding:20px;\"><div style=\"display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;\"><div style=\"width:60px;height:32px;border-radius:20px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"width:60px;height:32px;border-radius:20px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"width:60px;height:32px;border-radius:20px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"width:60px;height:32px;border-radius:20px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"width:60px;height:32px;border-radius:20px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"width:60px;height:32px;border-radius:20px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div></div><div style=\"height:14px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:8px;\"></div><div style=\"height:12px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div></div>';
   apiCall('/vehicles/colors?brand=' + encodeURIComponent(brand) + '&model=' + encodeURIComponent(model))
     .then(function(colors) {
       renderColorSelection(brand, model, colors);
@@ -1784,7 +1786,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
   var brand = decodeURIComponent(brandEnc);
   var model = decodeURIComponent(modelEnc);
   var color = decodeURIComponent(colorEnc);
-  showLoading(true);
+  showOverlay('page-vehicle-units');
+  var vuel = document.getElementById('vehicleUnitsContent');
+  if (vuel) vuel.innerHTML = '<div style=\"padding:16px;\"><div style=\"background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;\"><div style=\"height:140px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"padding:12px;\"><div style=\"height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;\"></div><div style=\"height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div></div></div><div style=\"background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;\"><div style=\"height:140px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"padding:12px;\"><div style=\"height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;\"></div><div style=\"height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div></div></div><div style=\"background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;\"><div style=\"height:140px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div><div style=\"padding:12px;\"><div style=\"height:12px;width:70%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:6px;\"></div><div style=\"height:10px;width:50%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div></div></div></div>';
   apiCall('/vehicles/units?brand=' + brandEnc + '&model=' + modelEnc + '&color=' + colorEnc + '&user_id=' + (currentUser.id || ''))
     .then(function(units) {
       renderVehicleUnits(brand, model, color, units);
@@ -2095,7 +2099,9 @@ function onVdColorChange() {
 
 // STEP 3: Book button tapped on a specific unit
 function selectVehicleUnit(vehicleId) {
-  showLoading(true);
+  showOverlay('page-vehicle-detail');
+  var svdEl = document.getElementById('vehicleDetailContent');
+  if (svdEl) svdEl.innerHTML = '<div style=\"height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div>';
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
     .then(function(v) {
       currentVehicleDetail = v;
