@@ -654,3 +654,128 @@
         grid-template-columns: repeat(4, 1fr) !important;
     }
 }
+/* =================================================================
+   USER MANAGEMENT -- Desktop Layout  (769px+)
+================================================================= */
+@media (min-width: 769px) {
+
+    /* Tab: remove only the bottom padding (100px mobile nav clearance).
+       Keep left/right/top padding so title shows and content isn't edge-to-edge. */
+    #users.users-desktop-tab {
+        padding-bottom: 32px !important;
+    }
+
+    /* Stats row: 3 equal columns with max-width so they don't stretch too wide */
+    #users > div[style*="grid-template-columns:1fr 1fr 1fr"],
+    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+        gap: 16px !important;
+        margin-bottom: 20px !important;
+        max-width: 600px !important;
+    }
+    #users > div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
+    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] > div {
+        padding: 20px 16px !important;
+        border-radius: 14px !important;
+    }
+    #users #umTotalCount,
+    #users #umVerifiedCount,
+    #users #umFrozenCount {
+        font-size: 1.8rem !important;
+        font-weight: 900 !important;
+    }
+
+    /* Search bar row */
+    #users > div[style*="display:flex"][style*="gap:10px"],
+    #users > div[style*="display: flex"][style*="gap: 10px"] {
+        margin-bottom: 14px !important;
+        max-width: 600px !important;
+    }
+
+    /* Filter chips row */
+    #users > div[style*="overflow-x:auto"],
+    #users > div[style*="overflow-x: auto"] {
+        margin-bottom: 18px !important;
+    }
+
+    /* User list: 3-column grid */
+    #umList.um-desktop-list {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 12px !important;
+    }
+
+    /* Individual user card */
+    .um-desktop-card {
+        margin-bottom: 0 !important;
+        padding: 16px !important;
+        border-radius: 14px !important;
+        transition: box-shadow 0.18s, transform 0.15s !important;
+        overflow: hidden !important;
+    }
+    .um-desktop-card:hover {
+        box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* Avatar */
+    .um-desktop-card > div:first-child {
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        font-size: 1.1rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Name: truncate properly */
+    .um-desktop-card > div:nth-child(2) > div:first-child {
+        font-size: 0.88rem !important;
+        font-weight: 800 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 140px !important;
+    }
+    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
+        font-size: 0.72rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 140px !important;
+    }
+
+    /* Right meta: no overflow */
+    .um-desktop-card > div:last-child {
+        flex-shrink: 0 !important;
+        min-width: 60px !important;
+    }
+
+    /* User detail modal: centered dialog on desktop */
+    #umModal {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 32px !important;
+    }
+    #umModal > div {
+        min-height: unset !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    #umModal > div > div {
+        border-radius: 20px !important;
+        max-width: 560px !important;
+        width: 100% !important;
+        max-height: 85vh !important;
+        padding: 28px !important;
+    }
+}
+
+/* 4-column on very wide screens only */
+@media (min-width: 1400px) {
+    #umList.um-desktop-list {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+    .um-desktop-card > div:nth-child(2) > div:first-child,
+    .um-desktop-card > div:nth-child(2) > div:nth-child(2) {
+        max-width: 160px !important;
+    }
+}

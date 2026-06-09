@@ -29573,11 +29573,10 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
                     card.classList.add('um-desktop-card');
                 }
             });
-            // Fix tab padding - remove 100px bottom padding (was for mobile nav)
+            // Fix tab: only remove bottom padding (was 100px for mobile nav bar)
             var tab = document.getElementById('users');
             if (tab) {
                 tab.style.removeProperty('padding-bottom');
-                tab.style.padding = '0';
                 tab.classList.add('users-desktop-tab');
             }
         }
