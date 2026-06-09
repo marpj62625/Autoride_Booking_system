@@ -574,6 +574,8 @@ function showLoading(show) {
   if (overlay) {
     overlay.style.display = show ? 'flex' : 'none';
   }
+  // Also lock body scroll while loading
+  document.body.style.overflow = show ? 'hidden' : '';
   var bar = document.getElementById('progressBar');
   if (!bar) {
     bar = document.createElement('div');
