@@ -986,7 +986,8 @@
         #loginBtn:active {
             transform: translateY(0);
         }
-    </style>
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -2605,6 +2606,7 @@
         },
         async refresh() {
             const listContainer = document.getElementById('vehiclesList');
+            showSkeleton('vehiclesList', 'list');
             if (!listContainer.innerHTML.trim() || listContainer.innerHTML.includes('Loading vehicles')) {
                 listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>';
             }
@@ -3158,6 +3160,7 @@
         _filter: 'all',
         async refresh() {
             const list = document.getElementById('bookingsList');
+            showSkeleton('bookingsList', 'table');
             if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
                 list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
             }
@@ -3926,6 +3929,7 @@
         data: [],
         async refresh() {
             const list = document.getElementById('driversList');
+            showSkeleton('driversList', 'list');
             try {
                 this.fetchWage();
                 const res = await fetch(`${API_BASE}/drivers`);
@@ -7355,6 +7359,26 @@
             return p;
         };
     })();
+
+    // ?? Skeleton screen helpers ??
+    function skelLine(h, w, mb) {
+        h = h||12; w = w||'100%'; mb = mb||8;
+        return '<div style="height:'+h+'px;width:'+w+';border-radius:6px;background:linear-gradient(90deg,var(--border,#e5e7eb) 25%,var(--bg-input,#f9fafb) 50%,var(--border,#e5e7eb) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:'+mb+'px;"></div>';
+    }
+    function showSkeleton(cid, type) {
+        var el = document.getElementById(cid);
+        if (!el) return;
+        var h = '', bg = 'background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);border-radius:12px;';
+        if (type === 'table') {
+            h = '<table style="width:100%;border-collapse:collapse;">';
+            for(var k=0;k<6;k++) h+='<tr style="border-bottom:1px solid var(--border,#e5e7eb);"><td style="padding:12px 8px;">'+skelLine(12,'80%',0)+'</td><td style="padding:12px 8px;">'+skelLine(12,'60%',0)+'</td><td style="padding:12px 8px;">'+skelLine(12,'70%',0)+'</td></tr>';
+            h += '</table>';
+        } else {
+            for(var j=0;j<5;j++) h+='<div style="'+bg+'padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border,#e5e7eb) 25%,var(--bg-input,#f9fafb) 50%,var(--border,#e5e7eb) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;">'+skelLine(12,'70%',6)+skelLine(10,'50%',0)+'</div></div>';
+        }
+        el.innerHTML = h;
+    }
+
 </script>
 
 <!-- DEBUG PANEL -->
