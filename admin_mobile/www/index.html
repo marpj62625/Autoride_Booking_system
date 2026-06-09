@@ -1905,7 +1905,7 @@
                         </button>
                         <label style="padding:16px 8px;background:var(--surface-container);border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
                             <i class="fas fa-images" style="font-size:1rem;"></i> Upload from Gallery
-                            <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
+                            <input type="file" accept="image/*" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
                         </label>
                     </div>
                 </div>
@@ -2133,7 +2133,7 @@
                     <div id="inspectPhotoPreview" style="display: flex; gap: 10px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 5px;"></div>
                     <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 15px; background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); box-shadow: none;">
                         <i class="fas fa-camera"></i> Take Photos
-                        <input type="file" id="inspectPhotos" multiple accept="image/*" capture="environment" style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
+                        <input type="file" accept="image/*" id="inspectPhotos" multiple accept="image/*" style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
                     </label>
                     <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; text-align: center;">Take photos of all 4 sides and interior.</p>
                 </div>

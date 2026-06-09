@@ -872,13 +872,13 @@
           <label>Front of License</label>
           <button class="btn-secondary" onclick="pickLicenseForProfile('front')"><i class="fas fa-camera"></i> Upload Front</button>
           <img id="licenseEditPreviewFront" style="width:100%;border-radius:var(--radius-sm);margin-top:10px;display:none;">
-          <input type="file" id="licenseFileInputFront" accept="image/*" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
+          <input type="file" accept="image/*" id="licenseFileInputFront" accept="image/*" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
         </div>
         <div class="form-group">
           <label>Back of License</label>
           <button class="btn-secondary" onclick="pickLicenseForProfile('back')"><i class="fas fa-camera"></i> Upload Back</button>
           <img id="licenseEditPreviewBack" style="width:100%;border-radius:var(--radius-sm);margin-top:10px;display:none;">
-          <input type="file" id="licenseFileInputBack" accept="image/*" style="display:none;" onchange="handleLicenseFileSelect(event, 'back')">
+          <input type="file" accept="image/*" id="licenseFileInputBack" accept="image/*" style="display:none;" onchange="handleLicenseFileSelect(event, 'back')">
         </div>
         
         <span class="field-error" id="licenseEditErr" style="display:block;margin-top:6px;margin-bottom:10px;"></span>

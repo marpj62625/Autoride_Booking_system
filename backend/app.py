@@ -9,6 +9,30 @@ import os
 
 from werkzeug.utils import secure_filename
 
+# ─── Image upload validation ─────────────────────────────────────
+ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp'}
+ALLOWED_IMAGE_MIMES = {
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+    'image/webp', 'image/heic', 'image/heif', 'image/bmp'
+}
+
+def is_allowed_image(file_storage):
+    """Return True if the FileStorage object is an allowed image type."""
+    if not file_storage or not file_storage.filename:
+        return False
+    ext = file_storage.filename.rsplit('.', 1)[-1].lower() if '.' in file_storage.filename else ''
+    mime = (file_storage.content_type or '').lower().split(';')[0].strip()
+    return ext in ALLOWED_IMAGE_EXTENSIONS or mime in ALLOWED_IMAGE_MIMES
+
+def reject_non_image(file_storage, field_name='file'):
+    """Return a 400 JSON error if the file is not an allowed image, else None."""
+    if file_storage and file_storage.filename and file_storage.filename != '':
+        if not is_allowed_image(file_storage):
+            from flask import jsonify
+            return jsonify({'error': f'{field_name} must be an image file (jpg, png, gif, webp).'}), 400
+    return None
+
+
 from config import DEBUG, GOOGLE_CLIENT_ID, SUPABASE_URL, SUPABASE_KEY
 
 from google.oauth2 import id_token
@@ -875,6 +899,10 @@ def register():
             file = request.files['license']
 
             if file.filename != '':
+
+                _img_err = reject_non_image(file, 'License'); 
+
+                if _img_err: return _img_err
 
                 filename = secure_filename(f"reg_license_{int(datetime.now().timestamp())}_{file.filename}")
 
@@ -3243,6 +3271,10 @@ def update_profile():
         if 'profile_picture' in request.files:
 
             file = request.files['profile_picture']
+
+            _img_err = reject_non_image(file, 'profile_picture')
+
+            if _img_err: return _img_err
 
             if file.filename != '':
 
