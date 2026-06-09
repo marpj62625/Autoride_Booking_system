@@ -3950,7 +3950,8 @@
 
 
 
-    </style>
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
 
 
 
@@ -10380,6 +10381,7 @@
 
 
             const listContainer = document.getElementById('vehiclesList');
+            showSkeleton('vehiclesList', 'list');
 
 
 
@@ -12592,6 +12594,7 @@
 
 
             const list = document.getElementById('bookingsList');
+            showSkeleton('bookingsList', 'table');
 
 
 
@@ -15664,6 +15667,7 @@
 
 
             const list = document.getElementById('driversList');
+            showSkeleton('driversList', 'list');
 
 
 
@@ -16096,6 +16100,7 @@
 
 
             const list = document.getElementById('verificationsList');
+            showSkeleton('verificationsList', 'list');
 
 
 
@@ -16772,6 +16777,7 @@
 
 
             const list = document.getElementById('instructionsList');
+            showSkeleton('instructionsList', 'list');
 
 
 
@@ -18012,6 +18018,7 @@
 
 
             const list = document.getElementById('activityList');
+            showSkeleton('activityList', 'list');
 
 
 
@@ -22508,6 +22515,8 @@
 
 
             document.getElementById('dashTotalRevenue').textContent = '\u20B1-';
+            var _dIds=['dashTotalRevenue','dashTotalBookings','dashActiveRentals','dashPendingBookings'];
+            _dIds.forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<div style="height:28px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div>';});
 
 
 
@@ -25872,6 +25881,7 @@
 
 
             document.getElementById('umList').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i></div>';
+            showSkeleton('umList', 'list');
 
 
 
@@ -29287,6 +29297,37 @@
 
     // === Blocking UI - auto-wraps all fetch calls ===
     var _adminFetchCount = 0;
+
+    // ?? Skeleton screen helpers ??
+    function skelLine(h, w, mb) {
+        h = h || 12; w = w || '100%'; mb = mb || 8;
+        return '<div style="height:'+h+'px;width:'+w+';border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:'+mb+'px;"></div>';
+    }
+    function skelCard(lines) {
+        return '<div style="background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;">' + lines.map(function(l){return skelLine(l[0],l[1],l[2]);}).join('') + '</div>';
+    }
+
+    // ?? Show skeleton for admin sections ??
+    function showSkeleton(containerId, type) {
+        var el = document.getElementById(containerId);
+        if (!el) return;
+        var html = '';
+        if (type === 'stats') {
+            html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
+            for (var i=0;i<3;i++) html += '<div style="background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:14px;padding:16px;">'+skelLine(10,'60%',10)+skelLine(28,'80%',0)+'</div>';
+            html += '</div>';
+        } else if (type === 'list') {
+            for (var j=0;j<5;j++) html += '<div style="background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;">'+skelLine(12,'70%',6)+skelLine(10,'50%',0)+'</div></div>';
+        } else if (type === 'table') {
+            html = '<table style="width:100%;border-collapse:collapse;">';
+            for (var k=0;k<6;k++) html += '<tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 8px;">'+skelLine(12,'80%',0)+'</td><td style="padding:14px 8px;">'+skelLine(12,'60%',0)+'</td><td style="padding:14px 8px;">'+skelLine(12,'70%',0)+'</td><td style="padding:14px 8px;">'+skelLine(12,'50%',0)+'</td></tr>';
+            html += '</table>';
+        } else {
+            html = skelCard([[12,'100%',8],[10,'80%',0]]) + skelCard([[12,'100%',8],[10,'60%',0]]) + skelCard([[12,'100%',8],[10,'70%',0]]);
+        }
+        el.innerHTML = html;
+    }
+
     function showAdminLoading(show) {
         var el = document.getElementById('adminLoadingOverlay');
         if (el) el.style.display = show ? 'flex' : 'none';
@@ -29308,6 +29349,37 @@
             return p;
         };
     })();
+
+    // ?? Skeleton screen helpers ??
+    function skelLine(h, w, mb) {
+        h = h || 12; w = w || '100%'; mb = mb || 8;
+        return '<div style="height:'+h+'px;width:'+w+';border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:'+mb+'px;"></div>';
+    }
+    function skelCard(lines) {
+        return '<div style="background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;">' + lines.map(function(l){return skelLine(l[0],l[1],l[2]);}).join('') + '</div>';
+    }
+
+    // ?? Show skeleton for admin sections ??
+    function showSkeleton(containerId, type) {
+        var el = document.getElementById(containerId);
+        if (!el) return;
+        var html = '';
+        if (type === 'stats') {
+            html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
+            for (var i=0;i<3;i++) html += '<div style="background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:14px;padding:16px;">'+skelLine(10,'60%',10)+skelLine(28,'80%',0)+'</div>';
+            html += '</div>';
+        } else if (type === 'list') {
+            for (var j=0;j<5;j++) html += '<div style="background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;">'+skelLine(12,'70%',6)+skelLine(10,'50%',0)+'</div></div>';
+        } else if (type === 'table') {
+            html = '<table style="width:100%;border-collapse:collapse;">';
+            for (var k=0;k<6;k++) html += '<tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 8px;">'+skelLine(12,'80%',0)+'</td><td style="padding:14px 8px;">'+skelLine(12,'60%',0)+'</td><td style="padding:14px 8px;">'+skelLine(12,'70%',0)+'</td><td style="padding:14px 8px;">'+skelLine(12,'50%',0)+'</td></tr>';
+            html += '</table>';
+        } else {
+            html = skelCard([[12,'100%',8],[10,'80%',0]]) + skelCard([[12,'100%',8],[10,'60%',0]]) + skelCard([[12,'100%',8],[10,'70%',0]]);
+        }
+        el.innerHTML = html;
+    }
+
 </script>
 
 
