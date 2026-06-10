@@ -4705,11 +4705,11 @@ def trigger_refund(booking_id):
         if hours_before >= 48:
             refund_amount = round(amount_paid, 2)
             non_refundable_fee = 0.0
-            refund_note = f"Full refund — cancelled {hours_before:.1f}h before pickup (>= 48h)"
+            refund_note = f"Full refund - cancelled {hours_before:.1f}h before pickup (>= 48h)"
         else:
             non_refundable_fee = round(amount_paid * 0.20, 2)
             refund_amount = round(amount_paid - non_refundable_fee, 2)
-            refund_note = (f"20% non-refundable: PHP {non_refundable_fee:.2f} — "
+            refund_note = (f"20% non-refundable: PHP {non_refundable_fee:.2f} - "
                            f"cancelled {hours_before:.1f}h before pickup (< 48h). "
                            f"Cancel: {cancel_dt.strftime('%Y-%m-%d %H:%M')} | "
                            f"Pickup: {pickup_dt.strftime('%Y-%m-%d %H:%M')}.")
