@@ -569,36 +569,17 @@ function uploadFile(endpoint, formData) {
 // Progress bar loading - also shows full-screen blocking overlay
 var _loadingCount = 0;
 function showLoading(show) {
-  // Full-screen blocking overlay ï¿½ prevents all interaction during API calls
+  // Full-screen blocking overlay — prevents all interaction during API calls
   var overlay = document.getElementById('loadingOverlay');
-  if (overlay) {
-    overlay.style.display = show ? 'flex' : 'none';
-  }
-  // Also lock body scroll while loading
-  // body scroll: not locked (non-blocking background indicator)
-  var bar = document.getElementById('progressBar');
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'progressBar';
-    bar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:var(--primary);z-index:99999;transition:width 0.3s ease,opacity 0.4s ease;width:0%;opacity:0;pointer-events:none;';
-    document.body.appendChild(bar);
-  }
   if (show) {
     _loadingCount++;
-    bar.style.opacity = '1';
-    bar.style.width = '70%';
-    // Animate to 90% to show progress
-    clearTimeout(bar._t);
-    bar._t = setTimeout(function() { bar.style.width = '90%'; }, 400);
+    if (overlay) overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
-      clearTimeout(bar._t);
-      bar.style.width = '100%';
-      bar._t = setTimeout(function() {
-        bar.style.opacity = '0';
-        bar._t2 = setTimeout(function() { bar.style.width = '0%'; }, 400);
-      }, 200);
+      if (overlay) overlay.style.display = 'none';
+      document.body.style.overflow = '';
     }
   }
 }
