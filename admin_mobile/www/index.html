@@ -1792,7 +1792,7 @@
             <span id="gpsStatusBadge" style="font-size:0.6rem;padding:4px 10px;background:rgba(0,177,79,0.1);color:var(--success);border-radius:20px;font-weight:800;border:1px solid currentColor;">LIVE</span>
         </div>
 
-        <!-- Live Map iframe -->  <div class="stat-card" style="padding:0;overflow:hidden;height:calc(100vh - 180px);min-height:400px;position:relative;border-radius:20px;border:1px solid var(--border);margin-bottom:0;">
+        <!-- Live Map iframe -->  <div class="stat-card" style="padding:0;overflow:hidden;height:calc(100vh - 220px);min-height:360px;position:relative;border-radius:20px;border:1px solid var(--border);margin-bottom:0;">
             <iframe id="blynkMapFrame" src="https://car-rental-inlaguna.vercel.app/" style="width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
             <div style="position:absolute;top:10px;left:10px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:6px;">
                 <span id="gpsLiveDot" style="width:7px;height:7px;background:#00B14F;border-radius:50%;animation:pulse 1.5s infinite;display:inline-block;"></span>
@@ -1806,6 +1806,13 @@
                     <i class="fas fa-external-link-alt"></i> Full Map
                 </button>
             </div>
+        </div>
+        <div id="gpsStatusBar" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span id="gpsStatusDot" style="width:9px;height:9px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
+                <span id="gpsStatusText" style="font-size:0.8rem;font-weight:700;color:var(--text-main);">Connecting...</span>
+            </div>
+            <span id="gpsLastUpdateBar" style="font-size:0.72rem;color:var(--text-muted);">--</span>
         </div>
 
         <!-- Live Coordinates -->
@@ -4466,16 +4473,27 @@ async edit(id) { this.openModal(id); }
                 const sats = data.v3 || '0';
                 const isEncrypted = rawLat.includes('ENCRYPTED') || rawLat === '' || rawLat === '0';
 
-                // Update status badge
+                // Update status badge + status bar
                 const badge = document.getElementById('gpsStatusBadge');
-                if (badge) {
-                    if (isEncrypted) {
-                        badge.textContent = 'ENCRYPTED';
-                        badge.style.color = '#d97706';
-                    } else {
-                        badge.textContent = isOnline ? 'LIVE' : 'WAITING';
-                        badge.style.color = isOnline ? 'var(--success)' : 'var(--amber, #d97706)';
-                    }
+                const dot = document.getElementById('gpsStatusDot');
+                const txt = document.getElementById('gpsStatusText');
+                const upBar = document.getElementById('gpsLastUpdateBar');
+
+                if (isEncrypted) {
+                    if (badge) { badge.textContent = 'ENCRYPTED'; badge.style.color = '#d97706'; }
+                    if (dot) { dot.style.background = '#d97706'; dot.style.boxShadow = 'none'; }
+                    if (txt) { txt.textContent = 'Location Encrypted'; txt.style.color = '#d97706'; }
+                    if (upBar) upBar.textContent = 'Use Decrypt button on the map';
+                } else if (isOnline) {
+                    if (badge) { badge.textContent = 'LIVE'; badge.style.color = 'var(--success)'; }
+                    if (dot) { dot.style.background = '#00B14F'; dot.style.boxShadow = '0 0 0 3px rgba(0,177,79,0.2)'; }
+                    if (txt) { txt.textContent = 'Live — Car-001'; txt.style.color = 'var(--text-main)'; }
+                    if (upBar) upBar.textContent = 'Updated ' + new Date().toLocaleTimeString();
+                } else {
+                    if (badge) { badge.textContent = 'WAITING'; badge.style.color = '#d97706'; }
+                    if (dot) { dot.style.background = '#d97706'; dot.style.boxShadow = 'none'; }
+                    if (txt) { txt.textContent = 'Waiting for device...'; txt.style.color = '#d97706'; }
+                    if (upBar) upBar.textContent = 'No recent signal';
                 }
 
                 // Update coordinates display
@@ -4514,8 +4532,12 @@ async edit(id) { this.openModal(id); }
         _showOffline(reason) {
             const badge = document.getElementById('gpsStatusBadge');
             if (badge) { badge.textContent = 'OFFLINE'; badge.style.color = 'var(--text-muted)'; }
-            const upEl = document.getElementById('gpsLastUpdate');
-            if (upEl) upEl.textContent = reason || 'No signal';
+            const dot = document.getElementById('gpsStatusDot');
+            if (dot) { dot.style.background = '#94a3b8'; dot.style.boxShadow = 'none'; }
+            const txt = document.getElementById('gpsStatusText');
+            if (txt) { txt.textContent = 'Device Offline'; txt.style.color = 'var(--text-muted)'; }
+            const upBar = document.getElementById('gpsLastUpdateBar');
+            if (upBar) upBar.textContent = reason || 'No signal';
         },
 
         openMap() {
