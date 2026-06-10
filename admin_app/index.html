@@ -16898,6 +16898,7 @@ async edit(id) { this.openModal(id); }
                     fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&pin=V0`),
                     fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&pin=V1`)
                 ]);
+                if (!latRes.ok || !lngRes.ok) { this._showOffline(); return; }
                 const lat = parseFloat(await latRes.text());
                 const lng = parseFloat(await lngRes.text());
 
@@ -16936,8 +16937,8 @@ async edit(id) { this.openModal(id); }
 
         startLive() {
             this.refresh();
-            if (this.timer) clearInterval(this.timer);
-            this.timer = setInterval(() => this.refresh(), 30000);
+            // No auto-polling - only refresh on manual button click
+            // to avoid console spam when device is offline
         },
 
         stopLive() {

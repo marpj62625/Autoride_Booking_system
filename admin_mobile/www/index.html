@@ -1797,7 +1797,7 @@
             <iframe id="blynkMapFrame" src="about:blank" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
             <div style="position:absolute;top:12px;left:12px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:10px;padding:6px 12px;display:flex;align-items:center;gap:6px;">
                 <span id="blynkLiveIndicator" style="width:7px;height:7px;background:#00B14F;border-radius:50%;animation:pulse 1.5s infinite;display:inline-block;"></span>
-                <span style="font-size:0.7rem;font-weight:700;color:white;">Blynk IoT — Live</span>
+                <span style="font-size:0.7rem;font-weight:700;color:white;">Blynk IoT ï¿½ Live</span>
             </div>
             <div style="position:absolute;bottom:12px;right:12px;z-index:10;display:flex;gap:8px;">
                 <button onclick="GPS.refresh()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:8px 12px;border-radius:10px;font-size:0.72rem;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;">
@@ -1818,11 +1818,11 @@
             <div id="gpsCoordDisplay" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                 <div style="background:var(--surface-container);border-radius:10px;padding:10px;">
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Latitude</div>
-                    <div id="gpsLat" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">—</div>
+                    <div id="gpsLat" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">ï¿½</div>
                 </div>
                 <div style="background:var(--surface-container);border-radius:10px;padding:10px;">
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Longitude</div>
-                    <div id="gpsLng" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">—</div>
+                    <div id="gpsLng" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">ï¿½</div>
                 </div>
             </div>
         </div>
@@ -3594,11 +3594,11 @@ async edit(id) { this.openModal(id); }
                 ${b.payment_status === 'Refund Pending' ? `
                 <div style="background:#fffbeb;border-radius:12px;padding:14px;margin-bottom:14px;border:1.5px solid #fde68a;">
                     <div style="font-size:0.65rem;color:#d97706;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:5px;">
-                        <i class="fas fa-clock"></i> Refund Pending — Action Required
+                        <i class="fas fa-clock"></i> Refund Pending ï¿½ Action Required
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Refund Amount</div><div style="font-size:0.95rem;font-weight:800;color:#d97706;">${fmtMoney(b.refund_amount)}</div></div>
-                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Channel</div><div style="font-size:0.88rem;font-weight:700;color:#0f172a;">${b.refund_channel || '—'}</div></div>
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Channel</div><div style="font-size:0.88rem;font-weight:700;color:#0f172a;">${b.refund_channel || 'ï¿½'}</div></div>
                     </div>
                     ${b.refund_account_name ? `
                     <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fde68a;">
@@ -4486,8 +4486,7 @@ async edit(id) { this.openModal(id); }
 
         startLive() {
             this.refresh();
-            if (this.timer) clearInterval(this.timer);
-            this.timer = setInterval(() => this.refresh(), 30000);
+            // No auto-polling - only refresh on manual button click
         },
 
         stopLive() {
