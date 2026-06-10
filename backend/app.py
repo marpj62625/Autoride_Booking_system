@@ -4606,6 +4606,7 @@ def user_cancel_booking():
         # Ensure refund columns exist
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12,2)")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_note TEXT")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ")
         commit_db()
 
         cur.execute("""
@@ -4614,6 +4615,7 @@ def user_cancel_booking():
                 payment_status = %s,
                 cancellation_reason = %s,
                 cancelled_by = 'customer',
+                cancelled_at = NOW(),
                 refund_amount = %s,
                 refund_note = %s
             WHERE id = %s
@@ -4708,6 +4710,102 @@ def reject_booking(booking_id):
 
         if 'cur' in locals(): cur.close()
 
+
+
+@app.route('/bookings/<int:booking_id>/trigger-refund', methods=['POST'])
+def trigger_refund(booking_id):
+    """Admin triggers a refund for a cancelled booking that was paid.
+    Uses cancelled_at (or updated_at fallback) vs start_date to apply the 48h policy accurately."""
+    try:
+        import datetime as _dtm
+        cur = get_cursor()
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ")
+        commit_db()
+
+        cur.execute("""
+            SELECT status, payment_status, amount_paid, total_price,
+                   start_date, cancelled_at, updated_at, user_id
+            FROM bookings WHERE id = %s
+        """, (booking_id,))
+        booking = cur.fetchone()
+
+        if not booking:
+            return jsonify({"error": "Booking not found"}), 404
+        if booking['status'] != 'Cancelled':
+            return jsonify({"error": "Booking is not cancelled"}), 400
+        if booking['payment_status'] in ['Refund Pending', 'Refunded']:
+            return jsonify({"error": f"Booking already has payment_status: {booking['payment_status']}"}), 400
+
+        amount_paid = float(booking.get('amount_paid') or booking.get('total_price') or 0)
+        if amount_paid <= 0:
+            return jsonify({"error": "No payment to refund"}), 400
+
+        # Use cancelled_at if available, otherwise fall back to updated_at, then now
+        cancel_time = booking['cancelled_at'] or booking['updated_at']
+        if cancel_time is None:
+            cancel_dt = _dtm.datetime.now()
+        elif isinstance(cancel_time, _dtm.datetime):
+            cancel_dt = cancel_time.replace(tzinfo=None)
+        else:
+            cancel_dt = _dtm.datetime.fromisoformat(str(cancel_time)[:19])
+
+        # Determine pickup datetime from start_date
+        start_raw = booking['start_date']
+        if isinstance(start_raw, (_dtm.date, _dtm.datetime)):
+            pickup_dt = _dtm.datetime.combine(
+                start_raw if isinstance(start_raw, _dtm.date) else start_raw.date(),
+                _dtm.time(6, 0)
+            )
+        else:
+            pickup_dt = _dtm.datetime.strptime(str(start_raw)[:10], '%Y-%m-%d').replace(hour=6)
+
+        hours_before = (pickup_dt - cancel_dt).total_seconds() / 3600
+
+        if hours_before >= 48:
+            refund_amount = round(amount_paid, 2)
+            non_refundable_fee = 0.0
+            refund_note = f"Full refund — cancelled {hours_before:.1f}h before pickup (>= 48h)"
+        else:
+            non_refundable_fee = round(amount_paid * 0.20, 2)
+            refund_amount = round(amount_paid - non_refundable_fee, 2)
+            refund_note = (f"20% non-refundable: PHP {non_refundable_fee:.2f} — "
+                           f"cancelled {hours_before:.1f}h before pickup (< 48h). "
+                           f"Cancel: {cancel_dt.strftime('%Y-%m-%d %H:%M')} | "
+                           f"Pickup: {pickup_dt.strftime('%Y-%m-%d %H:%M')}.")
+
+        new_status = 'Refund Pending' if refund_amount > 0 else 'Cancelled'
+
+        cur.execute("""
+            UPDATE bookings SET payment_status = %s, refund_amount = %s, refund_note = %s
+            WHERE id = %s
+        """, (new_status, refund_amount, refund_note, booking_id))
+        commit_db()
+
+        try:
+            notification_service.notify_user(
+                booking['user_id'], "Refund Initiated",
+                f"A refund of PHP {refund_amount:,.2f} has been initiated for Booking #{booking_id}. "
+                "Please submit your refund account details.",
+                'refund_initiated'
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            "message": "Refund triggered successfully.",
+            "refund_amount": refund_amount,
+            "non_refundable_fee": non_refundable_fee,
+            "refund_status": new_status,
+            "hours_before_pickup": round(hours_before, 1),
+            "cancellation_time": cancel_dt.strftime('%Y-%m-%d %H:%M'),
+            "pickup_time": pickup_dt.strftime('%Y-%m-%d %H:%M')
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
 
 @app.route('/bookings/<int:booking_id>/refund-details', methods=['POST'])
@@ -4805,7 +4903,8 @@ def admin_cancel_booking(booking_id):
 
             UPDATE bookings 
 
-            SET status='Cancelled', payment_status=%s 
+            SET status='Cancelled', payment_status=%s,
+                cancelled_at = NOW() 
 
             WHERE id=%s
 
