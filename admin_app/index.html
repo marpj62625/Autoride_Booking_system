@@ -16895,8 +16895,8 @@ async edit(id) { this.openModal(id); }
         async refresh() {
             try {
                 const [latRes, lngRes] = await Promise.all([
-                    fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&V0`),
-                    fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&V1`)
+                    fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&pin=V0`),
+                    fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&pin=V1`)
                 ]);
                 const lat = parseFloat(await latRes.text());
                 const lng = parseFloat(await lngRes.text());
