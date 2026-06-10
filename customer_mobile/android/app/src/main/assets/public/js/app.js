@@ -3369,7 +3369,20 @@ function renderBookingDetail(b) {
             '</div>'
           ) : '') +
           (!isRefunded ? (
-            '<div style="margin-top:10px;font-size:0.75rem;color:var(--text-muted);">Our team will process your refund shortly. You will be notified once completed.</div>'
+            '<div style="margin-top:12px;font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;">Our team will process your refund shortly. Please provide your preferred refund channel so we can send the money:</div>' +
+            (b.refund_channel ? (
+              '<div style="background:rgba(0,177,79,0.08);border:1.5px solid rgba(0,177,79,0.3);border-radius:10px;padding:12px;">' +
+                '<div style="font-size:0.72rem;color:#00B14F;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:6px;"><i class="fas fa-check-circle"></i> Refund Details Submitted</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_channel + ' \u2014 ' + (b.refund_account_name || '') + '</div>' +
+                '<div style="font-size:0.78rem;color:var(--text-muted);">Acct: ' + (b.refund_account_number || '') + '</div>' +
+                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;">Waiting for admin to process your refund.</div>' +
+              '</div>'
+            ) : (
+              '<button onclick="openRefundDetailsForm(' + b.id + ',' + (refundAmt > 0 ? refundAmt : totalPaid) + ')" ' +
+                'style="width:100%;padding:11px;background:#f59e0b;border:none;border-radius:12px;color:white;font-size:0.875rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+                '<i class="fas fa-paper-plane"></i> Submit Refund Details' +
+              '</button>'
+            ))
           ) : '') +
         '</div>';
         return html;
@@ -3798,6 +3811,121 @@ function _proceedCancel(bookingId, reason) {
       loadBookings();
     })
     .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
+}
+
+function openRefundDetailsForm(bookingId, refundAmount) {
+  var old = document.getElementById('_refundDetailsModal');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = '_refundDetailsModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);';
+  modal.innerHTML =
+    '<div style="background:var(--bg-card,#fff);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">' +
+      '<div style="width:36px;height:4px;background:var(--border,#e5e7eb);border-radius:2px;margin:0 auto 20px;"></div>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
+        '<div style="width:38px;height:38px;background:rgba(245,158,11,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<i class="fas fa-money-bill-wave" style="color:#f59e0b;font-size:1rem;"></i>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:1rem;font-weight:800;color:var(--text-primary,#0f172a);">Submit Refund Details</div>' +
+          '<div style="font-size:0.78rem;color:var(--text-muted,#94a3b8);">Refund amount: <strong style="color:#f59e0b;">' + formatPHP(refundAmount) + '</strong></div>' +
+        '</div>' +
+      '</div>' +
+      '<p style="font-size:0.82rem;color:var(--text-secondary,#64748b);margin-bottom:18px;margin-top:10px;">Choose how you want to receive your refund and provide the necessary details.</p>' +
+
+      // Channel selector
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Refund Channel</label>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">' +
+          '<label style="cursor:pointer;">' +
+            '<input type="radio" name="refundChannel" value="GCash" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'GCash Number\';document.getElementById(\'refundChannelCard_GCash\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_GCash\').style.borderColor=\'#00B14F\';[\'Maya\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<div id="refundChannelCard_GCash" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
+              '<i class="fas fa-mobile-alt" style="color:#00B14F;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
+              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">GCash</span>' +
+            '</div>' +
+          '</label>' +
+          '<label style="cursor:pointer;">' +
+            '<input type="radio" name="refundChannel" value="Maya" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Maya Number\';document.getElementById(\'refundChannelCard_Maya\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Maya\').style.borderColor=\'#00B14F\';[\'GCash\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<div id="refundChannelCard_Maya" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
+              '<i class="fas fa-wallet" style="color:#7c3aed;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
+              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">Maya</span>' +
+            '</div>' +
+          '</label>' +
+          '<label style="cursor:pointer;">' +
+            '<input type="radio" name="refundChannel" value="Bank" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Account Number\';document.getElementById(\'refundChannelCard_Bank\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Bank\').style.borderColor=\'#00B14F\';[\'GCash\',\'Maya\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<div id="refundChannelCard_Bank" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
+              '<i class="fas fa-university" style="color:#2563eb;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
+              '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">Bank</span>' +
+            '</div>' +
+          '</label>' +
+        '</div>' +
+      '</div>' +
+
+      // Account name
+      '<div style="margin-bottom:14px;">' +
+        '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Account Name</label>' +
+        '<input id="refundAcctName" type="text" placeholder="Full name on account" ' +
+          'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;box-sizing:border-box;">' +
+      '</div>' +
+
+      // Account number
+      '<div style="margin-bottom:14px;">' +
+        '<label id="refundAcctLabel" style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">GCash / Maya / Account Number</label>' +
+        '<input id="refundAcctNum" type="text" placeholder="e.g. 09XX-XXX-XXXX" ' +
+          'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;box-sizing:border-box;">' +
+      '</div>' +
+
+      // Notes
+      '<div style="margin-bottom:20px;">' +
+        '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Additional Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>' +
+        '<textarea id="refundNotes" placeholder="e.g. Bank name, branch, etc." rows="2" ' +
+          'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;resize:none;box-sizing:border-box;font-family:inherit;"></textarea>' +
+      '</div>' +
+
+      // Buttons
+      '<div style="display:flex;gap:10px;">' +
+        '<button onclick="document.getElementById(\'_refundDetailsModal\').remove();" ' +
+          'style="flex:1;padding:13px;background:var(--surface-container,#f1f5f9);border:none;border-radius:12px;font-size:0.875rem;font-weight:700;color:var(--text-secondary,#475569);cursor:pointer;">Cancel</button>' +
+        '<button onclick="_submitRefundDetails(' + bookingId + ');" ' +
+          'style="flex:2;padding:13px;background:#f59e0b;border:none;border-radius:12px;font-size:0.875rem;font-weight:700;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+          '<i class="fas fa-paper-plane"></i> Submit Details</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  // Close on backdrop tap
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+}
+
+function _submitRefundDetails(bookingId) {
+  var channel = (document.querySelector('input[name="refundChannel"]:checked') || {}).value || '';
+  var acctName = (document.getElementById('refundAcctName') || {}).value || '';
+  var acctNum = (document.getElementById('refundAcctNum') || {}).value || '';
+  var notes = (document.getElementById('refundNotes') || {}).value || '';
+
+  if (!channel) { showToast('Please select a refund channel (GCash, Maya, or Bank).', 'error'); return; }
+  if (!acctName.trim()) { showToast('Please enter your account name.', 'error'); return; }
+  if (!acctNum.trim()) { showToast('Please enter your account number.', 'error'); return; }
+
+  showLoading(true);
+  apiCall('/bookings/' + bookingId + '/refund-details', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_id: currentUser.id,
+      refund_channel: channel,
+      refund_account_name: acctName.trim(),
+      refund_account_number: acctNum.trim(),
+      refund_notes: notes.trim()
+    })
+  })
+    .then(function() {
+      document.getElementById('_refundDetailsModal').remove();
+      showToast('Refund details submitted! Our team will process it shortly.', 'success');
+      loadBookings();
+    })
+    .catch(function(err) { showToast(err.message || 'Failed to submit. Please try again.', 'error'); })
     .finally(function() { showLoading(false); });
 }
 

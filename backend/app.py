@@ -3176,6 +3176,7 @@ def user_bookings():
                    b.cancellation_reason, b.cancelled_by,
                    COALESCE(b.refund_amount, 0) AS refund_amount,
                    b.refund_method, b.refund_ref, b.refund_note,
+                   b.refund_channel, b.refund_account_name, b.refund_account_number,
                    CAST(b.refunded_at AS TEXT) AS refunded_at,
                    b.refund_proof_url,
                    v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color,
@@ -4115,7 +4116,9 @@ def get_all_bookings():
 
                    b.driver_id, d.full_name AS driver_name,
 
-                   pm.method AS payment_method, pm.reference_number
+                   pm.method AS payment_method, pm.reference_number,
+
+                   b.refund_amount, b.refund_channel, b.refund_account_name, b.refund_account_number
 
             FROM bookings b
 
@@ -4702,6 +4705,61 @@ def reject_booking(booking_id):
 
         if 'cur' in locals(): cur.close()
 
+
+
+@app.route('/bookings/<int:booking_id>/refund-details', methods=['POST'])
+def submit_refund_details(booking_id):
+    """Customer submits their preferred refund channel and account details."""
+    try:
+        data = request.get_json(silent=True) or {}
+        user_id = data.get('user_id')
+        refund_channel = data.get('refund_channel', '').strip()
+        refund_account_name = data.get('refund_account_name', '').strip()
+        refund_account_number = data.get('refund_account_number', '').strip()
+        refund_notes = data.get('refund_notes', '').strip()
+
+        if not refund_channel or not refund_account_name or not refund_account_number:
+            return jsonify({"error": "Refund channel, account name, and account number are required."}), 400
+
+        cur = get_cursor()
+
+        # Ensure columns exist
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_channel VARCHAR(50)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_account_name VARCHAR(200)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_account_number VARCHAR(100)")
+        commit_db()
+
+        cur.execute("SELECT user_id, payment_status FROM bookings WHERE id = %s", (booking_id,))
+        booking = cur.fetchone()
+        if not booking:
+            return jsonify({"error": "Booking not found"}), 404
+        if user_id and int(booking['user_id']) != int(user_id):
+            return jsonify({"error": "Unauthorized"}), 403
+        if booking['payment_status'] != 'Refund Pending':
+            return jsonify({"error": "This booking is not pending a refund."}), 400
+
+        note_parts = [f"Channel: {refund_channel}", f"Name: {refund_account_name}", f"Account: {refund_account_number}"]
+        if refund_notes:
+            note_parts.append(f"Notes: {refund_notes}")
+        refund_detail_note = " | ".join(note_parts)
+
+        cur.execute("""
+            UPDATE bookings
+            SET refund_channel = %s,
+                refund_account_name = %s,
+                refund_account_number = %s,
+                refund_note = COALESCE(refund_note || ' | ', '') || %s
+            WHERE id = %s
+        """, (refund_channel, refund_account_name, refund_account_number, refund_detail_note, booking_id))
+        commit_db()
+
+        return jsonify({"message": "Refund details submitted successfully."}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
 
 @app.route('/bookings/<int:booking_id>/cancel', methods=['PUT'])
