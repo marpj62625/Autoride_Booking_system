@@ -569,17 +569,14 @@ function uploadFile(endpoint, formData) {
 // Progress bar loading - also shows full-screen blocking overlay
 var _loadingCount = 0;
 function showLoading(show) {
-  // Full-screen blocking overlay — prevents all interaction during API calls
   var overlay = document.getElementById('loadingOverlay');
   if (show) {
     _loadingCount++;
     if (overlay) overlay.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
       if (overlay) overlay.style.display = 'none';
-      document.body.style.overflow = '';
     }
   }
 }
