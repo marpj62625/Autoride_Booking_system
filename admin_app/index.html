@@ -16884,7 +16884,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-        // --- GPS MODULE (Blynk IoT) ---
+    // --- GPS MODULE (Blynk IoT) ---
     const GPS = {
         BLYNK_TOKEN: '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz',
         BLYNK_SERVER: 'sgp1.blynk.cloud',
@@ -16902,8 +16902,7 @@ async edit(id) { this.openModal(id); }
                 const lng = parseFloat(await lngRes.text());
 
                 if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-                    this.lat = lat;
-                    this.lng = lng;
+                    this.lat = lat; this.lng = lng;
                     const frame = document.getElementById('blynkMapFrame');
                     if (frame) frame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
                     const latEl = document.getElementById('gpsLat');
@@ -16917,9 +16916,7 @@ async edit(id) { this.openModal(id); }
                 } else {
                     this._showOffline();
                 }
-            } catch(e) {
-                this._showOffline();
-            }
+            } catch(e) { this._showOffline(); }
         },
 
         _showOffline() {
@@ -16947,6 +16944,8139 @@ async edit(id) { this.openModal(id); }
             if (this.timer) { clearInterval(this.timer); this.timer = null; }
         }
     };
+
+
+        // --- ACTIVITY MODULE ---
+
+
+
+    const Activity = {
+
+
+
+        data: [],
+
+
+
+        _filter: 'all',
+
+
+
+
+
+
+
+        _colors: { login:'#00B14F', logout:'#94a3b8', approve:'#00B14F', reject:'#ef4444', create:'#00B14F', update:'#f59e0b', delete:'#ef4444', view:'#5FDBE2' },
+
+
+
+
+
+
+
+        _color(action) {
+
+
+
+            const k = Object.keys(this._colors).find(k => action.toLowerCase().includes(k));
+
+
+
+            return k ? this._colors[k] : '#00B14F';
+
+
+
+        },
+
+
+
+
+
+
+
+        _icon(action) {
+
+
+
+            const a = action.toLowerCase();
+
+
+
+            if (a.includes('login'))  return 'fa-sign-in-alt';
+
+
+
+            if (a.includes('logout')) return 'fa-sign-out-alt';
+
+
+
+            if (a.includes('approve')) return 'fa-check';
+
+
+
+            if (a.includes('reject')) return 'fa-times';
+
+
+
+            if (a.includes('delete')) return 'fa-trash';
+
+
+
+            if (a.includes('create') || a.includes('add')) return 'fa-plus';
+
+
+
+            if (a.includes('update') || a.includes('edit')) return 'fa-pen';
+
+
+
+            return 'fa-history';
+
+
+
+        },
+
+
+
+
+
+
+
+        setFilter(filter, btn) {
+
+
+
+            this._filter = filter;
+
+
+
+            document.querySelectorAll('.act-chip').forEach(b => {
+
+
+
+                const active = b.dataset.filter === filter;
+
+
+
+                b.style.background   = active ? 'var(--primary)' : 'var(--surface-container)';
+
+
+
+                b.style.borderColor  = active ? 'var(--primary)' : 'var(--border)';
+
+
+
+                b.style.color        = active ? '#fff' : 'var(--text-secondary)';
+
+
+
+            });
+
+
+
+            this.applyFilters();
+
+
+
+        },
+
+
+
+
+
+
+
+        applyFilters() {
+
+
+
+            const q = (document.getElementById('activitySearch')?.value || '').toLowerCase().trim();
+
+
+
+            const f = this._filter;
+
+
+
+            const filtered = this.data.filter(l => {
+
+
+
+                const matchF = f === 'all' || l.action.toLowerCase().includes(f);
+
+
+
+                const matchQ = !q ||
+
+
+
+                    (l.admin_name || '').toLowerCase().includes(q) ||
+
+
+
+                    (l.action     || '').toLowerCase().includes(q) ||
+
+
+
+                    (l.details    || '').toLowerCase().includes(q);
+
+
+
+                return matchF && matchQ;
+
+
+
+            });
+
+
+
+            this._render(filtered);
+
+
+
+        },
+
+
+
+
+
+
+
+        _render(logs) {
+
+
+
+            const list = document.getElementById('activityList');
+
+
+
+            if (!list) return;
+
+
+
+            if (!logs.length) {
+
+
+
+                list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No matching logs found.</div>';
+
+
+
+                return;
+
+
+
+            }
+
+
+
+            const now = new Date();
+
+
+
+            list.innerHTML = `<ul style="list-style:none;margin:0;padding:0;background:var(--surface-card,var(--surface));border-radius:16px;overflow:hidden;">` +
+
+
+
+                logs.map((l, i) => {
+
+
+
+                    const color = this._color(l.action);
+
+
+
+                    const icon  = this._icon(l.action);
+
+
+
+                    const dt    = new Date(l.created_at);
+
+
+
+                    const isToday = dt.toDateString() === now.toDateString();
+
+
+
+                    const dateStr = isToday
+
+
+
+                        ? dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+
+
+
+                        : dt.toLocaleDateString([], {month:'numeric', day:'numeric', year:'2-digit'});
+
+
+
+                    return `
+
+
+
+                    <li style="display:flex;align-items:center;gap:14px;padding:13px 16px;${i > 0 ? 'border-top:1px solid var(--border);' : ''}">
+
+
+
+                        <div style="flex-shrink:0;width:46px;height:46px;border-radius:50%;background:${color}22;display:flex;align-items:center;justify-content:center;color:${color};font-size:1rem;">
+
+
+
+                            <i class="fas ${icon}"></i>
+
+
+
+                        </div>
+
+
+
+                        <div style="flex:1;min-width:0;">
+
+
+
+                            <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.admin_name || 'System'}</div>
+
+
+
+                            <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.action.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+
+
+
+                            <div style="font-size:0.73rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${l.details || '-'}</div>
+
+
+
+                        </div>
+
+
+
+                        <div style="flex-shrink:0;display:flex;align-items:center;gap:4px;">
+
+
+
+                            <span style="font-size:0.72rem;color:${color};font-weight:600;">${dateStr}</span>
+
+
+
+                            <i class="fas fa-chevron-right" style="font-size:0.6rem;color:var(--text-muted);"></i>
+
+
+
+                        </div>
+
+
+
+                    </li>`;
+
+
+
+                }).join('') + `</ul>`;
+
+
+
+        },
+
+
+
+
+
+
+
+        async refresh() {
+
+
+
+            const list = document.getElementById('activityList');
+            showSkeleton('activityList', 'list');
+
+
+
+            if (!list) return;
+
+
+
+
+
+
+
+            // Show export button only for super_admin
+
+
+
+            const exportBtn = document.getElementById('activityExportBtn');
+
+
+
+            if (exportBtn) {
+
+
+
+                const user = adminAuth.getUser();
+
+
+
+                const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
+
+
+
+                exportBtn.style.display = isSuperAdmin ? 'flex' : 'none';
+
+
+
+            }
+
+
+
+
+
+
+
+            list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
+
+
+
+            try {
+
+
+
+                const res = await apiFetch(`admin/activity-logs`);
+
+
+
+                const logs = await res.json();
+
+
+
+                this.data = logs || [];
+
+
+
+                // Reset search + chips
+
+
+
+                const s = document.getElementById('activitySearch');
+
+
+
+                if (s) s.value = '';
+
+
+
+                this._filter = 'all';
+
+
+
+                document.querySelectorAll('.act-chip').forEach(b => {
+
+
+
+                    const active = b.dataset.filter === 'all';
+
+
+
+                    b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+
+
+
+                    b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+
+
+
+                    b.style.color       = active ? '#fff' : 'var(--text-secondary)';
+
+
+
+                });
+
+
+
+                if (!this.data.length) {
+
+
+
+                    list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No activity logs found.</div>';
+
+
+
+                    return;
+
+
+
+                }
+
+
+
+                this._render(this.data);
+
+
+
+            } catch (err) {
+
+
+
+                list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--danger);">Failed to load logs.</div>';
+
+
+
+            }
+
+
+
+        },
+
+
+
+
+
+
+
+        async exportExcel() {
+
+
+
+            // Double-check role before exporting
+
+
+
+            const user = adminAuth.getUser();
+
+
+
+            if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) {
+
+
+
+                showNotification('Only Super Admins can export activity logs.', 'error');
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            const data = this.data || [];
+
+
+
+            if (!data.length) {
+
+
+
+                showNotification('No activity logs to export.', 'error');
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            if (typeof XLSX === 'undefined') {
+
+
+
+                showNotification('Excel library not loaded. Please refresh.', 'error');
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            // Build rows
+
+
+
+            const headers = ['#', 'Admin', 'Action', 'Target Type', 'Target ID', 'Details', 'IP Address', 'Timestamp'];
+
+
+
+            const rows = [headers];
+
+
+
+            data.forEach((log, i) => {
+
+
+
+                rows.push([
+
+
+
+                    i + 1,
+
+
+
+                    log.admin_name || '-',
+
+
+
+                    log.action || '-',
+
+
+
+                    log.target_type || '-',
+
+
+
+                    log.target_id || '-',
+
+
+
+                    log.details || '-',
+
+
+
+                    log.ip_address || '-',
+
+
+
+                    log.created_at ? new Date(log.created_at).toLocaleString() : '-'
+
+
+
+                ]);
+
+
+
+            });
+
+
+
+
+
+
+
+            try {
+
+
+
+                const wb = XLSX.utils.book_new();
+
+
+
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+
+
+
+                // Auto-width columns
+
+
+
+                const colWidths = headers.map((h, i) => ({
+
+
+
+                    wch: Math.max(h.length, ...rows.slice(1).map(r => String(r[i] || '').length))
+
+
+
+                }));
+
+
+
+                ws['!cols'] = colWidths;
+
+
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Activity Log');
+
+
+
+
+
+
+
+                const filename = 'autoride_activity_log_' + new Date().toISOString().split('T')[0] + '.xlsx';
+
+
+
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+
+
+
+
+
+
+                // ?? Try Capacitor Filesystem (save to Downloads) ??
+
+
+
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+
+
+
+                if (Filesystem) {
+
+
+
+                    try {
+
+
+
+                        const result = await Filesystem.writeFile({
+
+
+
+                            path: filename,
+
+
+
+                            data: wboutBase64,
+
+
+
+                            directory: 'DOWNLOADS',
+
+
+
+                            recursive: true
+
+
+
+                        });
+
+
+
+                        showNotification('Activity log saved to Downloads: ' + filename, 'success');
+
+
+
+                        try {
+
+
+
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+
+
+
+                            if (FileOpener) await FileOpener.open({ filePath: result.uri, contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+
+
+                        } catch(e) {}
+
+
+
+                        return;
+
+
+
+                    } catch (fsErr) {
+
+
+
+                        try {
+
+
+
+                            await Filesystem.writeFile({ path: filename, data: wboutBase64, directory: 'DOCUMENTS', recursive: true });
+
+
+
+                            showNotification('Activity log saved to Documents: ' + filename, 'success');
+
+
+
+                            return;
+
+
+
+                        } catch(e) {}
+
+
+
+                    }
+
+
+
+                }
+
+
+
+
+
+
+
+                // Browser fallback
+
+
+
+                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+
+
+                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+
+
+                const url = URL.createObjectURL(blob);
+
+
+
+                const a = document.createElement('a');
+
+
+
+                a.href = url; a.download = filename;
+
+
+
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+
+
+
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+
+
+                showNotification('Activity log downloaded!', 'success');
+
+
+
+
+
+
+
+            } catch (err) {
+
+
+
+                showNotification('Export failed: ' + err.message, 'error');
+
+
+
+            }
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    // --- ACTIVE NOW MODULE ---
+
+
+
+    const ActiveNow = {
+
+
+
+        _timer: null,
+
+
+
+        _countdown: {},
+
+
+
+
+
+
+
+        render(allBookings) {
+
+
+
+            const active = (allBookings || []).filter(b =>
+
+
+
+                b.status === 'Picked Up' || b.status === 'Ongoing'
+
+
+
+            );
+
+
+
+            const countEl = document.getElementById('activeNowCount');
+
+
+
+            if (countEl) countEl.textContent = active.length;
+
+
+
+
+
+
+
+            const list = document.getElementById('activeNowList');
+
+
+
+            if (!list) return;
+
+
+
+
+
+
+
+            if (active.length === 0) {
+
+
+
+                list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.8rem;background:var(--surface-container);border-radius:14px;">No active rentals right now.</div>';
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            list.innerHTML = active.map((b, i) => {
+
+
+
+                const endDate = b.end_date ? new Date(b.end_date) : null;
+
+
+
+                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'N/A';
+
+
+
+                const cdId    = 'anCountdown_' + b.id;
+
+
+
+                
+
+
+
+                // Location handling
+
+
+
+                const pickupLoc = b.pickup_location || b.location || 'N/A';
+
+
+
+                const dropoffLoc = b.dropoff_location || b.pickup_location || b.location || 'N/A';
+
+
+
+                const showBothLocations = pickupLoc !== dropoffLoc && dropoffLoc !== 'N/A';
+
+
+
+                
+
+
+
+                // Truncate location for display (max 30 chars)
+
+
+
+                const truncateLocation = (loc) => {
+
+
+
+                    if (!loc || loc === 'N/A') return 'N/A';
+
+
+
+                    return loc.length > 30 ? loc.substring(0, 30) + '...' : loc;
+
+
+
+                };
+
+
+
+                
+
+
+
+                const pickupDisplay = truncateLocation(pickupLoc);
+
+
+
+                const dropoffDisplay = truncateLocation(dropoffLoc);
+
+
+
+                
+
+
+
+                return `
+
+
+
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;border-left:3px solid #00B14F;">
+
+
+
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+
+
+
+                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+
+
+
+                            <i class="fas fa-car" style="color:#00B14F;font-size:1rem;"></i>
+
+
+
+                        </div>
+
+
+
+                        <div style="flex:1;min-width:0;">
+
+
+
+                            <div style="font-size:0.88rem;font-weight:800;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${b.car || (b.brand||'') + ' ' + (b.model||'')}</div>
+
+
+
+                            <div style="font-size:0.72rem;color:var(--text-muted);">${b.customer_name || 'Customer'} &bull; #${b.id}</div>
+
+
+
+                        </div>
+
+
+
+                        <span style="background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;flex-shrink:0;">ACTIVE</span>
+
+
+
+                    </div>
+
+
+
+                    
+
+
+
+                    <!-- Location Information -->
+
+
+
+                    <div style="background:var(--surface-container);border-radius:10px;padding:10px;margin-bottom:8px;">
+
+
+
+                        <div style="display:flex;align-items:flex-start;gap:8px;">
+
+
+
+                            <i class="fas fa-map-marker-alt" style="color:var(--primary);font-size:1.1rem;flex-shrink:0;margin-top:2px;"></i>
+
+
+
+                            <div style="flex:1;min-width:0;">
+
+
+
+                                <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Location</div>
+
+
+
+                                <div style="display:flex;flex-direction:column;gap:4px;">
+
+
+
+                                    <div title="${pickupLoc}" style="font-size:0.78rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+
+
+
+                                        <span style="font-size:0.65rem;color:var(--text-muted);font-weight:600;">Pickup:</span> ${pickupDisplay}
+
+
+
+                                    </div>
+
+
+
+                                    ${showBothLocations ? `
+
+
+
+                                    <div style="display:flex;align-items:center;gap:4px;margin:2px 0;">
+
+
+
+                                        <i class="fas fa-arrow-down" style="color:var(--text-muted);font-size:0.65rem;"></i>
+
+
+
+                                    </div>
+
+
+
+                                    <div title="${dropoffLoc}" style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+
+
+
+                                        <span style="font-size:0.65rem;color:var(--text-muted);font-weight:600;">Dropoff:</span> ${dropoffDisplay}
+
+
+
+                                    </div>
+
+
+
+                                    ` : ''}
+
+
+
+                                </div>
+
+
+
+                            </div>
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                    
+
+
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+
+
+
+                        <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
+
+
+
+                            <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Return By</div>
+
+
+
+                            <div style="font-size:0.78rem;font-weight:700;color:var(--text-main);">${endStr}</div>
+
+
+
+                        </div>
+
+
+
+                        <div style="background:var(--surface-container);border-radius:10px;padding:8px 10px;">
+
+
+
+                            <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:2px;">Time Left</div>
+
+
+
+                            <div id="${cdId}" style="font-size:0.78rem;font-weight:800;color:#00B14F;">-</div>
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+
+
+
+                        <button onclick="Bookings.view(${b.id})" style="padding:9px 8px;background:rgba(99,102,241,0.12);color:#818cf8;border:1px solid rgba(99,102,241,0.25);border-radius:10px;font-size:0.72rem;font-weight:700;cursor:pointer;">
+
+
+
+                            <i class="fas fa-eye" style="margin-right:4px;"></i>View Details
+
+
+
+                        </button>
+
+
+
+                        <button onclick="AdminChatWithUser(${b.id})" style="padding:9px 8px;background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);border-radius:10px;font-size:0.72rem;font-weight:700;cursor:pointer;">
+
+
+
+                            <i class="fas fa-comments" style="margin-right:4px;"></i>Chat
+
+
+
+                        </button>
+
+
+
+                    </div>
+
+
+
+                </div>`;
+
+
+
+            }).join('');
+
+
+
+
+
+
+
+            // Start countdowns
+
+
+
+            this._stopCountdowns();
+
+
+
+            active.forEach(b => {
+
+
+
+                if (!b.end_date) return;
+
+
+
+                const endParts = this._normDate(b.end_date).split('-');
+
+
+
+                const endDt = new Date(parseInt(endParts[0]), parseInt(endParts[1])-1, parseInt(endParts[2]), 23, 59, 59);
+
+
+
+                const cdId = 'anCountdown_' + b.id;
+
+
+
+                this._countdown[b.id] = setInterval(() => {
+
+
+
+                    const el = document.getElementById(cdId);
+
+
+
+                    if (!el) { clearInterval(this._countdown[b.id]); return; }
+
+
+
+                    const ms = endDt - new Date();
+
+
+
+                    if (ms <= 0) { el.textContent = 'Ended'; el.style.color = '#ef4444'; return; }
+
+
+
+                    const d = Math.floor(ms/86400000);
+
+
+
+                    const h = Math.floor((ms%86400000)/3600000);
+
+
+
+                    const m = Math.floor((ms%3600000)/60000);
+
+
+
+                    const s = Math.floor((ms%60000)/1000);
+
+
+
+                    el.textContent = d > 0
+
+
+
+                        ? `${d}d ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
+
+
+
+                        : `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+
+
+
+                    el.style.color = ms < 86400000 ? '#ef4444' : '#00B14F';
+
+
+
+                }, 1000);
+
+
+
+            });
+
+
+
+
+
+
+
+            // Auto-refresh every 30s
+
+
+
+            if (this._timer) clearInterval(this._timer);
+
+
+
+            this._timer = setInterval(() => {
+
+
+
+                const label = document.getElementById('activeNowRefreshLabel');
+
+
+
+                if (label) label.textContent = 'refreshing...';
+
+
+
+                Bookings.refresh().then(() => {
+
+
+
+                    if (label) label.textContent = 'auto-refresh 30s';
+
+
+
+                }).catch(() => {
+
+
+
+                    if (label) label.textContent = 'auto-refresh 30s';
+
+
+
+                });
+
+
+
+            }, 30000);
+
+
+
+        },
+
+
+
+
+
+
+
+        _normDate(d) {
+
+
+
+            if (!d) return '';
+
+
+
+            if (/^\d{4}-\d{2}-\d{2}$/.test(String(d))) return String(d);
+
+
+
+            const dt = new Date(d);
+
+
+
+            if (isNaN(dt.getTime())) return String(d);
+
+
+
+            return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+
+
+
+        },
+
+
+
+
+
+
+
+        _stopCountdowns() {
+
+
+
+            Object.values(this._countdown).forEach(t => clearInterval(t));
+
+
+
+            this._countdown = {};
+
+
+
+        },
+
+
+
+
+
+
+
+        stop() {
+
+
+
+            this._stopCountdowns();
+
+
+
+            if (this._timer) { clearInterval(this._timer); this._timer = null; }
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    // --- PAST BOOKINGS MODULE ---
+
+
+
+    const PastBookings = {
+
+
+
+        data: [],
+
+
+
+        filteredData: [],
+
+
+
+        currentPage: 1,
+
+
+
+        pageSize: 10,
+
+
+
+        sortBy: 'completion_date_desc',
+
+
+
+        totalPages: 1,
+
+
+
+
+
+
+
+        async load() {
+
+
+
+            const loadingEl = document.getElementById('pastBookingsLoading');
+
+
+
+            const emptyEl = document.getElementById('pastBookingsEmpty');
+
+
+
+            const tableEl = document.getElementById('pastBookingsTable');
+
+
+
+            
+
+
+
+            // Show loading state
+
+
+
+            if (loadingEl) loadingEl.style.display = 'block';
+
+
+
+            if (emptyEl) emptyEl.classList.add('hidden');
+
+
+
+            if (tableEl) tableEl.style.display = 'none';
+
+
+
+
+
+
+
+            try {
+
+
+
+                // Fetch past bookings from API
+
+
+
+                const res = await fetch(`${API_BASE}/api/bookings/past?page=${this.currentPage}&page_size=${this.pageSize}&sort_by=${this.sortBy}`);
+
+
+
+                
+
+
+
+                if (!res.ok) {
+
+
+
+                    throw new Error(`Server error: ${res.status}`);
+
+
+
+                }
+
+
+
+                
+
+
+
+                const responseData = await res.json();
+
+
+
+                
+
+
+
+                // Handle response format - could be array or object with pagination
+
+
+
+                if (Array.isArray(responseData)) {
+
+
+
+                    this.data = responseData;
+
+
+
+                    this.filteredData = [...responseData];
+
+
+
+                    this.totalPages = Math.ceil(responseData.length / this.pageSize);
+
+
+
+                } else if (responseData.bookings) {
+
+
+
+                    this.data = responseData.bookings;
+
+
+
+                    this.filteredData = [...responseData.bookings];
+
+
+
+                    this.totalPages = responseData.total_pages || 1;
+
+
+
+                } else {
+
+
+
+                    this.data = [];
+
+
+
+                    this.filteredData = [];
+
+
+
+                    this.totalPages = 1;
+
+
+
+                }
+
+
+
+                
+
+
+
+                this.renderTable();
+
+
+
+                this.updatePaginationControls();
+
+
+
+                
+
+
+
+            } catch (err) {
+
+
+
+                console.error('Failed to load past bookings:', err);
+
+
+
+                
+
+
+
+                // Hide loading, show empty state with error
+
+
+
+                if (loadingEl) loadingEl.style.display = 'none';
+
+
+
+                if (emptyEl) {
+
+
+
+                    emptyEl.classList.remove('hidden');
+
+
+
+                    emptyEl.innerHTML = `
+
+
+
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3; color: var(--danger);"></i>
+
+
+
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Failed to Load</h3>
+
+
+
+                        <p style="font-size: 0.85rem; margin-bottom: 16px;">${err.message}</p>
+
+
+
+                        <button onclick="PastBookings.load()" style="padding: 10px 20px; background: var(--primary); border: none; color: white; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">Retry</button>
+
+
+
+                    `;
+
+
+
+                }
+
+
+
+                if (tableEl) tableEl.style.display = 'none';
+
+
+
+            }
+
+
+
+        },
+
+
+
+
+
+
+
+        renderTable() {
+
+
+
+            const tbody = document.getElementById('pastBookingsTableBody');
+
+
+
+            const loadingEl = document.getElementById('pastBookingsLoading');
+
+
+
+            const emptyEl = document.getElementById('pastBookingsEmpty');
+
+
+
+            const tableEl = document.getElementById('pastBookingsTable');
+
+
+
+            
+
+
+
+            // Hide loading
+
+
+
+            if (loadingEl) loadingEl.style.display = 'none';
+
+
+
+            
+
+
+
+            if (!tbody) return;
+
+
+
+            
+
+
+
+            if (this.filteredData.length === 0) {
+
+
+
+                // Show empty state
+
+
+
+                if (emptyEl) emptyEl.classList.remove('hidden');
+
+
+
+                if (tableEl) tableEl.style.display = 'none';
+
+
+
+                return;
+
+
+
+            }
+
+
+
+            
+
+
+
+            // Show table, hide empty state
+
+
+
+            if (emptyEl) emptyEl.classList.add('hidden');
+
+
+
+            if (tableEl) tableEl.style.display = 'table';
+
+
+
+            
+
+
+
+            // Render table rows
+
+
+
+            tbody.innerHTML = this.filteredData.map(b => {
+
+
+
+                const completionDate = b.completion_date || b.updated_at || b.end_date;
+
+
+
+                const completionDateStr = completionDate ? new Date(completionDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+
+
+
+                const startDateStr = b.start_date ? new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+
+
+
+                const endDateStr = b.end_date ? new Date(b.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'N/A';
+
+
+
+                const rentalDates = `${startDateStr} - ${endDateStr}`;
+
+
+
+                const totalPrice = b.total_price ? parseFloat(b.total_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+
+
+
+                
+
+
+
+                return `
+
+
+
+                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">
+
+
+
+                        <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);">#${b.id}</td>
+
+
+
+                        <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">${b.customer_name || 'N/A'}</td>
+
+
+
+                        <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${b.car || b.vehicle || 'N/A'}</td>
+
+
+
+                        <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${rentalDates}</td>
+
+
+
+                        <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${completionDateStr}</td>
+
+
+
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">&#8369;${totalPrice}</td>
+
+
+
+                        <td style="padding: 12px 10px; text-align: center;">
+
+
+
+                            <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+
+
+
+                                <i class="fas fa-eye" style="margin-right: 4px;"></i> View
+
+
+
+                            </button>
+
+
+
+                        </td>
+
+
+
+                    </tr>
+
+
+
+                `;
+
+
+
+            }).join('');
+
+
+
+        },
+
+
+
+
+
+
+
+        updatePaginationControls() {
+
+
+
+            const pageInfo = document.getElementById('pastBookingsPageInfo');
+
+
+
+            const prevBtn = document.getElementById('pastBookingsPrevBtn');
+
+
+
+            const nextBtn = document.getElementById('pastBookingsNextBtn');
+
+
+
+            
+
+
+
+            if (pageInfo) {
+
+
+
+                pageInfo.textContent = `Page ${this.currentPage} of ${this.totalPages}`;
+
+
+
+            }
+
+
+
+            
+
+
+
+            if (prevBtn) {
+
+
+
+                prevBtn.disabled = this.currentPage <= 1;
+
+
+
+                prevBtn.style.opacity = this.currentPage <= 1 ? '0.5' : '1';
+
+
+
+                prevBtn.style.cursor = this.currentPage <= 1 ? 'not-allowed' : 'pointer';
+
+
+
+            }
+
+
+
+            
+
+
+
+            if (nextBtn) {
+
+
+
+                nextBtn.disabled = this.currentPage >= this.totalPages;
+
+
+
+                nextBtn.style.opacity = this.currentPage >= this.totalPages ? '0.5' : '1';
+
+
+
+                nextBtn.style.cursor = this.currentPage >= this.totalPages ? 'not-allowed' : 'pointer';
+
+
+
+            }
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    // Global functions for past bookings
+
+
+
+    window.loadPastBookings = function() {
+
+
+
+        PastBookings.load();
+
+
+
+    };
+
+
+
+
+
+
+
+    window.filterPastBookings = function() {
+
+
+
+        const searchInput = document.getElementById('pastBookingsSearch');
+
+
+
+        if (!searchInput) return;
+
+
+
+        
+
+
+
+        const query = searchInput.value.toLowerCase().trim();
+
+
+
+        
+
+
+
+        if (!query) {
+
+
+
+            PastBookings.filteredData = [...PastBookings.data];
+
+
+
+        } else {
+
+
+
+            PastBookings.filteredData = PastBookings.data.filter(b => {
+
+
+
+                const customerName = (b.customer_name || '').toLowerCase();
+
+
+
+                const bookingId = String(b.id || '');
+
+
+
+                const vehicle = (b.car || b.vehicle || '').toLowerCase();
+
+
+
+                
+
+
+
+                return customerName.includes(query) || 
+
+
+
+                       bookingId.includes(query) || 
+
+
+
+                       vehicle.includes(query);
+
+
+
+            });
+
+
+
+        }
+
+
+
+        
+
+
+
+        PastBookings.currentPage = 1;
+
+
+
+        PastBookings.renderTable();
+
+
+
+        PastBookings.updatePaginationControls();
+
+
+
+    };
+
+
+
+
+
+
+
+    window.sortPastBookings = function() {
+
+
+
+        const sortSelect = document.getElementById('pastBookingsSort');
+
+
+
+        if (!sortSelect) return;
+
+
+
+        
+
+
+
+        PastBookings.sortBy = sortSelect.value;
+
+
+
+        PastBookings.currentPage = 1;
+
+
+
+        PastBookings.load();
+
+
+
+    };
+
+
+
+
+
+
+
+    window.changePastBookingsPageSize = function() {
+
+
+
+        const pageSizeSelect = document.getElementById('pastBookingsPageSize');
+
+
+
+        if (!pageSizeSelect) return;
+
+
+
+        
+
+
+
+        PastBookings.pageSize = parseInt(pageSizeSelect.value);
+
+
+
+        PastBookings.currentPage = 1;
+
+
+
+        PastBookings.load();
+
+
+
+    };
+
+
+
+
+
+
+
+    window.previousPastBookingsPage = function() {
+
+
+
+        if (PastBookings.currentPage > 1) {
+
+
+
+            PastBookings.currentPage--;
+
+
+
+            PastBookings.load();
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    window.nextPastBookingsPage = function() {
+
+
+
+        if (PastBookings.currentPage < PastBookings.totalPages) {
+
+
+
+            PastBookings.currentPage++;
+
+
+
+            PastBookings.load();
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    // --- EXTENSIONS MODULE ---
+
+
+
+    window.AdminChatWithUser = function(bookingId) {
+
+
+
+        // Find user info from Bookings.data, then open chat
+
+
+
+        const b = (Bookings.data || []).find(x => x.id === bookingId);
+
+
+
+        const name = b ? (b.customer_name || "Customer") : "Customer";
+
+
+
+        // We need user_id - fetch it via booking detail or use booking_id as fallback
+
+
+
+        fetch(`${API_BASE}/api/admin/bookings/${bookingId}/license-details`)
+
+
+
+            .then(r => r.json()).then(d => {
+
+
+
+                // license-details has user_id indirectly; use booking endpoint
+
+
+
+                return fetch(`${API_URL}/bookings?admin_id=`);
+
+
+
+            }).catch(() => {});
+
+
+
+        // Simpler: open chat tab and show user search pre-filled
+
+
+
+        switchTab("chat");
+
+
+
+        setTimeout(() => {
+
+
+
+            AdminChat.showUserSearch();
+
+
+
+            const inp = document.getElementById("acUserSearchInput");
+
+
+
+            if (inp) { inp.value = name; AdminChat.searchUsers(name); }
+
+
+
+        }, 300);
+
+
+
+    };
+
+
+
+
+
+
+
+    const Extensions = {
+
+
+
+        async load() {
+
+
+
+            const list = document.getElementById('extensionRequestsList');
+
+
+
+            if (!list) return;
+
+
+
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div>';
+
+
+
+            try {
+
+
+
+                const res = await fetch(`${API_URL}/admin/extensions`);
+
+
+
+                const data = res.ok ? await res.json() : [];
+
+
+
+                const badge = document.getElementById('extReqBadge');
+
+
+
+                if (badge) { badge.textContent = data.length; badge.style.display = data.length > 0 ? 'inline-flex' : 'none'; }
+
+
+
+                // Also update the tab button badge
+
+
+
+                const tabBadge = document.getElementById('extTabBadge');
+
+
+
+                if (tabBadge) { tabBadge.textContent = data.length; tabBadge.style.display = data.length > 0 ? 'inline-flex' : 'none'; }
+
+
+
+                if (!data.length) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">No pending extension requests.</div>'; return; }
+
+
+
+                list.innerHTML = data.map(e => `
+
+
+
+                    <div data-ext-id="${e.id}" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;border-left:3px solid #f59e0b;">
+
+
+
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+
+
+
+                            <div>
+
+
+
+                                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:700;">Booking #${e.booking_id}</div>
+
+
+
+                                <div style="font-size:0.88rem;font-weight:800;color:var(--text-main);">${e.customer_name || 'Customer'}</div>
+
+
+
+                                <div style="font-size:0.75rem;color:var(--text-muted);">${e.car || ''}</div>
+
+
+
+                            </div>
+
+
+
+                            <span style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);padding:3px 8px;border-radius:20px;font-size:0.62rem;font-weight:800;">PENDING</span>
+
+
+
+                        </div>
+
+
+
+                        <div style="background:var(--surface-container);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;">
+
+
+
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+
+
+
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Current End</div><div style="font-weight:700;color:var(--text-main);">${e.original_end_date}</div></div>
+
+
+
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Requested End</div><div style="font-weight:700;color:#f59e0b;">${e.new_end_date}</div></div>
+
+
+
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Extension</div><div style="font-weight:700;color:var(--text-main);">${e.extension_days} day${e.extension_days !== 1 ? 's' : ''}</div></div>
+
+
+
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Amount Paid</div><div style="font-weight:800;color:#00B14F;">&#8369;${parseFloat(e.extension_price||0).toLocaleString()}</div></div>
+
+
+
+                            </div>
+
+
+
+                            <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);">Method: <span style="color:var(--text-main);font-weight:600;">${e.payment_method || 'N/A'}</span>${e.reference_number ? ' &bull; Ref: ' + e.reference_number : ''}</div>
+
+
+
+                            ${e.payment_proof_url ? `<img src="${e.payment_proof_url}" style="width:100%;border-radius:8px;margin-top:8px;max-height:150px;object-fit:contain;background:rgba(0,0,0,0.2);">` : ''}
+
+
+
+                        </div>
+
+
+
+                        <div class="ext-action-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+
+
+
+                            <button onclick="Extensions.approve(${e.id})" style="padding:10px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+
+
+
+                                <i class="fas fa-check" style="margin-right:4px;"></i>Approve
+
+
+
+                            </button>
+
+
+
+                            <button onclick="Extensions.reject(${e.id})" style="padding:10px;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;">
+
+
+
+                                <i class="fas fa-times" style="margin-right:4px;"></i>Reject
+
+
+
+                            </button>
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                `).join('');
+
+
+
+            } catch(err) {
+
+
+
+                if (list) list.innerHTML = '<div style="color:var(--danger);text-align:center;padding:12px;">Failed to load extensions.</div>';
+
+
+
+            }
+
+
+
+        },
+
+
+
+
+
+
+
+        async approve(extId) {
+
+
+
+            if (!confirm('Approve this extension request?\n\nThis will update the booking end date.')) return;
+
+
+
+            try {
+
+
+
+                const res = await fetch(`${API_URL}/admin/extensions/${extId}/approve`, { method: 'PUT' });
+
+
+
+                const data = await res.json();
+
+
+
+                if (res.ok) {
+
+
+
+                    showNotification('Extension approved! Booking end date updated.', 'success');
+
+
+
+                    this.load();
+
+
+
+                    Bookings.refresh();
+
+
+
+                } else { showNotification(data.error || 'Failed to approve', 'error'); }
+
+
+
+            } catch(err) { showNotification('Network error', 'error'); }
+
+
+
+        },
+
+
+
+
+
+
+
+        async reject(extId) {
+
+
+
+            const note = prompt('Reason for rejection (customer will be notified):');
+
+
+
+            if (note === null) return;
+
+
+
+            try {
+
+
+
+                const res = await fetch(`${API_URL}/admin/extensions/${extId}/reject`, {
+
+
+
+                    method: 'PUT',
+
+
+
+                    headers: { 'Content-Type': 'application/json' },
+
+
+
+                    body: JSON.stringify({ note: note || 'Extension rejected. Refund will be processed.' })
+
+
+
+                });
+
+
+
+                const data = await res.json();
+
+
+
+                if (!res.ok) { showNotification(data.error || 'Failed to reject', 'error'); return; }
+
+
+
+
+
+
+
+                showNotification('Extension rejected. Customer notified.', 'success');
+
+
+
+
+
+
+
+                // Show inline refund form for this extension
+
+
+
+                const refundAmount = data.refund_amount || 0;
+
+
+
+                const bookingId    = data.booking_id;
+
+
+
+                const extensionId  = data.extension_id || extId;
+
+
+
+
+
+
+
+                // Find the card and replace action buttons with refund panel
+
+
+
+                const card = document.querySelector(`[data-ext-id="${extId}"]`);
+
+
+
+                if (card) {
+
+
+
+                    const actionDiv = card.querySelector('.ext-action-btns');
+
+
+
+                    if (actionDiv) {
+
+
+
+                        actionDiv.innerHTML = `
+
+
+
+                            <div style="border:1.5px solid #f59e0b;border-radius:12px;padding:14px;background:rgba(245,158,11,0.06);margin-top:4px;">
+
+
+
+                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+
+
+
+                                    <i class="fas fa-undo-alt" style="color:#f59e0b;"></i>
+
+
+
+                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund � ?${parseFloat(refundAmount).toLocaleString()}</span>
+
+
+
+                                </div>
+
+
+
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+
+
+
+                                    <input id="extRfAmt_${extensionId}" type="number" step="0.01" value="${parseFloat(refundAmount).toFixed(2)}"
+
+
+
+                                        placeholder="Amount (PHP)"
+
+
+
+                                        style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+
+
+
+                                    <select id="extRfMethod_${extensionId}" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+
+
+
+                                        <option value="GCash">GCash</option>
+
+
+
+                                        <option value="Maya">Maya</option>
+
+
+
+                                        <option value="Bank Transfer">Bank Transfer</option>
+
+
+
+                                        <option value="Cash">Cash</option>
+
+
+
+                                    </select>
+
+
+
+                                    <input id="extRfRef_${extensionId}" type="text" placeholder="Reference # (optional)"
+
+
+
+                                        style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.85rem;">
+
+
+
+                                    <input id="extRfProof_${extensionId}" type="file" accept="image/*" style="font-size:0.75rem;color:#64748b;">
+
+
+
+                                    <button onclick="Extensions.processExtRefund(${extensionId}, ${bookingId})"
+
+
+
+                                        style="width:100%;padding:11px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.85rem;font-weight:800;cursor:pointer;">
+
+
+
+                                        <i class="fas fa-paper-plane" style="margin-right:5px;"></i>Confirm Refund Sent
+
+
+
+                                    </button>
+
+
+
+                                </div>
+
+
+
+                            </div>`;
+
+
+
+                    }
+
+
+
+                } else {
+
+
+
+                    // Fallback: reload the list
+
+
+
+                    this.load();
+
+
+
+                }
+
+
+
+                Bookings.refresh();
+
+
+
+            } catch(err) { showNotification('Network error', 'error'); }
+
+
+
+        },
+
+
+
+
+
+
+
+        async processExtRefund(extensionId, bookingId) {
+
+
+
+            const user   = adminAuth.getUser();
+
+
+
+            const amount = (document.getElementById(`extRfAmt_${extensionId}`)    || {}).value;
+
+
+
+            const method = (document.getElementById(`extRfMethod_${extensionId}`) || {}).value || 'GCash';
+
+
+
+            const ref    = (document.getElementById(`extRfRef_${extensionId}`)    || {}).value || '';
+
+
+
+            const proofEl = document.getElementById(`extRfProof_${extensionId}`);
+
+
+
+
+
+
+
+            if (!amount || parseFloat(amount) <= 0) {
+
+
+
+                showNotification('Please enter a valid amount.', 'error');
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            const btn = event.target;
+
+
+
+            btn.disabled = true;
+
+
+
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+
+
+
+
+
+
+            try {
+
+
+
+                const fd = new FormData();
+
+
+
+                fd.append('booking_id', bookingId);
+
+
+
+                fd.append('extension_id', extensionId);
+
+
+
+                fd.append('admin_id', user ? user.id : 1);
+
+
+
+                fd.append('refund_amount', amount);
+
+
+
+                fd.append('refund_method', method);
+
+
+
+                fd.append('refund_ref', ref);
+
+
+
+                fd.append('refund_note', `Extension #${extensionId} refund`);
+
+
+
+                if (proofEl && proofEl.files && proofEl.files[0]) fd.append('proof', proofEl.files[0]);
+
+
+
+
+
+
+
+                const res  = await fetch(`${API_URL}/admin/process-refund`, { method: 'POST', body: fd });
+
+
+
+                const data = await res.json();
+
+
+
+                if (!res.ok) throw new Error(data.error || 'Refund failed');
+
+
+
+
+
+
+
+                showNotification(`Refund of ?${parseFloat(amount).toLocaleString()} confirmed. Customer notified.`, 'success');
+
+
+
+                this.load();
+
+
+
+                Bookings.refresh();
+
+
+
+            } catch(err) {
+
+
+
+                showNotification(err.message, 'error');
+
+
+
+                btn.disabled = false;
+
+
+
+                btn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:5px;"></i>Confirm Refund Sent';
+
+
+
+            }
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    window.switchBookingTab = function(tab) {
+
+
+
+        // Hide all tab contents
+
+
+
+        const tabContents = document.querySelectorAll('.booking-tab-content');
+
+
+
+        tabContents.forEach(content => {
+
+
+
+            content.style.display = 'none';
+
+
+
+        });
+
+
+
+        
+
+
+
+        // Remove active class from all tab buttons
+
+
+
+        const tabButtons = document.querySelectorAll('.booking-tab-btn');
+
+
+
+        tabButtons.forEach(btn => {
+
+
+
+            btn.style.border = '1px solid var(--border)';
+
+
+
+            btn.style.background = 'var(--surface-container)';
+
+
+
+            btn.style.color = 'var(--text-secondary)';
+
+
+
+        });
+
+
+
+        
+
+
+
+        // Show selected tab content
+
+
+
+        if (tab === 'active') {
+
+
+
+            const activeTab = document.getElementById('tabActive');
+
+
+
+            if (activeTab) activeTab.style.display = 'block';
+
+
+
+            const activeBtn = document.getElementById('tabBtnActive');
+
+
+
+            if (activeBtn) {
+
+
+
+                activeBtn.style.border = '1px solid var(--primary)';
+
+
+
+                activeBtn.style.background = 'var(--primary)';
+
+
+
+                activeBtn.style.color = 'white';
+
+
+
+            }
+
+
+
+            // Refresh active bookings
+
+
+
+            if (typeof ActiveNow !== 'undefined' && typeof Bookings !== 'undefined') {
+
+
+
+                ActiveNow.render(Bookings.data);
+
+
+
+            }
+
+
+
+        } else if (tab === 'past') {
+
+
+
+            const pastTab = document.getElementById('tabPast');
+
+
+
+            if (pastTab) pastTab.style.display = 'block';
+
+
+
+            const pastBtn = document.getElementById('tabBtnPast');
+
+
+
+            if (pastBtn) {
+
+
+
+                pastBtn.style.border = '1px solid var(--primary)';
+
+
+
+                pastBtn.style.background = 'var(--primary)';
+
+
+
+                pastBtn.style.color = 'white';
+
+
+
+            }
+
+
+
+            // Load past bookings
+
+
+
+            PastBookings.load();
+
+
+
+        } else if (tab === 'new') {
+
+
+
+            const newTab = document.getElementById('tabNew');
+
+
+
+            if (newTab) newTab.style.display = 'block';
+
+
+
+            const newBtn = document.getElementById('tabBtnNew');
+
+
+
+            if (newBtn) {
+
+
+
+                newBtn.style.border = '1px solid var(--primary)';
+
+
+
+                newBtn.style.background = 'var(--primary)';
+
+
+
+                newBtn.style.color = 'white';
+
+
+
+            }
+
+
+
+            if (typeof Bookings !== 'undefined') {
+
+
+
+                Bookings.renderNew();
+
+
+
+            }
+
+
+
+            if (typeof Extensions !== 'undefined') {
+
+
+
+                Extensions.load();
+
+
+
+            }
+
+
+
+        } else if (tab === 'all') {
+
+
+
+            const allTab = document.getElementById('tabAll');
+
+
+
+            if (allTab) allTab.style.display = 'block';
+
+
+
+            const allBtn = document.getElementById('tabBtnAll');
+
+
+
+            if (allBtn) {
+
+
+
+                allBtn.style.border = '1px solid var(--primary)';
+
+
+
+                allBtn.style.background = 'var(--primary)';
+
+
+
+                allBtn.style.color = 'white';
+
+
+
+            }
+
+
+
+            if (typeof Bookings !== 'undefined') {
+
+
+
+                Bookings.render();
+
+
+
+            }
+
+
+
+        } else if (tab === 'extensions') {
+
+
+
+            const extTab = document.getElementById('tabExtensions');
+
+
+
+            if (extTab) extTab.style.display = 'block';
+
+
+
+            const extBtn = document.getElementById('tabBtnExtensions');
+
+
+
+            if (extBtn) {
+
+
+
+                extBtn.style.border = '1px solid var(--primary)';
+
+
+
+                extBtn.style.background = 'var(--primary)';
+
+
+
+                extBtn.style.color = 'white';
+
+
+
+            }
+
+
+
+            if (typeof Extensions !== 'undefined') {
+
+
+
+                Extensions.load();
+
+
+
+            }
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    // --- REPORTS MODULE ---
+
+
+
+    const Reports = {
+
+
+
+        chart: null,
+
+
+
+        chartBookings: null,
+
+
+
+        chartPie: null,
+
+
+
+        _loaded: false,
+
+
+
+        _filter: 'month',
+
+
+
+        _rawData: null,
+
+
+
+
+
+
+
+        setFilter(period, btn) {
+
+
+
+            this._filter = period;
+
+
+
+            document.querySelectorAll('.rpt-filter-btn').forEach(b => {
+
+
+
+                b.style.background = 'var(--surface-container)';
+
+
+
+                b.style.borderColor = 'var(--border)';
+
+
+
+                b.style.color = 'var(--text-secondary)';
+
+
+
+            });
+
+
+
+            btn.style.background = 'var(--primary)';
+
+
+
+            btn.style.borderColor = 'var(--primary)';
+
+
+
+            btn.style.color = 'white';
+
+
+
+            // Set default date range based on period
+
+
+
+            const now = new Date();
+
+
+
+            const to = now.toISOString().split('T')[0];
+
+
+
+            let from;
+
+
+
+            if (period === 'day') {
+
+
+
+                from = to;
+
+
+
+            } else if (period === 'month') {
+
+
+
+                const d = new Date(now); d.setDate(1);
+
+
+
+                from = d.toISOString().split('T')[0];
+
+
+
+            } else {
+
+
+
+                const d = new Date(now); d.setMonth(0); d.setDate(1);
+
+
+
+                from = d.toISOString().split('T')[0];
+
+
+
+            }
+
+
+
+            document.getElementById('rptDateFrom').value = from;
+
+
+
+            document.getElementById('rptDateTo').value = to;
+
+
+
+            this.refresh();
+
+
+
+        },
+
+
+
+
+
+
+
+        async refresh() {
+
+
+
+            this._loaded = true;
+
+
+
+            try {
+
+
+
+                const from = document.getElementById('rptDateFrom').value;
+
+
+
+                const to = document.getElementById('rptDateTo').value;
+
+
+
+                const params = from && to ? `&date_from=${from}&date_to=${to}` : '';
+
+
+
+                const res = await fetch(`${API_BASE}/api/admin/detailed-stats?filter=${this._filter}${params}`);
+
+
+
+                const data = await res.json();
+
+
+
+                this._rawData = data;
+
+
+
+
+
+
+
+                const totalRev = data.totalRevenue || 0;
+
+
+
+                const totalBook = data.totalBookings || 0;
+
+
+
+                document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
+
+
+
+                document.getElementById('repActive').textContent = totalBook;
+
+
+
+                document.getElementById('repTotalRev').textContent = '\u20B1' + totalRev.toLocaleString();
+
+
+
+                const activeFleetCount = (data.fleetDistribution || []).reduce((sum, item) => sum + (item.count || 0), 0);
+
+
+
+                document.getElementById('repFleet').textContent = activeFleetCount;
+
+
+
+
+
+
+
+                this.renderRevenueChart(data.revenueTrend || []);
+
+
+
+                this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
+
+
+
+                this.renderPieChart(data.topVehicles || []);
+
+
+
+                this.renderTop(data.topVehicles || []);
+
+
+
+            } catch (err) { console.error(err); }
+
+
+
+        },
+
+
+
+
+
+
+
+        renderRevenueChart(trend) {
+
+
+
+            const ctx = document.getElementById('reportsRevenueChart').getContext('2d');
+
+
+
+            if (this.chart) this.chart.destroy();
+
+
+
+            this.chart = new Chart(ctx, {
+
+
+
+                type: 'line',
+
+
+
+                data: {
+
+
+
+                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+
+
+
+                    datasets: [{
+
+
+
+                        label: 'Revenue',
+
+
+
+                        data: trend.map(t => t.amount || t.revenue || 0),
+
+
+
+                        borderColor: '#00B14F',
+
+
+
+                        borderWidth: 2,
+
+
+
+                        backgroundColor: 'rgba(0,177,79,0.1)',
+
+
+
+                        fill: true,
+
+
+
+                        tension: 0.4,
+
+
+
+                        pointRadius: 3,
+
+
+
+                        pointBackgroundColor: '#00B14F'
+
+
+
+                    }]
+
+
+
+                },
+
+
+
+                options: { responsive: true, maintainAspectRatio: false,
+
+
+
+                    plugins: { legend: { display: false } },
+
+
+
+                    scales: {
+
+
+
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+
+
+
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+
+
+
+                    }
+
+
+
+                }
+
+
+
+            });
+
+
+
+            makeChartClickable('reportsRevenueChart', this.chart, 'revenue');
+
+
+
+        },
+
+
+
+
+
+
+
+        renderBookingsChart(trend) {
+
+
+
+            const ctx = document.getElementById('reportsBookingsChart').getContext('2d');
+
+
+
+            if (this.chartBookings) this.chartBookings.destroy();
+
+
+
+            const barPalette = ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#a855f7','#84cc16','#e11d48'];
+
+
+
+            this.chartBookings = new Chart(ctx, {
+
+
+
+                type: 'bar',
+
+
+
+                data: {
+
+
+
+                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+
+
+
+                    datasets: [{
+
+
+
+                        label: 'Bookings',
+
+
+
+                        data: trend.map(t => t.booking_count || t.count || t.bookings || 0),
+
+
+
+                        backgroundColor: trend.map((_, i) => barPalette[i % barPalette.length]),
+
+
+
+                        borderRadius: 4
+
+
+
+                    }]
+
+
+
+                },
+
+
+
+                options: { responsive: true, maintainAspectRatio: false,
+
+
+
+                    plugins: { legend: { display: false } },
+
+
+
+                    scales: {
+
+
+
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+
+
+
+                        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+
+
+
+                    }
+
+
+
+                }
+
+
+
+            });
+
+
+
+            makeChartClickable('reportsBookingsChart', this.chartBookings, 'bookings');
+
+
+
+        },
+
+
+
+
+
+
+
+        renderPieChart(cars) {
+
+
+
+            const ctx = document.getElementById('reportsTopPieChart').getContext('2d');
+
+
+
+            if (this.chartPie) this.chartPie.destroy();
+
+
+
+            // Deduplicate by vehicle name, summing booking counts
+
+
+
+            const seen = {};
+
+
+
+            cars.forEach(c => {
+
+
+
+                const key = `${c.brand} ${c.model}`;
+
+
+
+                if (seen[key]) {
+
+
+
+                    seen[key].booking_count += (c.booking_count || 0);
+
+
+
+                } else {
+
+
+
+                    seen[key] = { label: key, booking_count: c.booking_count || 0 };
+
+
+
+                }
+
+
+
+            });
+
+
+
+            const deduped = Object.values(seen).sort((a, b) => b.booking_count - a.booking_count).slice(0, 5);
+
+
+
+            this.chartPie = new Chart(ctx, {
+
+
+
+                type: 'pie',
+
+
+
+                data: {
+
+
+
+                    labels: deduped.map(c => c.label),
+
+
+
+                    datasets: [{
+
+
+
+                        data: deduped.map(c => c.booking_count),
+
+
+
+                        backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6'],
+
+
+
+                        borderWidth: 0
+
+
+
+                    }]
+
+
+
+                },
+
+
+
+                options: {
+
+
+
+                    responsive: true,
+
+
+
+                    maintainAspectRatio: false,
+
+
+
+                    plugins: {
+
+
+
+                        legend: {
+
+
+
+                            position: 'bottom',
+
+
+
+                            labels: {
+
+
+
+                                color: '#6b7080',
+
+
+
+                                font: { size: 9 },
+
+
+
+                                padding: 6,
+
+
+
+                                usePointStyle: true,
+
+
+
+                                pointStyleWidth: 8,
+
+
+
+                                boxHeight: 8
+
+
+
+                            }
+
+
+
+                        }
+
+
+
+                    }
+
+
+
+                }
+
+
+
+            });
+
+
+
+            makeChartClickable('reportsTopPieChart', this.chartPie, 'topveh');
+
+
+
+        },
+
+
+
+
+
+
+
+        renderTop(cars) {
+
+
+
+            const container = document.getElementById('reportsTopVehicles');
+
+
+
+            if (!cars.length) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:20px;">No data</p>'; return; }
+
+
+
+            container.innerHTML = cars.slice(0, 5).map((c, i) => `
+
+
+
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:var(--surface-container);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+
+
+
+                    <div style="display:flex;align-items:center;gap:10px;">
+
+
+
+                        <span style="width:22px;height:22px;border-radius:50%;background:var(--primary);color:white;font-size:0.65rem;font-weight:800;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+
+
+
+                        <div>
+
+
+
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);">${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}</div>
+
+
+
+                            <div style="font-size:0.65rem;color:var(--text-muted);">${c.booking_count} bookings</div>
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">&#8369;${(c.revenue||0).toLocaleString()}</span>
+
+
+
+                </div>
+
+
+
+            `).join('');
+
+
+
+        },
+
+
+
+
+
+
+
+        async exportExcel() {
+
+
+
+            const data = this._rawData;
+
+
+
+            if (!data) { showNotification('No data to export', 'error'); return; }
+
+
+
+
+
+
+
+            const totalRev = data.totalRevenue || 0;
+
+
+
+            const totalBook = data.totalBookings || 0;
+
+
+
+
+
+
+
+            const rows = [];
+
+
+
+            rows.push(['Autoride Sales Report']);
+
+
+
+            rows.push(['Generated:', new Date().toLocaleString()]);
+
+
+
+            rows.push([]);
+
+
+
+            rows.push(['Summary']);
+
+
+
+            rows.push(['Total Revenue (PHP)', totalRev]);
+
+
+
+            rows.push(['Total Bookings', totalBook]);
+
+
+
+            rows.push(['Average Revenue per Booking (PHP)', totalBook > 0 ? Math.floor(totalRev / totalBook) : 0]);
+
+
+
+            rows.push([]);
+
+
+
+            rows.push(['Top Vehicles by Revenue']);
+
+
+
+            rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
+
+
+
+            (data.topVehicles || []).forEach((c, i) => {
+
+
+
+                rows.push([i + 1, c.brand + " " + c.model, c.booking_count, c.revenue || 0]);
+
+
+
+            });
+
+
+
+            rows.push([]);
+
+
+
+            rows.push(['Revenue Trend']);
+
+
+
+            rows.push(['Date', 'Revenue (PHP)']);
+
+
+
+            (data.revenueTrend || []).forEach(t => {
+
+
+
+                rows.push([t.day || t.label || '', t.amount || 0]);
+
+
+
+            });
+
+
+
+
+
+
+
+            // Generate real Excel file using SheetJS
+
+
+
+            try {
+
+
+
+                if (typeof XLSX === 'undefined') {
+
+
+
+                    throw new Error('Excel library not loaded');
+
+
+
+                }
+
+
+
+                
+
+
+
+                const wb = XLSX.utils.book_new();
+
+
+
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+
+
+
+                XLSX.utils.book_append_sheet(wb, ws, "Report");
+
+
+
+                
+
+
+
+                // Write as base64
+
+
+
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+
+
+                const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
+
+
+
+
+
+
+
+                // ?? Try Capacitor Filesystem (Android native download) ??
+
+
+
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+
+
+
+                if (Filesystem) {
+
+
+
+                    try {
+
+
+
+                        // Write to Downloads directory
+
+
+
+                        const result = await Filesystem.writeFile({
+
+
+
+                            path: filename,
+
+
+
+                            data: wboutBase64,
+
+
+
+                            directory: 'DOWNLOADS',
+
+
+
+                            recursive: true
+
+
+
+                        });
+
+
+
+                        showNotification('Excel saved to Downloads: ' + filename, 'success');
+
+
+
+
+
+
+
+                        // Try to open it with a file viewer
+
+
+
+                        try {
+
+
+
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+
+
+
+                            if (FileOpener) {
+
+
+
+                                await FileOpener.open({
+
+
+
+                                    filePath: result.uri,
+
+
+
+                                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+
+
+                                });
+
+
+
+                            }
+
+
+
+                        } catch (openErr) {
+
+
+
+                            // FileOpener not available � that's OK, file is still saved
+
+
+
+                        }
+
+
+
+                        return;
+
+
+
+                    } catch (fsErr) {
+
+
+
+                        console.warn('Downloads directory failed, trying Documents:', fsErr);
+
+
+
+                        // Fallback to Documents directory
+
+
+
+                        try {
+
+
+
+                            const result = await Filesystem.writeFile({
+
+
+
+                                path: filename,
+
+
+
+                                data: wboutBase64,
+
+
+
+                                directory: 'DOCUMENTS',
+
+
+
+                                recursive: true
+
+
+
+                            });
+
+
+
+                            showNotification('Excel saved to Documents: ' + filename, 'success');
+
+
+
+                            return;
+
+
+
+                        } catch (docErr) {
+
+
+
+                            console.warn('Documents also failed, using browser download:', docErr);
+
+
+
+                        }
+
+
+
+                    }
+
+
+
+                }
+
+
+
+
+
+
+
+                // ?? Browser / web fallback: trigger download via blob URL ??
+
+
+
+                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+
+
+                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+
+
+                const url = URL.createObjectURL(blob);
+
+
+
+                const a = document.createElement('a');
+
+
+
+                a.href = url;
+
+
+
+                a.download = filename;
+
+
+
+                document.body.appendChild(a);
+
+
+
+                a.click();
+
+
+
+                document.body.removeChild(a);
+
+
+
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+
+
+                showNotification('Excel file downloaded!', 'success');
+
+
+
+
+
+
+
+            } catch (err) {
+
+
+
+                console.error('Excel export failed:', err);
+
+
+
+                showNotification('Export failed: ' + err.message, 'error');
+
+
+
+            }
+
+
+
+        },
+
+
+
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // --- SETTINGS MODULE ---
+
+
+
+    const Settings = {
+
+
+
+        async fetch() {
+
+
+
+            const list = document.getElementById('mobileSettingsList');
+
+
+
+            const user = adminAuth.getUser();
+
+
+
+            if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) return;
+
+
+
+            
+
+
+
+            try {
+
+
+
+                const res = await fetch(`${API_BASE}/api/admin/settings`);
+
+
+
+                const data = await res.json();
+
+
+
+                list.innerHTML = data.map(s => `
+
+
+
+                    <div style="margin-bottom: 15px;">
+
+
+
+                        <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px;">${s.description}</label>
+
+
+
+                        <div style="position: relative;">
+
+
+
+                            <input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                `).join('');
+
+
+
+            } catch (err) {
+
+
+
+                list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
+
+
+
+            }
+
+
+
+        },
+
+
+
+        async save() {
+
+
+
+            const inputs = document.querySelectorAll('#mobileSettingsList input');
+
+
+
+            const updates = Array.from(inputs).map(i => ({ key: i.dataset.key, value: i.value }));
+
+
+
+            const user = adminAuth.getUser();
+
+
+
+
+
+
+
+            try {
+
+
+
+                const res = await fetch(`${API_BASE}/api/admin/settings`, {
+
+
+
+                    method: 'POST',
+
+
+
+                    headers: { 'Content-Type': 'application/json' },
+
+
+
+                    body: JSON.stringify({ requester_id: user.id, settings: updates })
+
+
+
+                });
+
+
+
+                if (res.ok) {
+
+
+
+                    showNotification('Settings saved!', 'success');
+
+
+
+                    this.fetch();
+
+
+
+                } else {
+
+
+
+                    showNotification('Save failed', 'error');
+
+
+
+                }
+
+
+
+            } catch (err) { showNotification('Network error', 'error'); }
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    async function refreshDashboard(_retryCount) {
+
+
+
+        _retryCount = _retryCount || 0;
+
+
+
+        const user = adminAuth.getUser();
+
+
+
+        if (!user) {
+
+
+
+            if (_retryCount < 3) {
+
+
+
+                setTimeout(function() { refreshDashboard(_retryCount + 1); }, 500);
+
+
+
+            }
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        try {
+
+
+
+            const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}`);
+
+
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+
+
+            const data = await res.json();
+
+
+
+            
+
+
+
+            // Store for potential re-use
+
+
+
+            _dashData = data;
+
+
+
+
+
+
+
+            // Update stat cards
+
+
+
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
+
+
+
+            document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
+
+
+
+            
+
+
+
+            // Top Performance: bookings by vehicle type (derived from topVehicles)
+
+
+
+            const topPerf = document.getElementById('dashTopPerformance');
+
+
+
+            if (topPerf && data.topVehicles && data.topVehicles.length) {
+
+
+
+                // Group by vehicle type if available, else show top vehicles by booking count
+
+
+
+                const top = data.topVehicles.slice(0, 4);
+
+
+
+                topPerf.innerHTML = top.map(c => `
+
+
+
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-light);">
+
+
+
+                        <span style="font-size:0.75rem;color:var(--text-secondary);">${c.brand} ${c.model}</span>
+
+
+
+                        <span style="font-size:0.75rem;font-weight:800;color:var(--text-main);">${c.booking_count}</span>
+
+
+
+                    </div>
+
+
+
+                `).join('');
+
+
+
+            } else if (topPerf) {
+
+
+
+                topPerf.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">No data.</div>';
+
+
+
+            }
+
+
+
+
+
+
+
+            // Top Grossing: revenue by vehicle
+
+
+
+            const topGross = document.getElementById('dashTopGrossing');
+
+
+
+            if (topGross && data.topVehicles && data.topVehicles.length) {
+
+
+
+                const sorted = [...data.topVehicles].sort((a,b) => (b.revenue||0) - (a.revenue||0)).slice(0, 4);
+
+
+
+                topGross.innerHTML = sorted.map(c => `
+
+
+
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border-light);">
+
+
+
+                        <span style="font-size:0.75rem;color:var(--text-secondary);">${c.brand} ${c.model}</span>
+
+
+
+                        <span style="font-size:0.7rem;font-weight:800;color:var(--success);">\u20B1${(c.revenue||0).toLocaleString()}</span>
+
+
+
+                    </div>
+
+
+
+                `).join('');
+
+
+
+            } else if (topGross) {
+
+
+
+                topGross.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:10px 0;">No data.</div>';
+
+
+
+            }
+
+
+
+
+
+
+
+            // Init charts (canvases are always visible now)
+
+
+
+            if (typeof Chart !== 'undefined') initCharts(data);
+
+
+
+        } catch (err) { 
+
+
+
+            console.error('Dashboard Refresh Error:', err); 
+
+
+
+            document.getElementById('dashTotalRevenue').textContent = '\u20B1-';
+            var _dIds=['dashTotalRevenue','dashTotalBookings','dashActiveRentals','dashPendingBookings'];
+            _dIds.forEach(function(id){var e=document.getElementById(id);if(e)e.innerHTML='<div style="height:28px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div>';});
+
+
+
+            document.getElementById('dashTotalBookings').textContent = '-';
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    function renderTopVehicles(cars) {
+
+
+
+        const tbody = document.getElementById('topVehiclesBody');
+
+
+
+        if (!cars || cars.length === 0) {
+
+
+
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 40px; color: var(--text-muted); font-weight: 600;">No active vehicles.</td></tr>';
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        tbody.innerHTML = cars.map(c => `
+
+
+
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+
+
+
+                <td style="padding: 16px 8px;">
+
+
+
+                    <div style="font-weight: 800; color: var(--text-main); font-size: 0.9rem;">${c.brand}</div>
+
+
+
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">${c.model}</div>
+
+
+
+                </td>
+
+
+
+                <td style="padding: 16px 8px; text-align: center;">
+
+
+
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">${c.booking_count}</span>
+
+
+
+                </td>
+
+
+
+                <td style="padding: 16px 8px; text-align: right;">
+
+
+
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${c.revenue.toLocaleString()}</span>
+
+
+
+                </td>
+
+
+
+            </tr>
+
+
+
+        `).join('');
+
+
+
+    }
+
+
+
+
+
+
+
+    // --- CHART COLLAPSE TOGGLE ---
+
+
+
+    let _dashData = null; // store last dashboard data for re-render on expand
+
+
+
+
+
+
+
+    function toggleChart(id) {
+
+
+
+        const body = document.getElementById('cc-body-' + id);
+
+
+
+        const icon = document.getElementById('cc-icon-' + id);
+
+
+
+        if (!body) return;
+
+
+
+        const collapsed = body.style.display === 'none';
+
+
+
+        body.style.display = collapsed ? '' : 'none';
+
+
+
+        if (icon) icon.className = collapsed ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+
+
+
+        // Re-render chart when expanding so Chart.js gets correct dimensions
+
+
+
+        if (collapsed && _dashData) {
+
+
+
+            setTimeout(function() {
+
+
+
+                if (id === 'revenue' || id === 'bookings' || id === 'fleet' || id === 'topveh') {
+
+
+
+                    initCharts(_dashData);
+
+
+
+                }
+
+
+
+                window.dispatchEvent(new Event('resize'));
+
+
+
+            }, 100);
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    let charts = {};
+
+
+
+    function initCharts(data) {
+
+
+
+        if (charts.revenue) charts.revenue.destroy();
+
+
+
+        if (charts.bookings) charts.bookings.destroy();
+
+
+
+        if (charts.health) charts.health.destroy();
+
+
+
+        if (charts.topPie) charts.topPie.destroy();
+
+
+
+
+
+
+
+        const defaultScales = {
+
+
+
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+
+
+
+            y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+
+
+
+        };
+
+
+
+
+
+
+
+        // Revenue Line Chart
+
+
+
+        const revTrend = data.revenueTrend || [];
+
+
+
+        const revCtx = document.getElementById('revenueChart').getContext('2d');
+
+
+
+        charts.revenue = new Chart(revCtx, {
+
+
+
+            type: 'line',
+
+
+
+            data: {
+
+
+
+                labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
+
+
+
+                datasets: [{
+
+
+
+                    data: revTrend.length > 0 ? revTrend.map(t => t.amount) : [0],
+
+
+
+                    borderColor: '#00B14F',
+
+
+
+                    borderWidth: 3,
+
+
+
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+
+
+
+                    fill: true,
+
+
+
+                    tension: 0.4,
+
+
+
+                    pointRadius: 4,
+
+
+
+                    pointBackgroundColor: '#00B14F',
+
+
+
+                    pointBorderColor: '#fff',
+
+
+
+                    pointBorderWidth: 2
+
+
+
+                }]
+
+
+
+            },
+
+
+
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+
+
+
+        });
+
+
+
+
+
+
+
+        // Bookings Bar Chart - use booking status breakdown
+
+
+
+        const bookCtx = document.getElementById('bookingsChart');
+
+
+
+        if (bookCtx) {
+
+
+
+            const bStatus = data.bookingsByStatus || {};
+
+
+
+            const bLabels = Object.keys(bStatus).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+
+
+
+            const bData = Object.values(bStatus);
+
+
+
+            const barPalette = ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+
+
+
+            const bColors = bLabels.length
+
+
+
+                ? bLabels.map((_, i) => barPalette[i % barPalette.length])
+
+
+
+                : revTrend.map((_, i) => barPalette[i % barPalette.length]);
+
+
+
+            charts.bookings = new Chart(bookCtx.getContext('2d'), {
+
+
+
+                type: 'bar',
+
+
+
+                data: {
+
+
+
+                    labels: bLabels.length ? bLabels : revTrend.map(t => t.day.split('-').slice(1).join('/')),
+
+
+
+                    datasets: [{
+
+
+
+                        label: 'Bookings',
+
+
+
+                        data: bData.length ? bData : revTrend.map(() => 0),
+
+
+
+                        backgroundColor: bColors,
+
+
+
+                        borderRadius: 4
+
+
+
+                    }]
+
+
+
+                },
+
+
+
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+
+        // Fleet Health doughnut (only if canvas exists)
+
+
+
+        const fleetCtxEl = document.getElementById('fleetHealthChart');
+
+
+
+        if (fleetCtxEl) {
+
+
+
+            const fleetDist = data.fleetDistribution || [];
+
+
+
+            if (charts.health) charts.health.destroy();
+
+
+
+            charts.health = new Chart(fleetCtxEl.getContext('2d'), {
+
+
+
+                type: 'doughnut',
+
+
+
+                data: {
+
+
+
+                    labels: fleetDist.map(f => f.status),
+
+
+
+                    datasets: [{
+
+
+
+                        data: fleetDist.map(f => f.count),
+
+
+
+                        backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#94a3b8'],
+
+
+
+                        borderWidth: 0
+
+
+
+                    }]
+
+
+
+                },
+
+
+
+                options: {
+
+
+
+                    responsive: true, maintainAspectRatio: false, cutout: '75%',
+
+
+
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
+
+
+
+                }
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+
+        // Top Vehicles Pie Chart
+
+
+
+        const topVehEl = document.getElementById('topVehiclesPieChart');
+
+
+
+        if (topVehEl) {
+
+
+
+            const topVeh = (data.topVehicles || []).slice(0, 6);
+
+
+
+            if (charts.topPie) charts.topPie.destroy();
+
+
+
+            
+
+
+
+            const hasData = topVeh.length > 0 && topVeh.some(c => c.booking_count > 0);
+
+
+
+            
+
+
+
+            if (hasData) {
+
+
+
+                charts.topPie = new Chart(topVehEl.getContext('2d'), {
+
+
+
+                    type: 'pie',
+
+
+
+                    data: {
+
+
+
+                        labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
+
+
+
+                        datasets: [{
+
+
+
+                            data: topVeh.map(c => c.booking_count || 0),
+
+
+
+                            backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899'],
+
+
+
+                            borderWidth: 0
+
+
+
+                        }]
+
+
+
+                    },
+
+
+
+                    options: {
+
+
+
+                        responsive: true, maintainAspectRatio: false,
+
+
+
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
+
+
+
+                    }
+
+
+
+                });
+
+
+
+            } else {
+
+
+
+                const ctx = topVehEl.getContext('2d');
+
+
+
+                ctx.clearRect(0, 0, topVehEl.width, topVehEl.height);
+
+
+
+                ctx.font = 'bold 12px Arial';
+
+
+
+                ctx.fillStyle = '#94a3b8';
+
+
+
+                ctx.textAlign = 'center';
+
+
+
+                ctx.textBaseline = 'middle';
+
+
+
+                ctx.fillText('No data available', topVehEl.width / 2, topVehEl.height / 2);
+
+
+
+            }
+
+
+
+        }
+
+
+
+
+
+
+
+        // Make dashboard charts clickable
+
+
+
+        makeChartClickable('revenueChart', charts.revenue, 'revenue');
+
+
+
+        makeChartClickable('bookingsChart', charts.bookings, 'bookings');
+
+
+
+        if (charts.topPie) makeChartClickable('topVehiclesPieChart', charts.topPie, 'topveh');
+
+
+
+    }
+
+
+
+
+
+
+
+    // --- EXPANDABLE CHART POPUP LOGIC ---
+
+
+
+    let currentPopupChart = null;
+
+
+
+    let currentChartType = '';
+
+
+
+    let originalChartInstance = null;
+
+
+
+    let originalChartData = null;
+
+
+
+
+
+
+
+    function makeChartClickable(canvasId, chartInstance, chartType) {
+
+
+
+        const canvas = document.getElementById(canvasId);
+
+
+
+        if (!canvas) return;
+
+
+
+        canvas.style.cursor = 'pointer';
+
+
+
+        canvas.onclick = function() {
+
+
+
+            openChartPopup(chartInstance, chartType);
+
+
+
+        };
+
+
+
+    }
+
+
+
+
+
+
+
+    function openChartPopup(chartInstance, chartType) {
+
+
+
+        if (!chartInstance) return;
+
+
+
+        originalChartInstance = chartInstance;
+
+
+
+        currentChartType = chartType;
+
+
+
+        originalChartData = JSON.parse(JSON.stringify(chartInstance.data));
+
+
+
+
+
+
+
+        let titleText = 'Chart Details';
+
+
+
+        if (chartType === 'revenue') titleText = 'Revenue Details';
+
+
+
+        else if (chartType === 'bookings') titleText = 'Booking Details';
+
+
+
+        else if (chartType === 'fleet') titleText = 'Fleet Health Details';
+
+
+
+        else if (chartType === 'topveh') titleText = 'Vehicle Popularity Details';
+
+
+
+        document.getElementById('popupChartTitle').textContent = titleText;
+
+
+
+
+
+
+
+        // Reset filter inputs
+
+
+
+        document.getElementById('popupDateFrom').value = '';
+
+
+
+        document.getElementById('popupDateTo').value = '';
+
+
+
+        document.getElementById('popupStatusFilter').value = 'all';
+
+
+
+        document.getElementById('popupVehicleFilter').value = 'all';
+
+
+
+
+
+
+
+        // Adjust visibility of filters based on chart type
+
+
+
+        const metricContainer = document.getElementById('popupMetricFilterContainer');
+
+
+
+        const limitContainer = document.getElementById('popupLimitFilterContainer');
+
+
+
+        if (chartType === 'fleet') {
+
+
+
+            document.getElementById('popupStatusFilterContainer').style.display = 'none';
+
+
+
+        } else {
+
+
+
+            document.getElementById('popupStatusFilterContainer').style.display = '';
+
+
+
+        }
+
+
+
+        if (chartType === 'topveh') {
+
+
+
+            metricContainer.style.display = '';
+
+
+
+            limitContainer.style.display = '';
+
+
+
+            document.getElementById('popupMetricFilter').value = 'bookings';
+
+
+
+            document.getElementById('popupLimitFilter').value = '5';
+
+
+
+            document.getElementById('popupStatusFilterContainer').style.display = 'none';
+
+
+
+            document.getElementById('popupVehicleFilterContainer').style.display = 'none';
+
+
+
+        } else {
+
+
+
+            metricContainer.style.display = 'none';
+
+
+
+            limitContainer.style.display = 'none';
+
+
+
+            document.getElementById('popupVehicleFilterContainer').style.display = '';
+
+
+
+        }
+
+
+
+
+
+
+
+        const modal = document.getElementById('chartPopupModal');
+
+
+
+        modal.style.display = 'flex';
+
+
+
+        // Force reflow
+
+
+
+        modal.offsetHeight;
+
+
+
+        modal.classList.add('show');
+
+
+
+
+
+
+
+        renderPopupChart();
+
+
+
+    }
+
+
+
+
+
+
+
+    function renderPopupChart() {
+
+
+
+        const canvas = document.getElementById('popupChartCanvas');
+
+
+
+        if (!canvas) return;
+
+
+
+        const ctx = canvas.getContext('2d');
+
+
+
+        if (currentPopupChart) {
+
+
+
+            currentPopupChart.destroy();
+
+
+
+        }
+
+
+
+
+
+
+
+        const chartData = JSON.parse(JSON.stringify(originalChartData));
+
+
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+
+
+        const textColor = isDark ? '#ffffff' : '#0f1117';
+
+
+
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+
+
+
+
+
+
+
+        let chartConfig = {
+
+
+
+            type: originalChartInstance.config.type,
+
+
+
+            data: chartData,
+
+
+
+            options: {
+
+
+
+                responsive: true,
+
+
+
+                maintainAspectRatio: false,
+
+
+
+                plugins: {
+
+
+
+                    legend: {
+
+
+
+                        display: true,
+
+
+
+                        position: 'bottom',
+
+
+
+                        labels: {
+
+
+
+                            color: textColor,
+
+
+
+                            font: { family: 'Inter', size: 10, weight: 600 }
+
+
+
+                        }
+
+
+
+                    }
+
+
+
+                }
+
+
+
+            }
+
+
+
+        };
+
+
+
+
+
+
+
+        if (originalChartInstance.config.type !== 'doughnut' && originalChartInstance.config.type !== 'pie') {
+
+
+
+            chartConfig.options.scales = {
+
+
+
+                x: {
+
+
+
+                    grid: { display: false },
+
+
+
+                    ticks: { color: textColor, font: { size: 9 } }
+
+
+
+                },
+
+
+
+                y: {
+
+
+
+                    grid: { color: gridColor },
+
+
+
+                    ticks: { color: textColor, font: { size: 9 } }
+
+
+
+                }
+
+
+
+            };
+
+
+
+            if (currentChartType === 'revenue') {
+
+
+
+                chartConfig.options.scales.y.ticks.callback = function(value) {
+
+
+
+                    return '₱' + value.toLocaleString();
+
+
+
+                };
+
+
+
+            }
+
+
+
+        } else {
+
+
+
+            if (currentChartType === 'fleet') {
+
+
+
+                chartConfig.options.cutout = '68%';
+
+
+
+            }
+
+
+
+        }
+
+
+
+
+
+
+
+        currentPopupChart = new Chart(ctx, chartConfig);
+
+
+
+    }
+
+
+
+
+
+
+
+    function closeChartPopup() {
+
+
+
+        const modal = document.getElementById('chartPopupModal');
+
+
+
+        if (!modal) return;
+
+
+
+        modal.classList.remove('show');
+
+
+
+        setTimeout(() => {
+
+
+
+            modal.style.display = 'none';
+
+
+
+            if (currentPopupChart) {
+
+
+
+                currentPopupChart.destroy();
+
+
+
+                currentPopupChart = null;
+
+
+
+            }
+
+
+
+        }, 300);
+
+
+
+    }
+
+
+
+
+
+
+
+    function closeChartPopupOverlay(event) {
+
+
+
+        if (event.target.id === 'chartPopupModal') {
+
+
+
+            closeChartPopup();
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    async function applyPopupFilters() {
+
+
+
+        const dateFrom = document.getElementById('popupDateFrom').value;
+
+
+
+        const dateTo = document.getElementById('popupDateTo').value;
+
+
+
+        const status = document.getElementById('popupStatusFilter').value;
+
+
+
+        const vehicleType = document.getElementById('popupVehicleFilter').value;
+
+
+
+
+
+
+
+        const user = adminAuth.getUser();
+
+
+
+        if (!user) return;
+
+
+
+
+
+
+
+        try {
+
+
+
+            const url = `${API_URL}/admin/detailed-stats?admin_id=${user.id}&type=${currentChartType}&date_from=${dateFrom}&date_to=${dateTo}&status=${status}&vehicle_type=${vehicleType}`;
+
+
+
+            const response = await fetch(url);
+
+
+
+            if (!response.ok) throw new Error('Network response was not ok');
+
+
+
+            const data = await response.json();
+
+
+
+
+
+
+
+            if (currentChartType === 'revenue') {
+
+
+
+                const trend = data.revenueTrend || [];
+
+
+
+                originalChartData.labels = trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || '');
+
+
+
+                originalChartData.datasets[0].data = trend.map(t => t.amount || t.revenue || 0);
+
+
+
+            } else if (currentChartType === 'bookings') {
+
+
+
+                const trend = data.revenueTrend || [];
+
+
+
+                originalChartData.labels = trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || '');
+
+
+
+                originalChartData.datasets[0].data = trend.map(t => t.booking_count || t.count || t.bookings || 0);
+
+
+
+            } else if (currentChartType === 'fleet') {
+
+
+
+                const fleetDist = data.fleetDistribution || [];
+
+
+
+                originalChartData.labels = fleetDist.map(f => f.status);
+
+
+
+                originalChartData.datasets[0].data = fleetDist.map(f => f.count);
+
+
+
+            } else if (currentChartType === 'topveh') {
+
+
+
+                const metric = document.getElementById('popupMetricFilter').value || 'bookings';
+
+
+
+                const limitVal = document.getElementById('popupLimitFilter').value || '5';
+
+
+
+                let topVeh = data.topVehicles || [];
+
+
+
+                if (limitVal !== 'all') topVeh = topVeh.slice(0, parseInt(limitVal));
+
+
+
+                originalChartData.labels = topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim());
+
+
+
+                if (metric === 'revenue') {
+
+
+
+                    originalChartData.datasets[0].data = topVeh.map(c => c.revenue || 0);
+
+
+
+                } else {
+
+
+
+                    originalChartData.datasets[0].data = topVeh.map(c => c.booking_count || 0);
+
+
+
+                }
+
+
+
+                // Ensure enough colors
+
+
+
+                const pieColors = ['#00B14F','#00B14F','#f59e0b','#ef4444','#00B14F','#5FDBE2','#ec4899','#14b8a6','#f97316','#84cc16','#06b6d4','#a855f7','#e11d48','#0ea5e9','#22d3ee'];
+
+
+
+                originalChartData.datasets[0].backgroundColor = pieColors.slice(0, topVeh.length);
+
+
+
+            }
+
+
+
+
+
+
+
+            renderPopupChart();
+
+
+
+        } catch (error) {
+
+
+
+            console.error('Error applying popup filters:', error);
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    function resetPopupFilters() {
+
+
+
+        document.getElementById('popupDateFrom').value = '';
+
+
+
+        document.getElementById('popupDateTo').value = '';
+
+
+
+        document.getElementById('popupStatusFilter').value = 'all';
+
+
+
+        document.getElementById('popupVehicleFilter').value = 'all';
+
+
+
+        document.getElementById('popupMetricFilter').value = 'bookings';
+
+
+
+        document.getElementById('popupLimitFilter').value = '5';
+
+
+
+        applyPopupFilters();
+
+
+
+    }
+
+
+
+
+
+
+
+    // --- INSPECTIONS LOGIC ---
+
+
+
+    const Inspections = {
+
+
+
+        currentPhotos: [],
+
+
+
+        openModal(bookingId, type) {
+
+
+
+            const b = Bookings.data.find(x => x.id === bookingId);
+
+
+
+            if (!b) return;
+
+
+
+
+
+
+
+            // Reset first, then set values (order matters!)
+
+
+
+            document.getElementById('inspectionForm').reset();
+
+
+
+            this.currentPhotos = [];
+
+
+
+            document.getElementById('inspectPhotoPreview').innerHTML = '';
+
+
+
+            document.getElementById('inspectProofImages').innerHTML = '';
+
+
+
+
+
+
+
+            document.getElementById('inspectBookingId').value = bookingId;
+
+
+
+            document.getElementById('inspectType').value = type;
+
+
+
+            document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
+
+
+
+            document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
+
+
+
+
+
+
+
+            // Set receipt button
+
+
+
+            const receiptUrl = `${API_BASE}/api/bookings/${bookingId}/receipt`;
+
+
+
+            document.getElementById('inspectReceiptBtn').onclick = () => {
+
+
+
+                Inspections.showReceiptModal(bookingId);
+
+
+
+            };
+
+
+
+
+
+
+
+            // Load payment proof images asynchronously
+
+
+
+            fetch(`${API_BASE}/api/admin/bookings/${bookingId}/payment-proof`)
+
+
+
+                .then(r => r.json())
+
+
+
+                .then(data => {
+
+
+
+                    const proofs = Array.isArray(data) ? data.filter(p => p.payment_proof_url) : [];
+
+
+
+                    const container = document.getElementById('inspectProofImages');
+
+
+
+                    if (!container) return;
+
+
+
+                    if (proofs.length === 0) { container.innerHTML = ''; return; }
+
+
+
+                    container.innerHTML = proofs.map(p => `
+
+
+
+                        <div style="margin-top:8px;">
+
+
+
+                            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
+
+
+
+                                ${p.method || 'Payment'}${p.reference_number ? ' &bull; ' + p.reference_number : ''}
+
+
+
+                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
+
+
+
+                            </div>
+
+
+
+                            <img src="${p.payment_proof_url}" onclick="window.open('${p.payment_proof_url}','_blank')"
+
+
+
+                                style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;max-height:180px;object-fit:contain;background:rgba(0,0,0,0.3);">
+
+
+
+                        </div>
+
+
+
+                    `).join('');
+
+
+
+                }).catch(() => {});
+
+
+
+
+
+
+
+            document.getElementById('inspectionModal').style.display = 'flex'; modalOpen();
+
+
+
+        },
+
+
+
+
+
+
+
+        handlePhotoSelect(input) {
+
+
+
+            if (!input.files) return;
+
+
+
+            const preview = document.getElementById('inspectPhotoPreview');
+
+
+
+            Array.from(input.files).forEach(file => {
+
+
+
+                this.currentPhotos.push(file);
+
+
+
+                const reader = new FileReader();
+
+
+
+                reader.onload = (e) => {
+
+
+
+                    const div = document.createElement('div');
+
+
+
+                    div.style.cssText = 'flex: 0 0 100px; height: 100px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); position: relative;';
+
+
+
+                    div.innerHTML = `
+
+
+
+                        <img src="${e.target.result}" style="width: 100%; height: 100%; object-fit: cover;">
+
+
+
+                        <button type="button" onclick="this.parentElement.remove()" style="position: absolute; top: 5px; right: 5px; background: rgba(239, 68, 68, 0.8); border: none; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 0.6rem;"><i class="fas fa-times"></i></button>
+
+
+
+                    `;
+
+
+
+                    preview.appendChild(div);
+
+
+
+                };
+
+
+
+                reader.readAsDataURL(file);
+
+
+
+            });
+
+
+
+        },
+
+
+
+
+
+
+
+        async submit(event) {
+
+
+
+            event.preventDefault();
+
+
+
+            const btn = document.getElementById('inspectSubmitBtn');
+
+
+
+            const originalText = btn.innerHTML;
+
+
+
+            const bookingId = document.getElementById('inspectBookingId').value;
+
+
+
+            const type = document.getElementById('inspectType').value;
+
+
+
+            const user = adminAuth.getUser();
+
+
+
+            
+
+
+
+            const formData = new FormData();
+
+
+
+            formData.append('booking_id', bookingId);
+
+
+
+            formData.append('inspection_type', type);
+
+
+
+            formData.append('mileage', document.getElementById('inspectMileage').value);
+
+
+
+            formData.append('fuel_level', document.getElementById('inspectFuel').value);
+
+
+
+            formData.append('notes', document.getElementById('inspectNotes').value);
+
+
+
+            formData.append('inspector_id', user.id);
+
+
+
+            this.currentPhotos.forEach(file => formData.append('photos', file));
+
+
+
+
+
+
+
+            btn.disabled = true;
+
+
+
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
+
+
+
+
+
+
+
+            try {
+
+
+
+                const res = await fetch(`${API_URL}/inspections/submit`, { method: 'POST', body: formData });
+
+
+
+                const data = await res.json();
+
+
+
+                if (res.ok) {
+
+
+
+                    showNotification('Inspection report submitted!', 'success');
+
+
+
+                    document.getElementById('inspectionModal').style.display = 'none'; modalClose();
+
+
+
+                    Bookings.refresh();
+
+
+
+                } else {
+
+
+
+                    showNotification(data.error || 'Submission failed', 'error');
+
+
+
+                }
+
+
+
+            } catch (err) {
+
+
+
+                showNotification('Network error', 'error');
+
+
+
+            } finally {
+
+
+
+                btn.disabled = false;
+
+
+
+                btn.innerHTML = originalText;
+
+
+
+            }
+
+
+
+        },
+
+
+
+
+
+
+
+        async showReceiptModal(bookingId) {
+
+
+
+            const modal = document.getElementById('receiptPreviewModal');
+
+
+
+            const body = document.getElementById('receiptBody');
+
+
+
+            if (!modal || !body) return;
+
+
+
+
+
+
+
+            // Use already-loaded booking data from Bookings.data
+
+
+
+            const b = Bookings.data.find(x => x.id === bookingId);
+
+
+
+            if (!b) {
+
+
+
+                modal.style.display = 'flex';
+
+
+
+                body.innerHTML = '<div style="text-align:center;color:#f87171;padding:20px;"><i class="fas fa-exclamation-circle"></i> Booking not found</div>';
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            modal.style.display = 'flex';
+
+
+
+            body.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+
+
+
+
+
+
+            // Fetch payment proofs using correct API_URL
+
+
+
+            let proofs = [];
+
+
+
+            try {
+
+
+
+                const pRes = await fetch(`${API_URL}/admin/bookings/${bookingId}/payment-proof`);
+
+
+
+                if (pRes.ok) proofs = await pRes.json();
+
+
+
+                if (!Array.isArray(proofs)) proofs = [];
+
+
+
+            } catch(e) { proofs = []; }
+
+
+
+
+
+
+
+            const fmt = n => parseFloat(n||0).toLocaleString('en-PH', {minimumFractionDigits:2});
+
+
+
+            const fmtD = d => {
+
+
+
+                if (!d) return 'N/A';
+
+
+
+                try { return new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}); }
+
+
+
+                catch(e) { return String(d).split('T')[0]; }
+
+
+
+            };
+
+
+
+
+
+
+
+            // Build proof images HTML
+
+
+
+            const proofItems = proofs.filter(p => p.payment_proof_url);
+
+
+
+            const proofsHtml = proofItems.length ? `
+
+
+
+                <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);">
+
+
+
+                    <div style="font-size:0.68rem;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:10px;">Payment Proof</div>
+
+
+
+                    ${proofItems.map(p => `
+
+
+
+                        <div style="margin-bottom:8px;">
+
+
+
+                            <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
+
+
+
+                                ${p.method||'Payment'}${p.reference_number?' &bull; '+p.reference_number:''}
+
+
+
+                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+
+
+
+                            </div>
+
+
+
+                            <img src="${p.payment_proof_url}" style="width:100%;border-radius:8px;max-height:200px;object-fit:contain;background:rgba(0,0,0,0.3);">
+
+
+
+                        </div>
+
+
+
+                    `).join('')}
+
+
+
+                </div>` : '';
+
+
+
+
+
+
+
+            body.innerHTML = `
+
+
+
+                <div style="padding:4px 0 14px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:14px;">
+
+
+
+                    <div style="font-size:1rem;font-weight:900;color:white;">RECEIPT #${String(b.id).padStart(6,'0')}</div>
+
+
+
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:2px;">Status: <span style="color:#00B14F;font-weight:700;">${(b.status||'').toUpperCase()}</span></div>
+
+
+
+                </div>
+
+
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+
+
+
+                    <div>
+
+
+
+                        <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:4px;">Billed To</div>
+
+
+
+                        <div style="font-size:0.85rem;color:white;font-weight:600;">${b.customer_name||'N/A'}</div>
+
+
+
+                    </div>
+
+
+
+                    <div>
+
+
+
+                        <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:4px;">Rental Period</div>
+
+
+
+                        <div style="font-size:0.8rem;color:white;">${fmtD(b.start_date)}</div>
+
+
+
+                        <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);">to ${fmtD(b.end_date)}</div>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+                <div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;margin-bottom:14px;">
+
+
+
+                    <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:6px;">Vehicle</div>
+
+
+
+                    <div style="font-size:0.85rem;color:white;font-weight:600;">${b.car||'N/A'}</div>
+
+
+
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">${b.rental_type||''}</div>
+
+
+
+                </div>
+
+
+
+                <div>
+
+
+
+                    <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px;">Payment</div>
+
+
+
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.3);border-radius:10px;">
+
+
+
+                        <span style="font-weight:800;color:white;">Total Amount</span>
+
+
+
+                        <span style="font-weight:900;color:#00B14F;font-size:1.1rem;">&#8369;${fmt(b.total_price)}</span>
+
+
+
+                    </div>
+
+
+
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
+
+
+
+                        <span>Payment: <span style="color:${b.payment_status==='paid'?'#4ade80':'#fbbf24'};font-weight:700;">${(b.payment_status||'pending').toUpperCase()}</span></span>
+
+
+
+                    </div>
+
+
+
+                    ${proofs.length > 0 ? proofs.map(p => `
+
+
+
+                        <div style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+
+
+
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+
+
+
+                                <span style="font-size:0.72rem;color:rgba(255,255,255,0.5);">${p.method||'Payment'}</span>
+
+
+
+                                <span style="font-size:0.75rem;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+
+
+
+                            </div>
+
+
+
+                            ${p.reference_number ? `<div style="font-size:0.78rem;color:white;font-weight:600;">Ref #: <span style="color:#a5f3fc;font-family:monospace;">${p.reference_number}</span></div>` : ''}
+
+
+
+                            <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-top:2px;">Status: ${(p.status||'pending').toUpperCase()}</div>
+
+
+
+                        </div>
+
+
+
+                    `).join('') : ''}
+
+
+
+                </div>
+
+
+
+                ${proofsHtml}
+
+
+
+            `;
+
+
+
+        }
+
+
+
+
+
+
+
+    };
+
+
+
+
+
+
+
+    function openChangePasswordModal() {
+
+
+
+        document.getElementById('changePasswordModal').style.display = 'flex';
+
+
+
+    }
+
+
+
+
+
+
+
+    async function submitChangePassword() {
+
+
+
+        const newPass = document.getElementById('newMobilePassword').value;
+
+
+
+        const confirmPass = document.getElementById('confirmMobilePassword').value;
+
+
+
+        const user = adminAuth.getUser();
+
+
+
+
+
+
+
+        if (!newPass || !confirmPass) {
+
+
+
+            alert('Please fill in both fields');
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        if (newPass !== confirmPass) {
+
+
+
+            alert('Passwords do not match');
+
+
+
+            return;
+
+
+
+        }
+
+
+
+        if (newPass.length < 6) {
+
+
+
+            alert('Password too short (min 6 chars)');
+
+
+
+            return;
+
+
+
+        }
+
+
+
+
+
+
+
+        try {
+
+
+
+            const res = await fetch(`${API_BASE}/api/admin/change-password`, {
+
+
+
+                method: 'POST',
+
+
+
+                headers: { 'Content-Type': 'application/json' },
+
+
+
+                body: JSON.stringify({ user_id: user.id, new_password: newPass })
+
+
+
+            });
+
+
+
+            if (res.ok) {
+
+
+
+                showNotification('Password updated successfully!', 'success');
+
+
+
+                document.getElementById('changePasswordModal').style.display = 'none';
+
+
+
+                document.getElementById('newMobilePassword').value = '';
+
+
+
+                document.getElementById('confirmMobilePassword').value = '';
+
+
+
+            } else {
+
+
+
+                const data = await res.json();
+
+
+
+                showNotification(data.error || 'Failed to update', 'error');
+
+
+
+            }
+
+
+
+        } catch (err) { showNotification('Network error', 'error'); }
+
+
+
+    }
+
+
+
+
+
+
+
+    function showNotification(message, type = 'info') {
+
+
+
+        const container = document.getElementById('notificationContainer');
+
+
+
+        if (!container) return;
+
+
+
+
+
+
+
+        const notification = document.createElement('div');
+
+
+
+        notification.className = `notification ${type}`;
+
+
+
+        
+
+
+
+        let icon = 'info-circle';
+
+
+
+        if (type === 'success') icon = 'check-circle';
+
+
+
+        if (type === 'error') icon = 'exclamation-circle';
+
+
+
+
+
+
+
+        notification.innerHTML = `
+
+
+
+            <div class="notification-icon"><i class="fas fa-${icon}"></i></div>
+
+
+
+            <div style="flex:1; font-size: 0.9rem; font-weight: 500;">${message}</div>
+
+
+
+        `;
+
+
+
+
+
+
+
+        container.appendChild(notification);
+
+
+
+        setTimeout(() => notification.classList.add('show'), 10);
+
+
+
+        setTimeout(() => {
+
+
+
+            notification.classList.remove('show');
+
+
+
+            setTimeout(() => notification.remove(), 400);
+
+
+
+        }, 3500);
+
+
+
+    }
+
+
+
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+
+
+        adminAuth.initSession();
+
+
+
+
+
+
+
+        // FCM token save function for admin (defined early in script, referenced here for completeness)
+
+
+
+        // saveAdminFcmToken is defined at top of script block
+
+
+
+
+
+
+
+        // Login Button Listener
+
+
+
+        const loginBtn = document.getElementById('loginBtn');
+
+
+
+        if (loginBtn) {
+
+
+
+            loginBtn.addEventListener('click', () => {
+
+
+
+                adminAuth.login();
+
+
+
+            });
+
+
+
+        }
+
+
+
+        
+
+
+
+        // Staff Form Listener
+
+
+
+        const staffForm = document.getElementById('staffForm');
+
+
+
+        if (staffForm) {
+
+
+
+            staffForm.addEventListener('submit', (e) => Staff.submit(e));
+
+
+
+        }
+
+
+
+
+
+
+
+        setInterval(() => {
+
+
+
+            const now = new Date();
+
+
+
+            const headerTime = document.getElementById('headerTime');
+
+
+
+            if (headerTime) {
+
+
+
+                headerTime.textContent = now.toLocaleString('en-US', {
+
+
+
+                    weekday: 'short', month: 'short', day: 'numeric',
+
+
+
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+
+
+
+                });
+
+
+
+            }
+
+
+
+        }, 1000);
+
+
+
+
+
+
+
+        // Auto-refresh dashboard stats every 60 seconds (silent, no loading flash)
+
+
+
+        setInterval(() => {
+
+
+
+            if (typeof currentTab !== 'undefined' && currentTab === 'dashboard') {
+
+
+
+                refreshDashboard();
+
+
+
+            }
+
+
+
+        }, 60000);
+
+
+
+
+
+
+
+        // ---- Android Back Button Handler ----
+
+
+
+        // Uses custom modal instead of window.confirm() (which is blocked on Android WebView)
+
+
+
+        window.showExitConfirm = function() {
+
+
+
+            document.getElementById('exitConfirmModal').style.display = 'flex';
+
+
+
+        };
+
+
+
+        window.hideExitConfirm = function() {
+
+
+
+            document.getElementById('exitConfirmModal').style.display = 'none';
+
+
+
+        };
+
+
+
+        window.confirmExit = function() {
+
+
+
+            // Logout then exit
+
+
+
+            adminAuth.logoutAndExit();
+
+
+
+        };
+
+
+
+
+
+
+
+        // Tab history stack for back navigation
+
+
+
+        var _tabHistory = [];
+
+
+
+        var _origSwitchTabForBack = window.switchTab;
+
+
+
+        window.switchTab = function(tabId) {
+
+
+
+            var current = typeof currentTab !== 'undefined' ? currentTab : null;
+
+
+
+            if (current && current !== tabId) {
+
+
+
+                _tabHistory.push(current);
+
+
+
+                if (_tabHistory.length > 10) _tabHistory.shift();
+
+
+
+            }
+
+
+
+            _origSwitchTabForBack(tabId);
+
+
+
+        };
+
+
+
+
+
+
+
+        const handleBackButton = (e) => {
+
+
+
+            if (e && e.preventDefault) e.preventDefault();
+
+
+
+
+
+
+
+            // 1. If exit modal is open, close it
+
+
+
+            const exitModal = document.getElementById('exitConfirmModal');
+
+
+
+            if (exitModal && exitModal.style.display === 'flex') {
+
+
+
+                hideExitConfirm();
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            // 2. Close any open modal/overlay
+
+
+
+            const modals = document.querySelectorAll('.premium-modal, #inspectionModal, #licensePreviewModal, #changePasswordModal, #bookingDetailsModal, #vehicleModal, #driverModal');
+
+
+
+            for (const m of modals) {
+
+
+
+                if (m && (m.style.display === 'flex' || m.style.display === 'block')) {
+
+
+
+                    m.style.display = 'none';
+
+
+
+                    return;
+
+
+
+                }
+
+
+
+            }
+
+
+
+
+
+
+
+            // 3. Close notification panel if open
+
+
+
+            const notifPanel = document.getElementById('adminNotifPanel');
+
+
+
+            if (notifPanel && notifPanel.style.display !== 'none') {
+
+
+
+                notifPanel.style.display = 'none';
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            // 4. Close side drawer if open
+
+
+
+            const drawer = document.getElementById('sideDrawer');
+
+
+
+            if (drawer && (drawer.style.left === '0px' || drawer.classList.contains('open'))) {
+
+
+
+                toggleDrawer(false);
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            // 5. If on login screen, exit app
+
+
+
+            const loginOverlay = document.getElementById('adminLoginOverlay');
+
+
+
+            if (loginOverlay && loginOverlay.style.display !== 'none') {
+
+
+
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+
+
+
+                    window.Capacitor.Plugins.App.exitApp();
+
+
+
+                }
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            // 6. Navigate back through tab history
+
+
+
+            if (_tabHistory.length > 0) {
+
+
+
+                var prevTab = _tabHistory.pop();
+
+
+
+                _origSwitchTabForBack(prevTab);
+
+
+
+                return;
+
+
+
+            }
+
+
+
+
+
+
+
+            // 7. On root tab - show exit confirmation
+
+
+
+            showExitConfirm();
+
+
+
+        };
+
+
+
+
+
+
+
+        // Register for both Capacitor and Cordova back button events
+
+
+
+        (function() {
+
+
+
+            function _adminBackListener(e) {
+
+
+
+                if (e && e.preventDefault) e.preventDefault();
+
+
+
+                handleBackButton(e);
+
+
+
+            }
+
+
+
+            document.addEventListener('backbutton', _adminBackListener, false);
+
+
+
+            document.addEventListener('deviceready', function() {
+
+
+
+                document.removeEventListener('backbutton', _adminBackListener, false);
+
+
+
+                document.addEventListener('backbutton', _adminBackListener, false);
+
+
+
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+
+
+
+                    window.Capacitor.Plugins.App.addListener('backButton', function() {
+
+
+
+                        handleBackButton();
+
+
+
+                    });
+
+
+
+                }
+
+
+
+                
+
+
+
+                // Initialize Push Notifications for Admin
+
+
+
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+
+
+
+                    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+
+
+
+                    
+
+
+
+                    // Request permission
+
+
+
+                    PushNotifications.requestPermissions().then(function(result) {
+
+
+
+                        if (result.receive === 'granted') {
+
+
+
+                            PushNotifications.register();
+
+
+
+                        }
+
+
+
+                    });
+
+
+
+                    
+
+
+
+                    // Listen for registration success
+
+
+
+                    PushNotifications.addListener('registration', function(token) {
+
+
+
+                        console.log('Admin FCM Token:', token.value);
+
+
+
+                        window._adminFcmToken = token.value;
+
+
+
+                        saveAdminFcmToken(token.value);
+
+
+
+                    });
+
+
+
+                    
+
+
+
+                    // Listen for registration errors
+
+
+
+                    PushNotifications.addListener('registrationError', function(error) {
+
+
+
+                        console.error('Admin FCM Registration Error:', error);
+
+
+
+                    });
+
+
+
+                    
+
+
+
+                    // Listen for push notifications received
+
+
+
+                    PushNotifications.addListener('pushNotificationReceived', function(notification) {
+
+
+
+                        console.log('Admin Push notification received:', notification);
+
+
+
+                        // Show in-app notification
+
+
+
+                        showNotification(notification.title || 'New Notification', 'info');
+
+
+
+                        
+
+
+
+                        // Refresh chat if on chat tab
+
+
+
+                        const user = adminAuth.getUser();
+
+
+
+                        if (user && typeof AdminChat !== 'undefined') {
+
+
+
+                            AdminChat.updateNavBadge();
+
+
+
+                        }
+
+
+
+                    });
+
+
+
+                    
+
+
+
+                    // Listen for notification taps
+
+
+
+                    PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
+
+
+
+                        console.log('Admin Push notification action performed:', notification);
+
+
+
+                        // Navigate to chat tab
+
+
+
+                        switchTab('chat');
+
+
+
+                    });
+
+
+
+                }
+
+
+
+            }, false);
+
+
+
+        })();
+
+
+
+    });
+
+
+
+
+
+
+
+    // Global Bindings for HTML Access
+
+
+
+    window.adminAuth = adminAuth;
+
+
+
+    window.toggleDarkMode = toggleDarkMode;
+
+
+
+    window.toggleSystemConfigModal = toggleSystemConfigModal;
+
+
+
+    window.closeSystemConfigModal = closeSystemConfigModal;
+
+
+
+    window.closeSystemConfigModalBackdrop = closeSystemConfigModalBackdrop;
+
+
+
+    window.Vehicles = Vehicles;
+
+
+
+    window.Bookings = Bookings;
+
+
+
+    window.Drivers = Drivers;
+
+
+
+    window.Verifications = Verifications;
+
+
+
+    window.Instructions = Instructions;
+
+
+
+    window.Staff = Staff;
+
+
+
     window.GPS = GPS;
 
 
