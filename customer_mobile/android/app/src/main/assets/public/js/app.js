@@ -2126,7 +2126,7 @@ function renderVehicleDetail(v) {
   }).join('');
   var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
     return '<div class="review-item"><div class="reviewer">' +
-      '<div class="avatar-placeholder">' + ((r.full_name || '?')[0]) + '</div>' +
+      '<div class="avatar-placeholder">' + ((r.full_name || '₱')[0]) + '</div>' +
       '<div><strong style="font-size:0.875rem;">' + (r.full_name || 'Customer') + '</strong></div></div>' +
       (r.comment ? '<p style="font-size:0.875rem;color:var(--text-secondary);">' + r.comment + '</p>' : '') +
       '</div>';
@@ -2171,7 +2171,7 @@ var PICKUP_LOCATIONS = [
 
 var INSURANCE_OPTIONS = [
   { type: 'Basic Protection', pricePerDay: 0, desc: 'Standard passenger and third-party liability.' },
-  { type: 'Standard Protection', pricePerDay: 500, desc: 'Collision Damage Waiver (CDW) with ?10k deductible.' },
+  { type: 'Standard Protection', pricePerDay: 500, desc: 'Collision Damage Waiver (CDW) with ₱10k deductible.' },
   { type: 'Premium Protection', pricePerDay: 1200, desc: 'Full coverage, zero deductible, and roadside assistance.' }
 ];
 
@@ -2256,7 +2256,7 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   var insuranceHtml = INSURANCE_OPTIONS.map(function(ins, i) {
-    var priceLabel = ins.pricePerDay === 0 ? 'Included (?0)' : '?' + ins.pricePerDay.toLocaleString() + '/day';
+    var priceLabel = ins.pricePerDay === 0 ? 'Included (₱0)' : '₱' + ins.pricePerDay.toLocaleString() + '/day';
     return '<div class="option-card' + (i === 0 ? ' selected' : '') + '" onclick="selectInsuranceOpt(' + i + ',this)">' +
       '<input type="radio" name="insurance"' + (i === 0 ? ' checked' : '') + '>' +
       '<div><strong>' + ins.type + '</strong> <span style="color:var(--primary);font-weight:700;">' + priceLabel + '</span>' +
@@ -2477,10 +2477,10 @@ function updateBookingPrice() {
     '<div class="price-row"><span>Base Rate (' + result.days + ' days - ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
     // Individual add-ons
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
-      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days - ?' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
+      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days - ₱' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
     }).join('') : '') +
     // Insurance detail
-    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days - ?' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
+    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days - ₱' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
     (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Long-term Discount (' + (appSettings.long_term_discount_percent || 10) + '%)</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
     (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-ticket-alt"></i> Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
@@ -2587,9 +2587,9 @@ function showRentalAgreement(payload, result, payType) {
     '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:0.8rem;line-height:1.7;">' +
     '<p style="margin-bottom:8px;">By proceeding, you agree to the Autoride Rental Terms and Conditions:</p>' +
     '<p><strong>Fuel Policy:</strong> Return the vehicle with the same fuel level as at pickup.</p>' +
-    '<p><strong>Mileage Rule:</strong> ' + (appSettings.mileage_limit || 250) + ' km/day limit. Excess charged at ?10/km.</p>' +
+    '<p><strong>Mileage Rule:</strong> ' + (appSettings.mileage_limit || 250) + ' km/day limit. Excess charged at ₱10/km.</p>' +
     '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
-    '<p><strong>Late Return:</strong> Penalty of ?500 per hour for late returns.</p>' +
+    '<p><strong>Late Return:</strong> Penalty of ₱500 per hour for late returns.</p>' +
     '<p><strong>Damages:</strong> Any damages not covered by your selected insurance are your responsibility.</p>' +
     '<p><strong>Cancellation:</strong> 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup.</p>' +
     '</div>' +
@@ -4310,7 +4310,7 @@ function loadProfile() {
           avatarWrap.innerHTML = '<img class="profile-avatar" src="' + buildImgUrl(profile.profile_picture) + '" alt="Avatar">';
         } else {
           var placeholder = document.getElementById('profileAvatarPlaceholder');
-          if (placeholder) placeholder.textContent = (profile.full_name || '?')[0].toUpperCase();
+          if (placeholder) placeholder.textContent = (profile.full_name || '₱')[0].toUpperCase();
         }
       }
 
