@@ -498,6 +498,9 @@ def migrate_refund_columns():
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_note TEXT")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refunded_at TIMESTAMPTZ")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_proof_url TEXT")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_channel VARCHAR(50)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_account_name VARCHAR(200)")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_account_number VARCHAR(100)")
         commit_db()
         print("DEBUG: Refund Columns Migration Successful")
     except Exception as e:

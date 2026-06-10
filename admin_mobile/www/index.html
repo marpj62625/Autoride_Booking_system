@@ -4487,7 +4487,7 @@ async edit(id) { this.openModal(id); }
         startLive() {
             this.refresh();
             if (this.timer) clearInterval(this.timer);
-            this.timer = setInterval(() => this.refresh(), 10000);
+            this.timer = setInterval(() => this.refresh(), 30000);
         },
 
         stopLive() {
