@@ -191,10 +191,11 @@
                 <h3>Cancel Reservation</h3>
                 <button class="close-modal" onclick="closeModal('cancelModal')">&times;</button>
             </div>
+            <div id="cancelPolicyWarning"></div>
             <form id="cancelForm">
                 <input type="hidden" id="can_booking_id">
                 <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
-                    Please let us know why you are cancelling. Note: Cancellations made less than 48 hours before pickup will forfeit the reservation fee.
+                    Please let us know why you are cancelling. Note: Cancellations made less than 48 hours before pickup will forfeit the 20% reservation fee.
                 </p>
                 <div class="form-group">
                     <label>Reason for Cancellation</label>
@@ -208,6 +209,48 @@
                 </div>
                 <button type="submit" class="btn" style="background: var(--danger); border-color: var(--danger);">Confirm Cancellation</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Refund Details Modal -->
+    <div id="refundDetailsModalWeb" class="modal">
+        <div class="modal-content" style="max-width: 460px;">
+            <div class="modal-header">
+                <h3>&#128197; Submit Refund Details</h3>
+                <button class="close-modal" onclick="closeModal('refundDetailsModalWeb')">&times;</button>
+            </div>
+            <div id="refundDetailsWebInfo" style="margin-bottom:16px;padding:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;font-size:0.875rem;color:#92400e;"></div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-weight:600;margin-bottom:8px;font-size:0.875rem;">Refund Channel</label>
+                <div style="display:flex;gap:10px;">
+                    <label style="flex:1;cursor:pointer;text-align:center;padding:10px;border:2px solid #e5e7eb;border-radius:10px;" id="wrc_GCash">
+                        <input type="radio" name="wRefundChannel" value="GCash" style="display:none;" onchange="document.querySelectorAll('[id^=wrc_]').forEach(function(el){el.style.borderColor='#e5e7eb';});this.parentElement.style.borderColor='#00B14F';">
+                        <span style="font-size:1.2rem;display:block;">&#128241;</span><span style="font-size:0.8rem;font-weight:700;">GCash</span>
+                    </label>
+                    <label style="flex:1;cursor:pointer;text-align:center;padding:10px;border:2px solid #e5e7eb;border-radius:10px;" id="wrc_Maya">
+                        <input type="radio" name="wRefundChannel" value="Maya" style="display:none;" onchange="document.querySelectorAll('[id^=wrc_]').forEach(function(el){el.style.borderColor='#e5e7eb';});this.parentElement.style.borderColor='#00B14F';">
+                        <span style="font-size:1.2rem;display:block;">&#128179;</span><span style="font-size:0.8rem;font-weight:700;">Maya</span>
+                    </label>
+                    <label style="flex:1;cursor:pointer;text-align:center;padding:10px;border:2px solid #e5e7eb;border-radius:10px;" id="wrc_Bank">
+                        <input type="radio" name="wRefundChannel" value="Bank" style="display:none;" onchange="document.querySelectorAll('[id^=wrc_]').forEach(function(el){el.style.borderColor='#e5e7eb';});this.parentElement.style.borderColor='#00B14F';">
+                        <span style="font-size:1.2rem;display:block;">&#127968;</span><span style="font-size:0.8rem;font-weight:700;">Bank</span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.875rem;">Account Name</label>
+                <input id="wRefundAcctName" type="text" placeholder="Full name on account" class="form-input" style="width:100%;box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.875rem;">Account Number</label>
+                <input id="wRefundAcctNum" type="text" placeholder="e.g. 09XX-XXX-XXXX" class="form-input" style="width:100%;box-sizing:border-box;">
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="display:block;font-weight:600;margin-bottom:6px;font-size:0.875rem;">Notes <span style="font-weight:400;color:#6b7280;">(optional)</span></label>
+                <textarea id="wRefundNotes" placeholder="e.g. Bank name, branch..." rows="2" class="form-input" style="width:100%;box-sizing:border-box;resize:none;font-family:inherit;"></textarea>
+            </div>
+            <input type="hidden" id="wRefundBookingId">
+            <button onclick="submitRefundDetailsWeb()" class="btn" style="width:100%;background:#f59e0b;border-color:#f59e0b;">Submit Refund Details</button>
         </div>
     </div>
     <div id="reviewModal" class="modal">
@@ -369,18 +412,18 @@
                             <p><strong>Rental Type:</strong> ${b.rental_type}</p>
                             <p><strong>Pickup:</strong> ${b.pickup_location}</p>
                             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
-                                <span>Breakdown: Base â‚±${parseFloat(b.base_price).toFixed(2)} + Extras â‚±${parseFloat(b.addon_price).toFixed(2)} + Tax/Fees</span>
+                                <span>Breakdown: Base ?${parseFloat(b.base_price).toFixed(2)} + Extras ?${parseFloat(b.addon_price).toFixed(2)} + Tax/Fees</span>
                             </div>
                         </div>
                         <div class="booking-meta">
-                            <span class="price">â‚±${parseFloat(b.total_price).toFixed(2)}</span>
+                            <span class="price">?${parseFloat(b.total_price).toFixed(2)}</span>
                             <span class="status-badge ${statusColor}" style="background: ${b.status==='Pending'?'#fef3c7':''}; color: ${b.status==='Pending'?'#d97706':''}">${b.status}</span>
                             
                             <div style="margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                                 ${b.status === 'Pending' ? `
                                     <div style="display: flex; gap: 0.5rem;">
                                         <button onclick="resumeBookingPayment(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Pay Now</button>
-                                        <button onclick="openCancelModal(${b.id})" class="btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel</button>
+                                        <button onclick="openCancelModal(${b.id}, ${b.amount_paid||0}, '${b.start_date}', '${b.status}')" class="btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel</button>
                                     </div>
                                 ` : ''}
 
@@ -388,22 +431,38 @@
                                     <button onclick="location.href='track.html?id=${b.id}'" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--accent-color); color: #fff;">Track Vehicle</button>
                                 ` : ''}
 
-                                ${b.status === 'Confirmed' ? `
+                                ${(b.status === 'Confirmed' || b.status === 'Approved') ? `
                                     <div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
                                         ${b.payment_status === 'Partially Paid' ? `
-                                            <button onclick="payBalance(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--primary-color); color: #fff;">Pay Balance (â‚±${parseFloat(b.balance_amount || 0).toFixed(2)})</button>
+                                            <button onclick="payBalance(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--primary-color); color: #fff;">Pay Balance (?${parseFloat(b.balance_amount || 0).toFixed(2)})</button>
                                         ` : ''}
                                         <button onclick="downloadReceipt(${b.id})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #6366f1; color: #fff;">Download Receipt</button>
-                                        <button onclick="openCancelModal(${b.id})" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel Booking</button>
+                                        <button onclick="openCancelModal(${b.id}, ${b.amount_paid||0}, '${b.start_date}', '${b.status}')" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel Booking</button>
                                     </div>
                                 ` : ''}
 
-                                ${(b.status === 'Confirmed' || b.status === 'Pending') && category === 'upcoming' ? `
+                                ${(b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Pending') && category === 'upcoming' ? `
                                     <button onclick="openRescheduleModal(${b.id}, '${b.start_date}', '${b.end_date}')" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Modify Dates</button>
                                 ` : ''}
 
                                 ${b.status === 'Confirmed' && category === 'history' ? `
                                     <button onclick="openReviewModal(${b.id}, ${b.vehicle_id})" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: var(--success); color: var(--success);">Rate & Review</button>
+                                ` : ''}
+
+                                ${b.payment_status === 'Refund Pending' ? `
+                                    <div style="margin-top:0.5rem;width:100%;">
+                                        ${b.refund_channel ? `
+                                        <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px;font-size:0.8rem;text-align:left;">
+                                            <div style="color:#16a34a;font-weight:700;margin-bottom:4px;">? Refund Details Submitted</div>
+                                            <div style="color:#374151;"><strong>${b.refund_channel}</strong> — ${b.refund_account_name||''}</div>
+                                            <div style="color:#6b7280;">Acct: ${b.refund_account_number||''}</div>
+                                        </div>` : `
+                                        <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px;font-size:0.8rem;text-align:left;margin-bottom:6px;">
+                                            <div style="color:#d97706;font-weight:700;margin-bottom:4px;">? Refund Pending — ?${parseFloat(b.refund_amount||0).toFixed(2)}</div>
+                                            <div style="color:#92400e;">Please submit your refund account details so we can process your refund.</div>
+                                        </div>
+                                        <button onclick="openRefundDetailsModalWeb(${b.id}, ${b.refund_amount||0})" class="btn" style="width:100%;padding:0.4rem;font-size:0.8rem;background:#f59e0b;border-color:#f59e0b;">?? Submit Refund Details</button>`}
+                                    </div>
                                 ` : ''}
                             </div>
                         </div>
@@ -520,8 +579,34 @@
             document.getElementById('rescheduleModal').style.display = 'flex';
         }
 
-        function openCancelModal(bookingId) {
+        function openCancelModal(bookingId, amountPaid, startDate, status) {
             document.getElementById('can_booking_id').value = bookingId;
+            
+            // Show 48h warning if applicable
+            const warningEl = document.getElementById('cancelPolicyWarning');
+            const feeEl = document.getElementById('cancelFeeBreakdown');
+            if (warningEl) warningEl.style.display = 'none';
+            if (feeEl) feeEl.style.display = 'none';
+
+            if ((status === 'Confirmed' || status === 'Approved') && amountPaid > 0 && startDate) {
+                const pickup = new Date(startDate);
+                pickup.setHours(6, 0, 0, 0);
+                const hoursLeft = (pickup - new Date()) / (1000 * 60 * 60);
+                if (hoursLeft < 48) {
+                    const fee = Math.round(amountPaid * 0.20 * 100) / 100;
+                    const refund = Math.round((amountPaid - fee) * 100) / 100;
+                    if (warningEl) {
+                        warningEl.style.display = 'block';
+                        warningEl.innerHTML = `
+                            <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.85rem;">
+                                <div style="color:#dc2626;font-weight:700;margin-bottom:6px;">?? Cancellation within 48 hours</div>
+                                <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#374151;">Non-refundable fee (20%)</span><span style="color:#dc2626;font-weight:700;">?${fee.toFixed(2)}</span></div>
+                                <div style="display:flex;justify-content:space-between;"><span style="color:#374151;">Refundable amount</span><span style="color:#16a34a;font-weight:700;">?${refund.toFixed(2)}</span></div>
+                            </div>`;
+                    }
+                }
+            }
+
             document.getElementById('cancelModal').style.display = 'flex';
         }
 
@@ -616,29 +701,73 @@
             const id = document.getElementById('can_booking_id').value;
             const reason = document.getElementById('cancelReason').value;
             
-            if (!confirm('Are you ABSOLUTELY sure you want to cancel this booking? This action cannot be undone.')) return;
-            
             try {
-                const response = await fetch(`${API_BASE}/bookings/${id}/cancel`, {
+                const response = await fetch(`${API_BASE}/cancel-booking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
+                        booking_id: parseInt(id),
                         user_id: userId,
                         reason: reason
                     })
                 });
+                const data = await response.json();
                 if (response.ok) {
-                    alert('Booking cancelled successfully.');
+                    let msg = 'Booking cancelled successfully.';
+                    if (data.refund_amount > 0) {
+                        msg += ` Refund of ?${parseFloat(data.refund_amount).toFixed(2)} will be processed. Please submit your refund account details in your booking.`;
+                    }
+                    alert(msg);
                     closeModal('cancelModal');
                     fetchDashboard();
                 } else {
-                    const err = await response.json();
-                    alert(err.error || 'Failed to cancel');
+                    alert(data.error || 'Failed to cancel');
                 }
             } catch (err) {
                 alert('Connection error');
             }
         });
+
+        function openRefundDetailsModalWeb(bookingId, refundAmount) {
+            document.getElementById('wRefundBookingId').value = bookingId;
+            document.getElementById('wRefundAcctName').value = '';
+            document.getElementById('wRefundAcctNum').value = '';
+            document.getElementById('wRefundNotes').value = '';
+            document.querySelectorAll('[id^=wrc_]').forEach(function(el) { el.style.borderColor = '#e5e7eb'; });
+            document.querySelectorAll('input[name="wRefundChannel"]').forEach(function(r) { r.checked = false; });
+            document.getElementById('refundDetailsWebInfo').textContent = 'Refund amount: ?' + parseFloat(refundAmount).toFixed(2) + ' — Please provide where to send your refund.';
+            document.getElementById('refundDetailsModalWeb').style.display = 'flex';
+        }
+
+        async function submitRefundDetailsWeb() {
+            const bookingId = document.getElementById('wRefundBookingId').value;
+            const channel = (document.querySelector('input[name="wRefundChannel"]:checked') || {}).value || '';
+            const acctName = document.getElementById('wRefundAcctName').value.trim();
+            const acctNum = document.getElementById('wRefundAcctNum').value.trim();
+            const notes = document.getElementById('wRefundNotes').value.trim();
+
+            if (!channel) { alert('Please select a refund channel (GCash, Maya, or Bank).'); return; }
+            if (!acctName) { alert('Please enter your account name.'); return; }
+            if (!acctNum) { alert('Please enter your account number.'); return; }
+
+            try {
+                const res = await fetch(`${API_BASE}/bookings/${bookingId}/refund-details`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, refund_channel: channel, refund_account_name: acctName, refund_account_number: acctNum, refund_notes: notes })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('Refund details submitted! Our team will process your refund shortly.');
+                    closeModal('refundDetailsModalWeb');
+                    fetchDashboard();
+                } else {
+                    alert(data.error || 'Failed to submit. Please try again.');
+                }
+            } catch(e) {
+                alert('Connection error. Please try again.');
+            }
+        }
 
         async function downloadReceipt(id) {
             const btn = event.target;
