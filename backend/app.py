@@ -738,11 +738,17 @@ def send_receipt_email(email: str, details: dict):
     )
     
     if addon_price > 0 and addons_raw and addons_raw != 'None':
-        addon_list = [a.strip() for a in addons_raw.split(',') if a.strip()]
+        # Handle both JSON array format ["item"] and comma-separated format
+        import json as _json
+        try:
+            parsed = _json.loads(addons_raw)
+            addon_list = [str(a).strip() for a in parsed if str(a).strip()]
+        except Exception:
+            addon_list = [a.strip() for a in addons_raw.split(',') if a.strip()]
         for addon in addon_list:
             html += (
                 "<tr>"
-                "<td style='padding:3px 0;'>- " + addon + "</td>"
+                "<td style='padding:3px 0;'>" + addon + "</td>"
                 "<td style='text-align:center;padding:3px 0;'>1</td>"
                 "<td style='text-align:right;padding:3px 0;'>" + '{:,.2f}'.format(addon_price / max(1, len(addon_list))) + "</td>"
                 "</tr>"
@@ -751,7 +757,7 @@ def send_receipt_email(email: str, details: dict):
     if insurance_price > 0:
         html += (
             "<tr>"
-            "<td style='padding:3px 0;'>Insurance (" + insurance_text + ")</td>"
+            "<td style='padding:3px 0;'>Insurance</td>"
             "<td style='text-align:center;padding:3px 0;'>1</td>"
             "<td style='text-align:right;padding:3px 0;'>" + '{:,.2f}'.format(insurance_price) + "</td>"
             "</tr>"
@@ -801,8 +807,8 @@ def send_receipt_email(email: str, details: dict):
         "<div style='border-top:1px dashed #000;margin:10px 0;'></div>"
         
         "<table width='100%' style='font-size:13px;margin-bottom:20px;'>"
-        "<tr><td>Payment Method</td><td style='text-align:right;'>" + method + "</td></tr>"
-        "<tr><td>Reference No</td><td style='text-align:right;'>" + ref_num + "</td></tr>"
+        "<tr><td style='width:40%;'>Payment Method</td><td style='text-align:right;'>" + method + "</td></tr>"
+        "<tr><td style='width:40%;vertical-align:top;'>Reference No</td><td style='text-align:right;word-break:break-all;'>" + ref_num + "</td></tr>"
         "</table>"
         
         "<div style='text-align:center;margin:25px 0 15px;'>"
