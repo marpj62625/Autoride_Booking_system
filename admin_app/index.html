@@ -11689,6 +11689,1904 @@
         
 
         view(id) {
+            const v = this.data.find(x => x.id === id);
+            if (!v) { console.error('Vehicle not found:', id); return; }
+            const sc = v.status === 'Available' ? '#00B14F' : v.status === 'Rented' ? '#3b82f6' : v.status === 'Maintenance' ? '#f59e0b' : '#ef4444';
+            const imgHtml = v.vehicle_image
+                ? `<img src="${v.vehicle_image}" style="width:100%;height:220px;object-fit:cover;">`
+                : `<div style="width:100%;height:180px;background:var(--surface-container,#f4f6fb);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:4rem;color:var(--primary);opacity:0.3;"></i></div>`;
+            const galleryArr = Array.isArray(v.gallery) ? v.gallery : [];
+            const galleryHtml = galleryArr.length > 1
+                ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 16px 0;">` +
+                  galleryArr.slice(1,7).map(g => `<img src="${g}" style="width:100%;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="window.open('${g}','_blank')">`).join('') +
+                  `</div>` : '';
+            const fields = [
+                ['Brand', v.brand || '-'], ['Model', v.model || '-'],
+                ['Plate Number', v.plate_number || '-'], ['Type', v.vehicle_type || '-'],
+                ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
+                ['Seats', v.seats || '-'], ['Daily Rate', '&#8369;' + Number(v.daily_rate||0).toLocaleString()],
+                ['Location', v.location || '-'], ['Status', v.status || '-'],
+                ['Color', v.color_display || '-'], ['Year', v.year || '-'],
+            ];
+            const fieldsHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:16px;">`
+                + fields.map(([label,val]) => `<div><div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div><div style="font-size:0.88rem;font-weight:600;color:var(--text-main);">${val}</div></div>`).join('')
+                + `</div>`;
+            document.getElementById('vdModalTitle').textContent = (v.brand||'') + ' ' + (v.model||'');
+            document.getElementById('vehicleDetailContent').innerHTML =
+                imgHtml + galleryHtml +
+                `<div style="margin:12px 16px 0;"><span style="display:inline-block;padding:4px 14px;border-radius:20px;background:${sc};color:#fff;font-size:0.72rem;font-weight:800;">${v.status||'Unknown'}</span></div>` +
+                fieldsHtml +
+                (v.description ? `<div style="padding:0 16px 16px;font-size:0.85rem;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border);padding-top:12px;">${v.description}</div>` : '');
+            const modal = document.getElementById('vehicleDetailModal');
+            if (modal) { modal.style.display = 'flex'; }
+        },
+
+async edit(id) { this.openModal(id); }
+
+
+
+    };
+
+
+
+
+
+
+
+    // ?? VEHICLE PHOTOS MODULE ??????????????????????????????????????????????????
+
+
+
+    // Manages up to 4 new photos selected for a vehicle add/edit operation.
+
+
+
+    // Each entry: { file: File, dataUrl: string, label: string }
+
+
+
+    const VehiclePhotos = {
+
+
+
+        MAX: 4,
+
+
+
+        LABELS: ['Main', 'Front', 'Side', 'Rear'],
+
+
+
+        _items: [],   // { file, dataUrl, label }
+
+
+
+
+
+
+
+        clear() {
+
+
+
+            this._items = [];
+
+
+
+            this._render();
+
+
+
+            // Reset the hidden file input so the same file can be re-selected
+
+
+
+            const inp = document.getElementById('vGalleryPicker');
+
+
+
+            if (inp) inp.value = '';
+
+
+
+        },
+
+
+
+
+
+
+
+        // Called when user picks files from gallery input
+
+
+
+        onFilePick(input) {
+
+
+
+            const files = Array.from(input.files);
+
+
+
+            files.forEach(f => this._addFile(f));
+
+
+
+            input.value = ''; // allow re-picking same file
+
+
+
+        },
+
+
+
+
+
+
+
+        // Called by "Take Photo" button - uses Capacitor Camera if available,
+
+
+
+        // falls back to a hidden file input with capture="environment"
+
+
+
+        async takePhoto() {
+
+
+
+            const Camera = window.Capacitor?.Plugins?.Camera;
+
+
+
+            if (Camera) {
+
+
+
+                try {
+
+
+
+                    const photo = await Camera.getPhoto({
+
+
+
+                        quality: 85,
+
+
+
+                        allowEditing: false,
+
+
+
+                        resultType: 'base64',
+
+
+
+                        source: 'CAMERA'
+
+
+
+                    });
+
+
+
+                    // Convert base64 to File
+
+
+
+                    const byteStr = atob(photo.base64String);
+
+
+
+                    const arr = new Uint8Array(byteStr.length);
+
+
+
+                    for (let i = 0; i < byteStr.length; i++) arr[i] = byteStr.charCodeAt(i);
+
+
+
+                    const blob = new Blob([arr], { type: 'image/jpeg' });
+
+
+
+                    const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+
+
+                    this._addFile(file);
+
+
+
+                } catch (err) {
+
+
+
+                    if (err.message !== 'User cancelled photos app') {
+
+
+
+                        showNotification('Camera error: ' + err.message, 'error');
+
+
+
+                    }
+
+
+
+                }
+
+
+
+            } else {
+
+
+
+                // Fallback: trigger a file input with camera capture
+
+
+
+                let cap = document.getElementById('vCameraCapture');
+
+
+
+                if (!cap) {
+
+
+
+                    cap = document.createElement('input');
+
+
+
+                    cap.type = 'file';
+
+
+
+                    cap.accept = 'image/*';
+
+
+
+                    cap.capture = 'environment';
+
+
+
+                    cap.id = 'vCameraCapture';
+
+
+
+                    cap.style.display = 'none';
+
+
+
+                    cap.addEventListener('change', () => {
+
+
+
+                        Array.from(cap.files).forEach(f => this._addFile(f));
+
+
+
+                        cap.value = '';
+
+
+
+                    });
+
+
+
+                    document.body.appendChild(cap);
+
+
+
+                }
+
+
+
+                cap.click();
+
+
+
+            }
+
+
+
+        },
+
+
+
+
+
+
+
+        _addFile(file) {
+
+
+
+            if (this._items.length >= this.MAX) {
+
+
+
+                showNotification(`Maximum ${this.MAX} photos allowed.`, 'error');
+
+
+
+                return;
+
+
+
+            }
+
+
+
+            const reader = new FileReader();
+
+
+
+            reader.onload = (e) => {
+
+
+
+                const label = this.LABELS[this._items.length] || `Photo ${this._items.length + 1}`;
+
+
+
+                this._items.push({ file, dataUrl: e.target.result, label });
+
+
+
+                this._render();
+
+
+
+            };
+
+
+
+            reader.readAsDataURL(file);
+
+
+
+        },
+
+
+
+
+
+
+
+        remove(index) {
+
+
+
+            this._items.splice(index, 1);
+
+
+
+            // Re-assign labels after removal
+
+
+
+            this._items.forEach((item, i) => { item.label = this.LABELS[i] || `Photo ${i + 1}`; });
+
+
+
+            this._render();
+
+
+
+        },
+
+
+
+
+
+
+
+        _render() {
+
+
+
+            const strip = document.getElementById('vPhotoStrip');
+
+
+
+            if (!strip) return;
+
+
+
+            if (this._items.length === 0) {
+
+
+
+                strip.innerHTML = '';
+
+
+
+                return;
+
+
+
+            }
+
+
+
+            strip.innerHTML = this._items.map((item, i) => `
+
+
+
+                <div style="position: relative; flex-shrink: 0;">
+
+
+
+                    <div style="width: 80px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid ${i === 0 ? '#00B14F' : 'rgba(255,255,255,0.1)'};">
+
+
+
+                        <img src="${item.dataUrl}" style="width: 100%; height: 100%; object-fit: cover;">
+
+
+
+                    </div>
+
+
+
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); text-align: center; font-size: 0.55rem; font-weight: 700; color: ${i === 0 ? '#00B14F' : '#94a3b8'}; padding: 2px 0; border-radius: 0 0 8px 8px;">
+
+
+
+                        ${item.label}
+
+
+
+                    </div>
+
+
+
+                    <button type="button" onclick="VehiclePhotos.remove(${i})"
+
+
+
+                        style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #ef4444; border: none; border-radius: 50%; color: white; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; cursor: pointer; line-height: 1;">
+
+
+
+                        <i class="fas fa-times"></i>
+
+
+
+                    </button>
+
+
+
+                </div>
+
+
+
+            `).join('');
+
+
+
+        },
+
+
+
+
+
+
+
+        // Returns true if valid, false + shows toast if not
+
+
+
+        validate(isEdit) {
+
+
+
+            if (isEdit) return true; // editing: photos optional (existing gallery handles it)
+
+
+
+            if (this._items.length === 0) {
+
+
+
+                showNotification('Please add at least one vehicle photo (Main photo is required).', 'error');
+
+
+
+                return false;
+
+
+
+            }
+
+
+
+            return true;
+
+
+
+        },
+
+
+
+
+
+
+
+        // Appends files to a FormData object
+
+
+
+        appendTo(formData) {
+
+
+
+            this._items.forEach(item => {
+
+
+
+                formData.append('gallery', item.file);
+
+
+
+            });
+
+
+
+            // Set first photo as the main vehicle_image via URL after upload
+
+
+
+            // (server will handle gallery[0] as primary)
+
+
+
+        }
+
+
+
+    };
+
+
+
+
+
+
+
+    // Form Handler
+
+
+
+    document.getElementById('vehicleForm').addEventListener('submit', async function(e) {
+
+
+
+        e.preventDefault();
+
+
+
+        await Vehicles.submitForm(false);
+
+
+
+    });
+
+
+
+
+
+
+
+    function toggleDrawer(show) {
+
+
+
+        const drawer = document.getElementById('sideDrawer');
+
+
+
+        const overlay = document.getElementById('drawerOverlay');
+
+
+
+        if (show) {
+
+
+
+            overlay.style.display = 'block';
+
+
+
+            setTimeout(() => {
+
+
+
+                overlay.style.opacity = '1';
+
+
+
+                drawer.style.left = '0';
+
+
+
+            }, 10);
+
+
+
+        } else {
+
+
+
+            drawer.style.left = '-280px';
+
+
+
+            overlay.style.opacity = '0';
+
+
+
+            setTimeout(() => overlay.style.display = 'none', 300);
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    function navTo(tabId) {
+
+
+
+        switchTab(tabId);
+
+
+
+        toggleDrawer(false);
+
+
+
+    }
+
+
+
+
+
+
+
+    let currentTab = 'dashboard';
+
+
+
+    function switchTab(tabId) {
+
+
+
+        currentTab = tabId;
+
+
+
+        // Stop ActiveNow timers when leaving bookings tab
+
+
+
+        if (tabId !== 'bookings' && typeof ActiveNow !== 'undefined') ActiveNow.stop();
+
+
+
+        // Stop chat polling when leaving chat tab
+
+
+
+        if (tabId !== 'chat' && typeof AdminChat !== 'undefined') AdminChat.stopPolling();
+
+
+
+        try {
+
+
+
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+
+
+
+            document.querySelectorAll('.nav-item, .drawer-item').forEach(l => l.classList.remove('active'));
+
+
+
+            
+
+
+
+            const target = document.getElementById(tabId);
+
+
+
+            if (target) target.style.display = 'block';
+
+
+
+            
+
+
+
+            document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
+
+
+
+            
+
+
+
+            // Only load data if not already loaded (prevents "Fetching..." flash on every tab switch)
+
+
+
+            if (tabId === 'vehicles' && typeof Vehicles !== 'undefined' && Vehicles.data.length === 0) Vehicles.refresh();
+
+
+
+            if (tabId === 'bookings' && typeof Bookings !== 'undefined' && Bookings.data.length === 0) Bookings.refresh();
+
+
+
+            if (tabId === 'drivers' && typeof Drivers !== 'undefined' && Drivers.data.length === 0) Drivers.refresh();
+
+
+
+            if (tabId === 'verifications' && typeof Verifications !== 'undefined' && Verifications.data.length === 0) Verifications.refresh();
+
+
+
+            if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
+
+
+
+            if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
+
+
+
+            if (tabId === 'reports' && typeof Reports !== 'undefined' && !Reports._loaded) {
+
+
+
+                // Set default date range (current month) on first open
+
+
+
+                const now = new Date();
+
+
+
+                const to = now.toISOString().split('T')[0];
+
+
+
+                const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+
+
+
+                document.getElementById('rptDateFrom').value = from;
+
+
+
+                document.getElementById('rptDateTo').value = to;
+
+
+
+                Reports.refresh();
+
+
+
+            }
+
+
+
+            if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
+
+
+
+            if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
+
+
+
+            if (tabId === 'chat' && typeof AdminChat !== 'undefined') {
+
+
+
+                AdminChat.loadInbox();
+
+
+
+                // Clear nav badge when entering chat
+
+
+
+                const b = document.getElementById('adminChatNavBadge');
+
+
+
+                if (b) b.style.display = 'none';
+
+
+
+            }
+
+
+
+
+
+
+
+            if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
+
+
+
+            else if (typeof GPS !== 'undefined') GPS.stopLive();
+
+
+
+            
+
+
+
+            if (tabId === 'settings') {
+
+
+
+                const user = adminAuth.getUser();
+
+
+
+                if (user) {
+
+
+
+                    if(document.getElementById('settingsAvatar')) document.getElementById('settingsAvatar').textContent = user.full_name[0].toUpperCase();
+
+
+
+                    if(document.getElementById('settingsName')) document.getElementById('settingsName').textContent = user.full_name;
+
+
+
+                    if(document.getElementById('settingsRole')) document.getElementById('settingsRole').textContent = user.role.replace('_', ' ').toUpperCase();
+
+
+
+                    if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
+
+
+
+                    if (typeof Settings !== 'undefined') Settings.fetch();
+
+
+
+                }
+
+
+
+            }
+
+
+
+        } catch (err) {
+
+
+
+            console.error('Error in switchTab:', err);
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    const Bookings = {
+
+
+
+        data: [],
+
+
+
+        _filter: 'all',
+
+
+
+        async refresh() {
+
+
+
+            const list = document.getElementById('bookingsList');
+            showSkeleton('bookingsList', 'table');
+
+
+
+            if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
+
+
+
+                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
+
+
+
+            }
+
+
+
+            try {
+
+
+
+                // Fetch Stats and List in parallel
+
+
+
+                const user = adminAuth.getUser();
+
+
+
+                const adminId = user ? user.id : '';
+
+
+
+
+
+
+
+                const [statsRes, listRes] = await Promise.all([
+
+
+
+                    fetch(`${API_URL}/admin/stats?admin_id=${adminId}`),
+
+
+
+                    fetch(`${API_URL}/bookings?admin_id=${adminId}`)
+
+
+
+                ]);
+
+
+
+
+
+
+
+                // Update booking counts from stats
+
+
+
+                if (statsRes.ok) {
+
+
+
+                    const stats = await statsRes.json();
+
+
+
+                    const breakdown = stats.bookingsByStatus || {};
+
+
+
+                    document.getElementById('bookTotal').textContent = stats.total_bookings || 0;
+
+
+
+                    document.getElementById('bookConfirmed').textContent = (breakdown['confirmed'] || 0) + (breakdown['approved'] || 0);
+
+
+
+                    document.getElementById('bookPending').textContent = breakdown['pending'] || 0;
+
+
+
+                    document.getElementById('bookCancelled').textContent = (breakdown['cancelled'] || 0) + (breakdown['rejected'] || 0);
+
+
+
+                }
+
+
+
+
+
+
+
+                if (!listRes.ok) throw new Error(`Server error: ${listRes.status}`);
+
+
+
+                this.data = await listRes.json();
+
+
+
+                this.render();
+
+
+
+                this.renderNew();
+
+
+
+                ActiveNow.render(this.data);
+
+
+
+                if (typeof Extensions !== 'undefined') Extensions.load();
+
+
+
+            } catch (err) {
+
+
+
+                console.error('Bookings Error:', err);
+
+
+
+                list.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--danger);">Error: ${err.message}<br><button onclick="Bookings.refresh()" style="margin-top:10px; color:white; background:var(--primary); border:none; padding:8px 15px; border-radius:5px;">Retry</button></div>`;
+
+
+
+            }
+
+
+
+        },
+
+
+
+        setFilter(filter, btn) {
+
+
+
+            this._filter = filter;
+
+
+
+            document.querySelectorAll('.bk-chip').forEach(b => {
+
+
+
+                const active = b.dataset.filter === filter;
+
+
+
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+
+
+
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+
+
+
+                b.style.color       = active ? 'white' : 'var(--text-main)';
+
+
+
+                b.classList.toggle('bk-chip-active', active);
+
+
+
+            });
+
+
+
+            this.render();
+
+
+
+        },
+
+
+
+        _newFilter: 'all',
+
+
+
+        setNewFilter(filter, btn) {
+
+
+
+            this._newFilter = filter;
+
+
+
+            document.querySelectorAll('.nb-chip').forEach(b => {
+
+
+
+                const active = b.dataset.filter === filter;
+
+
+
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+
+
+
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+
+
+
+                b.style.color       = active ? 'white' : 'var(--text-main)';
+
+
+
+            });
+
+
+
+            this.renderNew();
+
+
+
+        },
+
+
+
+        renderNew() {
+
+
+
+            const list = document.getElementById('newBookingsList');
+
+
+
+            if (!list) return;
+
+
+
+            // Show pending + confirmed + approved + picked up
+
+
+
+            const activeStatuses = ['pending', 'confirmed', 'approved', 'picked up', 'ongoing'];
+
+
+
+            const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up' };
+
+
+
+            let filtered = this.data.filter(b => activeStatuses.includes((b.status||'').toLowerCase()));
+
+
+
+            if (this._newFilter !== 'all') {
+
+
+
+                filtered = filtered.filter(b => {
+
+
+
+                    const s = (b.status||'').toLowerCase().replace(' ', '_');
+
+
+
+                    return s === this._newFilter || (b.status||'') === statusMap[this._newFilter];
+
+
+
+                });
+
+
+
+            }
+
+
+
+            // Update badge count
+
+
+
+            const pendingCount = this.data.filter(b => (b.status||'').toLowerCase() === 'pending').length;
+
+
+
+            const badge = document.getElementById('newBookingsBadge');
+
+
+
+            if (badge) {
+
+
+
+                badge.textContent = pendingCount;
+
+
+
+                badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+
+
+
+            }
+
+
+
+            if (filtered.length === 0) {
+
+
+
+                list.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--text-muted);">
+
+
+
+                    <i class="fas fa-inbox" style="font-size:2.5rem;opacity:0.3;margin-bottom:12px;display:block;"></i>
+
+
+
+                    <p style="font-weight:600;">No bookings in this queue.</p></div>`;
+
+
+
+                return;
+
+
+
+            }
+
+
+
+            list.innerHTML = filtered.map(b => `
+
+
+
+                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+
+
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+
+
+
+                        <div>
+
+
+
+                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">#${b.id}</span>
+
+
+
+                            <h4 style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">${b.customer_name || 'Guest User'}</h4>
+
+
+
+                        </div>
+
+
+
+                        <span class="pill ${this.getPillClass(b.status)}">${b.status || 'PENDING'}</span>
+
+
+
+                    </div>
+
+
+
+                    <div style="display: flex; gap: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px;">
+
+
+
+                        <div style="width: 44px; height: 44px; background: rgba(99,102,241,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+
+
+
+                            <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
+
+
+
+                        </div>
+
+
+
+                        <div style="flex: 1;">
+
+
+
+                            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">${b.car || 'Unknown Vehicle'}</p>
+
+
+
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">
+
+
+
+                                <i class="far fa-calendar-alt" style="margin-right:4px;"></i>
+
+
+
+                                ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
+
+
+
+                            </p>
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                    <div style="padding-top: 16px; border-top: 1px solid var(--border);">
+
+
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+
+
+
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">&#8369;${parseFloat(b.total_price||0).toLocaleString()}</div>
+
+
+
+                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; font-weight: 700; border-radius: 10px;">
+
+
+
+                                <i class="fas fa-eye" style="margin-right:4px;"></i>Details
+
+
+
+                            </button>
+
+
+
+                        </div>
+
+
+
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+
+
+                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
+
+
+
+                                <button onclick="Bookings.markCashReceived(${b.id})" style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
+
+
+
+                                </button>
+
+
+
+                                <button onclick="Bookings.reject(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-times" style="margin-right:4px;"></i>Reject
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+                            ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? `
+
+
+
+                                <button onclick="Inspections.openModal(${b.id}, 'pickup')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
+
+
+
+                                </button>
+
+
+
+                                <button onclick="Bookings.pickup(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-car" style="margin-right:4px;"></i>Mark Picked Up
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+                            ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
+
+
+
+                                <button onclick="Inspections.openModal(${b.id}, 'return')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
+
+
+
+                                </button>
+
+
+
+                                <button onclick="Bookings.complete(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-flag-checkered" style="margin-right:4px;"></i>Mark Returned
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            `).join('');
+
+
+
+        },
+
+
+
+        render() {
+
+
+
+            const list = document.getElementById('bookingsList');
+
+
+
+            // Apply status filter
+
+
+
+            const statusMap = { pending: 'Pending', confirmed: 'Confirmed', approved: 'Approved', picked_up: 'Picked Up', completed: 'Completed', cancelled: 'Cancelled' };
+
+
+
+            const filtered = this._filter === 'all' ? this.data : this.data.filter(b => { const s = (b.status||'').toLowerCase().replace(' ', '_'); return s === this._filter || (b.status||'') === statusMap[this._filter]; });
+
+
+
+            if (filtered.length === 0) {
+
+
+
+                list.innerHTML = `
+
+
+
+                    <div style="text-align: center; padding: 60px 20px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border);">
+
+
+
+                        <i class="fas fa-calendar-times" style="font-size: 3rem; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
+
+
+
+                        <p style="color: var(--text-muted); font-weight: 600;">No bookings found.</p>
+
+
+
+                    </div>`;
+
+
+
+                return;
+
+
+
+            }
+
+
+
+            list.innerHTML = filtered.map(b => `
+
+
+
+                <div class="stat-card" style="padding: 20px; margin-bottom: 16px;">
+
+
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+
+
+
+                        <div>
+
+
+
+                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px;">#${b.id}</span>
+
+
+
+                            <h4 style="font-size: 1.1rem; font-weight: 800; margin-top: 2px;">${b.customer_name || 'Guest User'}</h4>
+
+
+
+                        </div>
+
+
+
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+
+
+
+                            <span class="pill ${this.getPillClass(b.status)}">
+
+
+
+                                ${b.status || 'PENDING'}
+
+
+
+                            </span>
+
+
+
+                            ${b.payment_status === 'Refund Pending' ? 
+
+
+
+                                `<span class="pill danger" style="font-size: 0.55rem; padding: 2px 8px;">REFUND NEEDED</span>` : 
+
+
+
+                                (b.payment_status === 'Paid' ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
+
+
+
+                            }
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                    
+
+
+
+                    <div style="display: flex; gap: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 14px; border: 1px solid var(--border);">
+
+
+
+                        <div style="width: 44px; height: 44px; background: rgba(99, 102, 241, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(99, 102, 241, 0.2);">
+
+
+
+                            <i class="fas fa-car" style="font-size: 1.2rem; color: var(--primary);"></i>
+
+
+
+                        </div>
+
+
+
+                        <div style="flex: 1;">
+
+
+
+                            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main);">${b.car || 'Unknown Vehicle'}</p>
+
+
+
+                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">
+
+
+
+                                <i class="far fa-calendar-alt" style="margin-right: 4px;"></i>
+
+
+
+                                ${b.start_date ? new Date(b.start_date).toLocaleDateString() : 'N/A'} - ${b.end_date ? new Date(b.end_date).toLocaleDateString() : 'N/A'}
+
+
+
+                            </p>
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+ 
+
+
+
+                    <div style="padding-top: 16px; border-top: 1px solid var(--border);">
+
+
+
+                        <!-- Price row -->
+
+
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+
+
+
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${parseFloat(b.total_price || 0).toLocaleString()}</div>
+
+
+
+                            <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; border-radius: 10px; font-weight: 700;">
+
+
+
+                                <i class="fas fa-eye" style="margin-right:4px;"></i>Details
+
+
+
+                            </button>
+
+
+
+                        </div>
+
+
+
+
+
+
+
+                        <!-- Contextual action buttons -->
+
+
+
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+
+
+
+
+
+
+
+                            ${(b.payment_status === 'Pending Payment' && b.status?.toLowerCase() === 'pending') ? `
+
+
+
+                                <button onclick="Bookings.markCashReceived(${b.id})"
+
+
+
+                                    style="flex:1; min-width:120px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Cash Received
+
+
+
+                                </button>
+
+
+
+                                <button onclick="Bookings.reject(${b.id})"
+
+
+
+                                    style="flex:1; min-width:100px; padding:10px 8px; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-times" style="margin-right:4px;"></i>Reject
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+
+
+
+
+                            ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? `
+
+
+
+                                <button onclick="Inspections.openModal(${b.id}, 'pickup')"
+
+
+
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
+
+
+
+                                </button>
+
+
+
+                                <button onclick="Bookings.pickup(${b.id})"
+
+
+
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-car" style="margin-right:4px;"></i>Mark Picked Up
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+
+
+
+
+                            ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
+
+
+
+                                <button onclick="Inspections.openModal(${b.id}, 'return')"
+
+
+
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
+
+
+
+                                </button>
+
+
+
+                                <button onclick="Bookings.complete(${b.id})"
+
+
+
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-flag-checkered" style="margin-right:4px;"></i>Mark Returned
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+
+
+
+
+                            ${b.payment_status === 'Partially Paid' ? `
+
+
+
+                                <button onclick="Bookings.markPaid(${b.id})"
+
+
+
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+
+
+
+                                    <i class="fas fa-money-bill-wave" style="margin-right:4px;"></i>Mark Fully Paid
+
+
+
+                                </button>
+
+
+
+                            ` : ''}
+
+
+
+
+
+
+
+                        </div>
+
+
+
+                    </div>
+
+
+
+                </div>
+
+
+
+            `).join('');
+
+
+
+        },
+
+
+
+        view(id) {
             const b = this.data.find(x => x.id === id);
             if (!b) { console.error('Booking not found:', id); return; }
 
@@ -11786,11 +13684,11 @@
                 </div>
                 <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:${actionBtns ? '14px' : '0'};border:1px solid #e2e8f0;">
                     <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-credit-card" style="color:#3b82f6;"></i>Payment</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${b.reference_number ? '8px' : '0'};">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Method</div><div style="font-size:0.85rem;font-weight:700;color:#0f172a;">${b.payment_method||'N/A'}</div></div>
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div><div style="font-size:0.82rem;font-weight:700;color:${b.payment_status==='Paid'?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div></div>
                     </div>
-                    ${parseFloat(b.amount_paid||0)>0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${b.reference_number ? '8px' : '0'};"><div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>${parseFloat(b.balance_amount||0)>0 ? `<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>` : ''}</div>` : ''}
+                    ${parseFloat(b.amount_paid||0)>0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>${parseFloat(b.balance_amount||0)>0?`<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>`:''}</div>` : ''}
                     ${b.reference_number ? `<div style="padding-top:8px;border-top:1px solid #f1f5f9;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Reference #</div><div style="font-size:0.78rem;font-weight:600;color:#0f172a;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;">${b.reference_number}</div></div>` : ''}
                 </div>
                 ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
