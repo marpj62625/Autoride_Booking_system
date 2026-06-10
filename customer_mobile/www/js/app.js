@@ -3365,7 +3365,7 @@ function renderBookingDetail(b) {
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
               '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
-              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee Â cancelled &lt;48h before pickup)' +
+              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee � cancelled <48h before pickup)' +
             '</div>'
           ) : '') +
           (!isRefunded ? (
@@ -3738,6 +3738,69 @@ function loadInspectionsForDetail(bookingId) {
     }).catch(function() {});
 }
 
+function _showCancelPolicyModal(fee, refund, bookingId, reason) {
+  // Remove any existing cancel modal
+  var old = document.getElementById('_cancelPolicyModal');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = '_cancelPolicyModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);';
+  modal.innerHTML =
+    '<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+      // Header
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">' +
+        '<div style="width:40px;height:40px;background:#fef2f2;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+          '<i class="fas fa-exclamation-triangle" style="color:#ef4444;font-size:1.1rem;"></i>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:1rem;font-weight:800;color:#0f172a;">Cancellation Policy</div>' +
+          '<div style="font-size:0.75rem;color:#94a3b8;margin-top:1px;">Less than 48 hours before pickup</div>' +
+        '</div>' +
+      '</div>' +
+      // Warning text
+      '<p style="font-size:0.85rem;color:#374151;margin-bottom:16px;line-height:1.5;">You are cancelling <strong>less than 48 hours</strong> before your scheduled pickup. The following fees apply:</p>' +
+      // Fee breakdown
+      '<div style="background:#fef2f2;border-radius:12px;padding:14px;margin-bottom:16px;border:1px solid #fecaca;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<span style="font-size:0.82rem;color:#dc2626;display:flex;align-items:center;gap:6px;"><i class="fas fa-times-circle"></i> Non-refundable fee (20%)</span>' +
+          '<span style="font-size:0.9rem;font-weight:800;color:#dc2626;">' + formatPHP(fee) + '</span>' +
+        '</div>' +
+        '<div style="border-top:1px solid #fecaca;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">' +
+          '<span style="font-size:0.82rem;color:#16a34a;display:flex;align-items:center;gap:6px;"><i class="fas fa-check-circle"></i> Refundable amount</span>' +
+          '<span style="font-size:0.9rem;font-weight:800;color:#16a34a;">' + formatPHP(refund) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<p style="font-size:0.8rem;color:#64748b;margin-bottom:20px;">Do you still want to cancel this booking?</p>' +
+      // Buttons
+      '<div style="display:flex;gap:10px;">' +
+        '<button onclick="document.getElementById(\'_cancelPolicyModal\').remove();" ' +
+          'style="flex:1;padding:12px;background:#f1f5f9;border:none;border-radius:12px;font-size:0.875rem;font-weight:700;color:#475569;cursor:pointer;">Keep Booking</button>' +
+        '<button onclick="document.getElementById(\'_cancelPolicyModal\').remove(); _proceedCancel(' + bookingId + ', \'' + reason.replace(/'/g, "\\'") + '\');" ' +
+          'style="flex:1;padding:12px;background:#ef4444;border:none;border-radius:12px;font-size:0.875rem;font-weight:700;color:white;cursor:pointer;">Yes, Cancel</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
+function _proceedCancel(bookingId, reason) {
+  showLoading(true);
+  apiCall('/cancel-booking', { method: 'POST', body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, reason: reason }) })
+    .then(function(data) {
+      var msg = 'Booking cancelled.';
+      if (data.refund_amount > 0) {
+        msg = 'Booking cancelled. Refund of ' + formatPHP(data.refund_amount) + ' will be processed.';
+      }
+      showToast(msg, 'success');
+      NotifStore.add('Booking #' + bookingId + ' has been cancelled.');
+      closeOverlay('page-booking-detail');
+      loadBookings();
+    })
+    .catch(function(err) { showToast(err.message, 'error'); })
+    .finally(function() { showLoading(false); });
+}
+
 function promptCancelBooking(bookingId) {
   var reason = prompt('Please provide a reason for cancellation:');
   if (!reason) return;
@@ -3759,12 +3822,9 @@ function promptCancelBooking(bookingId) {
       if (hoursLeft < 48 && amountPaid > 0) {
         var fee = Math.round(amountPaid * 0.20 * 100) / 100;
         var refund = Math.round((amountPaid - fee) * 100) / 100;
-        var msg = 'WARNING: Cancellation Policy\n\n' +
-          'You are cancelling less than 48 hours before pickup.\n\n' +
-          'Â Non-refundable fee: ' + formatPHP(fee) + ' (20%)\n' +
-          'Â Refundable amount: ' + formatPHP(refund) + '\n\n' +
-          'Do you still want to cancel?';
-        if (!confirm(msg)) return;
+        // Show custom cancellation policy modal instead of native confirm()
+        _showCancelPolicyModal(fee, refund, bookingId, reason);
+        return;
       }
     }
   }
