@@ -3371,65 +3371,6 @@ def update_profile():
 
 
 
-@app.route('/cancel-booking', methods=['POST'])
-
-def cancel_booking():
-
-    data = request.json
-
-    booking_id = data.get('booking_id')
-
-    try:
-
-        cur = get_cursor()
-
-        # Only allow cancellation if pending
-
-        cur.execute("SELECT status, user_id FROM bookings WHERE id=%s", (booking_id,))
-
-        bk = cur.fetchone()
-
-        if bk and bk['status'] in ['Pending', 'Confirmed', 'Approved']:
-
-            cur.execute("UPDATE bookings SET status='Cancelled' WHERE id=%s", (booking_id,))
-
-            
-
-            # Reset vehicle status to 'Available'
-
-            cur.execute("UPDATE vehicles SET status='Available' WHERE id=(SELECT vehicle_id FROM bookings WHERE id=%s)", (booking_id,))
-
-            
-
-            commit_db()
-
-            reason = (data or {}).get('reason', 'No reason provided')
-            # Send in-app notification
-            notification_service.notify_user(
-                bk['user_id'],
-                "Booking Cancelled",
-                f"Your booking #{booking_id} has been cancelled. Reason: {reason}.",
-                'booking_cancelled'
-            )
-
-            
-
-            return jsonify({"message": "Booking cancelled"}), 200
-
-        else:
-
-            return jsonify({"error": "Cannot cancel this booking"}), 400
-
-    except Exception as e:
-
-        return jsonify({"error": str(e)}), 500
-
-    finally:
-
-        if 'cur' in locals():
-
-            cur.close()
-
 @app.route('/toggle-favorite', methods=['POST'])
 
 def toggle_favorite():
