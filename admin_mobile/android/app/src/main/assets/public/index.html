@@ -986,10 +986,17 @@
         #loginBtn:active {
             transform: translateY(0);
         }
-    </style>
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+    <!-- Global blocking loading overlay -->
+    <div id="adminLoadingOverlay" style="display:none;position:fixed;bottom:24px;right:24px;width:auto;height:auto;background:transparent;z-index:99999;align-items:center;justify-content:center;flex-direction:row;gap:8px;pointer-events:none;">
+      <div style="width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.12);"></div>
+    </div>
+    <style>@keyframes adminSpin{to{transform:rotate(360deg)}}</style>
+
     <!-- Chart Popup Modal -->
     <div id="chartPopupModal" class="chart-popup-overlay" onclick="closeChartPopupOverlay(event)">
         <div class="chart-popup-container">
@@ -1299,7 +1306,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h1 class="page-title" style="margin: 0;">Activity Log</h1>
             <div style="display:flex;gap:8px;">
-                <!-- Export button — shown only for super_admin, toggled by JS on tab load -->
+                <!-- Export button ï¿½ shown only for super_admin, toggled by JS on tab load -->
                 <button id="activityExportBtn" onclick="Activity.exportExcel()" style="display:none;padding:10px 14px;border-radius:12px;font-size:0.85rem;background:rgba(0,177,79,0.12);border:1px solid rgba(0,177,79,0.35);color:#00b14f;font-weight:700;gap:6px;align-items:center;">
                     <i class="fas fa-file-excel"></i> Export
                 </button>
@@ -1358,9 +1365,6 @@
             <button onclick="switchBookingTab('active')" id="tabBtnActive" class="booking-tab-btn active-booking-tab" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--primary); background: var(--primary); color: white; font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
                 <i class="fas fa-circle" style="font-size: 0.5rem; margin-right: 6px;"></i> Active Now
             </button>
-            <button onclick="switchBookingTab('past')" id="tabBtnPast" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
-                <i class="fas fa-check-circle" style="font-size: 0.75rem; margin-right: 6px;"></i> Past Bookings
-            </button>
             <button onclick="switchBookingTab('new')" id="tabBtnNew" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-weight: 700; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 6px;">
                 <i class="fas fa-bell" style="font-size: 0.75rem; margin-right: 6px;"></i> New Bookings
                 <span id="newBookingsBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;"></span>
@@ -1371,6 +1375,9 @@
             <button onclick="switchBookingTab('extensions')" id="tabBtnExtensions" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-weight: 700; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
                 <i class="fas fa-calendar-plus" style="font-size: 0.75rem;"></i> Extensions
                 <span id="extTabBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;"></span>
+            </button>
+            <button onclick="switchBookingTab('past')" id="tabBtnPast" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-check-circle" style="font-size: 0.75rem; margin-right: 6px;"></i> Past Bookings
             </button>
         </div>
 
@@ -1475,11 +1482,12 @@
             </div>
             <!-- Status filter chips for new bookings tab -->
             <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
-                <button class="nb-chip nb-chip-active" data-filter="all" onclick="Bookings.setNewFilter('all',this)" style="flex-shrink:0;padding:7px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All Pending</button>
-                <button class="nb-chip" data-filter="pending" onclick="Bookings.setNewFilter('pending',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">New</button>
+                
+                <button class="nb-chip nb-chip-active" data-filter="pending" onclick="Bookings.setNewFilter('pending',this)" style="flex-shrink:0;padding:7px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">New</button>
                 <button class="nb-chip" data-filter="confirmed" onclick="Bookings.setNewFilter('confirmed',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Confirmed</button>
                 <button class="nb-chip" data-filter="approved" onclick="Bookings.setNewFilter('approved',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Approved</button>
                 <button class="nb-chip" data-filter="picked_up" onclick="Bookings.setNewFilter('picked_up',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">Picked Up</button>
+                <button class="nb-chip" data-filter="all" onclick="Bookings.setNewFilter('all',this)" style="flex-shrink:0;padding:7px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;">All Pending</button>
             </div>
             <div id="newBookingsList">
                 <div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading...</div>
@@ -1555,7 +1563,7 @@
     <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
             <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none';modalClose();" style="position: absolute; left: 0; background: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('bookingDetailsModal').style.display='none';modalClose();" style="position: absolute; right: 0; background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 10px; border-radius: 8px; cursor: pointer; line-height: 1;"><i class="fas fa-times"></i></button>: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
                 <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Booking Details</h2>
             </div>
             <div id="bookingDetailContent">
@@ -1779,28 +1787,54 @@
 
     <!-- GPS TRACKING TAB -->
     <div id="gps" class="tab-content" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h1 class="page-title" style="margin: 0;">GPS Tracking</h1>
-            <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(0,177,79,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h1 class="page-title" style="margin:0;">GPS Tracking</h1>
+            <span id="gpsStatusBadge" style="font-size:0.6rem;padding:4px 10px;background:rgba(0,177,79,0.1);color:var(--success);border-radius:20px;font-weight:800;border:1px solid currentColor;">LIVE</span>
         </div>
 
-        <!-- Map iframe -->
-        <div class="stat-card" style="padding: 0; overflow: hidden; height: 320px; position: relative; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 16px;">
-            <iframe src="https://car-rental-inlaguna.vercel.app/" style="width: 100%; height: 100%; border: none;" allow="geolocation"></iframe>
-            <div style="position: absolute; bottom: 12px; right: 12px; z-index: 10;">
-                <button onclick="window.open('https://car-rental-inlaguna.vercel.app/', '_blank')" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(5px); border: 1px solid var(--border); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <!-- Live Map iframe -->  <div class="stat-card" style="padding:0;overflow:hidden;height:calc(100vh - 220px);min-height:360px;position:relative;border-radius:20px;border:1px solid var(--border);margin-bottom:0;">
+            <iframe id="blynkMapFrame" src="https://car-rental-inlaguna.vercel.app/" style="width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
+            <div style="position:absolute;top:10px;left:10px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:8px;padding:5px 10px;display:flex;align-items:center;gap:6px;">
+                <span id="gpsLiveDot" style="width:7px;height:7px;background:#00B14F;border-radius:50%;animation:pulse 1.5s infinite;display:inline-block;"></span>
+                <span style="font-size:0.68rem;font-weight:700;color:white;">Live Tracker</span>
+            </div>
+            <div style="position:absolute;bottom:10px;right:10px;z-index:10;display:flex;gap:6px;">
+                <button onclick="GPS.refresh()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:7px 11px;border-radius:8px;font-size:0.7rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button onclick="GPS.openMap()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:7px 11px;border-radius:8px;font-size:0.7rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
                     <i class="fas fa-external-link-alt"></i> Full Map
                 </button>
             </div>
         </div>
-
-        <!-- Live vehicle list -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">Active Vehicles</h3>
-            <button onclick="GPS.refresh()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer;"><i class="fas fa-sync-alt"></i></button>
+        <div id="gpsStatusBar" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span id="gpsStatusDot" style="width:9px;height:9px;border-radius:50%;background:#94a3b8;flex-shrink:0;"></span>
+                <span id="gpsStatusText" style="font-size:0.8rem;font-weight:700;color:var(--text-main);">Connecting...</span>
+            </div>
+            <span id="gpsLastUpdateBar" style="font-size:0.72rem;color:var(--text-muted);">--</span>
         </div>
-        <div id="gpsDeviceList">
-            <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading vehicles...</div>
+
+        <!-- Live Coordinates -->
+        <div class="stat-card" style="padding:14px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-main);">Live Coordinates</h3>
+                <span id="gpsLastUpdate" style="font-size:0.65rem;color:var(--text-muted);">Fetching...</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                <div style="background:var(--surface-container);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Latitude</div>
+                    <div id="gpsLat" style="font-size:0.85rem;font-weight:800;color:var(--text-main);">--</div>
+                </div>
+                <div style="background:var(--surface-container);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Longitude</div>
+                    <div id="gpsLng" style="font-size:0.85rem;font-weight:800;color:var(--text-main);">--</div>
+                </div>
+                <div style="background:var(--surface-container);border-radius:10px;padding:10px;text-align:center;">
+                    <div style="font-size:0.58rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Satellites</div>
+                    <div id="gpsSats" style="font-size:0.85rem;font-weight:800;color:var(--primary);">--</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1898,7 +1932,7 @@
                         </button>
                         <label style="padding:16px 8px;background:var(--surface-container);border:1.5px solid var(--border);border-radius:14px;color:var(--text-secondary);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;">
                             <i class="fas fa-images" style="font-size:1rem;"></i> Upload from Gallery
-                            <input type="file" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
+                            <input type="file" accept="image/*" id="vGalleryPicker" accept="image/*" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
                         </label>
                     </div>
                 </div>
@@ -2092,7 +2126,7 @@
                 <input type="hidden" id="inspectBookingId">
                 <input type="hidden" id="inspectType">
 
-                <!-- Receipt section — populated by openModal -->
+                <!-- Receipt section ï¿½ populated by openModal -->
                 <div id="inspectReceiptSection" style="margin-bottom:20px;padding:14px;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.3);border-radius:12px;">
                     <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;letter-spacing:0.05em;">
                         <i class="fas fa-receipt" style="color:#00B14F;margin-right:5px;"></i>Customer Receipt
@@ -2126,7 +2160,7 @@
                     <div id="inspectPhotoPreview" style="display: flex; gap: 10px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 5px;"></div>
                     <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 15px; background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); box-shadow: none;">
                         <i class="fas fa-camera"></i> Take Photos
-                        <input type="file" id="inspectPhotos" multiple accept="image/*" capture="environment" style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
+                        <input type="file" accept="image/*" id="inspectPhotos" multiple accept="image/*" style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
                     </label>
                     <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; text-align: center;">Take photos of all 4 sides and interior.</p>
                 </div>
@@ -2250,7 +2284,7 @@
 </div>
 
 <script>
-    // API URL: auto-detect — works on Vercel (web) and Android APK
+    // API URL: auto-detect ï¿½ works on Vercel (web) and Android APK
     // NOTE: On native APK, window.Capacitor may not yet be defined at script parse time.
     // Use hostname check: Capacitor APK runs on https://localhost, NOT http://localhost:5000.
     // So: https://localhost ? APK ? use Vercel. http://localhost:5000 ? local dev only.
@@ -2598,6 +2632,7 @@
         },
         async refresh() {
             const listContainer = document.getElementById('vehiclesList');
+            showSkeleton('vehiclesList', 'list');
             if (!listContainer.innerHTML.trim() || listContainer.innerHTML.includes('Loading vehicles')) {
                 listContainer.innerHTML = '<div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading vehicles...</div>';
             }
@@ -2737,6 +2772,7 @@
                             <span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;">${(v.status||'Unavailable')}</span>
                         </div>
                         <div style="flex-shrink:0;display:flex;flex-direction:column;gap:12px;align-items:center;">
+                            <button onclick="Vehicles.view(${v.id})" style="background:none;border:none;color:var(--primary);font-size:1.05rem;padding:4px;cursor:pointer;" title="View Details"><i class="fas fa-eye"></i></button>
                             <button onclick="Vehicles.edit(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-pen-to-square"></i></button>
                             <button onclick="Vehicles.delete(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-trash-can"></i></button>
                         </div>
@@ -2926,7 +2962,42 @@
                 if (res.ok) this.refresh();
             } catch (err) { showNotification('Error deleting vehicle', 'error'); }
         },
-        async edit(id) { this.openModal(id); }
+        
+
+        view(id) {
+            const v = this.data.find(x => x.id === id);
+            if (!v) { console.error('Vehicle not found:', id); return; }
+            const sc = v.status === 'Available' ? '#00B14F' : v.status === 'Rented' ? '#3b82f6' : v.status === 'Maintenance' ? '#f59e0b' : '#ef4444';
+            const imgHtml = v.vehicle_image
+                ? `<img src="${v.vehicle_image}" style="width:100%;height:220px;object-fit:cover;">`
+                : `<div style="width:100%;height:180px;background:var(--surface-container,#f4f6fb);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:4rem;color:var(--primary);opacity:0.3;"></i></div>`;
+            const galleryArr = Array.isArray(v.gallery) ? v.gallery : [];
+            const galleryHtml = galleryArr.length > 1
+                ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 16px 0;">` +
+                  galleryArr.slice(1,7).map(g => `<img src="${g}" style="width:100%;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="window.open('${g}','_blank')">`).join('') +
+                  `</div>` : '';
+            const fields = [
+                ['Brand', v.brand || '-'], ['Model', v.model || '-'],
+                ['Plate Number', v.plate_number || '-'], ['Type', v.vehicle_type || '-'],
+                ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
+                ['Seats', v.seats || '-'], ['Daily Rate', '&#8369;' + Number(v.daily_rate||0).toLocaleString()],
+                ['Location', v.location || '-'], ['Status', v.status || '-'],
+                ['Color', v.color_display || '-'], ['Year', v.year || '-'],
+            ];
+            const fieldsHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:16px;">`
+                + fields.map(([label,val]) => `<div><div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div><div style="font-size:0.88rem;font-weight:600;color:var(--text-main);">${val}</div></div>`).join('')
+                + `</div>`;
+            document.getElementById('vdModalTitle').textContent = (v.brand||'') + ' ' + (v.model||'');
+            document.getElementById('vehicleDetailContent').innerHTML =
+                imgHtml + galleryHtml +
+                `<div style="margin:12px 16px 0;"><span style="display:inline-block;padding:4px 14px;border-radius:20px;background:${sc};color:#fff;font-size:0.72rem;font-weight:800;">${v.status||'Unknown'}</span></div>` +
+                fieldsHtml +
+                (v.description ? `<div style="padding:0 16px 16px;font-size:0.85rem;color:var(--text-secondary);line-height:1.5;border-top:1px solid var(--border);padding-top:12px;">${v.description}</div>` : '');
+            const modal = document.getElementById('vehicleDetailModal');
+            if (modal) { modal.style.display = 'flex'; }
+        },
+
+async edit(id) { this.openModal(id); }
     };
 
     // ?? VEHICLE PHOTOS MODULE ??????????????????????????????????????????????????
@@ -3151,6 +3222,7 @@
         _filter: 'all',
         async refresh() {
             const list = document.getElementById('bookingsList');
+            showSkeleton('bookingsList', 'table');
             if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
                 list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
             }
@@ -3392,6 +3464,171 @@
                 </div>
             `).join('');
         },
+        view(id) {
+            const b = this.data.find(x => x.id === id);
+            if (!b) { console.error('Booking not found:', id); return; }
+
+            const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : 'N/A';
+            const fmtMoney = v => '&#8369;' + parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+            const statusStyles = {
+                'pending':   { bg:'#fef9c3', color:'#854d0e', border:'#fde047' },
+                'confirmed': { bg:'#dbeafe', color:'#1e40af', border:'#93c5fd' },
+                'approved':  { bg:'#dbeafe', color:'#1e40af', border:'#93c5fd' },
+                'picked up': { bg:'#dcfce7', color:'#166534', border:'#86efac' },
+                'ongoing':   { bg:'#dcfce7', color:'#166534', border:'#86efac' },
+                'completed': { bg:'#d1fae5', color:'#065f46', border:'#6ee7b7' },
+                'cancelled': { bg:'#fee2e2', color:'#991b1b', border:'#fca5a5' },
+                'rejected':  { bg:'#fee2e2', color:'#991b1b', border:'#fca5a5' },
+            };
+            const ss = statusStyles[(b.status||'').toLowerCase()] || { bg:'#f1f5f9', color:'#475569', border:'#cbd5e1' };
+
+            // Addons
+            let addonRows = '';
+            if (parseFloat(b.addon_price||0) > 0 && b.addons) {
+                try {
+                    const addons = typeof b.addons === 'string' ? JSON.parse(b.addons) : b.addons;
+                    if (Array.isArray(addons) && addons.length) {
+                        const perAddon = parseFloat(b.addon_price||0) / addons.length;
+                        addonRows = addons.map(a => `
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                                <span style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:#374151;"><i class="fas fa-plus-circle" style="color:#00B14F;font-size:0.7rem;"></i>${a}</span>
+                                <span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(perAddon)}</span>
+                            </div>`).join('');
+                    }
+                } catch(e) {}
+            }
+
+            // Action buttons
+            const st = (b.status||'').toLowerCase();
+            let actionBtns = '';
+            if (b.payment_status === 'Pending Payment' && st === 'pending') {
+                actionBtns += `<button onclick="Bookings.markCashReceived(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-money-bill-wave"></i>Cash Received</button>`;
+                actionBtns += `<button onclick="Bookings.reject(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-times"></i>Reject</button>`;
+            }
+            if (st === 'confirmed' || st === 'approved') {
+                actionBtns += `<button onclick="Inspections.openModal(${b.id},'pickup')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-search-plus"></i>Pickup Inspect</button>`;
+                actionBtns += `<button onclick="Bookings.pickup(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-car"></i>Mark Picked Up</button>`;
+            }
+            if (st === 'picked up' || st === 'ongoing') {
+                actionBtns += `<button onclick="Inspections.openModal(${b.id},'return')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-clipboard-check"></i>Return Inspect</button>`;
+                actionBtns += `<button onclick="Bookings.complete(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-flag-checkered"></i>Mark Returned</button>`;
+            }
+            if (b.payment_status === 'Partially Paid') {
+                actionBtns += `<button onclick="Bookings.markPaid(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#10b981;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-check-circle"></i>Mark Fully Paid</button>`;
+            }
+            if (st !== 'cancelled' && st !== 'rejected' && st !== 'completed') {
+                actionBtns += `<button onclick="Bookings.cancel(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-ban"></i>Cancel</button>`;
+            }
+
+            document.getElementById('bookingDetailContent').innerHTML = `
+            <div style="color:#0f172a;">
+
+                <!-- Header: ID + Status -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                    <div>
+                        <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;letter-spacing:1px;text-transform:uppercase;">Booking</div>
+                        <div style="font-size:1.3rem;font-weight:900;color:#0f172a;letter-spacing:-0.5px;">#${b.id}</div>
+                    </div>
+                    <span style="padding:6px 14px;border-radius:20px;font-size:0.72rem;font-weight:800;letter-spacing:0.3px;background:${ss.bg};color:${ss.color};border:1.5px solid ${ss.border};">${(b.status||'PENDING').toUpperCase()}</span>
+                </div>
+
+                <!-- Customer + Vehicle row -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                    <div style="background:#f8fafc;border-radius:12px;padding:12px;border:1px solid #e2e8f0;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                            <div style="width:28px;height:28px;background:#dbeafe;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#3b82f6;font-size:0.7rem;"></i></div>
+                            <span style="font-size:0.62rem;color:#94a3b8;font-weight:800;text-transform:uppercase;">Customer</span>
+                        </div>
+                        <div style="font-weight:800;font-size:0.88rem;color:#0f172a;margin-bottom:2px;">${b.customer_name||'N/A'}</div>
+                        <div style="font-size:0.72rem;color:#64748b;word-break:break-all;">${b.customer_email||''}</div>
+                    </div>
+                    <div style="background:#f8fafc;border-radius:12px;padding:12px;border:1px solid #e2e8f0;">
+                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                            <div style="width:28px;height:28px;background:#dcfce7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:#16a34a;font-size:0.7rem;"></i></div>
+                            <span style="font-size:0.62rem;color:#94a3b8;font-weight:800;text-transform:uppercase;">Vehicle</span>
+                        </div>
+                        <div style="font-weight:800;font-size:0.85rem;color:#0f172a;line-height:1.3;">${b.car||'N/A'}</div>
+                    </div>
+                </div>
+
+                <!-- Dates + Location -->
+                <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:${b.pickup_location ? '10px' : '0'};">
+                        <div>
+                            <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;"><i class="fas fa-calendar-check" style="color:#00B14F;"></i>Pickup</div>
+                            <div style="font-weight:700;font-size:0.9rem;color:#0f172a;">${fmtDate(b.start_date)}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;"><i class="fas fa-calendar-times" style="color:#ef4444;"></i>Return</div>
+                            <div style="font-weight:700;font-size:0.9rem;color:#0f172a;">${fmtDate(b.end_date)}</div>
+                        </div>
+                    </div>
+                    ${b.pickup_location ? `<div style="padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:flex-start;gap:6px;"><i class="fas fa-map-marker-alt" style="color:#ef4444;margin-top:2px;font-size:0.8rem;"></i><div style="font-size:0.82rem;color:#374151;">${b.pickup_location}</div></div>` : ''}
+                </div>
+
+                <!-- Price Breakdown -->
+                <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
+                    <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-receipt" style="color:#00B14F;"></i>Price Breakdown</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                        <span style="font-size:0.82rem;color:#374151;">Base Rental</span>
+                        <span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.base_price)}</span>
+                    </div>
+                    ${addonRows}
+                    ${parseFloat(b.insurance_price||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#374151;">Insurance${b.insurance_type ? ' ('+b.insurance_type+')' : ''}</span><span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.insurance_price)}</span></div>` : ''}
+                    ${parseFloat(b.discount_amount||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#16a34a;"><i class="fas fa-tag" style="margin-right:4px;"></i>Discount</span><span style="font-size:0.82rem;font-weight:600;color:#16a34a;">-${fmtMoney(b.discount_amount)}</span></div>` : ''}
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 0;">
+                        <span style="font-size:0.92rem;font-weight:800;color:#0f172a;">TOTAL</span>
+                        <span style="font-size:1.1rem;font-weight:900;color:#00B14F;">${fmtMoney(b.total_price)}</span>
+                    </div>
+                </div>
+
+                <!-- Payment Info -->
+                <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:${actionBtns ? '14px' : '0'};border:1px solid #e2e8f0;">
+                    <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-credit-card" style="color:#3b82f6;"></i>Payment</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${b.reference_number ? '8px' : '0'};">
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Method</div><div style="font-size:0.85rem;font-weight:700;color:#0f172a;">${b.payment_method||'N/A'}</div></div>
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div>
+                            <div style="font-size:0.82rem;font-weight:700;color:${b.payment_status==='Paid'?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div>
+                        </div>
+                    </div>
+                    ${parseFloat(b.amount_paid||0)>0 ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${b.reference_number ? '8px' : '0'};">
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>
+                        ${parseFloat(b.balance_amount||0)>0 ? `<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>` : ''}
+                    </div>` : ''}
+                    ${b.reference_number ? `<div style="padding-top:8px;border-top:1px solid #f1f5f9;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Reference #</div><div style="font-size:0.78rem;font-weight:600;color:#0f172a;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;">${b.reference_number}</div></div>` : ''}
+                </div>
+
+                <!-- Refund Account Details (shown when customer submitted refund info) -->
+                ${b.payment_status === 'Refund Pending' ? `
+                <div style="background:#fffbeb;border-radius:12px;padding:14px;margin-bottom:14px;border:1.5px solid #fde68a;">
+                    <div style="font-size:0.65rem;color:#d97706;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:5px;">
+                        <i class="fas fa-clock"></i> Refund Pending ï¿½ Action Required
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Refund Amount</div><div style="font-size:0.95rem;font-weight:800;color:#d97706;">${fmtMoney(b.refund_amount)}</div></div>
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Channel</div><div style="font-size:0.88rem;font-weight:700;color:#0f172a;">${b.refund_channel || 'ï¿½'}</div></div>
+                    </div>
+                    ${b.refund_account_name ? `
+                    <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fde68a;">
+                        <div style="font-size:0.72rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Customer Refund Account</div>
+                        <div style="font-size:0.88rem;font-weight:700;color:#0f172a;margin-bottom:2px;">${b.refund_account_name}</div>
+                        <div style="font-size:0.85rem;color:#374151;font-weight:600;letter-spacing:0.3px;">${b.refund_account_number || ''}</div>
+                    </div>` : `
+                    <div style="font-size:0.78rem;color:#92400e;padding:8px;background:#fef3c7;border-radius:8px;">
+                        <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>Customer has not yet submitted refund account details.
+                    </div>`}
+                </div>` : ''}
+
+                <!-- Action Buttons -->
+                ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
+            </div>`;
+
+            const modal = document.getElementById('bookingDetailsModal');
+            modal.style.display = 'flex';
+            if (typeof modalOpen === 'function') modalOpen();
+        },
         getPillClass(s) {
             const status = s?.toLowerCase();
             if (status === 'confirmed') return 'confirmed';
@@ -3437,6 +3674,7 @@
 
         async approve(id) {
             if (!confirm('Approve this booking?')) return;
+            showAdminBlockingUI(true);
             try {
                 const res = await fetch(`${API_URL}/bookings/${id}/approve`, { method: 'PUT' });
                 if (res.ok) {
@@ -3447,7 +3685,8 @@
                     const data = await res.json();
                     showNotification(data.error || 'Failed to approve', 'error');
                 }
-            } catch (err) { showNotification('Network error', 'error'); }
+            } catch (err) {
+                showAdminBlockingUI(false); showNotification('Network error', 'error'); }
         },
 
         async markCashReceived(id) {
@@ -3468,6 +3707,7 @@
         async reject(id) {
             const reason = prompt('Enter rejection reason:');
             if (!reason) return;
+            showAdminBlockingUI(true);
             try {
                 const res = await fetch(`${API_URL}/bookings/${id}/reject`, {
                     method: 'PUT',
@@ -3482,11 +3722,13 @@
                     const data = await res.json();
                     showNotification(data.error || 'Failed to reject', 'error');
                 }
-            } catch (err) { showNotification('Network error', 'error'); }
+            } catch (err) {
+                showAdminBlockingUI(false); showNotification('Network error', 'error'); }
         },
 
         async pickup(id) {
             if (!confirm('Confirm vehicle has been picked up?')) return;
+            showAdminBlockingUI(true);
             try {
                 const res = await fetch(`${API_URL}/bookings/${id}/pickup`, { method: 'PUT' });
                 if (res.ok) {
@@ -3497,11 +3739,13 @@
                     const data = await res.json();
                     showNotification(data.error || 'Failed', 'error');
                 }
-            } catch (err) { showNotification('Network error', 'error'); }
+            } catch (err) {
+                showAdminBlockingUI(false); showNotification('Network error', 'error'); }
         },
 
         async complete(id) {
             if (!confirm('Confirm vehicle has been returned?')) return;
+            showAdminBlockingUI(true);
             try {
                 const res = await fetch(`${API_URL}/bookings/${id}/complete`, { method: 'PUT' });
                 if (res.ok) {
@@ -3512,181 +3756,10 @@
                     const data = await res.json();
                     showNotification(data.error || 'Failed', 'error');
                 }
-            } catch (err) { showNotification('Network error', 'error'); }
+            } catch (err) {
+                showAdminBlockingUI(false); showNotification('Network error', 'error'); }
         },
 
-        async view(id) {
-          try {
-            const b = this.data.find(x => x.id === id);
-            if (!b) { alert('Booking not found for id: ' + id); return; }
-            
-            const isCancellable = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status);
-            const isApprovable = (b.status === 'Pending' && b.payment_status === 'Pending Payment');
-
-            // Fetch license details for this booking
-            let licenseHtml = '<p style="font-size: 0.85rem; color: #64748b;">No license details available.</p>';
-            try {
-                const licRes = await fetch(`${API_BASE}/api/admin/bookings/${id}/license-details`);
-                const lData = licRes.ok ? await licRes.json() : {};
-                console.log('License API response for booking', id, ':', JSON.stringify(lData));
-
-                if (lData && Object.keys(lData).length > 0 && !lData.error) {
-                    licenseHtml = `
-                        <div style="font-size: 0.95rem; line-height: 1.8; color: #1e293b; margin-bottom: 15px;">
-                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">Full Name:</strong> <span style="color:#1e293b;">${lData.full_name || '-'}</span></div>
-                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">DOB:</strong> <span style="color:#1e293b;">${lData.date_of_birth || '-'}</span></div>
-                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">License #:</strong> <span style="color:#1e293b;">${lData.license_number || '-'}</span></div>
-                            <div style="margin-bottom:6px;"><strong style="color:#0f172a;">Expiry:</strong> <span style="color:#1e293b;">${lData.expiry_date || '-'}</span></div>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <button onclick="viewLicenseImage('${lData.license_front_url || ''}')" ${!lData.license_front_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Front Image</button>
-                            <button onclick="viewLicenseImage('${lData.license_back_url || ''}')" ${!lData.license_back_url ? 'disabled' : ''} style="flex:1;padding:12px;font-size:0.9rem;border-radius:8px;border:1px solid #e2e8f0;background:white;color:#64748b;font-weight:600;">Back Image</button>
-                        </div>
-                        </div>
-                        <div style="margin-top: 25px; font-size: 0.95rem; line-height: 1.8; color: #1e293b; background: white; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                            <h3 style="font-size: 1.05rem; color: #0f172a; font-weight: 800; margin-bottom: 10px;">Emergency Contact</h3>
-                            <div style="margin-bottom:4px;"><strong style="color:#0f172a;">Name:</strong> <span style="color:#1e293b;">${lData.emergency_contact_name || '-'}</span></div>
-                            <div style="margin-bottom:4px;"><strong style="color:#0f172a;">Phone:</strong> <span style="color:#1e293b;">${lData.emergency_contact_phone || '-'}</span></div>
-                            <div><strong style="color:#0f172a;">Rel:</strong> <span style="color:#1e293b;">${lData.emergency_contact_relationship || lData.emergency_contact_relation || '-'}</span></div>
-                        </div>
-                        <div style="display:none">
-                    `;
-                } else {
-                    licenseHtml = `<p style="font-size:0.8rem;color:#64748b;">No license data found. (API returned: ${JSON.stringify(lData)})</p>`;
-                }
-            } catch (e) {
-                console.error('License fetch error:', e);
-                licenseHtml = `<p style="font-size:0.8rem;color:#ef4444;">Error loading license: ${e.message}</p>`;
-            }
-
-            const paymentBg = b.payment_status === 'Paid' ? '#dcfce7' : '#fee2e2';
-            const paymentColor = b.payment_status === 'Paid' ? '#16a34a' : '#ef4444';
-            const statusBg = ['Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status) ? '#dcfce7' : (['Pending'].includes(b.status) ? '#fef3c7' : '#fee2e2');
-            const statusColor = ['Confirmed', 'Approved', 'Picked Up', 'Ongoing'].includes(b.status) ? '#16a34a' : (['Pending'].includes(b.status) ? '#d97706' : '#ef4444');
-
-            const content = `
-                <div style="display: flex; flex-direction: column; gap: 24px; background: white; padding-bottom: 20px;">
-                    <h2 style="font-size: 1.8rem; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -0.5px;">Booking Details #${b.id}</h2>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 15px 10px; align-items: start;">
-                        <!-- Row 1 -->
-                        <div>
-                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Customer</label>
-                            <div style="font-weight: 500; font-size: 0.95rem; color: #0f172a; margin-top: 4px; word-break: break-word;">${b.customer_name || 'Guest'}</div>
-                        </div>
-                        <div>
-                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Vehicle</label>
-                            <div style="font-weight: 500; font-size: 0.95rem; color: #0f172a; margin-top: 4px; word-break: break-word;">${b.car || '-'}</div>
-                        </div>
-                        <div>
-                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Rental Period</label>
-                            <div style="font-weight: 500; font-size: 0.95rem; color: #0f172a; margin-top: 4px; word-break: break-word; line-height: 1.4;">${b.start_date ? new Date(b.start_date).toLocaleDateString() : '-'} to<br>${b.end_date ? new Date(b.end_date).toLocaleDateString() : '-'}</div>
-                        </div>
-                        
-                        <!-- Row 2 -->
-                        <div>
-                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Payment Status</label>
-                            <div style="margin-top: 6px;">
-                                <span style="background: ${paymentBg}; color: ${paymentColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">${(b.payment_status || 'Unpaid')}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Total Price</label>
-                            <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 6px;">&#8369;${b.total_price ? parseFloat(b.total_price).toFixed(2) : '0.00'}</div>
-                        </div>
-                        <div>
-                            <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Booking Status</label>
-                            <div style="margin-top: 6px;">
-                                <span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">${(b.status || 'PENDING')}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- INSPECTION SECTION -->
-                    <div style="border: 1px solid #00B14F; padding: 18px; border-radius: 12px; margin-top: 5px; background: white;">
-                        <h3 style="font-size: 1.1rem; color: #00B14F; font-weight: 800; margin-bottom: 15px;">Driver's License Details</h3>
-                        <div id="bookingLicenseDetailsWrapper">
-                            ${licenseHtml}
-                        </div>
-                    </div>
-
-
-
-                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
-                        ${isApprovable ? `
-                            <button onclick="Bookings.markCashReceived(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;"><i class="fas fa-money-bill-wave" style="margin-right:6px;"></i>Cash Received & Confirm</button>
-                            <button onclick="Bookings.reject(${b.id})" style="width: 100%; background: white; color: #ef4444; border: 1px solid #ef4444; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Reject Booking</button>
-                        ` : ''}
-
-                        
-
-                        ${b.status === 'Picked Up' ? `
-                            <button onclick="Bookings.complete(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-check-circle"></i> Complete Booking (Returned)</button>
-                        ` : ''}
-
-                        ${b.payment_status === 'Partially Paid' ? `
-                            <button onclick="Bookings.markPaid(${b.id})" style="width: 100%; background: #00B14F; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;">Mark as Fully Paid</button>
-                        ` : ''}
-
-                        ${isCancellable ? `
-                            <button onclick="Bookings.cancel(${b.id})" style="width:100%;padding:14px;font-size:0.85rem;background:white;border:1px solid #ef4444;color:#ef4444;border-radius:8px;font-weight:600;">Cancel Booking</button>
-                        ` : ''}
-
-                        ${(b.payment_status === 'Refund Pending' || b.payment_status === 'Refund Pending') ? `
-                        <div id="refundPanel_${b.id}" style="margin-top:4px;border:1.5px solid #f59e0b;border-radius:14px;padding:16px;background:rgba(245,158,11,0.05);">
-                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                                <i class="fas fa-undo-alt" style="color:#f59e0b;font-size:1rem;"></i>
-                                <span style="font-size:0.9rem;font-weight:800;color:#f59e0b;">Process Refund</span>
-                            </div>
-                            ${b.refund_note ? `<div style="font-size:0.75rem;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 10px;margin-bottom:10px;"><i class="fas fa-info-circle" style="margin-right:4px;"></i>${b.refund_note}</div>` : ''}
-                            <div style="display:flex;flex-direction:column;gap:10px;">
-                                <div>
-                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Refund Amount (PHP)</label>
-                                    <input id="rfAmount_${b.id}" type="number" step="0.01" min="0"
-                                        value="${b.refund_amount ? parseFloat(b.refund_amount).toFixed(2) : parseFloat(b.amount_paid||b.total_price||0).toFixed(2)}"
-                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;font-weight:700;color:#0f172a;">
-                                </div>
-                                <div>
-                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Refund Method</label>
-                                    <select id="rfMethod_${b.id}" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
-                                        <option value="GCash">GCash</option>
-                                        <option value="Maya">Maya</option>
-                                        <option value="Bank Transfer">Bank Transfer</option>
-                                        <option value="Cash">Cash</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Reference # (optional)</label>
-                                    <input id="rfRef_${b.id}" type="text" placeholder="e.g. GCash ref number"
-                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
-                                </div>
-                                <div>
-                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Note (optional)</label>
-                                    <input id="rfNote_${b.id}" type="text" placeholder="e.g. Refunded via GCash send money"
-                                        style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.9rem;color:#0f172a;">
-                                </div>
-                                <div>
-                                    <label style="font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;display:block;margin-bottom:4px;">Proof Screenshot (optional)</label>
-                                    <input id="rfProof_${b.id}" type="file" accept="image/*" style="font-size:0.8rem;color:#64748b;">
-                                </div>
-                                <button onclick="Bookings.processRefund(${b.id})" style="width:100%;padding:13px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.9rem;font-weight:800;cursor:pointer;">
-                                    <i class="fas fa-paper-plane" style="margin-right:6px;"></i>Confirm Refund Sent
-                                </button>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-            document.getElementById('bookingDetailContent').innerHTML = content;
-            document.getElementById('bookingDetailsModal').style.display = 'flex'; // Use flex for centering
-            modalOpen();
-
-          } catch(err) {
-            alert('VIEW ERROR: ' + err.message + '\n' + err.stack);
-            console.error('Bookings.view error:', err);
-          }
-        },
 
         async uploadRefundProof(bookingId) {
             const fileInput = document.getElementById('mRefundProofFile');
@@ -3919,6 +3992,7 @@
         data: [],
         async refresh() {
             const list = document.getElementById('driversList');
+            showSkeleton('driversList', 'list');
             try {
                 this.fetchWage();
                 const res = await fetch(`${API_BASE}/drivers`);
@@ -4367,58 +4441,119 @@
 
 
 
-    // --- GPS MODULE ---
+    // --- GPS MODULE (Blynk IoT) ---
     const GPS = {
-        data: [],
+        BLYNK_TOKEN: '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz',
+        BLYNK_SERVER: 'sgp1.blynk.cloud',
+        lat: null,
+        lng: null,
+        lastActive: 0,
         timer: null,
+
         async refresh() {
             try {
-                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
-                this.data = await res.json();
-                this.render();
-            } catch (err) { console.error(err); }
+                // Fetch all pins in a single request (same as car-rental site)
+                const res = await fetch(
+                    `https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&v1&v2&v3&v4&_=${Date.now()}`
+                );
+                if (!res.ok) { this._showOffline('Device offline'); return; }
+
+                const data = await res.json();
+                const now = Date.now();
+
+                // V4 is the heartbeat pin - update lastActive if it changed
+                if (data.v4 !== undefined) this.lastActive = now;
+
+                // Check if device is online (within 20 seconds)
+                const isOnline = (now - this.lastActive) < 20000;
+                if (!isOnline && this.lastActive > 0) { this._showOffline('Device offline'); return; }
+
+                const rawLat = String(data.v1 || '');
+                const rawLng = String(data.v2 || '');
+                const sats = data.v3 || '0';
+                const isEncrypted = rawLat.includes('ENCRYPTED') || rawLat === '' || rawLat === '0';
+
+                // Update status badge + status bar
+                const badge = document.getElementById('gpsStatusBadge');
+                const dot = document.getElementById('gpsStatusDot');
+                const txt = document.getElementById('gpsStatusText');
+                const upBar = document.getElementById('gpsLastUpdateBar');
+
+                if (isEncrypted) {
+                    if (badge) { badge.textContent = 'ENCRYPTED'; badge.style.color = '#d97706'; }
+                    if (dot) { dot.style.background = '#d97706'; dot.style.boxShadow = 'none'; }
+                    if (txt) { txt.textContent = 'Location Encrypted'; txt.style.color = '#d97706'; }
+                    if (upBar) upBar.textContent = 'Use Decrypt button on the map';
+                } else if (isOnline) {
+                    if (badge) { badge.textContent = 'LIVE'; badge.style.color = 'var(--success)'; }
+                    if (dot) { dot.style.background = '#00B14F'; dot.style.boxShadow = '0 0 0 3px rgba(0,177,79,0.2)'; }
+                    if (txt) { txt.textContent = 'Live â€” Car-001'; txt.style.color = 'var(--text-main)'; }
+                    if (upBar) upBar.textContent = 'Updated ' + new Date().toLocaleTimeString();
+                } else {
+                    if (badge) { badge.textContent = 'WAITING'; badge.style.color = '#d97706'; }
+                    if (dot) { dot.style.background = '#d97706'; dot.style.boxShadow = 'none'; }
+                    if (txt) { txt.textContent = 'Waiting for device...'; txt.style.color = '#d97706'; }
+                    if (upBar) upBar.textContent = 'No recent signal';
+                }
+
+                // Update coordinates display
+                const latEl = document.getElementById('gpsLat');
+                const lngEl = document.getElementById('gpsLng');
+                const satsEl = document.getElementById('gpsSats');
+                const upEl = document.getElementById('gpsLastUpdate');
+
+                if (isEncrypted) {
+                    // Location is encrypted - show hidden state
+                    if (latEl) { latEl.textContent = '*** ENCRYPTED ***'; latEl.style.color = '#d97706'; latEl.style.fontSize = '0.7rem'; }
+                    if (lngEl) { lngEl.textContent = '*** ENCRYPTED ***'; lngEl.style.color = '#d97706'; lngEl.style.fontSize = '0.7rem'; }
+                    if (satsEl) { satsEl.textContent = 'Hidden'; satsEl.style.color = '#94a3b8'; }
+                    if (upEl) upEl.textContent = 'Location encrypted';
+                } else {
+                    const lat = parseFloat(rawLat);
+                    const lng = parseFloat(rawLng);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        this.lat = lat;
+                        this.lng = lng;
+                        if (latEl) { latEl.textContent = lat.toFixed(6); latEl.style.color = ''; latEl.style.fontSize = ''; }
+                        if (lngEl) { lngEl.textContent = lng.toFixed(6); lngEl.style.color = ''; lngEl.style.fontSize = ''; }
+                        if (satsEl) { satsEl.textContent = sats; satsEl.style.color = ''; }
+                        if (upEl) upEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
+                    } else {
+                        if (latEl) { latEl.textContent = '--'; latEl.style.color = ''; }
+                        if (lngEl) { lngEl.textContent = '--'; lngEl.style.color = ''; }
+                        if (satsEl) satsEl.textContent = '0';
+                        if (upEl) upEl.textContent = 'No GPS fix';
+                    }
+                }
+
+            } catch(e) { this._showOffline('Connection error'); }
         },
+
+        _showOffline(reason) {
+            const badge = document.getElementById('gpsStatusBadge');
+            if (badge) { badge.textContent = 'OFFLINE'; badge.style.color = 'var(--text-muted)'; }
+            const dot = document.getElementById('gpsStatusDot');
+            if (dot) { dot.style.background = '#94a3b8'; dot.style.boxShadow = 'none'; }
+            const txt = document.getElementById('gpsStatusText');
+            if (txt) { txt.textContent = 'Device Offline'; txt.style.color = 'var(--text-muted)'; }
+            const upBar = document.getElementById('gpsLastUpdateBar');
+            if (upBar) upBar.textContent = reason || 'No signal';
+        },
+
+        openMap() {
+            window.open('https://car-rental-inlaguna.vercel.app/', '_blank');
+        },
+
         startLive() {
             this.refresh();
-            this.timer = setInterval(() => this.refresh(), 5000); // 5s updates
-        },
-        stopLive() {
             if (this.timer) clearInterval(this.timer);
+            this.timer = setInterval(() => this.refresh(), 10000);
         },
-        render() {
-            const list = document.getElementById('gpsDeviceList');
-            if (this.data.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">No active modules.</div>';
-                return;
-            }
-            list.innerHTML = this.data.map(d => `
-                <div style="background: rgba(0,177,79,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <strong style="font-size: 0.9rem;">${d.name} (${d.plate_number})</strong>
-                        <span style="font-size: 0.6rem; color: ${this.isActive(d.last_gps_update) ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800;">
-                            ${this.isActive(d.last_gps_update) ? '<i class="fas fa-circle" style="font-size:0.5rem;"></i> LIVE' : 'OFFLINE'}
-                        </span>
-                    </div>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Lat: ${d.latitude}, Lng: ${d.longitude}</p>
-                    <p style="font-size: 0.65rem; color: var(--primary); margin-top: 5px; font-weight: 600;">Last update: ${this.timeAgo(d.last_gps_update)}</p>
-                </div>
-            `).join('');
-        },
-        isActive(time) {
-            if (!time) return false;
-            const diff = (new Date() - new Date(time)) / 1000;
-            return diff < 60; // Active if updated in last 60s
-        },
-        timeAgo(time) {
-            if (!time) return 'Never';
-            const diff = Math.floor((new Date() - new Date(time)) / 1000);
-            if (diff < 10) return 'Just now';
-            if (diff < 60) return `${diff}s ago`;
-            return `${Math.floor(diff / 60)}m ago`;
+
+        stopLive() {
+            if (this.timer) { clearInterval(this.timer); this.timer = null; }
         }
     };
-
-
 
     // --- ACTIVITY MODULE ---
     const Activity = {
@@ -4884,7 +5019,7 @@
                         <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${b.car || b.vehicle || 'N/A'}</td>
                         <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${rentalDates}</td>
                         <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${completionDateStr}</td>
-                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">?${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">&#8369;${totalPrice}</td>
                         <td style="padding: 12px 10px; text-align: center;">
                             <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
                                 <i class="fas fa-eye" style="margin-right: 4px;"></i> View
@@ -5090,7 +5225,7 @@
                             <div style="border:1.5px solid #f59e0b;border-radius:12px;padding:14px;background:rgba(245,158,11,0.06);margin-top:4px;">
                                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
                                     <i class="fas fa-undo-alt" style="color:#f59e0b;"></i>
-                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund — ?${parseFloat(refundAmount).toLocaleString()}</span>
+                                    <span style="font-size:0.85rem;font-weight:800;color:#f59e0b;">Process Refund ï¿½ ?${parseFloat(refundAmount).toLocaleString()}</span>
                                 </div>
                                 <div style="display:flex;flex-direction:column;gap:8px;">
                                     <input id="extRfAmt_${extensionId}" type="number" step="0.01" value="${parseFloat(refundAmount).toFixed(2)}"
@@ -5489,7 +5624,7 @@
                                 });
                             }
                         } catch (openErr) {
-                            // FileOpener not available — that's OK, file is still saved
+                            // FileOpener not available ï¿½ that's OK, file is still saved
                         }
                         return;
                     } catch (fsErr) {
@@ -7325,6 +7460,83 @@
         });
     };
 
+    // === Blocking UI - auto-wraps all fetch calls ===
+    var _adminFetchCount = 0;
+    var _adminLoadingTimeout = null;
+    function showAdminLoading(show) {
+        var el = document.getElementById('adminLoadingOverlay');
+        if (show) {
+            _adminFetchCount++;
+            if (el) el.style.display = 'flex';
+            // Safety: auto-hide after 10s to prevent spinner getting stuck
+            clearTimeout(_adminLoadingTimeout);
+            _adminLoadingTimeout = setTimeout(function() {
+                _adminFetchCount = 0;
+                if (el) el.style.display = 'none';
+            }, 10000);
+        } else {
+            _adminFetchCount = Math.max(0, _adminFetchCount - 1);
+            if (_adminFetchCount === 0) {
+                clearTimeout(_adminLoadingTimeout);
+                if (el) el.style.display = 'none';
+            }
+        }
+    }
+    (function() {
+        var _orig = window.fetch;
+        var _SKIP = ['/notifications', '/fcm-token', '/gps', '/chat/messages', '/paymongo/status'];
+        window.fetch = function(url, opts) {
+            var us = typeof url === 'string' ? url : '';
+            var skip = _SKIP.some(function(s) { return us.indexOf(s) >= 0; });
+            if (!skip) { _adminFetchCount++; showAdminLoading(true); }
+            var p = _orig.apply(this, arguments);
+            p.then(function() {
+                if (!skip) { _adminFetchCount = Math.max(0, _adminFetchCount - 1); if (_adminFetchCount === 0) showAdminLoading(false); }
+            }, function() {
+                if (!skip) { _adminFetchCount = Math.max(0, _adminFetchCount - 1); if (_adminFetchCount === 0) showAdminLoading(false); }
+            });
+            return p;
+        };
+    })();
+
+    // === Full-screen blocking UI for write operations ===
+    function showAdminBlockingUI(show) {
+        var el = document.getElementById('adminBlockingOverlay');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'adminBlockingOverlay';
+            el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;'
+                + 'display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;'
+                + 'backdrop-filter:blur(2px);';
+            el.innerHTML = '<div style="width:52px;height:52px;border:4px solid rgba(255,255,255,0.3);'
+                + 'border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;"></div>'
+                + '<p style="color:#fff;font-size:0.9rem;font-weight:700;letter-spacing:0.3px;">Processing...</p>';
+            document.body.appendChild(el);
+        }
+        el.style.display = show ? 'flex' : 'none';
+        document.body.style.overflow = show ? 'hidden' : '';
+    }
+
+
+    // ?? Skeleton screen helpers ??
+    function skelLine(h, w, mb) {
+        h = h||12; w = w||'100%'; mb = mb||8;
+        return '<div style="height:'+h+'px;width:'+w+';border-radius:6px;background:linear-gradient(90deg,var(--border,#e5e7eb) 25%,var(--bg-input,#f9fafb) 50%,var(--border,#e5e7eb) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:'+mb+'px;"></div>';
+    }
+    function showSkeleton(cid, type) {
+        var el = document.getElementById(cid);
+        if (!el) return;
+        var h = '', bg = 'background:var(--bg-card,#fff);border:1px solid var(--border,#e5e7eb);border-radius:12px;';
+        if (type === 'table') {
+            h = '<table style="width:100%;border-collapse:collapse;">';
+            for(var k=0;k<6;k++) h+='<tr style="border-bottom:1px solid var(--border,#e5e7eb);"><td style="padding:12px 8px;">'+skelLine(12,'80%',0)+'</td><td style="padding:12px 8px;">'+skelLine(12,'60%',0)+'</td><td style="padding:12px 8px;">'+skelLine(12,'70%',0)+'</td></tr>';
+            h += '</table>';
+        } else {
+            for(var j=0;j<5;j++) h+='<div style="'+bg+'padding:14px;margin-bottom:8px;display:flex;gap:12px;align-items:center;"><div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:linear-gradient(90deg,var(--border,#e5e7eb) 25%,var(--bg-input,#f9fafb) 50%,var(--border,#e5e7eb) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;"></div><div style="flex:1;">'+skelLine(12,'70%',6)+skelLine(10,'50%',0)+'</div></div>';
+        }
+        el.innerHTML = h;
+    }
+
 </script>
 
 <!-- DEBUG PANEL -->
@@ -7369,71 +7581,16 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
     }
 
 </script>
+
+<!-- Vehicle Detail Modal -->
+<div id="vehicleDetailModal" class="premium-modal" style="display:none;background:rgba(15,23,42,0.85);align-items:center;justify-content:center;padding:20px;">
+  <div class="modal-content" style="background:var(--surface,#fff);color:var(--text-main,#0f1117);padding:0;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.3);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
+    <div style="position:relative;display:flex;justify-content:center;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <h2 id="vdModalTitle" style="font-size:1.05rem;font-weight:700;margin:0;">Vehicle Details</h2>
+      <button onclick="document.getElementById('vehicleDetailModal').style.display='none';" style="position:absolute;right:16px;background:rgba(0,0,0,0.06);border:none;color:#374151;font-size:1rem;padding:7px 9px;border-radius:8px;cursor:pointer;"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="vehicleDetailContent" style="padding:0;"></div>
+  </div>
+</div>
+
 </body>
-</html>
-
-
-    <script>
-        // Password visibility toggle function
-        function togglePasswordVisibility(inputId, button) {
-            const input = document.getElementById(inputId);
-            const icon = button.querySelector('i');
-            
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'fas fa-eye-slash';
-            } else {
-                input.type = 'password';
-                icon.className = 'fas fa-eye';
-            }
-        }
-
-        // Password validation function
-        function validatePassword(password, errorElementId) {
-            const requirements = {
-                uppercase: /[A-Z]/.test(password),
-                lowercase: /[a-z]/.test(password),
-                number: /\d/.test(password),
-                length: password.length >= 8
-            };
-
-            // Update requirement indicators
-            const updateRequirement = (id, isValid) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    const icon = element.querySelector('i');
-                    if (isValid) {
-                        element.classList.add('valid');
-                        element.classList.remove('invalid');
-                        icon.className = 'fas fa-check';
-                    } else {
-                        element.classList.add('invalid');
-                        element.classList.remove('valid');
-                        icon.className = 'fas fa-times';
-                    }
-                }
-            };
-
-            updateRequirement('req-uppercase', requirements.uppercase);
-            updateRequirement('req-lowercase', requirements.lowercase);
-            updateRequirement('req-number', requirements.number);
-            updateRequirement('req-length', requirements.length);
-
-            // Check if all requirements are met
-            const isValid = Object.values(requirements).every(req => req);
-            
-            // Update error message
-            const errorElement = document.getElementById(errorElementId);
-            if (errorElement) {
-                if (password.length > 0 && !isValid) {
-                    errorElement.textContent = 'Password does not meet all requirements';
-                    errorElement.style.display = 'block';
-                } else {
-                    errorElement.textContent = '';
-                    errorElement.style.display = 'none';
-                }
-            }
-
-            return isValid;
-        }
-    </script>

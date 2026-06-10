@@ -28650,7 +28650,7 @@ async edit(id) { this.openModal(id); }
     }
     (function() {
         var _orig = window.fetch;
-        var _SKIP = ['/notifications', '/fcm-token', '/gps', '/chat/messages', '/paymongo/status'];
+        var _SKIP = ['/notifications', '/fcm-token', '/gps', '/chat/messages', '/paymongo/status', 'blynk.cloud'];
         window.fetch = function(url, opts) {
             var us = typeof url === 'string' ? url : '';
             var skip = _SKIP.some(function(s) { return us.indexOf(s) >= 0; });
