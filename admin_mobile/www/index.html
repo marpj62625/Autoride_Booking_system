@@ -1792,23 +1792,39 @@
             <span id="gpsStatusBadge" style="font-size: 0.6rem; padding: 4px 10px; background: rgba(0,177,79,0.1); color: var(--success); border-radius: 20px; font-weight: 800; border: 1px solid currentColor;">LIVE</span>
         </div>
 
-        <!-- Map iframe -->
-        <div class="stat-card" style="padding: 0; overflow: hidden; height: 320px; position: relative; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 16px;">
-            <iframe src="https://car-rental-inlaguna.vercel.app/" style="width: 100%; height: 100%; border: none;" allow="geolocation"></iframe>
-            <div style="position: absolute; bottom: 12px; right: 12px; z-index: 10;">
-                <button onclick="window.open('https://car-rental-inlaguna.vercel.app/', '_blank')" style="background: rgba(15,23,42,0.85); backdrop-filter: blur(5px); border: 1px solid var(--border); color: white; padding: 8px 14px; border-radius: 10px; font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <i class="fas fa-external-link-alt"></i> Full Map
+        <!-- Blynk Map -->
+        <div class="stat-card" style="padding: 0; overflow: hidden; height: 340px; position: relative; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 16px;">
+            <iframe id="blynkMapFrame" src="about:blank" style="width:100%;height:100%;border:none;" allowfullscreen></iframe>
+            <div style="position:absolute;top:12px;left:12px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:10px;padding:6px 12px;display:flex;align-items:center;gap:6px;">
+                <span id="blynkLiveIndicator" style="width:7px;height:7px;background:#00B14F;border-radius:50%;animation:pulse 1.5s infinite;display:inline-block;"></span>
+                <span style="font-size:0.7rem;font-weight:700;color:white;">Blynk IoT — Live</span>
+            </div>
+            <div style="position:absolute;bottom:12px;right:12px;z-index:10;display:flex;gap:8px;">
+                <button onclick="GPS.refresh()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:8px 12px;border-radius:10px;font-size:0.72rem;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+                <button id="blynkOpenBtn" onclick="GPS.openBlynk()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:8px 12px;border-radius:10px;font-size:0.72rem;font-weight:600;display:flex;align-items:center;gap:5px;cursor:pointer;">
+                    <i class="fas fa-external-link-alt"></i> Open Map
                 </button>
             </div>
         </div>
 
-        <!-- Live vehicle list -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">Active Vehicles</h3>
-            <button onclick="GPS.refresh()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer;"><i class="fas fa-sync-alt"></i></button>
-        </div>
-        <div id="gpsDeviceList">
-            <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading vehicles...</div>
+        <!-- Coordinates info -->
+        <div class="stat-card" style="padding:14px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-main);">Vehicle Location</h3>
+                <span id="gpsLastUpdate" style="font-size:0.65rem;color:var(--text-muted);">Fetching...</span>
+            </div>
+            <div id="gpsCoordDisplay" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:var(--surface-container);border-radius:10px;padding:10px;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Latitude</div>
+                    <div id="gpsLat" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">—</div>
+                </div>
+                <div style="background:var(--surface-container);border-radius:10px;padding:10px;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Longitude</div>
+                    <div id="gpsLng" style="font-size:0.95rem;font-weight:800;color:var(--text-main);">—</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -4415,54 +4431,67 @@ async edit(id) { this.openModal(id); }
 
 
 
-    // --- GPS MODULE ---
+    // --- GPS MODULE (Blynk IoT) ---
     const GPS = {
-        data: [],
+        BLYNK_TOKEN: '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz',
+        BLYNK_SERVER: 'sgp1.blynk.cloud',
+        lat: null,
+        lng: null,
         timer: null,
+
         async refresh() {
             try {
-                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
-                this.data = await res.json();
-                this.render();
-            } catch (err) { console.error(err); }
+                const [latRes, lngRes] = await Promise.all([
+                    fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&V0`),
+                    fetch(`https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&V1`)
+                ]);
+                const lat = parseFloat(await latRes.text());
+                const lng = parseFloat(await lngRes.text());
+
+                if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                    this.lat = lat;
+                    this.lng = lng;
+                    const frame = document.getElementById('blynkMapFrame');
+                    if (frame) frame.src = `https://maps.google.com/maps?q=${lat},${lng}&z=16&output=embed`;
+                    const latEl = document.getElementById('gpsLat');
+                    const lngEl = document.getElementById('gpsLng');
+                    const upEl = document.getElementById('gpsLastUpdate');
+                    if (latEl) latEl.textContent = lat.toFixed(6);
+                    if (lngEl) lngEl.textContent = lng.toFixed(6);
+                    if (upEl) upEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
+                    const badge = document.getElementById('gpsStatusBadge');
+                    if (badge) { badge.textContent = 'LIVE'; badge.style.color = 'var(--success)'; }
+                } else {
+                    this._showOffline();
+                }
+            } catch(e) {
+                this._showOffline();
+            }
         },
+
+        _showOffline() {
+            const badge = document.getElementById('gpsStatusBadge');
+            if (badge) { badge.textContent = 'OFFLINE'; badge.style.color = 'var(--text-muted)'; }
+            const upEl = document.getElementById('gpsLastUpdate');
+            if (upEl) upEl.textContent = 'No signal';
+        },
+
+        openBlynk() {
+            if (this.lat && this.lng) {
+                window.open(`https://maps.google.com/maps?q=${this.lat},${this.lng}&z=16`, '_blank');
+            } else {
+                window.open(`https://${this.BLYNK_SERVER}`, '_blank');
+            }
+        },
+
         startLive() {
             this.refresh();
-            this.timer = setInterval(() => this.refresh(), 5000); // 5s updates
-        },
-        stopLive() {
             if (this.timer) clearInterval(this.timer);
+            this.timer = setInterval(() => this.refresh(), 10000);
         },
-        render() {
-            const list = document.getElementById('gpsDeviceList');
-            if (this.data.length === 0) {
-                list.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">No active modules.</div>';
-                return;
-            }
-            list.innerHTML = this.data.map(d => `
-                <div style="background: rgba(0,177,79,0.05); padding: 12px; border-radius: 12px; border: 1px solid ${this.isActive(d.last_gps_update) ? 'var(--primary-glow)' : 'var(--border)'}; margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <strong style="font-size: 0.9rem;">${d.name} (${d.plate_number})</strong>
-                        <span style="font-size: 0.6rem; color: ${this.isActive(d.last_gps_update) ? 'var(--success)' : 'var(--text-muted)'}; font-weight: 800;">
-                            ${this.isActive(d.last_gps_update) ? '<i class="fas fa-circle" style="font-size:0.5rem;"></i> LIVE' : 'OFFLINE'}
-                        </span>
-                    </div>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Lat: ${d.latitude}, Lng: ${d.longitude}</p>
-                    <p style="font-size: 0.65rem; color: var(--primary); margin-top: 5px; font-weight: 600;">Last update: ${this.timeAgo(d.last_gps_update)}</p>
-                </div>
-            `).join('');
-        },
-        isActive(time) {
-            if (!time) return false;
-            const diff = (new Date() - new Date(time)) / 1000;
-            return diff < 60; // Active if updated in last 60s
-        },
-        timeAgo(time) {
-            if (!time) return 'Never';
-            const diff = Math.floor((new Date() - new Date(time)) / 1000);
-            if (diff < 10) return 'Just now';
-            if (diff < 60) return `${diff}s ago`;
-            return `${Math.floor(diff / 60)}m ago`;
+
+        stopLive() {
+            if (this.timer) { clearInterval(this.timer); this.timer = null; }
         }
     };
 
