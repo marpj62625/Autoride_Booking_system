@@ -3187,7 +3187,7 @@ function openBookingDetail(bookingId) {
 }
 
 function renderBookingDetail(b) {
-  var canCancel = b.status === 'Pending' || b.status === 'Confirmed';
+  var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
   var el = document.getElementById('bookingDetailContent');
@@ -3254,7 +3254,7 @@ function renderBookingDetail(b) {
   var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
   secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')">Download Receipt</button>';
   if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
-  if (b.status === 'Pending' || b.status === 'Confirmed') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
+  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
   else secondaryActions += '</div>';
 
   var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();

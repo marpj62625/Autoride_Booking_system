@@ -3385,7 +3385,7 @@ def cancel_booking():
 
         bk = cur.fetchone()
 
-        if bk and bk['status'] == 'Pending':
+        if bk and bk['status'] in ['Pending', 'Confirmed', 'Approved']:
 
             cur.execute("UPDATE bookings SET status='Cancelled' WHERE id=%s", (booking_id,))
 
@@ -4564,7 +4564,7 @@ def user_cancel_booking():
         if user_id and int(booking['user_id']) != int(user_id):
             return jsonify({"error": "Unauthorized. You can only cancel your own bookings."}), 403
 
-        if booking['status'] not in ['Pending', 'Confirmed']:
+        if booking['status'] not in ['Pending', 'Confirmed', 'Approved']:
             return jsonify({"error": f"Cannot cancel a booking that is '{booking['status']}'"}), 400
 
         # ?? 48-hour cancellation policy ??????????????????????????????????
