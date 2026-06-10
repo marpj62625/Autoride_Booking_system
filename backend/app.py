@@ -4100,19 +4100,22 @@ def get_all_bookings():
 
         query = """
 
-            SELECT b.id, u.full_name AS customer_name,
+            SELECT b.id, u.full_name AS customer_name, u.email AS customer_email,
 
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
+                   v.plate_number,
 
                    b.start_date, b.end_date, b.total_price, b.status,
 
-                   b.payment_status,
+                   b.payment_status, b.base_price, b.addon_price, b.insurance_price,
+                   b.insurance_type, b.discount_amount, b.payment_type,
+                   b.amount_paid, b.balance_amount,
 
                    b.pickup_location, b.rental_type, b.addons,
 
                    b.driver_id, d.full_name AS driver_name,
 
-                   pm.method AS payment_method
+                   pm.method AS payment_method, pm.reference_number
 
             FROM bookings b
 
@@ -4123,7 +4126,7 @@ def get_all_bookings():
             LEFT JOIN drivers d ON b.driver_id = d.id
 
             LEFT JOIN (
-                SELECT booking_id, method
+                SELECT booking_id, method, reference_number
                 FROM payments
                 WHERE id IN (SELECT MAX(id) FROM payments GROUP BY booking_id)
             ) pm ON pm.booking_id = b.id
