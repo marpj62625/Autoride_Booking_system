@@ -1308,20 +1308,6 @@ function otpBackspace(event, currentInput, prevIdx) {
     }
   }
 }
-}
-      // Initialise Supabase client and load notifications
-      if (typeof supabase !== 'undefined') {
-          supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      }
-      loadNotifications(data.user_id);
-      subscribeToNotifications(data.user_id);
-      showPage('page-home');
-    })
-    .catch(function(err) {
-      document.getElementById('smsOtpErr').textContent = err.message || 'Invalid or expired OTP.';
-    })
-    .finally(function() { showLoading(false); });
-}
 
 // HOME
 // Active booking countdown timer handle
