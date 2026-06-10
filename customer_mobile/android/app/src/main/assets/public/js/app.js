@@ -568,14 +568,22 @@ function uploadFile(endpoint, formData) {
 // UI HELPERS
 // Progress bar loading - also shows full-screen blocking overlay
 var _loadingCount = 0;
+var _loadingTimeout = null;
 function showLoading(show) {
   var overlay = document.getElementById('loadingOverlay');
   if (show) {
     _loadingCount++;
     if (overlay) overlay.style.display = 'flex';
+    // Safety: auto-hide after 10s to prevent spinner getting stuck
+    clearTimeout(_loadingTimeout);
+    _loadingTimeout = setTimeout(function() {
+      _loadingCount = 0;
+      if (overlay) overlay.style.display = 'none';
+    }, 10000);
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
+      clearTimeout(_loadingTimeout);
       if (overlay) overlay.style.display = 'none';
     }
   }
@@ -1074,6 +1082,7 @@ function _doGoogleOAuth2Popup(clientId) {
       })
         .then(function(r) { return r.json(); })
         .then(function(userInfo) {
+          showLoading(false); // hand off to _finishGoogleLogin which manages its own loading
           return _finishGoogleLogin(
             tokenResponse.access_token,
             userInfo.email,

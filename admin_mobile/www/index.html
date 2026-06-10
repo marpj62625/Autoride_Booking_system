@@ -7210,14 +7210,22 @@ async edit(id) { this.openModal(id); }
 
     // === Blocking UI - auto-wraps all fetch calls ===
     var _adminFetchCount = 0;
+    var _adminLoadingTimeout = null;
     function showAdminLoading(show) {
         var el = document.getElementById('adminLoadingOverlay');
         if (show) {
             _adminFetchCount++;
             if (el) el.style.display = 'flex';
+            // Safety: auto-hide after 10s to prevent spinner getting stuck
+            clearTimeout(_adminLoadingTimeout);
+            _adminLoadingTimeout = setTimeout(function() {
+                _adminFetchCount = 0;
+                if (el) el.style.display = 'none';
+            }, 10000);
         } else {
             _adminFetchCount = Math.max(0, _adminFetchCount - 1);
             if (_adminFetchCount === 0) {
+                clearTimeout(_adminLoadingTimeout);
                 if (el) el.style.display = 'none';
             }
         }
