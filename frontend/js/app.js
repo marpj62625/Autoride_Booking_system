@@ -3346,18 +3346,26 @@ function renderBookingDetail(b) {
             '</div>' +
             (isRefunded && b.refund_method ? (
               '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Method</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_method + '</div>' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + (b.refund_channel || b.refund_method) + '</div>' +
+              '</div>'
+            ) : (b.refund_channel ? (
+              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_channel + '</div>' +
               '</div>'
             ) : (
               '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
                 '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Amount Paid</div>' +
                 '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(totalPaid) + '</div>' +
               '</div>'
-            )) +
+            ))) +
           '</div>' +
           (isRefunded && b.refund_ref ? (
-            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Reference: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Reference #: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
+          ) : '') +
+          (isRefunded && b.refund_account_name ? (
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Sent to: <strong style="color:var(--text-primary);">' + b.refund_account_name + '</strong> (' + (b.refund_account_number || '') + ')</div>'
           ) : '') +
           (isRefunded && b.refunded_at ? (
             '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Processed: ' + _fmtDate(_normDateStr(b.refunded_at)) + '</div>'
