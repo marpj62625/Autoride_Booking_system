@@ -412,11 +412,11 @@
                             <p><strong>Rental Type:</strong> ${b.rental_type}</p>
                             <p><strong>Pickup:</strong> ${b.pickup_location}</p>
                             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
-                                <span>Breakdown: Base ?${parseFloat(b.base_price).toFixed(2)} + Extras ?${parseFloat(b.addon_price).toFixed(2)} + Tax/Fees</span>
+                                <span>Breakdown: Base ₱${parseFloat(b.base_price).toFixed(2)} + Extras ₱${parseFloat(b.addon_price).toFixed(2)} + Tax/Fees</span>
                             </div>
                         </div>
                         <div class="booking-meta">
-                            <span class="price">?${parseFloat(b.total_price).toFixed(2)}</span>
+                            <span class="price">₱${parseFloat(b.total_price).toFixed(2)}</span>
                             <span class="status-badge ${statusColor}" style="background: ${b.status==='Pending'?'#fef3c7':''}; color: ${b.status==='Pending'?'#d97706':''}">${b.status}</span>
                             
                             <div style="margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
@@ -434,7 +434,7 @@
                                 ${(b.status === 'Confirmed' || b.status === 'Approved') ? `
                                     <div style="display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap;">
                                         ${b.payment_status === 'Partially Paid' ? `
-                                            <button onclick="payBalance(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--primary-color); color: #fff;">Pay Balance (?${parseFloat(b.balance_amount || 0).toFixed(2)})</button>
+                                            <button onclick="payBalance(${JSON.stringify(b).replace(/"/g, '&quot;')})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: var(--primary-color); color: #fff;">Pay Balance (₱${parseFloat(b.balance_amount || 0).toFixed(2)})</button>
                                         ` : ''}
                                         <button onclick="downloadReceipt(${b.id})" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #6366f1; color: #fff;">Download Receipt</button>
                                         <button onclick="openCancelModal(${b.id}, ${b.amount_paid||0}, '${b.start_date}', '${b.status}')" class="btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;">Cancel Booking</button>
@@ -458,7 +458,7 @@
                                             <div style="color:#6b7280;">Acct: ${b.refund_account_number||''}</div>
                                         </div>` : `
                                         <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px;font-size:0.8rem;text-align:left;margin-bottom:6px;">
-                                            <div style="color:#d97706;font-weight:700;margin-bottom:4px;">? Refund Pending  -  ?${parseFloat(b.refund_amount||0).toFixed(2)}</div>
+                                            <div style="color:#d97706;font-weight:700;margin-bottom:4px;">? Refund Pending  -  ₱${parseFloat(b.refund_amount||0).toFixed(2)}</div>
                                             <div style="color:#92400e;">Please submit your refund account details so we can process your refund.</div>
                                         </div>
                                         <button onclick="openRefundDetailsModalWeb(${b.id}, ${b.refund_amount||0})" class="btn" style="width:100%;padding:0.4rem;font-size:0.8rem;background:#f59e0b;border-color:#f59e0b;">?? Submit Refund Details</button>`}

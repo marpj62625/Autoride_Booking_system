@@ -305,7 +305,7 @@
         document.getElementById('nameSearch').addEventListener('input', applyFilters);
         document.getElementById('favoriteFilter').addEventListener('change', applyFilters);
         document.getElementById('priceFilter').addEventListener('input', (e) => {
-            document.getElementById('priceLabel').textContent = `?${e.target.value}`;
+            document.getElementById('priceLabel').textContent = `₱${e.target.value}`;
             applyFilters();
         });
 
