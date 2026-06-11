@@ -5,18 +5,50 @@
 
 // CONFIG Â auto-detect API URL for web vs APK
 var API_BASE = (function() {
+  console.log('API_BASE detection:');
+  console.log('- window._API_BASE:', typeof window !== 'undefined' ? window._API_BASE : 'undefined');
+  console.log('- window.Capacitor:', typeof window !== 'undefined' ? !!window.Capacitor : 'undefined');
+  console.log('- window.Capacitor.isNative:', typeof window !== 'undefined' && window.Capacitor ? window.Capacitor.isNative : 'undefined');
+  console.log('- window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'undefined');
+  console.log('- window.location.protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
+  
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
+  
   // Always use production URL on native Capacitor APK
   if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
+    console.log('Using production API for Capacitor native app');
     return 'https://autoride-booking-system.vercel.app/api';
   }
+  
+  // Force production for mobile apps (fallback detection)
+  if (typeof window !== 'undefined' && (
+    window.location.protocol === 'capacitor:' || 
+    window.location.protocol === 'https:' && window.location.hostname === 'localhost'
+  )) {
+    console.log('Using production API for mobile protocol detection');
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
+  
+  // FORCE PRODUCTION - temporary fix
+  // Remove this after debugging
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    console.log('FORCED: Using production API instead of localhost');
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
+  
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
-    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
+    if (h === 'localhost' || h === '127.0.0.1') {
+      console.log('Using localhost API for web development');
+      return 'http://localhost:5000/api';
+    }
     if (window.location.protocol === 'https:') {
+      console.log('Using origin API for HTTPS');
       return window.location.origin + '/api';
     }
   }
+  
+  console.log('Using fallback production API');
   return 'https://autoride-booking-system.vercel.app/api';
 }());
 
