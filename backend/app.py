@@ -2110,19 +2110,35 @@ def upload_refund_proof():
 
         
 
+        ref_val = request.form.get('refund_ref', '')
         cur.execute("""
 
             UPDATE bookings 
 
             SET payment_status = 'Refunded', 
 
-                refund_proof_url = %s 
+                refund_proof_url = %s,
+                refund_ref = COALESCE(%s, refund_ref)
 
             WHERE id = %s
 
-        """, (url, booking_id))
+        """, (url, ref_val or None, booking_id))
 
-        
+        # Notify customer
+        try:
+            cur2 = get_cursor()
+            cur2.execute('SELECT user_id, refund_amount FROM bookings WHERE id = %s', (booking_id,))
+            bk = cur2.fetchone()
+            if bk and bk['user_id']:
+                notification_service.notify_user(
+                    bk['user_id'],
+                    'Refund Processed',
+                    f"Your refund of PHP {float(bk['refund_amount'] or 0):,.2f} for Booking #{booking_id} has been sent. Please check your account.",
+                    'refund_processed'
+                )
+            cur2.close()
+        except Exception:
+            pass
 
         # Log activity
 
