@@ -4362,16 +4362,7 @@ async edit(id) { this.openModal(id); }
         viewLicense(url) {
             if (!url) return alert('No license image uploaded');
             const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-            
-            // Show in-app preview instead of window.open which fails in Capacitor
-            const modal = document.getElementById('licensePreviewModal');
-            const img = document.getElementById('licensePreviewImg');
-            if (modal && img) {
-                img.src = fullUrl;
-                modal.style.display = 'flex';
-            } else {
-                window.open(fullUrl, '_blank');
-            }
+            viewLicenseImage(fullUrl);
         },
         async process(userId, status) {
             const admin = adminAuth.getUser();
@@ -7672,10 +7663,45 @@ async edit(id) { this.openModal(id); }
     function viewLicenseImage(url) {
         var modal = document.getElementById('licensePreviewModal');
         var img = document.getElementById('licensePreviewImg');
-        if (modal && img) {
-            img.src = url;
-            modal.style.display = 'flex';
+        if (!modal || !img) return;
+        // Show modal with loading state
+        img.src = '';
+        img.style.display = 'none';
+        modal.style.display = 'flex';
+        var wrap = img.parentNode;
+        var loadingEl = document.getElementById('_licenseLoadingMsg');
+        if (!loadingEl) {
+            loadingEl = document.createElement('p');
+            loadingEl.id = '_licenseLoadingMsg';
+            loadingEl.style.cssText = 'color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px;';
+            loadingEl.textContent = 'Loading...';
+            wrap.insertBefore(loadingEl, img);
         }
+        loadingEl.style.display = 'block';
+        loadingEl.textContent = 'Loading...';
+        loadingEl.style.color = '#94a3b8';
+
+        fetch(url)
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.blob();
+            })
+            .then(function(blob) {
+                var objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                img.style.display = 'block';
+                loadingEl.style.display = 'none';
+            })
+            .catch(function() {
+                loadingEl.textContent = 'Could not load image. ';
+                loadingEl.style.color = '#ef4444';
+                var link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.style.color = '#00B14F';
+                link.textContent = 'Open in browser';
+                loadingEl.appendChild(link);
+            });
     }
 
 </script>
