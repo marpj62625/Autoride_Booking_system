@@ -7,5 +7,14 @@
     "allowNavigation": [
       "autoride-booking-system.vercel.app"
     ]
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
   }
 }

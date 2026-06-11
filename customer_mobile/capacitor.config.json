@@ -27,6 +27,13 @@
       ],
       "serverClientId": "857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com",
       "forceCodeForRefreshToken": false
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
     }
   }
 }

@@ -4,4 +4,6 @@
     <string name="title_activity_main">Autoride Admin</string>
     <string name="package_name">com.autoride.admin</string>
     <string name="custom_url_scheme">com.autoride.admin</string>
+
+    <color name="colorPrimary">#00B14F</color>
 </resources>
