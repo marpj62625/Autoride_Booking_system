@@ -3840,21 +3840,21 @@ function openRefundDetailsForm(bookingId, refundAmount) {
         '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Refund Channel</label>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">' +
           '<label style="cursor:pointer;">' +
-            '<input type="radio" name="refundChannel" value="GCash" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'GCash Number\';document.getElementById(\'refundChannelCard_GCash\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_GCash\').style.borderColor=\'#00B14F\';[\'Maya\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<input type="radio" name="refundChannel" value="GCash" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'GCash Number\';document.getElementById(\'refundAcctNum\').maxLength=11;document.getElementById(\'refundAcctNum\').placeholder=\'09XX-XXX-XXXX\';document.getElementById(\'refundChannelCard_GCash\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_GCash\').style.borderColor=\'#00B14F\';[\'Maya\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
             '<div id="refundChannelCard_GCash" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
               '<i class="fas fa-mobile-alt" style="color:#00B14F;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
               '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">GCash</span>' +
             '</div>' +
           '</label>' +
           '<label style="cursor:pointer;">' +
-            '<input type="radio" name="refundChannel" value="Maya" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Maya Number\';document.getElementById(\'refundChannelCard_Maya\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Maya\').style.borderColor=\'#00B14F\';[\'GCash\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<input type="radio" name="refundChannel" value="Maya" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Maya Number\';document.getElementById(\'refundAcctNum\').maxLength=11;document.getElementById(\'refundAcctNum\').placeholder=\'09XX-XXX-XXXX\';document.getElementById(\'refundChannelCard_Maya\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Maya\').style.borderColor=\'#00B14F\';[\'GCash\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
             '<div id="refundChannelCard_Maya" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
               '<i class="fas fa-wallet" style="color:#7c3aed;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
               '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">Maya</span>' +
             '</div>' +
           '</label>' +
           '<label style="cursor:pointer;">' +
-            '<input type="radio" name="refundChannel" value="Bank" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Account Number\';document.getElementById(\'refundChannelCard_Bank\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Bank\').style.borderColor=\'#00B14F\';[\'GCash\',\'Maya\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<input type="radio" name="refundChannel" value="Bank" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Account Number\';document.getElementById(\'refundAcctNum\').maxLength=20;document.getElementById(\'refundAcctNum\').placeholder=\'Bank account number\';document.getElementById(\'refundChannelCard_Bank\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Bank\').style.borderColor=\'#00B14F\';[\'GCash\',\'Maya\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
             '<div id="refundChannelCard_Bank" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
               '<i class="fas fa-university" style="color:#2563eb;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
               '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">Bank</span>' +
@@ -3873,7 +3873,8 @@ function openRefundDetailsForm(bookingId, refundAmount) {
       // Account number
       '<div style="margin-bottom:14px;">' +
         '<label id="refundAcctLabel" style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">GCash / Maya / Account Number</label>' +
-        '<input id="refundAcctNum" type="text" placeholder="e.g. 09XX-XXX-XXXX" ' +
+        '<input id="refundAcctNum" type="tel" placeholder="e.g. 09XX-XXX-XXXX" maxlength="11" ' +
+      'oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,11);" ' +
           'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;box-sizing:border-box;">' +
       '</div>' +
 
