@@ -3653,6 +3653,30 @@ async edit(id) { this.openModal(id); }
                         <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>Customer has not yet submitted refund account details.
                     </div>`}
                 </div>` : ''}
+
+                <!-- Driver License Details -->
+                ${(b.license_number || b.license_front_url || b.license_back_url) ? `
+                <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
+                    <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-id-card" style="color:#7c3aed;"></i>Driver License</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${(b.license_front_url || b.license_back_url) ? '10px' : '0'};">
+                        ${b.license_number ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">License #</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_number}</div></div>` : ''}
+                        ${b.license_class ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Class</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_class}</div></div>` : ''}
+                        ${b.license_expiry ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Expiry</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_expiry}</div></div>` : ''}
+                        ${b.license_full_name ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Full Name</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_full_name}</div></div>` : ''}
+                    </div>
+                    ${(b.license_front_url || b.license_back_url) ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        ${b.license_front_url ? `<button onclick="viewLicenseImage('${b.license_front_url}')" style="padding:8px;background:#ede9fe;border:1.5px solid #7c3aed;border-radius:8px;color:#7c3aed;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-image" style="margin-right:4px;"></i>Front</button>` : ''}
+                        ${b.license_back_url ? `<button onclick="viewLicenseImage('${b.license_back_url}')" style="padding:8px;background:#ede9fe;border:1.5px solid #7c3aed;border-radius:8px;color:#7c3aed;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-image" style="margin-right:4px;"></i>Back</button>` : ''}
+                    </div>` : ''}
+                    ${b.emergency_contact_name ? `
+                    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;">
+                        <div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Emergency Contact</div>
+                        <div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.emergency_contact_name}</div>
+                        <div style="font-size:0.78rem;color:#64748b;">${b.emergency_contact_phone || ''} ${b.emergency_contact_relationship ? '· ' + b.emergency_contact_relationship : ''}</div>
+                    </div>` : ''}
+                </div>` : ''}
+
                 <!-- Action Buttons -->
                 ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
             </div>`;

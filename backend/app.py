@@ -4090,7 +4090,18 @@ def get_all_bookings():
 
                    pm.method AS payment_method, pm.reference_number,
 
-                   b.refund_amount, b.refund_channel, b.refund_account_name, b.refund_account_number
+                   b.refund_amount, b.refund_channel, b.refund_account_name, b.refund_account_number,
+                   b.refund_proof_url, b.refund_ref, b.refunded_at,
+
+                   COALESCE(ld.full_name, u.full_name) AS license_full_name,
+                   COALESCE(ld.license_number, u.license_number) AS license_number,
+                   COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
+                   ld.license_class,
+                   ld.license_front_url,
+                   ld.license_back_url,
+                   ld.emergency_contact_name,
+                   ld.emergency_contact_phone,
+                   ld.emergency_contact_relationship
 
             FROM bookings b
 
@@ -4099,6 +4110,8 @@ def get_all_bookings():
             JOIN vehicles v ON b.vehicle_id = v.id
 
             LEFT JOIN drivers d ON b.driver_id = d.id
+
+            LEFT JOIN license_details ld ON b.user_id = ld.user_id
 
             LEFT JOIN (
                 SELECT booking_id, method, reference_number
