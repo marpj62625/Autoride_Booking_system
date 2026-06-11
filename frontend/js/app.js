@@ -3842,7 +3842,9 @@ function _viewRefundProof(url) {
         '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
         '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
       '</div>' +
-      '<img src="' + url + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;" onerror="this.parentElement.innerHTML+=\'<p style=\\\"padding:20px;text-align:center;color:#ef4444;\\\">Could not load proof image.</p>\'">' +
+      '<img src="' + url + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;" ' +
+        'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';">' +
+      '<p style="display:none;padding:20px;text-align:center;color:#ef4444;">Could not load proof image.</p>' +
     '</div>';
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
