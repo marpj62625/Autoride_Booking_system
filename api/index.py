@@ -15,7 +15,6 @@ class PrefixMiddleware(object):
 
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
-        print(f"DEBUG: Incoming path = '{path}'")
 
         # Strip the /api prefix
         if path.startswith(self.prefix):
@@ -28,7 +27,6 @@ class PrefixMiddleware(object):
         if len(path) > 1 and path.endswith('/'):
             path = path[:-1]
 
-        print(f"DEBUG: Flask sees path = '{path}'")
         environ['PATH_INFO'] = path
         return self.app(environ, start_response)
 

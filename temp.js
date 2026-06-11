@@ -223,6 +223,32 @@
         }
     }
 
+    // --- SYSTEM CONFIG MODAL ---
+    function toggleSystemConfigModal() {
+        const modal = document.getElementById('systemConfigModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            // Load settings when modal opens
+            if (typeof Settings !== 'undefined' && Settings.fetch) {
+                Settings.fetch();
+            }
+        }
+    }
+
+    function closeSystemConfigModal() {
+        const modal = document.getElementById('systemConfigModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function closeSystemConfigModalBackdrop(event) {
+        // Only close if clicking on the backdrop (not the modal content)
+        if (event.target === event.currentTarget) {
+            closeSystemConfigModal();
+        }
+    }
+
     // --- VEHICLES MODULE (REFINED) ---
     const Vehicles = {
         data: [],
@@ -2627,7 +2653,7 @@
             rows.push(['Top Vehicles by Revenue']);
             rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
             (data.topVehicles || []).forEach((c, i) => {
-                rows.push([i + 1, `${c.brand} ${c.model}`, c.booking_count, c.revenue || 0]);
+                rows.push([i + 1, c.brand + " " + c.model, c.booking_count, c.revenue || 0]);
             });
             rows.push([]);
             rows.push(['Revenue Trend']);
@@ -2636,51 +2662,55 @@
                 rows.push([t.day || t.label || '', t.amount || 0]);
             });
 
-            const csv = rows.map(r => r.map(cell => {
-                const str = String(cell);
-                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-                    return `"${str.replace(/"/g, '""')}"`;
-                }
-                return str;
-            }).join(',')).join('\n');
-
-            const BOM = '\uFEFF';
-            const csvContent = BOM + csv;
-            const filename = `autoride_report_${new Date().toISOString().split('T')[0]}.csv`;
-
+            // Generate real Excel file using SheetJS
             try {
-                // Use Capacitor Filesystem to write to Downloads
+                if (typeof XLSX === 'undefined') {
+                    throw new Error('Excel library not loaded');
+                }
+                
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                XLSX.utils.book_append_sheet(wb, ws, "Report");
+                
+                // Write as base64
+                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
+
                 const { Filesystem, Directory } = window.Capacitor.Plugins;
                 if (Filesystem) {
-                    // Write file to Downloads directory
                     const result = await Filesystem.writeFile({
                         path: filename,
-                        data: btoa(unescape(encodeURIComponent(csvContent))),
+                        data: wboutBase64,
                         directory: Directory ? Directory.Documents : 'DOCUMENTS',
                         recursive: true
                     });
                     
-                    // Share the saved file
                     const { Share } = window.Capacitor.Plugins;
                     if (Share) {
                         await Share.share({
                             title: 'Autoride Sales Report',
-                            text: 'Sales report from Autoride Admin',
                             url: result.uri,
-                            dialogTitle: 'Share Report'
+                            dialogTitle: 'Share Excel Report'
                         });
                     }
-                    showNotification('Report saved and ready to share!', 'success');
+                    showNotification('Excel Report saved and ready to share!', 'success');
                     return;
                 }
             } catch (err) {
-                console.error('Filesystem export failed:', err);
+                console.error('Excel generation/sharing failed:', err);
             }
 
-            // Fallback: Copy CSV to clipboard
+            // Fallback for web or if plugins fail
             try {
-                await navigator.clipboard.writeText(csv);
-                showNotification('Report copied to clipboard! Paste it into Excel or Google Sheets.', 'success');
+                if (typeof XLSX !== 'undefined') {
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    XLSX.utils.book_append_sheet(wb, ws, "Report");
+                    XLSX.writeFile(wb, 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx');
+                    showNotification('Excel file downloaded!', 'success');
+                } else {
+                    showNotification('Export failed. Excel library not available.', 'error');
+                }
             } catch (err) {
                 showNotification('Export failed. Please try again.', 'error');
             }
@@ -3546,6 +3576,9 @@
     // Global Bindings for HTML Access
     window.adminAuth = adminAuth;
     window.toggleDarkMode = toggleDarkMode;
+    window.toggleSystemConfigModal = toggleSystemConfigModal;
+    window.closeSystemConfigModal = closeSystemConfigModal;
+    window.closeSystemConfigModalBackdrop = closeSystemConfigModalBackdrop;
     window.Vehicles = Vehicles;
     window.Bookings = Bookings;
     window.Drivers = Drivers;
@@ -4455,3 +4488,68 @@ window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (s
         }
     }
 
+
+
+        // Password visibility toggle function
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Password validation function
+        function validatePassword(password, errorElementId) {
+            const requirements = {
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                length: password.length >= 8
+            };
+
+            // Update requirement indicators
+            const updateRequirement = (id, isValid) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const icon = element.querySelector('i');
+                    if (isValid) {
+                        element.classList.add('valid');
+                        element.classList.remove('invalid');
+                        icon.className = 'fas fa-check';
+                    } else {
+                        element.classList.add('invalid');
+                        element.classList.remove('valid');
+                        icon.className = 'fas fa-times';
+                    }
+                }
+            };
+
+            updateRequirement('req-uppercase', requirements.uppercase);
+            updateRequirement('req-lowercase', requirements.lowercase);
+            updateRequirement('req-number', requirements.number);
+            updateRequirement('req-length', requirements.length);
+
+            // Check if all requirements are met
+            const isValid = Object.values(requirements).every(req => req);
+            
+            // Update error message
+            const errorElement = document.getElementById(errorElementId);
+            if (errorElement) {
+                if (password.length > 0 && !isValid) {
+                    errorElement.textContent = 'Password does not meet all requirements';
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+    
