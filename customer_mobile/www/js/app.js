@@ -3874,31 +3874,92 @@ function _viewRefundProof(url) {
         '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
         '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
       '</div>' +
-      '<div id="_refundProofImgWrap" style="min-height:120px;display:flex;align-items:center;justify-content:center;">' +
-        '<p style="color:#94a3b8;font-size:0.85rem;">Loading...</p>' +
+      '<div id="_refundProofImgWrap" style="min-height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:20px;">' +
+        '<p id="_refundProofStatus" style="color:#94a3b8;font-size:0.85rem;margin-bottom:10px;">Loading image...</p>' +
+        '<div style="width:100%;display:none;" id="_refundProofImgContainer"></div>' +
       '</div>' +
     '</div>';
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
 
-  // Fetch as blob to bypass Android WebView external image restrictions
   console.log('Fetching refund proof from:', url);
-  fetch(url)
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.blob();
-    })
-    .then(function(blob) {
-      var objectUrl = URL.createObjectURL(blob);
-      var wrap = document.getElementById('_refundProofImgWrap');
-      if (!wrap) return;
-      wrap.innerHTML = '<img src="' + objectUrl + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;">';
-    })
-    .catch(function(err) {
-      console.error('Refund proof fetch error:', err);
-      var wrap = document.getElementById('_refundProofImgWrap');
-      if (wrap) wrap.innerHTML = '<p style="padding:20px;text-align:center;color:#ef4444;">Could not load proof image.<br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;">Open in browser</a></p>';
-    });
+  var statusEl = document.getElementById('_refundProofStatus');
+  var containerEl = document.getElementById('_refundProofImgContainer');
+  
+  // Try multiple approaches
+  var attempts = [
+    // Approach 1: Direct fetch + blob (current method)
+    function() {
+      return fetch(url, {
+        method: 'GET',
+        mode: 'cors'
+      }).then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.blob();
+      }).then(function(blob) {
+        var objectUrl = URL.createObjectURL(blob);
+        containerEl.innerHTML = '<img src="' + objectUrl + '" style="width:100%;display:block;max-height:60vh;object-fit:contain;border-radius:8px;">';
+        containerEl.style.display = 'block';
+        statusEl.style.display = 'none';
+        return true;
+      });
+    },
+    
+    // Approach 2: Direct image with crossorigin
+    function() {
+      return new Promise(function(resolve, reject) {
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          containerEl.innerHTML = '<img src="' + url + '" style="width:100%;display:block;max-height:60vh;object-fit:contain;border-radius:8px;">';
+          containerEl.style.display = 'block';
+          statusEl.style.display = 'none';
+          resolve(true);
+        };
+        img.onerror = function() {
+          reject(new Error('Image load failed'));
+        };
+        img.src = url;
+      });
+    },
+    
+    // Approach 3: Simple direct image (no crossorigin)
+    function() {
+      return new Promise(function(resolve, reject) {
+        var img = new Image();
+        img.onload = function() {
+          containerEl.innerHTML = '<img src="' + url + '" style="width:100%;display:block;max-height:60vh;object-fit:contain;border-radius:8px;">';
+          containerEl.style.display = 'block';
+          statusEl.style.display = 'none';
+          resolve(true);
+        };
+        img.onerror = function() {
+          reject(new Error('Direct image load failed'));
+        };
+        img.src = url;
+      });
+    }
+  ];
+  
+  function tryNextApproach(index) {
+    if (index >= attempts.length) {
+      // All approaches failed
+      statusEl.innerHTML = '<span style="color:#ef4444;">Could not load proof image.</span><br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;text-decoration:underline;">Open in browser</a>';
+      return;
+    }
+    
+    statusEl.textContent = 'Loading... (method ' + (index + 1) + ')';
+    attempts[index]()
+      .then(function() {
+        console.log('Image loaded successfully with method', index + 1);
+      })
+      .catch(function(err) {
+        console.warn('Method', index + 1, 'failed:', err.message);
+        tryNextApproach(index + 1);
+      });
+  }
+  
+  tryNextApproach(0);
 }
 
 function openRefundDetailsForm(bookingId, refundAmount) {
