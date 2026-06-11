@@ -454,11 +454,11 @@
                                         ${b.refund_channel ? `
                                         <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:10px;font-size:0.8rem;text-align:left;">
                                             <div style="color:#16a34a;font-weight:700;margin-bottom:4px;">? Refund Details Submitted</div>
-                                            <div style="color:#374151;"><strong>${b.refund_channel}</strong> — ${b.refund_account_name||''}</div>
+                                            <div style="color:#374151;"><strong>${b.refund_channel}</strong>  -  ${b.refund_account_name||''}</div>
                                             <div style="color:#6b7280;">Acct: ${b.refund_account_number||''}</div>
                                         </div>` : `
                                         <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px;font-size:0.8rem;text-align:left;margin-bottom:6px;">
-                                            <div style="color:#d97706;font-weight:700;margin-bottom:4px;">? Refund Pending — ?${parseFloat(b.refund_amount||0).toFixed(2)}</div>
+                                            <div style="color:#d97706;font-weight:700;margin-bottom:4px;">? Refund Pending  -  ?${parseFloat(b.refund_amount||0).toFixed(2)}</div>
                                             <div style="color:#92400e;">Please submit your refund account details so we can process your refund.</div>
                                         </div>
                                         <button onclick="openRefundDetailsModalWeb(${b.id}, ${b.refund_amount||0})" class="btn" style="width:100%;padding:0.4rem;font-size:0.8rem;background:#f59e0b;border-color:#f59e0b;">?? Submit Refund Details</button>`}
@@ -735,7 +735,7 @@
             document.getElementById('wRefundNotes').value = '';
             document.querySelectorAll('[id^=wrc_]').forEach(function(el) { el.style.borderColor = '#e5e7eb'; });
             document.querySelectorAll('input[name="wRefundChannel"]').forEach(function(r) { r.checked = false; });
-            document.getElementById('refundDetailsWebInfo').textContent = 'Refund amount: ?' + parseFloat(refundAmount).toFixed(2) + ' — Please provide where to send your refund.';
+            document.getElementById('refundDetailsWebInfo').textContent = 'Refund amount: ?' + parseFloat(refundAmount).toFixed(2) + '  -  Please provide where to send your refund.';
             document.getElementById('refundDetailsModalWeb').style.display = 'flex';
         }
 

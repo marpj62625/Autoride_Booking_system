@@ -17,7 +17,7 @@ describe('Expandable Dashboard Charts', () => {
                 <div class="modal-card chart-popup-card">
                     <header class="modal-header">
                         <h3 id="chartPopupTitle">Chart Details</h3>
-                        <button class="close-btn" id="chartPopupClose">×</button>
+                        <button class="close-btn" id="chartPopupClose">x</button>
                     </header>
                     <div class="chart-filters">
                         <div class="filter-group">

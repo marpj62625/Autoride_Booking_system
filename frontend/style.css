@@ -459,14 +459,14 @@ footer {
     }
 }
 
-/* Large desktop (≥1400px) �" 3 columns with sidebar */
+/* Large desktop (≥1400px) " 3 columns with sidebar */
 @media (min-width: 1400px) {
     .vehicles-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
-/* Extra large (≥1800px) �" 4 columns */
+/* Extra large (≥1800px) " 4 columns */
 @media (min-width: 1800px) {
     .vehicles-grid {
         grid-template-columns: repeat(4, 1fr);

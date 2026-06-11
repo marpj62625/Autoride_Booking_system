@@ -3694,7 +3694,7 @@ async edit(id) { this.openModal(id); }
                     <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;">
                         <div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Emergency Contact</div>
                         <div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.emergency_contact_name}</div>
-                        <div style="font-size:0.78rem;color:#64748b;">${b.emergency_contact_phone || ''} ${b.emergency_contact_relationship ? '· ' + b.emergency_contact_relationship : ''}</div>
+                        <div style="font-size:0.78rem;color:#64748b;">${b.emergency_contact_phone || ''} ${b.emergency_contact_relationship ? ' |  ' + b.emergency_contact_relationship : ''}</div>
                     </div>` : ''}
                 </div>` : ''}
 

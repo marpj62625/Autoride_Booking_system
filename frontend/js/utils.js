@@ -1,5 +1,5 @@
 /**
- * utils.js — Pure utility functions for the Autoride Customer Mobile App.
+ * utils.js  -  Pure utility functions for the Autoride Customer Mobile App.
  * All functions are side-effect-free and fully testable without DOM or Capacitor.
  *
  * Feature: autoride-customer-mobile-app
@@ -91,7 +91,7 @@ function formatTime12h(time24) {
 
 /**
  * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
- * Property 7: File validation — format and size.
+ * Property 7: File validation  -  format and size.
  * @param {{ type: string, size: number }} file
  * @returns {string|null} Error message string, or null if valid.
  */
@@ -113,8 +113,8 @@ function validateUploadFile(file) {
  * - startDate must be today or a future date
  * - endDate must be strictly after startDate
  * Property 3: Date range validation.
- * @param {string} startDate — 'YYYY-MM-DD'
- * @param {string} endDate   — 'YYYY-MM-DD'
+ * @param {string} startDate  -  'YYYY-MM-DD'
+ * @param {string} endDate    -  'YYYY-MM-DD'
  * @returns {{ valid: boolean, error?: string }}
  */
 function validateDateRange(startDate, endDate) {
@@ -154,14 +154,14 @@ function validateDateRange(startDate, endDate) {
  * Property 6: Loyalty points earned round-trip.
  *
  * @param {number} dailyRate
- * @param {string} startDate — 'YYYY-MM-DD'
- * @param {string} endDate   — 'YYYY-MM-DD'
- * @param {Array<{price: number}>} addons — array of add-on objects with a price field
+ * @param {string} startDate  -  'YYYY-MM-DD'
+ * @param {string} endDate    -  'YYYY-MM-DD'
+ * @param {Array<{price: number}>} addons  -  array of add-on objects with a price field
  * @param {number} insurancePrice
- * @param {number} longTermDiscountDays — minimum days to qualify for long-term discount
- * @param {number} longTermDiscountPercent — discount percentage (e.g. 10 for 10%)
- * @param {number} couponPercent — coupon discount percentage (0 if none)
- * @param {number} pointsRedeemed — loyalty points to redeem (10 points = PHP 1)
+ * @param {number} longTermDiscountDays  -  minimum days to qualify for long-term discount
+ * @param {number} longTermDiscountPercent  -  discount percentage (e.g. 10 for 10%)
+ * @param {number} couponPercent  -  coupon discount percentage (0 if none)
+ * @param {number} pointsRedeemed  -  loyalty points to redeem (10 points = PHP 1)
  * @returns {{
  *   days: number,
  *   basePrice: number,
@@ -242,7 +242,7 @@ function calculateBookingPrice(
  * @returns {string}
  */
 function formatBookingDate(dateStr) {
-  if (!dateStr) return '—';
+  if (!dateStr) return ' - ';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('en-PH', {

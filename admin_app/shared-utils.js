@@ -1,5 +1,5 @@
 /* ============================================================
-   Autoride Admin – Shared Utility Functions
+   Autoride Admin  -  Shared Utility Functions
    Reusable utility functions for all admin pages
    ============================================================ */
 
@@ -29,11 +29,11 @@ function escapeHtml(str) {
  * @returns {string} - Formatted date string
  */
 function formatDate(dateStr, options = null) {
-    if (!dateStr) return '—';
+    if (!dateStr) return ' - ';
     const d = new Date(dateStr);
     
     // Check if date is valid
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return ' - ';
     
     const defaultOptions = { 
         month: 'short', 
@@ -50,10 +50,10 @@ function formatDate(dateStr, options = null) {
  * @returns {string} - Formatted date and time string
  */
 function formatDateTime(dateStr) {
-    if (!dateStr) return '—';
+    if (!dateStr) return ' - ';
     const d = new Date(dateStr);
     
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return ' - ';
     
     return d.toLocaleString('en-US', {
         month: 'short',
@@ -70,10 +70,10 @@ function formatDateTime(dateStr) {
  * @returns {string} - Formatted time string
  */
 function formatTime(dateStr) {
-    if (!dateStr) return '—';
+    if (!dateStr) return ' - ';
     const d = new Date(dateStr);
     
-    if (isNaN(d.getTime())) return '—';
+    if (isNaN(d.getTime())) return ' - ';
     
     return d.toLocaleTimeString('en-US', {
         hour: '2-digit',
