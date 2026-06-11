@@ -1104,7 +1104,7 @@
         <div style="border-top: 1px solid var(--border); margin: 15px 10px; padding-top: 15px;">
             <a href="#" class="drawer-item" data-tab="activity" onclick="navTo('activity')"><i class="fas fa-history"></i> Activity Log</a>
             <a href="#" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
-            <a href="#" class="drawer-item" onclick="adminAuth.logout()" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            <a href="#" class="drawer-item" onclick="if(window.adminAuth)adminAuth.logout()" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
         </div>
     </div>
 </div>
@@ -1290,7 +1290,7 @@
             </div>
         </div>
 
-        <button onclick="adminAuth.logout()" style="width: 100%; margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius); color: var(--danger); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <button onclick="if(window.adminAuth)adminAuth.logout()" style="width: 100%; margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius); color: var(--danger); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;">
             <i class="fas fa-sign-out-alt"></i>
             Logout Account
         </button>
@@ -2268,7 +2268,7 @@
             <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 18px 24px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 0; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
         </div>
         
-        <button id="loginBtn" onclick="adminAuth.login()" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #005339, #00B14F); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
+        <button id="loginBtn" onclick="if(window.adminAuth)adminAuth.login();" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #005339, #00B14F); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
         
         <p id="loginError" style="color: #ef4444; margin-top: 24px; font-size: 1rem; font-weight: 600; text-align: center; padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); display: none;"></p>
     </div>
@@ -6538,7 +6538,7 @@ async edit(id) { this.openModal(id); }
         };
         window.confirmExit = function() {
             // Logout then exit
-            adminAuth.logoutAndExit();
+            if (window.adminAuth) adminAuth.logoutAndExit();
         };
 
         // Tab history stack for back navigation
@@ -7633,37 +7633,11 @@ async edit(id) { this.openModal(id); }
 
 </script>
 
-<!-- DEBUG PANEL -->
-<div id="__adminDebug" style="display:none;position:fixed;bottom:0;left:0;right:0;height:45vh;background:rgba(0,0,0,0.92);z-index:99999;flex-direction:column;font-family:monospace;">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#111;border-top:2px solid #e63946;">
-    <span style="color:#e63946;font-weight:bold;font-size:12px;">DEBUG LOG</span>
-    <div style="display:flex;gap:8px;">
-      <button onclick="document.getElementById('__adminDbgList').innerHTML=''" style="background:#333;color:white;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Clear</button>
-      <button onclick="document.getElementById('__adminDebug').style.display='none'" style="background:#e63946;color:white;border:none;padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Close</button>
-    </div>
-  </div>
-  <div id="__adminDbgList" style="flex:1;overflow-y:auto;padding:6px 10px;font-size:11px;line-height:1.6;"></div>
-</div>
-<button id="__adminDebugBtn" onclick="var d=document.getElementById('__adminDebug');d.style.display=d.style.display==='none'?'flex':'none';"
-  style="position:fixed;bottom:76px;right:10px;width:36px;height:36px;background:#e63946;color:white;border:none;border-radius:50%;font-size:16px;z-index:99998;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);">&#x1F41E;</button>
+<!-- DEBUG PANEL REMOVED -->
 <script>
-function adminDbg(msg, color) {
-  var list = document.getElementById('__adminDbgList');
-  if (!list) return;
-  var d = document.createElement('div');
-  d.style.color = color || '#aaa';
-  d.style.borderBottom = '1px solid #222';
-  d.style.padding = '2px 0';
-  var t = new Date().toLocaleTimeString();
-  d.textContent = '[' + t + '] ' + msg;
-  list.appendChild(d);
-  list.scrollTop = list.scrollHeight;
-}
-var _origLog = console.log;
-var _origErr = console.error;
-console.log = function() { _origLog.apply(console, arguments); adminDbg(Array.from(arguments).join(' '), '#aaa'); };
-console.error = function() { _origErr.apply(console, arguments); adminDbg(Array.from(arguments).join(' '), '#ff4444'); };
-window.onerror = function(msg, src, line) { adminDbg('ERROR: ' + msg + ' [' + (src||'').split('/').pop() + ':' + line + ']', '#ff4444'); };
+// Debug panel disabled in production
+window.adminDbg = function() {};
+</script>
 
     function viewLicenseImage(url) {
         var modal = document.getElementById('licensePreviewModal');
