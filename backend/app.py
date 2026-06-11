@@ -4665,7 +4665,7 @@ def trigger_refund(booking_id):
 
         cur.execute("""
             SELECT status, payment_status, amount_paid, total_price,
-                   start_date, cancelled_at, created_at, user_id
+                   start_date, cancelled_at, user_id
             FROM bookings WHERE id = %s
         """, (booking_id,))
         booking = cur.fetchone()
@@ -4681,8 +4681,8 @@ def trigger_refund(booking_id):
         if amount_paid <= 0:
             return jsonify({"error": "No payment to refund"}), 400
 
-        # Use cancelled_at if available, otherwise fall back to created_at, then now
-        cancel_time = booking['cancelled_at'] or booking['created_at']
+        # Use cancelled_at if available, otherwise use NOW() as best estimate
+        cancel_time = booking['cancelled_at']
         if cancel_time is None:
             cancel_dt = _dtm.datetime.now()
         elif isinstance(cancel_time, _dtm.datetime):
