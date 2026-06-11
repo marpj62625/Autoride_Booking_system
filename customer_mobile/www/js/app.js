@@ -3370,6 +3370,14 @@ function renderBookingDetail(b) {
           (isRefunded && b.refunded_at ? (
             '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Processed: ' + _fmtDate(_normDateStr(b.refunded_at)) + '</div>'
           ) : '') +
+          (isRefunded && b.refund_proof_url ? (
+            '<div style="margin-top:10px;">' +
+              '<button onclick="_viewRefundProof(\'' + b.refund_proof_url.replace(/'/g, '') + '\')" ' +
+                'style="width:100%;padding:9px;background:rgba(0,177,79,0.1);border:1.5px solid rgba(0,177,79,0.3);border-radius:10px;color:#00B14F;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+                '<i class="fas fa-image"></i> View Transfer Proof' +
+              '</button>' +
+            '</div>'
+          ) : '') +
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
               '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
@@ -3820,6 +3828,24 @@ function _proceedCancel(bookingId, reason) {
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
+}
+
+function _viewRefundProof(url) {
+  var old = document.getElementById('_refundProofModal');
+  if (old) old.remove();
+  var modal = document.createElement('div');
+  modal.id = '_refundProofModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.85);';
+  modal.innerHTML =
+    '<div style="position:relative;max-width:480px;width:100%;background:#fff;border-radius:16px;overflow:hidden;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;">' +
+        '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
+        '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
+      '</div>' +
+      '<img src="' + url + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;" onerror="this.parentElement.innerHTML+=\'<p style=\\\"padding:20px;text-align:center;color:#ef4444;\\\">Could not load proof image.</p>\'">' +
+    '</div>';
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 function openRefundDetailsForm(bookingId, refundAmount) {

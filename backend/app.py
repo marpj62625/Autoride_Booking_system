@@ -2100,13 +2100,31 @@ def upload_refund_proof():
 
         filename = secure_filename(f"refund_{booking_id}_{int(datetime.now().timestamp())}_{file.filename}")
 
+        # Save to /tmp as fallback
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-        file.save(filepath)
-
+        file_bytes = file.read()
+        with open(filepath, 'wb') as _f:
+            _f.write(file_bytes)
         url = f"/uploads/{filename}"
 
-        
+        # Upload to Supabase Storage for persistent public access
+        try:
+            import requests as _req
+            from config import SUPABASE_URL, SUPABASE_KEY
+            supa_path = f"refund-proofs/{filename}"
+            supa_res = _req.post(
+                f"{SUPABASE_URL}/storage/v1/object/{supa_path}",
+                headers={
+                    'Authorization': f'Bearer {SUPABASE_KEY}',
+                    'Content-Type': file.content_type or 'image/jpeg',
+                    'x-upsert': 'true'
+                },
+                data=file_bytes
+            )
+            if supa_res.status_code in (200, 201):
+                url = f"{SUPABASE_URL}/storage/v1/object/public/{supa_path}"
+        except Exception:
+            pass  # Keep /tmp fallback
 
         ref_val = request.form.get('refund_ref', '').strip()
         cur.execute("""
