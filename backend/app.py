@@ -2084,12 +2084,9 @@ def upload_refund_proof():
 
         filename = secure_filename(f"refund_{booking_id}_{int(datetime.now().timestamp())}_{file.filename}")
 
-        # Save to /tmp as fallback
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        # Read file bytes
         file_bytes = file.read()
-        with open(filepath, 'wb') as _f:
-            _f.write(file_bytes)
-        url = f"/uploads/{filename}"
+        url = None  # Will only be set if Supabase upload succeeds
 
         # Upload to Supabase Storage for persistent public access
         try:
@@ -2101,7 +2098,7 @@ def upload_refund_proof():
                 'Authorization': f'Bearer {SUPABASE_KEY}',
                 'apikey': SUPABASE_KEY
             }
-            # Ensure bucket exists
+            # Ensure bucket exists (public)
             _bucket_data = _json.dumps({'id': 'refund-proofs', 'name': 'refund-proofs', 'public': True}).encode()
             _bucket_req = _urlreq.Request(
                 f"{SUPABASE_URL}/storage/v1/bucket",
@@ -2119,11 +2116,15 @@ def upload_refund_proof():
                 headers={**_auth_headers, 'Content-Type': file.content_type or 'image/jpeg', 'x-upsert': 'true'},
                 method='POST'
             )
-            with _urlreq.urlopen(_upload_req, timeout=10) as _resp:
+            with _urlreq.urlopen(_upload_req, timeout=15) as _resp:
                 if _resp.status in (200, 201):
                     url = f"{SUPABASE_URL}/storage/v1/object/public/refund-proofs/{filename}"
         except Exception as _supa_err:
-            pass
+            print(f"Supabase upload failed: {_supa_err}")
+            return jsonify({"error": "Failed to upload proof image. Please check your internet connection and try again."}), 500
+
+        if not url:
+            return jsonify({"error": "Failed to upload proof image to storage. Please try again."}), 500
 
         ref_val = request.form.get('refund_ref', '').strip()
         cur.execute("""
