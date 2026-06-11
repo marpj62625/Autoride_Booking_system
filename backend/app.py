@@ -4132,9 +4132,9 @@ def get_cancelled_bookings():
         offset = (page - 1) * page_size
         
         # Determine sort order
-        sort_clause = "b.updated_at DESC"  # Default: cancellation date descending
+        sort_clause = "b.created_at DESC"  # Default: cancellation date descending
         if sort_by == 'cancellation_date_asc':
-            sort_clause = "b.updated_at ASC"
+            sort_clause = "b.created_at ASC"
         elif sort_by == 'customer_name':
             sort_clause = "u.full_name ASC"
         elif sort_by == 'original_booking_date':
@@ -4156,7 +4156,7 @@ def get_cancelled_bookings():
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    b.start_date, b.end_date, b.total_price, b.status,
                    b.created_at AS booking_date,
-                   b.updated_at AS cancellation_date,
+                   b.created_at AS cancellation_date,
                    b.cancellation_reason,
                    b.cancelled_by,
                    b.payment_status
@@ -4665,7 +4665,7 @@ def trigger_refund(booking_id):
 
         cur.execute("""
             SELECT status, payment_status, amount_paid, total_price,
-                   start_date, cancelled_at, updated_at, user_id
+                   start_date, cancelled_at, created_at, user_id
             FROM bookings WHERE id = %s
         """, (booking_id,))
         booking = cur.fetchone()
@@ -4681,8 +4681,8 @@ def trigger_refund(booking_id):
         if amount_paid <= 0:
             return jsonify({"error": "No payment to refund"}), 400
 
-        # Use cancelled_at if available, otherwise fall back to updated_at, then now
-        cancel_time = booking['cancelled_at'] or booking['updated_at']
+        # Use cancelled_at if available, otherwise fall back to created_at, then now
+        cancel_time = booking['cancelled_at'] or booking['created_at']
         if cancel_time is None:
             cancel_dt = _dtm.datetime.now()
         elif isinstance(cancel_time, _dtm.datetime):
