@@ -2121,6 +2121,7 @@ def upload_refund_proof():
             WHERE id = %s
 
         """, (url, ref_val or None, booking_id))
+        commit_db()  # Commit immediately after the status update
 
         # Notify customer
         try:
