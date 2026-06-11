@@ -274,11 +274,10 @@ def migrate_settings_v2():
 
         commit_db()
 
-        print("DEBUG: Settings Migration V2 Successful")
 
     except Exception as e:
+        pass
 
-        print(f"DEBUG: Settings Migration Failed: {e}")
 
     finally:
 
@@ -314,11 +313,10 @@ def migrate_payment_cancellation():
 
         commit_db()
 
-        print("DEBUG: Payment & Cancellation Migration Successful")
 
     except Exception as e:
+        pass
 
-        print(f"DEBUG: Payment & Cancellation Migration Failed: {e}")
 
     finally:
 
@@ -330,7 +328,7 @@ try:
     with app.app_context():
         migrate_payment_cancellation()
 except Exception as _e:
-    print(f"DEBUG: migrate_payment_cancellation startup failed: {_e}")
+    pass
 
 
 def migrate_notifications():
@@ -379,11 +377,10 @@ def migrate_notifications():
 
         commit_db()
 
-        print("DEBUG: Notifications Migration Successful")
 
     except Exception as e:
+        pass
 
-        print(f"DEBUG: Notifications Migration Failed: {e}")
 
     finally:
 
@@ -395,7 +392,7 @@ try:
     with app.app_context():
         migrate_notifications()
 except Exception as _e:
-    print(f"DEBUG: migrate_notifications startup failed: {_e}")
+    pass
 
 def migrate_chat():
 
@@ -416,7 +413,6 @@ def migrate_chat():
 
         if has_old_schema:
             # Old chatbot table - drop and recreate with new live-chat schema
-            print("DEBUG: Dropping old chat_messages table (chatbot schema) and recreating...")
             cur.execute("DROP TABLE IF EXISTS chat_messages CASCADE")
             commit_db()
 
@@ -450,11 +446,10 @@ def migrate_chat():
 
         commit_db()
 
-        print("DEBUG: Chat Migration Successful")
 
     except Exception as e:
+        pass
 
-        print(f"DEBUG: Chat Migration Failed: {e}")
 
     finally:
 
@@ -466,7 +461,7 @@ try:
     with app.app_context():
         migrate_chat()
 except Exception as _e:
-    print(f"DEBUG: migrate_chat startup failed: {_e}")
+    pass
 
 def migrate_fcm_tokens():
     """Adds fcm_token column to users and admins tables for push notifications."""
@@ -475,9 +470,8 @@ def migrate_fcm_tokens():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT")
         cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS fcm_token TEXT")
         commit_db()
-        print("DEBUG: FCM Token Migration Successful")
     except Exception as e:
-        print(f"DEBUG: FCM Token Migration Failed: {e}")
+        pass
     finally:
         if 'cur' in locals(): cur.close()
 
@@ -485,7 +479,7 @@ try:
     with app.app_context():
         migrate_fcm_tokens()
 except Exception as _e:
-    print(f"DEBUG: migrate_fcm_tokens startup failed: {_e}")
+    pass
 
 
 def migrate_refund_columns():
@@ -502,9 +496,8 @@ def migrate_refund_columns():
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_account_name VARCHAR(200)")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS refund_account_number VARCHAR(100)")
         commit_db()
-        print("DEBUG: Refund Columns Migration Successful")
     except Exception as e:
-        print(f"DEBUG: Refund Columns Migration Failed: {e}")
+        pass
     finally:
         if 'cur' in locals(): cur.close()
 
@@ -512,17 +505,16 @@ try:
     with app.app_context():
         migrate_refund_columns()
 except Exception as _e:
-    print(f"DEBUG: migrate_refund_columns startup failed: {_e}")
+    pass
 
 
 
 @app.before_request
 
 def log_request_info():
+    pass
 
-    print(f"DEBUG: Incoming {request.method} from {request.remote_addr}")
 
-    print(f"DEBUG: Origin: {request.headers.get('Origin')}")
 
 
 
@@ -664,11 +656,10 @@ def send_verification_email(email: str, otp: str):
 
             server.send_message(msg)
 
-        print(f"DEBUG: Verification email sent to {email}")
 
     except Exception as e:
+        pass
 
-        print(f"DEBUG: SMTP Send Failed (Normal for Dev). Error: {str(e)}")
 
 
 
@@ -839,9 +830,8 @@ def send_receipt_email(email: str, details: dict):
             server.ehlo()
             server.login(EMAIL_USER, EMAIL_PASS)
             server.send_message(msg)
-        print('DEBUG: HTML receipt email sent to ' + email)
     except Exception as e:
-        print('DEBUG: Receipt SMTP Failed. Error: ' + str(e))
+        pass
 
 @app.route("/")
 
@@ -1129,20 +1119,16 @@ def admin_verify_user():
 
         cur.execute("UPDATE users SET is_verified = %s WHERE id = %s", (status, user_id))
         rows_updated = cur.rowcount
-        print(f"DEBUG verify-action: user_id={user_id} status={status} rows_updated={rows_updated}")
 
         # Verify before commit
         cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
         row = cur.fetchone()
-        print(f"DEBUG verify-action: pre-commit is_verified = {row}")
 
         conn.commit()
-        print(f"DEBUG verify-action: committed successfully")
 
         # Verify after commit on same connection
         cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
         row2 = cur.fetchone()
-        print(f"DEBUG verify-action: post-commit is_verified = {row2}")
 
         cur.close()
         conn.close()
@@ -1324,7 +1310,6 @@ def admin_list_users():
 
         
 
-    print(f"DEBUG: admin_list_users called with status={status} via path={request.path}")
 
     try:
 
@@ -1380,7 +1365,6 @@ def admin_list_users():
                 d['date_of_birth'] = str(d['date_of_birth']).split(' ')[0]
             result.append(d)
 
-        print(f"DEBUG: Found {len(result)} users matching criteria")
 
         return jsonify(result), 200
 
@@ -2139,7 +2123,7 @@ def upload_refund_proof():
                 if _resp.status in (200, 201):
                     url = f"{SUPABASE_URL}/storage/v1/object/public/refund-proofs/{filename}"
         except Exception as _supa_err:
-            print(f"Supabase upload failed: {_supa_err}, using local fallback")
+            pass
 
         ref_val = request.form.get('refund_ref', '').strip()
         cur.execute("""
@@ -2568,7 +2552,6 @@ def get_vehicle(vehicle_id):
 
 def delete_vehicle_image(image_id):
 
-    print(f"DEBUG: Attempting to delete vehicle image with ID: {image_id}")
 
     try:
 
@@ -2957,7 +2940,6 @@ def book():
 
         
 
-        print(f"DEBUG: Booking created ID={booking_id} for Vehicle ID={vehicle_id}")
 
         
 
@@ -2965,7 +2947,6 @@ def book():
 
         cur.execute("UPDATE vehicles SET status = 'Booked' WHERE id = %s", (final_vehicle_id,))
 
-        print(f"DEBUG: Vehicle {final_vehicle_id} status updated to Booked")
 
         
 
@@ -3069,7 +3050,6 @@ def legacy_payment():
 
         
 
-        print(f"DEBUG: Payment received for Booking ID={booking_id}")
 
         
 
@@ -3077,7 +3057,6 @@ def legacy_payment():
 
         cur.execute("UPDATE vehicles SET status='Booked' WHERE id=(SELECT vehicle_id FROM bookings WHERE id=%s)", (booking_id,))
 
-        print(f"DEBUG: Vehicle linked to booking {booking_id} status ensured to Booked")
 
         
 
@@ -3378,7 +3357,6 @@ def update_profile():
 
                     cur.execute("UPDATE users SET profile_picture=%s WHERE id=%s", (public_url, user_id))
 
-                    print(f"DEBUG: Profile picture uploaded to Supabase: {public_url}")
 
                 except Exception as storage_err:
 
@@ -4937,10 +4915,8 @@ def admin_cancel_booking(booking_id):
             notif_conn.commit()
             notif_cur.close()
             notif_conn.close()
-            print(f"DEBUG: notification inserted for user_id={booking['user_id']}, booking_id={booking_id}")
         except Exception as notif_err:
             notif_error = str(notif_err)
-            print(f"DEBUG: notification insert failed for user_id={booking['user_id']}: {notif_err}")
 
         notification_service.notify_user(
 
@@ -6572,7 +6548,6 @@ def chat_endpoint():
 
 def admin_login():
     data = request.get_json(force=True, silent=True)
-    print(f"DEBUG: admin_login called with data={data}")
 
     if not data:
         return jsonify({"error": "No data received - check Content-Type"}), 400
