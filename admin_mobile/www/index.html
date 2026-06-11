@@ -956,26 +956,21 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
-            padding: 48px 32px;
+            padding: 0;
             width: 100%;
             max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(79, 70, 229, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         #loginEmail:focus, #loginPass:focus {
-            border-color: rgba(79, 70, 229, 0.6) !important;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+            border-color: rgba(0, 177, 79, 0.6) !important;
+            box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.1) !important;
             outline: none !important;
         }
 
         #loginEmail::placeholder, #loginPass::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 500;
-        }
-
-        .password-toggle:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
-            color: rgba(255, 255, 255, 0.9) !important;
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 400;
         }
 
         #loginBtn:hover {
@@ -2255,71 +2250,58 @@
 
 <!-- Admin Login Overlay -->
 <div id="adminLoginOverlay">
-    <div class="login-card">
-        <!-- Logo + Title -->
-        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:32px;">
-            <div style="width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
-                <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.3));">
-            </div>
-            <div style="text-align:center;">
-                <div style="font-size:1.8rem;font-weight:900;color:white;letter-spacing:-0.03em;line-height:1;">Autoride</div>
-                <div style="font-size:0.75rem;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-top:4px;">Admin Portal</div>
-            </div>
+    <div class="login-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 28px;box-sizing:border-box;">
+
+        <!-- Logo -->
+        <div style="width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:64px;height:64px;object-fit:contain;">
         </div>
 
-        <!-- Subtitle -->
-        <div style="text-align:center;margin-bottom:28px;">
-            <h1 style="font-size:1.4rem;font-weight:700;color:white;margin:0 0 6px 0;">Welcome back</h1>
-            <p style="font-size:0.85rem;color:rgba(255,255,255,0.45);margin:0;">Sign in to access your dashboard</p>
-        </div>
+        <!-- App Name -->
+        <div style="font-size:2rem;font-weight:900;color:white;letter-spacing:-0.03em;line-height:1;margin-bottom:4px;">Autoride</div>
+        <div style="font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:28px;">Admin Portal</div>
+
+        <!-- Title -->
+        <div style="font-size:1.35rem;font-weight:700;color:white;margin-bottom:6px;text-align:center;">Welcome back</div>
+        <div style="font-size:0.82rem;color:rgba(255,255,255,0.4);margin-bottom:28px;text-align:center;">Sign in to access your dashboard</div>
 
         <!-- Email Field -->
-        <div style="margin-bottom:16px;position:relative;">
-            <div style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.4);font-size:1rem;pointer-events:none;">
-                <i class="fas fa-envelope"></i>
-            </div>
+        <div style="width:100%;margin-bottom:14px;position:relative;">
+            <i class="fas fa-envelope" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:0.9rem;pointer-events:none;"></i>
             <input type="email" id="loginEmail" placeholder="Email Address" autocomplete="email"
                 onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus();"
-                style="width:100%;padding:16px 16px 16px 44px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:1rem;box-sizing:border-box;outline:none;transition:border-color 0.2s;"
-                onfocus="this.style.borderColor='rgba(0,177,79,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+                onfocus="this.style.borderColor='rgba(0,177,79,0.7)';this.style.background='rgba(255,255,255,0.1)';"
+                onblur="this.style.borderColor='rgba(255,255,255,0.12)';this.style.background='rgba(255,255,255,0.07)';"
+                style="width:100%;padding:15px 16px 15px 42px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:0.95rem;box-sizing:border-box;outline:none;transition:all 0.2s;">
         </div>
 
         <!-- Password Field -->
-        <div style="margin-bottom:10px;position:relative;">
-            <div style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.4);font-size:1rem;pointer-events:none;">
-                <i class="fas fa-lock"></i>
-            </div>
+        <div style="width:100%;margin-bottom:8px;position:relative;">
+            <i class="fas fa-lock" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);font-size:0.9rem;pointer-events:none;"></i>
             <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"
                 onkeydown="if(event.key==='Enter'&&window.adminAuth)adminAuth.login();"
-                style="width:100%;padding:16px 48px 16px 44px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:1rem;box-sizing:border-box;outline:none;transition:border-color 0.2s;"
-                onfocus="this.style.borderColor='rgba(0,177,79,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
-            <button type="button" id="togglePassBtn" onclick="
-                var inp=document.getElementById('loginPass');
-                var ico=document.getElementById('togglePassIcon');
-                if(inp.type==='password'){inp.type='text';ico.className='fas fa-eye-slash';}
-                else{inp.type='password';ico.className='fas fa-eye';}
-            " style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;padding:6px;font-size:1rem;line-height:1;transition:color 0.2s;"
-               onmouseover="this.style.color='rgba(255,255,255,0.8)'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">
-                <i id="togglePassIcon" class="fas fa-eye"></i>
+                onfocus="this.style.borderColor='rgba(0,177,79,0.7)';this.style.background='rgba(255,255,255,0.1)';"
+                onblur="this.style.borderColor='rgba(255,255,255,0.12)';this.style.background='rgba(255,255,255,0.07)';"
+                style="width:100%;padding:15px 48px 15px 42px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:0.95rem;box-sizing:border-box;outline:none;transition:all 0.2s;">
+            <!-- Eye toggle on the RIGHT, clearly separate from lock icon on left -->
+            <button type="button" onclick="var i=document.getElementById('loginPass'),ic=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';ic.className='fas fa-eye-slash';}else{i.type='password';ic.className='fas fa-eye';}"
+                style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;padding:6px;font-size:0.95rem;line-height:1;">
+                <i id="eyeIcon" class="fas fa-eye"></i>
             </button>
         </div>
 
-        <!-- Error Message -->
-        <p id="loginError" style="color:#fca5a5;font-size:0.82rem;font-weight:600;text-align:center;padding:10px 14px;background:rgba(239,68,68,0.12);border-radius:10px;border:1px solid rgba(239,68,68,0.25);display:none;margin-bottom:16px;"></p>
+        <!-- Error -->
+        <p id="loginError" style="width:100%;color:#fca5a5;font-size:0.8rem;font-weight:600;text-align:center;padding:10px 14px;background:rgba(239,68,68,0.12);border-radius:10px;border:1px solid rgba(239,68,68,0.25);display:none;margin-bottom:14px;box-sizing:border-box;"></p>
 
         <!-- Login Button -->
-        <button id="loginBtn" onclick="if(window.adminAuth){adminAuth.login();}else{alert('App not ready, please wait and try again.');}"
-            style="width:100%;padding:16px 24px;background:linear-gradient(135deg,#005339,#00B14F);border:none;border-radius:14px;color:white;font-weight:700;font-size:1.05rem;cursor:pointer;transition:all 0.2s;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.01em;box-shadow:0 8px 24px rgba(0,177,79,0.3);"
-            onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 12px 28px rgba(0,177,79,0.4)'"
-            onmouseout="this.style.transform='none';this.style.boxShadow='0 8px 24px rgba(0,177,79,0.3)'">
-            <i class="fas fa-sign-in-alt"></i>
-            Login to Dashboard
+        <button id="loginBtn"
+            onclick="if(window.adminAuth){adminAuth.login();}else{alert('App not ready, please wait and try again.');}"
+            style="width:100%;margin-top:8px;padding:16px;background:linear-gradient(135deg,#005339,#00B14F);border:none;border-radius:14px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(0,177,79,0.3);transition:all 0.2s;letter-spacing:0.02em;">
+            <i class="fas fa-sign-in-alt"></i> Login to Dashboard
         </button>
 
         <!-- Version -->
-        <div style="text-align:center;margin-top:24px;opacity:0.3;">
-            <p style="font-size:0.65rem;font-weight:700;letter-spacing:1.5px;color:white;text-transform:uppercase;">Autoride Admin v2.1</p>
-        </div>
+        <div style="margin-top:28px;font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:1.5px;text-transform:uppercase;">Autoride Admin v2.1</div>
     </div>
 </div>
 
