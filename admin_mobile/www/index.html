@@ -2295,6 +2295,9 @@
             style="width:100%;margin-top:10px;padding:16px;background:linear-gradient(135deg,#005339,#00B14F);border:none;border-radius:14px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(0,177,79,0.35);box-sizing:border-box;">
             <i class="fas fa-sign-in-alt"></i> Login to Dashboard
         </button>
+        
+        <!-- Login Error Message -->
+        <div id="loginError" style="display:none;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:12px;border-radius:8px;margin-top:12px;font-size:0.85rem;font-weight:500;text-align:center;"></div>
 
         <div style="margin-top:20px;font-size:0.6rem;font-weight:700;color:rgba(255,255,255,0.18);letter-spacing:1.5px;text-transform:uppercase;">Autoride Admin v2.1</div>
     </div>
@@ -2436,6 +2439,18 @@
         login: async function() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
+            
+            if (!email.trim()) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Please enter your email address';
+                return;
+            }
+            if (!password.trim()) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Please enter your password';
+                return;
+            }
+            
             const btn = document.getElementById('loginBtn');
             
             if (!btn) {
@@ -2446,6 +2461,9 @@
             
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
+            
+            // Hide any previous errors
+            document.getElementById('loginError').style.display = 'none';
 
             try {
                 const res = await fetch(`${API_URL}/admin/login`, {
@@ -2454,17 +2472,20 @@
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
+                
                 if (res.ok) {
                     // Store with timestamp for expiry check
                     localStorage.setItem('admin_user', JSON.stringify({ user: data, savedAt: Date.now() }));
                     this.initSession();
                 } else {
+                    document.getElementById('loginError').style.display = 'block';
                     document.getElementById('loginError').textContent = data.error || 'Invalid credentials';
                 }
             } catch (err) { 
                 console.error('Login error:', err);
                 alert('FETCH ERROR: ' + err.message + '\nTarget: ' + API_BASE + '/api/admin/login');
-                showNotification('Connection Error: ' + err.message, 'error'); 
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Connection error: ' + err.message;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -6529,6 +6550,7 @@ async edit(id) { this.openModal(id); }
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
+                console.log('Login button clicked, API_URL:', API_URL);
                 adminAuth.login();
             });
         }
@@ -6664,7 +6686,6 @@ async edit(id) { this.openModal(id); }
                     
                     // Listen for registration success
                     PushNotifications.addListener('registration', function(token) {
-                        console.log('Admin FCM Token:', token.value);
                         window._adminFcmToken = token.value;
                         saveAdminFcmToken(token.value);
                     });
@@ -6676,7 +6697,6 @@ async edit(id) { this.openModal(id); }
                     
                     // Listen for push notifications received
                     PushNotifications.addListener('pushNotificationReceived', function(notification) {
-                        console.log('Admin Push notification received:', notification);
                         // Show in-app notification
                         showNotification(notification.title || 'New Notification', 'info');
                         
@@ -6689,7 +6709,6 @@ async edit(id) { this.openModal(id); }
                     
                     // Listen for notification taps
                     PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
-                        console.log('Admin Push notification action performed:', notification);
                         // Navigate to chat tab
                         switchTab('chat');
                     });
@@ -7362,10 +7381,9 @@ async edit(id) { this.openModal(id); }
             fetch(API_URL + '/chat/messages?user_id=' + _currentUserId + '&admin_id=' + aid + '&limit=100')
                 .then(function(r) { return r.json(); })
                 .then(function(msgs) {
-                    console.log('[AdminChat] Received ' + (Array.isArray(msgs) ? msgs.length : 0) + ' messages');
+
                     if (msgs && msgs.length > 0) {
-                        console.log('[AdminChat] First message:', JSON.stringify(msgs[0]));
-                        console.log('[AdminChat] Last message:', JSON.stringify(msgs[msgs.length - 1]));
+
                     }
                     
                     const container = document.getElementById('acMessages');
@@ -7376,11 +7394,10 @@ async edit(id) { this.openModal(id); }
                         return;
                     }
                     const latestId = msgs[msgs.length - 1].id;
-                    console.log('[AdminChat] Latest ID: ' + latestId + ', Last ID: ' + _lastMsgId);
+
                     
                     // Only skip update if not initial AND same lastMsgId AND not forced
                     if (String(latestId) === String(_lastMsgId) && !initial && initial !== 'force') {
-                        console.log('[AdminChat] Skipping update - same message ID');
                         return;
                     }
 
@@ -7395,7 +7412,7 @@ async edit(id) { this.openModal(id); }
                     }
 
                     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-                    console.log('[AdminChat] Rendering ' + msgs.length + ' messages');
+
                     container.innerHTML = msgs.map(function(m) {
                         const isMe = m.sender_type === 'admin';
                         const ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -7434,8 +7451,7 @@ async edit(id) { this.openModal(id); }
             if (!inputEl) { console.error('CHAT: no input element'); return; }
             const msg = (inputEl.value || '').trim();
             const aid = _adminId();
-            console.log('CHAT SEND: msg=' + msg + ' aid=' + aid + ' userId=' + _currentUserId);
-            if (!msg) { console.error('CHAT: empty message'); return; }
+            if (!msg) { return; }
             if (!aid) { alert('Not logged in - cannot send'); return; }
             if (!_currentUserId) { alert('No user selected'); return; }
             inputEl.value = '';
@@ -7720,6 +7736,19 @@ window.adminDbg = function() {};
       <button onclick="document.getElementById('vehicleDetailModal').style.display='none';" style="position:absolute;right:16px;background:rgba(0,0,0,0.06);border:none;color:#374151;font-size:1rem;padding:7px 9px;border-radius:8px;cursor:pointer;"><i class="fas fa-times"></i></button>
     </div>
     <div id="vehicleDetailContent" style="padding:0;"></div>
+  </div>
+</div>
+
+<!-- License Preview Modal -->
+<div id="licensePreviewModal" class="premium-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px;">
+  <div style="position:relative;max-width:480px;width:100%;background:#fff;border-radius:16px;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;">
+      <span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Driver License</span>
+      <button onclick="document.getElementById('licensePreviewModal').style.display='none';" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>
+    </div>
+    <div style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+      <img id="licensePreviewImg" style="width:100%;display:block;max-height:70vh;object-fit:contain;">
+    </div>
   </div>
 </div>
 

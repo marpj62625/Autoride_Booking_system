@@ -942,40 +942,40 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, var(--surface-container) 0%, var(--surface) 100%);
+            background: linear-gradient(160deg, #0f2027 0%, #1a3a2e 50%, #0d1b2a 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10000;
-            padding: 20px;
+            padding: 0;
             box-sizing: border-box;
+            overflow: auto;
         }
 
         .login-card {
-            background: rgba(30, 41, 59, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 48px 32px;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(79, 70, 229, 0.1);
+            height: 100%;
+            min-height: 100vh;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         #loginEmail:focus, #loginPass:focus {
-            border-color: rgba(79, 70, 229, 0.6) !important;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1) !important;
+            border-color: rgba(0, 177, 79, 0.7) !important;
+            background: rgba(255,255,255,0.1) !important;
             outline: none !important;
         }
 
         #loginEmail::placeholder, #loginPass::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 500;
-        }
-
-        .password-toggle:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
-            color: rgba(255, 255, 255, 0.9) !important;
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 400;
         }
 
         #loginBtn:hover {
@@ -1563,13 +1563,12 @@
     <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);">
             <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
-                <button onclick="document.getElementById('bookingDetailsModal').style.display='none';modalClose();" style="position: absolute; right: 0; background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 10px; border-radius: 8px; cursor: pointer; line-height: 1;"><i class="fas fa-times"></i></button>: transparent; border: none; color: #0f172a; font-size: 1.2rem; padding: 5px;"><i class="fas fa-times"></i></button>
                 <h2 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin: 0;">Booking Details</h2>
+                <button onclick="document.getElementById('bookingDetailsModal').style.display='none';modalClose();" style="position: absolute; right: 0; background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 10px; border-radius: 8px; cursor: pointer; line-height: 1;"><i class="fas fa-times"></i></button>
             </div>
             <div id="bookingDetailContent">
                 <!-- Content injected via JS -->
             </div>
-
         </div>
     </div>
     
@@ -2254,23 +2253,53 @@
 </nav>
 
 <!-- Admin Login Overlay -->
-<div id="adminLoginOverlay">
-    <div class="login-card">
-        <div class="logo-wrap" style="justify-content: center; margin-bottom: 40px; display: flex; align-items: center; flex-direction: column; gap: 8px;">
-            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:100px;height:100px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.2));">
-            <span style="font-size: 2.2rem; font-weight: 800; color: white; letter-spacing: -0.02em;">Autoride</span>
+<div id="adminLoginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(160deg,#0f2027,#1a3a2a,#0f2027);display:flex;align-items:center;justify-content:center;z-index:10000;overflow-y:auto;">
+    <div style="width:100%;max-width:400px;padding:40px 28px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;">
+
+        <!-- Logo -->
+        <div style="width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0;">
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:60px;height:60px;object-fit:contain;">
         </div>
-        <h1 style="font-size: 2rem; margin-bottom: 40px; color: white; font-weight: 700; text-align: center; letter-spacing: -0.01em;">Admin Login</h1>
-        
-        <input type="email" id="loginEmail" placeholder="Email Address" style="width: 100%; padding: 18px 24px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 24px; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
-        
-        <div class="password-input-wrapper" style="margin-bottom: 32px; position: relative;">
-            <input type="password" id="loginPass" placeholder="Password" style="width: 100%; padding: 18px 24px; background: transparent; border: 2px solid rgba(255,255,255,0.15); border-radius: 16px; color: white; margin-bottom: 0; font-size: 1.1rem; transition: all 0.3s ease; box-sizing: border-box;">
+        <div style="font-size:1.9rem;font-weight:900;color:white;letter-spacing:-0.03em;margin-bottom:2px;">Autoride</div>
+        <div style="font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:22px;">Admin Portal</div>
+        <div style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:4px;">Welcome back</div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:24px;text-align:center;">Sign in to access your dashboard</div>
+
+        <!-- Email Field -->
+        <div style="width:100%;margin-bottom:12px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;display:flex;align-items:center;box-sizing:border-box;">
+            <i class="fas fa-envelope" style="padding:0 10px 0 16px;color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;"></i>
+            <input type="email" id="loginEmail" placeholder="Email Address" autocomplete="email"
+                onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus();"
+                style="flex:1;width:0;padding:15px 12px 15px 0;background:transparent;border:none;color:white;font-size:0.95rem;outline:none;">
         </div>
+
+        <!-- Password Field -->
+        <div style="width:100%;margin-bottom:6px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;display:flex;align-items:center;box-sizing:border-box;">
+            <i class="fas fa-lock" style="padding:0 10px 0 16px;color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;"></i>
+            <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"
+                onkeydown="if(event.key==='Enter'&&window.adminAuth)adminAuth.login();"
+                style="flex:1;width:0;padding:15px 0;background:transparent;border:none;color:white;font-size:0.95rem;outline:none;">
+            <button type="button"
+                onclick="var i=document.getElementById('loginPass'),ic=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';ic.className='fas fa-eye-slash';}else{i.type='password';ic.className='fas fa-eye';}"
+                style="flex-shrink:0;padding:0 16px;background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:1rem;line-height:1;height:52px;display:flex;align-items:center;">
+                <i id="eyeIcon" class="fas fa-eye"></i>
+            </button>
+        </div>
+
+        <!-- Error -->
+        <p id="loginError" style="width:100%;color:#fca5a5;font-size:0.8rem;font-weight:600;text-align:center;padding:10px 14px;background:rgba(239,68,68,0.12);border-radius:10px;border:1px solid rgba(239,68,68,0.25);display:none;margin-bottom:10px;box-sizing:border-box;"></p>
+
+        <!-- Login Button -->
+        <button id="loginBtn"
+            onclick="if(window.adminAuth){adminAuth.login();}else{alert('App not ready, please wait and try again.');}"
+            style="width:100%;margin-top:10px;padding:16px;background:linear-gradient(135deg,#005339,#00B14F);border:none;border-radius:14px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(0,177,79,0.35);box-sizing:border-box;">
+            <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+        </button>
         
-        <button id="loginBtn" onclick="if(window.adminAuth)adminAuth.login();" style="width: 100%; padding: 18px 24px; background: linear-gradient(135deg, #005339, #00B14F); border: none; border-radius: 16px; color: white; font-weight: 700; font-size: 1.2rem; box-shadow: 0 12px 32px rgba(79, 70, 229, 0.4), 0 4px 16px rgba(0, 0, 0, 0.1); transition: all 0.2s ease; cursor: pointer; letter-spacing: 0.01em;">Login to Dashboard</button>
-        
-        <p id="loginError" style="color: #ef4444; margin-top: 24px; font-size: 1rem; font-weight: 600; text-align: center; padding: 12px 16px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2); display: none;"></p>
+        <!-- Login Error Message -->
+        <div id="loginError" style="display:none;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:12px;border-radius:8px;margin-top:12px;font-size:0.85rem;font-weight:500;text-align:center;"></div>
+
+        <div style="margin-top:20px;font-size:0.6rem;font-weight:700;color:rgba(255,255,255,0.18);letter-spacing:1.5px;text-transform:uppercase;">Autoride Admin v2.1</div>
     </div>
 </div>
 
@@ -2410,6 +2439,18 @@
         login: async function() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPass').value;
+            
+            if (!email.trim()) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Please enter your email address';
+                return;
+            }
+            if (!password.trim()) {
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Please enter your password';
+                return;
+            }
+            
             const btn = document.getElementById('loginBtn');
             
             if (!btn) {
@@ -2420,6 +2461,9 @@
             
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Authenticating...';
+            
+            // Hide any previous errors
+            document.getElementById('loginError').style.display = 'none';
 
             try {
                 const res = await fetch(`${API_URL}/admin/login`, {
@@ -2428,17 +2472,20 @@
                     body: JSON.stringify({email, password})
                 });
                 const data = await res.json();
+                
                 if (res.ok) {
                     // Store with timestamp for expiry check
                     localStorage.setItem('admin_user', JSON.stringify({ user: data, savedAt: Date.now() }));
                     this.initSession();
                 } else {
+                    document.getElementById('loginError').style.display = 'block';
                     document.getElementById('loginError').textContent = data.error || 'Invalid credentials';
                 }
             } catch (err) { 
                 console.error('Login error:', err);
                 alert('FETCH ERROR: ' + err.message + '\nTarget: ' + API_BASE + '/api/admin/login');
-                showNotification('Connection Error: ' + err.message, 'error'); 
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('loginError').textContent = 'Connection error: ' + err.message;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
@@ -3614,8 +3661,8 @@ async edit(id) { this.openModal(id); }
                     <div style="background:#fff;border-radius:8px;padding:10px;border:1px solid #fde68a;margin-bottom:10px;">
                         <div style="font-size:0.72rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Step 1 - Upload Transfer Proof</div>
                         <input type="file" id="refundProofFile_${b.id}" accept="image/*" onchange="Bookings._onProofSelected(${b.id}, this)" style="display:none;">
-                        <button onclick="document.getElementById('refundProofFile_${b.id}').click()" style="width:100%;padding:9px;background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:8px;color:#374151;font-size:0.8rem;font-weight:600;cursor:pointer;margin-bottom:6px;">
-                            <i class="fas fa-upload" style="margin-right:6px;color:#d97706;"></i><span id="refundProofLabel_${b.id}">Choose proof image</span>
+                        <button onclick="document.getElementById('refundProofFile_${b.id}').click()" style="width:100%;padding:9px;background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:8px;color:#111827;font-size:0.8rem;font-weight:600;cursor:pointer;margin-bottom:6px;">
+                            <i class="fas fa-upload" style="margin-right:6px;color:#d97706;"></i><span id="refundProofLabel_${b.id}" style="color:#111827;">Choose proof image</span>
                         </button>
                         <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:8px;">Step 2 - Reference / Transaction No. (optional)</div>
                         <input type="text" id="refundRefInput_${b.id}" placeholder="e.g. TXN123456789" style="width:100%;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.82rem;color:#0f172a;background:#f8fafc;box-sizing:border-box;margin-bottom:10px;">
@@ -3626,20 +3673,32 @@ async edit(id) { this.openModal(id); }
                     <div style="font-size:0.78rem;color:#92400e;padding:8px;background:#fef3c7;border-radius:8px;">
                         <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>Customer has not yet submitted refund account details.
                     </div>`}
-                </div>` : ''}refundProofFile_${b.id}" accept="image/*" onchange="Bookings._onProofSelected(${b.id}, this)" style="display:none;">
-                        <button onclick="document.getElementById('refundProofFile_${b.id}').click()" style="width:100%;padding:9px;background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:8px;color:#374151;font-size:0.8rem;font-weight:600;cursor:pointer;margin-bottom:6px;">
-                            <i class="fas fa-upload" style="margin-right:6px;color:#d97706;"></i><span id="refundProofLabel_${b.id}">Choose proof image</span>
-                        </button>
-                        <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:8px;">Step 2 - Reference / Transaction No. (optional)</div>
-                        <input type="text" id="refundRefInput_${b.id}" placeholder="e.g. TXN123456789" style="width:100%;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.82rem;color:#0f172a;background:#f8fafc;box-sizing:border-box;margin-bottom:10px;">
-                        <button id="markRefundedBtn_${b.id}" onclick="Bookings.markRefunded(${b.id})" disabled style="width:100%;padding:10px;background:#d1d5db;border:none;border-radius:10px;color:#fff;font-size:0.82rem;font-weight:700;cursor:not-allowed;">
-                            <i class="fas fa-check-circle" style="margin-right:6px;"></i>Mark as Refunded
-                        </button>
-                    </div>` : `
-                    <div style="font-size:0.78rem;color:#92400e;padding:8px;background:#fef3c7;border-radius:8px;">
-                        <i class="fas fa-exclamation-circle" style="margin-right:4px;"></i>Customer has not yet submitted refund account details.
-                    </div>`}
-                </div>` : ''}      <!-- Action Buttons -->
+                </div>` : ''}
+
+                <!-- Driver License Details -->
+                ${(b.license_number || b.license_front_url || b.license_back_url) ? `
+                <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
+                    <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-id-card" style="color:#7c3aed;"></i>Driver License</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:${(b.license_front_url || b.license_back_url) ? '10px' : '0'};">
+                        ${b.license_number ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">License #</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_number}</div></div>` : ''}
+                        ${b.license_class ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Class</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_class}</div></div>` : ''}
+                        ${b.license_expiry ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Expiry</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_expiry}</div></div>` : ''}
+                        ${b.license_full_name ? `<div><div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Full Name</div><div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.license_full_name}</div></div>` : ''}
+                    </div>
+                    ${(b.license_front_url || b.license_back_url) ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        ${b.license_front_url ? `<button onclick="viewLicenseImage('${b.license_front_url}')" style="padding:8px;background:#ede9fe;border:1.5px solid #7c3aed;border-radius:8px;color:#7c3aed;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-image" style="margin-right:4px;"></i>Front</button>` : ''}
+                        ${b.license_back_url ? `<button onclick="viewLicenseImage('${b.license_back_url}')" style="padding:8px;background:#ede9fe;border:1.5px solid #7c3aed;border-radius:8px;color:#7c3aed;font-size:0.75rem;font-weight:700;cursor:pointer;"><i class="fas fa-image" style="margin-right:4px;"></i>Back</button>` : ''}
+                    </div>` : ''}
+                    ${b.emergency_contact_name ? `
+                    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;">
+                        <div style="font-size:0.6rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Emergency Contact</div>
+                        <div style="font-size:0.82rem;font-weight:700;color:#0f172a;">${b.emergency_contact_name}</div>
+                        <div style="font-size:0.78rem;color:#64748b;">${b.emergency_contact_phone || ''} ${b.emergency_contact_relationship ? '· ' + b.emergency_contact_relationship : ''}</div>
+                    </div>` : ''}
+                </div>` : ''}
+
+                <!-- Action Buttons -->
                 ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
             </div>`;
 
@@ -4324,16 +4383,7 @@ async edit(id) { this.openModal(id); }
         viewLicense(url) {
             if (!url) return alert('No license image uploaded');
             const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
-            
-            // Show in-app preview instead of window.open which fails in Capacitor
-            const modal = document.getElementById('licensePreviewModal');
-            const img = document.getElementById('licensePreviewImg');
-            if (modal && img) {
-                img.src = fullUrl;
-                modal.style.display = 'flex';
-            } else {
-                window.open(fullUrl, '_blank');
-            }
+            viewLicenseImage(fullUrl);
         },
         async process(userId, status) {
             const admin = adminAuth.getUser();
@@ -6500,6 +6550,7 @@ async edit(id) { this.openModal(id); }
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
             loginBtn.addEventListener('click', () => {
+                console.log('Login button clicked, API_URL:', API_URL);
                 adminAuth.login();
             });
         }
@@ -6635,7 +6686,6 @@ async edit(id) { this.openModal(id); }
                     
                     // Listen for registration success
                     PushNotifications.addListener('registration', function(token) {
-                        console.log('Admin FCM Token:', token.value);
                         window._adminFcmToken = token.value;
                         saveAdminFcmToken(token.value);
                     });
@@ -6647,7 +6697,6 @@ async edit(id) { this.openModal(id); }
                     
                     // Listen for push notifications received
                     PushNotifications.addListener('pushNotificationReceived', function(notification) {
-                        console.log('Admin Push notification received:', notification);
                         // Show in-app notification
                         showNotification(notification.title || 'New Notification', 'info');
                         
@@ -6660,7 +6709,6 @@ async edit(id) { this.openModal(id); }
                     
                     // Listen for notification taps
                     PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
-                        console.log('Admin Push notification action performed:', notification);
                         // Navigate to chat tab
                         switchTab('chat');
                     });
@@ -7333,10 +7381,9 @@ async edit(id) { this.openModal(id); }
             fetch(API_URL + '/chat/messages?user_id=' + _currentUserId + '&admin_id=' + aid + '&limit=100')
                 .then(function(r) { return r.json(); })
                 .then(function(msgs) {
-                    console.log('[AdminChat] Received ' + (Array.isArray(msgs) ? msgs.length : 0) + ' messages');
+
                     if (msgs && msgs.length > 0) {
-                        console.log('[AdminChat] First message:', JSON.stringify(msgs[0]));
-                        console.log('[AdminChat] Last message:', JSON.stringify(msgs[msgs.length - 1]));
+
                     }
                     
                     const container = document.getElementById('acMessages');
@@ -7347,11 +7394,10 @@ async edit(id) { this.openModal(id); }
                         return;
                     }
                     const latestId = msgs[msgs.length - 1].id;
-                    console.log('[AdminChat] Latest ID: ' + latestId + ', Last ID: ' + _lastMsgId);
+
                     
                     // Only skip update if not initial AND same lastMsgId AND not forced
                     if (String(latestId) === String(_lastMsgId) && !initial && initial !== 'force') {
-                        console.log('[AdminChat] Skipping update - same message ID');
                         return;
                     }
 
@@ -7366,7 +7412,7 @@ async edit(id) { this.openModal(id); }
                     }
 
                     const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-                    console.log('[AdminChat] Rendering ' + msgs.length + ' messages');
+
                     container.innerHTML = msgs.map(function(m) {
                         const isMe = m.sender_type === 'admin';
                         const ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -7405,8 +7451,7 @@ async edit(id) { this.openModal(id); }
             if (!inputEl) { console.error('CHAT: no input element'); return; }
             const msg = (inputEl.value || '').trim();
             const aid = _adminId();
-            console.log('CHAT SEND: msg=' + msg + ' aid=' + aid + ' userId=' + _currentUserId);
-            if (!msg) { console.error('CHAT: empty message'); return; }
+            if (!msg) { return; }
             if (!aid) { alert('Not logged in - cannot send'); return; }
             if (!_currentUserId) { alert('No user selected'); return; }
             inputEl.value = '';
@@ -7631,23 +7676,56 @@ async edit(id) { this.openModal(id); }
         el.innerHTML = h;
     }
 
+    function viewLicenseImage(url) {
+        var modal = document.getElementById('licensePreviewModal');
+        var img = document.getElementById('licensePreviewImg');
+        if (!modal || !img) return;
+        // Show modal with loading state
+        img.src = '';
+        img.style.display = 'none';
+        modal.style.display = 'flex';
+        var wrap = img.parentNode;
+        var loadingEl = document.getElementById('_licenseLoadingMsg');
+        if (!loadingEl) {
+            loadingEl = document.createElement('p');
+            loadingEl.id = '_licenseLoadingMsg';
+            loadingEl.style.cssText = 'color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px;';
+            loadingEl.textContent = 'Loading...';
+            wrap.insertBefore(loadingEl, img);
+        }
+        loadingEl.style.display = 'block';
+        loadingEl.textContent = 'Loading...';
+        loadingEl.style.color = '#94a3b8';
+
+        fetch(url)
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.blob();
+            })
+            .then(function(blob) {
+                var objectUrl = URL.createObjectURL(blob);
+                img.src = objectUrl;
+                img.style.display = 'block';
+                loadingEl.style.display = 'none';
+            })
+            .catch(function() {
+                loadingEl.textContent = 'Could not load image. ';
+                loadingEl.style.color = '#ef4444';
+                var link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.style.color = '#00B14F';
+                link.textContent = 'Open in browser';
+                loadingEl.appendChild(link);
+            });
+    }
+
 </script>
 
 <!-- DEBUG PANEL REMOVED -->
 <script>
 // Debug panel disabled in production
 window.adminDbg = function() {};
-</script>
-
-    function viewLicenseImage(url) {
-        var modal = document.getElementById('licensePreviewModal');
-        var img = document.getElementById('licensePreviewImg');
-        if (modal && img) {
-            img.src = url;
-            modal.style.display = 'flex';
-        }
-    }
-
 </script>
 
 <!-- Vehicle Detail Modal -->
@@ -7658,6 +7736,19 @@ window.adminDbg = function() {};
       <button onclick="document.getElementById('vehicleDetailModal').style.display='none';" style="position:absolute;right:16px;background:rgba(0,0,0,0.06);border:none;color:#374151;font-size:1rem;padding:7px 9px;border-radius:8px;cursor:pointer;"><i class="fas fa-times"></i></button>
     </div>
     <div id="vehicleDetailContent" style="padding:0;"></div>
+  </div>
+</div>
+
+<!-- License Preview Modal -->
+<div id="licensePreviewModal" class="premium-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px;">
+  <div style="position:relative;max-width:480px;width:100%;background:#fff;border-radius:16px;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;">
+      <span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Driver License</span>
+      <button onclick="document.getElementById('licensePreviewModal').style.display='none';" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>
+    </div>
+    <div style="min-height:120px;display:flex;align-items:center;justify-content:center;">
+      <img id="licensePreviewImg" style="width:100%;display:block;max-height:70vh;object-fit:contain;">
+    </div>
   </div>
 </div>
 

@@ -3882,6 +3882,7 @@ function _viewRefundProof(url) {
   document.body.appendChild(modal);
 
   // Fetch as blob to bypass Android WebView external image restrictions
+  console.log('Fetching refund proof from:', url);
   fetch(url)
     .then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -3893,7 +3894,8 @@ function _viewRefundProof(url) {
       if (!wrap) return;
       wrap.innerHTML = '<img src="' + objectUrl + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;">';
     })
-    .catch(function() {
+    .catch(function(err) {
+      console.error('Refund proof fetch error:', err);
       var wrap = document.getElementById('_refundProofImgWrap');
       if (wrap) wrap.innerHTML = '<p style="padding:20px;text-align:center;color:#ef4444;">Could not load proof image.<br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;">Open in browser</a></p>';
     });
