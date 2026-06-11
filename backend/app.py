@@ -2109,33 +2109,37 @@ def upload_refund_proof():
 
         # Upload to Supabase Storage for persistent public access
         try:
-            import requests as _req
+            import urllib.request as _urlreq
+            import urllib.error as _urlerr
+            import json as _json
             from config import SUPABASE_URL, SUPABASE_KEY
-            _headers = {
+            _auth_headers = {
                 'Authorization': f'Bearer {SUPABASE_KEY}',
                 'apikey': SUPABASE_KEY
             }
-            # Ensure bucket exists (create if not)
-            _req.post(
+            # Ensure bucket exists
+            _bucket_data = _json.dumps({'id': 'refund-proofs', 'name': 'refund-proofs', 'public': True}).encode()
+            _bucket_req = _urlreq.Request(
                 f"{SUPABASE_URL}/storage/v1/bucket",
-                headers={**_headers, 'Content-Type': 'application/json'},
-                json={'id': 'refund-proofs', 'name': 'refund-proofs', 'public': True}
+                data=_bucket_data,
+                headers={**_auth_headers, 'Content-Type': 'application/json'},
+                method='POST'
             )
+            try: _urlreq.urlopen(_bucket_req, timeout=5)
+            except Exception: pass
             # Upload file
             supa_path = f"refund-proofs/{filename}"
-            supa_res = _req.post(
+            _upload_req = _urlreq.Request(
                 f"{SUPABASE_URL}/storage/v1/object/{supa_path}",
-                headers={
-                    **_headers,
-                    'Content-Type': file.content_type or 'image/jpeg',
-                    'x-upsert': 'true'
-                },
-                data=file_bytes
+                data=file_bytes,
+                headers={**_auth_headers, 'Content-Type': file.content_type or 'image/jpeg', 'x-upsert': 'true'},
+                method='POST'
             )
-            if supa_res.status_code in (200, 201):
-                url = f"{SUPABASE_URL}/storage/v1/object/public/refund-proofs/{filename}"
-        except Exception:
-            pass  # Keep /tmp fallback
+            with _urlreq.urlopen(_upload_req, timeout=10) as _resp:
+                if _resp.status in (200, 201):
+                    url = f"{SUPABASE_URL}/storage/v1/object/public/refund-proofs/{filename}"
+        except Exception as _supa_err:
+            print(f"Supabase upload failed: {_supa_err}, using local fallback")
 
         ref_val = request.form.get('refund_ref', '').strip()
         cur.execute("""
@@ -2169,17 +2173,18 @@ def upload_refund_proof():
         except Exception:
             pass
 
-        # Log activity
+        # Log activity (skip if admin_id not in admins table)
+        try:
+            cur.execute("SELECT username FROM admins WHERE id = %s", (admin_id,))
 
-        cur.execute("SELECT username FROM admins WHERE id = %s", (admin_id,))
+            admin = cur.fetchone()
 
-        admin = cur.fetchone()
+            admin_name = admin['username'] if admin else f"Admin {admin_id}"
 
-        admin_name = admin['username'] if admin else f"Admin {admin_id}"
-
-        
-
-        log_activity(admin_id, admin_name, "Uploaded refund proof", "booking", booking_id, f"Marked as Refunded. Receipt: {url}")
+            if admin:
+                log_activity(admin_id, admin_name, "Uploaded refund proof", "booking", booking_id, f"Marked as Refunded. Receipt: {url}")
+        except Exception:
+            pass
 
         
 
