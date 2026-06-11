@@ -7631,14 +7631,6 @@ async edit(id) { this.openModal(id); }
         el.innerHTML = h;
     }
 
-</script>
-
-<!-- DEBUG PANEL REMOVED -->
-<script>
-// Debug panel disabled in production
-window.adminDbg = function() {};
-</script>
-
     function viewLicenseImage(url) {
         var modal = document.getElementById('licensePreviewModal');
         var img = document.getElementById('licensePreviewImg');
@@ -7648,6 +7640,12 @@ window.adminDbg = function() {};
         }
     }
 
+</script>
+
+<!-- DEBUG PANEL REMOVED -->
+<script>
+// Debug panel disabled in production
+window.adminDbg = function() {};
 </script>
 
 <!-- Vehicle Detail Modal -->
