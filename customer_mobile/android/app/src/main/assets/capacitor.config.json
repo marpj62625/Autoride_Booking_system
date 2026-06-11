@@ -6,6 +6,12 @@
 		"cleartext": true,
 		"allowNavigation": [
 			"autoride-booking-system.vercel.app",
+			"https://autoride-booking-system.vercel.app",
+			"http://localhost:3000",
+			"car-rental-inlaguna.vercel.app",
+			"https://car-rental-inlaguna.vercel.app",
+			"fydfsgjrlowrrtlmefwq.supabase.co",
+			"https://fydfsgjrlowrrtlmefwq.supabase.co",
 			"*.googleapis.com",
 			"*.google.com",
 			"accounts.google.com"
@@ -27,6 +33,13 @@
 			],
 			"serverClientId": "857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com",
 			"forceCodeForRefreshToken": false
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
 		}
 	}
 }
