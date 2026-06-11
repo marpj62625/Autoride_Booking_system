@@ -17,6 +17,7 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', "857792394948-9m57q54s4638muf0a
 # Supabase API Configuration (for Storage)
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://fydfsgjrlowrrtlmefwq.supabase.co')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4')
+SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTAyOTA1NywiZXhwIjoyMDkwNjA1MDU3fQ.mMZth_DpbilzCsDJhriyP6ZKb8pM5PSyhgLfgGA-5Ww')
 
 # Firebase Cloud Messaging (FCM) - for push notifications
 FCM_SERVER_KEY = os.getenv('FCM_SERVER_KEY', 'BIb5YffHFeCD1_TYpNHpC5TOeZgML5MW8CIsaD-jExr1a5soJ598H7PPrdppR2JX2EvJhZc1CFBp7oF7BEwk-sU')

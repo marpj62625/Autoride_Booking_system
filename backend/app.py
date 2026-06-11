@@ -2093,10 +2093,10 @@ def upload_refund_proof():
             import urllib.request as _urlreq
             import urllib.error as _urlerr
             import json as _json
-            from config import SUPABASE_URL, SUPABASE_KEY
+            from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
             _auth_headers = {
-                'Authorization': f'Bearer {SUPABASE_KEY}',
-                'apikey': SUPABASE_KEY
+                'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
+                'apikey': SUPABASE_SERVICE_KEY
             }
             # Ensure bucket exists (public)
             _bucket_data = _json.dumps({'id': 'refund-proofs', 'name': 'refund-proofs', 'public': True}).encode()
