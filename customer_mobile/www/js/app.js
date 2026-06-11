@@ -3,7 +3,7 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
-// CONFIG Â auto-detect API URL for web vs APK
+// CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
   console.log('API_BASE detection:');
   console.log('- window._API_BASE:', typeof window !== 'undefined' ? window._API_BASE : 'undefined');
@@ -1086,7 +1086,7 @@ function doGoogleLogin() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  // Native APK Â use Capacitor GoogleAuth plugin
+  // Native APK  - use Capacitor GoogleAuth plugin
   if (isCapacitorNative && GoogleAuthPlugin) {
     showLoading(true);
     GoogleAuthPlugin.signIn()
@@ -1123,7 +1123,7 @@ function doGoogleLogin() {
     return;
   }
 
-  // Web browser Â use OAuth2 popup
+  // Web browser  - use OAuth2 popup
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
@@ -1408,7 +1408,7 @@ function _normDateStr(d) {
   var s = String(d).trim();
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Has a T Â strip time component (ISO datetime)
+  // Has a T  - strip time component (ISO datetime)
   if (s.indexOf('T') !== -1) {
     var iso = s.split('T')[0];
     if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -1416,7 +1416,7 @@ function _normDateStr(d) {
   // Parse as date string
   var dt = new Date(s);
   if (!isNaN(dt.getTime())) {
-    // HTTP-date format ends in 'GMT' and represents UTC midnight Â use UTC date parts
+    // HTTP-date format ends in 'GMT' and represents UTC midnight  - use UTC date parts
     // to avoid timezone shift (e.g. UTC+8 would shift "01 Jun 00:00 GMT" to May 31 local)
     var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
     var y  = useUTC ? dt.getUTCFullYear()            : dt.getFullYear();
@@ -2175,7 +2175,7 @@ function renderVehicleDetail(v) {
   var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
   var mileage = appSettings.mileage_limit || '250';
 
-  // 1 booking per account Â block if any active booking exists
+  // 1 booking per account  - block if any active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -2298,7 +2298,7 @@ function autoSetReturnTime() {
 }
 
 function openBookingForm(vehicleId) {
-  // 1 booking per account Â hard block if active booking exists
+  // 1 booking per account  - hard block if active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -3445,7 +3445,7 @@ function renderBookingDetail(b) {
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
               '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
-              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee � cancelled <48h before pickup)' +
+              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee - cancelled <48h before pickup)' +
             '</div>'
           ) : '') +
           (!isRefunded ? (
@@ -3521,7 +3521,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     // Parse any format (including HTTP-date "Mon, 01 Jun 2026 00:00:00 GMT")
     var dt = new Date(s);
     if (!isNaN(dt.getTime())) {
-      // HTTP-date is UTC midnight Â use UTC parts to avoid timezone shift
+      // HTTP-date is UTC midnight  - use UTC parts to avoid timezone shift
       var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
       var y  = useUTC ? dt.getUTCFullYear()  : dt.getFullYear();
       var mo = useUTC ? dt.getUTCMonth() + 1 : dt.getMonth() + 1;
@@ -3531,7 +3531,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     return '';
   }
 
-  // Normalize date Â prefer activeBookingData as most reliable source
+  // Normalize date  - prefer activeBookingData as most reliable source
   var endDateNorm = _toLocalDateStr(currentEndDate);
   if (!endDateNorm && typeof activeBookingData !== 'undefined' && activeBookingData) {
     endDateNorm = _toLocalDateStr(activeBookingData.end_date);
@@ -3544,7 +3544,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     rate = parseFloat(activeBookingData.daily_rate || 0);
   }
 
-  // Calculate minDate (day after current end) using LOCAL date arithmetic Â no UTC conversion
+  // Calculate minDate (day after current end) using LOCAL date arithmetic  - no UTC conversion
   var minDate = currentEndDate;
   if (currentEndDate) {
     try {
