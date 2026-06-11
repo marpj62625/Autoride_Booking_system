@@ -2108,7 +2108,7 @@ def upload_refund_proof():
 
         
 
-        ref_val = request.form.get('refund_ref', '')
+        ref_val = request.form.get('refund_ref', '').strip()
         cur.execute("""
 
             UPDATE bookings 
@@ -2116,11 +2116,11 @@ def upload_refund_proof():
             SET payment_status = 'Refunded', 
 
                 refund_proof_url = %s,
-                refund_ref = COALESCE(%s, refund_ref)
+                refund_ref = CASE WHEN %s != '' THEN %s ELSE refund_ref END
 
             WHERE id = %s
 
-        """, (url, ref_val or None, booking_id))
+        """, (url, ref_val, ref_val, booking_id))
         commit_db()  # Commit immediately after the status update
 
         # Notify customer
