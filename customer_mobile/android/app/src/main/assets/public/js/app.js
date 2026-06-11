@@ -479,8 +479,8 @@ function _showNotifPopup(title, message, color, iconClass) {
     ].join(';');
 
     popup.innerHTML =
-        '<div style="width:34px;height:34px;border-radius:50%;background:' + color + '22;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '<i class="fas ' + iconClass + '" style="font-size:0.85rem;color:' + color + ';"></i>' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:#fff;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">' +
+            '<img src="Autoride-logo-nobg.png" style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fas ' + iconClass + '\\\' style=\\\'font-size:0.85rem;color:' + color + ';\\\'>\';" />' +
         '</div>' +
         '<div style="flex:1;min-width:0;">' +
             '<div style="font-size:0.82rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (title || 'Autoride') + '</div>' +
@@ -1026,8 +1026,29 @@ function doLogin() {
     .finally(function() { showLoading(false); });
 }
 
+// AUTH: LOGOUT
+function doLogout() {
+  if (!confirm('Are you sure you want to log out?')) return;
+  Session.clear();
+  if (notifChannel && supabaseClient) {
+    try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
+    notifChannel = null;
+  }
+  currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
+  notifList = [];
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
+  if (GoogleAuthPlugin) {
+    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+  }
+  var nav = document.getElementById('bottomNav');
+  if (nav) nav.classList.add('hidden');
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  showPage('page-login');
+  showToast('Logged out successfully', 'success');
+}
+
 function doGoogleLogin() {
-  var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;

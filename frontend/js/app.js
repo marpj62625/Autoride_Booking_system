@@ -479,8 +479,8 @@ function _showNotifPopup(title, message, color, iconClass) {
     ].join(';');
 
     popup.innerHTML =
-        '<div style="width:34px;height:34px;border-radius:50%;background:' + color + '22;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '<i class="fas ' + iconClass + '" style="font-size:0.85rem;color:' + color + ';"></i>' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:#fff;border:1.5px solid ' + color + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">' +
+            '<img src="Autoride-logo-nobg.png" style="width:28px;height:28px;object-fit:contain;" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'<i class=\\\'fas ' + iconClass + '\\\' style=\\\'font-size:0.85rem;color:' + color + ';\\\'>\';" />' +
         '</div>' +
         '<div style="flex:1;min-width:0;">' +
             '<div style="font-size:0.82rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (title || 'Autoride') + '</div>' +
