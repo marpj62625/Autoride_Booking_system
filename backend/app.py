@@ -2116,6 +2116,7 @@ def upload_refund_proof():
             SET payment_status = 'Refunded', 
 
                 refund_proof_url = %s,
+                refunded_at = NOW(),
                 refund_ref = CASE WHEN %s != '' THEN %s ELSE refund_ref END
 
             WHERE id = %s
