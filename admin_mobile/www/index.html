@@ -2254,56 +2254,50 @@
 </nav>
 
 <!-- Admin Login Overlay -->
-<div id="adminLoginOverlay">
-    <div class="login-card" style="display:flex;flex-direction:column;align-items:center;width:100%;max-width:400px;padding:36px 28px;box-sizing:border-box;">
+<div id="adminLoginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(160deg,#0f2027,#1a3a2a,#0f2027);display:flex;align-items:center;justify-content:center;z-index:10000;overflow-y:auto;">
+    <div style="width:100%;max-width:400px;padding:40px 28px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;">
 
         <!-- Logo -->
-        <div style="width:86px;height:86px;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0;">
-            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:62px;height:62px;object-fit:contain;">
+        <div style="width:84px;height:84px;border-radius:50%;background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0;">
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:60px;height:60px;object-fit:contain;">
         </div>
-
         <div style="font-size:1.9rem;font-weight:900;color:white;letter-spacing:-0.03em;margin-bottom:2px;">Autoride</div>
-        <div style="font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:24px;">Admin Portal</div>
-
-        <div style="font-size:1.3rem;font-weight:700;color:white;margin-bottom:4px;">Welcome back</div>
+        <div style="font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:22px;">Admin Portal</div>
+        <div style="font-size:1.25rem;font-weight:700;color:white;margin-bottom:4px;">Welcome back</div>
         <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-bottom:24px;text-align:center;">Sign in to access your dashboard</div>
 
         <!-- Email Field -->
-        <div style="width:100%;margin-bottom:12px;display:flex;align-items:center;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden;box-sizing:border-box;">
-            <span style="padding:0 12px 0 16px;color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;line-height:1;">
-                <i class="fas fa-envelope"></i>
-            </span>
+        <div style="width:100%;margin-bottom:12px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;display:flex;align-items:center;box-sizing:border-box;">
+            <i class="fas fa-envelope" style="padding:0 10px 0 16px;color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;"></i>
             <input type="email" id="loginEmail" placeholder="Email Address" autocomplete="email"
                 onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus();"
-                style="flex:1;padding:15px 12px 15px 0;background:transparent;border:none;color:white;font-size:0.95rem;outline:none;min-width:0;">
+                style="flex:1;width:0;padding:15px 12px 15px 0;background:transparent;border:none;color:white;font-size:0.95rem;outline:none;">
         </div>
 
         <!-- Password Field -->
-        <div style="width:100%;margin-bottom:8px;display:flex;align-items:center;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden;box-sizing:border-box;">
-            <span style="padding:0 12px 0 16px;color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;line-height:1;">
-                <i class="fas fa-lock"></i>
-            </span>
+        <div style="width:100%;margin-bottom:6px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.12);border-radius:14px;display:flex;align-items:center;box-sizing:border-box;">
+            <i class="fas fa-lock" style="padding:0 10px 0 16px;color:rgba(255,255,255,0.4);font-size:0.9rem;flex-shrink:0;"></i>
             <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"
                 onkeydown="if(event.key==='Enter'&&window.adminAuth)adminAuth.login();"
-                style="flex:1;padding:15px 0;background:transparent;border:none;color:white;font-size:0.95rem;outline:none;min-width:0;">
+                style="flex:1;width:0;padding:15px 0;background:transparent;border:none;color:white;font-size:0.95rem;outline:none;">
             <button type="button"
                 onclick="var i=document.getElementById('loginPass'),ic=document.getElementById('eyeIcon');if(i.type==='password'){i.type='text';ic.className='fas fa-eye-slash';}else{i.type='password';ic.className='fas fa-eye';}"
-                style="padding:0 16px 0 8px;background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;font-size:0.95rem;line-height:1;flex-shrink:0;">
+                style="flex-shrink:0;padding:0 16px;background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;font-size:1rem;line-height:1;height:52px;display:flex;align-items:center;">
                 <i id="eyeIcon" class="fas fa-eye"></i>
             </button>
         </div>
 
         <!-- Error -->
-        <p id="loginError" style="width:100%;color:#fca5a5;font-size:0.8rem;font-weight:600;text-align:center;padding:10px 14px;background:rgba(239,68,68,0.12);border-radius:10px;border:1px solid rgba(239,68,68,0.25);display:none;margin-bottom:12px;box-sizing:border-box;"></p>
+        <p id="loginError" style="width:100%;color:#fca5a5;font-size:0.8rem;font-weight:600;text-align:center;padding:10px 14px;background:rgba(239,68,68,0.12);border-radius:10px;border:1px solid rgba(239,68,68,0.25);display:none;margin-bottom:10px;box-sizing:border-box;"></p>
 
         <!-- Login Button -->
         <button id="loginBtn"
             onclick="if(window.adminAuth){adminAuth.login();}else{alert('App not ready, please wait and try again.');}"
-            style="width:100%;margin-top:8px;padding:15px;background:linear-gradient(135deg,#005339,#00B14F);border:none;border-radius:14px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(0,177,79,0.3);letter-spacing:0.02em;box-sizing:border-box;">
+            style="width:100%;margin-top:10px;padding:16px;background:linear-gradient(135deg,#005339,#00B14F);border:none;border-radius:14px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 24px rgba(0,177,79,0.35);box-sizing:border-box;">
             <i class="fas fa-sign-in-alt"></i> Login to Dashboard
         </button>
 
-        <div style="margin-top:24px;font-size:0.6rem;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:1.5px;text-transform:uppercase;">Autoride Admin v2.1</div>
+        <div style="margin-top:20px;font-size:0.6rem;font-weight:700;color:rgba(255,255,255,0.18);letter-spacing:1.5px;text-transform:uppercase;">Autoride Admin v2.1</div>
     </div>
 </div>
 
