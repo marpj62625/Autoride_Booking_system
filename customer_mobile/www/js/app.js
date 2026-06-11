@@ -391,7 +391,18 @@ function subscribeToNotifications(userId) {
                     if (typeof loadBookings === 'function') loadBookings();
                 } else if (type === 'refund_processed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-undo-alt');
+                    // Reload bookings and re-render booking detail if open
                     if (typeof loadBookings === 'function') loadBookings();
+                    // If booking detail page is visible, refresh it after bookings reload
+                    setTimeout(function() {
+                        var detailPage = document.getElementById('page-booking-detail');
+                        if (detailPage && (detailPage.style.display === 'block' || detailPage.classList.contains('active'))) {
+                            // Get the current booking ID from the page
+                            var bIdEl = document.querySelector('[data-booking-id]');
+                            var bId = bIdEl ? parseInt(bIdEl.dataset.bookingId) : null;
+                            if (bId && typeof openBookingDetail === 'function') openBookingDetail(bId);
+                        }
+                    }, 1500);
                 } else if (type === 'booking_approved' || type === 'booking_confirmed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-check-circle');
                 } else if (type === 'booking_cancelled' || type === 'booking_cancelled_by_admin') {

@@ -391,7 +391,18 @@ function subscribeToNotifications(userId) {
                     if (typeof loadBookings === 'function') loadBookings();
                 } else if (type === 'refund_processed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-undo-alt');
+                    // Reload bookings and re-render booking detail if open
                     if (typeof loadBookings === 'function') loadBookings();
+                    // If booking detail page is visible, refresh it after bookings reload
+                    setTimeout(function() {
+                        var detailPage = document.getElementById('page-booking-detail');
+                        if (detailPage && (detailPage.style.display === 'block' || detailPage.classList.contains('active'))) {
+                            // Get the current booking ID from the page
+                            var bIdEl = document.querySelector('[data-booking-id]');
+                            var bId = bIdEl ? parseInt(bIdEl.dataset.bookingId) : null;
+                            if (bId && typeof openBookingDetail === 'function') openBookingDetail(bId);
+                        }
+                    }, 1500);
                 } else if (type === 'booking_approved' || type === 'booking_confirmed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-check-circle');
                 } else if (type === 'booking_cancelled' || type === 'booking_cancelled_by_admin') {
@@ -3346,21 +3357,37 @@ function renderBookingDetail(b) {
             '</div>' +
             (isRefunded && b.refund_method ? (
               '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Method</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_method + '</div>' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + (b.refund_channel || b.refund_method) + '</div>' +
+              '</div>'
+            ) : (b.refund_channel ? (
+              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
+                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
+                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_channel + '</div>' +
               '</div>'
             ) : (
               '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
                 '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Amount Paid</div>' +
                 '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(totalPaid) + '</div>' +
               '</div>'
-            )) +
+            ))) +
           '</div>' +
           (isRefunded && b.refund_ref ? (
-            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Reference: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Reference #: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
+          ) : '') +
+          (isRefunded && b.refund_account_name ? (
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Sent to: <strong style="color:var(--text-primary);">' + b.refund_account_name + '</strong> (' + (b.refund_account_number || '') + ')</div>'
           ) : '') +
           (isRefunded && b.refunded_at ? (
             '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Processed: ' + _fmtDate(_normDateStr(b.refunded_at)) + '</div>'
+          ) : '') +
+          (isRefunded && b.refund_proof_url ? (
+            '<div style="margin-top:10px;">' +
+              '<button onclick="_viewRefundProof(\'' + b.refund_proof_url.replace(/'/g, '') + '\')" ' +
+                'style="width:100%;padding:9px;background:rgba(0,177,79,0.1);border:1.5px solid rgba(0,177,79,0.3);border-radius:10px;color:#00B14F;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+                '<i class="fas fa-image"></i> View Transfer Proof' +
+              '</button>' +
+            '</div>'
           ) : '') +
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
@@ -3814,6 +3841,26 @@ function _proceedCancel(bookingId, reason) {
     .finally(function() { showLoading(false); });
 }
 
+function _viewRefundProof(url) {
+  var old = document.getElementById('_refundProofModal');
+  if (old) old.remove();
+  var modal = document.createElement('div');
+  modal.id = '_refundProofModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.85);';
+  modal.innerHTML =
+    '<div style="position:relative;max-width:480px;width:100%;background:#fff;border-radius:16px;overflow:hidden;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;">' +
+        '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
+        '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
+      '</div>' +
+      '<img src="' + url + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;" ' +
+        'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';">' +
+      '<p style="display:none;padding:20px;text-align:center;color:#ef4444;">Could not load proof image.</p>' +
+    '</div>';
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
 function openRefundDetailsForm(bookingId, refundAmount) {
   var old = document.getElementById('_refundDetailsModal');
   if (old) old.remove();
@@ -3840,21 +3887,21 @@ function openRefundDetailsForm(bookingId, refundAmount) {
         '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Refund Channel</label>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">' +
           '<label style="cursor:pointer;">' +
-            '<input type="radio" name="refundChannel" value="GCash" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'GCash Number\';document.getElementById(\'refundChannelCard_GCash\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_GCash\').style.borderColor=\'#00B14F\';[\'Maya\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<input type="radio" name="refundChannel" value="GCash" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'GCash Number\';document.getElementById(\'refundAcctNum\').maxLength=11;document.getElementById(\'refundAcctNum\').placeholder=\'09XX-XXX-XXXX\';document.getElementById(\'refundChannelCard_GCash\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_GCash\').style.borderColor=\'#00B14F\';[\'Maya\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
             '<div id="refundChannelCard_GCash" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
               '<i class="fas fa-mobile-alt" style="color:#00B14F;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
               '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">GCash</span>' +
             '</div>' +
           '</label>' +
           '<label style="cursor:pointer;">' +
-            '<input type="radio" name="refundChannel" value="Maya" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Maya Number\';document.getElementById(\'refundChannelCard_Maya\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Maya\').style.borderColor=\'#00B14F\';[\'GCash\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<input type="radio" name="refundChannel" value="Maya" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Maya Number\';document.getElementById(\'refundAcctNum\').maxLength=11;document.getElementById(\'refundAcctNum\').placeholder=\'09XX-XXX-XXXX\';document.getElementById(\'refundChannelCard_Maya\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Maya\').style.borderColor=\'#00B14F\';[\'GCash\',\'Bank\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
             '<div id="refundChannelCard_Maya" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
               '<i class="fas fa-wallet" style="color:#7c3aed;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
               '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">Maya</span>' +
             '</div>' +
           '</label>' +
           '<label style="cursor:pointer;">' +
-            '<input type="radio" name="refundChannel" value="Bank" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Account Number\';document.getElementById(\'refundChannelCard_Bank\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Bank\').style.borderColor=\'#00B14F\';[\'GCash\',\'Maya\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
+            '<input type="radio" name="refundChannel" value="Bank" style="display:none;" onchange="document.getElementById(\'refundAcctLabel\').textContent=\'Account Number\';document.getElementById(\'refundAcctNum\').maxLength=20;document.getElementById(\'refundAcctNum\').placeholder=\'Bank account number\';document.getElementById(\'refundChannelCard_Bank\').style.background=\'rgba(0,177,79,0.12)\';document.getElementById(\'refundChannelCard_Bank\').style.borderColor=\'#00B14F\';[\'GCash\',\'Maya\'].forEach(function(c){document.getElementById(\'refundChannelCard_\'+c).style.background=\'var(--surface-container,#f4f6fb)\';document.getElementById(\'refundChannelCard_\'+c).style.borderColor=\'var(--border,#e5e7eb)\';});">' +
             '<div id="refundChannelCard_Bank" style="padding:10px 6px;border:2px solid var(--border,#e5e7eb);border-radius:10px;text-align:center;background:var(--surface-container,#f4f6fb);transition:all 0.2s;">' +
               '<i class="fas fa-university" style="color:#2563eb;font-size:1.1rem;display:block;margin-bottom:4px;"></i>' +
               '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary,#0f172a);">Bank</span>' +
@@ -3873,7 +3920,8 @@ function openRefundDetailsForm(bookingId, refundAmount) {
       // Account number
       '<div style="margin-bottom:14px;">' +
         '<label id="refundAcctLabel" style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">GCash / Maya / Account Number</label>' +
-        '<input id="refundAcctNum" type="text" placeholder="e.g. 09XX-XXX-XXXX" ' +
+        '<input id="refundAcctNum" type="tel" placeholder="e.g. 09XX-XXX-XXXX" maxlength="11" ' +
+      'oninput="this.value=this.value.replace(/[^0-9]/g,\'\').slice(0,11);" ' +
           'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;box-sizing:border-box;">' +
       '</div>' +
 
