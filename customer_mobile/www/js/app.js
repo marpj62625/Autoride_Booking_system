@@ -3874,55 +3874,33 @@ function _viewRefundProof(url) {
         '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
         '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
       '</div>' +
-      '<div style="min-height:200px;display:flex;align-items:center;justify-content:center;">' +
-        '<img id="_refundProofImg" style="width:100%;display:none;max-height:70vh;object-fit:contain;">' +
+      '<div id="_refundProofImgWrap" style="min-height:200px;display:flex;align-items:center;justify-content:center;">' +
+        '<p id="_refundProofStatus" style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px;">Loading...</p>' +
+        '<img id="_refundProofImg" style="width:100%;display:none;max-height:70vh;object-fit:contain;" />' +
       '</div>' +
     '</div>';
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
 
   var img = document.getElementById('_refundProofImg');
-  if (!img) return;
-  // Show modal with loading state
-  img.src = '';
-  img.style.display = 'none';
-  modal.style.display = 'flex';
-  var wrap = img.parentNode;
-  var loadingEl = document.getElementById('_refundLoadingMsg');
-  if (!loadingEl) {
-    loadingEl = document.createElement('p');
-    loadingEl.id = '_refundLoadingMsg';
-    loadingEl.style.cssText = 'color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px;';
-    loadingEl.textContent = 'Loading...';
-    wrap.insertBefore(loadingEl, img);
-  }
-  loadingEl.style.display = 'block';
-  loadingEl.textContent = 'Loading...';
-  loadingEl.style.color = '#94a3b8';
-
-  console.log('Fetching refund proof from:', url);
-  fetch(url)
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.blob();
-    })
-    .then(function(blob) {
-      var objectUrl = URL.createObjectURL(blob);
-      img.src = objectUrl;
-      img.style.display = 'block';
-      loadingEl.style.display = 'none';
-    })
-    .catch(function(err) {
-      console.error('Refund proof fetch error:', err);
-      loadingEl.textContent = 'Could not load image. ';
-      loadingEl.style.color = '#ef4444';
-      var link = document.createElement('a');
-      link.href = url;
-      link.target = '_blank';
-      link.style.color = '#00B14F';
-      link.textContent = 'Open in browser';
-      loadingEl.appendChild(link);
-    });
+  var statusEl = document.getElementById('_refundProofStatus');
+  
+  console.log('Loading refund proof image from:', url);
+  
+  // Simple direct image loading - no fetch, no CORS issues
+  img.onload = function() {
+    console.log('Image loaded successfully');
+    img.style.display = 'block';
+    statusEl.style.display = 'none';
+  };
+  
+  img.onerror = function() {
+    console.log('Image load failed');
+    statusEl.innerHTML = '<span style="color:#ef4444;">Could not load image.</span><br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;text-decoration:underline;">Open in browser</a>';
+  };
+  
+  // Set the image source - this triggers the load
+  img.src = url;
 }
 
 function openRefundDetailsForm(bookingId, refundAmount) {
