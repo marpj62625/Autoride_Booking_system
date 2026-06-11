@@ -1026,8 +1026,29 @@ function doLogin() {
     .finally(function() { showLoading(false); });
 }
 
+// AUTH: LOGOUT
+function doLogout() {
+  if (!confirm('Are you sure you want to log out?')) return;
+  Session.clear();
+  if (notifChannel && supabaseClient) {
+    try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
+    notifChannel = null;
+  }
+  currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
+  notifList = [];
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
+  if (GoogleAuthPlugin) {
+    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+  }
+  var nav = document.getElementById('bottomNav');
+  if (nav) nav.classList.add('hidden');
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  showPage('page-login');
+  showToast('Logged out successfully', 'success');
+}
+
 function doGoogleLogin() {
-  var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;
@@ -3853,12 +3874,29 @@ function _viewRefundProof(url) {
         '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
         '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
       '</div>' +
-      '<img src="' + url + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;" ' +
-        'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';">' +
-      '<p style="display:none;padding:20px;text-align:center;color:#ef4444;">Could not load proof image.</p>' +
+      '<div id="_refundProofImgWrap" style="min-height:120px;display:flex;align-items:center;justify-content:center;">' +
+        '<p style="color:#94a3b8;font-size:0.85rem;">Loading...</p>' +
+      '</div>' +
     '</div>';
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+
+  // Fetch as blob to bypass Android WebView external image restrictions
+  fetch(url)
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.blob();
+    })
+    .then(function(blob) {
+      var objectUrl = URL.createObjectURL(blob);
+      var wrap = document.getElementById('_refundProofImgWrap');
+      if (!wrap) return;
+      wrap.innerHTML = '<img src="' + objectUrl + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;">';
+    })
+    .catch(function() {
+      var wrap = document.getElementById('_refundProofImgWrap');
+      if (wrap) wrap.innerHTML = '<p style="padding:20px;text-align:center;color:#ef4444;">Could not load proof image.<br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;">Open in browser</a></p>';
+    });
 }
 
 function openRefundDetailsForm(bookingId, refundAmount) {
