@@ -708,31 +708,60 @@ function apiCall(endpoint, options) {
     });
 }
 
-function uploadFile(endpoint, formData) {
+function uploadFile(endpoint, formData, timeoutMs) {
   var url = API_BASE + endpoint;
-  return fetch(url, { method: 'POST', body: formData })
-    .then(function(res) {
-      return res.text().then(function(text) {
-        var data;
-        try { data = JSON.parse(text); } catch(e) {
-          var parseErr = new Error('Server error (status ' + res.status + ')');
-          parseErr.status = res.status;
-          throw parseErr;
+  timeoutMs = timeoutMs || 90000; // 90-second default for file uploads
+
+  function doFetch(attempt) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller
+      ? setTimeout(function() { controller.abort(); }, timeoutMs)
+      : null;
+
+    var opts = { method: 'POST', body: formData };
+    if (controller) opts.signal = controller.signal;
+
+    return fetch(url, opts)
+      .then(function(res) {
+        if (timer) clearTimeout(timer);
+        return res.text().then(function(text) {
+          var data;
+          try { data = JSON.parse(text); } catch(e) {
+            var parseErr = new Error('Server error (status ' + res.status + ')');
+            parseErr.status = res.status;
+            throw parseErr;
+          }
+          if (!res.ok) {
+            var err = new Error(data.error || 'Upload failed');
+            err.status = res.status;
+            throw err;
+          }
+          return data;
+        });
+      })
+      .catch(function(err) {
+        if (timer) clearTimeout(timer);
+        // If it's a known server error, don't retry
+        if (err.status && err.status !== 0) throw err;
+        // If it's abort (timeout) or network error, retry once
+        if (attempt < 2) {
+          console.warn('[uploadFile] Attempt ' + attempt + ' failed (' + (err.name || err.message) + '), retrying...');
+          return new Promise(function(resolve) { setTimeout(resolve, 2000); })
+            .then(function() { return doFetch(attempt + 1); });
         }
-        if (!res.ok) {
-          var err = new Error(data.error || 'Upload failed');
-          err.status = res.status;
-          throw err;
-        }
-        return data;
+        // Give up - give helpful error
+        var isTimeout = err.name === 'AbortError';
+        var netErr = new Error(
+          isTimeout
+            ? 'Upload timed out. Please check your connection and try again.'
+            : 'Network error during upload. Please try again.'
+        );
+        netErr.status = 0;
+        throw netErr;
       });
-    })
-    .catch(function(err) {
-      if (err.status) throw err;
-      var netErr = new Error('Network error during upload. Check connection.');
-      netErr.status = 0;
-      throw netErr;
-    });
+  }
+
+  return doFetch(1);
 }
 
 // UI HELPERS
@@ -749,7 +778,7 @@ function showLoading(show) {
     _loadingTimeout = setTimeout(function() {
       _loadingCount = 0;
       if (overlay) overlay.style.display = 'none';
-    }, 10000);
+    }, 120000); // 120s safety timeout (supports large file uploads)
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {

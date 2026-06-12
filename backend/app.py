@@ -8779,7 +8779,50 @@ def save_license_details():
             cur.close()
 
 
-# Duplicate admin FCM token function removed to prevent Flask conflicts
+# Restore admin FCM token function with unique function name to prevent Flask conflicts
+@app.route('/admin/fcm-token', methods=['POST'])
+def register_admin_device_fcm_token():
+    """Register or update an admin's FCM device token for push notifications.
+    Admin accounts are in the users table (role=admin/super_admin).
+    """
+    data = request.get_json(silent=True) or {}
+    admin_id = data.get('admin_id')
+    fcm_token = data.get('fcm_token')
+    if not admin_id or not fcm_token:
+        return jsonify({'error': 'admin_id and fcm_token are required'}), 400
+    try:
+        cur = get_cursor()
+        # Ensure fcm_token column exists (auto-migrate if needed)
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT")
+            commit_db()
+        except Exception:
+            pass  # Column already exists or can't alter
+        cur.execute(
+            "UPDATE users SET fcm_token = %s WHERE id = %s AND role IN ('admin', 'super_admin')",
+            (fcm_token, int(admin_id))
+        )
+        commit_db()
+        print(f"[FCM] Admin {admin_id} token saved OK")
+        return jsonify({'message': 'Admin FCM token registered'}), 200
+    except Exception as e:
+        print(f"[FCM] Admin FCM token save error: {e}")
+        # Try fallback: upsert via separate statement
+        try:
+            cur2 = get_cursor()
+            cur2.execute(
+                "UPDATE users SET fcm_token = %s WHERE id = %s",
+                (fcm_token, int(admin_id))
+            )
+            commit_db()
+            cur2.close()
+            print(f"[FCM] Admin {admin_id} token saved via fallback")
+            return jsonify({'message': 'Admin FCM token registered (fallback)'}), 200
+        except Exception as e2:
+            print(f"[FCM] Admin FCM fallback error: {e2}")
+            return jsonify({'error': str(e2)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 @app.route('/user/fcm-token', methods=['POST'])
@@ -8794,13 +8837,21 @@ def register_user_fcm_token():
         return jsonify({'error': 'user_id and fcm_token are required'}), 400
     try:
         cur = get_cursor()
+        # Ensure fcm_token column exists (auto-migrate if needed)
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT")
+            commit_db()
+        except Exception:
+            pass  # Column already exists or can't alter
         cur.execute(
             "UPDATE users SET fcm_token = %s WHERE id = %s",
-            (fcm_token, user_id)
+            (fcm_token, int(user_id))
         )
         commit_db()
+        print(f"[FCM] User {user_id} token saved OK")
         return jsonify({'message': 'FCM token registered'}), 200
     except Exception as e:
+        print(f"[FCM] User FCM token save error: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
