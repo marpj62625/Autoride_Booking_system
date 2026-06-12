@@ -1,0 +1,12 @@
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-06-12 10:30:00
+This file change should trigger Vercel deployment.
+Git commits pushed but no auto-deployment happening.
+Need to verify Vercel-GitHub connection.
+
+Repository: github.com/marpj62625/Autoride_Booking_system.git
+Branch: main
+Latest commits:
+- 553fd4f: Force Vercel redeploy - trigger deployment  
+- c3c48f4: CRITICAL FIX: Remove duplicate Flask function names
+
+If this file change doesn't trigger deployment, there's a configuration issue.
