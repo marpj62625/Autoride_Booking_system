@@ -4785,35 +4785,24 @@ function loadProfile() {
         console.log('Setting up license thumbnails with data:', licenseData);
         var html = '';
         
-        // Note: API returns license_front_status/license_back_status as "available" 
-        // We need to construct the actual image URLs or check if they exist differently
         var frontUrl = licenseData.license_front_url;
         var backUrl = licenseData.license_back_url;
         
-        // If status is "available", try to construct URL or use a placeholder approach
-        if (licenseData.license_front_status === 'available' && !frontUrl) {
-          // You may need to construct URL based on your file storage structure
-          console.log('Front license marked as available but no URL provided');
-        }
-        if (licenseData.license_back_status === 'available' && !backUrl) {
-          console.log('Back license marked as available but no URL provided');
-        }
+        console.log('License front URL:', frontUrl);
+        console.log('License back URL:', backUrl);
         
-        if (frontUrl) {
+        if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '') {
           html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + frontUrl + '\')"></div>';
-        } else if (licenseData.license_front_status === 'available') {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);">Available</div></div>';
         }
         
-        if (backUrl) {
+        if (backUrl && backUrl !== 'null' && backUrl.trim() !== '') {
           html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + backUrl + '\')"></div>';
-        } else if (licenseData.license_back_status === 'available') {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);">Available</div></div>';
         }
         
         if (!html) {
           html = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photos uploaded yet.</p>';
         }
+        
         licenseThumb.innerHTML = html;
         console.log('License thumbnails HTML set:', html);
       }
