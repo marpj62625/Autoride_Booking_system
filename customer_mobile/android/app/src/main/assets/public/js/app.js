@@ -1458,7 +1458,7 @@ function _finishGoogleLogin(idToken, email, name) {
       }
     })
     .catch(function(err) {
-      showToast('Google Sign-In failed. Please try again.', 'error');
+      showToast('Google Sign-In failed: ' + (err.message || 'Please try again.'), 'error');
     })
     .finally(function() { showLoading(false); });
 }
