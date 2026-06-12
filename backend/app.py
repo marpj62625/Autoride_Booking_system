@@ -552,6 +552,24 @@ except Exception as _e:
     pass
 
 
+def migrate_loyalty_points():
+    """Ensures loyalty_points column exists on users table."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0")
+        commit_db()
+    except Exception as e:
+        pass
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_loyalty_points()
+except Exception as _e:
+    pass
+
+
 
 @app.before_request
 
@@ -1938,10 +1956,14 @@ def google_auth():
                     commit_db()
 
                 
-                # Fetch loyalty points for the user
-                cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_fresh['id'],))
-                lp_row = cur.fetchone()
-                loyalty_pts = int(lp_row['loyalty_points']) if lp_row and lp_row.get('loyalty_points') else 0
+                # Fetch loyalty points for the user (safe - column may not exist yet)
+                loyalty_pts = 0
+                try:
+                    cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_fresh['id'],))
+                    lp_row = cur.fetchone()
+                    loyalty_pts = int(lp_row['loyalty_points']) if lp_row and lp_row.get('loyalty_points') else 0
+                except Exception:
+                    pass
 
                 # SKIP OTP - User is already verified!
                 return jsonify({

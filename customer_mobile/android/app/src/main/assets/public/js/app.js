@@ -5861,38 +5861,24 @@ function escapeHtml(str) {
 }
 
 // PUSH NOTIFICATIONS INITIALIZATION
-// Initialize push notifications when the app starts - with safe error handling
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('App loaded, checking push notification support...');
-  
-  // Unconditionally initialize push notification plugin to request permission on startup
-  setTimeout(function() {
-    try {
-      var pushPlugin = getPushNotifications();
-      if (pushPlugin) {
-        console.log('Push notifications plugin available, initializing immediately...');
-        PushNotifications.init().catch(function(error) {
-          console.log('Push notifications init failed (this is normal without Firebase): ' + error);
-        });
-      } else {
-        console.log('Push notifications not available on this platform');
-      }
-    } catch (error) {
-      console.log('Push notification check failed safely: ' + error);
-    }
-  }, 1000);
-});
+// Push notifications are initialized ONLY after user logs in (via initializePushForUser)
+// This prevents the permission dialog from appearing at cold start before login
 
-// Also initialize when Capacitor is ready (for native apps)
+// Also initialize when Capacitor is ready (for native apps) - but only if user is logged in
 document.addEventListener('deviceready', function() {
   console.log('Capacitor device ready, checking push notifications...');
   setTimeout(function() {
     try {
-      var pushPlugin = getPushNotifications();
-      if (pushPlugin) {
-        PushNotifications.init().catch(function(error) {
-          console.log('Push notifications init failed: ' + error);
-        });
+      // Only init push if user is already logged in (returning user)
+      if (currentUser && currentUser.id) {
+        var pushPlugin = getPushNotifications();
+        if (pushPlugin) {
+          PushNotifications.init().catch(function(error) {
+            console.log('Push notifications init failed: ' + error);
+          });
+        }
+      } else {
+        console.log('No logged in user - skipping push notification init on deviceready');
       }
     } catch (error) {
       console.log('Push notification deviceready check failed safely: ' + error);
