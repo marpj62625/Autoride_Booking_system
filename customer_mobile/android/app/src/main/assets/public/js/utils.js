@@ -263,5 +263,67 @@ function sanitizeInput(str) {
   return str.replace(/[<>"'`\\]/g, '');
 }
 
+/**
+ * Compresses an image file using canvas before uploading.
+ * Returns a Promise that resolves with a compressed File object (or original file if compression fails/unsupported).
+ */
+function compressImage(file, maxW, maxH, quality) {
+  return new Promise(function(resolve) {
+    if (!file || !file.type || !file.type.match(/image.*/)) {
+      resolve(file);
+      return;
+    }
+    
+    var reader = new FileReader();
+    reader.onload = function(readerEvent) {
+      var image = new Image();
+      image.onload = function() {
+        var width = image.width;
+        var height = image.height;
+        
+        if (width > height) {
+          if (width > maxW) {
+            height *= maxW / width;
+            width = maxW;
+          }
+        } else {
+          if (height > maxH) {
+            width *= maxH / height;
+            height = maxH;
+          }
+        }
+        
+        var canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, width, height);
+        
+        canvas.toBlob(function(blob) {
+          if (blob) {
+            var compressedFile = new File([blob], file.name || 'image.jpg', {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            console.log('Compressed image from ' + (file.size / 1024 / 1024).toFixed(2) + 'MB to ' + (compressedFile.size / 1024).toFixed(2) + 'KB');
+            resolve(compressedFile);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', quality);
+      };
+      image.onerror = function() {
+        resolve(file);
+      };
+      image.src = readerEvent.target.result;
+    };
+    reader.onerror = function() {
+      resolve(file);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // Remove ES module export for browser/WebView compatibility
 // All functions are available globally in this file

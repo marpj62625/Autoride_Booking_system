@@ -944,6 +944,21 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
+
+  // Initialize Google Auth as early as possible on cold start
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
+    console.log('[GoogleAuth] Initializing immediately in initApp');
+    window.Capacitor.Plugins.GoogleAuth.initialize({
+      clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true
+    }).then(function() {
+      console.log('[GoogleAuth] Initialized successfully in initApp');
+    }).catch(function(err) {
+      console.error('[GoogleAuth] Initialization error in initApp:', err);
+    });
+  }
+
   // Load theme - default to LIGHT
   var savedTheme = null;
   try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
@@ -1183,6 +1198,61 @@ function doLogin() {
       }
     })
     .finally(function() { showLoading(false); });
+}
+
+// AUTH: FORGOT PASSWORD
+function openForgotPasswordPage(e) {
+  if (e) e.preventDefault();
+  // Reset the form state
+  var emailEl = document.getElementById('forgotPwEmail');
+  var errEl = document.getElementById('forgotPwErr');
+  var successEl = document.getElementById('forgotPwSuccess');
+  var btnText = document.getElementById('forgotPwBtnText');
+  var btn = document.getElementById('forgotPwBtn');
+  if (emailEl) emailEl.value = '';
+  if (errEl) errEl.textContent = '';
+  if (successEl) { successEl.style.display = 'none'; successEl.textContent = ''; }
+  if (btnText) btnText.textContent = 'Send Temporary Password';
+  if (btn) btn.disabled = false;
+  showPage('page-forgot-password');
+}
+
+function doForgotPassword() {
+  var emailEl = document.getElementById('forgotPwEmail');
+  var errEl = document.getElementById('forgotPwErr');
+  var successEl = document.getElementById('forgotPwSuccess');
+  var btn = document.getElementById('forgotPwBtn');
+  var btnText = document.getElementById('forgotPwBtnText');
+  var email = emailEl ? emailEl.value.trim() : '';
+
+  if (errEl) errEl.textContent = '';
+  if (successEl) { successEl.style.display = 'none'; }
+
+  if (!email) {
+    if (errEl) errEl.textContent = 'Please enter your email address.';
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Sending...';
+
+  apiCall('/user/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email: email })
+  })
+  .then(function(data) {
+    if (successEl) {
+      successEl.textContent = '✅ ' + (data.message || 'Temporary password sent! Check your email inbox.');
+      successEl.style.display = 'block';
+    }
+    if (btnText) btnText.textContent = 'Email Sent!';
+    if (emailEl) emailEl.value = '';
+  })
+  .catch(function(err) {
+    if (errEl) errEl.textContent = '❌ ' + (err.message || 'Failed to send email. Please try again.');
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Send Temporary Password';
+  });
 }
 
 // AUTH: LOGOUT
@@ -4578,39 +4648,52 @@ var Profile = {
       }
     }
 
-    var fd = new FormData();
-    fd.append('user_id', currentUser.id);
-    fd.append('license_number', document.getElementById('editLicenseNumber').value.trim());
-    fd.append('expiry_date', document.getElementById('editLicenseExpiry').value.trim());
-    fd.append('issuing_country_state', document.getElementById('editLicenseCountry').value.trim());
-    fd.append('license_class', document.getElementById('editLicenseClass').value.trim());
-    fd.append('full_name', document.getElementById('editLicenseName').value.trim());
-    fd.append('date_of_birth', document.getElementById('editLicenseDob').value.trim());
-    fd.append('emergency_contact_name', document.getElementById('editLicenseEmName').value.trim());
-    fd.append('emergency_contact_phone', document.getElementById('editLicenseEmPhone').value.trim());
-    fd.append('emergency_contact_relationship', document.getElementById('editLicenseEmRel').value.trim());
-
-    // Keep existing URLs if no new files uploaded
-    if (_licenseFrontBlob) {
-      fd.append('license_front_file', _licenseFrontBlob, 'front.jpg');
-    } else {
-      fd.append('license_front_url', currentUser._licenseDetails?.license_front_url || '');
-    }
-    if (_licenseBackBlob) {
-      fd.append('license_back_file', _licenseBackBlob, 'back.jpg');
-    } else {
-      fd.append('license_back_url', currentUser._licenseDetails?.license_back_url || '');
-    }
-
     showLoading(true);
-    uploadFile('/user/license-details', fd)
-      .then(function() {
-        showToast('License details saved!', 'success');
-        Profile.cancelLicenseEdit();
-        loadProfile();
-      })
-      .catch(function(err) { if (errEl) errEl.textContent = err.message || 'Failed to save.'; })
-      .finally(function() { showLoading(false); });
+    
+    // Compress both front and back images if they are newly chosen
+    var frontPromise = _licenseFrontBlob ? compressImage(_licenseFrontBlob, 1200, 1200, 0.8) : Promise.resolve(null);
+    var backPromise = _licenseBackBlob ? compressImage(_licenseBackBlob, 1200, 1200, 0.8) : Promise.resolve(null);
+
+    Promise.all([frontPromise, backPromise]).then(function(compressedBlobs) {
+      var compressedFront = compressedBlobs[0];
+      var compressedBack = compressedBlobs[1];
+      
+      var fd = new FormData();
+      fd.append('user_id', currentUser.id);
+      fd.append('license_number', document.getElementById('editLicenseNumber').value.trim());
+      fd.append('expiry_date', document.getElementById('editLicenseExpiry').value.trim());
+      fd.append('issuing_country_state', document.getElementById('editLicenseCountry').value.trim());
+      fd.append('license_class', document.getElementById('editLicenseClass').value.trim());
+      fd.append('full_name', document.getElementById('editLicenseName').value.trim());
+      fd.append('date_of_birth', document.getElementById('editLicenseDob').value.trim());
+      fd.append('emergency_contact_name', document.getElementById('editLicenseEmName').value.trim());
+      fd.append('emergency_contact_phone', document.getElementById('editLicenseEmPhone').value.trim());
+      fd.append('emergency_contact_relationship', document.getElementById('editLicenseEmRel').value.trim());
+
+      if (compressedFront) {
+        fd.append('license_front_file', compressedFront, 'front.jpg');
+      } else {
+        fd.append('license_front_url', currentUser._licenseDetails?.license_front_url || '');
+      }
+      if (compressedBack) {
+        fd.append('license_back_file', compressedBack, 'back.jpg');
+      } else {
+        fd.append('license_back_url', currentUser._licenseDetails?.license_back_url || '');
+      }
+
+      return uploadFile('/user/license-details', fd);
+    })
+    .then(function() {
+      showToast('License details saved!', 'success');
+      Profile.cancelLicenseEdit();
+      loadProfile();
+    })
+    .catch(function(err) { 
+      if (errEl) errEl.textContent = err.message || 'Failed to save.'; 
+    })
+    .finally(function() { 
+      showLoading(false); 
+    });
   }
 };
 
@@ -5106,11 +5189,16 @@ function submitLicense() {
   var errEl = document.getElementById('licenseErr');
   if (errEl) errEl.textContent = '';
   if (!licenseBlob) { if (errEl) errEl.textContent = 'Please select a license image first.'; return; }
-  var fd = new FormData();
-  fd.append('user_id', currentUser.id);
-  fd.append('license', licenseBlob, 'license.jpg');
+  
   showLoading(true);
-  uploadFile('/user/upload-license', fd)
+  compressImage(licenseBlob, 1200, 1200, 0.8)
+    .then(function(compressedBlob) {
+      var fd = new FormData();
+      fd.append('user_id', currentUser.id);
+      fd.append('license', compressedBlob, 'license.jpg');
+      
+      return uploadFile('/user/upload-license', fd);
+    })
     .then(function() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
@@ -5201,16 +5289,47 @@ function loadFavorites() {
 function loadChatbot() {
   var el = document.getElementById('chatbotContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
+  el.innerHTML =
+    '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-chatbot\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Chat Assistant</h2></div>' +
+    '<h2>AI Assistant</h2></div>' +
     '<div class="chat-messages" id="chatMessages">' +
-    '<div class="chat-msg bot">Hi! I\'m the Autoride assistant. How can I help you today?</div>' +
+    '<div class="chat-msg bot">Hi! 👋 I\'m the Autoride AI assistant. How can I help you today?</div>' +
+    '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;">' +
+    '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
+    '<button onclick="sendChatMsg(\'How to book?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 How to Book</button>' +
+    '<button onclick="sendChatMsg(\'What are the prices?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💰 Pricing</button>' +
+    '<button onclick="sendChatMsg(\'What are the requirements?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📄 Requirements</button>' +
+    '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
+    '</div>' +
     '</div>' +
     '<div class="chat-input-row">' +
     '<input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')sendChat()">' +
     '<button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>' +
     '</div>';
+}
+
+function sendChatMsg(msg) {
+  var inputEl = document.getElementById('chatInput');
+  if (inputEl) inputEl.value = msg;
+  // Hide quick replies
+  var qr = document.getElementById('chatQuickReplies');
+  if (qr) qr.style.display = 'none';
+  sendChat();
+}
+
+function chatLocalFallback(msg) {
+  var lower = msg.toLowerCase();
+  if (lower.match(/tutorial|guide|how.*use|how.*work|paano|gamitin|step by step|get started/)) {
+    return '📖 **How to Use Autoride:**\n\n1️⃣ **Register** — Sign up with your Gmail & password, then verify your email\n2️⃣ **Complete Profile** — Upload your Driver\'s License (front & back) in Profile\n3️⃣ **Browse Cars** — Filter by type/date or search by name\n4️⃣ **Book** — Pick dates, choose location, confirm booking\n5️⃣ **Pay** — Use GCash, Maya, Credit Card, or Cash\n6️⃣ **Track** — Monitor your booking status in My Bookings\n\n💬 Need more help? Use Live Chat!';
+  }
+  if (lower.match(/book|rent|reserve/)) return '📋 To book: Browse Cars → Select dates → Choose location → Confirm Booking!';
+  if (lower.match(/price|rate|cost|magkano/)) return '💰 Rates start at ₱1,500/day. Check each vehicle page for exact pricing.';
+  if (lower.match(/payment|pay|gcash|maya/)) return '💳 We accept GCash, Maya, Credit Card, Bank Transfer, and Cash.';
+  if (lower.match(/require|license|id|valid id/)) return '📄 Requirements: Valid Driver\'s License (uploaded in Profile), Government ID, and active Gmail account.';
+  if (lower.match(/cancel|refund/)) return '🔄 Free cancellation 48+ hours before pickup. Go to My Bookings → Cancel.';
+  if (lower.match(/thank|thanks|salamat/)) return 'You\'re welcome! 😊 Happy riding!';
+  return 'I\'m having trouble connecting right now. Please try again or use Live Chat for immediate support!';
 }
 
 function sendChat() {
@@ -5219,16 +5338,33 @@ function sendChat() {
   var msg = sanitizeInput(inputEl.value.trim());
   if (isBlank(msg)) return;
   inputEl.value = '';
+  // Hide quick replies after first message
+  var qr = document.getElementById('chatQuickReplies');
+  if (qr) qr.style.display = 'none';
   var msgs = document.getElementById('chatMessages');
   if (!msgs) return;
   msgs.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
   msgs.scrollTop = msgs.scrollHeight;
+  // Show typing indicator
+  var typingId = 'typing_' + Date.now();
+  msgs.innerHTML += '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>';
+  msgs.scrollTop = msgs.scrollHeight;
   apiCall('/chat', { method: 'POST', body: JSON.stringify({ message: msg, user_id: currentUser.id }) })
     .then(function(data) {
-      msgs.innerHTML += '<div class="chat-msg bot">' + (data.response || 'I\'m not sure about that. Please contact support.') + '</div>';
+      var typing = document.getElementById(typingId);
+      if (typing) typing.remove();
+      var resp = (data.response || 'I\'m not sure about that. Please contact support.');
+      // Format markdown-style bold **text** and bullet points
+      resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      resp = resp.replace(/\n/g, '<br>');
+      msgs.innerHTML += '<div class="chat-msg bot">' + resp + '</div>';
     })
     .catch(function() {
-      msgs.innerHTML += '<div class="chat-msg bot">Sorry, I couldn\'t process that. Please try again.</div>';
+      var typing = document.getElementById(typingId);
+      if (typing) typing.remove();
+      var fallback = chatLocalFallback(msg);
+      fallback = fallback.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+      msgs.innerHTML += '<div class="chat-msg bot">' + fallback + '</div>';
     })
     .finally(function() { msgs.scrollTop = msgs.scrollHeight; });
 }

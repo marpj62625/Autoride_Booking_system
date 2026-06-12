@@ -139,7 +139,7 @@ class Notification_Service:
                     token = admin.get('fcm_token')
                     if token:
                         try:
-                            fcm_service.send_push(token, title, message)
+                            fcm_service.send_push(token, title, message, channel_id='autoride_admin_high_priority')
                             print(f"notify_admins_inapp: push sent to user_id={uid}", file=sys.stderr)
                         except Exception as push_err:
                             print(f"notify_admins_inapp: push failed for user_id={uid}: {push_err}", file=sys.stderr)
@@ -247,7 +247,7 @@ class FCM_Service:
             print(f"FCM_Service._get_access_token: failed: {exc}", file=sys.stderr)
             return None
 
-    def send_push(self, fcm_token: str, title: str, body: str) -> bool:
+    def send_push(self, fcm_token: str, title: str, body: str, channel_id: str = 'autoride_high_priority') -> bool:
         """
         Sends a push notification via FCM V1 API (service account) with
         legacy FCM HTTP API fallback if service account is unavailable.
@@ -256,6 +256,7 @@ class FCM_Service:
         print(f"  - Token: {fcm_token[:20]}...{fcm_token[-10:] if len(fcm_token) > 30 else fcm_token}")
         print(f"  - Title: {title}")
         print(f"  - Body: {body}")
+        print(f"  - Channel: {channel_id}")
         
         # Try V1 API first (service account)
         try:
@@ -274,10 +275,18 @@ class FCM_Service:
                             'token': fcm_token,
                             'android': {
                                 'priority': 'high',
+                                'notification': {
+                                    'channel_id': channel_id,
+                                    'sound': 'default',
+                                    'notification_priority': 'PRIORITY_MAX',
+                                    'default_sound': True,
+                                    'default_vibrate_timings': True
+                                }
                             },
-                            # DATA-ONLY: no 'notification' key so FCM always calls
-                            # onMessageReceived() even when app is in background.
-                            # Our custom notification handler then shows a heads-up popup.
+                            'notification': {
+                                'title': title,
+                                'body': body
+                            },
                             'data': {'title': title, 'body': body}
                         }
                     },
@@ -311,8 +320,12 @@ class FCM_Service:
                 json={
                     'to': fcm_token,
                     'priority': 'high',
-                    # DATA-ONLY: no 'notification' key - forces onMessageReceived()
-                    # so our custom heads-up notification always shows
+                    'notification': {
+                        'title': title,
+                        'body': body,
+                        'sound': 'default',
+                        'android_channel_id': channel_id
+                    },
                     'data': {'title': title, 'body': body}
                 },
                 timeout=10
