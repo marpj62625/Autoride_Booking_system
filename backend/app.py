@@ -1123,6 +1123,11 @@ def login():
                     commit_db()
             if pw_ok:
                 user = user_row
+                try:
+                    cur.execute("UPDATE users SET force_logout_at = NULL WHERE id = %s", (user['id'],))
+                    commit_db()
+                except Exception as fle:
+                    print(f"WARN login: reset force_logout_at failed: {fle}")
 
         
 
@@ -1256,6 +1261,18 @@ def admin_verify_user():
                 "Your driver's license has been verified! You can now book vehicles on Autoride.",
                 'license_approved'
             )
+            # Stamp force_logout_at so the customer app force-logs out and re-logs in with fresh status
+            try:
+                import psycopg as _psycopg2
+                conn2 = _psycopg2.connect(conninfo=_DB_URL)
+                cur2 = conn2.cursor()
+                cur2.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMPTZ DEFAULT NULL")
+                cur2.execute("UPDATE users SET force_logout_at = NOW() WHERE id = %s", (user_id,))
+                conn2.commit()
+                cur2.close()
+                conn2.close()
+            except Exception as fle:
+                print(f"WARN: force_logout_at stamp failed: {fle}")
         elif status == 0:
             notification_service.notify_user(
                 user_id,
@@ -1297,13 +1314,16 @@ def check_verify_status():
         # Force read from primary (not replica) to avoid stale reads after admin approval
         cur.execute("SET TRANSACTION READ WRITE")
 
-        cur.execute("SELECT is_verified, license_image_url FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT is_verified, license_image_url, force_logout_at FROM users WHERE id = %s", (user_id,))
 
         user = cur.fetchone()
 
         if not user: return jsonify({"error": "User not found"}), 404
 
-        return jsonify(dict(user)), 200
+        result = dict(user)
+        if result.get('force_logout_at'):
+            result['force_logout_at'] = result['force_logout_at'].isoformat()
+        return jsonify(result), 200
 
     except Exception as e: return jsonify({"error": str(e)}), 500
 
@@ -1733,11 +1753,8 @@ def verify_email():
         try:
 
             cur = get_cursor()
-
-            cur.execute("UPDATE users SET is_email_verified = True WHERE email = %s RETURNING id, full_name, is_driver", (email,))
-
+            cur.execute("UPDATE users SET is_email_verified = True, force_logout_at = NULL WHERE email = %s RETURNING id, full_name, is_driver", (email,))
             user = cur.fetchone()
-
             commit_db()
 
             del temp_email_otps[email]
@@ -1897,8 +1914,7 @@ def google_auth():
 
             # UPDATE: Also update is_driver if requested
 
-            cur.execute("UPDATE users SET google_id = %s, auth_provider = 'google', is_driver = CASE WHEN %s = 1 THEN 1 ELSE is_driver END WHERE email = %s", (google_id, is_driver, email))
-
+            cur.execute("UPDATE users SET google_id = %s, auth_provider = 'google', is_driver = CASE WHEN %s = 1 THEN 1 ELSE is_driver END, force_logout_at = NULL WHERE email = %s", (google_id, is_driver, email))
             commit_db()
 
             

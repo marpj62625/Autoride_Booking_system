@@ -574,28 +574,31 @@ function subscribeToNotifications(userId) {
                 if (type === 'license_approved' || type === 'license_rejected') {
                     if (type === 'license_approved') {
                         _showNotifPopup(title, msg, '#00b14f', 'fa-id-card');
+                        setTimeout(function() {
+                            forceLogoutSilent('Your license was approved! Please log in again to continue.');
+                        }, 2500);
                     } else {
                         _showNotifPopup(title, msg, '#f87171', 'fa-id-card');
+                        apiCall('/user/verify-status?user_id=' + userId)
+                            .then(function(v) {
+                                currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
+                                Session.save(currentUser);
+                                var badge = document.getElementById('profileVerifyBadge');
+                                if (badge) {
+                                    var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                    badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+                                    badge.className = 'verify-badge verify-' + currentUser.isVerified;
+                                }
+                                var statusEl = document.getElementById('viewLicenseStatus');
+                                if (statusEl) {
+                                    var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                    var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+                                    var v2 = currentUser.isVerified;
+                                    statusEl.textContent = statusMap[v2] || '-';
+                                    statusEl.style.color = statusColor[v2] || 'var(--text-main)';
+                                }
+                            }).catch(function() {});
                     }
-                    apiCall('/user/verify-status?user_id=' + userId)
-                        .then(function(v) {
-                            currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
-                            Session.save(currentUser);
-                            var badge = document.getElementById('profileVerifyBadge');
-                            if (badge) {
-                                var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-                                badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
-                                badge.className = 'verify-badge verify-' + currentUser.isVerified;
-                            }
-                            var statusEl = document.getElementById('viewLicenseStatus');
-                            if (statusEl) {
-                                var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-                                var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
-                                var v2 = currentUser.isVerified;
-                                statusEl.textContent = statusMap[v2] || '-';
-                                statusEl.style.color = statusColor[v2] || 'var(--text-main)';
-                            }
-                        }).catch(function() {});
                 }
             }
         })
@@ -708,31 +711,60 @@ function apiCall(endpoint, options) {
     });
 }
 
-function uploadFile(endpoint, formData) {
+function uploadFile(endpoint, formData, timeoutMs) {
   var url = API_BASE + endpoint;
-  return fetch(url, { method: 'POST', body: formData })
-    .then(function(res) {
-      return res.text().then(function(text) {
-        var data;
-        try { data = JSON.parse(text); } catch(e) {
-          var parseErr = new Error('Server error (status ' + res.status + ')');
-          parseErr.status = res.status;
-          throw parseErr;
+  timeoutMs = timeoutMs || 90000; // 90-second default for file uploads
+
+  function doFetch(attempt) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller
+      ? setTimeout(function() { controller.abort(); }, timeoutMs)
+      : null;
+
+    var opts = { method: 'POST', body: formData };
+    if (controller) opts.signal = controller.signal;
+
+    return fetch(url, opts)
+      .then(function(res) {
+        if (timer) clearTimeout(timer);
+        return res.text().then(function(text) {
+          var data;
+          try { data = JSON.parse(text); } catch(e) {
+            var parseErr = new Error('Server error (status ' + res.status + ')');
+            parseErr.status = res.status;
+            throw parseErr;
+          }
+          if (!res.ok) {
+            var err = new Error(data.error || 'Upload failed');
+            err.status = res.status;
+            throw err;
+          }
+          return data;
+        });
+      })
+      .catch(function(err) {
+        if (timer) clearTimeout(timer);
+        // If it's a known server error, don't retry
+        if (err.status && err.status !== 0) throw err;
+        // If it's abort (timeout) or network error, retry once
+        if (attempt < 2) {
+          console.warn('[uploadFile] Attempt ' + attempt + ' failed (' + (err.name || err.message) + '), retrying...');
+          return new Promise(function(resolve) { setTimeout(resolve, 2000); })
+            .then(function() { return doFetch(attempt + 1); });
         }
-        if (!res.ok) {
-          var err = new Error(data.error || 'Upload failed');
-          err.status = res.status;
-          throw err;
-        }
-        return data;
+        // Give up - give helpful error
+        var isTimeout = err.name === 'AbortError';
+        var netErr = new Error(
+          isTimeout
+            ? 'Upload timed out. Please check your connection and try again.'
+            : 'Network error during upload. Please try again.'
+        );
+        netErr.status = 0;
+        throw netErr;
       });
-    })
-    .catch(function(err) {
-      if (err.status) throw err;
-      var netErr = new Error('Network error during upload. Check connection.');
-      netErr.status = 0;
-      throw netErr;
-    });
+  }
+
+  return doFetch(1);
 }
 
 // UI HELPERS
@@ -749,7 +781,7 @@ function showLoading(show) {
     _loadingTimeout = setTimeout(function() {
       _loadingCount = 0;
       if (overlay) overlay.style.display = 'none';
-    }, 10000);
+    }, 120000); // 120s safety timeout (supports large file uploads)
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
@@ -980,6 +1012,10 @@ function initApp() {
       // Always refresh verification status from server
       apiCall('/user/verify-status?user_id=' + user.id)
         .then(function(v) {
+          if (v.force_logout_at) {
+            forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+            return;
+          }
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : user.isVerified;
           Session.save(currentUser);
         }).catch(function() {});
@@ -1184,6 +1220,7 @@ function doLogin() {
       }
       loadNotifications(data.user_id);
       subscribeToNotifications(data.user_id);
+      initializePushForUser();
       showPage('page-home');
     })
     .catch(function(err) {
@@ -1275,6 +1312,26 @@ function doLogout() {
   document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
   showPage('page-login');
   showToast('Logged out successfully', 'success');
+}
+
+function forceLogoutSilent(message) {
+  Session.clear();
+  if (notifChannel && supabaseClient) {
+    try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
+    notifChannel = null;
+  }
+  currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
+  notifList = [];
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
+  if (GoogleAuthPlugin) {
+    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+  }
+  var nav = document.getElementById('bottomNav');
+  if (nav) nav.classList.add('hidden');
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  showPage('page-login');
+  showToast(message || 'You have been logged out.', 'info');
 }
 
 function doGoogleLogin() {
@@ -1376,6 +1433,7 @@ function _finishGoogleLogin(idToken, email, name) {
         }
         loadNotifications(currentUser.id);
         subscribeToNotifications(currentUser.id);
+        initializePushForUser();
         startBgChatPolling();
         showPage('page-home');
       } else {
@@ -1468,6 +1526,7 @@ function doVerifyEmail() {
         }
         loadNotifications(data.user.id);
         subscribeToNotifications(data.user.id);
+        initializePushForUser();
         
         // Redirect to home page
         setTimeout(function() {
@@ -5287,13 +5346,26 @@ function loadFavorites() {
 
 // CHATBOT
 function loadChatbot() {
+  var overlay = document.getElementById('page-chatbot');
   var el = document.getElementById('chatbotContent');
   if (!el) return;
+  // Only initialize once - guard so clicking inside doesn't re-render
+  if (el.dataset.initialized === '1') return;
+  el.dataset.initialized = '1';
+
+  // Make the overlay a flex column so input is pinned at bottom
+  if (overlay) {
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.overflow = 'hidden';
+  }
+  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;';
+
   el.innerHTML =
-    '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-chatbot\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<div class="page-header" style="flex-shrink:0;">' +
+    '<button class="back-btn" onclick="closeChatbot()"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>AI Assistant</h2></div>' +
-    '<div class="chat-messages" id="chatMessages">' +
+    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;">' +
     '<div class="chat-msg bot">Hi! 👋 I\'m the Autoride AI assistant. How can I help you today?</div>' +
     '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;">' +
     '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
@@ -5303,10 +5375,19 @@ function loadChatbot() {
     '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
     '</div>' +
     '</div>' +
-    '<div class="chat-input-row">' +
+    '<div class="chat-input-row" style="flex-shrink:0;">' +
     '<input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')sendChat()">' +
     '<button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>' +
     '</div>';
+}
+
+function closeChatbot() {
+  var overlay = document.getElementById('page-chatbot');
+  var el = document.getElementById('chatbotContent');
+  // Reset so next open re-initializes fresh
+  if (el) { el.dataset.initialized = ''; el.innerHTML = ''; }
+  if (overlay) { overlay.style.cssText = ''; }
+  closeOverlay('page-chatbot');
 }
 
 function sendChatMsg(msg) {

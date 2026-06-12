@@ -574,28 +574,31 @@ function subscribeToNotifications(userId) {
                 if (type === 'license_approved' || type === 'license_rejected') {
                     if (type === 'license_approved') {
                         _showNotifPopup(title, msg, '#00b14f', 'fa-id-card');
+                        setTimeout(function() {
+                            forceLogoutSilent('Your license was approved! Please log in again to continue.');
+                        }, 2500);
                     } else {
                         _showNotifPopup(title, msg, '#f87171', 'fa-id-card');
+                        apiCall('/user/verify-status?user_id=' + userId)
+                            .then(function(v) {
+                                currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
+                                Session.save(currentUser);
+                                var badge = document.getElementById('profileVerifyBadge');
+                                if (badge) {
+                                    var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                    badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+                                    badge.className = 'verify-badge verify-' + currentUser.isVerified;
+                                }
+                                var statusEl = document.getElementById('viewLicenseStatus');
+                                if (statusEl) {
+                                    var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                    var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+                                    var v2 = currentUser.isVerified;
+                                    statusEl.textContent = statusMap[v2] || '-';
+                                    statusEl.style.color = statusColor[v2] || 'var(--text-main)';
+                                }
+                            }).catch(function() {});
                     }
-                    apiCall('/user/verify-status?user_id=' + userId)
-                        .then(function(v) {
-                            currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
-                            Session.save(currentUser);
-                            var badge = document.getElementById('profileVerifyBadge');
-                            if (badge) {
-                                var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-                                badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
-                                badge.className = 'verify-badge verify-' + currentUser.isVerified;
-                            }
-                            var statusEl = document.getElementById('viewLicenseStatus');
-                            if (statusEl) {
-                                var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-                                var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
-                                var v2 = currentUser.isVerified;
-                                statusEl.textContent = statusMap[v2] || '-';
-                                statusEl.style.color = statusColor[v2] || 'var(--text-main)';
-                            }
-                        }).catch(function() {});
                 }
             }
         })
@@ -1009,6 +1012,10 @@ function initApp() {
       // Always refresh verification status from server
       apiCall('/user/verify-status?user_id=' + user.id)
         .then(function(v) {
+          if (v.force_logout_at) {
+            forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+            return;
+          }
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : user.isVerified;
           Session.save(currentUser);
         }).catch(function() {});
@@ -1305,6 +1312,26 @@ function doLogout() {
   document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
   showPage('page-login');
   showToast('Logged out successfully', 'success');
+}
+
+function forceLogoutSilent(message) {
+  Session.clear();
+  if (notifChannel && supabaseClient) {
+    try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
+    notifChannel = null;
+  }
+  currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
+  notifList = [];
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
+  if (GoogleAuthPlugin) {
+    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+  }
+  var nav = document.getElementById('bottomNav');
+  if (nav) nav.classList.add('hidden');
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  showPage('page-login');
+  showToast(message || 'You have been logged out.', 'info');
 }
 
 function doGoogleLogin() {
