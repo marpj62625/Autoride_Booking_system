@@ -4703,7 +4703,15 @@ function loadProfile() {
     // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
   // Load license details from new table
-  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id).catch(function() { return {}; });
+  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
+    .then(function(data) {
+      console.log('License details loaded:', data);
+      return data || {};
+    })
+    .catch(function(err) { 
+      console.warn('Failed to load license details:', err.message || err);
+      return {}; 
+    });
 
   Promise.all([profilePromise, licensePromise])
     .then(function(results) {
@@ -4772,9 +4780,13 @@ function loadProfile() {
       }
 
       // License detail fields - view mode (from new license_details table)
+      console.log('Populating license view fields with data:', licenseData);
       var el;
       el = document.getElementById('viewLicenseNumber');
-      if (el) el.textContent = licenseData.license_number || '-';
+      if (el) {
+        el.textContent = licenseData.license_number || '-';
+        console.log('License number set to:', el.textContent);
+      }
       el = document.getElementById('viewLicenseExpiry');
       if (el) el.textContent = licenseData.expiry_date || '-';
       el = document.getElementById('viewLicenseClass');
@@ -4791,6 +4803,22 @@ function loadProfile() {
       if (el) el.textContent = licenseData.emergency_contact_phone || '-';
       el = document.getElementById('viewLicenseEmRel');
       if (el) el.textContent = licenseData.emergency_contact_relationship || '-';
+      
+      // Show message if no license details exist
+      if (!licenseData.license_number && !licenseData.full_name) {
+        console.log('No license data found, showing empty state');
+        var licenseCard = document.getElementById('viewLicenseNumber');
+        if (licenseCard && licenseCard.closest('.card')) {
+          var infoMsg = licenseCard.closest('.card').querySelector('.no-license-info');
+          if (!infoMsg) {
+            infoMsg = document.createElement('p');
+            infoMsg.className = 'no-license-info';
+            infoMsg.style.cssText = 'font-size:0.85rem;color:var(--text-muted);text-align:center;margin:20px 0;font-style:italic;';
+            infoMsg.textContent = 'No license details uploaded yet. Click Edit to add your license information.';
+            licenseCard.closest('.card').appendChild(infoMsg);
+          }
+        }
+      }
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
