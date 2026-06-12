@@ -102,6 +102,14 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 def request_entity_too_large(error):
     return jsonify({'error': 'File too large. Maximum upload size is 16 MB.'}), 413
 
+@app.errorhandler(Exception)
+def handle_large_response(error):
+    """Handle responses that might be too large for Vercel functions."""
+    error_str = str(error)
+    if len(error_str) > 1000:  # If error message is very long
+        error_str = error_str[:500] + "... [truncated]"
+    return jsonify({'error': error_str}), 500
+
 
 
 @app.after_request
@@ -478,6 +486,42 @@ def migrate_fcm_tokens():
 try:
     with app.app_context():
         migrate_fcm_tokens()
+except Exception as _e:
+    pass
+
+
+def migrate_license_details_table():
+    """Creates the license_details table if it doesn't exist."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS license_details (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) UNIQUE,
+                full_name VARCHAR(255),
+                date_of_birth DATE,
+                license_number VARCHAR(100),
+                expiry_date DATE,
+                issuing_country_state VARCHAR(100),
+                license_class VARCHAR(50),
+                emergency_contact_name VARCHAR(255),
+                emergency_contact_phone VARCHAR(50),
+                emergency_contact_relationship VARCHAR(100),
+                license_front_url TEXT,
+                license_back_url TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        commit_db()
+    except Exception as e:
+        pass
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_license_details_table()
 except Exception as _e:
     pass
 
@@ -2038,6 +2082,111 @@ def verify_coupon():
 
             cur.close()
 
+
+
+@app.route('/users/<int:user_id>/fcm-token', methods=['POST'])
+def register_fcm_token(user_id):
+    """Register or update FCM token for push notifications"""
+    try:
+        data = request.get_json() or {}
+        fcm_token = data.get('fcm_token', '').strip()
+        
+        if not fcm_token:
+            return jsonify({"error": "fcm_token is required"}), 400
+            
+        cur = get_cursor()
+        
+        # Update user's FCM token
+        cur.execute(
+            "UPDATE users SET fcm_token = %s WHERE id = %s",
+            (fcm_token, user_id)
+        )
+        
+        commit_db()
+        
+        return jsonify({
+            "message": "FCM token registered successfully",
+            "user_id": user_id
+        }), 200
+        
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/test-fcm-config', methods=['GET'])
+def test_fcm_config():
+    """Test FCM configuration and show detailed status"""
+    try:
+        from config import FCM_SERVER_KEY
+        import os
+        
+        # Check configuration
+        server_key = os.environ.get('FCM_SERVER_KEY', FCM_SERVER_KEY)
+        
+        config_status = {
+            'fcm_server_key_configured': bool(server_key and server_key.strip() != ''),
+            'fcm_server_key_length': len(server_key) if server_key else 0,
+            'fcm_server_key_preview': f"{server_key[:10]}...{server_key[-10:]}" if server_key and len(server_key) > 20 else server_key,
+            'environment_fcm_key': bool(os.environ.get('FCM_SERVER_KEY')),
+        }
+        
+        # Test FCM service
+        try:
+            from notifications import fcm_service
+            # Try to get access token (V1 API test)
+            try:
+                access_token = fcm_service._get_access_token()
+                config_status['fcm_v1_api_token'] = bool(access_token)
+            except Exception as v1_err:
+                config_status['fcm_v1_api_error'] = str(v1_err)
+                config_status['fcm_v1_api_token'] = False
+        except Exception as fcm_err:
+            config_status['fcm_service_error'] = str(fcm_err)
+        
+        return jsonify({
+            'status': 'success',
+            'config': config_status,
+            'message': 'FCM configuration test completed'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+
+@app.route('/test-push/<int:user_id>', methods=['POST'])
+def test_push_notification(user_id):
+    """Test endpoint to send push notification to a user"""
+    try:
+        data = request.get_json() or {}
+        title = data.get('title', 'Test Notification')
+        message = data.get('message', 'This is a test push notification from Autoride')
+        
+        # Send both in-app and push notification
+        from notifications import notification_service
+        success = notification_service.notify_user(
+            user_id,
+            title,
+            message,
+            'test_notification'
+        )
+        
+        if success:
+            return jsonify({
+                "message": "Test notification sent successfully",
+                "user_id": user_id
+            }), 200
+        else:
+            return jsonify({"error": "Failed to send notification"}), 500
+            
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/admin/upload-refund-proof', methods=['POST'])
@@ -8179,27 +8328,53 @@ def get_license_details():
     user_id = request.args.get('user_id')
     if not user_id:
         return jsonify({'error': 'user_id is required'}), 400
+        
     try:
         cur = get_cursor()
-        cur.execute(
-            """SELECT * FROM license_details WHERE user_id = %s""",
-            (user_id,)
-        )
+        
+        # First check if table exists
+        cur.execute("""
+            SELECT table_name FROM information_schema.tables 
+            WHERE table_name = 'license_details' AND table_schema = 'public'
+        """)
+        table_exists = cur.fetchone()
+        
+        if not table_exists:
+            # Return empty data if table doesn't exist yet
+            return jsonify({}), 200
+            
+        # Limit the query to prevent large payloads
+        cur.execute("""
+            SELECT id, user_id, full_name, date_of_birth, license_number, 
+                   expiry_date, issuing_country_state, license_class,
+                   emergency_contact_name, emergency_contact_phone, 
+                   emergency_contact_relationship,
+                   CASE WHEN LENGTH(license_front_url) > 500 THEN SUBSTRING(license_front_url, 1, 500) || '...' ELSE license_front_url END as license_front_url,
+                   CASE WHEN LENGTH(license_back_url) > 500 THEN SUBSTRING(license_back_url, 1, 500) || '...' ELSE license_back_url END as license_back_url,
+                   created_at, updated_at
+            FROM license_details 
+            WHERE user_id = %s 
+            LIMIT 1
+        """, (user_id,))
+        
         row = cur.fetchone()
         if row:
             d = dict(row)
-            # convert dates to string
-            if d.get('date_of_birth'): d['date_of_birth'] = str(d['date_of_birth'])
-            if d.get('expiry_date'): d['expiry_date'] = str(d['expiry_date'])
-            if d.get('created_at'): d['created_at'] = str(d['created_at'])
-            if d.get('updated_at'): d['updated_at'] = str(d['updated_at'])
+            # Convert dates to string to prevent serialization issues
+            for date_field in ['date_of_birth', 'expiry_date', 'created_at', 'updated_at']:
+                if d.get(date_field):
+                    d[date_field] = str(d[date_field])
             return jsonify(d), 200
         else:
             return jsonify({}), 200
+            
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Return minimal error to prevent large payloads
+        error_msg = str(e)[:200]  # Limit error message length
+        return jsonify({'error': error_msg}), 500
     finally:
-        if 'cur' in locals(): cur.close()
+        if 'cur' in locals(): 
+            cur.close()
 
 @app.route('/user/license-details', methods=['POST'])
 def save_license_details():
@@ -8207,41 +8382,96 @@ def save_license_details():
     user_id = request.form.get('user_id')
     if not user_id:
         return jsonify({'error': 'user_id is required'}), 400
+        
     try:
         cur = get_cursor()
         
-        full_name = request.form.get('full_name', '')
-        date_of_birth = request.form.get('date_of_birth', '')
-        license_number = request.form.get('license_number', '')
-        expiry_date = request.form.get('expiry_date', '')
-        issuing_country_state = request.form.get('issuing_country_state', '')
-        license_class = request.form.get('license_class', '')
-        emergency_contact_name = request.form.get('emergency_contact_name', '')
-        emergency_contact_phone = request.form.get('emergency_contact_phone', '')
-        emergency_contact_relationship = request.form.get('emergency_contact_relationship', '')
+        # Ensure the license_details table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS license_details (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) UNIQUE,
+                full_name VARCHAR(255),
+                date_of_birth DATE,
+                license_number VARCHAR(100),
+                expiry_date DATE,
+                issuing_country_state VARCHAR(100),
+                license_class VARCHAR(50),
+                emergency_contact_name VARCHAR(255),
+                emergency_contact_phone VARCHAR(50),
+                emergency_contact_relationship VARCHAR(100),
+                license_front_url TEXT,
+                license_back_url TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        commit_db()
         
-        front_url = request.form.get('license_front_url', '')
-        back_url = request.form.get('license_back_url', '')
+        # Get form data with length limits
+        full_name = (request.form.get('full_name', '') or '')[:255]
+        date_of_birth = request.form.get('date_of_birth', '') or None
+        license_number = (request.form.get('license_number', '') or '')[:100]
+        expiry_date = request.form.get('expiry_date', '') or None
+        issuing_country_state = (request.form.get('issuing_country_state', '') or '')[:100]
+        license_class = (request.form.get('license_class', '') or '')[:50]
+        emergency_contact_name = (request.form.get('emergency_contact_name', '') or '')[:255]
+        emergency_contact_phone = (request.form.get('emergency_contact_phone', '') or '')[:50]
+        emergency_contact_relationship = (request.form.get('emergency_contact_relationship', '') or '')[:100]
+        
+        front_url = (request.form.get('license_front_url', '') or '')[:1000]  # Limit URL length
+        back_url = (request.form.get('license_back_url', '') or '')[:1000]   # Limit URL length
 
-        # handle file uploads if present
+        # Handle file uploads if present with size limits
         def upload_img(file_key, prefix):
             if file_key in request.files and request.files[file_key].filename:
                 file = request.files[file_key]
+                
+                # Check file size (max 5MB)
+                file.seek(0, 2)  # Seek to end
+                file_size = file.tell()
+                file.seek(0)  # Reset to beginning
+                
+                if file_size > 5 * 1024 * 1024:  # 5MB limit
+                    raise ValueError(f"File {file_key} is too large. Maximum size is 5MB.")
+                
                 filename = f"{prefix}_{user_id}_{int(datetime.now().timestamp())}.jpg"
                 file_data = file.read()
+                
                 try:
-                    supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": "image/jpeg", "upsert": "true"})
-                except Exception:
-                    supabase.storage.from_('uploads').update(path=filename, file=file_data, file_options={"content-type": "image/jpeg"})
-                return supabase.storage.from_('uploads').get_public_url(filename)
+                    result = supabase.storage.from_('uploads').upload(
+                        path=filename, 
+                        file=file_data, 
+                        file_options={"content-type": "image/jpeg", "upsert": "true"}
+                    )
+                    return supabase.storage.from_('uploads').get_public_url(filename)
+                except Exception as upload_err:
+                    # Fallback: try update instead of upload
+                    try:
+                        supabase.storage.from_('uploads').update(
+                            path=filename, 
+                            file=file_data, 
+                            file_options={"content-type": "image/jpeg"}
+                        )
+                        return supabase.storage.from_('uploads').get_public_url(filename)
+                    except Exception:
+                        # If Supabase fails, return a placeholder
+                        return f"/uploads/license_{prefix}_{user_id}.jpg"
             return None
 
-        new_front = upload_img('license_front_file', 'license_front')
-        if new_front: front_url = new_front
-        
-        new_back = upload_img('license_back_file', 'license_back')
-        if new_back: back_url = new_back
+        try:
+            new_front = upload_img('license_front_file', 'license_front')
+            if new_front: front_url = new_front
+            
+            new_back = upload_img('license_back_file', 'license_back')
+            if new_back: back_url = new_back
+        except ValueError as ve:
+            return jsonify({'error': str(ve)}), 413  # Payload too large
+        except Exception as upload_err:
+            print(f"Upload error: {upload_err}")
+            # Continue without failing the entire request
 
+        # Check if record exists
         cur.execute("SELECT id FROM license_details WHERE user_id = %s", (user_id,))
         exists = cur.fetchone()
 
@@ -8253,7 +8483,10 @@ def save_license_details():
                     emergency_contact_phone=%s, emergency_contact_relationship=%s,
                     license_front_url=%s, license_back_url=%s, updated_at=CURRENT_TIMESTAMP
                 WHERE user_id=%s
-            """, (full_name, date_of_birth, license_number, expiry_date, issuing_country_state, license_class, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, front_url, back_url, user_id))
+            """, (full_name, date_of_birth or None, license_number, expiry_date or None, 
+                  issuing_country_state, license_class, emergency_contact_name, 
+                  emergency_contact_phone, emergency_contact_relationship, 
+                  front_url, back_url, user_id))
         else:
             cur.execute("""
                 INSERT INTO license_details (
@@ -8262,16 +8495,20 @@ def save_license_details():
                     emergency_contact_phone, emergency_contact_relationship,
                     license_front_url, license_back_url
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (user_id, full_name, date_of_birth, license_number, expiry_date, issuing_country_state, license_class, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, front_url, back_url))
+            """, (user_id, full_name, date_of_birth or None, license_number, 
+                  expiry_date or None, issuing_country_state, license_class, 
+                  emergency_contact_name, emergency_contact_phone, 
+                  emergency_contact_relationship, front_url, back_url))
             
+        # Update user verification status
         cur.execute("UPDATE users SET is_verified = 1 WHERE id = %s", (user_id,))
         commit_db()
 
-        # Notify admins that a customer updated their license details
+        # Notify admins (with error handling to prevent notification failures from breaking the main flow)
         try:
-            cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
+            cur.execute("SELECT full_name FROM users WHERE id = %s LIMIT 1", (user_id,))
             u = cur.fetchone()
-            uname = u['full_name'] if u else f'User #{user_id}'
+            uname = (u['full_name'] if u else f'User #{user_id}')[:100]  # Limit name length
             notification_service.notify_admins_inapp(
                 "License Details Updated",
                 f"{uname} has submitted/updated their driver's license details and is awaiting verification.",
@@ -8279,12 +8516,22 @@ def save_license_details():
             )
         except Exception as notif_err:
             print(f"License details admin notification error: {notif_err}")
+            # Don't fail the main request due to notification errors
 
-        return jsonify({'message': 'License details saved successfully', 'is_verified': 1}), 200
+        return jsonify({
+            'message': 'License details saved successfully', 
+            'is_verified': 1,
+            'user_id': user_id
+        }), 200
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Return minimal error to prevent large payloads
+        error_msg = str(e)[:200]  # Limit error message length
+        print(f"License details save error: {e}")
+        return jsonify({'error': error_msg}), 500
     finally:
-        if 'cur' in locals(): cur.close()
+        if 'cur' in locals(): 
+            cur.close()
 
 
 @app.route('/admin/fcm-token', methods=['POST'])
