@@ -20,8 +20,8 @@ var API_BASE = (function() {
   return 'https://autoride-booking-system.vercel.app/api';
 }());
 
-// Google OAuth2 Client ID (web)
-var GOOGLE_CLIENT_ID = '857792394948-vrf515cmh0d1lalr6g1d4g0alaqci903.apps.googleusercontent.com';
+// Google OAuth2 Client ID (web) - must match Google Cloud Console
+var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
