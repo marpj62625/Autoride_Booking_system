@@ -272,11 +272,12 @@ class FCM_Service:
                     json={
                         'message': {
                             'token': fcm_token,
-                            'notification': {'title': title, 'body': body},
                             'android': {
                                 'priority': 'high',
-                                'notification': {'sound': 'default', 'channel_id': 'autoride_notifications'}
                             },
+                            # DATA-ONLY: no 'notification' key so FCM always calls
+                            # onMessageReceived() even when app is in background.
+                            # Our custom notification handler then shows a heads-up popup.
                             'data': {'title': title, 'body': body}
                         }
                     },
@@ -310,12 +311,8 @@ class FCM_Service:
                 json={
                     'to': fcm_token,
                     'priority': 'high',
-                    'notification': {
-                        'title': title,
-                        'body': body,
-                        'sound': 'default',
-                        'android_channel_id': 'autoride_notifications',
-                    },
+                    # DATA-ONLY: no 'notification' key - forces onMessageReceived()
+                    # so our custom heads-up notification always shows
                     'data': {'title': title, 'body': body}
                 },
                 timeout=10
