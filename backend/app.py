@@ -1018,6 +1018,60 @@ def health_check():
 
 
 
+@app.route('/user/forgot-password', methods=['POST'])
+def user_forgot_password():
+    """Forgot password endpoint for customers. Generates a temporary password and emails it."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+        
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, auth_provider FROM users WHERE LOWER(email) = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({'error': 'Email address not found'}), 404
+            
+        if user.get('auth_provider') == 'google':
+            return jsonify({'error': 'This email is registered using Google Sign-In. Please log in using Google.'}), 400
+
+        # Generate random 8-character temporary password
+        import string
+        import random
+        import bcrypt
+        
+        temp_chars = string.ascii_letters + string.digits
+        temp_password = ''.join(random.choice(temp_chars) for _ in range(8))
+        
+        # Hash temporary password
+        hashed_pw = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Update user's password in database
+        cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user['id']))
+        commit_db()
+        
+        # Send temporary password via email using notifications.py SMTP logic
+        try:
+            from notifications import send_notification
+            subject = "Autoride Password Reset"
+            message = f"Hello {user['full_name']},\n\nWe received a request to reset your password. Your new temporary password is:\n\n{temp_password}\n\nPlease use this temporary password to log in and change your password in your Profile Settings immediately."
+            send_notification(user['id'], subject, message)
+            print(f"Forgot password email sent to {email}")
+        except Exception as email_err:
+            print(f"Failed to send forgot password email: {email_err}")
+            return jsonify({'error': 'Failed to send temporary password email. Please try again later.'}), 500
+            
+        return jsonify({'message': 'Temporary password sent successfully! Please check your email inbox.'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+
 @app.route('/login', methods=['POST'])
 
 def login():
@@ -6506,6 +6560,14 @@ CHATBOT_FAQ = [
         "keywords": ["register", "sign up", "create account", "gawa account", "account"],
 
         "response": " **Creating an Account:**\n\n1. Click **Register** on the top right\n2. Enter your full name, email, and password\n3. Verify your email address\n4. Complete your profile with contact info\n5. You're ready to book!\n\nYou can also sign in with Google for faster access."
+
+    },
+
+    {
+
+        "keywords": ["tutorial", "guide", "how to use", "how to book", "paano gamitin", "paano mag-book", "step by step", "how does it work", "get started", "beginners", "new user", "first time"],
+
+        "response": " **How to Use Autoride \u2014 Step-by-Step Guide:**\n\n**Step 1: Create an Account**\n\u2022 Register with your Name, Gmail, and Password\n\u2022 Verify your email with the 6-digit code sent to you\n\u2022 Or use **Sign in with Google** for instant access\n\n**Step 2: Complete Your Profile**\n\u2022 Go to **Profile** and fill in your contact info\n\u2022 Upload your **Driver's License** (front and back photo)\n\u2022 Add emergency contact details\n\u2022 Wait for verification approval\n\n**Step 3: Browse Vehicles**\n\u2022 Go to **Browse Cars** or the Vehicles page\n\u2022 Filter by type: Sedan, SUV, Van, Pickup\n\u2022 Search by name or location\n\u2022 Tap any car to see details, photos, specs, and pricing\n\n**Step 4: Book a Vehicle**\n\u2022 Select your **start and end dates**\n\u2022 Choose pickup and dropoff location\n\u2022 Review your booking summary\n\u2022 Click **Confirm Booking**\n\n**Step 5: Pay for Your Booking**\n\u2022 Choose: GCash, Maya, Credit Card, Bank Transfer, or Cash\n\u2022 Complete payment instructions\n\u2022 You will receive a **booking confirmation email**\n\n**Step 6: Manage Your Booking**\n\u2022 Track your booking in the **My Bookings** tab\n\u2022 View booking status in real-time\n\u2022 Cancel or request support if needed\n\n Need help? Use **Live Chat** or check our **Support** page!"
 
     },
 

@@ -19,6 +19,7 @@ function initChat() {
                         <button class="quick-reply-btn" data-msg="What are the prices?">💰 Pricing</button>
                         <button class="quick-reply-btn" data-msg="What are the requirements?">📄 Requirements</button>
                         <button class="quick-reply-btn" data-msg="Payment methods">💳 Payment</button>
+                        <button class="quick-reply-btn" data-msg="Show me a tutorial on how to use the app">📖 App Tutorial</button>
                     </div>
                 </div>
                 <div class="chat-input-area">
@@ -160,6 +161,9 @@ function initChat() {
     function getLocalFallback(msg) {
         const lower = msg.toLowerCase();
         if (lower.match(/hi|hello|hey|kumusta/)) return "Hello! 👋 Welcome to Autoride! How can I help you today?";
+        if (lower.match(/tutorial|guide|how.*use|how.*work|paano|gamitin/)) {
+            return "📖 **How to Use Autoride — Step by Step:**\n\n**1. Create an Account**\n• Go to Register and enter your Name, Gmail, and Password\n• Verify your email via the 6-digit code sent to you\n\n**2. Complete Your Profile**\n• Go to Profile → upload your Driver's License (front & back)\n• Add your emergency contact details\n\n**3. Browse & Select a Vehicle**\n• Click Browse Cars on Home, or go to the Vehicles page\n• Filter by type (Sedan, SUV, Van) or search by name\n• Tap a car to view details, photos, and pricing\n\n**4. Book a Vehicle**\n• Select your rental dates and pickup/dropoff location\n• Review the booking summary\n• Click Confirm Booking\n\n**5. Complete Payment**\n• Choose your payment method (GCash, Maya, Credit Card, Cash)\n• Follow payment instructions\n• You'll receive a booking confirmation email\n\n**6. Manage Your Booking**\n• View your booking in My Bookings tab\n• Track your rental status in real-time\n• Cancel or request support if needed\n\n💬 Need more help? Use Live Chat or message us on Facebook!";
+        }
         if (lower.match(/book|rent|reserve/)) return "📋 To book: Browse vehicles → Select dates → Choose location → Checkout!";
         if (lower.match(/price|rate|cost|magkano/)) return "💰 Rates start at ₱1,500/day for cars. Check each vehicle page for exact pricing.";
         if (lower.match(/payment|pay|gcash/)) return "💳 We accept Credit Cards, GCash, Maya, Bank Transfer, and Cash.";

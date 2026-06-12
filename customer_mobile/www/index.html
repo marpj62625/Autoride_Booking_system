@@ -382,6 +382,9 @@
           </button>
         </div>
         <span class="field-error" id="loginPasswordErr"></span>
+        <div style="text-align:right;margin-top:6px;">
+          <a href="#" onclick="openForgotPasswordPage(event)" style="font-size:0.8rem;color:var(--primary);font-weight:600;text-decoration:none;">Forgot Password?</a>
+        </div>
       </div>
       <span class="field-error" id="loginErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
       <button class="btn-primary" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
@@ -392,6 +395,32 @@
       </button>
       <div class="auth-link">
         Don't have an account? <a href="#" onclick="showPage('page-register')">Register</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--
+     FORGOT PASSWORD PAGE
+ -->
+<div id="page-forgot-password" class="auth-page">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:120px;height:120px;object-fit:contain;margin-bottom:4px;">
+      <h1 style="font-size:1.4rem;margin-top:8px;">Reset Password</h1>
+    </div>
+    <div class="auth-card">
+      <h2>Forgot Password?</h2>
+      <p class="subtitle">Enter your email and we'll send you a temporary password</p>
+      <div class="form-group" style="margin-top:16px;">
+        <label>Email Address</label>
+        <input type="email" id="forgotPwEmail" placeholder="yourname@gmail.com" autocomplete="email" onkeydown="if(event.key==='Enter')doForgotPassword()">
+        <span class="field-error" id="forgotPwErr"></span>
+      </div>
+      <div id="forgotPwSuccess" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 14px;font-size:0.85rem;color:#10b981;margin-bottom:14px;font-weight:600;text-align:center;"></div>
+      <button class="btn-primary" id="forgotPwBtn" onclick="doForgotPassword()"><i class="fas fa-paper-plane"></i> <span id="forgotPwBtnText">Send Temporary Password</span></button>
+      <div class="auth-link" style="margin-top:16px;">
+        <a href="#" onclick="showPage('page-login')"><i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back to Login</a>
       </div>
     </div>
   </div>
