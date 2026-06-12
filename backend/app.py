@@ -209,7 +209,7 @@ def migrate_settings_v2():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
-
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMPTZ DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'Unpaid'")
 
         

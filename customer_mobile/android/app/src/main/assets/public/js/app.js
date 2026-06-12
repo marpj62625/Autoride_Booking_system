@@ -1343,7 +1343,24 @@ function doGoogleLogin() {
   // Native APK  - use Capacitor GoogleAuth plugin
   if (isCapacitorNative && GoogleAuthPlugin) {
     showLoading(true);
-    GoogleAuthPlugin.signIn()
+    var initPromise = Promise.resolve();
+    if (!window._googleAuthInitialized) {
+      console.log('[GoogleAuth] Not initialized yet, initializing on demand...');
+      initPromise = GoogleAuthPlugin.initialize({
+        clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true
+      }).then(function() {
+        window._googleAuthInitialized = true;
+        console.log('[GoogleAuth] Initialized successfully on demand');
+      }).catch(function(e) {
+        console.log('[GoogleAuth] Initialized error on demand: ' + e);
+      });
+    }
+
+    initPromise.then(function() {
+      return GoogleAuthPlugin.signIn();
+    })
       .then(function(result) {
         showLoading(false);
         var idToken = (result.authentication && result.authentication.idToken)
@@ -5848,22 +5865,22 @@ function escapeHtml(str) {
 document.addEventListener('DOMContentLoaded', function() {
   console.log('App loaded, checking push notification support...');
   
-  // Only try to initialize if push notifications plugin is available and user is logged in
+  // Unconditionally initialize push notification plugin to request permission on startup
   setTimeout(function() {
     try {
       var pushPlugin = getPushNotifications();
-      if (pushPlugin && currentUser && currentUser.id) {
-        console.log('User logged in, initializing push notifications...');
+      if (pushPlugin) {
+        console.log('Push notifications plugin available, initializing immediately...');
         PushNotifications.init().catch(function(error) {
           console.log('Push notifications init failed (this is normal without Firebase): ' + error);
         });
       } else {
-        console.log('Push notifications not available or user not logged in yet');
+        console.log('Push notifications not available on this platform');
       }
     } catch (error) {
       console.log('Push notification check failed safely: ' + error);
     }
-  }, 2000); // Increased delay to ensure everything is loaded
+  }, 1000);
 });
 
 // Also initialize when Capacitor is ready (for native apps)
@@ -5871,7 +5888,8 @@ document.addEventListener('deviceready', function() {
   console.log('Capacitor device ready, checking push notifications...');
   setTimeout(function() {
     try {
-      if (currentUser && currentUser.id) {
+      var pushPlugin = getPushNotifications();
+      if (pushPlugin) {
         PushNotifications.init().catch(function(error) {
           console.log('Push notifications init failed: ' + error);
         });
@@ -5879,7 +5897,7 @@ document.addEventListener('deviceready', function() {
     } catch (error) {
       console.log('Push notification deviceready check failed safely: ' + error);
     }
-  }, 1000);
+  }, 500);
 });
 
 // Re-register FCM token when user logs in (call this after successful login)
