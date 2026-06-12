@@ -8322,59 +8322,129 @@ def get_user_license_details(user_id):
     finally:
         if 'cur' in locals(): cur.close()
 
+@app.route('/user/license-details-test', methods=['GET'])
+def test_license_details():
+    """Test endpoint to verify the deployment is working."""
+    return jsonify({
+        'status': 'ok',
+        'message': 'License details endpoint is working',
+        'timestamp': str(datetime.now()),
+        'version': '2.0'
+    }), 200
+
 @app.route('/user/license-details', methods=['GET'])
 def get_license_details():
     """Get the full driver's license details for a user."""
-    user_id = request.args.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'user_id is required'}), 400
-        
     try:
-        cur = get_cursor()
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'error': 'user_id required'}), 400
         
-        # First check if table exists
-        cur.execute("""
-            SELECT table_name FROM information_schema.tables 
-            WHERE table_name = 'license_details' AND table_schema = 'public'
-        """)
-        table_exists = cur.fetchone()
+        # Ultra-safe approach: minimal response
+        response_data = {
+            'user_id': user_id,
+            'status': 'checking',
+            'table_exists': False,
+            'has_data': False
+        }
         
-        if not table_exists:
-            # Return empty data if table doesn't exist yet
-            return jsonify({}), 200
+        try:
+            cur = get_cursor()
             
-        # Limit the query to prevent large payloads
-        cur.execute("""
-            SELECT id, user_id, full_name, date_of_birth, license_number, 
-                   expiry_date, issuing_country_state, license_class,
-                   emergency_contact_name, emergency_contact_phone, 
-                   emergency_contact_relationship,
-                   CASE WHEN LENGTH(license_front_url) > 500 THEN SUBSTRING(license_front_url, 1, 500) || '...' ELSE license_front_url END as license_front_url,
-                   CASE WHEN LENGTH(license_back_url) > 500 THEN SUBSTRING(license_back_url, 1, 500) || '...' ELSE license_back_url END as license_back_url,
-                   created_at, updated_at
-            FROM license_details 
-            WHERE user_id = %s 
-            LIMIT 1
-        """, (user_id,))
-        
-        row = cur.fetchone()
-        if row:
-            d = dict(row)
-            # Convert dates to string to prevent serialization issues
-            for date_field in ['date_of_birth', 'expiry_date', 'created_at', 'updated_at']:
-                if d.get(date_field):
-                    d[date_field] = str(d[date_field])
-            return jsonify(d), 200
-        else:
-            return jsonify({}), 200
+            # Check if table exists with minimal query
+            cur.execute("SELECT 1 FROM information_schema.tables WHERE table_name = 'license_details' LIMIT 1")
+            table_exists = cur.fetchone()
+            response_data['table_exists'] = bool(table_exists)
             
+            if not table_exists:
+                # Create table immediately if it doesn't exist
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS license_details (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) UNIQUE,
+                        full_name VARCHAR(100),
+                        date_of_birth DATE,
+                        license_number VARCHAR(50),
+                        expiry_date DATE,
+                        issuing_country_state VARCHAR(50),
+                        license_class VARCHAR(20),
+                        emergency_contact_name VARCHAR(100),
+                        emergency_contact_phone VARCHAR(20),
+                        emergency_contact_relationship VARCHAR(50),
+                        license_front_url TEXT,
+                        license_back_url TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                commit_db()
+                response_data['table_created'] = True
+                response_data['table_exists'] = True
+            
+            # Simple check for data existence
+            cur.execute("SELECT COUNT(*) as count FROM license_details WHERE user_id = %s LIMIT 1", (user_id,))
+            count_result = cur.fetchone()
+            has_data = count_result and count_result['count'] > 0
+            response_data['has_data'] = has_data
+            
+            if has_data:
+                # Get data with strict limits
+                cur.execute("""
+                    SELECT id, user_id, 
+                           SUBSTRING(full_name, 1, 50) as full_name,
+                           date_of_birth, 
+                           SUBSTRING(license_number, 1, 20) as license_number,
+                           expiry_date,
+                           SUBSTRING(issuing_country_state, 1, 30) as issuing_country_state,
+                           SUBSTRING(license_class, 1, 10) as license_class,
+                           SUBSTRING(emergency_contact_name, 1, 50) as emergency_contact_name,
+                           SUBSTRING(emergency_contact_phone, 1, 15) as emergency_contact_phone,
+                           SUBSTRING(emergency_contact_relationship, 1, 20) as emergency_contact_relationship,
+                           CASE WHEN license_front_url IS NOT NULL THEN 'available' ELSE NULL END as license_front_status,
+                           CASE WHEN license_back_url IS NOT NULL THEN 'available' ELSE NULL END as license_back_status,
+                           created_at::text as created_at,
+                           updated_at::text as updated_at
+                    FROM license_details 
+                    WHERE user_id = %s 
+                    LIMIT 1
+                """, (user_id,))
+                
+                row = cur.fetchone()
+                if row:
+                    data = dict(row)
+                    # Ensure all values are safe
+                    for key, value in data.items():
+                        if isinstance(value, str) and len(value) > 100:
+                            data[key] = value[:97] + "..."
+                    response_data['data'] = data
+            
+        except Exception as db_error:
+            error_msg = str(db_error)[:100]  # Limit error message
+            response_data['db_error'] = error_msg
+            
+        finally:
+            if 'cur' in locals():
+                cur.close()
+        
+        # Ensure response is never too large
+        import json
+        response_json = json.dumps(response_data)
+        if len(response_json) > 10000:  # 10KB limit
+            return jsonify({
+                'error': 'Response too large',
+                'user_id': user_id,
+                'table_exists': response_data.get('table_exists', False)
+            }), 413
+        
+        return jsonify(response_data), 200
+        
     except Exception as e:
-        # Return minimal error to prevent large payloads
-        error_msg = str(e)[:200]  # Limit error message length
-        return jsonify({'error': error_msg}), 500
-    finally:
-        if 'cur' in locals(): 
-            cur.close()
+        # Ultimate fallback - minimal response
+        error_msg = str(e)[:50]  # Very short error
+        return jsonify({
+            'error': error_msg,
+            'user_id': request.args.get('user_id', 'unknown')
+        }), 500
 
 @app.route('/user/license-details', methods=['POST'])
 def save_license_details():
