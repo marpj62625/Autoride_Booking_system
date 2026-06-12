@@ -8428,8 +8428,8 @@ def get_license_details():
                            SUBSTRING(emergency_contact_name, 1, 50) as emergency_contact_name,
                            SUBSTRING(emergency_contact_phone, 1, 15) as emergency_contact_phone,
                            SUBSTRING(emergency_contact_relationship, 1, 20) as emergency_contact_relationship,
-                           CASE WHEN license_front_url IS NOT NULL THEN 'available' ELSE NULL END as license_front_status,
-                           CASE WHEN license_back_url IS NOT NULL THEN 'available' ELSE NULL END as license_back_status,
+                           license_front_url,
+                           license_back_url,
                            created_at::text as created_at,
                            updated_at::text as updated_at
                     FROM license_details 
