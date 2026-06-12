@@ -20,6 +20,9 @@ var API_BASE = (function() {
   return 'https://autoride-booking-system.vercel.app/api';
 }());
 
+// Google OAuth2 Client ID (web)
+var GOOGLE_CLIENT_ID = '857792394948-vrf515cmh0d1lalr6g1d4g0alaqci903.apps.googleusercontent.com';
+
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
 var allVehicles = [];
@@ -1148,6 +1151,7 @@ function _finishGoogleLogin(idToken, email, name) {
         loadNotifications(currentUser.id);
         subscribeToNotifications(currentUser.id);
         startBgChatPolling();
+        startBgSessionPolling();
         showPage('page-home');
       } else {
         showToast('Login failed. Please try again.', 'error');
@@ -1161,6 +1165,8 @@ function _finishGoogleLogin(idToken, email, name) {
 
 function doLogout() {
   unsubscribeFromNotifications();
+  stopBgChatPolling();
+  stopBgSessionPolling();
   notifList = [];
   Session.clear();
   currentUser = { id: null, fullName: '', isVerified: 0 };
