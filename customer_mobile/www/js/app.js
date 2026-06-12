@@ -1184,6 +1184,7 @@ function doLogin() {
       }
       loadNotifications(data.user_id);
       subscribeToNotifications(data.user_id);
+      initializePushForUser();
       showPage('page-home');
     })
     .catch(function(err) {
@@ -1376,6 +1377,7 @@ function _finishGoogleLogin(idToken, email, name) {
         }
         loadNotifications(currentUser.id);
         subscribeToNotifications(currentUser.id);
+        initializePushForUser();
         startBgChatPolling();
         showPage('page-home');
       } else {
@@ -1468,6 +1470,7 @@ function doVerifyEmail() {
         }
         loadNotifications(data.user.id);
         subscribeToNotifications(data.user.id);
+        initializePushForUser();
         
         // Redirect to home page
         setTimeout(function() {
