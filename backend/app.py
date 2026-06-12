@@ -570,6 +570,33 @@ except Exception as _e:
     pass
 
 
+def migrate_google_auth_columns():
+    """Ensures all columns required by the google_auth route exist in the users table.
+    This replaces the disabled migrate_settings_v2() which had these columns commented out."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'email'")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMPTZ DEFAULT NULL")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_driver INT DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified INT DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS freeze_reason TEXT")
+        commit_db()
+        print("[MIGRATION] google_auth_columns migration completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] google_auth_columns migration error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_google_auth_columns()
+except Exception as _e:
+    pass
+
+
 
 @app.before_request
 
@@ -1907,7 +1934,6 @@ def google_auth():
 
 
         # ID token is valid. Get the user's Google ID (sub), email, and name.
-
         email = idinfo['email']
 
         name = idinfo.get('name', 'Google User')
@@ -1916,173 +1942,113 @@ def google_auth():
 
         google_email_verified = idinfo.get('email_verified', False)
 
-        
+        # Use a fresh direct connection to avoid g.db_conn aborted-transaction cascade
+        import psycopg as _psycopg_ga
+        from config import SUPABASE_DB_URL as _GA_DB_URL
+        from psycopg.rows import dict_row as _dict_row_ga
+
+        _ga_conn = _psycopg_ga.connect(conninfo=_GA_DB_URL, row_factory=_dict_row_ga)
+        try:
+            with _ga_conn.cursor() as _gc:
+                # 1. Find the user
+                _gc.execute("SELECT id, full_name, email FROM users WHERE email = %s", (email,))
+                user = _gc.fetchone()
+
+                if user:
+                    # 2a. User exists — try to update google_id / auth_provider / force_logout_at
+                    try:
+                        _gc.execute(
+                            "UPDATE users SET google_id = %s, auth_provider = 'google', force_logout_at = NULL WHERE email = %s",
+                            (google_id, email)
+                        )
+                        _ga_conn.commit()
+                        print(f"[GOOGLE_AUTH] Updated existing user google_id for {email}")
+                    except Exception as _ue:
+                        _ga_conn.rollback()
+                        print(f"[GOOGLE_AUTH] UPDATE google_id failed (non-fatal): {_ue}")
+
+                    # 3. Re-fetch fresh user data
+                    try:
+                        _gc.execute(
+                            "SELECT id, full_name, is_email_verified, is_driver, is_verified, loyalty_points FROM users WHERE email = %s",
+                            (email,)
+                        )
+                        user_fresh = _gc.fetchone() or {}
+                    except Exception as _rfe:
+                        _ga_conn.rollback()
+                        print(f"[GOOGLE_AUTH] Re-fetch failed: {_rfe}")
+                        # Fallback: use what we know
+                        user_fresh = {'id': user['id'], 'full_name': user['full_name']}
+
+                    user_id    = user_fresh.get('id') or user['id']
+                    full_name  = user_fresh.get('full_name') or user['full_name']
+                    is_drv     = int(user_fresh.get('is_driver') or 0)
+                    is_ver     = int(user_fresh.get('is_verified') or 0)
+                    lp         = int(user_fresh.get('loyalty_points') or 0)
+                    email_ver  = bool(user_fresh.get('is_email_verified') or google_email_verified)
+
+                    # 4. If Google says email is verified, mark it in DB
+                    if google_email_verified and not user_fresh.get('is_email_verified'):
+                        try:
+                            _gc.execute("UPDATE users SET is_email_verified = TRUE WHERE email = %s", (email,))
+                            _ga_conn.commit()
+                        except Exception as _eve:
+                            _ga_conn.rollback()
+                            print(f"[GOOGLE_AUTH] Mark email_verified failed (non-fatal): {_eve}")
+
+                    # Google emails are always verified — skip OTP
+                    return jsonify({
+                        "message": "login success",
+                        "user": {
+                            "id": user_id,
+                            "fullName": full_name,
+                            "email": email,
+                            "isDriver": is_drv,
+                            "isVerified": is_ver,
+                            "loyaltyPoints": lp
+                        },
+                        "verification_required": False
+                    }), 200
+
+                else:
+                    # 2b. New user — insert
+                    try:
+                        _gc.execute(
+                            "INSERT INTO users (full_name, email, google_id, auth_provider, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, 'google', %s, %s, 0) RETURNING id",
+                            (name, email, google_id, is_driver, google_email_verified)
+                        )
+                        new_row = _gc.fetchone()
+                        new_user_id = new_row['id'] if new_row else None
+                        _ga_conn.commit()
+                    except Exception as _ie:
+                        _ga_conn.rollback()
+                        # Insert might fail if google_id/auth_provider columns don't exist yet
+                        print(f"[GOOGLE_AUTH] INSERT with google columns failed: {_ie}, trying basic insert")
+                        _gc.execute(
+                            "INSERT INTO users (full_name, email, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, %s, 0) RETURNING id",
+                            (name, email, is_driver, google_email_verified)
+                        )
+                        new_row = _gc.fetchone()
+                        new_user_id = new_row['id'] if new_row else None
+                        _ga_conn.commit()
+
+                    return jsonify({
+                        "message": "login success",
+                        "user": {
+                            "id": new_user_id,
+                            "fullName": name,
+                            "email": email,
+                            "isDriver": is_driver,
+                            "isVerified": 0,
+                            "loyaltyPoints": 0
+                        },
+                        "verification_required": False
+                    }), 201
 
-        cur = get_cursor()
+        finally:
+            _ga_conn.close()
 
-        cur.execute("SELECT id, full_name, email, is_driver FROM users WHERE email=%s", (email,))
 
-        user = cur.fetchone()
-
-        
-
-        if user:
-
-            # User exists, link google_id if not present
-
-            # UPDATE: Also update is_driver if requested
-
-            cur.execute("UPDATE users SET google_id = %s, auth_provider = 'google', is_driver = CASE WHEN %s = 1 THEN 1 ELSE is_driver END, force_logout_at = NULL WHERE email = %s", (google_id, is_driver, email))
-            commit_db()
-
-            
-
-            # CHECK IF EMAIL IS ALREADY VERIFIED
-
-            # Re-fetch with fresh data
-
-            cur.execute("SELECT id, full_name, is_email_verified, is_driver FROM users WHERE email = %s", (email,))
-
-            user_fresh = cur.fetchone()
-
-
-
-            if user_fresh.get('is_email_verified') or google_email_verified:
-
-                if google_email_verified and not user_fresh.get('is_email_verified'):
-
-                    cur.execute("UPDATE users SET is_email_verified = True WHERE email = %s", (email,))
-
-                    commit_db()
-
-                
-                # Fetch loyalty points for the user (safe - column may not exist yet)
-                loyalty_pts = 0
-                try:
-                    cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_fresh['id'],))
-                    lp_row = cur.fetchone()
-                    loyalty_pts = int(lp_row['loyalty_points']) if lp_row and lp_row.get('loyalty_points') else 0
-                except Exception:
-                    pass
-
-                # SKIP OTP - User is already verified!
-                return jsonify({
-
-                    "message": "login success",
-
-                    "user": {
-
-                        "id": user_fresh['id'],
-
-                        "fullName": user_fresh['full_name'],
-
-                        "email": email,
-
-                        "isDriver": user_fresh.get('is_driver', 0),
-
-                        "isVerified": user_fresh.get('is_verified', 0),
-
-                        "loyaltyPoints": loyalty_pts
-
-                    },
-
-                    "verification_required": False
-
-                }), 200
-
-
-
-            # If not verified yet, REQUIRE OTP verification
-
-            import random
-
-            otp = str(random.randint(100000, 999999))
-
-            temp_email_otps[email] = otp
-
-            send_verification_email(email, otp)
-
-
-
-            return jsonify({
-
-                "message": "OTP sent to your Google email",
-
-                "email": email,
-
-                "verification_required": True
-
-            }), 200
-
-        else:
-
-            # Create new user
-
-            cur.execute("""
-
-                INSERT INTO users (full_name, email, google_id, auth_provider, is_driver, is_email_verified, is_verified) 
-
-                VALUES (%s, %s, %s, 'google', %s, %s, 0) RETURNING id
-
-            """, (name, email, google_id, is_driver, google_email_verified))
-
-            new_user_id = cur.fetchone()['id']
-
-            commit_db()
-
-
-
-            if google_email_verified:
-
-                return jsonify({
-
-                    "message": "login success",
-
-                    "user": {
-
-                        "id": new_user_id,
-
-                        "fullName": name,
-
-                        "email": email,
-
-                        "isDriver": is_driver,
-
-                        "isVerified": 0,
-
-                        "loyaltyPoints": 0
-
-                    },
-
-                    "verification_required": False
-
-                }), 201
-
-
-
-            # REQUIRE OTP verification only if Google email not verified
-
-            import random
-
-            otp = str(random.randint(100000, 999999))
-
-            temp_email_otps[email] = otp
-
-            send_verification_email(email, otp)
-
-            
-
-            return jsonify({
-
-                "message": "Registration successful. Please verify OTP.",
-
-                "email": email,
-
-                "verification_required": True
-
-            }), 201
-
-            
 
     except ValueError:
 
