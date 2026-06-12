@@ -66,7 +66,8 @@
             --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
             --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
         }
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; user-select:none; -webkit-user-select:none; }
+        input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
         body { background:var(--bg-page); color:var(--text-primary); min-height:100vh; overflow-x:hidden; line-height:1.5; }
         .hidden { display:none !important; }
         .page { display:none; min-height:100vh; padding-bottom:80px; }

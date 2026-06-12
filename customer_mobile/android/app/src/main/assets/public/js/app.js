@@ -4911,11 +4911,6 @@ function loadProfile() {
                  '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">?? No license photos available</p>' +
                  '<p style="font-size:0.75rem;color:var(--text-secondary);">Please re-upload your license images through the Edit section</p>' +
                  '</div>';
-        } else {
-          // Add a helper message if there might be broken images  
-          html += '<div style="margin-top:8px;text-align:center;">' +
-                  '<p style="font-size:0.7rem;color:var(--text-secondary);">🧐 Images not loading? Try re-uploading through Edit</p>' +
-                  '</div>';
         }
         
         licenseThumb.innerHTML = html;
