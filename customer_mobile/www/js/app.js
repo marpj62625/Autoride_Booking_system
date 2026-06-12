@@ -4699,17 +4699,31 @@ function loadLicenseDetailsForEdit() {
 }
 
 function loadProfile() {
-  if (!currentUser.id) return;
-    // Load main profile
+  console.log('loadProfile() called');
+  console.log('currentUser:', currentUser);
+  console.log('currentUser.id:', currentUser.id);
+  
+  if (!currentUser || !currentUser.id) {
+    console.warn('No currentUser.id available for loadProfile');
+    return;
+  }
+  
+  // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
-  // Load license details from new table
+  // Load license details from new table with enhanced error handling
   var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(data) {
-      console.log('License details loaded:', data);
+      console.log('License details API response:', data);
+      console.log('License details loaded successfully:', data);
       return data || {};
     })
     .catch(function(err) { 
-      console.warn('Failed to load license details:', err.message || err);
+      console.error('Failed to load license details:', err);
+      console.error('Error details:', {
+        message: err.message || 'Unknown error',
+        status: err.status || 'No status',
+        response: err.response || 'No response'
+      });
       return {}; 
     });
 

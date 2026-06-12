@@ -8337,15 +8337,43 @@ def get_license_details():
     """Get the full driver's license details for a user."""
     try:
         user_id = request.args.get('user_id')
-        if not user_id:
-            return jsonify({'error': 'user_id required'}), 400
+        
+        # Enhanced debugging for parameter validation
+        debug_info = {
+            'received_user_id': user_id,
+            'user_id_type': type(user_id).__name__,
+            'user_id_length': len(user_id) if user_id else 0,
+            'request_args': dict(request.args),
+            'method': request.method
+        }
+        
+        if not user_id or user_id.strip() == '':
+            return jsonify({
+                'error': 'user_id required or empty',
+                'debug': debug_info
+            }), 400
+        
+        # Validate user_id is numeric
+        try:
+            user_id_int = int(user_id.strip())
+            if user_id_int <= 0:
+                return jsonify({
+                    'error': 'user_id must be a positive integer',
+                    'debug': debug_info
+                }), 400
+        except (ValueError, TypeError):
+            return jsonify({
+                'error': 'user_id must be a valid number',
+                'debug': debug_info
+            }), 400
         
         # Ultra-safe approach: minimal response
         response_data = {
-            'user_id': user_id,
+            'user_id': user_id_int,
             'status': 'checking',
             'table_exists': False,
-            'has_data': False
+            'has_data': False,
+            'debug': debug_info
         }
         
         try:
@@ -8382,7 +8410,7 @@ def get_license_details():
                 response_data['table_exists'] = True
             
             # Simple check for data existence
-            cur.execute("SELECT COUNT(*) as count FROM license_details WHERE user_id = %s LIMIT 1", (user_id,))
+            cur.execute("SELECT COUNT(*) as count FROM license_details WHERE user_id = %s LIMIT 1", (user_id_int,))
             count_result = cur.fetchone()
             has_data = count_result and count_result['count'] > 0
             response_data['has_data'] = has_data
@@ -8407,7 +8435,7 @@ def get_license_details():
                     FROM license_details 
                     WHERE user_id = %s 
                     LIMIT 1
-                """, (user_id,))
+                """, (user_id_int,))
                 
                 row = cur.fetchone()
                 if row:
@@ -8458,7 +8486,12 @@ def get_license_details():
         error_msg = str(e)[:50]  # Very short error
         return jsonify({
             'error': error_msg,
-            'user_id': request.args.get('user_id', 'unknown')
+            'user_id': request.args.get('user_id', 'unknown'),
+            'debug': {
+                'received_args': dict(request.args),
+                'method': request.method,
+                'error_type': type(e).__name__
+            }
         }), 500
 
 @app.route('/user/license-details', methods=['POST'])
