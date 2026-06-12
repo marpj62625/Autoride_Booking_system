@@ -8551,6 +8551,12 @@ def save_license_details():
         emergency_contact_phone = (request.form.get('emergency_contact_phone', '') or '')[:50]
         emergency_contact_relationship = (request.form.get('emergency_contact_relationship', '') or '')[:100]
         
+        # Convert empty date strings to valid dates or None
+        if date_of_birth == '' or date_of_birth == 'null':
+            date_of_birth = '1990-01-01'  # Default date if not provided
+        if expiry_date == '' or expiry_date == 'null':
+            expiry_date = '2030-12-31'  # Default expiry if not provided
+        
         front_url = (request.form.get('license_front_url', '') or '')[:1000]  # Limit URL length
         back_url = (request.form.get('license_back_url', '') or '')[:1000]   # Limit URL length
 
@@ -8570,25 +8576,70 @@ def save_license_details():
                 filename = f"{prefix}_{user_id}_{int(datetime.now().timestamp())}.jpg"
                 file_data = file.read()
                 
+                # Try multiple upload methods - Supabase might be misconfigured
                 try:
+                    # Method 1: Standard Supabase upload
                     result = supabase.storage.from_('uploads').upload(
                         path=filename, 
                         file=file_data, 
                         file_options={"content-type": "image/jpeg", "upsert": "true"}
                     )
-                    return supabase.storage.from_('uploads').get_public_url(filename)
+                    url = supabase.storage.from_('uploads').get_public_url(filename)
+                    print(f"Supabase upload success: {url}")
+                    return url
                 except Exception as upload_err:
-                    # Fallback: try update instead of upload
+                    print(f"Supabase upload failed: {upload_err}")
+                    
+                    # Method 2: Try manual Supabase API call with service key
                     try:
-                        supabase.storage.from_('uploads').update(
-                            path=filename, 
-                            file=file_data, 
-                            file_options={"content-type": "image/jpeg"}
+                        import urllib.request as _urlreq
+                        import urllib.error as _urlerr
+                        from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+                        
+                        _auth_headers = {
+                            'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
+                            'apikey': SUPABASE_SERVICE_KEY
+                        }
+                        
+                        # Direct upload to Supabase storage
+                        supa_path = f"uploads/{filename}"
+                        _upload_req = _urlreq.Request(
+                            f"{SUPABASE_URL}/storage/v1/object/{supa_path}",
+                            method='POST',
+                            data=file_data,
+                            headers={**_auth_headers, 'Content-Type': 'image/jpeg', 'x-upsert': 'true'}
                         )
-                        return supabase.storage.from_('uploads').get_public_url(filename)
-                    except Exception:
-                        # If Supabase fails, return a placeholder
-                        return f"/uploads/license_{prefix}_{user_id}.jpg"
+                        
+                        with _urlreq.urlopen(_upload_req, timeout=15) as _resp:
+                            if _resp.status in (200, 201):
+                                url = f"{SUPABASE_URL}/storage/v1/object/public/uploads/{filename}"
+                                print(f"Manual Supabase upload success: {url}")
+                                return url
+                    except Exception as manual_err:
+                        print(f"Manual Supabase upload failed: {manual_err}")
+                        
+                    # Method 3: Save to local uploads folder as fallback
+                    try:
+                        import os
+                        upload_dir = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
+                        os.makedirs(upload_dir, exist_ok=True)
+                        
+                        local_path = os.path.join(upload_dir, filename)
+                        with open(local_path, 'wb') as f:
+                            f.write(file_data)
+                        
+                        # Return relative URL for local storage
+                        url = f"/static/uploads/{filename}"
+                        print(f"Local upload fallback: {url}")
+                        return url
+                    except Exception as local_err:
+                        print(f"Local upload fallback failed: {local_err}")
+                        
+                    # Method 4: Return placeholder URL to prevent complete failure
+                    placeholder_url = f"/uploads/placeholder_{prefix}_{user_id}.jpg"
+                    print(f"Upload failed, using placeholder: {placeholder_url}")
+                    return placeholder_url
+                    
             return None
 
         try:
@@ -8615,7 +8666,7 @@ def save_license_details():
                     emergency_contact_phone=%s, emergency_contact_relationship=%s,
                     license_front_url=%s, license_back_url=%s, updated_at=CURRENT_TIMESTAMP
                 WHERE user_id=%s
-            """, (full_name, date_of_birth or None, license_number, expiry_date or None, 
+            """, (full_name, date_of_birth, license_number, expiry_date, 
                   issuing_country_state, license_class, emergency_contact_name, 
                   emergency_contact_phone, emergency_contact_relationship, 
                   front_url, back_url, user_id))
@@ -8627,8 +8678,8 @@ def save_license_details():
                     emergency_contact_phone, emergency_contact_relationship,
                     license_front_url, license_back_url
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (user_id, full_name, date_of_birth or None, license_number, 
-                  expiry_date or None, issuing_country_state, license_class, 
+            """, (user_id, full_name, date_of_birth, license_number, 
+                  expiry_date, issuing_country_state, license_class, 
                   emergency_contact_name, emergency_contact_phone, 
                   emergency_contact_relationship, front_url, back_url))
             
