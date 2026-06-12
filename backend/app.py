@@ -583,6 +583,10 @@ def log_activity(admin_id, admin_name, action, target_type=None, target_id=None,
     except Exception as e:
 
         print(f"FAILED TO LOG ACTIVITY: {e}")
+        try:
+            get_db().rollback()
+        except:
+            pass
 
     finally:
 
