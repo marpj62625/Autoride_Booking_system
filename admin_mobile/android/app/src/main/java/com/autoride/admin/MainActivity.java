@@ -19,6 +19,7 @@ public class MainActivity extends BridgeActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        AutorideAdminMessagingService.createNotificationChannel(this);
         requestNotificationPermission();
         fetchAndForwardFcmToken();
         registerBackHandler();
