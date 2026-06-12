@@ -4699,17 +4699,33 @@ function loadLicenseDetailsForEdit() {
 }
 
 function loadProfile() {
-  if (!currentUser.id) return;
-    // Load main profile
+  console.log('loadProfile() called');
+  console.log('currentUser:', currentUser);
+  console.log('currentUser.id:', currentUser.id);
+  
+  if (!currentUser || !currentUser.id) {
+    console.warn('No currentUser.id available for loadProfile');
+    return;
+  }
+  
+  // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
-  // Load license details from new table
+  // Load license details from new table with enhanced error handling
   var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(data) {
-      console.log('License details loaded:', data);
-      return data || {};
+      console.log('License details API response:', data);
+      // Handle the API response structure - license data is in the 'data' property
+      var licenseData = data && data.data ? data.data : {};
+      console.log('Extracted license data:', licenseData);
+      return licenseData;
     })
     .catch(function(err) { 
-      console.warn('Failed to load license details:', err.message || err);
+      console.error('Failed to load license details:', err);
+      console.error('Error details:', {
+        message: err.message || 'Unknown error',
+        status: err.status || 'No status',
+        response: err.response || 'No response'
+      });
       return {}; 
     });
 
@@ -4766,43 +4782,118 @@ function loadProfile() {
       // License images thumbnail (from new license_details table)
       var licenseThumb = document.getElementById('profileLicenseThumb');
       if (licenseThumb) {
+        console.log('Setting up license thumbnails with data:', licenseData);
         var html = '';
-        if (licenseData.license_front_url) {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><img src="' + licenseData.license_front_url + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + licenseData.license_front_url + '\')"></div>';
+        
+        // Note: API returns license_front_status/license_back_status as "available" 
+        // We need to construct the actual image URLs or check if they exist differently
+        var frontUrl = licenseData.license_front_url;
+        var backUrl = licenseData.license_back_url;
+        
+        // If status is "available", try to construct URL or use a placeholder approach
+        if (licenseData.license_front_status === 'available' && !frontUrl) {
+          // You may need to construct URL based on your file storage structure
+          console.log('Front license marked as available but no URL provided');
         }
-        if (licenseData.license_back_url) {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><img src="' + licenseData.license_back_url + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + licenseData.license_back_url + '\')"></div>';
+        if (licenseData.license_back_status === 'available' && !backUrl) {
+          console.log('Back license marked as available but no URL provided');
         }
+        
+        if (frontUrl) {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + frontUrl + '\')"></div>';
+        } else if (licenseData.license_front_status === 'available') {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);">Available</div></div>';
+        }
+        
+        if (backUrl) {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + backUrl + '\')"></div>';
+        } else if (licenseData.license_back_status === 'available') {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);">Available</div></div>';
+        }
+        
         if (!html) {
           html = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photos uploaded yet.</p>';
         }
         licenseThumb.innerHTML = html;
+        console.log('License thumbnails HTML set:', html);
       }
 
       // License detail fields - view mode (from new license_details table)
       console.log('Populating license view fields with data:', licenseData);
+      console.log('Available license data keys:', Object.keys(licenseData));
+      
       var el;
       el = document.getElementById('viewLicenseNumber');
       if (el) {
         el.textContent = licenseData.license_number || '-';
         console.log('License number set to:', el.textContent);
+      } else {
+        console.log('viewLicenseNumber element not found');
       }
+      
       el = document.getElementById('viewLicenseExpiry');
-      if (el) el.textContent = licenseData.expiry_date || '-';
+      if (el) {
+        el.textContent = licenseData.expiry_date || '-';
+        console.log('License expiry set to:', el.textContent);
+      } else {
+        console.log('viewLicenseExpiry element not found');
+      }
+      
       el = document.getElementById('viewLicenseClass');
-      if (el) el.textContent = licenseData.license_class || '-';
+      if (el) {
+        el.textContent = licenseData.license_class || '-';
+        console.log('License class set to:', el.textContent);
+      } else {
+        console.log('viewLicenseClass element not found');
+      }
+      
       el = document.getElementById('viewLicenseCountry');
-      if (el) el.textContent = licenseData.issuing_country_state || '-';
+      if (el) {
+        el.textContent = licenseData.issuing_country_state || '-';
+        console.log('License country set to:', el.textContent);
+      } else {
+        console.log('viewLicenseCountry element not found');
+      }
+      
       el = document.getElementById('viewLicenseName');
-      if (el) el.textContent = licenseData.full_name || '-';
+      if (el) {
+        el.textContent = licenseData.full_name || '-';
+        console.log('License name set to:', el.textContent);
+      } else {
+        console.log('viewLicenseName element not found');
+      }
+      
       el = document.getElementById('viewLicenseDob');
-      if (el) el.textContent = licenseData.date_of_birth || '-';
+      if (el) {
+        el.textContent = licenseData.date_of_birth || '-';
+        console.log('License DOB set to:', el.textContent);
+      } else {
+        console.log('viewLicenseDob element not found');
+      }
+      
       el = document.getElementById('viewLicenseEmName');
-      if (el) el.textContent = licenseData.emergency_contact_name || '-';
+      if (el) {
+        el.textContent = licenseData.emergency_contact_name || '-';
+        console.log('Emergency contact name set to:', el.textContent);
+      } else {
+        console.log('viewLicenseEmName element not found');
+      }
+      
       el = document.getElementById('viewLicenseEmPhone');
-      if (el) el.textContent = licenseData.emergency_contact_phone || '-';
+      if (el) {
+        el.textContent = licenseData.emergency_contact_phone || '-';
+        console.log('Emergency contact phone set to:', el.textContent);
+      } else {
+        console.log('viewLicenseEmPhone element not found');
+      }
+      
       el = document.getElementById('viewLicenseEmRel');
-      if (el) el.textContent = licenseData.emergency_contact_relationship || '-';
+      if (el) {
+        el.textContent = licenseData.emergency_contact_relationship || '-';
+        console.log('Emergency contact relationship set to:', el.textContent);
+      } else {
+        console.log('viewLicenseEmRel element not found');
+      }
       
       // Show message if no license details exist
       if (!licenseData.license_number && !licenseData.full_name) {
