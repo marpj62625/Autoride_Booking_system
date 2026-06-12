@@ -252,11 +252,17 @@ class FCM_Service:
         Sends a push notification via FCM V1 API (service account) with
         legacy FCM HTTP API fallback if service account is unavailable.
         """
+        print(f"FCM_Service.send_push: Attempting to send push notification")
+        print(f"  - Token: {fcm_token[:20]}...{fcm_token[-10:] if len(fcm_token) > 30 else fcm_token}")
+        print(f"  - Title: {title}")
+        print(f"  - Body: {body}")
+        
         # Try V1 API first (service account)
         try:
             access_token = self._get_access_token()
             if access_token:
                 project_id = 'autoride-a1a32'
+                print(f"FCM_Service: Trying V1 API with project {project_id}")
                 resp = requests.post(
                     f'https://fcm.googleapis.com/v1/projects/{project_id}/messages:send',
                     headers={
@@ -276,19 +282,25 @@ class FCM_Service:
                     },
                     timeout=10
                 )
+                print(f"FCM V1 response: {resp.status_code} - {resp.text}")
                 if resp.ok:
+                    print("FCM V1: Push notification sent successfully!")
                     return True
-                print(f"FCM V1 failed ({resp.status_code}), trying legacy API", file=sys.stderr)
+                print(f"FCM V1 failed ({resp.status_code}), trying legacy API")
         except Exception as exc:
-            print(f"FCM V1 error: {exc}, trying legacy API", file=sys.stderr)
+            print(f"FCM V1 error: {exc}, trying legacy API")
 
         # Fallback: legacy FCM HTTP API using server key
         try:
             import os
             from config import FCM_SERVER_KEY
             server_key = os.environ.get('FCM_SERVER_KEY', FCM_SERVER_KEY)
-            if not server_key:
+            
+            if not server_key or server_key.strip() == '':
+                print("FCM_Service: No server key configured - push notifications disabled")
                 return False
+                
+            print(f"FCM_Service: Trying legacy API with server key: {server_key[:10]}...")
             resp = requests.post(
                 'https://fcm.googleapis.com/fcm/send',
                 headers={
@@ -308,11 +320,14 @@ class FCM_Service:
                 },
                 timeout=10
             )
-            if not resp.ok:
-                print(f"FCM legacy failed ({resp.status_code}): {resp.text}", file=sys.stderr)
+            print(f"FCM legacy response: {resp.status_code} - {resp.text}")
+            if resp.ok:
+                print("FCM Legacy: Push notification sent successfully!")
+            else:
+                print(f"FCM legacy failed ({resp.status_code}): {resp.text}")
             return resp.ok
         except Exception as exc:
-            print(f"FCM legacy error: {exc}", file=sys.stderr)
+            print(f"FCM legacy error: {exc}")
             return False
 
     def notify_user_push(self, user_id: int, title: str, body: str) -> bool:

@@ -98,6 +98,16 @@
         .card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:12px; }
         /* Buttons */
         .btn-primary { background:var(--primary); color:var(--on-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        /* Placeholder visibility fix */
+        input::placeholder, textarea::placeholder, select::placeholder { color: #999999 !important; opacity: 1 !important; }
+        input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: #999999 !important; opacity: 1 !important; }
+        input::-moz-placeholder, textarea::-moz-placeholder { color: #999999 !important; opacity: 1 !important; }
+        input:-ms-input-placeholder, textarea:-ms-input-placeholder { color: #999999 !important; opacity: 1 !important; }
+        /* OTP input placeholders */
+        .otp-input::placeholder { color: #bbbbbb !important; opacity: 1 !important; }
+        .otp-input::-webkit-input-placeholder { color: #bbbbbb !important; opacity: 1 !important; }
+        .otp-input::-moz-placeholder { color: #bbbbbb !important; opacity: 1 !important; }
+        .otp-input:-ms-input-placeholder { color: #bbbbbb !important; opacity: 1 !important; }
         .btn-primary:active { background:var(--primary-dark); }
         .btn-secondary { background:var(--bg-input); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; transition:background 0.2s; }
         .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
@@ -108,6 +118,12 @@
         .form-group label { display:block; font-size:0.85rem; font-weight:600; color:var(--text-secondary); margin-bottom:6px; }
         .form-group input, .form-group select, .form-group textarea { width:100%; padding:12px 14px; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); font-size:0.95rem; color:var(--text-primary); outline:none; transition:border-color 0.2s; }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--primary); background:#fff; }
+        
+        /* Placeholder styling - use specific colors instead of CSS variables */
+        .form-group input::placeholder, .form-group textarea::placeholder { color: #999999; opacity: 1; }
+        .form-group input:focus::placeholder, .form-group textarea:focus::placeholder { color: #bbbbbb; opacity: 1; }
+        input::placeholder, textarea::placeholder { color: #999999 !important; opacity: 1 !important; }
+        input:focus::placeholder, textarea:focus::placeholder { color: #bbbbbb !important; opacity: 1 !important; }
         .form-group textarea { resize:vertical; min-height:80px; }
         .field-error { color:var(--danger); font-size:0.78rem; margin-top:4px; display:block; }
         /* Password Input Wrapper Styles */
@@ -158,6 +174,7 @@
         .otp-inputs { display:flex; gap:10px; justify-content:center; margin:20px 0; }
         .otp-inputs input { width:44px; height:52px; text-align:center; font-size:1.4rem; font-weight:700; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); outline:none; }
         .otp-inputs input:focus { border-color:var(--primary); background:#fff; }
+        .otp-inputs input::placeholder { color: #999999; opacity: 1; }
         /* Home screen */
         .home-banner { background:linear-gradient(135deg, var(--primary), var(--primary-dark)); color:var(--on-primary); padding:24px 20px; margin-bottom:0; }
         .home-banner h2 { font-size:1.3rem; font-weight:800; }
@@ -233,6 +250,7 @@
         .chat-unread-badge { background:var(--primary); color:#fff; border-radius:50%; width:20px; height:20px; font-size:0.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
         .chat-input-row { display:flex; gap:10px; padding:12px 16px; background:var(--bg-card); border-top:1px solid var(--border); }
         .chat-input-row input { flex:1; padding:10px 14px; background:var(--bg-input); border:none; border-radius:var(--radius-sm); font-size:0.9rem; outline:none; }
+        .chat-input-row input::placeholder { color: #999999; opacity: 1; }
         .chat-input-row button { background:var(--primary); color:var(--text-primary); border:none; border-radius:var(--radius-sm); padding:10px 16px; cursor:pointer; }
         /* Notification item */
         .notif-item { background:var(--bg-card); border-radius:var(--radius-sm); padding:14px; margin-bottom:8px; border-left:4px solid var(--primary); }
@@ -343,7 +361,7 @@
 <div id="page-login" class="auth-page">
   <div class="auth-container">
     <div class="auth-logo">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:140px;height:140px;object-fit:contain;margin-bottom:4px;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:200px;height:200px;object-fit:contain;margin-bottom:4px;">
       <p>Book your perfect ride</p>
     </div>
     <div class="auth-card">
@@ -384,7 +402,7 @@
 <div id="page-register" class="auth-page">
   <div class="auth-container">
     <div class="auth-logo">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:140px;height:140px;object-fit:contain;margin-bottom:4px;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:200px;height:200px;object-fit:contain;margin-bottom:4px;">
     </div>
     <div class="auth-card">
       <h2>Create Account</h2>
@@ -1076,3 +1094,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Main Application Scripts -->
+<script src="js/utils.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
+</html>

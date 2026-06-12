@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test License Details Endpoint</title>
+</head>
+<body>
+    <h1>License Details Endpoint Test</h1>
+    <div id="results"></div>
+    <button onclick="testEndpoint()">Test License Details Endpoint</button>
+    <button onclick="testProfile()">Test Profile Endpoint</button>
+
+    <script>
+        const BASE_URL = 'https://autoride-booking-system.vercel.app';
+        
+        async function testEndpoint() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Testing license details endpoint...';
+            
+            try {
+                // Test multiple user IDs
+                const userIds = [1, 40, 100];
+                
+                for (const userId of userIds) {
+                    const url = `${BASE_URL}/api/user/license-details?user_id=${userId}`;
+                    console.log(`Testing: ${url}`);
+                    
+                    const response = await fetch(url);
+                    const responseText = await response.text();
+                    
+                    console.log(`User ID ${userId}: Status ${response.status}`);
+                    console.log(`Response: ${responseText}`);
+                    
+                    resultsDiv.innerHTML += `<p><strong>User ID ${userId}:</strong> Status ${response.status}</p>`;
+                    resultsDiv.innerHTML += `<pre>${responseText}</pre><hr>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        async function testProfile() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML += '<hr><h3>Testing Profile Endpoint:</h3>';
+            
+            try {
+                const url = `${BASE_URL}/api/user/profile-full?user_id=40`;
+                console.log(`Testing profile: ${url}`);
+                
+                const response = await fetch(url);
+                const responseText = await response.text();
+                
+                console.log(`Profile: Status ${response.status}`);
+                console.log(`Profile Response: ${responseText}`);
+                
+                resultsDiv.innerHTML += `<p><strong>Profile:</strong> Status ${response.status}</p>`;
+                resultsDiv.innerHTML += `<pre>${responseText}</pre>`;
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Profile Error: ${error.message}</p>`;
+                console.error('Profile test error:', error);
+            }
+        }
+        
+        // Auto test on load
+        window.onload = () => {
+            testEndpoint();
+            setTimeout(testProfile, 2000);
+        };
+    </script>
+</body>
+</html>

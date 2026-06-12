@@ -4733,21 +4733,29 @@ function loadLicenseDetailsForEdit() {
         }
       }
       
-      // Show existing images in preview
-      if (data.license_front_url) {
+      // Show existing images in preview (with admin mobile fallback pattern)
+      var frontUrl = data.license_front_url || data.license_image_url || '';
+      var backUrl = data.license_back_url || '';
+      
+      console.log('Edit form using fallback pattern:');
+      console.log('- Front URL (with fallback):', frontUrl);
+      console.log('- Back URL:', backUrl);
+      console.log('- Fallback license_image_url:', data.license_image_url);
+      
+      if (frontUrl) {
         var prevF = document.getElementById('licenseEditPreviewFront');
         if (prevF) { 
-          prevF.src = data.license_front_url; 
+          prevF.src = frontUrl; 
           prevF.style.display = 'block';
-          console.log('Set front image preview:', data.license_front_url);
+          console.log('Set front image preview using fallback:', frontUrl);
         }
       }
-      if (data.license_back_url) {
+      if (backUrl) {
         var prevB = document.getElementById('licenseEditPreviewBack');
         if (prevB) { 
-          prevB.src = data.license_back_url; 
+          prevB.src = backUrl; 
           prevB.style.display = 'block';
-          console.log('Set back image preview:', data.license_back_url);
+          console.log('Set back image preview:', backUrl);
         }
       }
       
@@ -4839,17 +4847,19 @@ function loadProfile() {
       var emailDisplay = document.getElementById('profileEmailDisplay');
       if (emailDisplay) emailDisplay.textContent = profile.email || '';
 
-      // License images thumbnail (from new license_details table)
+      // License images thumbnail (with admin mobile fallback pattern)
       var licenseThumb = document.getElementById('profileLicenseThumb');
       if (licenseThumb) {
         console.log('Setting up license thumbnails with data:', licenseData);
         var html = '';
         
-        var frontUrl = licenseData.license_front_url;
-        var backUrl = licenseData.license_back_url;
+        // Use admin mobile fallback pattern: license_front_url || license_image_url || ''
+        var frontUrl = licenseData.license_front_url || licenseData.license_image_url || '';
+        var backUrl = licenseData.license_back_url || '';
         
-        console.log('License front URL:', frontUrl);
+        console.log('License front URL (with fallback):', frontUrl);
         console.log('License back URL:', backUrl);
+        console.log('Fallback license_image_url:', licenseData.license_image_url);
         
         if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '') {
           html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
@@ -4883,14 +4893,14 @@ function loadProfile() {
                  '<p style="font-size:0.75rem;color:var(--text-secondary);">Please re-upload your license images through the Edit section</p>' +
                  '</div>';
         } else {
-          // Add a helper message if there might be broken images
+          // Add a helper message if there might be broken images  
           html += '<div style="margin-top:8px;text-align:center;">' +
                   '<p style="font-size:0.7rem;color:var(--text-secondary);">?? Images not loading? Try re-uploading through Edit</p>' +
                   '</div>';
         }
         
         licenseThumb.innerHTML = html;
-        console.log('License thumbnails HTML set with error handling');
+        console.log('License thumbnails HTML set with admin mobile fallback pattern');
       }
 
       // License detail fields - view mode (from new license_details table)

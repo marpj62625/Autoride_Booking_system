@@ -20,7 +20,8 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e
 SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTAyOTA1NywiZXhwIjoyMDkwNjA1MDU3fQ.mMZth_DpbilzCsDJhriyP6ZKb8pM5PSyhgLfgGA-5Ww')
 
 # Firebase Cloud Messaging (FCM) - for push notifications
-FCM_SERVER_KEY = os.getenv('FCM_SERVER_KEY', 'BIb5YffHFeCD1_TYpNHpC5TOeZgML5MW8CIsaD-jExr1a5soJ598H7PPrdppR2JX2EvJhZc1CFBp7oF7BEwk-sU')
+# Using a demo/test server key - replace with real one from Firebase Console for production
+FCM_SERVER_KEY = os.getenv('FCM_SERVER_KEY', 'AAAATMVnu0E:APA91bHQzQj5ExampleDemoKeyForTesting123456789')
 
 # PayMongo Configuration
 PAYMONGO_SECRET_KEY = os.getenv('PAYMONGO_SECRET_KEY', '')

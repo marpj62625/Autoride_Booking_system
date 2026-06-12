@@ -8446,6 +8446,20 @@ def get_license_details():
                             data[key] = value[:97] + "..."
                         elif value is None:
                             data[key] = None
+                    
+                    # Add fallback license_image_url from users table for admin mobile compatibility
+                    try:
+                        cur.execute("SELECT license_image_url FROM users WHERE id = %s", (user_id_int,))
+                        user_row = cur.fetchone()
+                        if user_row and user_row.get('license_image_url'):
+                            data['license_image_url'] = user_row['license_image_url']
+                            print(f"Added fallback license_image_url: {data['license_image_url']}")
+                        else:
+                            data['license_image_url'] = ""
+                    except Exception as fallback_err:
+                        print(f"Fallback license_image_url fetch error: {fallback_err}")
+                        data['license_image_url'] = ""
+                    
                     response_data['data'] = data
             
         except Exception as db_error:

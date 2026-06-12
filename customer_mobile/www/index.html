@@ -98,6 +98,16 @@
         .card { background:var(--bg-card); border-radius:var(--radius-md); box-shadow:var(--shadow-card); padding:16px; margin-bottom:12px; }
         /* Buttons */
         .btn-primary { background:var(--primary); color:var(--on-primary); border:none; padding:14px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.95rem; width:100%; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; justify-content:center; gap:8px; }
+        /* Placeholder visibility fix */
+        input::placeholder, textarea::placeholder, select::placeholder { color: #999999 !important; opacity: 1 !important; }
+        input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: #999999 !important; opacity: 1 !important; }
+        input::-moz-placeholder, textarea::-moz-placeholder { color: #999999 !important; opacity: 1 !important; }
+        input:-ms-input-placeholder, textarea:-ms-input-placeholder { color: #999999 !important; opacity: 1 !important; }
+        /* OTP input placeholders */
+        .otp-input::placeholder { color: #bbbbbb !important; opacity: 1 !important; }
+        .otp-input::-webkit-input-placeholder { color: #bbbbbb !important; opacity: 1 !important; }
+        .otp-input::-moz-placeholder { color: #bbbbbb !important; opacity: 1 !important; }
+        .otp-input:-ms-input-placeholder { color: #bbbbbb !important; opacity: 1 !important; }
         .btn-primary:active { background:var(--primary-dark); }
         .btn-secondary { background:var(--bg-input); color:var(--text-primary); border:none; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:0.9rem; width:100%; cursor:pointer; transition:background 0.2s; }
         .btn-outline { background:transparent; color:var(--primary); border:2px solid var(--primary); padding:12px 20px; border-radius:var(--radius-md); font-weight:700; font-size:0.9rem; width:100%; cursor:pointer; }
@@ -1084,3 +1094,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Main Application Scripts -->
+<script src="js/utils.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
+</html>
