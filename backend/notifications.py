@@ -1,5 +1,6 @@
 import smtplib
 import sys
+import requests
 from email.mime.text import MIMEText
 from config import SMTP_SERVER, SMTP_PORT, EMAIL_USER, EMAIL_PASS
 from database import get_cursor, commit_db
