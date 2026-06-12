@@ -194,7 +194,12 @@ class FCM_Service:
                     print("FCM_Service: FIREBASE_SERVICE_ACCOUNT env var not set", file=sys.stderr)
                     return None
             else:
-                sa = json.loads(sa_json)
+                sa_json_clean = sa_json.strip()
+                if sa_json_clean.startswith("'") and sa_json_clean.endswith("'"):
+                    sa_json_clean = sa_json_clean[1:-1]
+                elif sa_json_clean.startswith('"') and sa_json_clean.endswith('"') and not sa_json_clean.startswith('"{'):
+                    sa_json_clean = sa_json_clean[1:-1]
+                sa = json.loads(sa_json_clean)
 
             # Build JWT for service account
             import base64
@@ -221,8 +226,11 @@ class FCM_Service:
             from cryptography.hazmat.primitives import hashes, serialization
             from cryptography.hazmat.primitives.asymmetric import padding
 
+            # Fix for Vercel: literal '\n' sequences in JSON env variables need to be actual newlines
+            private_key_str = sa['private_key'].replace('\\n', '\n')
+            
             private_key = serialization.load_pem_private_key(
-                sa['private_key'].encode(), password=None
+                private_key_str.encode(), password=None
             )
             signature = private_key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
             sig_b64 = base64.urlsafe_b64encode(signature).rstrip(b'=').decode()
