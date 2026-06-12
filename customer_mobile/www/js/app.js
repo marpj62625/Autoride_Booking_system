@@ -4742,20 +4742,20 @@ function loadLicenseDetailsForEdit() {
       console.log('- Back URL:', backUrl);
       console.log('- Fallback license_image_url:', data.license_image_url);
       
-      if (frontUrl) {
+      if (frontUrl && frontUrl !== 'null' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
         var prevF = document.getElementById('licenseEditPreviewFront');
         if (prevF) { 
-          prevF.src = frontUrl; 
+          prevF.src = buildImgUrl(frontUrl); 
           prevF.style.display = 'block';
-          console.log('Set front image preview using fallback:', frontUrl);
+          console.log('Set front image preview using fallback:', buildImgUrl(frontUrl));
         }
       }
-      if (backUrl) {
+      if (backUrl && backUrl !== 'null' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
         var prevB = document.getElementById('licenseEditPreviewBack');
         if (prevB) { 
-          prevB.src = backUrl; 
+          prevB.src = buildImgUrl(backUrl); 
           prevB.style.display = 'block';
-          console.log('Set back image preview:', backUrl);
+          console.log('Set back image preview:', buildImgUrl(backUrl));
         }
       }
       
@@ -4764,6 +4764,22 @@ function loadLicenseDetailsForEdit() {
     .catch(function(err) { 
       console.error('Failed to load license details for edit:', err);
     });
+}
+
+function viewLicenseImage(url) {
+  var modal = document.getElementById('licensePreviewModal');
+  var img = document.getElementById('licensePreviewImg');
+  if (modal && img) {
+    img.src = url;
+    modal.style.display = 'flex';
+  } else {
+    window.open(url, '_system');
+  }
+}
+
+function closeLicensePreview() {
+  var modal = document.getElementById('licensePreviewModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function loadProfile() {
@@ -4857,11 +4873,14 @@ function loadProfile() {
         var frontUrl = licenseData.license_front_url || licenseData.license_image_url || '';
         var backUrl = licenseData.license_back_url || '';
         
+        frontUrl = frontUrl ? buildImgUrl(frontUrl) : null;
+        backUrl = backUrl ? buildImgUrl(backUrl) : null;
+        
         console.log('License front URL (with fallback):', frontUrl);
         console.log('License back URL:', backUrl);
         console.log('Fallback license_image_url:', licenseData.license_image_url);
         
-        if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '') {
+        if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
           html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
                   '<img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
                   'onclick="viewLicenseImage(\'' + frontUrl + '\')" ' +
@@ -4874,7 +4893,7 @@ function loadProfile() {
                   '</div>';
         }
         
-        if (backUrl && backUrl !== 'null' && backUrl.trim() !== '') {
+        if (backUrl && backUrl !== 'null' && backUrl.trim() !== '' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
           html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
                   '<img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
                   'onclick="viewLicenseImage(\'' + backUrl + '\')" ' +
@@ -4895,12 +4914,12 @@ function loadProfile() {
         } else {
           // Add a helper message if there might be broken images  
           html += '<div style="margin-top:8px;text-align:center;">' +
-                  '<p style="font-size:0.7rem;color:var(--text-secondary);">?? Images not loading? Try re-uploading through Edit</p>' +
+                  '<p style="font-size:0.7rem;color:var(--text-secondary);">🧐 Images not loading? Try re-uploading through Edit</p>' +
                   '</div>';
         }
         
         licenseThumb.innerHTML = html;
-        console.log('License thumbnails HTML set with admin mobile fallback pattern');
+        console.log('License thumbnails HTML set with error handling');
       }
 
       // License detail fields - view mode (from new license_details table)

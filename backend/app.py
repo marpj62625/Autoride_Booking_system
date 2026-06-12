@@ -8442,7 +8442,7 @@ def get_license_details():
                     data = dict(row)
                     # Ensure all values are safe and handle None dates
                     for key, value in data.items():
-                        if isinstance(value, str) and len(value) > 100:
+                        if key not in ('license_front_url', 'license_back_url', 'license_image_url') and isinstance(value, str) and len(value) > 100:
                             data[key] = value[:97] + "..."
                         elif value is None:
                             data[key] = None
