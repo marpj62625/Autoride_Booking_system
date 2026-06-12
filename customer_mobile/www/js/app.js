@@ -4792,19 +4792,45 @@ function loadProfile() {
         console.log('License back URL:', backUrl);
         
         if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '') {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + frontUrl + '\')"></div>';
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
+                  '<img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
+                  'onclick="viewLicenseImage(\'' + frontUrl + '\')" ' +
+                  'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />' +
+                  '<div style="display:none;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Front Image<br>Not Available</div>' +
+                  '</div>';
+        } else {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
+                  '<div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Front Image<br>Not Uploaded</div>' +
+                  '</div>';
         }
         
         if (backUrl && backUrl !== 'null' && backUrl.trim() !== '') {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + backUrl + '\')"></div>';
+          html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
+                  '<img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
+                  'onclick="viewLicenseImage(\'' + backUrl + '\')" ' +
+                  'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />' +
+                  '<div style="display:none;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Back Image<br>Not Available</div>' +
+                  '</div>';
+        } else {
+          html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
+                  '<div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Back Image<br>Not Uploaded</div>' +
+                  '</div>';
         }
         
         if (!html) {
-          html = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photos uploaded yet.</p>';
+          html = '<div style="text-align:center;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);border:2px dashed var(--border);margin-bottom:10px;">' +
+                 '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">?? No license photos available</p>' +
+                 '<p style="font-size:0.75rem;color:var(--text-secondary);">Please re-upload your license images through the Edit section</p>' +
+                 '</div>';
+        } else {
+          // Add a helper message if there might be broken images
+          html += '<div style="margin-top:8px;text-align:center;">' +
+                  '<p style="font-size:0.7rem;color:var(--text-secondary);">?? Images not loading? Try re-uploading through Edit</p>' +
+                  '</div>';
         }
         
         licenseThumb.innerHTML = html;
-        console.log('License thumbnails HTML set:', html);
+        console.log('License thumbnails HTML set with error handling');
       }
 
       // License detail fields - view mode (from new license_details table)
