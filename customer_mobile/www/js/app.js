@@ -1018,7 +1018,10 @@ function initApp() {
           }
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : user.isVerified;
           Session.save(currentUser);
-        }).catch(function() {});
+          startBgSessionPolling();
+        }).catch(function() {
+          startBgSessionPolling();
+        });
       apiCall('/public/settings').then(function(s) {
         Object.assign(appSettings, s);
       }).catch(function() {});
@@ -1212,7 +1215,10 @@ function doLogin() {
         .then(function(v) {
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (data.is_verified || 0);
           Session.save(currentUser);
-        }).catch(function() {});
+          startBgSessionPolling();
+        }).catch(function() {
+          startBgSessionPolling();
+        });
       apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
       // Initialise Supabase client and load notifications
       if (typeof supabase !== 'undefined') {
@@ -1295,6 +1301,7 @@ function doForgotPassword() {
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
+  stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
     try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
@@ -1315,6 +1322,7 @@ function doLogout() {
 }
 
 function forceLogoutSilent(message) {
+  stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
     try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
@@ -1452,6 +1460,7 @@ function _finishGoogleLogin(idToken, email, name) {
         subscribeToNotifications(currentUser.id);
         initializePushForUser();
         startBgChatPolling();
+        startBgSessionPolling();
         showPage('page-home');
       } else {
         showToast('Login failed. Please try again.', 'error');
@@ -1465,6 +1474,7 @@ function _finishGoogleLogin(idToken, email, name) {
 
 function doLogout() {
   unsubscribeFromNotifications();
+  stopBgSessionPolling();
   notifList = [];
   Session.clear();
   currentUser = { id: null, fullName: '', isVerified: 0 };
@@ -5848,6 +5858,45 @@ function startBgChatPolling() {
 
 function stopBgChatPolling() {
   if (_bgChatPollTimer) { clearInterval(_bgChatPollTimer); _bgChatPollTimer = null; }
+}
+
+var _bgSessionPollTimer = null;
+function startBgSessionPolling() {
+  if (_bgSessionPollTimer) return;
+  _bgSessionPollTimer = setInterval(function() {
+    if (!currentUser.id) return;
+    apiCall('/user/verify-status?user_id=' + currentUser.id)
+      .then(function(v) {
+        if (v.force_logout_at) {
+          stopBgSessionPolling();
+          forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+          return;
+        }
+        var newVerify = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
+        if (currentUser.isVerified !== newVerify) {
+          currentUser.isVerified = newVerify;
+          Session.save(currentUser);
+          var badge = document.getElementById('profileVerifyBadge');
+          if (badge) {
+            var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+            badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+            badge.className = 'verify-badge verify-' + currentUser.isVerified;
+          }
+          var statusEl = document.getElementById('viewLicenseStatus');
+          if (statusEl) {
+            var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+            var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+            statusEl.textContent = statusMap[currentUser.isVerified] || '-';
+            statusEl.style.color = statusColor[currentUser.isVerified] || 'var(--text-main)';
+          }
+        }
+      })
+      .catch(function() {});
+  }, 20000);
+}
+
+function stopBgSessionPolling() {
+  if (_bgSessionPollTimer) { clearInterval(_bgSessionPollTimer); _bgSessionPollTimer = null; }
 }
 
 function escapeHtml(str) {
