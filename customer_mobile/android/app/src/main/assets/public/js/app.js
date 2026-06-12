@@ -81,6 +81,8 @@ var gpsMarker = null;
 // SUPABASE REALTIME (in-app notifications)
 var SUPABASE_URL = 'https://fydfsgjrlowrrtlmefwq.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
+// Google OAuth2 Web Client ID (for browser-based Google Sign-In fallback)
+var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 var supabaseClient = null;
 var notifChannel = null;
 var notifList = [];
@@ -277,7 +279,7 @@ var Session = {
   }
 };
 
-// ?? BOOKING SESSION: save/restore in-progress booking state (1 minute TTL) ??
+// BOOKING SESSION: save/restore in-progress booking state (1 minute TTL)
 var BOOKING_SESSION_KEY = 'autoride_booking_session';
 var BOOKING_SESSION_TTL = 60 * 1000; // 1 minute
 
@@ -1242,7 +1244,7 @@ function doGoogleLogin() {
         } else if (msg.includes('10') || code === '10') {
           showToast('Google Sign-In configuration error. Please contact support.', 'error');
         } else {
-          showToast('Google Sign-In failed. Please try again.', 'error');
+          showToast('Google Sign-In failed: ' + msg, 'error');
         }
       });
     return;
@@ -1519,7 +1521,7 @@ function _startActiveBookingCountdown(endDateStr) {
     el.style.color = result.urgent ? '#ef4444' : '#10b981';
     if (result.urgent && !_activeBookingNotified) {
       _activeBookingNotified = true;
-      showToast('?? Your rental ends in less than 24 hours!', 'error');
+      showToast('Your rental ends in less than 24 hours!', 'error');
       NotifStore.add('Your rental is ending soon - less than 24 hours remaining.');
     }
   }
@@ -1788,7 +1790,7 @@ function filterVehicles(filter, chipEl) {
   renderVehicles(filtered);
 }
 
-// ?? INLINE BROWSE: Transmission selected ? populate Color dropdown ??????????
+// INLINE BROWSE: Transmission selected - populate Color dropdown
 function onVehicleTransmissionChange(brandEnc, modelEnc, cardId) {
   var transEl = document.getElementById('vtrans-' + cardId);
   var colorWrap = document.getElementById('vcolor-wrap-' + cardId);
@@ -1823,7 +1825,7 @@ function onVehicleTransmissionChange(brandEnc, modelEnc, cardId) {
     .catch(function(err) { showToast(err.message, 'error'); });
 }
 
-// ?? INLINE BROWSE: Color selected ? show plate + image + Book button ?????????
+// INLINE BROWSE: Color selected - show plate + image + Book button
 function onVehicleColorChange(brandEnc, modelEnc, cardId) {
   var transEl = document.getElementById('vtrans-' + cardId);
   var colorEl = document.getElementById('vcolor-' + cardId);
@@ -4908,7 +4910,7 @@ function loadProfile() {
         
         if (!html) {
           html = '<div style="text-align:center;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);border:2px dashed var(--border);margin-bottom:10px;">' +
-                 '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">?? No license photos available</p>' +
+                 '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">No license photos available</p>' +
                  '<p style="font-size:0.75rem;color:var(--text-secondary);">Please re-upload your license images through the Edit section</p>' +
                  '</div>';
         }
@@ -5113,7 +5115,7 @@ function submitLicense() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
       showLoading(false);
-      // Force logout after upload Ã¯Â¿Â½ user must wait for admin verification before re-logging in
+      // Force logout after upload - user must wait for admin verification before re-logging in
       showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
       setTimeout(function() {
         Session.clear();
@@ -5356,7 +5358,7 @@ var LiveChat = (function () {
   var _currentAdminId = null;
   var _lastMsgId = 0;
 
-  // ?? Inbox ??????????????????????????????????????????????????
+  // Inbox
   function loadInbox() {
     var el = document.getElementById('liveChatContent');
     if (!el) return;
@@ -5406,7 +5408,7 @@ var LiveChat = (function () {
       });
   }
 
-  // ?? Conversation ???????????????????????????????????????????
+  // Conversation
   function openConversation(adminId, adminName) {
     _currentAdminId = adminId;
     _lastMsgId = 0;
