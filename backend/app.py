@@ -8392,9 +8392,9 @@ def get_license_details():
                 cur.execute("""
                     SELECT id, user_id, 
                            SUBSTRING(full_name, 1, 50) as full_name,
-                           date_of_birth, 
+                           date_of_birth::text as date_of_birth, 
                            SUBSTRING(license_number, 1, 20) as license_number,
-                           expiry_date,
+                           expiry_date::text as expiry_date,
                            SUBSTRING(issuing_country_state, 1, 30) as issuing_country_state,
                            SUBSTRING(license_class, 1, 10) as license_class,
                            SUBSTRING(emergency_contact_name, 1, 50) as emergency_contact_name,
@@ -8412,10 +8412,12 @@ def get_license_details():
                 row = cur.fetchone()
                 if row:
                     data = dict(row)
-                    # Ensure all values are safe
+                    # Ensure all values are safe and handle None dates
                     for key, value in data.items():
                         if isinstance(value, str) and len(value) > 100:
                             data[key] = value[:97] + "..."
+                        elif value is None:
+                            data[key] = None
                     response_data['data'] = data
             
         except Exception as db_error:
@@ -8428,13 +8430,26 @@ def get_license_details():
         
         # Ensure response is never too large
         import json
-        response_json = json.dumps(response_data)
-        if len(response_json) > 10000:  # 10KB limit
+        import datetime
+        
+        def safe_serialize(obj):
+            if isinstance(obj, (datetime.date, datetime.datetime)):
+                return obj.isoformat()
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+        
+        try:
+            response_json = json.dumps(response_data, default=safe_serialize)
+            if len(response_json) > 10000:  # 10KB limit
+                return jsonify({
+                    'error': 'Response too large',
+                    'user_id': user_id,
+                    'table_exists': response_data.get('table_exists', False)
+                }), 413
+        except Exception as json_err:
             return jsonify({
-                'error': 'Response too large',
-                'user_id': user_id,
-                'table_exists': response_data.get('table_exists', False)
-            }), 413
+                'error': f'JSON serialization error: {str(json_err)[:100]}',
+                'user_id': user_id
+            }), 500
         
         return jsonify(response_data), 200
         
