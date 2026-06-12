@@ -285,76 +285,85 @@
             }
         }
 
-        function doGoogleLogin() {
-            var GOOGLE_CLIENT_ID = '857792394948-vrf515cmh0d1lalr6g1d4g0alaqci903.apps.googleusercontent.com';
-            var btn = document.getElementById('btnGoogleLogin');
-            
-            // If Google API not loaded yet, show loading and retry up to 3 times
-            function attemptGoogleLogin(retries) {
-                if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                    if (retries <= 0) {
-                        showMessage('Google Sign-In could not load. Please refresh the page and try again.', true);
-                        if (btn) btn.disabled = false;
+        var GOOGLE_CLIENT_ID = '857792394948-vrf515cmh0d1lalr6g1d4g0alaqci903.apps.googleusercontent.com';
+        var _googleTokenClient = null;
+
+        // Pre-initialize Google token client as soon as the GSI script loads
+        function initGoogleTokenClient() {
+            if (_googleTokenClient) return; // already initialized
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return;
+            _googleTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'email profile openid',
+                callback: function(tokenResponse) {
+                    var btn = document.getElementById('btnGoogleLogin');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google'; }
+                    if (tokenResponse.error) {
+                        showMessage('Google Sign-In cancelled or failed: ' + tokenResponse.error, true);
                         return;
                     }
-                    if (btn) btn.textContent = 'Loading Google Sign-In...';
-                    setTimeout(function() { attemptGoogleLogin(retries - 1); }, 1500);
-                    return;
-                }
-                // Restore button
-                if (btn) { btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google'; btn.disabled = false; }
-                
-                var tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: GOOGLE_CLIENT_ID,
-                    scope: 'email profile openid',
-                    callback: function(tokenResponse) {
-                        if (tokenResponse.error) {
-                            showMessage('Google Sign-In failed: ' + tokenResponse.error, true);
-                            return;
-                        }
-                        showMessage('Verifying Google account...');
-                        // Fetch user info from Google then authenticate with backend
-                        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                            headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
-                        })
-                        .then(function(r) { return r.json(); })
-                        .then(function(userInfo) {
-                            return fetch(window.API_BASE + '/api/auth/google', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    id_token: tokenResponse.access_token,
-                                    email: userInfo.email,
-                                    name: userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
-                                })
-                            });
-                        })
-                        .then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
-                        .then(function(result) {
-                            if (result.ok) {
-                                if (result.data.verification_required) {
-                                    unverifiedEmail = result.data.email;
-                                    displayEmail.textContent = result.data.email;
-                                    authContainer.classList.add('verification-active');
-                                    showMessage(result.data.message || 'Please verify your email.');
-                                } else {
-                                    finalizeLogin(result.data);
-                                }
-                            } else {
-                                showMessage('Google Login Error: ' + (result.data.error || 'Unknown error'), true);
-                            }
-                        })
-                        .catch(function(err) {
-                            showMessage('Server connection error. Please try again.', true);
-                            console.error('Google login error:', err);
+                    showMessage('Verifying Google account...');
+                    // Fetch user info from Google then authenticate with backend
+                    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(userInfo) {
+                        return fetch(window.API_BASE + '/api/auth/google', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id_token: tokenResponse.access_token,
+                                email: userInfo.email,
+                                name: userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
+                            })
                         });
-                    }
-                });
-                tokenClient.requestAccessToken({ prompt: 'select_account' });
+                    })
+                    .then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
+                    .then(function(result) {
+                        if (result.ok) {
+                            if (result.data.verification_required) {
+                                unverifiedEmail = result.data.email;
+                                displayEmail.textContent = result.data.email;
+                                authContainer.classList.add('verification-active');
+                                showMessage(result.data.message || 'Please verify your email.');
+                            } else {
+                                finalizeLogin(result.data);
+                            }
+                        } else {
+                            showMessage('Google Login Error: ' + (result.data.error || 'Unknown error'), true);
+                        }
+                    })
+                    .catch(function(err) {
+                        showMessage('Server connection error. Please try again.', true);
+                        console.error('Google login error:', err);
+                    });
+                }
+            });
+        }
+
+        // Try to init immediately, then retry when GSI script loads
+        initGoogleTokenClient();
+        // GSI calls window.onGoogleLibraryLoad when ready
+        window.onGoogleLibraryLoad = function() { initGoogleTokenClient(); };
+
+        function doGoogleLogin() {
+            var btn = document.getElementById('btnGoogleLogin');
+            // If Google API not loaded yet, show error
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                showMessage('Google Sign-In is not available. Please refresh the page and try again.', true);
+                return;
             }
-            
-            if (btn) btn.disabled = true;
-            attemptGoogleLogin(3);
+            // Re-init client if somehow not done yet
+            if (!_googleTokenClient) initGoogleTokenClient();
+            if (!_googleTokenClient) {
+                showMessage('Google Sign-In failed to initialize. Please refresh and try again.', true);
+                return;
+            }
+            // Disable button to prevent double-clicks
+            if (btn) { btn.disabled = true; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Signing in...'; }
+            // This MUST be called synchronously from user click for popup to not be blocked
+            _googleTokenClient.requestAccessToken({ prompt: 'select_account' });
         }
 
         // ---- Forgot Password Functions ----
