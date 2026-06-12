@@ -92,6 +92,131 @@ function getPreferences() {
 function getCamera() {
   return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) || null;
 }
+function getPushNotifications() {
+  return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) || null;
+}
+
+// PUSH NOTIFICATIONS SERVICE
+var PushNotifications = {
+  isInitialized: false,
+  currentToken: null,
+  
+  init: function() {
+    if (this.isInitialized) return Promise.resolve();
+    
+    var pushPlugin = getPushNotifications();
+    if (!pushPlugin) {
+      console.log('Push notifications not available (web browser)');
+      return Promise.resolve();
+    }
+
+    console.log('Initializing push notifications...');
+    
+    // Request permission first
+    return pushPlugin.requestPermissions().then(function(result) {
+      console.log('Permission result:', result);
+      if (result.receive === 'granted') {
+        console.log('Push notification permission granted');
+        
+        // Register for push notifications
+        return pushPlugin.register().then(function() {
+          console.log('Push registration initiated successfully');
+        });
+      } else {
+        console.log('Push notification permission denied:', result.receive);
+        showToast('Push notifications disabled - permission denied', 'info');
+        return Promise.reject('Permission denied: ' + result.receive);
+      }
+    }).then(function() {
+      // Add event listeners
+      pushPlugin.addListener('registration', function(token) {
+        console.log('Push registration success, token: ' + token.value);
+        PushNotifications.currentToken = token.value;
+        PushNotifications.sendTokenToServer(token.value);
+        showToast('Push notifications enabled successfully!', 'success');
+      });
+
+      pushPlugin.addListener('registrationError', function(error) {
+        console.error('Push registration error: ' + JSON.stringify(error));
+        
+        var errorMsg = 'Push notification setup failed';
+        if (error.error && error.error.includes('FIS_AUTH_ERROR')) {
+          errorMsg = 'Firebase configuration needed for push notifications';
+          console.log('FIS_AUTH_ERROR detected - Firebase project not properly configured');
+        } else if (error.error) {
+          errorMsg = error.error;
+        }
+        showToast(errorMsg, 'warning');
+      });
+
+      pushPlugin.addListener('pushNotificationReceived', function(notification) {
+        console.log('Push notification received: ' + JSON.stringify(notification));
+        PushNotifications.handleNotification(notification);
+      });
+
+      pushPlugin.addListener('pushNotificationActionPerformed', function(notification) {
+        console.log('Push notification action performed: ' + JSON.stringify(notification));
+        PushNotifications.handleNotificationAction(notification);
+      });
+
+      PushNotifications.isInitialized = true;
+      console.log('Push notifications listeners initialized successfully');
+      
+    }).catch(function(error) {
+      console.error('Error initializing push notifications: ' + JSON.stringify(error));
+      
+      // Handle specific Firebase errors gracefully
+      if (error.includes && error.includes('FIS_AUTH_ERROR')) {
+        showToast('In-app notifications active (Firebase setup needed for push)', 'info');
+      } else if (!error.includes('Permission denied')) {
+        showToast('Push setup incomplete - in-app notifications will work', 'warning');
+      }
+    });
+  },
+
+  sendTokenToServer: function(token) {
+    if (!token || !currentUser.id) return;
+    
+    console.log('Sending FCM token to server for user: ' + currentUser.id);
+    saveFcmToken(token);
+  },
+
+  handleNotification: function(notification) {
+    console.log('Handling received notification:', notification);
+    
+    // Show toast notification in app
+    var title = notification.title || 'Autoride';
+    var body = notification.body || '';
+    
+    if (body) {
+      showToast(title + ': ' + body, 'info');
+    }
+    
+    // Add to local notification store
+    NotifStore.add(body || title);
+    
+    // Refresh notifications list if currently visible
+    var notifPage = document.getElementById('page-notifications');
+    if (notifPage && notifPage.classList.contains('active')) {
+      loadNotifications(currentUser.id);
+    }
+  },
+
+  handleNotificationAction: function(notification) {
+    console.log('Handling notification action:', notification);
+    
+    // Handle notification tap - could navigate to specific page
+    var data = notification.notification && notification.notification.data;
+    
+    if (data && data.page) {
+      // Navigate to specific page mentioned in notification
+      showPage(data.page);
+    } else {
+      // Default: show notifications page
+      showOverlay('page-notifications');
+    }
+  }
+};
 
 // SESSION - expires after 8 hours of inactivity
 var SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
@@ -5281,5 +5406,58 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// PUSH NOTIFICATIONS INITIALIZATION
+// Initialize push notifications when the app starts - with safe error handling
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('App loaded, checking push notification support...');
+  
+  // Only try to initialize if push notifications plugin is available and user is logged in
+  setTimeout(function() {
+    try {
+      var pushPlugin = getPushNotifications();
+      if (pushPlugin && currentUser && currentUser.id) {
+        console.log('User logged in, initializing push notifications...');
+        PushNotifications.init().catch(function(error) {
+          console.log('Push notifications init failed (this is normal without Firebase): ' + error);
+        });
+      } else {
+        console.log('Push notifications not available or user not logged in yet');
+      }
+    } catch (error) {
+      console.log('Push notification check failed safely: ' + error);
+    }
+  }, 2000); // Increased delay to ensure everything is loaded
+});
 
+// Also initialize when Capacitor is ready (for native apps)
+document.addEventListener('deviceready', function() {
+  console.log('Capacitor device ready, checking push notifications...');
+  setTimeout(function() {
+    try {
+      if (currentUser && currentUser.id) {
+        PushNotifications.init().catch(function(error) {
+          console.log('Push notifications init failed: ' + error);
+        });
+      }
+    } catch (error) {
+      console.log('Push notification deviceready check failed safely: ' + error);
+    }
+  }, 1000);
+});
 
+// Re-register FCM token when user logs in (call this after successful login)
+function initializePushForUser() {
+  try {
+    if (currentUser.id && PushNotifications.currentToken) {
+      console.log('Re-registering FCM token for logged in user: ' + currentUser.id);
+      PushNotifications.sendTokenToServer(PushNotifications.currentToken);
+    } else if (currentUser.id) {
+      console.log('User logged in, initializing push notifications...');
+      PushNotifications.init().catch(function(error) {
+        console.log('Push init after login failed (normal without Firebase): ' + error);
+      });
+    }
+  } catch (error) {
+    console.log('Push initialization for user failed safely: ' + error);
+  }
+}
