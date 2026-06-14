@@ -906,11 +906,17 @@ function showPage(id) {
   if (id === 'page-more') loadMorePage();
 }
 
+var _overlayZBase = 500;
+var _overlayZCounter = 0;
+
 function showOverlay(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.add('active');
   el.style.display = 'block';
+  // Bump z-index so the most-recently opened overlay always sits on top
+  _overlayZCounter++;
+  el.style.zIndex = String(_overlayZBase + _overlayZCounter);
   if (id === 'page-notifications') openNotificationsPage();
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
@@ -925,8 +931,10 @@ function closeOverlay(id) {
   if (!el) return;
   el.classList.remove('active');
   el.style.display = 'none';
+  el.style.zIndex = '';
   if (id === 'page-gps-map') stopGpsPolling();
   if (id === 'page-livechat') LiveChat.stopPolling();
+  if (id === 'page-payment') stopPaymentPolling();
 }
 
 function statusPill(status) {
@@ -1188,6 +1196,29 @@ function handleBackButton() {
             var bookingId = parseInt(match[1]);
             // Auto-check payment status
             checkPaymentStatus(bookingId, 0, 'online');
+          }
+        }
+      });
+      // Foreground resumption - check status when app returns from background (user finished checkout and switched back)
+      window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
+        if (state.isActive) {
+          console.log('App resumed, checking active payment status...');
+          var paymentOverlay = document.getElementById('page-payment');
+          if (paymentOverlay && (paymentOverlay.style.display === 'block' || paymentOverlay.classList.contains('active'))) {
+            // Find wait overlay button data
+            var checkBtn = document.querySelector('#paymentContent .btn-primary');
+            if (checkBtn) {
+              var onclickStr = checkBtn.getAttribute('onclick') || '';
+              // Match e.g. checkPaymentStatus(123, 2500, 'gcash')
+              var match = onclickStr.match(/checkPaymentStatus\((\d+)\s*,\s*([\d.]+)\s*,\s*['"]([^'"]+)['"]/);
+              if (match) {
+                var bookingId = parseInt(match[1]);
+                var amount = parseFloat(match[2]);
+                var method = match[3];
+                console.log('Detected active payment waiting for booking #' + bookingId + ', auto verifying...');
+                autoCheckPaymentStatus(bookingId, amount, method);
+              }
+            }
           }
         }
       });
@@ -2986,26 +3017,32 @@ function confirmAndBook() {
 }
 
 // PAYMENT - PayMongo Integration
-function openPaymentScreen(bookingId, priceResult, payType) {
+function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
   if (!el) return;
 
-  var breakdownHtml =
-    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
-    // Render all available addons as toggleable on payment page
-    (ADDON_OPTIONS.map(function(opt, idx) {
-      var isSelected = selectedAddons.some(function(a) { return a.name === opt.name; });
-      var aPrice = opt.pricePerDay * priceResult.days;
-      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;" onclick="togglePaymentAddon(' + idx + ', ' + bookingId + ')">' +
-             '<span><i class="fas ' + (isSelected ? 'fa-check-square' : 'fa-square') + '" style="color:var(--' + (isSelected ? 'success' : 'border') + ');margin-right:6px;font-size:1.1em;vertical-align:middle;"></i> ' + opt.name + '</span>' +
-             '<span>' + formatPHP(aPrice) + '</span></div>';
-    }).join('')) +
-    (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
-    (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
-    (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
-    '<div class="price-row total"><span>Total</span><span>' + formatPHP(priceResult.total) + '</span></div>' +
-    (payType === 'Downpayment' ?
+  var breakdownHtml = '';
+  if (isExistingBooking) {
+    breakdownHtml = '<div class="price-row"><span>Total Booking Price</span><span>' + formatPHP(priceResult.total) + '</span></div>';
+  } else {
+    breakdownHtml =
+      '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
+      // Render all available addons as toggleable on payment page
+      (ADDON_OPTIONS.map(function(opt, idx) {
+        var isSelected = selectedAddons.some(function(a) { return a.name === opt.name; });
+        var aPrice = opt.pricePerDay * priceResult.days;
+        return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;" onclick="togglePaymentAddon(' + idx + ', ' + bookingId + ')">' +
+               '<span><i class="fas ' + (isSelected ? 'fa-check-square' : 'fa-square') + '" style="color:var(--' + (isSelected ? 'success' : 'border') + ');margin-right:6px;font-size:1.1em;vertical-align:middle;"></i> ' + opt.name + '</span>' +
+               '<span>' + formatPHP(aPrice) + '</span></div>';
+      }).join('')) +
+      (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
+      (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
+      (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
+      '<div class="price-row total"><span>Total</span><span>' + formatPHP(priceResult.total) + '</span></div>';
+  }
+
+  breakdownHtml += (payType === 'Downpayment' ?
       '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20%)</span><span>' + formatPHP(nowDue) + '</span></div>' +
       '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance</span><span>' + formatPHP(priceResult.balanceAmount) + '</span></div>' : '');
 
@@ -3024,74 +3061,78 @@ function openPaymentScreen(bookingId, priceResult, payType) {
     '<div style="color:#fff;font-size:1.4rem;font-weight:800;">' + formatPHP(nowDue) + '</div>' +
     '</div></div>' +
 
-    // PayMongo payment methods
+    // PayMongo payment methods - tapping GCash/Maya/Card immediately redirects to PayMongo
     '<div class="card">' +
     '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
-    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Secure payments powered by PayMongo</p>' +
+    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Tap a method to proceed — secure payments via PayMongo</p>' +
 
-    // GCash
-    '<div class="option-card" id="pmGcash" onclick="selectPayMethod(\'gcash\',this)" style="margin-bottom:8px;">' +
+    // GCash - immediate PayMongo redirect
+    '<div class="option-card" id="pmGcash" onclick="directPayMethod(\'gcash\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<span style="color:#fff;font-weight:900;font-size:0.85rem;">G</span></div>' +
-    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Pay via GCash e-wallet</small></div>' +
-    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Tap to pay via GCash</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#0070e0;margin-left:auto;"></i>' +
     '</div>' +
 
-    // Maya
-    '<div class="option-card" id="pmMaya" onclick="selectPayMethod(\'maya\',this)" style="margin-bottom:8px;">' +
+    // Maya - immediate PayMongo redirect
+    '<div class="option-card" id="pmMaya" onclick="directPayMethod(\'maya\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<span style="color:#fff;font-weight:900;font-size:0.85rem;">M</span></div>' +
-    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Pay via Maya e-wallet</small></div>' +
-    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Tap to pay via Maya</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#00b4d8;margin-left:auto;"></i>' +
     '</div>' +
 
-    // Credit/Debit Card
-    '<div class="option-card" id="pmCard" onclick="selectPayMethod(\'card\',this)" style="margin-bottom:8px;">' +
+    // Credit/Debit Card - immediate PayMongo redirect
+    '<div class="option-card" id="pmCard" onclick="directPayMethod(\'card\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
     '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--text-secondary);">Visa, Mastercard, JCB</small></div>' +
-    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '<i class="fas fa-arrow-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    // Cash
+    // Cash - manual flow, shows fields below
     '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'cash\',this)">' +
     '<div style="width:40px;height:40px;background:#2dc653;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-money-bill-wave" style="color:#fff;font-size:1rem;"></i></div>' +
     '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay at our office upon pickup</small></div>' +
+    '<i class="fas fa-chevron-down" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    '<input type="hidden" id="payMethod" value="gcash">' +
+    '<input type="hidden" id="payMethod" value="">' +
     '</div>' +
 
-    // Cash reference fields (only for cash)
+    // Cash reference fields (only shown when Cash is selected)
     '<div class="card" id="cashPayFields" style="display:none;">' +
+    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-money-bill" style="color:#2dc653;margin-right:8px;"></i>Cash Payment Details</h4>' +
     '<div class="form-group"><label>Reference / Transaction Number (optional)</label>' +
     '<input type="text" id="payRef" placeholder="e.g. 1234567890"></div>' +
     '<div class="form-group"><label>Payment Screenshot / Proof (optional)</label>' +
     '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>' +
     '<img id="payProofPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;display:none;">' +
-    '</div></div>' +
+    '</div>' +
+    '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
+    '<button class="btn-primary" style="margin-bottom:8px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-check"></i> Confirm Cash Payment</button>' +
+    '</div>' +
 
-    // Split payment
+    // Split payment (new bookings only)
+    (!isExistingBooking ? 
     '<div class="card" style="border:1.5px dashed var(--primary);">' +
     '<button class="btn-outline" onclick="showOverlay(\'page-split-payment\')" style="width:100%;">' +
     '<i class="fas fa-users"></i> Split Payment with a Friend</button>' +
-    '</div>' +
+    '</div>' : '') +
 
-    '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
-    '<i class="fas fa-lock"></i> Pay ' + formatPHP(nowDue) + '</button>' +
+    '<span class="field-error" id="payErrOnline" style="display:none;margin-bottom:12px;text-align:center;"></span>' +
     '</div>';
-
-  // Auto-select GCash
-  var gcashEl = document.getElementById('pmGcash');
-  if (gcashEl) gcashEl.classList.add('selected');
 
   showOverlay('page-payment');
 }
 
 
 function togglePaymentAddon(idx, bookingId) {
+  if (activeBookingData && activeBookingData.id === bookingId) {
+    return;
+  }
   var opt = ADDON_OPTIONS[idx];
   var days = _pendingPriceResult.days;
   var existingIdx = selectedAddons.findIndex(function(a) { return a.name === opt.name; });
@@ -3119,6 +3160,20 @@ function togglePaymentAddon(idx, bookingId) {
   
   // Re-render payment screen
   openPaymentScreen(bookingId, _pendingPriceResult, _pendingPayType);
+}
+
+// directPayMethod: immediately triggers PayMongo for GCash/Maya/Card (no extra button needed)
+function directPayMethod(method, bookingId, amount) {
+  var methodEl = document.getElementById('payMethod');
+  if (methodEl) methodEl.value = method;
+  // Visual feedback - mark the tapped card as selected
+  var cards = document.querySelectorAll('#paymentContent .option-card');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+  var idMap = { gcash: 'pmGcash', maya: 'pmMaya', card: 'pmCard' };
+  var card = document.getElementById(idMap[method]);
+  if (card) card.classList.add('selected');
+  // Immediately call PayMongo
+  submitPayment(bookingId, amount);
 }
 
 function selectPayMethod(method, el) {
@@ -3188,12 +3243,17 @@ function submitPayment(bookingId, amount) {
 
   // Online payment - redirect to PayMongo
   showLoading(true);
+  var paymentTypeForPaymongo = _pendingPayType || 'Full';
+  if (activeBookingData && activeBookingData.payment_type) {
+    paymentTypeForPaymongo = activeBookingData.payment_type;
+  }
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
       booking_id: bookingId,
       amount: amount,
       method: method,
+      payment_type: paymentTypeForPaymongo,
       description: 'Autoride Booking #' + bookingId,
       customer_name: currentUser.fullName || '',
       customer_email: currentUser.email || ''
@@ -3220,31 +3280,118 @@ function submitPayment(bookingId, amount) {
     });
 }
 
+var _paymentPollInterval = null;
+
 function showPaymentWaiting(bookingId, amount, method) {
   var el = document.getElementById('paymentContent');
   if (!el) return;
+  
+  // Clear any existing polling interval
+  if (_paymentPollInterval) {
+    clearInterval(_paymentPollInterval);
+    _paymentPollInterval = null;
+  }
+  
+  // Remove any previous browser event listeners
+  if (window._browserFinishedListener) {
+    try { window._browserFinishedListener.remove(); } catch(e) {}
+    window._browserFinishedListener = null;
+  }
+  if (window._browserPageLoadedListener) {
+    try { window._browserPageLoadedListener.remove(); } catch(e) {}
+    window._browserPageLoadedListener = null;
+  }
+
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
   el.innerHTML =
     '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Waiting for Payment</h2></div>' +
     '<div class="scroll-content" style="padding-bottom:100px;text-align:center;padding-top:40px;">' +
     '<div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">' +
     '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">Complete Payment in ' + methodLabel + '</h3>' +
-    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there, then return here.</p>' +
+    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there. This page will update automatically.</p>' +
     '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
     '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
     '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
     '</div>' +
-    '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\')">' +
+    '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\', false)">' +
     '<i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>' +
-    '<button class="btn-secondary" onclick="closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
+    '<button class="btn-secondary" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
     '</div>';
+
+  // Add Capacitor Browser event listeners for automatic detection
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    // Auto-check when user closes the browser (back button or done)
+    window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
+      console.log('Browser closed, auto-checking payment status for booking #' + bookingId);
+      autoCheckPaymentStatus(bookingId, amount, method);
+    }).then(function(listener) {
+      window._browserFinishedListener = listener;
+    }).catch(function() {});
+
+    // Also check when browser navigates to success URL
+    window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', function() {
+      // Poll quickly after each page load in the browser
+      setTimeout(function() {
+        autoCheckPaymentStatus(bookingId, amount, method);
+      }, 1500);
+    }).then(function(listener) {
+      window._browserPageLoadedListener = listener;
+    }).catch(function() {});
+  }
+
+  // Start polling every 3 seconds
+  _paymentPollInterval = setInterval(function() {
+    autoCheckPaymentStatus(bookingId, amount, method);
+  }, 3000);
+}
+
+
+function stopPaymentPolling() {
+  if (_paymentPollInterval) {
+    clearInterval(_paymentPollInterval);
+    _paymentPollInterval = null;
+  }
+  // Clean up browser event listeners
+  if (window._browserFinishedListener) {
+    try { window._browserFinishedListener.remove(); } catch(e) {}
+    window._browserFinishedListener = null;
+  }
+  if (window._browserPageLoadedListener) {
+    try { window._browserPageLoadedListener.remove(); } catch(e) {}
+    window._browserPageLoadedListener = null;
+  }
+}
+
+var _paymentCheckInProgress = false;
+function autoCheckPaymentStatus(bookingId, amount, method) {
+  if (_paymentCheckInProgress) return; // Prevent concurrent checks
+  _paymentCheckInProgress = true;
+  apiCall('/paymongo/status/' + bookingId)
+    .then(function(data) {
+      _paymentCheckInProgress = false;
+      if (data.paid) {
+        stopPaymentPolling();
+        // Close in-app browser if still open
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.close().catch(function() {});
+        }
+        BookingSession.clear();
+        closeOverlay('page-payment');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
+        loadNotifications(currentUser.id);
+        loadBookings();
+        showPage('page-bookings');
+      }
+    })
+    .catch(function() { _paymentCheckInProgress = false; });
 }
 
 function checkPaymentStatus(bookingId, amount, method) {
   showLoading(true);
+  stopPaymentPolling();
   // Close in-app browser if still open
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
@@ -3295,12 +3442,17 @@ function showPaymentFailed(bookingId, amount, method, message) {
 
 function retryPayment(bookingId, amount, method) {
   showLoading(true);
+  var paymentTypeForPaymongo = _pendingPayType || 'Full';
+  if (activeBookingData && activeBookingData.payment_type) {
+    paymentTypeForPaymongo = activeBookingData.payment_type;
+  }
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
       booking_id: bookingId,
       amount: amount,
       method: method,
+      payment_type: paymentTypeForPaymongo,
       description: 'Autoride Booking #' + bookingId,
       customer_name: currentUser.fullName || currentUser.full_name || '',
       customer_email: currentUser.email || ''
@@ -3517,9 +3669,43 @@ function renderBookingsList(data) {
 
 function openBookingDetail(bookingId) {
   if (!currentUser.id) return;
+
+  // Use cached data first for instant response (avoids slow PayMongo polling on each click)
+  var cachedBooking = null;
+  if (_allBookingsData && _allBookingsData.length) {
+    for (var ci = 0; ci < _allBookingsData.length; ci++) {
+      if (_allBookingsData[ci].id === bookingId) { cachedBooking = _allBookingsData[ci]; break; }
+    }
+  }
+  if (cachedBooking) {
+    activeBookingData = cachedBooking;
+    renderBookingDetail(cachedBooking);
+    showOverlay('page-booking-detail');
+    // Background refresh to get latest status without blocking UI
+    apiCall('/user-bookings?user_id=' + currentUser.id)
+      .then(function(bookings) {
+        var fresh = null;
+        for (var i = 0; i < bookings.length; i++) {
+          if (bookings[i].id === bookingId) { fresh = bookings[i]; break; }
+        }
+        if (fresh) {
+          _allBookingsData = bookings;
+          // Only re-render if status changed
+          if (fresh.payment_status !== cachedBooking.payment_status || fresh.status !== cachedBooking.status) {
+            activeBookingData = fresh;
+            renderBookingDetail(fresh);
+          }
+        }
+      })
+      .catch(function() {});
+    return;
+  }
+
+  // Fallback: fetch from API if not in cache
   showLoading(true);
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(bookings) {
+      _allBookingsData = bookings;
       var b = null;
       for (var i = 0; i < bookings.length; i++) {
         if (bookings[i].id === bookingId) { b = bookings[i]; break; }
@@ -3537,6 +3723,7 @@ function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
+  var canPayNow = b.payment_status === 'Unpaid' && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
 
@@ -3587,9 +3774,13 @@ function renderBookingDetail(b) {
   // Primary action button - customer-relevant only
   var primaryAction = '';
   var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing');
+  if (canPayNow) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Now (' + formatPHP(b.total_price) + ')</button>';
+  }
   if (canPayBalance) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
-  } else if (canReview) {
+    primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
+  }
+  if (!canPayNow && !canPayBalance && canReview) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
   }
   if (canExtend) {
@@ -4463,7 +4654,68 @@ function openPayBalanceScreen(bookingId, balance) {
     '<span class="field-error" id="balErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
     '<button class="btn-primary" onclick="submitBalancePayment(' + bookingId + ',' + balance + ')">Pay ' + formatPHP(balance) + '</button>' +
     '</div>';
+  // Force hide booking detail before showing payment overlay
+  var detailEl = document.getElementById('page-booking-detail');
+  if (detailEl) {
+    detailEl.classList.remove('active');
+    detailEl.style.display = 'none';
+    detailEl.style.zIndex = '';
+  }
   showOverlay('page-payment');
+}
+
+// Resume full payment for Unpaid bookings from the booking detail view
+function openPayNowFromDetail(bookingId) {
+  // Try activeBookingData first, then fall back to _allBookingsData cache
+  var b = activeBookingData;
+  if (!b || b.id !== bookingId) {
+    if (typeof _allBookingsData !== 'undefined' && _allBookingsData) {
+      for (var i = 0; i < _allBookingsData.length; i++) {
+        if (_allBookingsData[i].id === bookingId) { b = _allBookingsData[i]; break; }
+      }
+    }
+  }
+  if (!b || b.id !== bookingId) {
+    showToast('Booking data not available. Please try again.', 'error');
+    return;
+  }
+  var total = parseFloat(b.total_price) || 0;
+  var days = 1;
+  var start = b.start_date ? b.start_date.split('T')[0] : null;
+  var end = b.end_date ? b.end_date.split('T')[0] : null;
+  if (start && end) {
+    var s = new Date(start), e = new Date(end);
+    days = Math.max(1, Math.round((e - s) / 86400000));
+  }
+  var dailyRate = parseFloat(b.daily_rate) || 0;
+  var downpaymentAmount = parseFloat((total * 0.20).toFixed(2));
+  var balanceAmount = parseFloat((total * 0.80).toFixed(2));
+  // Build a synthetic priceResult from stored booking data
+  var priceResult = {
+    days: days,
+    basePrice: dailyRate * days,
+    addonPrice: 0,
+    insurancePrice: 0,
+    longTermDiscount: 0,
+    couponDiscount: 0,
+    pointsDiscount: 0,
+    downpaymentAmount: downpaymentAmount,
+    balanceAmount: balanceAmount,
+    total: total,
+    pointsEarned: Math.floor(total / 100)
+  };
+  _pendingPriceResult = priceResult;
+  _pendingPayType = 'Full';
+  activeBookingData = b;
+  // Force hide booking detail completely before opening payment
+  var detailEl = document.getElementById('page-booking-detail');
+  if (detailEl) {
+    detailEl.classList.remove('active');
+    detailEl.style.display = 'none';
+    detailEl.style.zIndex = '';
+  }
+  // Open payment screen immediately (no setTimeout needed since we force-hid the overlay above)
+  openPaymentScreen(bookingId, priceResult, 'Full', true);
 }
 
 function submitBalancePayment(bookingId, amount) {
@@ -4736,9 +4988,9 @@ var Profile = {
 
     showLoading(true);
     
-    // Compress both front and back images if they are newly chosen
-    var frontPromise = _licenseFrontBlob ? compressImage(_licenseFrontBlob, 1200, 1200, 0.8) : Promise.resolve(null);
-    var backPromise = _licenseBackBlob ? compressImage(_licenseBackBlob, 1200, 1200, 0.8) : Promise.resolve(null);
+    // Compress both front and back images more aggressively (800x800, 0.6 quality) to fit Vercel payload limit (4.5MB) and speed up uploads
+    var frontPromise = _licenseFrontBlob ? compressImage(_licenseFrontBlob, 800, 800, 0.6) : Promise.resolve(null);
+    var backPromise = _licenseBackBlob ? compressImage(_licenseBackBlob, 800, 800, 0.6) : Promise.resolve(null);
 
     Promise.all([frontPromise, backPromise]).then(function(compressedBlobs) {
       var compressedFront = compressedBlobs[0];
@@ -5277,7 +5529,7 @@ function submitLicense() {
   if (!licenseBlob) { if (errEl) errEl.textContent = 'Please select a license image first.'; return; }
   
   showLoading(true);
-  compressImage(licenseBlob, 1200, 1200, 0.8)
+  compressImage(licenseBlob, 800, 800, 0.6)
     .then(function(compressedBlob) {
       var fd = new FormData();
       fd.append('user_id', currentUser.id);
