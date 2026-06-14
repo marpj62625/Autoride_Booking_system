@@ -1446,7 +1446,9 @@ def upload_license():
             notification_service.notify_admins_inapp(
                 "License Uploaded for Review",
                 f"{uname} has uploaded a driver's license and is awaiting verification.",
-                'admin_license_upload'
+                'admin_license_upload',
+                type='license',
+                user_id=user_id
             )
         except Exception as notif_err:
             print(f"License upload admin notification error: {notif_err}")
@@ -3320,7 +3322,9 @@ def legacy_payment():
                 notification_service.notify_admins_inapp(
                     "Payment Proof Uploaded",
                     f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
-                    'admin_payment_proof'
+                    'admin_payment_proof',
+                    type='payment',
+                    booking_id=booking_id
                 )
             except Exception as notif_err:
                 print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
@@ -3376,7 +3380,9 @@ def legacy_payment():
             notification_service.notify_admins_inapp(
                 "Payment Proof Uploaded",
                 f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
-                'admin_payment_proof'
+                'admin_payment_proof',
+                type='payment',
+                booking_id=booking_id
             )
         except Exception as notif_err:
             print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
@@ -3407,6 +3413,12 @@ def user_bookings():
         
 
     try:
+
+        try:
+            from routers.paymongo_routes import check_and_update_unpaid_paymongo_bookings
+            check_and_update_unpaid_paymongo_bookings(user_id)
+        except Exception as pm_err:
+            print(f"Auto status check error: {pm_err}")
 
         cur = get_cursor()
 
@@ -4263,6 +4275,12 @@ def get_all_bookings():
 
     try:
 
+        try:
+            from routers.paymongo_routes import check_and_update_unpaid_paymongo_bookings
+            check_and_update_unpaid_paymongo_bookings()
+        except Exception as pm_err:
+            print(f"Auto status check error for admin: {pm_err}")
+
         cur = get_cursor()
 
         
@@ -4521,6 +4539,26 @@ def approve_booking(booking_id):
             return jsonify({"error": f"Cannot approve a booking with status '{row['status']}'"}), 400
 
         cur.execute("UPDATE bookings SET status='Approved' WHERE id=%s", (booking_id,))
+
+        # If booking was pending payment (cash), mark it as Paid and create payment record
+        cur.execute("SELECT payment_status, total_price FROM bookings WHERE id=%s", (booking_id,))
+        pay_row = cur.fetchone()
+        if pay_row and pay_row['payment_status'] in ('Pending Payment', 'Unpaid'):
+            total = float(pay_row.get('total_price') or 0)
+            cur.execute("""
+                UPDATE bookings
+                SET payment_status = 'Paid', amount_paid = %s, balance_amount = 0
+                WHERE id = %s
+            """, (total, booking_id))
+            # Insert a payment record
+            try:
+                cur.execute("""
+                    INSERT INTO payments (booking_id, amount, method, reference_number, status)
+                    VALUES (%s, %s, 'Cash (Over the counter)', 'CASH-CONFIRMED', 'Completed')
+                """, (booking_id, total))
+            except Exception:
+                pass  # Don't block approval if payment insert fails
+
 
         
 
@@ -4835,6 +4873,25 @@ def user_cancel_booking():
         except Exception:
             pass
 
+        # Notify admins about the cancellation
+        try:
+            _cur_cn = get_cursor()
+            _cur_cn.execute("SELECT full_name FROM users WHERE id = %s", (booking['user_id'],))
+            _urow = _cur_cn.fetchone()
+            _uname = _urow['full_name'] if _urow else f'User #{booking["user_id"]}'
+            _admin_msg = f"Booking #{booking_id} cancelled by customer {_uname}. Reason: {reason}."
+            if refund_amount > 0:
+                _admin_msg += f" Refund of PHP {refund_amount:,.2f} is pending."
+            notification_service.notify_admins_inapp(
+                "Booking Cancelled by Customer",
+                _admin_msg,
+                'admin_booking_cancelled',
+                type='admin_booking_cancelled',
+                booking_id=booking_id
+            )
+        except Exception as _admin_err:
+            print(f"Admin cancel notification error: {_admin_err}")
+
         return jsonify({
             "message": "Booking cancelled successfully.",
             "refund_amount": refund_amount,
@@ -5047,6 +5104,27 @@ def submit_refund_details(booking_id):
             WHERE id = %s
         """, (refund_channel, refund_account_name, refund_account_number, refund_detail_note, booking_id))
         commit_db()
+
+        # Notify admins that customer submitted refund details
+        try:
+            _cur_rd = get_cursor()
+            _cur_rd.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+            _bk_rd = _cur_rd.fetchone()
+            if _bk_rd:
+                _uid_rd = _bk_rd['user_id']
+                _cur_rd.execute("SELECT full_name FROM users WHERE id = %s", (_uid_rd,))
+                _urow_rd = _cur_rd.fetchone()
+                _uname_rd = _urow_rd['full_name'] if _urow_rd else f'User #{_uid_rd}'
+                notification_service.notify_admins_inapp(
+                    "Refund Details Submitted",
+                    f"{_uname_rd} submitted refund details for Booking #{booking_id}. "
+                    f"Channel: {refund_channel}, Account: {refund_account_name} ({refund_account_number}).",
+                    'admin_refund_request',
+                    type='admin_refund_request',
+                    booking_id=booking_id
+                )
+        except Exception as _rd_err:
+            print(f"Admin refund notification error: {_rd_err}")
 
         return jsonify({"message": "Refund details submitted successfully."}), 200
 
@@ -8765,7 +8843,9 @@ def save_license_details():
             notification_service.notify_admins_inapp(
                 "License Details Updated",
                 f"{uname} has submitted/updated their driver's license details and is awaiting verification.",
-                'admin_license_upload'
+                'admin_license_upload',
+                type='license',
+                user_id=user_id
             )
         except Exception as notif_err:
             print(f"License details admin notification error: {notif_err}")
