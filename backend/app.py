@@ -3323,7 +3323,7 @@ def legacy_payment():
                     "Payment Proof Uploaded",
                     f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
                     'admin_payment_proof',
-                    type='payment',
+                    type='admin_payment_proof',
                     booking_id=booking_id
                 )
             except Exception as notif_err:
@@ -4889,6 +4889,16 @@ def user_cancel_booking():
                 type='admin_booking_cancelled',
                 booking_id=booking_id
             )
+            
+            # Also notify admins of the refund request if there's a refund pending
+            if refund_amount > 0:
+                notification_service.notify_admins_inapp(
+                    "Refund Request",
+                    f"Refund request of PHP {refund_amount:,.2f} for cancelled booking #{booking_id} by {_uname}.",
+                    'admin_refund_request',
+                    type='admin_refund_request',
+                    booking_id=booking_id
+                )
         except Exception as _admin_err:
             print(f"Admin cancel notification error: {_admin_err}")
 
@@ -9488,6 +9498,7 @@ def get_admin_notifications():
     Admin accounts are stored in the users table (role=admin/super_admin),
     so notifications are keyed by user_id.
     Query param: admin_id (int, required) - this is the users.id of the admin.
+    Uses a dedicated connection to avoid shared connection state issues.
     """
     admin_id = request.args.get('admin_id')
     if not admin_id:
@@ -9497,34 +9508,42 @@ def get_admin_notifications():
     except (ValueError, TypeError):
         return jsonify({'error': 'admin_id must be an integer'}), 400
     try:
-        cur = get_cursor()
-        cur.execute(
-            """
-            SELECT id, title, message, type, is_read, created_at
-            FROM notifications
-            WHERE user_id = %s AND type LIKE 'admin\\_%%'
-            ORDER BY created_at DESC
-            """,
-            (admin_id,)
-        )
-        rows = cur.fetchall()
-        result = []
-        for row in rows:
-            entry = dict(row)
-            if entry.get('created_at'):
-                entry['created_at'] = entry['created_at'].isoformat()
-            result.append(entry)
-        return jsonify(result), 200
+        import psycopg as _psycopg
+        from config import SUPABASE_DB_URL as _SUPABASE_DB_URL
+        from psycopg.rows import dict_row as _dict_row
+        _conn = _psycopg.connect(conninfo=_SUPABASE_DB_URL)
+        try:
+            _cur = _conn.cursor(row_factory=_dict_row)
+            _cur.execute(
+                """
+                SELECT id, title, message, type, is_read, created_at
+                FROM notifications
+                WHERE user_id = %s AND type LIKE 'admin\\_%%'
+                ORDER BY created_at DESC
+                """,
+                (admin_id,)
+            )
+            rows = _cur.fetchall()
+            result = []
+            for row in rows:
+                entry = dict(row)
+                if entry.get('created_at'):
+                    entry['created_at'] = entry['created_at'].isoformat()
+                result.append(entry)
+            return jsonify(result), 200
+        finally:
+            _conn.close()
     except Exception as e:
+        print(f"GET ADMIN NOTIFICATIONS ERROR: {e}")
         return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
+
 
 
 @app.route('/admin/notifications/read-all', methods=['POST'])
 def mark_all_admin_notifications_read():
     """Mark all notifications as read for an admin.
     Request body: { "admin_id": int }
+    Uses a dedicated connection to avoid shared connection state issues.
     """
     data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
@@ -9535,24 +9554,30 @@ def mark_all_admin_notifications_read():
     except (ValueError, TypeError):
         return jsonify({'error': 'admin_id must be an integer'}), 400
     try:
-        cur = get_cursor()
-        cur.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND type LIKE 'admin\\_%' AND is_read = FALSE",
-            (admin_id,)
-        )
-        updated = cur.rowcount
-        commit_db()
-        return jsonify({'updated': updated}), 200
+        import psycopg as _psycopg
+        from config import SUPABASE_DB_URL as _SUPABASE_DB_URL
+        _conn = _psycopg.connect(conninfo=_SUPABASE_DB_URL)
+        try:
+            _cur = _conn.cursor()
+            _cur.execute(
+                "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND type LIKE 'admin_%%' AND is_read = FALSE",
+                (admin_id,)
+            )
+            updated = _cur.rowcount
+            _conn.commit()
+            return jsonify({'updated': updated}), 200
+        finally:
+            _conn.close()
     except Exception as e:
+        print(f"MARK ALL ADMIN NOTIFICATIONS READ ERROR: {e}")
         return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
 
 
 @app.route('/admin/notifications/<int:notif_id>/read', methods=['POST'])
 def mark_admin_notification_read(notif_id):
     """Mark a single admin notification as read.
     Request body: { "admin_id": int }
+    Uses a dedicated connection to avoid shared connection state issues.
     """
     data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
@@ -9563,30 +9588,36 @@ def mark_admin_notification_read(notif_id):
     except (ValueError, TypeError):
         return jsonify({'error': 'admin_id must be an integer'}), 400
     try:
-        cur = get_cursor()
-        cur.execute(
-            "SELECT id, user_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
-            (notif_id,)
-        )
-        notif = cur.fetchone()
-        if not notif:
-            return jsonify({'error': 'Notification not found'}), 404
-        if notif['user_id'] != admin_id:
-            return jsonify({'error': 'Forbidden'}), 403
-        cur.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE id = %s",
-            (notif_id,)
-        )
-        commit_db()
-        entry = dict(notif)
-        entry['is_read'] = True
-        if entry.get('created_at'):
-            entry['created_at'] = entry['created_at'].isoformat()
-        return jsonify(entry), 200
+        import psycopg as _psycopg
+        from config import SUPABASE_DB_URL as _SUPABASE_DB_URL
+        from psycopg.rows import dict_row as _dict_row
+        _conn = _psycopg.connect(conninfo=_SUPABASE_DB_URL)
+        try:
+            _cur = _conn.cursor(row_factory=_dict_row)
+            _cur.execute(
+                "SELECT id, user_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
+                (notif_id,)
+            )
+            notif = _cur.fetchone()
+            if not notif:
+                return jsonify({'error': 'Notification not found'}), 404
+            if notif['user_id'] != admin_id:
+                return jsonify({'error': 'Forbidden'}), 403
+            _cur.execute(
+                "UPDATE notifications SET is_read = TRUE WHERE id = %s",
+                (notif_id,)
+            )
+            _conn.commit()
+            entry = dict(notif)
+            entry['is_read'] = True
+            if entry.get('created_at'):
+                entry['created_at'] = entry['created_at'].isoformat()
+            return jsonify(entry), 200
+        finally:
+            _conn.close()
     except Exception as e:
+        print(f"MARK ADMIN NOTIFICATION READ ERROR: {e}")
         return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
 
 
 # ?????????????????????????????????????????????

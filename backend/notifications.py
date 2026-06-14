@@ -89,31 +89,35 @@ class Notification_Service:
             )
             return False
 
-    def notify_admins_inapp(self, title: str, message: str, notif_type: str) -> list:
+    def notify_admins_inapp(self, title: str, message: str, notif_type: str, **kwargs) -> list:
         """
         Finds all admin users and inserts one notification row per admin.
         Admin accounts are stored in the users table with role='admin'/'super_admin'.
         Inserts with user_id (not admin_id) so the FK constraint is satisfied and
         the GET /admin/notifications endpoint (which queries by user_id) can find them.
         Also sends a native FCM push notification to each admin's device.
+        Always uses a dedicated separate DB connection to avoid interfering with
+        any ongoing Flask request transaction.
         """
         try:
             import psycopg
             from config import SUPABASE_DB_URL
             from psycopg.rows import dict_row
 
+            # Always use a separate, dedicated connection so we never interfere
+            # with the outer Flask request's transaction.
             conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
             try:
                 cur = conn.cursor(row_factory=dict_row)
 
                 # Admin accounts live in the users table with role admin/super_admin
-                conn.rollback()
                 cur.execute("SELECT id, fcm_token FROM users WHERE role IN ('admin', 'super_admin')")
                 rows = cur.fetchall()
                 admins = rows if rows else []
 
                 if not admins:
                     print("notify_admins_inapp: no admin users found in users table", file=sys.stderr)
+                    conn.close()
                     return []
 
                 print(f"notify_admins_inapp: found {len(admins)} admin(s) in users table", file=sys.stderr)
@@ -123,7 +127,6 @@ class Notification_Service:
                     uid = admin['id']
                     # Save in-app notification
                     try:
-                        conn.rollback()
                         cur.execute(
                             "INSERT INTO notifications (user_id, admin_id, title, message, type) VALUES (%s, NULL, %s, %s, %s)",
                             (uid, title, message, notif_type)
@@ -140,7 +143,7 @@ class Notification_Service:
                     token = admin.get('fcm_token')
                     if token:
                         try:
-                            fcm_service.send_push(token, title, message, channel_id='autoride_admin_high_priority')
+                            fcm_service.send_push(token, title, message, channel_id='autoride_admin_high_priority', **kwargs)
                             print(f"notify_admins_inapp: push sent to user_id={uid}", file=sys.stderr)
                         except Exception as push_err:
                             print(f"notify_admins_inapp: push failed for user_id={uid}: {push_err}", file=sys.stderr)
@@ -256,7 +259,7 @@ class FCM_Service:
             print(f"FCM_Service._get_access_token: failed: {exc}", file=sys.stderr)
             return None
 
-    def send_push(self, fcm_token: str, title: str, body: str, channel_id: str = 'autoride_high_priority') -> bool:
+    def send_push(self, fcm_token: str, title: str, body: str, channel_id: str = 'autoride_high_priority', **kwargs) -> bool:
         """
         Sends a push notification via FCM V1 API (service account) with
         legacy FCM HTTP API fallback if service account is unavailable.
@@ -266,6 +269,15 @@ class FCM_Service:
         print(f"  - Title: {title}")
         print(f"  - Body: {body}")
         print(f"  - Channel: {channel_id}")
+        
+        # Build extra data dict for deep links
+        extra_data = {
+            'title': title,
+            'body': body,
+            'type': kwargs.get('type', ''),
+            'booking_id': str(kwargs.get('booking_id', '')),
+            'user_id': str(kwargs.get('user_id', ''))
+        }
         
         # Try V1 API first (service account)
         try:
@@ -296,7 +308,7 @@ class FCM_Service:
                                 'title': title,
                                 'body': body
                             },
-                            'data': {'title': title, 'body': body}
+                            'data': extra_data
                         }
                     },
                     timeout=10
@@ -335,7 +347,7 @@ class FCM_Service:
                         'sound': 'default',
                         'android_channel_id': channel_id
                     },
-                    'data': {'title': title, 'body': body}
+                    'data': extra_data
                 },
                 timeout=10
             )

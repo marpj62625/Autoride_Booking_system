@@ -9104,6 +9104,34 @@
 
 
 
+                        // Auto-refresh bookings for payment/cancel/refund notifications
+
+
+
+                        if (newOnes[0].type === 'admin_payment_proof' || newOnes[0].type === 'admin_booking_cancelled' || newOnes[0].type === 'admin_refund_request' || newOnes[0].type === 'admin_new_booking') {
+
+
+
+                            var bookingsTab = document.getElementById('bookings');
+
+
+
+                            if (bookingsTab && (bookingsTab.style.display === 'block' || bookingsTab.classList.contains('active'))) {
+
+
+
+                                if (typeof loadBookings === 'function') loadBookings();
+
+
+
+                            }
+
+
+
+                        }
+
+
+
                     } else if (newOnes.length > 1) {
 
 
@@ -9121,6 +9149,34 @@
 
 
                             if (typeof Extensions !== 'undefined') Extensions.load();
+
+
+
+                        }
+
+
+
+                        // Auto-refresh bookings for payment/cancel/refund notifications
+
+
+
+                        if (newOnes.some(n => n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request' || n.type === 'admin_new_booking')) {
+
+
+
+                            var bookingsTab2 = document.getElementById('bookings');
+
+
+
+                            if (bookingsTab2 && (bookingsTab2.style.display === 'block' || bookingsTab2.classList.contains('active'))) {
+
+
+
+                                if (typeof loadBookings === 'function') loadBookings();
+
+
+
+                            }
 
 
 
@@ -9302,35 +9358,28 @@
 
                 list.innerHTML = notifs.map(n => {
 
-
-
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-
-
 
                     const unreadStyle = n.is_read ? '' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);';
 
+                    let onClickAction = '';
+                    if (n.type === 'license' || n.type === 'admin_license_upload') {
+                        onClickAction = "onclick=\"switchTab('users');\" style=\"cursor:pointer;\"";
+                    } else if (n.type === 'admin_new_booking' || n.type === 'admin_booking_cancelled' || n.type === 'admin_payment_proof' || n.type === 'admin_extension_request' || n.type === 'admin_refund_request') {
+                        onClickAction = "onclick=\"switchTab('bookings');\" style=\"cursor:pointer;\"";
+                    } else {
+                        onClickAction = "onclick=\"switchTab('chat');\" style=\"cursor:pointer;\"";
+                    }
 
-
-                    return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
-
-
+                    return `<div ${onClickAction} style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
 
                         <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
 
-
-
                         <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-
-
 
                         <small style="color:var(--text-muted);">${ts}</small>
 
-
-
                     </div>`;
-
-
 
                 }).join('');
 
@@ -25119,21 +25168,20 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
+                    PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
 
+                        console.log('Admin Push notification action performed:', action);
 
+                        var data = (action.notification && action.notification.data) ? action.notification.data : {};
+                        var type = data.type || '';
 
-                        console.log('Admin Push notification action performed:', notification);
-
-
-
-                        // Navigate to chat tab
-
-
-
-                        switchTab('chat');
-
-
+                        if (type === 'license' || type === 'admin_license_upload') {
+                            switchTab('users');
+                        } else if (type === 'admin_new_booking' || type === 'admin_booking_cancelled' || type === 'admin_payment_proof' || type === 'admin_extension_request') {
+                            switchTab('bookings');
+                        } else {
+                            switchTab('chat');
+                        }
 
                     });
 
