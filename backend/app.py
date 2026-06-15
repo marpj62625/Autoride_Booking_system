@@ -2253,6 +2253,61 @@ def test_push_notification(user_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/admin/send-custom-push', methods=['POST'])
+def admin_send_custom_push():
+    """Admin endpoint to send custom push notification or broadcast to all users"""
+    try:
+        data = request.get_json() or {}
+        title = data.get('title', '').strip()
+        body = data.get('body', '').strip()
+        user_id = data.get('user_id')
+        broadcast = data.get('broadcast', False)
+        
+        if not title or not body:
+            return jsonify({"error": "Title and body are required"}), 400
+            
+        from notifications import notification_service
+        
+        if broadcast:
+            # Send to all users with active FCM tokens or simply all users
+            cur = get_cursor()
+            cur.execute("SELECT id FROM users")
+            users = cur.fetchall()
+            
+            success_count = 0
+            for u in users:
+                ok = notification_service.notify_user(
+                    u['id'],
+                    title,
+                    body,
+                    'admin_broadcast'
+                )
+                if ok:
+                    success_count += 1
+            return jsonify({
+                "message": f"Broadcast push notification sent successfully to {success_count} users."
+            }), 200
+        else:
+            if not user_id:
+                return jsonify({"error": "User ID is required for sending individual notification"}), 400
+                
+            ok = notification_service.notify_user(
+                int(user_id),
+                title,
+                body,
+                'admin_custom_push'
+            )
+            if ok:
+                return jsonify({"message": "Push notification sent successfully"}), 200
+            else:
+                return jsonify({"error": "Failed to send notification. User might not have a registered device/token."}), 500
+                
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+
 @app.route('/admin/upload-refund-proof', methods=['POST'])
 
 def upload_refund_proof():

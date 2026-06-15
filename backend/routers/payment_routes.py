@@ -127,7 +127,9 @@ def process_payment():
                 notification_service.notify_admins_inapp(
                     "New Payment Received",
                     f"Booking #{booking_id} - PHP {amount} via {method}. Ref: {reference_number}.",
-                    'admin_payment_proof'
+                    'admin_payment_proof',
+                    type='admin_payment_proof',
+                    booking_id=booking_id
                 )
         except Exception as notif_err:
             print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
