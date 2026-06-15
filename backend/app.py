@@ -3094,6 +3094,29 @@ def book():
 
 
 
+        # ── Overlap guard: reject if the requested vehicle_id already has an active booking that overlaps ──
+        cur.execute("""
+            SELECT id, start_date, end_date, status,
+                   (end_date + INTERVAL '1 day')::date AS next_available
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date <= %s
+              AND end_date >= %s
+            ORDER BY start_date ASC
+            LIMIT 1
+        """, (vehicle_id, end_date, start_date))
+
+        overlap = cur.fetchone()
+        if overlap:
+            o = dict(overlap)
+            return jsonify({
+                "error": "This vehicle is already booked from {start} to {end} (status: {status}). "
+                         "It will be available again from {next}.".format(
+                             start=str(o['start_date']), end=str(o['end_date']),
+                             status=o['status'], next=str(o['next_available']))
+            }), 409
+
         # Category Auto-Assignment Logic
 
         # Get category info from the representative vehicle_id
@@ -3122,15 +3145,15 @@ def book():
 
                 SELECT vehicle_id FROM bookings 
 
-                WHERE status IN ('Confirmed', 'Pending', 'Picked Up')
+                WHERE status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
 
-                AND (%s <= end_date AND %s >= start_date)
+                AND (start_date <= %s AND end_date >= %s)
 
             )
 
             LIMIT 1
 
-        """, (category['brand'], category['model'], start_date, end_date))
+        """, (category['brand'], category['model'], end_date, start_date))
 
         
 
@@ -4036,6 +4059,31 @@ def modify_booking():
         if not bk or bk['status'] not in ['Pending', 'Confirmed']:
 
             return jsonify({"error": "Booking cannot be modified"}), 400
+
+        # ── Overlap guard for modification: check no other booking occupies the new dates ──
+        cur.execute("""
+            SELECT b.id, b.start_date, b.end_date, b.status,
+                   (b.end_date + INTERVAL '1 day')::date AS next_available
+            FROM bookings b
+            JOIN bookings orig ON orig.id = %s
+            WHERE b.vehicle_id = orig.vehicle_id
+              AND b.id != %s
+              AND b.status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND b.start_date <= %s
+              AND b.end_date >= %s
+            ORDER BY b.start_date ASC
+            LIMIT 1
+        """, (booking_id, booking_id, new_end, new_start))
+
+        mod_overlap = cur.fetchone()
+        if mod_overlap:
+            o = dict(mod_overlap)
+            return jsonify({
+                "error": "Cannot change dates – another booking occupies {start} to {end} (status: {status}). "
+                         "The vehicle is available again from {next}.".format(
+                             start=str(o['start_date']), end=str(o['end_date']),
+                             status=o['status'], next=str(o['next_available']))
+            }), 409
 
             
 
@@ -7517,7 +7565,90 @@ def delete_vehicle(vehicle_id):
 
 
 
+@app.route('/vehicles/check-availability', methods=['POST'])
+def check_vehicle_availability():
+    """
+    Check if a vehicle has any conflicting bookings for the requested dates.
+    Returns:
+      - available: True if no conflict
+      - conflict: details of the conflicting booking (nearest one that overlaps)
+      - next_available_from: the date after the conflicting booking ends
+    """
+    try:
+        data = request.get_json() or {}
+        vehicle_id = data.get('vehicle_id')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if not vehicle_id or not start_date or not end_date:
+            return jsonify({'error': 'vehicle_id, start_date, and end_date are required'}), 400
+
+        cur = get_cursor()
+
+        # Find any overlapping active bookings
+        cur.execute("""
+            SELECT id, start_date, end_date, status,
+                   (end_date + INTERVAL '1 day')::date as next_available
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date <= %s
+              AND end_date >= %s
+            ORDER BY start_date ASC
+            LIMIT 1
+        """, (vehicle_id, end_date, start_date))
+
+        conflict = cur.fetchone()
+
+        if conflict:
+            c = dict(conflict)
+            return jsonify({
+                'available': False,
+                'conflict': {
+                    'booking_id': c['id'],
+                    'start_date': str(c['start_date']),
+                    'end_date': str(c['end_date']),
+                    'status': c['status']
+                },
+                'next_available_from': str(c['next_available'])
+            }), 200
+
+        # Also check if the requested end_date is close to a future booking
+        # so we can warn the user about extending limits
+        cur.execute("""
+            SELECT id, start_date, end_date, status
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date > %s
+            ORDER BY start_date ASC
+            LIMIT 1
+        """, (vehicle_id, end_date))
+
+        upcoming = cur.fetchone()
+        upcoming_info = None
+        if upcoming:
+            u = dict(upcoming)
+            upcoming_info = {
+                'start_date': str(u['start_date']),
+                'end_date': str(u['end_date']),
+                'status': u['status']
+            }
+
+        return jsonify({
+            'available': True,
+            'next_booking': upcoming_info
+        }), 200
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/vehicles/categories', methods=['GET'], strict_slashes=False)
+
 
 def get_vehicle_categories():
 
@@ -7535,10 +7666,10 @@ def get_vehicle_categories():
 
                 model,
 
-                -- Use image from first AVAILABLE unit (not booked/maintenance/etc.)
+                -- Use image from first AVAILABLE unit (not in permanent out-of-service states)
                 -- Falls back to any unit image if none are available
                 COALESCE(
-                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked','Rented') THEN vehicle_image END),
+                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN vehicle_image END),
                     MIN(vehicle_image)
                 ) as vehicle_image,
 
@@ -7556,7 +7687,10 @@ def get_vehicle_categories():
 
                 COUNT(*) as total_units,
 
-                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked','Rented') THEN 1 ELSE 0 END) as available_units
+                -- Count units that are operationally available (not permanently out of service).
+                -- 'Rented' is intentionally included because a car booked for June 25-26 is
+                -- still bookable for other dates — overlap is enforced at booking time, not here.
+                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN 1 ELSE 0 END) as available_units
 
             FROM vehicles
 
@@ -8296,7 +8430,7 @@ def get_vehicle_colors():
         commit_db()
         cur.execute(
             "SELECT DISTINCT COALESCE(color, 'Not Specified') as color, COUNT(*) as total, "
-            "SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN 1 ELSE 0 END) as available "
+            "SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN 1 ELSE 0 END) as available "
             "FROM vehicles WHERE brand = %s AND model = %s GROUP BY color ORDER BY color",
             (brand, model)
         )
@@ -8320,8 +8454,10 @@ def get_vehicle_units():
 
     try:
         cur = get_cursor()
-        # Exclude unavailable statuses using explicit placeholders (psycopg3 compatible)
-        unavailable = ['Maintenance', 'Repair', 'Service', 'Sold', 'Booked', 'Rented']
+        # Exclude permanently unavailable statuses only.
+        # 'Rented' and 'Booked' are intentionally NOT excluded here — a vehicle rented for
+        # June 25-26 is still bookable for other dates; overlap is enforced at submit time.
+        unavailable = ['Maintenance', 'Repair', 'Service', 'Sold']
         placeholders = ','.join(['%s'] * len(unavailable))
 
         if color and color != 'all' and color != 'Not Specified':
