@@ -90,6 +90,20 @@ function formatTime12h(time24) {
 }
 
 /**
+ * Formats a 'YYYY-MM-DD' string into a readable date like "Jun 17, 2026".
+ * @param {string} dateStr - YYYY-MM-DD
+ * @returns {string}
+ */
+function formatDateDisplay(dateStr) {
+  if (!dateStr) return '';
+  var parts = dateStr.split('T')[0].split('-');
+  if (parts.length < 3) return dateStr;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
+  return months[m] + ' ' + d + ', ' + y;
+}
+
+/**
  * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
  * Property 7: File validation  -  format and size.
  * @param {{ type: string, size: number }} file
@@ -117,7 +131,7 @@ function validateUploadFile(file) {
  * @param {string} endDate    -  'YYYY-MM-DD'
  * @returns {{ valid: boolean, error?: string }}
  */
-function validateDateRange(startDate, endDate) {
+function validateDateRange(startDate, endDate, pickupTime) {
   if (!startDate || !endDate) {
     return { valid: false, error: 'Both start and end dates are required.' };
   }
@@ -141,6 +155,24 @@ function validateDateRange(startDate, endDate) {
   if (start < today) {
     return { valid: false, error: 'Start date must be today or a future date.' };
   }
+
+  // If start date is TODAY, validate pickup time is at least 1 hour from now
+  if (start.getTime() === today.getTime() && pickupTime) {
+    const [hh, mm] = pickupTime.split(':').map(Number);
+    const pickupDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm);
+    const minAllowed = new Date(now.getTime() + 60 * 60 * 1000); // +1 hour from now
+    if (pickupDateTime < minAllowed) {
+      const minH = minAllowed.getHours().toString().padStart(2, '0');
+      const minM = minAllowed.getMinutes() >= 30 ? '30' : '00';
+      const ampm = minAllowed.getHours() < 12 ? 'AM' : 'PM';
+      const h12 = minAllowed.getHours() === 0 ? 12 : minAllowed.getHours() > 12 ? minAllowed.getHours() - 12 : minAllowed.getHours();
+      return {
+        valid: false,
+        error: 'Pickup time must be at least 1 hour from now. Please choose a time after ' + h12 + ':' + minM + ' ' + ampm + '.'
+      };
+    }
+  }
+
   if (end <= start) {
     return { valid: false, error: 'End date must be after the start date.' };
   }

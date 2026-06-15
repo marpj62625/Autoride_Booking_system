@@ -2871,13 +2871,18 @@ function updateBookingPrice() {
 function submitBooking() {
   var start = document.getElementById('bfStartDate').value;
   var end = document.getElementById('bfEndDate').value;
+  var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
   document.getElementById('bfStartErr').textContent = '';
   document.getElementById('bfEndErr').textContent = '';
   document.getElementById('bfErr').textContent = '';
-  var dateCheck = validateDateRange(start, end);
+  var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
-    if (dateCheck.error && dateCheck.error.indexOf('Start') >= 0) document.getElementById('bfStartErr').textContent = dateCheck.error;
-    else document.getElementById('bfEndErr').textContent = dateCheck.error;
+    // Route pickup-time errors to start date error field
+    if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0 || dateCheck.error.indexOf('Pickup time') >= 0)) {
+      document.getElementById('bfStartErr').textContent = dateCheck.error;
+    } else {
+      document.getElementById('bfEndErr').textContent = dateCheck.error;
+    }
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
@@ -2935,8 +2940,41 @@ function submitBooking() {
     service_type: serviceType,
     split_with_email: splitEmail || null
   };
-  // Show rental agreement before submitting
-  showRentalAgreement(payload, result, payType);
+
+  // Check availability on the server before proceeding
+  showLoading(true);
+  apiCall('/vehicles/check-availability', {
+    method: 'POST',
+    body: JSON.stringify({
+      vehicle_id: bookingFormVehicle.id,
+      start_date: start,
+      end_date: end
+    })
+  }).then(function(avail) {
+    showLoading(false);
+    if (!avail.available) {
+      var conflict = avail.conflict || {};
+      var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
+      var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
+        formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
+        '. Next available: ' + nextDate + '.';
+      document.getElementById('bfErr').textContent = msg;
+      return;
+    }
+    // Warn if the chosen end_date is close to an upcoming booking
+    if (avail.next_booking) {
+      var nb = avail.next_booking;
+      var nbStart = formatDateDisplay(nb.start_date);
+      showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
+    }
+    // Show rental agreement before submitting
+    showRentalAgreement(payload, result, payType);
+  }).catch(function(err) {
+    showLoading(false);
+    // If availability check fails, allow the booking to proceed (server will catch it)
+    console.warn('Availability check failed:', err);
+    showRentalAgreement(payload, result, payType);
+  });
 }
 
 // RENTAL AGREEMENT MODAL
