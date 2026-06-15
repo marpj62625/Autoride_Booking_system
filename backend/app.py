@@ -2269,21 +2269,42 @@ def admin_send_custom_push():
         from notifications import notification_service
         
         if broadcast:
-            # Send to all users with active FCM tokens or simply all users
+            # Send to all users using the existing database cursor/transaction
             cur = get_cursor()
-            cur.execute("SELECT id FROM users")
+            cur.execute("SELECT id, fcm_token FROM users")
             users = cur.fetchall()
             
             success_count = 0
+            # 1. Bulk insert in-app notifications
             for u in users:
-                ok = notification_service.notify_user(
-                    u['id'],
-                    title,
-                    body,
-                    'admin_broadcast'
-                )
-                if ok:
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO notifications (user_id, admin_id, title, message, type)
+                        VALUES (%s, NULL, %s, %s, %s)
+                        """,
+                        (u['id'], title, body, 'admin_broadcast')
+                    )
                     success_count += 1
+                except Exception as e:
+                    print(f"Failed to insert in-app notification for user {u['id']}: {e}")
+            
+            # Commit the changes to the database
+            commit_db()
+            
+            # 2. Dispatch FCM push notifications for users who have tokens
+            try:
+                from notifications import fcm_service
+                for u in users:
+                    token = u.get('fcm_token')
+                    if token:
+                        try:
+                            fcm_service.send_push(token, title, body, channel_id='autoride_customer_high_priority')
+                        except Exception as push_err:
+                            print(f"FCM push failed for user {u['id']}: {push_err}")
+            except Exception as fcm_err:
+                print(f"FCM service error: {fcm_err}")
+                
             return jsonify({
                 "message": f"Broadcast push notification sent successfully to {success_count} users."
             }), 200
