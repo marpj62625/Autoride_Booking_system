@@ -591,7 +591,8 @@
           /* Auth pages override the sidebar offset - they cover the full screen */
           #page-login.auth-page.active,
           #page-register.auth-page.active,
-          #page-otp-verify.auth-page.active {
+          #page-otp-verify.auth-page.active,
+          #page-forgot-password.auth-page.active {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             width: 100vw;
@@ -1154,6 +1155,9 @@
           </button>
         </div>
         <span class="field-error" id="loginPasswordErr"></span>
+        <div style="text-align:right; margin-top:0.5rem;">
+          <a href="#" onclick="openForgotPasswordPage(event)" style="color: var(--primary); font-size: 0.85rem; text-decoration: none; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Forgot Password?</a>
+        </div>
       </div>
       <span class="field-error" id="loginErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
       <button class="btn-primary" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Sign In</button>
@@ -1164,6 +1168,39 @@
       </button>
       <div class="auth-link">
         Don't have an account? <a href="#" onclick="showPage('page-register')">Register</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================
+     FORGOT PASSWORD PAGE
+========================================================= -->
+<div id="page-forgot-password" class="auth-page">
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:280px;height:280px;object-fit:contain;margin-bottom:20px;filter:drop-shadow(0 6px 28px rgba(0,0,0,0.3));">
+      <h1 style="font-size:3rem;font-weight:900;color:#ffffff;letter-spacing:-1.5px;line-height:1.1;margin-bottom:12px;">Reset Password</h1>
+      <p style="color:rgba(255,255,255,0.8);font-size:1.1rem;font-weight:400;margin-bottom:48px;line-height:1.5;">Recover access to your account.<br>We'll send you a temporary password.</p>
+    </div>
+  </div>
+  <div class="auth-container">
+    <div class="auth-logo">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:200px;height:200px;object-fit:contain;margin-bottom:8px;filter:drop-shadow(0 4px 20px rgba(0,0,0,0.25));">
+      <p>Book your perfect ride</p>
+    </div>
+    <div class="auth-card">
+      <h2>Forgot Password?</h2>
+      <p class="subtitle">Enter your email and we'll send you a temporary password</p>
+      <div class="form-group" style="margin-top:16px;">
+        <label>Email Address</label>
+        <input type="email" id="forgotPwEmail" placeholder="yourname@gmail.com" autocomplete="email" onkeydown="if(event.key==='Enter')doForgotPassword()">
+        <span class="field-error" id="forgotPwErr"></span>
+      </div>
+      <div id="forgotPwSuccess" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 14px;font-size:0.85rem;color:#10b981;margin-bottom:14px;font-weight:600;text-align:center;"></div>
+      <button class="btn-primary" id="forgotPwBtn" onclick="doForgotPassword()"><i class="fas fa-paper-plane"></i> <span id="forgotPwBtnText">Send Temporary Password</span></button>
+      <div class="auth-link" style="margin-top:16px;">
+        <a href="#" onclick="showPage('page-login')"><i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back to Login</a>
       </div>
     </div>
   </div>

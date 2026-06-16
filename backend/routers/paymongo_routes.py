@@ -38,6 +38,7 @@ def create_payment():
     customer_name = data.get('customer_name', '')
     customer_email = data.get('customer_email', '')
     customer_phone = data.get('customer_phone', '')
+    payment_type = data.get('payment_type', 'Full')
 
     if not all([booking_id, amount, method]):
         return jsonify({'error': 'booking_id, amount, and method are required'}), 400
@@ -77,7 +78,8 @@ def create_payment():
                 'cancel_url': cancel_url,
                 'metadata': {
                     'booking_id': str(booking_id),
-                    'method': method
+                    'method': method,
+                    'payment_type': payment_type
                 }
             }
         }
@@ -327,7 +329,7 @@ def check_payment_status(booking_id):
     try:
         cur = get_cursor()
         cur.execute(
-            "SELECT status, payment_status, paymongo_link_id, payment_type FROM bookings WHERE id = %s",
+            "SELECT status, payment_status, paymongo_link_id, payment_type, total_price FROM bookings WHERE id = %s",
             (booking_id,)
         )
         booking = cur.fetchone()
@@ -408,7 +410,68 @@ def check_payment_status(booking_id):
         return jsonify({'error': str(e)}), 500
 
 
+def check_and_update_unpaid_paymongo_bookings(user_id=None):
+    """
+    Finds bookings that are 'Unpaid' or 'Downpayment unpaid' but have a paymongo_link_id,
+    polls the PayMongo API for their status, and updates them if they are paid.
+    """
+    try:
+        cur = get_cursor()
+        if user_id:
+            cur.execute(
+                "SELECT id, paymongo_link_id, payment_status, payment_type, total_price FROM bookings "
+                "WHERE user_id = %s AND payment_status IN ('Unpaid', 'Downpayment unpaid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''",
+                (user_id,)
+            )
+        else:
+            cur.execute(
+                "SELECT id, paymongo_link_id, payment_status, payment_type, total_price FROM bookings "
+                "WHERE payment_status IN ('Unpaid', 'Downpayment unpaid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''"
+            )
+        unpaid_bookings = cur.fetchall()
+        
+        for booking in unpaid_bookings:
+            booking_id = booking['id']
+            link_id = booking['paymongo_link_id']
+            if not PAYMONGO_SECRET_KEY or not link_id:
+                continue
+                
+            try:
+                res = requests.get(
+                    f'{PAYMONGO_API}/links/{link_id}',
+                    headers=get_auth_header(),
+                    timeout=5
+                )
+                if res.status_code == 200:
+                    link_data = res.json()['data']
+                    link_status = link_data['attributes']['status']
+                    if link_status == 'paid':
+                        payments = link_data['attributes'].get('payments', [])
+                        method = 'online'
+                        ref_num = link_id
+                        amount_paid = float(booking.get('total_price') or 0)
+                        if payments:
+                            try:
+                                p = payments[0]
+                                p_attrs = p.get('data', p).get('attributes', p)
+                                method = p_attrs.get('source', {}).get('type', 'online')
+                                ref_num = p.get('data', p).get('id', link_id)
+                                raw_amount = p_attrs.get('amount', 0)
+                                if raw_amount > 0:
+                                    amount_paid = raw_amount / 100
+                            except Exception:
+                                pass
+                        
+                        pay_type = booking['payment_type'] or 'Full'
+                        _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
+            except Exception as pm_err:
+                print(f"Automatic PayMongo status check error for booking {booking_id}: {pm_err}")
+    except Exception as e:
+        print(f"Error checking unpaid bookings: {e}")
+
+
 # ??? INTERNAL HELPER ?????????????????????????????????????????????????????????
+
 
 def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
     """Internal: record payment and update booking status."""
@@ -429,15 +492,34 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
         """, (booking_id, amount, method, ref_num))
         payment_id = cur.fetchone()['id']
 
-        # Determine payment status
-        new_payment_status = 'Partially Paid' if payment_type == 'Downpayment' else 'Paid'
+        # Get booking total price
+        cur.execute("SELECT total_price, amount_paid FROM bookings WHERE id = %s", (booking_id,))
+        bk_data = cur.fetchone()
+        total_price = float(bk_data['total_price'] or 0) if bk_data else 0.0
+
+        # Determine payment status, amount_paid, and balance_amount
+        if payment_type == 'Downpayment':
+            new_payment_status = 'Partially Paid'
+            new_amount_paid = float(amount)
+            new_balance_amount = total_price - new_amount_paid
+        elif payment_type == 'Balance':
+            new_payment_status = 'Paid'
+            new_amount_paid = total_price
+            new_balance_amount = 0.0
+        else: # Full
+            new_payment_status = 'Paid'
+            new_amount_paid = float(amount) if float(amount) > 0 else total_price
+            new_balance_amount = 0.0
 
         # Update booking
         cur.execute("""
             UPDATE bookings
-            SET status = 'Confirmed', payment_status = %s
+            SET status = 'Confirmed', 
+                payment_status = %s,
+                amount_paid = %s,
+                balance_amount = %s
             WHERE id = %s
-        """, (new_payment_status, booking_id))
+        """, (new_payment_status, new_amount_paid, new_balance_amount, booking_id))
 
         # Update vehicle status
         cur.execute("""
@@ -492,6 +574,21 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
                         f'Payment of PHP {amt:.2f} confirmed for booking #{booking_id} via {method}. Ref: {ref_num}.',
                         'payment_confirmed'
                     )
+                
+                # Notify admins about the new payment
+                try:
+                    cur.execute("SELECT full_name FROM users WHERE id = %s", (uid,))
+                    u_row = cur.fetchone()
+                    uname = u_row['full_name'] if u_row else f'User #{uid}'
+                    notification_service.notify_admins_inapp(
+                        "New Payment Received",
+                        f"Booking #{booking_id} - PHP {amt:.2f} paid via {method} by {uname}.",
+                        'admin_payment_proof',
+                        type='admin_payment_proof',
+                        booking_id=booking_id
+                    )
+                except Exception as admin_notif_err:
+                    print(f"Admin notification error: {admin_notif_err}")
         except Exception as notif_err:
             print(f'_confirm_payment notification error: {notif_err}')
             # Rollback any aborted transaction state so email query can still run

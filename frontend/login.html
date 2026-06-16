@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Autoride</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css?v=4">
     <script src="config.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -44,10 +45,13 @@
                     <div class="form-group">
                         <label for="password">Password</label>
                         <div class="password-input-wrapper">
-                            <input type="password" id="password" class="form-input" required placeholder="â¢â¢â¢â¢â¢â¢â¢â¢">
+                            <input type="password" id="password" class="form-input" required placeholder="••••••••">
                             <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)">
                                 <i class="fas fa-eye"></i>
                             </button>
+                        </div>
+                        <div style="text-align:right; margin-top:0.5rem;">
+                            <a href="#" id="forgotPasswordLink" onclick="openForgotPassword(event)" style="color: var(--primary-color); font-size: 0.85rem; text-decoration: none; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Forgot Password?</a>
                         </div>
                     </div>
                     
@@ -93,6 +97,32 @@
 
         <div class="auth-links" id="authLinks" style="margin-top: 2rem; text-align:center; font-size: 0.95rem;">
             <p style="color: var(--text-muted);">Don't have an account? <a href="register.html" style="color: var(--primary-color); font-weight: 600;">Sign up</a></p>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotPasswordModal" style="display:none; align-items:center; justify-content:center;" onclick="closeForgotIfOutside(event)">
+        <div class="modal-content" style="max-width:420px; text-align:center;">
+            <button onclick="closeForgotPassword()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;">&times;</button>
+            
+            <div style="width:60px;height:60px;background:rgba(99,102,241,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;border:1px solid rgba(99,102,241,0.3);">
+                <svg width="26" height="26" fill="none" stroke="#818cf8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            </div>
+            
+            <h3 style="font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;background:linear-gradient(to right,#818cf8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Reset Password</h3>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.75rem;line-height:1.6;">Enter your registered email address and we'll send you a temporary password to get back into your account.</p>
+            
+            <div class="form-group" style="text-align:left;">
+                <label for="forgotEmail" style="display:block;margin-bottom:0.5rem;font-weight:600;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Email Address</label>
+                <input type="email" id="forgotEmail" class="form-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitForgotPassword()">
+            </div>
+            
+            <div id="forgotMsg" style="min-height:1.5rem;margin-bottom:1rem;font-size:0.9rem;font-weight:500;"></div>
+            
+            <button id="forgotSubmitBtn" onclick="submitForgotPassword()" class="btn" style="margin-bottom:0.75rem;">
+                <span id="forgotBtnText">Send Temporary Password</span>
+            </button>
+            <button onclick="closeForgotPassword()" style="display:block;width:100%;padding:0.75rem;background:transparent;border:1px solid var(--border-color);border-radius:8px;color:var(--text-muted);cursor:pointer;font-size:0.9rem;font-weight:500;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-color)';this.style.color='var(--text-main)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-muted)'">Cancel</button>
         </div>
     </div>
 
@@ -255,18 +285,21 @@
             }
         }
 
-        function doGoogleLogin() {
-            var GOOGLE_CLIENT_ID = '632685261969-pak4g39l46krdnufu49h576eo5ainddl.apps.googleusercontent.com';
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                showMessage('Google Sign-In not loaded yet. Please refresh and try again.', true);
-                return;
-            }
-            var tokenClient = google.accounts.oauth2.initTokenClient({
+        var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
+        var _googleTokenClient = null;
+
+        // Pre-initialize Google token client as soon as the GSI script loads
+        function initGoogleTokenClient() {
+            if (_googleTokenClient) return; // already initialized
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return;
+            _googleTokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: GOOGLE_CLIENT_ID,
                 scope: 'email profile openid',
                 callback: function(tokenResponse) {
+                    var btn = document.getElementById('btnGoogleLogin');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google'; }
                     if (tokenResponse.error) {
-                        showMessage('Google Sign-In failed: ' + tokenResponse.error, true);
+                        showMessage('Google Sign-In cancelled or failed: ' + tokenResponse.error, true);
                         return;
                     }
                     showMessage('Verifying Google account...');
@@ -302,12 +335,102 @@
                         }
                     })
                     .catch(function(err) {
-                        showMessage('Server connection error.', true);
+                        showMessage('Server connection error. Please try again.', true);
                         console.error('Google login error:', err);
                     });
                 }
             });
-            tokenClient.requestAccessToken({ prompt: 'select_account' });
+        }
+
+        // Try to init immediately, then retry when GSI script loads
+        initGoogleTokenClient();
+        // GSI calls window.onGoogleLibraryLoad when ready
+        window.onGoogleLibraryLoad = function() { initGoogleTokenClient(); };
+
+        function doGoogleLogin() {
+            var btn = document.getElementById('btnGoogleLogin');
+            // If Google API not loaded yet, show error
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                showMessage('Google Sign-In is not available. Please refresh the page and try again.', true);
+                return;
+            }
+            // Re-init client if somehow not done yet
+            if (!_googleTokenClient) initGoogleTokenClient();
+            if (!_googleTokenClient) {
+                showMessage('Google Sign-In failed to initialize. Please refresh and try again.', true);
+                return;
+            }
+            // Disable button to prevent double-clicks
+            if (btn) { btn.disabled = true; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Signing in...'; }
+            // This MUST be called synchronously from user click for popup to not be blocked
+            _googleTokenClient.requestAccessToken({ prompt: 'select_account' });
+        }
+
+        // ---- Forgot Password Functions ----
+        function openForgotPassword(e) {
+            if (e) e.preventDefault();
+            var modal = document.getElementById('forgotPasswordModal');
+            modal.style.display = 'flex';
+            document.getElementById('forgotEmail').value = '';
+            document.getElementById('forgotMsg').textContent = '';
+            document.getElementById('forgotMsg').style.color = '';
+            document.getElementById('forgotBtnText').textContent = 'Send Temporary Password';
+            document.getElementById('forgotSubmitBtn').disabled = false;
+            setTimeout(function() { document.getElementById('forgotEmail').focus(); }, 100);
+        }
+
+        function closeForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+        }
+
+        function closeForgotIfOutside(e) {
+            if (e.target === document.getElementById('forgotPasswordModal')) {
+                closeForgotPassword();
+            }
+        }
+
+        async function submitForgotPassword() {
+            var emailInput = document.getElementById('forgotEmail');
+            var msgEl = document.getElementById('forgotMsg');
+            var btn = document.getElementById('forgotSubmitBtn');
+            var btnText = document.getElementById('forgotBtnText');
+            var email = emailInput.value.trim();
+
+            if (!email) {
+                msgEl.textContent = 'Please enter your email address.';
+                msgEl.style.color = '#ef4444';
+                emailInput.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.textContent = 'Sending...';
+            msgEl.textContent = '';
+
+            try {
+                var res = await fetch(window.API_BASE + '/api/user/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                var data = await res.json();
+                if (res.ok) {
+                    msgEl.textContent = '✅ ' + (data.message || 'Temporary password sent! Check your email inbox.');
+                    msgEl.style.color = '#10b981';
+                    btnText.textContent = 'Email Sent!';
+                    emailInput.value = '';
+                } else {
+                    msgEl.textContent = '❌ ' + (data.error || 'Failed to send email.');
+                    msgEl.style.color = '#ef4444';
+                    btn.disabled = false;
+                    btnText.textContent = 'Send Temporary Password';
+                }
+            } catch (err) {
+                msgEl.textContent = '❌ Server connection error. Please try again.';
+                msgEl.style.color = '#ef4444';
+                btn.disabled = false;
+                btnText.textContent = 'Send Temporary Password';
+            }
         }
         
         function finalizeLogin(data) {

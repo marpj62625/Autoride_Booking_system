@@ -45,6 +45,22 @@ def book_vehicle():
                 "message": "Your driver's license must be approved by an administrator before you can book a vehicle."
             }), 403
 
+        # Check for overlapping active bookings for this vehicle
+        cur.execute("""
+            SELECT COUNT(*) as conflict_count 
+            FROM bookings 
+            WHERE vehicle_id = %s 
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date <= %s 
+              AND end_date >= %s
+        """, (vehicle_id, end_date, start_date))
+        conflict = cur.fetchone()
+        if conflict and conflict.get('conflict_count', 0) > 0:
+            return jsonify({
+                "error": "Vehicle Unavailable",
+                "message": "Ang sasakyan ay mayroon nang booking sa napiling mga petsa. Mangyaring pumili ng ibang petsa o ibang sasakyan."
+            }), 400
+
         payment_type = data.get('payment_type', 'Full')
         if payment_type == 'Downpayment':
             amount_paid = float(total_price) * 0.20
@@ -100,7 +116,9 @@ def book_vehicle():
             notification_service.notify_admins_inapp(
                 "New Booking",
                 f"New booking #{booking_id} from {customer_name} for {brand} {model}, {start_date} to {end_date}.",
-                'admin_new_booking'
+                'admin_new_booking',
+                type='admin_new_booking',
+                booking_id=booking_id
             )
             print(f"DEBUG: notify_admins_inapp done for booking {booking_id}")
         except Exception as e:
@@ -205,10 +223,25 @@ def cancel_booking(booking_id):
             notification_service.notify_admins_inapp(
                 "Booking Cancelled by Customer",
                 f"Booking #{booking_id} was cancelled by the customer. Reason: {reason}.",
-                'admin_booking_cancelled'
+                'admin_booking_cancelled',
+                type='admin_booking_cancelled',
+                booking_id=booking_id
             )
         except Exception as e:
             print(f"DEBUG: notify_admins_inapp cancel failed: {e}")
+
+        # If booking is now Refund Pending, also trigger a refund request notification to admins
+        if booking['payment_status'] in ['Paid', 'Partially Paid']:
+            try:
+                notification_service.notify_admins_inapp(
+                    "Refund Request",
+                    f"Refund request for cancelled booking #{booking_id} by {booking.get('customer_name', 'Customer') or 'Customer'}.",
+                    'admin_refund_request',
+                    type='admin_refund_request',
+                    booking_id=booking_id
+                )
+            except Exception as e:
+                print(f"DEBUG: notify_admins_inapp refund request failed: {e}")
 
         return jsonify({"message": "Booking cancelled successfully"}), 200
 

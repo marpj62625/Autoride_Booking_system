@@ -27,6 +27,7 @@ public class MainActivity extends BridgeActivity {
         // Register GoogleAuth plugin
         registerPlugin(GoogleAuth.class);
 
+        AutorideMessagingService.createNotificationChannel(this);
         requestNotificationPermission();
         fetchAndForwardFcmToken();
         registerBackHandler();

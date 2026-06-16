@@ -5,7 +5,11 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.media.AudioAttributes;
+import android.net.Uri;
 import android.os.Build;
+import android.os.VibrationEffect;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -14,8 +18,34 @@ import com.google.firebase.messaging.RemoteMessage;
 @SuppressWarnings("SpellCheckingInspection")
 public class AutorideMessagingService extends FirebaseMessagingService {
 
-    private static final String CHANNEL_ID   = "autoride_notifications";
+    public static final String CHANNEL_ID   = "autoride_high_priority";
     private static final String CHANNEL_NAME = "Autoride Notifications";
+
+    /**
+     * Create (or update) the notification channel. Safe to call multiple times.
+     * Must be called before any notification is posted.
+     */
+    public static void createNotificationChannel(Context ctx) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationManager mgr =
+                (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (mgr == null) return;
+
+            // Delete old low-priority channel if it exists
+            mgr.deleteNotificationChannel("autoride_notifications");
+
+            NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
+            ch.setDescription("Autoride booking and payment notifications");
+            ch.enableVibration(true);
+            ch.setVibrationPattern(new long[]{0, 250, 250, 250});
+            ch.enableLights(true);
+            ch.setLightColor(Color.GREEN);
+            ch.setShowBadge(true);
+            ch.setLockscreenVisibility(android.app.Notification.VISIBILITY_PUBLIC);
+            mgr.createNotificationChannel(ch);
+        }
+    }
 
     @Override
     public void onNewToken(@NonNull String token) {
@@ -33,46 +63,50 @@ public class AutorideMessagingService extends FirebaseMessagingService {
         String title = "Autoride";
         String body  = "";
 
-        if (message.getNotification() != null) {
-            RemoteMessage.Notification n = message.getNotification();
-            if (n.getTitle() != null) title = n.getTitle();
-            if (n.getBody()  != null) body  = n.getBody();
-        }
-        if (body.isEmpty() && message.getData().containsKey("body"))
-            body = message.getData().get("body");
+        // Prefer data payload (sent when app is foreground OR when we send data-only)
         if (message.getData().containsKey("title"))
             title = message.getData().get("title");
+        if (message.getData().containsKey("body"))
+            body = message.getData().get("body");
+
+        // Fall back to notification payload
+        if (message.getNotification() != null) {
+            RemoteMessage.Notification n = message.getNotification();
+            if ((title.equals("Autoride")) && n.getTitle() != null) title = n.getTitle();
+            if (body.isEmpty() && n.getBody() != null) body = n.getBody();
+        }
 
         showNotification(title, body);
     }
 
     private void showNotification(String title, String body) {
+        createNotificationChannel(this);
+
         NotificationManager mgr =
             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel ch = new NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH);
-            ch.setDescription("Autoride booking and payment notifications");
-            ch.enableVibration(true);
-            mgr.createNotificationChannel(ch);
-        }
-
         Intent intent = new Intent(this, MainActivity.class)
-            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        int piFlags = PendingIntent.FLAG_ONE_SHOT |
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        int piFlags = PendingIntent.FLAG_UPDATE_CURRENT |
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
-        PendingIntent pi = PendingIntent.getActivity(this, 0, intent, piFlags);
+        PendingIntent pi = PendingIntent.getActivity(this, (int) System.currentTimeMillis(), intent, piFlags);
 
-        mgr.notify((int) System.currentTimeMillis(),
-            new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                .setAutoCancel(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(pi)
-                .build());
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_name)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)   // MAX forces heads-up popup
+            .setDefaults(NotificationCompat.DEFAULT_ALL)    // sound + vibrate + lights
+            .setVibrate(new long[]{0, 250, 250, 250})
+            .setLights(Color.GREEN, 1000, 1000)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(pi);
+
+        if (mgr != null) {
+            mgr.notify((int) System.currentTimeMillis(), builder.build());
+        }
     }
 }

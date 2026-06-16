@@ -209,7 +209,7 @@ def migrate_settings_v2():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_expiry DATE")
 
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS license_type VARCHAR(50)")
-
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMPTZ DEFAULT NULL")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'Unpaid'")
 
         
@@ -552,6 +552,51 @@ except Exception as _e:
     pass
 
 
+def migrate_loyalty_points():
+    """Ensures loyalty_points column exists on users table."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS loyalty_points INTEGER DEFAULT 0")
+        commit_db()
+    except Exception as e:
+        pass
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_loyalty_points()
+except Exception as _e:
+    pass
+
+
+def migrate_google_auth_columns():
+    """Ensures all columns required by the google_auth route exist in the users table.
+    This replaces the disabled migrate_settings_v2() which had these columns commented out."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_provider VARCHAR(50) DEFAULT 'email'")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMPTZ DEFAULT NULL")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_driver INT DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified INT DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_frozen BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS freeze_reason TEXT")
+        commit_db()
+        print("[MIGRATION] google_auth_columns migration completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] google_auth_columns migration error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_google_auth_columns()
+except Exception as _e:
+    pass
+
+
 
 @app.before_request
 
@@ -583,6 +628,10 @@ def log_activity(admin_id, admin_name, action, target_type=None, target_id=None,
     except Exception as e:
 
         print(f"FAILED TO LOG ACTIVITY: {e}")
+        try:
+            get_db().rollback()
+        except:
+            pass
 
     finally:
 
@@ -1018,6 +1067,60 @@ def health_check():
 
 
 
+@app.route('/user/forgot-password', methods=['POST'])
+def user_forgot_password():
+    """Forgot password endpoint for customers. Generates a temporary password and emails it."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+        
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, auth_provider FROM users WHERE LOWER(email) = %s", (email,))
+        user = cur.fetchone()
+        
+        if not user:
+            return jsonify({'error': 'Email address not found'}), 404
+            
+        if user.get('auth_provider') == 'google':
+            return jsonify({'error': 'This email is registered using Google Sign-In. Please log in using Google.'}), 400
+
+        # Generate random 8-character temporary password
+        import string
+        import random
+        import bcrypt
+        
+        temp_chars = string.ascii_letters + string.digits
+        temp_password = ''.join(random.choice(temp_chars) for _ in range(8))
+        
+        # Hash temporary password
+        hashed_pw = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Update user's password in database
+        cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user['id']))
+        commit_db()
+        
+        # Send temporary password via email using notifications.py SMTP logic
+        try:
+            from notifications import send_notification
+            subject = "Autoride Password Reset"
+            message = f"Hello {user['full_name']},\n\nWe received a request to reset your password. Your new temporary password is:\n\n{temp_password}\n\nPlease use this temporary password to log in and change your password in your Profile Settings immediately."
+            send_notification(user['id'], subject, message)
+            print(f"Forgot password email sent to {email}")
+        except Exception as email_err:
+            print(f"Failed to send forgot password email: {email_err}")
+            return jsonify({'error': 'Failed to send temporary password email. Please try again later.'}), 500
+            
+        return jsonify({'message': 'Temporary password sent successfully! Please check your email inbox.'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+
 @app.route('/login', methods=['POST'])
 
 def login():
@@ -1065,6 +1168,11 @@ def login():
                     commit_db()
             if pw_ok:
                 user = user_row
+                try:
+                    cur.execute("UPDATE users SET force_logout_at = NULL WHERE id = %s", (user['id'],))
+                    commit_db()
+                except Exception as fle:
+                    print(f"WARN login: reset force_logout_at failed: {fle}")
 
         
 
@@ -1198,6 +1306,18 @@ def admin_verify_user():
                 "Your driver's license has been verified! You can now book vehicles on Autoride.",
                 'license_approved'
             )
+            # Stamp force_logout_at so the customer app force-logs out and re-logs in with fresh status
+            try:
+                import psycopg as _psycopg2
+                conn2 = _psycopg2.connect(conninfo=_DB_URL)
+                cur2 = conn2.cursor()
+                cur2.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS force_logout_at TIMESTAMPTZ DEFAULT NULL")
+                cur2.execute("UPDATE users SET force_logout_at = NOW() WHERE id = %s", (user_id,))
+                conn2.commit()
+                cur2.close()
+                conn2.close()
+            except Exception as fle:
+                print(f"WARN: force_logout_at stamp failed: {fle}")
         elif status == 0:
             notification_service.notify_user(
                 user_id,
@@ -1239,13 +1359,16 @@ def check_verify_status():
         # Force read from primary (not replica) to avoid stale reads after admin approval
         cur.execute("SET TRANSACTION READ WRITE")
 
-        cur.execute("SELECT is_verified, license_image_url FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT is_verified, license_image_url, force_logout_at FROM users WHERE id = %s", (user_id,))
 
         user = cur.fetchone()
 
         if not user: return jsonify({"error": "User not found"}), 404
 
-        return jsonify(dict(user)), 200
+        result = dict(user)
+        if result.get('force_logout_at'):
+            result['force_logout_at'] = result['force_logout_at'].isoformat()
+        return jsonify(result), 200
 
     except Exception as e: return jsonify({"error": str(e)}), 500
 
@@ -1323,7 +1446,9 @@ def upload_license():
             notification_service.notify_admins_inapp(
                 "License Uploaded for Review",
                 f"{uname} has uploaded a driver's license and is awaiting verification.",
-                'admin_license_upload'
+                'admin_license_upload',
+                type='license',
+                user_id=user_id
             )
         except Exception as notif_err:
             print(f"License upload admin notification error: {notif_err}")
@@ -1675,11 +1800,8 @@ def verify_email():
         try:
 
             cur = get_cursor()
-
-            cur.execute("UPDATE users SET is_email_verified = True WHERE email = %s RETURNING id, full_name, is_driver", (email,))
-
+            cur.execute("UPDATE users SET is_email_verified = True, force_logout_at = NULL WHERE email = %s RETURNING id, full_name, is_driver", (email,))
             user = cur.fetchone()
-
             commit_db()
 
             del temp_email_otps[email]
@@ -1814,7 +1936,6 @@ def google_auth():
 
 
         # ID token is valid. Get the user's Google ID (sub), email, and name.
-
         email = idinfo['email']
 
         name = idinfo.get('name', 'Google User')
@@ -1823,170 +1944,113 @@ def google_auth():
 
         google_email_verified = idinfo.get('email_verified', False)
 
-        
+        # Use a fresh direct connection to avoid g.db_conn aborted-transaction cascade
+        import psycopg as _psycopg_ga
+        from config import SUPABASE_DB_URL as _GA_DB_URL
+        from psycopg.rows import dict_row as _dict_row_ga
+
+        _ga_conn = _psycopg_ga.connect(conninfo=_GA_DB_URL, row_factory=_dict_row_ga)
+        try:
+            with _ga_conn.cursor() as _gc:
+                # 1. Find the user
+                _gc.execute("SELECT id, full_name, email FROM users WHERE email = %s", (email,))
+                user = _gc.fetchone()
+
+                if user:
+                    # 2a. User exists — try to update google_id / auth_provider / force_logout_at
+                    try:
+                        _gc.execute(
+                            "UPDATE users SET google_id = %s, auth_provider = 'google', force_logout_at = NULL WHERE email = %s",
+                            (google_id, email)
+                        )
+                        _ga_conn.commit()
+                        print(f"[GOOGLE_AUTH] Updated existing user google_id for {email}")
+                    except Exception as _ue:
+                        _ga_conn.rollback()
+                        print(f"[GOOGLE_AUTH] UPDATE google_id failed (non-fatal): {_ue}")
+
+                    # 3. Re-fetch fresh user data
+                    try:
+                        _gc.execute(
+                            "SELECT id, full_name, is_email_verified, is_driver, is_verified, loyalty_points FROM users WHERE email = %s",
+                            (email,)
+                        )
+                        user_fresh = _gc.fetchone() or {}
+                    except Exception as _rfe:
+                        _ga_conn.rollback()
+                        print(f"[GOOGLE_AUTH] Re-fetch failed: {_rfe}")
+                        # Fallback: use what we know
+                        user_fresh = {'id': user['id'], 'full_name': user['full_name']}
+
+                    user_id    = user_fresh.get('id') or user['id']
+                    full_name  = user_fresh.get('full_name') or user['full_name']
+                    is_drv     = int(user_fresh.get('is_driver') or 0)
+                    is_ver     = int(user_fresh.get('is_verified') or 0)
+                    lp         = int(user_fresh.get('loyalty_points') or 0)
+                    email_ver  = bool(user_fresh.get('is_email_verified') or google_email_verified)
+
+                    # 4. If Google says email is verified, mark it in DB
+                    if google_email_verified and not user_fresh.get('is_email_verified'):
+                        try:
+                            _gc.execute("UPDATE users SET is_email_verified = TRUE WHERE email = %s", (email,))
+                            _ga_conn.commit()
+                        except Exception as _eve:
+                            _ga_conn.rollback()
+                            print(f"[GOOGLE_AUTH] Mark email_verified failed (non-fatal): {_eve}")
+
+                    # Google emails are always verified — skip OTP
+                    return jsonify({
+                        "message": "login success",
+                        "user": {
+                            "id": user_id,
+                            "fullName": full_name,
+                            "email": email,
+                            "isDriver": is_drv,
+                            "isVerified": is_ver,
+                            "loyaltyPoints": lp
+                        },
+                        "verification_required": False
+                    }), 200
+
+                else:
+                    # 2b. New user — insert
+                    try:
+                        _gc.execute(
+                            "INSERT INTO users (full_name, email, google_id, auth_provider, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, 'google', %s, %s, 0) RETURNING id",
+                            (name, email, google_id, is_driver, google_email_verified)
+                        )
+                        new_row = _gc.fetchone()
+                        new_user_id = new_row['id'] if new_row else None
+                        _ga_conn.commit()
+                    except Exception as _ie:
+                        _ga_conn.rollback()
+                        # Insert might fail if google_id/auth_provider columns don't exist yet
+                        print(f"[GOOGLE_AUTH] INSERT with google columns failed: {_ie}, trying basic insert")
+                        _gc.execute(
+                            "INSERT INTO users (full_name, email, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, %s, 0) RETURNING id",
+                            (name, email, is_driver, google_email_verified)
+                        )
+                        new_row = _gc.fetchone()
+                        new_user_id = new_row['id'] if new_row else None
+                        _ga_conn.commit()
+
+                    return jsonify({
+                        "message": "login success",
+                        "user": {
+                            "id": new_user_id,
+                            "fullName": name,
+                            "email": email,
+                            "isDriver": is_driver,
+                            "isVerified": 0,
+                            "loyaltyPoints": 0
+                        },
+                        "verification_required": False
+                    }), 201
 
-        cur = get_cursor()
+        finally:
+            _ga_conn.close()
 
-        cur.execute("SELECT id, full_name, email, is_driver FROM users WHERE email=%s", (email,))
 
-        user = cur.fetchone()
-
-        
-
-        if user:
-
-            # User exists, link google_id if not present
-
-            # UPDATE: Also update is_driver if requested
-
-            cur.execute("UPDATE users SET google_id = %s, auth_provider = 'google', is_driver = CASE WHEN %s = 1 THEN 1 ELSE is_driver END WHERE email = %s", (google_id, is_driver, email))
-
-            commit_db()
-
-            
-
-            # CHECK IF EMAIL IS ALREADY VERIFIED
-
-            # Re-fetch with fresh data
-
-            cur.execute("SELECT id, full_name, is_email_verified, is_driver FROM users WHERE email = %s", (email,))
-
-            user_fresh = cur.fetchone()
-
-
-
-            if user_fresh.get('is_email_verified') or google_email_verified:
-
-                if google_email_verified and not user_fresh.get('is_email_verified'):
-
-                    cur.execute("UPDATE users SET is_email_verified = True WHERE email = %s", (email,))
-
-                    commit_db()
-
-                
-                # Fetch loyalty points for the user
-                cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_fresh['id'],))
-                lp_row = cur.fetchone()
-                loyalty_pts = int(lp_row['loyalty_points']) if lp_row and lp_row.get('loyalty_points') else 0
-
-                # SKIP OTP - User is already verified!
-                return jsonify({
-
-                    "message": "login success",
-
-                    "user": {
-
-                        "id": user_fresh['id'],
-
-                        "fullName": user_fresh['full_name'],
-
-                        "email": email,
-
-                        "isDriver": user_fresh.get('is_driver', 0),
-
-                        "isVerified": user_fresh.get('is_verified', 0),
-
-                        "loyaltyPoints": loyalty_pts
-
-                    },
-
-                    "verification_required": False
-
-                }), 200
-
-
-
-            # If not verified yet, REQUIRE OTP verification
-
-            import random
-
-            otp = str(random.randint(100000, 999999))
-
-            temp_email_otps[email] = otp
-
-            send_verification_email(email, otp)
-
-
-
-            return jsonify({
-
-                "message": "OTP sent to your Google email",
-
-                "email": email,
-
-                "verification_required": True
-
-            }), 200
-
-        else:
-
-            # Create new user
-
-            cur.execute("""
-
-                INSERT INTO users (full_name, email, google_id, auth_provider, is_driver, is_email_verified, is_verified) 
-
-                VALUES (%s, %s, %s, 'google', %s, %s, 0) RETURNING id
-
-            """, (name, email, google_id, is_driver, google_email_verified))
-
-            new_user_id = cur.fetchone()['id']
-
-            commit_db()
-
-
-
-            if google_email_verified:
-
-                return jsonify({
-
-                    "message": "login success",
-
-                    "user": {
-
-                        "id": new_user_id,
-
-                        "fullName": name,
-
-                        "email": email,
-
-                        "isDriver": is_driver,
-
-                        "isVerified": 0,
-
-                        "loyaltyPoints": 0
-
-                    },
-
-                    "verification_required": False
-
-                }), 201
-
-
-
-            # REQUIRE OTP verification only if Google email not verified
-
-            import random
-
-            otp = str(random.randint(100000, 999999))
-
-            temp_email_otps[email] = otp
-
-            send_verification_email(email, otp)
-
-            
-
-            return jsonify({
-
-                "message": "Registration successful. Please verify OTP.",
-
-                "email": email,
-
-                "verification_required": True
-
-            }), 201
-
-            
 
     except ValueError:
 
@@ -2187,6 +2251,82 @@ def test_push_notification(user_id):
     except Exception as e:
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/send-custom-push', methods=['POST'])
+def admin_send_custom_push():
+    """Admin endpoint to send custom push notification or broadcast to all users"""
+    try:
+        data = request.get_json() or {}
+        title = data.get('title', '').strip()
+        body = data.get('body', '').strip()
+        user_id = data.get('user_id')
+        broadcast = data.get('broadcast', False)
+        
+        if not title or not body:
+            return jsonify({"error": "Title and body are required"}), 400
+            
+        from notifications import notification_service
+        
+        if broadcast:
+            # Send to all users using the existing database cursor/transaction
+            cur = get_cursor()
+            cur.execute("SELECT id, fcm_token FROM users")
+            users = cur.fetchall()
+            
+            success_count = 0
+            # 1. Bulk insert in-app notifications
+            for u in users:
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO notifications (user_id, admin_id, title, message, type)
+                        VALUES (%s, NULL, %s, %s, %s)
+                        """,
+                        (u['id'], title, body, 'admin_broadcast')
+                    )
+                    success_count += 1
+                except Exception as e:
+                    print(f"Failed to insert in-app notification for user {u['id']}: {e}")
+            
+            # Commit the changes to the database
+            commit_db()
+            
+            # 2. Dispatch FCM push notifications for users who have tokens
+            try:
+                from notifications import fcm_service
+                for u in users:
+                    token = u.get('fcm_token')
+                    if token:
+                        try:
+                            fcm_service.send_push(token, title, body, channel_id='autoride_customer_high_priority')
+                        except Exception as push_err:
+                            print(f"FCM push failed for user {u['id']}: {push_err}")
+            except Exception as fcm_err:
+                print(f"FCM service error: {fcm_err}")
+                
+            return jsonify({
+                "message": f"Broadcast push notification sent successfully to {success_count} users."
+            }), 200
+        else:
+            if not user_id:
+                return jsonify({"error": "User ID is required for sending individual notification"}), 400
+                
+            ok = notification_service.notify_user(
+                int(user_id),
+                title,
+                body,
+                'admin_custom_push'
+            )
+            if ok:
+                return jsonify({"message": "Push notification sent successfully"}), 200
+            else:
+                return jsonify({"error": "Failed to send notification. User might not have a registered device/token."}), 500
+                
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/admin/upload-refund-proof', methods=['POST'])
@@ -2954,6 +3094,29 @@ def book():
 
 
 
+        # ── Overlap guard: reject if the requested vehicle_id already has an active booking that overlaps ──
+        cur.execute("""
+            SELECT id, start_date, end_date, status,
+                   (end_date + INTERVAL '1 day')::date AS next_available
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date <= %s
+              AND end_date >= %s
+            ORDER BY start_date ASC
+            LIMIT 1
+        """, (vehicle_id, end_date, start_date))
+
+        overlap = cur.fetchone()
+        if overlap:
+            o = dict(overlap)
+            return jsonify({
+                "error": "This vehicle is already booked from {start} to {end} (status: {status}). "
+                         "It will be available again from {next}.".format(
+                             start=str(o['start_date']), end=str(o['end_date']),
+                             status=o['status'], next=str(o['next_available']))
+            }), 409
+
         # Category Auto-Assignment Logic
 
         # Get category info from the representative vehicle_id
@@ -2982,15 +3145,15 @@ def book():
 
                 SELECT vehicle_id FROM bookings 
 
-                WHERE status IN ('Confirmed', 'Pending', 'Picked Up')
+                WHERE status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
 
-                AND (%s <= end_date AND %s >= start_date)
+                AND (start_date <= %s AND end_date >= %s)
 
             )
 
             LIMIT 1
 
-        """, (category['brand'], category['model'], start_date, end_date))
+        """, (category['brand'], category['model'], end_date, start_date))
 
         
 
@@ -3258,7 +3421,9 @@ def legacy_payment():
                 notification_service.notify_admins_inapp(
                     "Payment Proof Uploaded",
                     f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
-                    'admin_payment_proof'
+                    'admin_payment_proof',
+                    type='admin_payment_proof',
+                    booking_id=booking_id
                 )
             except Exception as notif_err:
                 print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
@@ -3314,7 +3479,9 @@ def legacy_payment():
             notification_service.notify_admins_inapp(
                 "Payment Proof Uploaded",
                 f"Payment proof uploaded for booking #{booking_id} by {customer_name}. Amount: PHP {float(amount or 0)}.",
-                'admin_payment_proof'
+                'admin_payment_proof',
+                type='payment',
+                booking_id=booking_id
             )
         except Exception as notif_err:
             print(f"ERROR SENDING PAYMENT NOTIFICATION: {notif_err}")
@@ -3345,6 +3512,12 @@ def user_bookings():
         
 
     try:
+
+        try:
+            from routers.paymongo_routes import check_and_update_unpaid_paymongo_bookings
+            check_and_update_unpaid_paymongo_bookings(user_id)
+        except Exception as pm_err:
+            print(f"Auto status check error: {pm_err}")
 
         cur = get_cursor()
 
@@ -3887,6 +4060,31 @@ def modify_booking():
 
             return jsonify({"error": "Booking cannot be modified"}), 400
 
+        # ── Overlap guard for modification: check no other booking occupies the new dates ──
+        cur.execute("""
+            SELECT b.id, b.start_date, b.end_date, b.status,
+                   (b.end_date + INTERVAL '1 day')::date AS next_available
+            FROM bookings b
+            JOIN bookings orig ON orig.id = %s
+            WHERE b.vehicle_id = orig.vehicle_id
+              AND b.id != %s
+              AND b.status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND b.start_date <= %s
+              AND b.end_date >= %s
+            ORDER BY b.start_date ASC
+            LIMIT 1
+        """, (booking_id, booking_id, new_end, new_start))
+
+        mod_overlap = cur.fetchone()
+        if mod_overlap:
+            o = dict(mod_overlap)
+            return jsonify({
+                "error": "Cannot change dates – another booking occupies {start} to {end} (status: {status}). "
+                         "The vehicle is available again from {next}.".format(
+                             start=str(o['start_date']), end=str(o['end_date']),
+                             status=o['status'], next=str(o['next_available']))
+            }), 409
+
             
 
         rate = float(bk['daily_rate'])
@@ -4201,6 +4399,12 @@ def get_all_bookings():
 
     try:
 
+        try:
+            from routers.paymongo_routes import check_and_update_unpaid_paymongo_bookings
+            check_and_update_unpaid_paymongo_bookings()
+        except Exception as pm_err:
+            print(f"Auto status check error for admin: {pm_err}")
+
         cur = get_cursor()
 
         
@@ -4459,6 +4663,26 @@ def approve_booking(booking_id):
             return jsonify({"error": f"Cannot approve a booking with status '{row['status']}'"}), 400
 
         cur.execute("UPDATE bookings SET status='Approved' WHERE id=%s", (booking_id,))
+
+        # If booking was pending payment (cash), mark it as Paid and create payment record
+        cur.execute("SELECT payment_status, total_price FROM bookings WHERE id=%s", (booking_id,))
+        pay_row = cur.fetchone()
+        if pay_row and pay_row['payment_status'] in ('Pending Payment', 'Unpaid'):
+            total = float(pay_row.get('total_price') or 0)
+            cur.execute("""
+                UPDATE bookings
+                SET payment_status = 'Paid', amount_paid = %s, balance_amount = 0
+                WHERE id = %s
+            """, (total, booking_id))
+            # Insert a payment record
+            try:
+                cur.execute("""
+                    INSERT INTO payments (booking_id, amount, method, reference_number, status)
+                    VALUES (%s, %s, 'Cash (Over the counter)', 'CASH-CONFIRMED', 'Completed')
+                """, (booking_id, total))
+            except Exception:
+                pass  # Don't block approval if payment insert fails
+
 
         
 
@@ -4773,6 +4997,35 @@ def user_cancel_booking():
         except Exception:
             pass
 
+        # Notify admins about the cancellation
+        try:
+            _cur_cn = get_cursor()
+            _cur_cn.execute("SELECT full_name FROM users WHERE id = %s", (booking['user_id'],))
+            _urow = _cur_cn.fetchone()
+            _uname = _urow['full_name'] if _urow else f'User #{booking["user_id"]}'
+            _admin_msg = f"Booking #{booking_id} cancelled by customer {_uname}. Reason: {reason}."
+            if refund_amount > 0:
+                _admin_msg += f" Refund of PHP {refund_amount:,.2f} is pending."
+            notification_service.notify_admins_inapp(
+                "Booking Cancelled by Customer",
+                _admin_msg,
+                'admin_booking_cancelled',
+                type='admin_booking_cancelled',
+                booking_id=booking_id
+            )
+            
+            # Also notify admins of the refund request if there's a refund pending
+            if refund_amount > 0:
+                notification_service.notify_admins_inapp(
+                    "Refund Request",
+                    f"Refund request of PHP {refund_amount:,.2f} for cancelled booking #{booking_id} by {_uname}.",
+                    'admin_refund_request',
+                    type='admin_refund_request',
+                    booking_id=booking_id
+                )
+        except Exception as _admin_err:
+            print(f"Admin cancel notification error: {_admin_err}")
+
         return jsonify({
             "message": "Booking cancelled successfully.",
             "refund_amount": refund_amount,
@@ -4985,6 +5238,27 @@ def submit_refund_details(booking_id):
             WHERE id = %s
         """, (refund_channel, refund_account_name, refund_account_number, refund_detail_note, booking_id))
         commit_db()
+
+        # Notify admins that customer submitted refund details
+        try:
+            _cur_rd = get_cursor()
+            _cur_rd.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
+            _bk_rd = _cur_rd.fetchone()
+            if _bk_rd:
+                _uid_rd = _bk_rd['user_id']
+                _cur_rd.execute("SELECT full_name FROM users WHERE id = %s", (_uid_rd,))
+                _urow_rd = _cur_rd.fetchone()
+                _uname_rd = _urow_rd['full_name'] if _urow_rd else f'User #{_uid_rd}'
+                notification_service.notify_admins_inapp(
+                    "Refund Details Submitted",
+                    f"{_uname_rd} submitted refund details for Booking #{booking_id}. "
+                    f"Channel: {refund_channel}, Account: {refund_account_name} ({refund_account_number}).",
+                    'admin_refund_request',
+                    type='admin_refund_request',
+                    booking_id=booking_id
+                )
+        except Exception as _rd_err:
+            print(f"Admin refund notification error: {_rd_err}")
 
         return jsonify({"message": "Refund details submitted successfully."}), 200
 
@@ -6511,6 +6785,14 @@ CHATBOT_FAQ = [
 
     {
 
+        "keywords": ["tutorial", "guide", "how to use", "how to book", "paano gamitin", "paano mag-book", "step by step", "how does it work", "get started", "beginners", "new user", "first time"],
+
+        "response": " **How to Use Autoride \u2014 Step-by-Step Guide:**\n\n**Step 1: Create an Account**\n\u2022 Register with your Name, Gmail, and Password\n\u2022 Verify your email with the 6-digit code sent to you\n\u2022 Or use **Sign in with Google** for instant access\n\n**Step 2: Complete Your Profile**\n\u2022 Go to **Profile** and fill in your contact info\n\u2022 Upload your **Driver's License** (front and back photo)\n\u2022 Add emergency contact details\n\u2022 Wait for verification approval\n\n**Step 3: Browse Vehicles**\n\u2022 Go to **Browse Cars** or the Vehicles page\n\u2022 Filter by type: Sedan, SUV, Van, Pickup\n\u2022 Search by name or location\n\u2022 Tap any car to see details, photos, specs, and pricing\n\n**Step 4: Book a Vehicle**\n\u2022 Select your **start and end dates**\n\u2022 Choose pickup and dropoff location\n\u2022 Review your booking summary\n\u2022 Click **Confirm Booking**\n\n**Step 5: Pay for Your Booking**\n\u2022 Choose: GCash, Maya, Credit Card, Bank Transfer, or Cash\n\u2022 Complete payment instructions\n\u2022 You will receive a **booking confirmation email**\n\n**Step 6: Manage Your Booking**\n\u2022 Track your booking in the **My Bookings** tab\n\u2022 View booking status in real-time\n\u2022 Cancel or request support if needed\n\n Need help? Use **Live Chat** or check our **Support** page!"
+
+    },
+
+    {
+
         "keywords": ["forgot password", "reset password", "can't login", "hindi makapasok", "password reset"],
 
         "response": " **Password Reset:**\n\nIf you forgot your password:\n1. Go to the Login page\n2. Click 'Forgot Password'\n3. Enter your registered email\n4. Check your inbox for the reset link\n5. Set a new password\n\nStill can't access your account? Submit a support ticket and we'll help!"
@@ -7283,7 +7565,90 @@ def delete_vehicle(vehicle_id):
 
 
 
+@app.route('/vehicles/check-availability', methods=['POST'])
+def check_vehicle_availability():
+    """
+    Check if a vehicle has any conflicting bookings for the requested dates.
+    Returns:
+      - available: True if no conflict
+      - conflict: details of the conflicting booking (nearest one that overlaps)
+      - next_available_from: the date after the conflicting booking ends
+    """
+    try:
+        data = request.get_json() or {}
+        vehicle_id = data.get('vehicle_id')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if not vehicle_id or not start_date or not end_date:
+            return jsonify({'error': 'vehicle_id, start_date, and end_date are required'}), 400
+
+        cur = get_cursor()
+
+        # Find any overlapping active bookings
+        cur.execute("""
+            SELECT id, start_date, end_date, status,
+                   (end_date + INTERVAL '1 day')::date as next_available
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date <= %s
+              AND end_date >= %s
+            ORDER BY start_date ASC
+            LIMIT 1
+        """, (vehicle_id, end_date, start_date))
+
+        conflict = cur.fetchone()
+
+        if conflict:
+            c = dict(conflict)
+            return jsonify({
+                'available': False,
+                'conflict': {
+                    'booking_id': c['id'],
+                    'start_date': str(c['start_date']),
+                    'end_date': str(c['end_date']),
+                    'status': c['status']
+                },
+                'next_available_from': str(c['next_available'])
+            }), 200
+
+        # Also check if the requested end_date is close to a future booking
+        # so we can warn the user about extending limits
+        cur.execute("""
+            SELECT id, start_date, end_date, status
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date > %s
+            ORDER BY start_date ASC
+            LIMIT 1
+        """, (vehicle_id, end_date))
+
+        upcoming = cur.fetchone()
+        upcoming_info = None
+        if upcoming:
+            u = dict(upcoming)
+            upcoming_info = {
+                'start_date': str(u['start_date']),
+                'end_date': str(u['end_date']),
+                'status': u['status']
+            }
+
+        return jsonify({
+            'available': True,
+            'next_booking': upcoming_info
+        }), 200
+
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/vehicles/categories', methods=['GET'], strict_slashes=False)
+
 
 def get_vehicle_categories():
 
@@ -7301,10 +7666,10 @@ def get_vehicle_categories():
 
                 model,
 
-                -- Use image from first AVAILABLE unit (not booked/maintenance/etc.)
+                -- Use image from first AVAILABLE unit (not in permanent out-of-service states)
                 -- Falls back to any unit image if none are available
                 COALESCE(
-                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked','Rented') THEN vehicle_image END),
+                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN vehicle_image END),
                     MIN(vehicle_image)
                 ) as vehicle_image,
 
@@ -7322,7 +7687,10 @@ def get_vehicle_categories():
 
                 COUNT(*) as total_units,
 
-                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked','Rented') THEN 1 ELSE 0 END) as available_units
+                -- Count units that are operationally available (not permanently out of service).
+                -- 'Rented' is intentionally included because a car booked for June 25-26 is
+                -- still bookable for other dates — overlap is enforced at booking time, not here.
+                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN 1 ELSE 0 END) as available_units
 
             FROM vehicles
 
@@ -8062,7 +8430,7 @@ def get_vehicle_colors():
         commit_db()
         cur.execute(
             "SELECT DISTINCT COALESCE(color, 'Not Specified') as color, COUNT(*) as total, "
-            "SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold','Booked') THEN 1 ELSE 0 END) as available "
+            "SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN 1 ELSE 0 END) as available "
             "FROM vehicles WHERE brand = %s AND model = %s GROUP BY color ORDER BY color",
             (brand, model)
         )
@@ -8086,8 +8454,10 @@ def get_vehicle_units():
 
     try:
         cur = get_cursor()
-        # Exclude unavailable statuses using explicit placeholders (psycopg3 compatible)
-        unavailable = ['Maintenance', 'Repair', 'Service', 'Sold', 'Booked', 'Rented']
+        # Exclude permanently unavailable statuses only.
+        # 'Rented' and 'Booked' are intentionally NOT excluded here — a vehicle rented for
+        # June 25-26 is still bookable for other dates; overlap is enforced at submit time.
+        unavailable = ['Maintenance', 'Repair', 'Service', 'Sold']
         placeholders = ','.join(['%s'] * len(unavailable))
 
         if color and color != 'all' and color != 'Not Specified':
@@ -8442,7 +8812,7 @@ def get_license_details():
                     data = dict(row)
                     # Ensure all values are safe and handle None dates
                     for key, value in data.items():
-                        if isinstance(value, str) and len(value) > 100:
+                        if key not in ('license_front_url', 'license_back_url', 'license_image_url') and isinstance(value, str) and len(value) > 100:
                             data[key] = value[:97] + "..."
                         elif value is None:
                             data[key] = None
@@ -8695,7 +9065,9 @@ def save_license_details():
             notification_service.notify_admins_inapp(
                 "License Details Updated",
                 f"{uname} has submitted/updated their driver's license details and is awaiting verification.",
-                'admin_license_upload'
+                'admin_license_upload',
+                type='license',
+                user_id=user_id
             )
         except Exception as notif_err:
             print(f"License details admin notification error: {notif_err}")
@@ -8717,7 +9089,50 @@ def save_license_details():
             cur.close()
 
 
-# Duplicate admin FCM token function removed to prevent Flask conflicts
+# Restore admin FCM token function with unique function name to prevent Flask conflicts
+@app.route('/admin/fcm-token', methods=['POST'])
+def register_admin_device_fcm_token():
+    """Register or update an admin's FCM device token for push notifications.
+    Admin accounts are in the users table (role=admin/super_admin).
+    """
+    data = request.get_json(silent=True) or {}
+    admin_id = data.get('admin_id')
+    fcm_token = data.get('fcm_token')
+    if not admin_id or not fcm_token:
+        return jsonify({'error': 'admin_id and fcm_token are required'}), 400
+    try:
+        cur = get_cursor()
+        # Ensure fcm_token column exists (auto-migrate if needed)
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT")
+            commit_db()
+        except Exception:
+            pass  # Column already exists or can't alter
+        cur.execute(
+            "UPDATE users SET fcm_token = %s WHERE id = %s AND role IN ('admin', 'super_admin')",
+            (fcm_token, int(admin_id))
+        )
+        commit_db()
+        print(f"[FCM] Admin {admin_id} token saved OK")
+        return jsonify({'message': 'Admin FCM token registered'}), 200
+    except Exception as e:
+        print(f"[FCM] Admin FCM token save error: {e}")
+        # Try fallback: upsert via separate statement
+        try:
+            cur2 = get_cursor()
+            cur2.execute(
+                "UPDATE users SET fcm_token = %s WHERE id = %s",
+                (fcm_token, int(admin_id))
+            )
+            commit_db()
+            cur2.close()
+            print(f"[FCM] Admin {admin_id} token saved via fallback")
+            return jsonify({'message': 'Admin FCM token registered (fallback)'}), 200
+        except Exception as e2:
+            print(f"[FCM] Admin FCM fallback error: {e2}")
+            return jsonify({'error': str(e2)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 @app.route('/user/fcm-token', methods=['POST'])
@@ -8732,13 +9147,21 @@ def register_user_fcm_token():
         return jsonify({'error': 'user_id and fcm_token are required'}), 400
     try:
         cur = get_cursor()
+        # Ensure fcm_token column exists (auto-migrate if needed)
+        try:
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS fcm_token TEXT")
+            commit_db()
+        except Exception:
+            pass  # Column already exists or can't alter
         cur.execute(
             "UPDATE users SET fcm_token = %s WHERE id = %s",
-            (fcm_token, user_id)
+            (fcm_token, int(user_id))
         )
         commit_db()
+        print(f"[FCM] User {user_id} token saved OK")
         return jsonify({'message': 'FCM token registered'}), 200
     except Exception as e:
+        print(f"[FCM] User FCM token save error: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
@@ -9287,6 +9710,7 @@ def get_admin_notifications():
     Admin accounts are stored in the users table (role=admin/super_admin),
     so notifications are keyed by user_id.
     Query param: admin_id (int, required) - this is the users.id of the admin.
+    Uses a dedicated connection to avoid shared connection state issues.
     """
     admin_id = request.args.get('admin_id')
     if not admin_id:
@@ -9296,34 +9720,42 @@ def get_admin_notifications():
     except (ValueError, TypeError):
         return jsonify({'error': 'admin_id must be an integer'}), 400
     try:
-        cur = get_cursor()
-        cur.execute(
-            """
-            SELECT id, title, message, type, is_read, created_at
-            FROM notifications
-            WHERE user_id = %s AND type LIKE 'admin\\_%%'
-            ORDER BY created_at DESC
-            """,
-            (admin_id,)
-        )
-        rows = cur.fetchall()
-        result = []
-        for row in rows:
-            entry = dict(row)
-            if entry.get('created_at'):
-                entry['created_at'] = entry['created_at'].isoformat()
-            result.append(entry)
-        return jsonify(result), 200
+        import psycopg as _psycopg
+        from config import SUPABASE_DB_URL as _SUPABASE_DB_URL
+        from psycopg.rows import dict_row as _dict_row
+        _conn = _psycopg.connect(conninfo=_SUPABASE_DB_URL)
+        try:
+            _cur = _conn.cursor(row_factory=_dict_row)
+            _cur.execute(
+                """
+                SELECT id, title, message, type, is_read, created_at
+                FROM notifications
+                WHERE user_id = %s AND type LIKE 'admin\\_%%'
+                ORDER BY created_at DESC
+                """,
+                (admin_id,)
+            )
+            rows = _cur.fetchall()
+            result = []
+            for row in rows:
+                entry = dict(row)
+                if entry.get('created_at'):
+                    entry['created_at'] = entry['created_at'].isoformat()
+                result.append(entry)
+            return jsonify(result), 200
+        finally:
+            _conn.close()
     except Exception as e:
+        print(f"GET ADMIN NOTIFICATIONS ERROR: {e}")
         return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
+
 
 
 @app.route('/admin/notifications/read-all', methods=['POST'])
 def mark_all_admin_notifications_read():
     """Mark all notifications as read for an admin.
     Request body: { "admin_id": int }
+    Uses a dedicated connection to avoid shared connection state issues.
     """
     data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
@@ -9334,24 +9766,30 @@ def mark_all_admin_notifications_read():
     except (ValueError, TypeError):
         return jsonify({'error': 'admin_id must be an integer'}), 400
     try:
-        cur = get_cursor()
-        cur.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND type LIKE 'admin\\_%' AND is_read = FALSE",
-            (admin_id,)
-        )
-        updated = cur.rowcount
-        commit_db()
-        return jsonify({'updated': updated}), 200
+        import psycopg as _psycopg
+        from config import SUPABASE_DB_URL as _SUPABASE_DB_URL
+        _conn = _psycopg.connect(conninfo=_SUPABASE_DB_URL)
+        try:
+            _cur = _conn.cursor()
+            _cur.execute(
+                "UPDATE notifications SET is_read = TRUE WHERE user_id = %s AND type LIKE 'admin_%%' AND is_read = FALSE",
+                (admin_id,)
+            )
+            updated = _cur.rowcount
+            _conn.commit()
+            return jsonify({'updated': updated}), 200
+        finally:
+            _conn.close()
     except Exception as e:
+        print(f"MARK ALL ADMIN NOTIFICATIONS READ ERROR: {e}")
         return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
 
 
 @app.route('/admin/notifications/<int:notif_id>/read', methods=['POST'])
 def mark_admin_notification_read(notif_id):
     """Mark a single admin notification as read.
     Request body: { "admin_id": int }
+    Uses a dedicated connection to avoid shared connection state issues.
     """
     data = request.get_json(silent=True) or {}
     admin_id = data.get('admin_id')
@@ -9362,30 +9800,36 @@ def mark_admin_notification_read(notif_id):
     except (ValueError, TypeError):
         return jsonify({'error': 'admin_id must be an integer'}), 400
     try:
-        cur = get_cursor()
-        cur.execute(
-            "SELECT id, user_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
-            (notif_id,)
-        )
-        notif = cur.fetchone()
-        if not notif:
-            return jsonify({'error': 'Notification not found'}), 404
-        if notif['user_id'] != admin_id:
-            return jsonify({'error': 'Forbidden'}), 403
-        cur.execute(
-            "UPDATE notifications SET is_read = TRUE WHERE id = %s",
-            (notif_id,)
-        )
-        commit_db()
-        entry = dict(notif)
-        entry['is_read'] = True
-        if entry.get('created_at'):
-            entry['created_at'] = entry['created_at'].isoformat()
-        return jsonify(entry), 200
+        import psycopg as _psycopg
+        from config import SUPABASE_DB_URL as _SUPABASE_DB_URL
+        from psycopg.rows import dict_row as _dict_row
+        _conn = _psycopg.connect(conninfo=_SUPABASE_DB_URL)
+        try:
+            _cur = _conn.cursor(row_factory=_dict_row)
+            _cur.execute(
+                "SELECT id, user_id, title, message, type, is_read, created_at FROM notifications WHERE id = %s",
+                (notif_id,)
+            )
+            notif = _cur.fetchone()
+            if not notif:
+                return jsonify({'error': 'Notification not found'}), 404
+            if notif['user_id'] != admin_id:
+                return jsonify({'error': 'Forbidden'}), 403
+            _cur.execute(
+                "UPDATE notifications SET is_read = TRUE WHERE id = %s",
+                (notif_id,)
+            )
+            _conn.commit()
+            entry = dict(notif)
+            entry['is_read'] = True
+            if entry.get('created_at'):
+                entry['created_at'] = entry['created_at'].isoformat()
+            return jsonify(entry), 200
+        finally:
+            _conn.close()
     except Exception as e:
+        print(f"MARK ADMIN NOTIFICATION READ ERROR: {e}")
         return jsonify({'error': str(e)}), 500
-    finally:
-        if 'cur' in locals(): cur.close()
 
 
 # ?????????????????????????????????????????????
