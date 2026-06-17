@@ -2685,7 +2685,7 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-booking-form\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="closeOverlay(\'page-booking-form\'); showPage(\'page-browse\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
