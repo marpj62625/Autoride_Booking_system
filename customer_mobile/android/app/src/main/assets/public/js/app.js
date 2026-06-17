@@ -2269,8 +2269,8 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
       window._vdBrand = brand;
       window._vdModel = model;
 
-      // Get unique transmissions from available units only
-      var availUnits = allUnits.filter(function(u) { return u.status === 'Available'; });
+      // Get unique transmissions from operationally available units (not out of service)
+      var availUnits = allUnits.filter(function(u) { return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1; });
       var seenTrans = {};
       var transmissions = [];
       availUnits.forEach(function(u) {
@@ -2278,10 +2278,10 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         if (!seenTrans[t]) { seenTrans[t] = true; transmissions.push(t); }
       });
 
-      // Pick a default unit to show initially
-      var defaultUnit = availUnits[0] || allUnits[0];
-      var isAvailable = defaultUnit.status === 'Available';
-      var canBook = isAvailable && parseInt(currentUser.isVerified) === 2;
+      // Pick a default unit to show initially (prefer Available, fallback to Rented/Booked)
+      var defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
+      var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(defaultUnit.status) === -1;
+      var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
       var imgSrc = (defaultUnit.gallery && defaultUnit.gallery.length) ? buildImgUrl(defaultUnit.gallery[0]) : buildImgUrl(defaultUnit.vehicle_image);
 
       // Build transmission options
@@ -2310,7 +2310,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         // Title + status
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
         '<h4 style="font-weight:800;font-size:1rem;">' + brand + ' ' + model + '</h4>' +
-        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
         '</div>' +
         // Specs grid - Transmission and Color are dropdowns
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
@@ -2362,7 +2362,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '</div>' +
         '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;"' +
         (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
-        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isAvailable ? 'Verify License' : 'Unavailable')) +
+        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
         '</button>' +
         '</div></div>';
 
@@ -2377,7 +2377,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 function onVdTransChange() {
   var trans = document.getElementById('vd-trans').value;
   var availUnits = (window._vdUnits || []).filter(function(u) {
-    return u.status === 'Available' && u.transmission === trans;
+    return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && u.transmission === trans;
   });
   var seenColors = {};
   var colors = [];
@@ -2403,7 +2403,7 @@ function onVdColorChange() {
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
     var uColor = u.color_display || u.color || 'Not Specified';
-    if (u.status === 'Available' && uColor === color && (!trans || u.transmission === trans)) {
+    if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && uColor === color && (!trans || u.transmission === trans)) {
       unit = u; break;
     }
   }
@@ -2436,12 +2436,13 @@ function onVdColorChange() {
   // Update book button
   var bookBtn = document.getElementById('vd-book-btn');
   if (bookBtn) {
-    var canBook = unit.status === 'Available' && parseInt(currentUser.isVerified) === 2;
+    var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(unit.status) === -1;
+    var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
     bookBtn.disabled = !canBook;
     bookBtn.style.cssText = canBook
       ? 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;'
       : 'width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;';
-    bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (unit.status === 'Available' ? 'Verify License' : 'Unavailable'));
+    bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable'));
     if (canBook) {
       (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
     }
@@ -2721,7 +2722,9 @@ function openBookingForm(vehicleId) {
     // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
     '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:8px;">Available: <strong>' + (currentUser.loyaltyPoints || 0) + ' pts</strong></p>' +
-    '<div class="form-group"><label>Points to Redeem</label><input type="number" id="bfPoints" min="0" max="' + (currentUser.loyaltyPoints || 0) + '" value="0" onchange="updateBookingPrice()"></div>' +
+    '<p id="maxPointsInfo" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;display:none;"><i class="fas fa-info-circle"></i> Max redeemable (50% of total): <strong id="maxPointsValue">0</strong> pts</p>' +
+    '<div class="form-group"><label>Points to Redeem</label><input type="number" id="bfPoints" min="0" max="' + (currentUser.loyaltyPoints || 0) + '" value="0" onchange="validateLoyaltyPoints(); updateBookingPrice()"></div>' +
+    '<span class="field-error" id="pointsErr" style="display:none;"></span>' +
     '</div>' +
 
     // Price Breakdown
@@ -2820,6 +2823,71 @@ function selectInsurance(type, price, el) {
   updateBookingPrice();
 }
 
+function validateLoyaltyPoints() {
+  var ptsEl = document.getElementById('bfPoints');
+  var pointsErrEl = document.getElementById('pointsErr');
+  var maxPointsInfoEl = document.getElementById('maxPointsInfo');
+  var maxPointsValueEl = document.getElementById('maxPointsValue');
+  
+  if (!ptsEl) return;
+  
+  var enteredPoints = parseInt(ptsEl.value) || 0;
+  
+  // Calculate the maximum allowed points based on 50% of booking subtotal
+  var startEl = document.getElementById('bfStartDate');
+  var endEl = document.getElementById('bfEndDate');
+  if (!startEl || !endEl || !startEl.value || !endEl.value) {
+    if (pointsErrEl) pointsErrEl.style.display = 'none';
+    return;
+  }
+  
+  var v = bookingFormVehicle;
+  if (!v) return;
+  
+  var start = startEl.value;
+  var end = endEl.value;
+  var days = getBookingDays();
+  var insPrice = (selectedInsurance.pricePerDay || 0) * days;
+  
+  // Calculate subtotal (before points)
+  var basePrice = v.daily_rate * days;
+  var addonPrice = selectedAddons.reduce(function(sum, a) { return sum + (a.price || 0); }, 0);
+  var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+  var ltPercent = parseInt(appSettings.long_term_discount_percent) || 10;
+  var longTermDiscount = days >= ltDays ? basePrice * (ltPercent / 100) : 0;
+  var subtotal = basePrice + addonPrice + insPrice - longTermDiscount;
+  
+  // Max points discount is 50% of subtotal
+  var maxPointsDiscount = subtotal * 0.50;
+  var maxPoints = Math.floor(maxPointsDiscount * 10); // 10 points = PHP 1
+  
+  // Cap by user's available points
+  maxPoints = Math.min(maxPoints, currentUser.loyaltyPoints || 0);
+  
+  // Show max points info
+  if (maxPointsInfoEl && maxPointsValueEl) {
+    maxPointsValueEl.textContent = maxPoints;
+    maxPointsInfoEl.style.display = maxPoints > 0 ? 'block' : 'none';
+  }
+  
+  // Validate and cap the entered value
+  if (enteredPoints > maxPoints) {
+    ptsEl.value = maxPoints;
+    if (pointsErrEl) {
+      pointsErrEl.textContent = 'Maximum ' + maxPoints + ' points can be redeemed (50% of booking total)';
+      pointsErrEl.style.display = 'block';
+      setTimeout(function() {
+        if (pointsErrEl) pointsErrEl.style.display = 'none';
+      }, 3000);
+    }
+  } else {
+    if (pointsErrEl) pointsErrEl.style.display = 'none';
+  }
+  
+  // Update the max attribute
+  ptsEl.setAttribute('max', maxPoints);
+}
+
 function updateBookingPrice() {
   var startEl = document.getElementById('bfStartDate');
   var endEl = document.getElementById('bfEndDate');
@@ -2838,6 +2906,9 @@ function updateBookingPrice() {
     return Object.assign({}, a, { price: a.pricePerDay * days });
   });
 
+  // Validate points before calculating price
+  validateLoyaltyPoints();
+  
   var ptsEl = document.getElementById('bfPoints');
   var pts = ptsEl ? (parseInt(ptsEl.value) || 0) : 0;
   var result = calculateBookingPrice(
@@ -2871,13 +2942,18 @@ function updateBookingPrice() {
 function submitBooking() {
   var start = document.getElementById('bfStartDate').value;
   var end = document.getElementById('bfEndDate').value;
+  var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
   document.getElementById('bfStartErr').textContent = '';
   document.getElementById('bfEndErr').textContent = '';
   document.getElementById('bfErr').textContent = '';
-  var dateCheck = validateDateRange(start, end);
+  var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
-    if (dateCheck.error && dateCheck.error.indexOf('Start') >= 0) document.getElementById('bfStartErr').textContent = dateCheck.error;
-    else document.getElementById('bfEndErr').textContent = dateCheck.error;
+    // Route pickup-time errors to start date error field
+    if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0 || dateCheck.error.indexOf('Pickup time') >= 0)) {
+      document.getElementById('bfStartErr').textContent = dateCheck.error;
+    } else {
+      document.getElementById('bfEndErr').textContent = dateCheck.error;
+    }
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
@@ -2935,8 +3011,41 @@ function submitBooking() {
     service_type: serviceType,
     split_with_email: splitEmail || null
   };
-  // Show rental agreement before submitting
-  showRentalAgreement(payload, result, payType);
+
+  // Check availability on the server before proceeding
+  showLoading(true);
+  apiCall('/vehicles/check-availability', {
+    method: 'POST',
+    body: JSON.stringify({
+      vehicle_id: bookingFormVehicle.id,
+      start_date: start,
+      end_date: end
+    })
+  }).then(function(avail) {
+    showLoading(false);
+    if (!avail.available) {
+      var conflict = avail.conflict || {};
+      var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
+      var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
+        formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
+        '. Next available: ' + nextDate + '.';
+      document.getElementById('bfErr').textContent = msg;
+      return;
+    }
+    // Warn if the chosen end_date is close to an upcoming booking
+    if (avail.next_booking) {
+      var nb = avail.next_booking;
+      var nbStart = formatDateDisplay(nb.start_date);
+      showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
+    }
+    // Show rental agreement before submitting
+    showRentalAgreement(payload, result, payType);
+  }).catch(function(err) {
+    showLoading(false);
+    // If availability check fails, allow the booking to proceed (server will catch it)
+    console.warn('Availability check failed:', err);
+    showRentalAgreement(payload, result, payType);
+  });
 }
 
 // RENTAL AGREEMENT MODAL
@@ -5681,7 +5790,7 @@ function sendChatMsg(msg) {
 function chatLocalFallback(msg) {
   var lower = msg.toLowerCase();
   if (lower.match(/tutorial|guide|how.*use|how.*work|paano|gamitin|step by step|get started/)) {
-    return '📖 **How to Use Autoride:**\n\n1️⃣ **Register** — Sign up with your Gmail & password, then verify your email\n2️⃣ **Complete Profile** — Upload your Driver\'s License (front & back) in Profile\n3️⃣ **Browse Cars** — Filter by type/date or search by name\n4️⃣ **Book** — Pick dates, choose location, confirm booking\n5️⃣ **Pay** — Use GCash, Maya, Credit Card, or Cash\n6️⃣ **Track** — Monitor your booking status in My Bookings\n\n💬 Need more help? Use Live Chat!';
+    return '📖 **How to Use Autoride:**\n\n1︝⃣ **Register** — Sign up with your Gmail & password, then verify your email\n2︝⃣ **Complete Profile** — Upload your Driver\'s License (front & back) in Profile\n3︝⃣ **Browse Cars** — Filter by type/date or search by name\n4︝⃣ **Book** — Pick dates, choose location, confirm booking\n5︝⃣ **Pay** — Use GCash, Maya, Credit Card, or Cash\n6︝⃣ **Track** — Monitor your booking status in My Bookings\n\n💬 Need more help? Use Live Chat!';
   }
   if (lower.match(/book|rent|reserve/)) return '📋 To book: Browse Cars → Select dates → Choose location → Confirm Booking!';
   if (lower.match(/price|rate|cost|magkano/)) return '💰 Rates start at ₱1,500/day. Check each vehicle page for exact pricing.';

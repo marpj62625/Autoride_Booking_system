@@ -242,7 +242,11 @@ function calculateBookingPrice(
   const couponDiscount = subtotal * (cpPercent / 100);
 
   const pts = Number(pointsRedeemed) || 0;
-  const pointsDiscount = pts / 10; // 10 points = PHP 1
+  const pointsValue = pts / 10; // 10 points = PHP 1
+  
+  // LIMIT: Points can only cover max 50% of subtotal (after coupon)
+  const maxPointsDiscount = (subtotal - couponDiscount) * 0.50;
+  const pointsDiscount = Math.min(pointsValue, maxPointsDiscount);
 
   const total = Math.max(0, subtotal - couponDiscount - pointsDiscount);
   const pointsEarned = Math.floor(total / 100);
