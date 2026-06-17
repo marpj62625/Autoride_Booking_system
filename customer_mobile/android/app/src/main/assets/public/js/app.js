@@ -2539,9 +2539,10 @@ function toggleFav(vehicleId, btn) {
 }
 
 function openVehicleDetail(vehicleId) {
-  // Ensure browse page is active as base layer
-  if (!document.getElementById('page-browse').classList.contains('active')) {
-    showPage('page-browse');
+  // Ensure vehicles/browse page is active as base layer
+  var vehiclesPage = document.getElementById('page-vehicles');
+  if (vehiclesPage && !vehiclesPage.classList.contains('active')) {
+    showPage('page-vehicles');
   }
   showOverlay('page-vehicle-detail');
   var vdEl = document.getElementById('vehicleDetailContent');
