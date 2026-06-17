@@ -1770,11 +1770,76 @@ function loadHome() {
       var el2 = document.getElementById('homePoints2');
       if (el2) el2.textContent = pts_val.toLocaleString();
       currentUser.loyaltyPoints = pts_val;
-      var progress = Math.min(100, (pts_val / 2000) * 100);
+      
+      // Determine tier and next tier threshold
+      var tier, tierBg, tierColor, tierBorder, nextTier, nextThreshold;
+      if (pts_val < 1000) {
+        tier = 'BRONZE';
+        tierBg = 'rgba(205,127,50,0.2)';
+        tierColor = '#cd7f32';
+        tierBorder = 'rgba(205,127,50,0.3)';
+        nextTier = 'Silver';
+        nextThreshold = 1000;
+      } else if (pts_val < 2000) {
+        tier = 'SILVER';
+        tierBg = 'rgba(245,158,11,0.2)';
+        tierColor = '#fbbf24';
+        tierBorder = 'rgba(245,158,11,0.3)';
+        nextTier = 'Gold';
+        nextThreshold = 2000;
+      } else if (pts_val < 5000) {
+        tier = 'GOLD';
+        tierBg = 'rgba(251,191,36,0.2)';
+        tierColor = '#fbbf24';
+        tierBorder = 'rgba(251,191,36,0.3)';
+        nextTier = 'Platinum';
+        nextThreshold = 5000;
+      } else {
+        tier = 'PLATINUM';
+        tierBg = 'rgba(168,162,158,0.2)';
+        tierColor = '#a8a29e';
+        tierBorder = 'rgba(168,162,158,0.3)';
+        nextTier = 'Max';
+        nextThreshold = pts_val; // already at max
+      }
+      
+      // Update tier badge
+      var tierBadge = document.getElementById('loyaltyTierBadge');
+      if (tierBadge) {
+        tierBadge.textContent = tier;
+        tierBadge.style.background = tierBg;
+        tierBadge.style.color = tierColor;
+        tierBadge.style.border = '1px solid ' + tierBorder;
+      }
+      
+      // Update progress label and target
+      var progressLabel = document.getElementById('loyaltyProgressLabel');
+      if (progressLabel) {
+        if (tier === 'PLATINUM') {
+          progressLabel.textContent = 'Maximum Tier Achieved!';
+        } else {
+          progressLabel.textContent = 'Progress to ' + nextTier;
+        }
+      }
+      
+      var targetEl = document.getElementById('loyaltyTargetPoints');
+      if (targetEl) targetEl.textContent = nextThreshold.toLocaleString();
+      
+      // Calculate progress bar
+      var progress = tier === 'PLATINUM' ? 100 : Math.min(100, (pts_val / nextThreshold) * 100);
       var bar = document.getElementById('loyaltyBar');
       if (bar) bar.style.width = progress + '%';
+      
+      // Update progress text
       var ptsNeeded = document.getElementById('ptsNeeded');
-      if (ptsNeeded) ptsNeeded.textContent = Math.max(0, 2000 - pts_val).toLocaleString() + ' pts more to unlock Gold benefits';
+      if (ptsNeeded) {
+        if (tier === 'PLATINUM') {
+          ptsNeeded.textContent = 'You have unlocked all loyalty benefits!';
+        } else {
+          var remaining = Math.max(0, nextThreshold - pts_val);
+          ptsNeeded.textContent = remaining.toLocaleString() + ' pts more to unlock ' + nextTier + ' benefits';
+        }
+      }
     }).catch(function() {});
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(bookings) {
