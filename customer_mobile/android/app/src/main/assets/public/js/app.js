@@ -2407,7 +2407,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
         // Color dropdown
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<span style="font-size:16px;width:16px;flex-shrink:0;">??</span>' +
+        '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
         '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
         colorOptions + '</select>' +
         '</div>' +
