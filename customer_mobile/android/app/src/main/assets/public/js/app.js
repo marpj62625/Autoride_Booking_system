@@ -383,7 +383,9 @@ var BookingSession = {
 
     if (data.overlays.vehicleDetail && data.currentVehicle) {
       showToast('Restored your last viewed vehicle.', 'info');
-      openVehicleDetail(data.currentVehicle);
+      // Extract vehicle ID if currentVehicle is an object
+      var vehicleId = typeof data.currentVehicle === 'object' ? data.currentVehicle.id : data.currentVehicle;
+      openVehicleDetail(vehicleId);
       return true;
     }
 
