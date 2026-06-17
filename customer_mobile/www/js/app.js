@@ -310,8 +310,8 @@ var BookingSession = {
       // Booking form fields
       startDate: (document.getElementById('bfStartDate') || {}).value || null,
       endDate: (document.getElementById('bfEndDate') || {}).value || null,
-      pickupTime: (document.getElementById('bfPickupTime') || {}).value || '06:00',
-      returnTime: (document.getElementById('bfReturnTime') || {}).value || '06:00',
+      pickupTime: (document.getElementById('bfPickupTime') || {}).value || getCurrentTimeRounded(),
+      returnTime: (document.getElementById('bfReturnTime') || {}).value || getCurrentTimeRounded(),
       serviceType: (document.getElementById('bfServiceType') || {}).value || 'pickup',
       pickupLocation: (document.getElementById('bfPickupLocation') || {}).value || null,
       rentalType: (document.getElementById('bfRentalType') || {}).value || 'Self-Drive',
@@ -2560,8 +2560,42 @@ var ADDON_OPTIONS = [
   { name: 'Roadside Assistance', pricePerDay: 100 }
 ];
 
+function getCurrentTimeRounded() {
+  var now = new Date();
+  var currentHour = now.getHours();
+  var currentMin = now.getMinutes();
+  
+  // Round to nearest 30 minutes  
+  var roundedMin = currentMin < 15 ? 0 : currentMin < 45 ? 30 : 0;
+  if (currentMin >= 45) {
+    currentHour = (currentHour + 1) % 24;
+  }
+  
+  var hh = String(currentHour).padStart(2, '0');
+  var mm = String(roundedMin).padStart(2, '0');
+  return hh + ':' + mm;
+}
+
 function generateTimeOptions(selectedTime) {
   var times = [];
+  
+  // If no selectedTime provided, use current time rounded to nearest 30 minutes
+  if (!selectedTime) {
+    var now = new Date();
+    var currentHour = now.getHours();
+    var currentMin = now.getMinutes();
+    
+    // Round to nearest 30 minutes
+    var roundedMin = currentMin < 15 ? 0 : currentMin < 45 ? 30 : 0;
+    if (currentMin >= 45) {
+      currentHour = (currentHour + 1) % 24;
+    }
+    
+    var hh = String(currentHour).padStart(2, '0');
+    var mm = String(roundedMin).padStart(2, '0');
+    selectedTime = hh + ':' + mm;
+  }
+  
   for (var h = 0; h < 24; h++) {
     for (var m = 0; m < 60; m += 30) {
       var hh = String(h).padStart(2, '0');
@@ -2584,7 +2618,7 @@ function autoSetReturnTime() {
   var endDateEl    = document.getElementById('bfEndDate');
   if (!pickupTimeEl || !returnTimeEl) return;
 
-  var pickupTime = pickupTimeEl.value || '06:00';
+  var pickupTime = pickupTimeEl.value || getCurrentTimeRounded();
   var parts = pickupTime.split(':');
   var pickupHour = parseInt(parts[0]);
   var pickupMin  = parseInt(parts[1]);
@@ -2661,12 +2695,12 @@ function openBookingForm(vehicleId) {
     '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
     '<div class="form-group"><label>Pickup Time</label>' +
     '<select id="bfPickupTime" onchange="autoSetReturnTime()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
-    generateTimeOptions('06:00') +
+    generateTimeOptions() +
     '</select></div>' +
     '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfEndErr"></span></div>' +
     '<div class="form-group"><label>Return Time</label>' +
     '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
-    generateTimeOptions('06:00') +
+    generateTimeOptions() +
     '</select>' +
     '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-info-circle"></i> Return time is auto-set to 24 hrs after pickup</small>' +
     '</div>' +
@@ -2991,8 +3025,8 @@ function submitBooking() {
     user_id: currentUser.id,
     vehicle_id: bookingFormVehicle.id,
     start_date: start, end_date: end,
-    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '06:00',
-    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : '06:00',
+    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
+    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
     pickup_location: pickupLocation,
     pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
     return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
