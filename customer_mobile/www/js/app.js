@@ -2539,6 +2539,10 @@ function toggleFav(vehicleId, btn) {
 }
 
 function openVehicleDetail(vehicleId) {
+  // Ensure browse page is active as base layer
+  if (!document.getElementById('page-browse').classList.contains('active')) {
+    showPage('page-browse');
+  }
   showOverlay('page-vehicle-detail');
   var vdEl = document.getElementById('vehicleDetailContent');
   if (vdEl) vdEl.innerHTML = '<div style=\"padding:20px;\"><div style=\"width:100%;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;\"></div><div style=\"background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;\"><div style=\"height:22px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;\"></div><div style=\"height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div></div></div>';
@@ -2750,7 +2754,7 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-booking-form\'); showPage(\'page-browse\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="closeOverlay(\'page-booking-form\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
