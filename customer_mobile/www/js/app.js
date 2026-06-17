@@ -2539,10 +2539,16 @@ function toggleFav(vehicleId, btn) {
 }
 
 function openVehicleDetail(vehicleId) {
-  // Ensure vehicles/browse page is active as base layer
+  // Ensure vehicles/browse page is visible as base layer (without closing overlays)
   var vehiclesPage = document.getElementById('page-vehicles');
   if (vehiclesPage && !vehiclesPage.classList.contains('active')) {
-    showPage('page-vehicles');
+    // Manually show the page without calling showPage (which closes all overlays)
+    vehiclesPage.style.display = 'block';
+    vehiclesPage.classList.add('active');
+    // Load vehicles if not already loaded
+    if (!allVehicles || allVehicles.length === 0) {
+      loadVehicles();
+    }
   }
   showOverlay('page-vehicle-detail');
   var vdEl = document.getElementById('vehicleDetailContent');
