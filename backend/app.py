@@ -100,7 +100,11 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
-    return jsonify({'error': 'File too large. Maximum upload size is 16 MB.'}), 413
+    response = jsonify({'error': 'File too large. Maximum upload size is 16 MB.'})
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response, 413
 
 @app.errorhandler(Exception)
 def handle_large_response(error):
@@ -108,7 +112,11 @@ def handle_large_response(error):
     error_str = str(error)
     if len(error_str) > 1000:  # If error message is very long
         error_str = error_str[:500] + "... [truncated]"
-    return jsonify({'error': error_str}), 500
+    response = jsonify({'error': error_str})
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response, 500
 
 
 
