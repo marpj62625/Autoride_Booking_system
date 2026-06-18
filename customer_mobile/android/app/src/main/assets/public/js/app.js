@@ -5809,7 +5809,7 @@ function loadChatbot() {
     '<div class="page-header" style="flex-shrink:0;">' +
     '<button class="back-btn" onclick="closeChatbot()"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>AI Assistant</h2></div>' +
-    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;">' +
+    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:100px;">' +
     '<div class="chat-msg bot">Hi! 👋 I\'m the Autoride AI assistant. How can I help you today?</div>' +
     '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;">' +
     '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
@@ -5819,7 +5819,7 @@ function loadChatbot() {
     '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
     '</div>' +
     '</div>' +
-    '<div class="chat-input-row" style="flex-shrink:0;">' +
+    '<div class="chat-input-row" style="flex-shrink:0;position:sticky;bottom:0;left:0;right:0;z-index:100;background:var(--bg-card);">' +
     '<input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')sendChat()">' +
     '<button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>' +
     '</div>';
