@@ -40,14 +40,33 @@ def create_payment():
     customer_phone = data.get('customer_phone', '')
     payment_type = data.get('payment_type', 'Full')
 
+    # Log incoming request for debugging
+    print(f"[PayMongo] Create payment request: booking_id={booking_id}, amount={amount}, method={method}")
+
     if not all([booking_id, amount, method]):
-        return jsonify({'error': 'booking_id, amount, and method are required'}), 400
+        missing_fields = []
+        if not booking_id:
+            missing_fields.append('booking_id')
+        if not amount:
+            missing_fields.append('amount')
+        if not method:
+            missing_fields.append('method')
+        error_msg = f'Missing required fields: {", ".join(missing_fields)}'
+        print(f"[PayMongo] Error: {error_msg}")
+        return jsonify({'error': error_msg}), 400
 
     # PayMongo amounts are in centavos (multiply by 100)
-    amount_centavos = int(float(amount) * 100)
+    try:
+        amount_centavos = int(float(amount) * 100)
+    except (ValueError, TypeError) as e:
+        error_msg = f'Invalid amount format: {amount}'
+        print(f"[PayMongo] Error: {error_msg}")
+        return jsonify({'error': error_msg}), 400
 
     if amount_centavos < 10000:  # Minimum 100 PHP
-        return jsonify({'error': 'Minimum payment amount is PHP 100'}), 400
+        error_msg = 'Minimum payment amount is PHP 100'
+        print(f"[PayMongo] Error: {error_msg} (amount_centavos={amount_centavos})")
+        return jsonify({'error': error_msg}), 400
 
     # Map method names to PayMongo payment method types
     method_map = {
@@ -60,7 +79,9 @@ def create_payment():
     }
     pm_type = method_map.get(method.lower())
     if not pm_type:
-        return jsonify({'error': f'Unsupported payment method: {method}'}), 400
+        error_msg = f'Unsupported payment method: {method}'
+        print(f"[PayMongo] Error: {error_msg}")
+        return jsonify({'error': error_msg}), 400
 
     # Build success/failure redirect URLs
     success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
