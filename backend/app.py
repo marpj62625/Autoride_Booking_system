@@ -8471,6 +8471,29 @@ def get_vehicle_units():
                 [brand, model] + unavailable
             )
         units = cur.fetchall()
+        
+        # Fetch reviews and avg_rating for the first unit (all units of same brand+model share reviews)
+        reviews_data = []
+        avg_rating = 0
+        if units:
+            first_vehicle_id = units[0]['id']
+            # Get avg rating
+            cur.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE vehicle_id = %s", (first_vehicle_id,))
+            avg_row = cur.fetchone()
+            avg_rating = float(avg_row['avg_rating']) if avg_row and avg_row['avg_rating'] else 0
+            
+            # Get reviews with user details
+            cur.execute("""
+                SELECT r.id, r.user_id, r.vehicle_id, r.rating, r.comment, r.created_at,
+                       u.full_name, u.profile_picture
+                FROM reviews r
+                JOIN users u ON r.user_id = u.id
+                WHERE r.vehicle_id = %s
+                ORDER BY r.created_at DESC
+            """, (first_vehicle_id,))
+            reviews_rows = cur.fetchall()
+            reviews_data = [dict(row) for row in reviews_rows]
+        
         result = []
         for u in units:
             d = dict(u)
@@ -8478,6 +8501,10 @@ def get_vehicle_units():
                 d['daily_rate'] = float(d['daily_rate'])
             d['color_display'] = d.get('color') or 'Not Specified'
             d['is_favorite'] = False
+            
+            # Add reviews and avg_rating to each unit
+            d['reviews'] = reviews_data
+            d['avg_rating'] = avg_rating
             if user_id:
                 cur.execute("SELECT 1 FROM favorites WHERE user_id = %s AND vehicle_id = %s", (user_id, d['id']))
                 if cur.fetchone():
