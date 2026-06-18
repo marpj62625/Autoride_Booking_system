@@ -100,11 +100,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 
 @app.errorhandler(413)
 def request_entity_too_large(error):
-    response = jsonify({'error': 'File too large. Maximum upload size is 16 MB.'})
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response, 413
+    return jsonify({'error': 'File too large. Maximum upload size is 16 MB.'}), 413
 
 @app.errorhandler(Exception)
 def handle_large_response(error):
@@ -112,11 +108,7 @@ def handle_large_response(error):
     error_str = str(error)
     if len(error_str) > 1000:  # If error message is very long
         error_str = error_str[:500] + "... [truncated]"
-    response = jsonify({'error': error_str})
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-    return response, 500
+    return jsonify({'error': error_str}), 500
 
 
 
@@ -8479,35 +8471,6 @@ def get_vehicle_units():
                 [brand, model] + unavailable
             )
         units = cur.fetchall()
-        
-        # Fetch reviews and avg_rating for the first unit (all units of same brand+model share reviews)
-        reviews_data = []
-        avg_rating = 0
-        if units:
-            first_vehicle_id = units[0]['id']
-            try:
-                # Get avg rating
-                cur.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE vehicle_id = %s", (first_vehicle_id,))
-                avg_row = cur.fetchone()
-                avg_rating = float(avg_row['avg_rating']) if avg_row and avg_row['avg_rating'] else 0
-                
-                # Get reviews with user details
-                cur.execute("""
-                    SELECT r.id, r.user_id, r.vehicle_id, r.rating, r.comment, r.created_at,
-                           u.full_name, u.profile_picture
-                    FROM reviews r
-                    JOIN users u ON r.user_id = u.id
-                    WHERE r.vehicle_id = %s
-                    ORDER BY r.created_at DESC
-                """, (first_vehicle_id,))
-                reviews_rows = cur.fetchall()
-                reviews_data = [dict(row) for row in reviews_rows]
-            except Exception as review_err:
-                # If reviews table doesn't exist or query fails, continue without reviews
-                print(f"Reviews query error: {review_err}")
-                reviews_data = []
-                avg_rating = 0
-        
         result = []
         for u in units:
             d = dict(u)
@@ -8515,10 +8478,6 @@ def get_vehicle_units():
                 d['daily_rate'] = float(d['daily_rate'])
             d['color_display'] = d.get('color') or 'Not Specified'
             d['is_favorite'] = False
-            
-            # Add reviews and avg_rating to each unit
-            d['reviews'] = reviews_data
-            d['avg_rating'] = avg_rating
             if user_id:
                 cur.execute("SELECT 1 FROM favorites WHERE user_id = %s AND vehicle_id = %s", (user_id, d['id']))
                 if cur.fetchone():
