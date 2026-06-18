@@ -8477,22 +8477,28 @@ def get_vehicle_units():
         avg_rating = 0
         if units:
             first_vehicle_id = units[0]['id']
-            # Get avg rating
-            cur.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE vehicle_id = %s", (first_vehicle_id,))
-            avg_row = cur.fetchone()
-            avg_rating = float(avg_row['avg_rating']) if avg_row and avg_row['avg_rating'] else 0
-            
-            # Get reviews with user details
-            cur.execute("""
-                SELECT r.id, r.user_id, r.vehicle_id, r.rating, r.comment, r.created_at,
-                       u.full_name, u.profile_picture
-                FROM reviews r
-                JOIN users u ON r.user_id = u.id
-                WHERE r.vehicle_id = %s
-                ORDER BY r.created_at DESC
-            """, (first_vehicle_id,))
-            reviews_rows = cur.fetchall()
-            reviews_data = [dict(row) for row in reviews_rows]
+            try:
+                # Get avg rating
+                cur.execute("SELECT AVG(rating) as avg_rating FROM reviews WHERE vehicle_id = %s", (first_vehicle_id,))
+                avg_row = cur.fetchone()
+                avg_rating = float(avg_row['avg_rating']) if avg_row and avg_row['avg_rating'] else 0
+                
+                # Get reviews with user details
+                cur.execute("""
+                    SELECT r.id, r.user_id, r.vehicle_id, r.rating, r.comment, r.created_at,
+                           u.full_name, u.profile_picture
+                    FROM reviews r
+                    JOIN users u ON r.user_id = u.id
+                    WHERE r.vehicle_id = %s
+                    ORDER BY r.created_at DESC
+                """, (first_vehicle_id,))
+                reviews_rows = cur.fetchall()
+                reviews_data = [dict(row) for row in reviews_rows]
+            except Exception as review_err:
+                # If reviews table doesn't exist or query fails, continue without reviews
+                print(f"Reviews query error: {review_err}")
+                reviews_data = []
+                avg_rating = 0
         
         result = []
         for u in units:
