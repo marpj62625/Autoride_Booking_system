@@ -2558,66 +2558,10 @@ function openVehicleDetail(vehicleId) {
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
     .then(function(v) {
       currentVehicleDetail = v;
-      renderVehicleDetail(v);
+      // Use compact vehicle detail (openVehicleUnits with 'all' colors to show first unit)
+      openVehicleUnits(encodeURIComponent(v.brand), encodeURIComponent(v.model), 'all');
     })
     .catch(function(err) { showToast(err.message, 'error'); closeOverlay('page-vehicle-detail'); });
-}
-
-function renderVehicleDetail(v) {
-  var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
-  var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
-  var mileage = appSettings.mileage_limit || '250';
-
-  // 1 booking per account  - block if any active booking exists
-  var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
-  var hasActiveBooking = _allBookingsData.some(function(b) {
-    return ACTIVE_STATUSES.indexOf(b.status) !== -1;
-  });
-
-  var canBook = parseInt(currentUser.isVerified) === 2 && !hasActiveBooking;
-  var el = document.getElementById('vehicleDetailContent');
-  if (!el) return;
-  var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
-  var galleryHtml = galleryImgs.map(function(img) {
-    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'" alt="Vehicle">';
-  }).join('');
-  var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
-    return '<div class="review-item"><div class="reviewer">' +
-      '<div class="avatar-placeholder">' + ((r.full_name || '₱')[0]) + '</div>' +
-      '<div><strong style="font-size:0.875rem;">' + (r.full_name || 'Customer') + '</strong></div></div>' +
-      (r.comment ? '<p style="font-size:0.875rem;color:var(--text-secondary);">' + r.comment + '</p>' : '') +
-      '</div>';
-  }).join('') : '<div class="empty-state" style="padding:20px 0;"><p>No reviews yet</p></div>';
-
-  var bookBtn;
-  if (parseInt(currentUser.isVerified) !== 2) {
-    bookBtn = '<div style="background:#f8d7da;border-radius:var(--radius-sm);padding:12px;text-align:center;font-size:0.875rem;color:#842029;margin-bottom:12px;"><i class="fas fa-lock"></i> License verification required before booking.</div>';
-  } else if (hasActiveBooking) {
-    bookBtn = '<div style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);border-radius:var(--radius-sm);padding:14px;text-align:center;font-size:0.875rem;color:#92400e;margin-bottom:12px;"><i class="fas fa-calendar-check" style="margin-right:6px;color:#f59e0b;"></i><strong>1 booking per account.</strong><br><span style="font-size:0.8rem;">Complete or cancel your current booking before making a new one.</span></div>';
-  } else {
-    bookBtn = '<button class="btn-primary" onclick="openBookingForm(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book Now</button>';
-  }
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>' + v.brand + ' ' + v.model + '</h2>' +
-    '</div>' +
-    '<div class="gallery-scroll">' + galleryHtml + '</div>' +
-    '<div class="scroll-content">' +
-    '<div class="card">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-    '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
-    '<div style="color:#ffc107;">&#9733; ' + ((v.avg_rating || 0).toFixed(1)) + '</div>' +
-    '</div>' +
-    '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + ' | ' + (v.seats || '-') + ' seats</div>' +
-    '<div class="vehicle-meta" style="margin-top:6px;"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
-    '<div style="background:#fff3cd;border-radius:var(--radius-sm);padding:10px;margin-top:10px;font-size:0.8rem;color:#856404;">' +
-    'Rentals of ' + ltDays + '+ days get a <strong>' + ltPct + '% discount</strong>!</div>' +
-    '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:10px;margin-top:8px;font-size:0.8rem;color:#084298;">' +
-    'Daily mileage limit: <strong>' + mileage + ' km</strong></div>' +
-    '</div>' +
-    bookBtn +
-    '<div style="margin-top:20px;"><h4 style="font-weight:700;margin-bottom:12px;">Customer Reviews</h4>' + reviewsHtml + '</div>' +
-    '</div>';
 }
 
 // BOOKING FORM
@@ -2763,7 +2707,7 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-rendering vehicle detail with data:\', currentVehicleDetail.brand, currentVehicleDetail.model); renderVehicleDetail(currentVehicleDetail); var vd=document.getElementById(\'page-vehicle-detail\'); if(vd){vd.style.display=\'block\'; vd.classList.add(\'active\');} console.log(\'[DEBUG] Vehicle detail re-rendered and shown\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
