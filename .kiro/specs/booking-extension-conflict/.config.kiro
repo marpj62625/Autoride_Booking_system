@@ -1,0 +1,16 @@
+{
+  "specId": "booking-extension-conflict",
+  "name": "Booking Extension with Conflict Resolution",
+  "version": "1.0.0",
+  "status": "tasks",
+  "priority": "medium",
+  "complexity": "high",
+  "estimatedEffort": "3-4 weeks",
+  "tags": ["booking", "extension", "conflict-resolution", "notifications", "refunds"],
+  "stakeholders": ["Operations Team", "Customer Support", "Development Team"],
+  "dependencies": [
+    "notification-system",
+    "payment-gateway",
+    "refund-processing"
+  ]
+}

@@ -531,6 +531,74 @@ except Exception as _e:
     pass
 
 
+def migrate_extensions_v1():
+    """Creates booking_extensions and booking_conflicts tables and adds extension columns to bookings."""
+    try:
+        cur = get_cursor()
+        # 1. Ensure booking_extensions table exists
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS booking_extensions (
+                id                BIGSERIAL PRIMARY KEY,
+                booking_id        INTEGER NOT NULL,
+                requested_by      INTEGER NOT NULL,
+                original_end_date DATE NOT NULL,
+                new_end_date      DATE NOT NULL,
+                extension_days    INTEGER NOT NULL,
+                extension_price   NUMERIC(12,2) NOT NULL,
+                payment_method    VARCHAR(100),
+                reference_number  VARCHAR(200),
+                payment_proof_url TEXT,
+                status            VARCHAR(20) DEFAULT 'pending',
+                admin_note        TEXT,
+                created_at        TIMESTAMPTZ DEFAULT NOW(),
+                updated_at        TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+        cur.execute("ALTER TABLE booking_extensions ADD COLUMN IF NOT EXISTS approved_by_admin_id INTEGER")
+        cur.execute("ALTER TABLE booking_extensions ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ")
+        cur.execute("ALTER TABLE booking_extensions ADD COLUMN IF NOT EXISTS has_conflicts BOOLEAN DEFAULT FALSE")
+
+        # 2. Add extension columns to bookings table
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS has_active_extension BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS extension_count INT DEFAULT 0")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_conflict_affected BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS conflict_id INT DEFAULT NULL")
+
+        # 3. Create booking_conflicts table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS booking_conflicts (
+                id                              BIGSERIAL PRIMARY KEY,
+                extension_id                    INTEGER NOT NULL,
+                affected_booking_id             INTEGER NOT NULL,
+                affected_user_id                INTEGER NOT NULL,
+                conflict_start_date             DATE,
+                conflict_end_date               DATE,
+                resolution_status               VARCHAR(50) DEFAULT 'Pending',
+                resolution_deadline             TIMESTAMPTZ,
+                selected_alternative_vehicle_id INTEGER,
+                refund_amount                   NUMERIC(12,2),
+                refund_status                   VARCHAR(50) DEFAULT 'Pending',
+                refund_transaction_id           VARCHAR(200),
+                customer_notified_at            TIMESTAMPTZ,
+                customer_responded_at           TIMESTAMPTZ,
+                created_at                      TIMESTAMPTZ DEFAULT NOW(),
+                updated_at                      TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+        commit_db()
+        print("DEBUG: migrate_extensions_v1 completed successfully.")
+    except Exception as e:
+        print(f"DEBUG: migrate_extensions_v1 error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_extensions_v1()
+except Exception as _e:
+    pass
+
+
 def migrate_license_details_table():
     """Creates the license_details table if it doesn't exist."""
     try:

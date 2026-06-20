@@ -1376,6 +1376,10 @@
                 <i class="fas fa-calendar-plus" style="font-size: 0.75rem;"></i> Extensions
                 <span id="extTabBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;"></span>
             </button>
+            <button onclick="switchBookingTab('refunds')" id="tabBtnRefunds" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-weight: 700; font-size: 0.78rem; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-money-bill-wave" style="font-size: 0.75rem;"></i> Refunds
+                <span id="refundTabBadge" style="display:none;background:#ef4444;color:white;border-radius:50%;width:18px;height:18px;font-size:0.65rem;font-weight:900;align-items:center;justify-content:center;"></span>
+            </button>
             <button onclick="switchBookingTab('past')" id="tabBtnPast" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s;">
                 <i class="fas fa-check-circle" style="font-size: 0.75rem; margin-right: 6px;"></i> Past Bookings
             </button>
@@ -1507,6 +1511,36 @@
             </div>
             <div id="extensionRequestsList">
                 <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.8rem;">No pending extension requests.</div>
+            </div>
+        </div>
+
+        <!-- REFUNDS TAB CONTENT -->
+        <div id="tabRefunds" class="booking-tab-content" style="display: none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h3 style="font-size:1.1rem;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-money-bill-wave" style="color:#f59e0b;"></i> Refund Management
+                </h3>
+                <button onclick="Refunds.load()" style="background:var(--surface-container);border:1px solid var(--border);color:var(--text-muted);padding:7px 12px;border-radius:10px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+
+            <!-- Filter chips -->
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none;">
+                <button class="rf-chip rf-chip-active" data-filter="needs" onclick="Refunds.setFilter('needs',this)" style="flex-shrink:0;padding:8px 14px;background:var(--primary);color:white;border:1px solid var(--primary);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    Needs Refund <span id="needsRefundCount" style="background:rgba(255,255,255,0.2);color:white;border-radius:20px;padding:1px 8px;font-size:0.65rem;font-weight:900;">0</span>
+                </button>
+                <button class="rf-chip" data-filter="pending" onclick="Refunds.setFilter('pending',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    Refund Pending <span id="refundPendingCount" style="background:rgba(0,0,0,0.08);color:var(--text-secondary);border-radius:20px;padding:1px 8px;font-size:0.65rem;font-weight:900;">0</span>
+                </button>
+                <button class="rf-chip" data-filter="refunded" onclick="Refunds.setFilter('refunded',this)" style="flex-shrink:0;padding:8px 14px;background:var(--surface-container);color:var(--text-main);border:1px solid var(--border);border-radius:20px;font-size:0.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    Refunded <span id="refundedCount" style="background:rgba(0,0,0,0.08);color:var(--text-secondary);border-radius:20px;padding:1px 8px;font-size:0.65rem;font-weight:900;">0</span>
+                </button>
+            </div>
+
+            <!-- Single list container -->
+            <div id="refundsList">
+                <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.8rem;">Loading...</div>
             </div>
         </div>
 
@@ -2166,42 +2200,638 @@
             </form>
         </div>
     </div>
-</main>
 
 <!-- ===================== USER MANAGEMENT TAB ===================== -->
-<div id="users" class="tab-content" style="display:none; padding: 20px; padding-bottom: 100px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h1 class="page-title" style="margin:0;">User Management</h1>
-        <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem;"><i class="fas fa-sync-alt"></i> Refresh</button>
-    </div>
-    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umTotalCount" style="font-size:1.4rem; font-weight:900; color:var(--primary-light);">-</div>
-            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Total</div>
+<style>
+    /* ========= USER MANAGEMENT PREMIUM STYLES ========= */
+    #users {
+        background: var(--bg-page);
+        min-height: 100vh;
+    }
+
+    .um-hero-bar {
+        position: relative;
+        background: linear-gradient(135deg, #00B14F 0%, #005339 100%);
+        border-radius: 0 0 28px 28px;
+        padding: 96px 20px 32px;
+        margin: -80px -16px 24px;
+        overflow: hidden;
+    }
+    .um-hero-bar::before {
+        content: '';
+        position: absolute;
+        top: -40px; right: -40px;
+        width: 160px; height: 160px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+    }
+    .um-hero-bar::after {
+        content: '';
+        position: absolute;
+        bottom: -60px; left: -20px;
+        width: 200px; height: 200px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 50%;
+    }
+    .um-hero-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+    }
+    .um-hero-title {
+        font-size: 1.6rem;
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: -0.5px;
+        line-height: 1.1;
+    }
+    .um-hero-sub {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.7);
+        margin-top: 4px;
+        font-weight: 500;
+    }
+    .um-broadcast-btn {
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(10px);
+        border: 1.5px solid rgba(255,255,255,0.3);
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        letter-spacing: 0.2px;
+    }
+    .um-broadcast-btn:active {
+        transform: scale(0.96);
+        background: rgba(255,255,255,0.25);
+    }
+    .um-broadcast-btn i {
+        font-size: 0.85rem;
+    }
+    .um-stats-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        position: relative;
+        z-index: 1;
+    }
+    .um-stat-card {
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 16px;
+        padding: 14px 10px;
+        text-align: center;
+        transition: transform 0.15s;
+    }
+    .um-stat-card:active { transform: scale(0.97); }
+    .um-stat-num {
+        font-size: 1.7rem;
+        font-weight: 900;
+        color: #fff;
+        line-height: 1;
+        letter-spacing: -1px;
+    }
+    .um-stat-icon {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.55);
+        margin-bottom: 4px;
+    }
+    .um-stat-label {
+        font-size: 0.6rem;
+        color: rgba(255,255,255,0.6);
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 3px;
+    }
+
+    /* Search bar */
+    .um-search-wrap {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .um-search-inner {
+        flex: 1;
+        position: relative;
+    }
+    .um-search-inner i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+    .um-search-input {
+        width: 100%;
+        padding: 13px 14px 13px 40px;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 50px;
+        color: var(--text-main);
+        font-size: 0.85rem;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .um-search-input:focus {
+        border-color: #00B14F;
+        box-shadow: 0 0 0 3px rgba(0,177,79,0.12);
+    }
+    .um-export-btn {
+        width: 48px;
+        height: 48px;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #00B14F;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+    }
+    .um-export-btn:active { transform: scale(0.93); }
+
+    /* Filter pills */
+    .um-filters {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 18px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+    .um-filters::-webkit-scrollbar { display: none; }
+    .um-filter-btn {
+        white-space: nowrap;
+        padding: 8px 18px;
+        border-radius: 50px;
+        border: 1.5px solid var(--border);
+        background: var(--bg-card);
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.18s;
+        font-family: inherit;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .um-filter-btn.active {
+        background: linear-gradient(135deg, #00B14F, #005339);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(0,177,79,0.3);
+    }
+
+    /* User cards */
+    .um-user-card {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 16px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+    .um-user-card::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 3px;
+        background: transparent;
+        transition: background 0.2s;
+        border-radius: 0 2px 2px 0;
+    }
+    .um-user-card:active {
+        transform: scale(0.985);
+        box-shadow: 0 4px 16px rgba(0,177,79,0.12);
+        border-color: rgba(0,177,79,0.3);
+    }
+    .um-user-card:active::before {
+        background: linear-gradient(180deg, #00B14F, #005339);
+    }
+    .um-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00B14F, #005339);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 1.2rem;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0,177,79,0.25);
+        position: relative;
+    }
+    .um-avatar-ring {
+        position: absolute;
+        inset: -3px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(0,177,79,0.5), rgba(0,83,57,0.2));
+        z-index: -1;
+    }
+    .um-user-info { flex: 1; min-width: 0; }
+    .um-user-name {
+        font-weight: 800;
+        font-size: 0.92rem;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .um-user-email {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .um-badges { margin-top: 7px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+    .um-badge-verified {
+        background: rgba(0,177,79,0.1);
+        color: #00B14F;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.58rem;
+        font-weight: 800;
+        border: 1px solid rgba(0,177,79,0.2);
+        letter-spacing: 0.4px;
+    }
+    .um-badge-pending {
+        background: rgba(217,119,6,0.1);
+        color: #d97706;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.58rem;
+        font-weight: 800;
+        border: 1px solid rgba(217,119,6,0.2);
+        letter-spacing: 0.4px;
+    }
+    .um-badge-unverified {
+        background: rgba(107,112,128,0.1);
+        color: var(--text-muted);
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.58rem;
+        font-weight: 800;
+        border: 1px solid var(--border);
+        letter-spacing: 0.4px;
+    }
+    .um-badge-frozen {
+        background: rgba(220,38,38,0.08);
+        color: #dc2626;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 0.58rem;
+        font-weight: 800;
+        border: 1px solid rgba(220,38,38,0.2);
+        letter-spacing: 0.4px;
+    }
+    .um-user-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .um-user-meta { text-align: right; }
+    .um-user-date { font-size: 0.63rem; color: var(--text-muted); font-weight: 600; }
+    .um-user-pts {
+        font-size: 0.7rem;
+        color: #d97706;
+        margin-top: 3px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 3px;
+    }
+    .um-bell-btn {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, rgba(0,177,79,0.1), rgba(0,83,57,0.05));
+        border: 1.5px solid rgba(0,177,79,0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #00B14F;
+        cursor: pointer;
+        transition: all 0.18s;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .um-bell-btn:active {
+        transform: scale(0.9);
+        background: rgba(0,177,79,0.2);
+        box-shadow: 0 0 12px rgba(0,177,79,0.3);
+    }
+
+    /* Push Notification Modal */
+    .push-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 3100;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(12px);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0;
+    }
+    .push-modal-sheet {
+        width: 100%;
+        max-width: 520px;
+        background: var(--bg-card);
+        border-radius: 28px 28px 0 0;
+        padding: 0;
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+        overflow: hidden;
+        animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .push-modal-header {
+        background: linear-gradient(135deg, #00B14F 0%, #005339 100%);
+        padding: 24px 20px 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .push-modal-header::before {
+        content: '';
+        position: absolute;
+        top: -30px; right: -30px;
+        width: 120px; height: 120px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
+    }
+    .push-modal-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        position: relative;
+        z-index: 1;
+    }
+    .push-modal-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.18);
+        backdrop-filter: blur(8px);
+        border: 1.5px solid rgba(255,255,255,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        color: #fff;
+        margin-bottom: 12px;
+    }
+    .push-modal-title {
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: #fff;
+        position: relative;
+        z-index: 1;
+    }
+    .push-modal-subtitle {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.7);
+        margin-top: 2px;
+        font-weight: 500;
+        position: relative;
+        z-index: 1;
+    }
+    .push-modal-close {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .push-modal-close:active { transform: scale(0.92); }
+    .push-modal-body { padding: 20px; }
+    .push-recipient-chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, rgba(0,177,79,0.08), rgba(0,83,57,0.04));
+        border: 1.5px solid rgba(0,177,79,0.2);
+        border-radius: 14px;
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+    .push-recipient-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #00B14F;
+        flex-shrink: 0;
+        box-shadow: 0 0 8px rgba(0,177,79,0.5);
+        animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+        0%, 100% { box-shadow: 0 0 8px rgba(0,177,79,0.5); }
+        50% { box-shadow: 0 0 16px rgba(0,177,79,0.8), 0 0 24px rgba(0,177,79,0.3); }
+    }
+    .push-recipient-label {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #00B14F;
+    }
+    .push-form-label {
+        display: block;
+        font-size: 0.68rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 7px;
+    }
+    .push-form-input {
+        width: 100%;
+        background: var(--bg-card2);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 13px 14px;
+        color: var(--text-main);
+        font-size: 0.9rem;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+    .push-form-input:focus {
+        border-color: #00B14F;
+        box-shadow: 0 0 0 3px rgba(0,177,79,0.1);
+        background: var(--bg-card);
+    }
+    .push-form-input::placeholder { color: var(--text-muted); }
+    .push-form-textarea {
+        width: 100%;
+        background: var(--bg-card2);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        padding: 13px 14px;
+        color: var(--text-main);
+        font-size: 0.9rem;
+        font-family: inherit;
+        outline: none;
+        transition: all 0.2s;
+        resize: none;
+        box-sizing: border-box;
+    }
+    .push-form-textarea:focus {
+        border-color: #00B14F;
+        box-shadow: 0 0 0 3px rgba(0,177,79,0.1);
+        background: var(--bg-card);
+    }
+    .push-form-textarea::placeholder { color: var(--text-muted); }
+    .push-modal-footer {
+        display: flex;
+        gap: 12px;
+        padding: 16px 20px 24px;
+        border-top: 1px solid var(--border);
+    }
+    .push-cancel-btn {
+        flex: 1;
+        background: var(--bg-card2);
+        border: 1.5px solid var(--border);
+        color: var(--text-secondary);
+        padding: 14px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.15s;
+    }
+    .push-cancel-btn:active { transform: scale(0.97); }
+    .push-send-btn {
+        flex: 2;
+        background: linear-gradient(135deg, #00B14F, #005339);
+        border: none;
+        color: #fff;
+        padding: 14px;
+        border-radius: 14px;
+        font-weight: 800;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(0,177,79,0.35);
+        letter-spacing: 0.2px;
+    }
+    .push-send-btn:active {
+        transform: scale(0.97);
+        box-shadow: 0 2px 8px rgba(0,177,79,0.25);
+    }
+    .push-send-btn:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+</style>
+<div id="users" class="tab-content" style="display:none; padding:0; padding-bottom:24px;">
+
+    <!-- Hero Header -->
+    <div class="um-hero-bar">
+        <div class="um-hero-top">
+            <div>
+                <div class="um-hero-title">User Management</div>
+                <div class="um-hero-sub">Manage and notify your users</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-direction:column; align-items:flex-end;">
+                <button class="um-broadcast-btn" onclick="UserMgmt.openBroadcastModal()">
+                    <i class="fas fa-bullhorn"></i> Broadcast
+                </button>
+                <button onclick="UserMgmt.refresh()" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.85); padding:7px 13px; border-radius:50px; font-size:0.7rem; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px;">
+                    <i class="fas fa-sync-alt" style="font-size:0.7rem;"></i> Refresh
+                </button>
+            </div>
         </div>
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umVerifiedCount" style="font-size:1.4rem; font-weight:900; color:var(--success);">-</div>
-            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Verified</div>
-        </div>
-        <div style="background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; text-align:center;">
-            <div id="umFrozenCount" style="font-size:1.4rem; font-weight:900; color:var(--danger);">-</div>
-            <div style="font-size:0.6rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:2px;">Frozen</div>
+        <!-- Stats inside hero -->
+        <div class="um-stats-row">
+            <div class="um-stat-card">
+                <div class="um-stat-icon"><i class="fas fa-users"></i></div>
+                <div id="umTotalCount" class="um-stat-num">-</div>
+                <div class="um-stat-label">Total</div>
+            </div>
+            <div class="um-stat-card">
+                <div class="um-stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div id="umVerifiedCount" class="um-stat-num">-</div>
+                <div class="um-stat-label">Verified</div>
+            </div>
+            <div class="um-stat-card">
+                <div class="um-stat-icon"><i class="fas fa-ban"></i></div>
+                <div id="umFrozenCount" class="um-stat-num">-</div>
+                <div class="um-stat-label">Frozen</div>
+            </div>
         </div>
     </div>
-    <div style="display:flex; gap:10px; margin-bottom:12px;">
-        <div style="flex:1; position:relative;">
-            <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.8rem;"></i>
-            <input type="text" id="umSearch" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 12px 12px 38px; background:var(--surface); border:1px solid var(--border); border-radius:50px; color:white; font-size:0.85rem;">
+
+    <!-- Search Row -->
+    <div class="um-search-wrap">
+        <div class="um-search-inner">
+            <i class="fas fa-search"></i>
+            <input type="text" id="umSearch" class="um-search-input" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone...">
         </div>
-        <button onclick="UserMgmt.exportCSV()" style="background:rgba(0,177,79,0.1); border:1px solid var(--success); color:var(--success); width:44px; border-radius:50px; display:flex; align-items:center; justify-content:center;" title="Export CSV"><i class="fas fa-download" style="font-size:0.85rem;"></i></button>
+        <button onclick="UserMgmt.exportCSV()" class="um-export-btn" title="Export CSV">
+            <i class="fas fa-download"></i>
+        </button>
     </div>
-    <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
-        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Verified</button>
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Unverified</button>
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Frozen</button>
+
+    <!-- Filter Pills -->
+    <div class="um-filters">
+        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)">All Users</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)">✓ Verified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)">Unverified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)">🚫 Frozen</button>
     </div>
-    <div id="umList"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading users...</div></div>
+
+    <!-- User List -->
+    <div id="umList">
+        <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+            <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:#00B14F; margin-bottom:12px; display:block;"></i>
+            Loading users...
+        </div>
+    </div>
 </div>
 
 <!-- User Detail Modal -->
@@ -2217,12 +2847,61 @@
     </div>
 </div>
 
-<!-- ===================== CHAT TAB ===================== -->
-<div id="chat" class="tab-content" style="display:none; padding:0; padding-bottom:80px;">
-    <div id="adminChatContent" style="padding:20px;">
+<!-- Custom Push Notification Modal (premium bottom sheet) -->
+<div id="pushNotifModal" class="push-modal-overlay" style="display:none;">
+    <div class="push-modal-sheet">
+        <!-- Gradient header -->
+        <div class="push-modal-header">
+            <div class="push-modal-header-row">
+                <div></div>
+                <button class="push-modal-close" onclick="UserMgmt.closePushModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="push-modal-icon-wrap">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <div class="push-modal-title">Send Push Notification</div>
+            <div class="push-modal-subtitle">Delivered directly to the user's device</div>
+        </div>
+
+        <!-- Body -->
+        <div class="push-modal-body">
+            <!-- Recipient chip -->
+            <div class="push-recipient-chip">
+                <div class="push-recipient-dot"></div>
+                <div id="pushNotifRecipient" class="push-recipient-label">All Users</div>
+            </div>
+
+            <!-- Title -->
+            <div style="margin-bottom:14px;">
+                <label class="push-form-label">Notification Title</label>
+                <input type="text" id="pushNotifTitle" class="push-form-input" placeholder="e.g. Important Update">
+            </div>
+
+            <!-- Body -->
+            <div>
+                <label class="push-form-label">Message</label>
+                <textarea id="pushNotifBody" class="push-form-textarea" rows="3" placeholder="Type your announcement or message here..."></textarea>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="push-modal-footer">
+            <button class="push-cancel-btn" onclick="UserMgmt.closePushModal()">Cancel</button>
+            <button class="push-send-btn" onclick="UserMgmt.submitPushNotif()">
+                <i class="fas fa-paper-plane"></i> Send Now
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div id="chat" class="tab-content" style="display:none; padding:0; padding-bottom:24px;">
+    <div id="adminChatContent" style="padding:0;">
         <div style="text-align:center; padding:40px; color:var(--text-muted);">Loading...</div>
     </div>
 </div>
+
+</main>
 
 <nav class="bottom-nav">
     <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
@@ -2348,17 +3027,22 @@
                     const newOnes = list.filter(n => !window._adminNotifKnownIds.has(n.id) && !n.is_read);
                     if (newOnes.length === 1) {
                         window._adminShowToast(newOnes[0].title, newOnes[0].message);
-                        // Auto-refresh Extensions tab if it's an extension request
-                        if (newOnes[0].type === 'admin_extension_request') {
-                            if (typeof Extensions !== 'undefined') Extensions.load();
-                        }
                     } else if (newOnes.length > 1) {
                         window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
-                        // Refresh extensions if any are extension requests
-                        if (newOnes.some(n => n.type === 'admin_extension_request')) {
+                    }
+                    // Auto-refresh relevant tabs based on new notification types
+                    newOnes.forEach(function(n) {
+                        if (n.type === 'admin_extension_request') {
                             if (typeof Extensions !== 'undefined') Extensions.load();
                         }
-                    }
+                        if (n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request') {
+                            // Refresh bookings list if it's currently visible
+                            var bookingsTab = document.getElementById('bookings');
+                            if (bookingsTab && (bookingsTab.style.display === 'block' || bookingsTab.classList.contains('active'))) {
+                                if (typeof loadBookings === 'function') loadBookings();
+                            }
+                        }
+                    });
                 }
                 // Update known IDs
                 list.forEach(n => window._adminNotifKnownIds.add(n.id));
@@ -2404,10 +3088,24 @@
                 list.innerHTML = notifs.map(n => {
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
                     const unreadStyle = n.is_read ? '' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);';
-                    return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
-                        <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
-                        <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-                        <small style="color:var(--text-muted);">${ts}</small>
+                    // Type-specific icon and color
+                    let iconHtml = '<i class="fas fa-bell" style="color:#94a3b8;"></i>';
+                    if (n.type === 'admin_payment_proof') {
+                        iconHtml = '<i class="fas fa-credit-card" style="color:#22c55e;"></i>';
+                    } else if (n.type === 'admin_booking_cancelled') {
+                        iconHtml = '<i class="fas fa-times-circle" style="color:#ef4444;"></i>';
+                    } else if (n.type === 'admin_refund_request') {
+                        iconHtml = '<i class="fas fa-hand-holding-usd" style="color:#f59e0b;"></i>';
+                    } else if (n.type === 'admin_extension_request') {
+                        iconHtml = '<i class="fas fa-calendar-plus" style="color:#3b82f6;"></i>';
+                    }
+                    return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}display:flex;gap:10px;align-items:flex-start;">
+                        <div style="font-size:1.1rem;margin-top:2px;flex-shrink:0;">${iconHtml}</div>
+                        <div style="flex:1;">
+                            <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
+                            <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
+                            <small style="color:var(--text-muted);">${ts}</small>
+                        </div>
                     </div>`;
                 }).join('');
             }
@@ -2557,9 +3255,9 @@
                 // Register FCM token if available from native layer
                 if (window._adminFcmToken) saveAdminFcmToken(window._adminFcmToken);
 
-                // Load admin notifications and poll every 30s for new ones
+                // Load admin notifications and poll every 15s for new ones
                 loadAdminNotifications(user.id);
-                setInterval(function() { loadAdminNotifications(user.id); }, 30000);
+                setInterval(function() { loadAdminNotifications(user.id); }, 15000);
 
                 // Start chat badge polling every 30s
                 if (typeof AdminChat !== 'undefined') {
@@ -3381,19 +4079,14 @@ async edit(id) { this.openModal(id); }
                                 </button>
                             ` : ''}
                             ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? `
-                                <button onclick="Inspections.openModal(${b.id}, 'pickup')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                                <button onclick="${b.payment_status === 'Paid' ? `Inspections.openModal(${b.id}, 'pickup')` : 'showNotification(\'Booking must be fully paid before starting inspection\', \'error\')'}" 
+                                    style="flex:1; min-width:110px; padding:10px 8px; background:${b.payment_status === 'Paid' ? 'var(--amber,#f59e0b)' : '#94a3b8'}; color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:${b.payment_status === 'Paid' ? 'pointer' : 'not-allowed'}; opacity:${b.payment_status === 'Paid' ? '1' : '0.6'};">
                                     <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
-                                </button>
-                                <button onclick="Bookings.pickup(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
-                                    <i class="fas fa-car" style="margin-right:4px;"></i>Mark Picked Up
                                 </button>
                             ` : ''}
                             ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
                                 <button onclick="Inspections.openModal(${b.id}, 'return')" style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
                                     <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
-                                </button>
-                                <button onclick="Bookings.complete(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;">
-                                    <i class="fas fa-flag-checkered" style="margin-right:4px;"></i>Mark Returned
                                 </button>
                             ` : ''}
                         </div>
@@ -3469,24 +4162,16 @@ async edit(id) { this.openModal(id); }
                             ` : ''}
 
                             ${(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'approved') ? `
-                                <button onclick="Inspections.openModal(${b.id}, 'pickup')"
-                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-                                    <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
-                                </button>
-                                <button onclick="Bookings.pickup(${b.id})"
-                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-                                    <i class="fas fa-car" style="margin-right:4px;"></i>Mark Picked Up
-                                </button>
+                                <button onclick="${b.payment_status === 'Paid' ? `Inspections.openModal(${b.id}, 'pickup')` : 'showNotification(\'Booking must be fully paid before starting inspection\', \'error\')'}"
+                                     style="flex:1; min-width:110px; padding:10px 8px; background:${b.payment_status === 'Paid' ? 'var(--amber,#f59e0b)' : '#94a3b8'}; color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:${b.payment_status === 'Paid' ? 'pointer' : 'not-allowed'}; opacity:${b.payment_status === 'Paid' ? '1' : '0.6'};">
+                                     <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
+                                 </button>
                             ` : ''}
 
                             ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
                                 <button onclick="Inspections.openModal(${b.id}, 'return')"
                                     style="flex:1; min-width:110px; padding:10px 8px; background:var(--amber,#f59e0b); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
                                     <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
-                                </button>
-                                <button onclick="Bookings.complete(${b.id})"
-                                    style="flex:1; min-width:110px; padding:10px 8px; background:var(--primary); color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;">
-                                    <i class="fas fa-flag-checkered" style="margin-right:4px;"></i>Mark Returned
                                 </button>
                             ` : ''}
 
@@ -3545,12 +4230,10 @@ async edit(id) { this.openModal(id); }
                 actionBtns += `<button onclick="Bookings.reject(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-times"></i>Reject</button>`;
             }
             if (st === 'confirmed' || st === 'approved') {
-                actionBtns += `<button onclick="Inspections.openModal(${b.id},'pickup')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-search-plus"></i>Pickup Inspect</button>`;
-                actionBtns += `<button onclick="Bookings.pickup(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-car"></i>Mark Picked Up</button>`;
+                actionBtns += `<button onclick="${b.payment_status === 'Paid' ? `Inspections.openModal(${b.id},'pickup')` : 'showNotification(\'Booking must be fully paid before starting inspection\', \'error\')'}" style="flex:1;min-width:120px;padding:11px 10px;background:${b.payment_status === 'Paid' ? '#f59e0b' : '#94a3b8'};color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:${b.payment_status === 'Paid' ? 'pointer' : 'not-allowed'};opacity:${b.payment_status === 'Paid' ? '1' : '0.6'};display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-search-plus"></i>Pickup Inspect</button>`;
             }
             if (st === 'picked up' || st === 'ongoing') {
                 actionBtns += `<button onclick="Inspections.openModal(${b.id},'return')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-clipboard-check"></i>Return Inspect</button>`;
-                actionBtns += `<button onclick="Bookings.complete(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#00B14F;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-flag-checkered"></i>Mark Returned</button>`;
             }
             if (b.payment_status === 'Partially Paid') {
                 actionBtns += `<button onclick="Bookings.markPaid(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#10b981;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-check-circle"></i>Mark Fully Paid</button>`;
@@ -5520,8 +6203,160 @@ async edit(id) { this.openModal(id); }
             if (typeof Extensions !== 'undefined') {
                 Extensions.load();
             }
+        } else if (tab === 'refunds') {
+            const refTab = document.getElementById('tabRefunds');
+            if (refTab) refTab.style.display = 'block';
+            const refBtn = document.getElementById('tabBtnRefunds');
+            if (refBtn) {
+                refBtn.style.border = '1px solid var(--primary)';
+                refBtn.style.background = 'var(--primary)';
+                refBtn.style.color = 'white';
+            }
+            if (typeof Refunds !== 'undefined') {
+                Refunds.load();
+            }
         }
     };
+
+    // --- REFUNDS MODULE ---
+    const Refunds = {
+        _filter: 'needs',
+        _all: [],
+
+        async load() {
+            try {
+                const list = document.getElementById('refundsList');
+                if (list) {
+                    list.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.8rem;">Loading...</div>';
+                }
+                const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+                const user = adminAuth.getUser();
+                const adminId = user ? user.id : '';
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const res = await fetch(`${API_URL}/bookings?admin_id=${adminId}`, { headers });
+                if (!res.ok) throw new Error('Failed to fetch bookings');
+                const data = await res.json();
+                this._all = data.bookings || data || [];
+                this.render(this._all);
+            } catch(e) {
+                console.error('Refunds.load error:', e);
+                const list = document.getElementById('refundsList');
+                if (list) {
+                    list.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444;font-size:0.8rem;">Failed to load. <a href="#" onclick="Refunds.load()" style="color:var(--primary);">Retry</a></div>`;
+                }
+            }
+        },
+
+        setFilter(filter, btn) {
+            this._filter = filter;
+            document.querySelectorAll('.rf-chip').forEach(b => {
+                const active = b.dataset.filter === filter;
+                b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                b.style.color       = active ? 'white' : 'var(--text-main)';
+                b.classList.toggle('rf-chip-active', active);
+                
+                const badge = b.querySelector('span');
+                if (badge) {
+                    if (active) {
+                        badge.style.background = 'rgba(255,255,255,0.2)';
+                        badge.style.color = 'white';
+                    } else {
+                        badge.style.background = 'rgba(0,0,0,0.08)';
+                        badge.style.color = 'var(--text-secondary)';
+                    }
+                }
+            });
+            this._renderFiltered();
+        },
+
+        render(bookings) {
+            this._all = bookings;
+            
+            const needsRefund = this._all.filter(b =>
+                b.status === 'Cancelled' &&
+                ['Paid', 'Partially Paid'].includes(b.payment_status)
+            );
+            const refundPending = this._all.filter(b =>
+                b.payment_status === 'Refund Pending'
+            );
+            const refunded = this._all.filter(b =>
+                b.payment_status === 'Refunded'
+            );
+
+            // Update counts
+            const setCount = (id, count) => { const el = document.getElementById(id); if (el) el.textContent = count; };
+            setCount('needsRefundCount', needsRefund.length);
+            setCount('refundPendingCount', refundPending.length);
+            setCount('refundedCount', refunded.length);
+
+            // Badge on tab button
+            const urgentCount = needsRefund.length + refundPending.length;
+            const badge = document.getElementById('refundTabBadge');
+            if (badge) { badge.textContent = urgentCount; badge.style.display = urgentCount > 0 ? 'flex' : 'none'; }
+
+            this._renderFiltered();
+        },
+
+        _renderFiltered() {
+            const list = document.getElementById('refundsList');
+            if (!list) return;
+
+            let filteredList = [];
+            let type = 'needs';
+            if (this._filter === 'needs') {
+                filteredList = this._all.filter(b =>
+                    b.status === 'Cancelled' &&
+                    ['Paid', 'Partially Paid'].includes(b.payment_status)
+                );
+                type = 'needs';
+            } else if (this._filter === 'pending') {
+                filteredList = this._all.filter(b =>
+                    b.payment_status === 'Refund Pending'
+                );
+                type = 'pending';
+            } else if (this._filter === 'refunded') {
+                filteredList = this._all.filter(b =>
+                    b.payment_status === 'Refunded'
+                );
+                type = 'done';
+            }
+
+            if (!filteredList.length) {
+                const emptyMsgs = { needs: 'No cancelled bookings needing refund.', pending: 'No refunds pending.', refunded: 'No completed refunds yet.' };
+                list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.8rem;">${emptyMsgs[this._filter]}</div>`;
+                return;
+            }
+
+            list.innerHTML = filteredList.map(b => {
+                const accentColor = type === 'needs' ? '#ef4444' : type === 'pending' ? '#f59e0b' : '#10b981';
+                const amount = parseFloat(b.refund_amount || b.amount_paid || 0).toLocaleString('en-PH', {minimumFractionDigits:2});
+                const refundAmt = parseFloat(b.amount_paid || 0).toLocaleString('en-PH', {minimumFractionDigits:2});
+                return `
+                <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${accentColor};border-radius:12px;padding:14px 16px;margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+                        <div>
+                            <span style="font-size:0.7rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Booking #${b.id}</span>
+                            <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);margin-top:2px;">${b.full_name || b.customer_name || 'Customer'}</div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);">${b.brand || ''} ${b.model || ''} &bull; ${b.start_date || ''} &ndash; ${b.end_date || ''}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.72rem;color:var(--text-muted);font-weight:700;">Amount Paid</div>
+                            <div style="font-size:1rem;font-weight:900;color:${accentColor};">&#8369;${type === 'done' ? amount : refundAmt}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <span style="font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(0,0,0,0.06);color:var(--text-secondary);">Status: ${b.status}</span>
+                        <span style="font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(0,0,0,0.06);color:var(--text-secondary);">Payment: ${b.payment_status}</span>
+                        ${type === 'needs' ? `<button onclick="Bookings.triggerRefund(${b.id})" style="margin-left:auto;padding:6px 14px;background:#ef4444;color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:800;cursor:pointer;"><i class='fas fa-bolt' style='margin-right:4px;'></i>Trigger Refund</button>` : ''}
+                        ${type === 'pending' ? `<button onclick="Bookings.openDetail(${b.id})" style="margin-left:auto;padding:6px 14px;background:#f59e0b;color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:800;cursor:pointer;"><i class='fas fa-eye' style='margin-right:4px;'></i>View & Process</button>` : ''}
+                        ${type === 'done' ? `<span style="margin-left:auto;font-size:0.68rem;font-weight:800;color:#10b981;"><i class='fas fa-check-circle' style='margin-right:4px;'></i>Refund Completed</span>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    };
+    window.Refunds = Refunds;
 
     // --- REPORTS MODULE ---
     const Reports = {
@@ -6708,9 +7543,18 @@ async edit(id) { this.openModal(id); }
                     });
                     
                     // Listen for notification taps
-                    PushNotifications.addListener('pushNotificationActionPerformed', function(notification) {
-                        // Navigate to chat tab
-                        switchTab('chat');
+                    PushNotifications.addListener('pushNotificationActionPerformed', function(action) {
+                        console.log('Admin Push notification action performed:', action);
+                        var data = (action.notification && action.notification.data) ? action.notification.data : {};
+                        var type = data.type || '';
+                        
+                        if (type === 'license' || type === 'admin_license_upload') {
+                            switchTab('verifications');
+                        } else if (type === 'admin_new_booking' || type === 'admin_booking_cancelled' || type === 'admin_payment_proof' || type === 'admin_refund_request' || type === 'admin_extension_request') {
+                            switchTab('bookings');
+                        } else {
+                            switchTab('chat');
+                        }
                     });
                 }
             }, false);
@@ -6799,34 +7643,114 @@ async edit(id) { this.openModal(id); }
         _render(list) {
             const el = document.getElementById('umList');
             if (!list.length) {
-                el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No users found</div>';
+                el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(0,177,79,0.08);border:2px dashed rgba(0,177,79,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.5rem;color:rgba(0,177,79,0.5);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div style="font-weight:700;color:var(--text-secondary);font-size:0.9rem;">No users found</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Try adjusting your search or filters</div>
+                </div>`;
                 return;
             }
             el.innerHTML = list.map(u => {
                 const verifiedBadge = u.is_verified === 2
-                    ? `<span style="background:rgba(0,177,79,0.15);color:var(--success);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">VERIFIED</span>`
+                    ? `<span class="um-badge-verified">✓ VERIFIED</span>`
                     : u.is_verified === 1
-                    ? `<span style="background:rgba(245,158,11,0.15);color:var(--amber);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">PENDING</span>`
-                    : `<span style="background:rgba(148,163,184,0.1);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;">UNVERIFIED</span>`;
+                    ? `<span class="um-badge-pending">⏳ PENDING</span>`
+                    : `<span class="um-badge-unverified">UNVERIFIED</span>`;
                 const frozenBadge = u.is_frozen
-                    ? `<span style="background:rgba(239,68,68,0.15);color:var(--danger);padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;">FROZEN</span>`
+                    ? `<span class="um-badge-frozen">🚫 FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
                 const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
                 return `
-                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
-                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:800;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
-                        <div style="margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
+                <div class="um-user-card" onclick="UserMgmt.openModal(${u.id})">
+                    <div class="um-avatar">
+                        <div class="um-avatar-ring"></div>
+                        ${avatar}
                     </div>
-                    <div style="text-align:right;flex-shrink:0;">
-                        <div style="font-size:0.65rem;color:var(--text-muted);">${joined}</div>
-                        <div style="font-size:0.7rem;color:var(--amber);margin-top:4px;font-weight:700;"><i class="fas fa-star" style="font-size:0.6rem;"></i> ${u.loyalty_points || 0} pts</div>
+                    <div class="um-user-info">
+                        <div class="um-user-name">${u.full_name || 'No Name'}</div>
+                        <div class="um-user-email">${u.email}</div>
+                        <div class="um-badges">${verifiedBadge}${frozenBadge}</div>
+                    </div>
+                    <div class="um-user-right">
+                        <div class="um-user-meta">
+                            <div class="um-user-date">${joined}</div>
+                            <div class="um-user-pts"><i class="fas fa-star" style="font-size:0.6rem;"></i> ${u.loyalty_points || 0} pts</div>
+                        </div>
+                        <button class="um-bell-btn" onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" title="Send Notification">
+                            <i class="fas fa-bell"></i>
+                        </button>
                     </div>
                 </div>`;
             }).join('');
+        },
+
+
+        _pushTarget: null,
+
+        openBroadcastModal() {
+            this._pushTarget = null;
+            document.getElementById('pushNotifRecipient').textContent = '📢 ALL REGISTERED USERS';
+            document.getElementById('pushNotifTitle').value = '';
+            document.getElementById('pushNotifBody').value = '';
+            document.getElementById('pushNotifModal').style.display = 'block';
+        },
+
+        openPushModal(userId, userName) {
+            this._pushTarget = userId;
+            document.getElementById('pushNotifRecipient').textContent = `🔔 ${userName} (User ID: ${userId})`;
+            document.getElementById('pushNotifTitle').value = '';
+            document.getElementById('pushNotifBody').value = '';
+            document.getElementById('pushNotifModal').style.display = 'block';
+        },
+
+        closePushModal() {
+            document.getElementById('pushNotifModal').style.display = 'none';
+        },
+
+        async submitPushNotif() {
+            const title = document.getElementById('pushNotifTitle').value.trim();
+            const body = document.getElementById('pushNotifBody').value.trim();
+            if (!title || !body) {
+                alert('Please fill in both Title and Message Body');
+                return;
+            }
+            
+            const payload = {
+                title: title,
+                body: body
+            };
+            
+            if (this._pushTarget === null) {
+                payload.broadcast = true;
+            } else {
+                payload.user_id = this._pushTarget;
+            }
+            
+            const btn = document.querySelector('#pushNotifModal button[onclick="UserMgmt.submitPushNotif()"]');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            
+            try {
+                const res = await apiFetch('admin/send-custom-push', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to send notification');
+                
+                showNotification(data.message || 'Notification sent successfully!', 'success');
+                this.closePushModal();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
         },
 
         async openModal(userId) {
