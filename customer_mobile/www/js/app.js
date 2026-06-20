@@ -3707,6 +3707,7 @@ function downloadReceipt(bookingId) {
 
 // BOOKINGS
 var _allBookingsData = [];
+var _currentBookingFilter = 'Confirmed';
 
 function loadBookings() {
   if (!currentUser.id) return;
@@ -3719,7 +3720,7 @@ function loadBookings() {
       var parsed = JSON.parse(cached);
       if (parsed.data && Date.now() - parsed.savedAt < 2 * 60 * 1000) {
         _allBookingsData = parsed.data;
-        renderBookingsList(parsed.data);
+        filterBookingsList(_currentBookingFilter);
         updateBookingStats(parsed.data);
       }
     }
@@ -3731,7 +3732,7 @@ function loadBookings() {
     .then(function(data) {
       _allBookingsData = data;
       updateBookingStats(data);
-      renderBookingsList(data);
+      filterBookingsList(_currentBookingFilter);
       try { localStorage.setItem('autoride_bookings_' + currentUser.id, JSON.stringify({ data: data, savedAt: Date.now() })); } catch(e) {}
     })
     .catch(function(err) {
@@ -3753,18 +3754,31 @@ function updateBookingStats(data) {
 }
 
 function filterBookingsList(filter, btn) {
+  _currentBookingFilter = filter;
   // Update tab styles
   var tabs = document.querySelectorAll('#bookingFilterTabs button');
   for (var i = 0; i < tabs.length; i++) {
     tabs[i].style.background = 'transparent';
     tabs[i].style.color = 'var(--text-secondary)';
   }
+  
+  if (!btn && tabs.length > 0) {
+    // Determine active tab button programmatically if called without element ref
+    var map = { 'Confirmed': 0, 'Completed': 1, 'Cancelled': 2, 'all': 3 };
+    var idx = map[filter];
+    if (idx !== undefined && tabs[idx]) {
+      btn = tabs[idx];
+    }
+  }
+
   if (btn) {
     btn.style.background = 'var(--primary)';
     btn.style.color = '#fff';
   }
   var filtered = filter === 'all' ? _allBookingsData : _allBookingsData.filter(function(b) {
-    if (filter === 'Confirmed') return b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up';
+    if (filter === 'Confirmed') {
+      return b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Pending';
+    }
     return b.status === filter;
   });
   renderBookingsList(filtered);

@@ -450,6 +450,17 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                 "WHERE payment_status IN ('Unpaid', 'Downpayment unpaid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''"
             )
         unpaid_bookings = cur.fetchall()
+        cur.close()
+        
+        # Release the connection back to the pool before doing slow HTTP requests
+        from flask import g
+        conn = g.pop('db_conn', None)
+        if conn:
+            try:
+                conn.commit()
+                conn.close()
+            except Exception:
+                pass
         
         for booking in unpaid_bookings:
             booking_id = booking['id']
