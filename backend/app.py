@@ -157,6 +157,7 @@ from routers.report_routes import report_bp
 from routers.paymongo_routes import paymongo_bp
 
 from booking_extension_routes import ext_bp
+from routers.conflict_routes import conflict_bp
 
 from utils.pdf_generator import generate_booking_pdf
 
@@ -176,6 +177,46 @@ app.register_blueprint(paymongo_bp)
 
 app.register_blueprint(ext_bp)
 
+app.register_blueprint(conflict_bp)
+
+
+import threading
+import time
+
+def start_deadline_monitor():
+    def monitor_loop():
+        # Wait a short while on startup
+        time.sleep(10)
+        while True:
+            try:
+                from database import get_connection, release_connection
+                conn = None
+                try:
+                    conn = get_connection()
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM information_schema.tables 
+                            WHERE table_name = 'booking_conflicts'
+                        )
+                    """)
+                    exists = cur.fetchone()[0]
+                    if exists:
+                        from services.extension_service import check_expired_deadlines
+                        check_expired_deadlines()
+                except Exception as e:
+                    print("Deadline monitor thread table check failed:", e)
+                finally:
+                    if conn:
+                        release_connection(conn)
+            except Exception as e:
+                print("Deadline monitor thread error:", e)
+            time.sleep(3600)  # Check every 1 hour
+
+    t = threading.Thread(target=monitor_loop, daemon=True)
+    t.start()
+
+start_deadline_monitor()
 
 
 def migrate_settings_v2():
@@ -3534,6 +3575,8 @@ def user_bookings():
                    b.refund_channel, b.refund_account_name, b.refund_account_number,
                    CAST(b.refunded_at AS TEXT) AS refunded_at,
                    b.refund_proof_url,
+                   b.is_conflict_affected,
+                   b.conflict_id,
                    v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
                    COALESCE(ld.license_number, u.license_number) AS license_number,

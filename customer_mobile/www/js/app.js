@@ -4008,6 +4008,9 @@ function renderBookingDetail(b) {
       // Divider
       '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
 
+      // Conflict affected card placeholder
+      (b.is_conflict_affected ? '<div id="conflict-resolution-card-' + b.id + '" style="margin-bottom:20px;"></div>' : '') +
+
       // Driver's License Details
       licenseHtml +
 
@@ -4112,6 +4115,188 @@ function renderBookingDetail(b) {
       secondaryActions +
 
     '</div>';
+
+  if (b.is_conflict_affected && b.conflict_id) {
+    setTimeout(function() {
+      loadConflictResolution(b.id, b.conflict_id, parseFloat(b.amount_paid || b.total_price || 0), ((b.brand || '') + ' ' + (b.model || '')).trim(), b.start_date, b.end_date);
+    }, 50);
+  }
+}
+
+function loadConflictResolution(bookingId, conflictId, totalPaid, vehicleName, startDate, endDate) {
+  var card = document.getElementById('conflict-resolution-card-' + bookingId);
+  if (!card) return;
+  card.innerHTML = '<div style="text-align:center;padding:15px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Loading conflict options...</div>';
+  
+  apiCall('/api/conflicts/' + conflictId + '/alternatives')
+    .then(function(res) {
+      if (res.alternatives_available) {
+        card.innerHTML = 
+          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px;">' +
+            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">' +
+              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444;"></i>' +
+              '<span style="font-size:1rem; font-weight:800; color:#ef4444;">Booking Update Required</span>' +
+            '</div>' +
+            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.4; margin-bottom:12px;">' +
+              'Your upcoming booking is no longer available because the current renter extended their trip.' +
+            '</p>' +
+            '<div style="display:flex; flex-direction:column; gap:10px;">' +
+              '<button class="btn-primary" style="background:linear-gradient(135deg,#3b82f6,#2563eb); border:none; padding:12px; font-weight:700; border-radius:12px; color:#fff;" onclick="openConflictAlternativesOverlay(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\')">' +
+                '<i class="fas fa-exchange-alt" style="margin-right:6px;"></i> Choose Alternative Vehicle (' + res.alternatives.length + ' available)' +
+              '</button>' +
+              '<button class="btn-outline" style="color:#ef4444; border-color:#ef4444; padding:11px; font-weight:700; border-radius:12px;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+                '<i class="fas fa-undo" style="margin-right:6px;"></i> Get Full Refund (' + formatPHP(totalPaid) + ')' +
+              '</button>' +
+            '</div>' +
+            '<div style="font-size:0.75rem; color:var(--text-secondary); margin-top:12px; display:flex; align-items:center; gap:4px; justify-content:center;">' +
+              '<i class="fas fa-clock"></i> Respond within 48 hours to avoid auto-cancellation.' +
+            '</div>' +
+          '</div>';
+      } else {
+        card.innerHTML = 
+          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px;">' +
+            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">' +
+              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444;"></i>' +
+              '<span style="font-size:1rem; font-weight:800; color:#ef4444;">No Alternative Vehicles Available</span>' +
+            '</div>' +
+            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.4; margin-bottom:12px;">' +
+              'We sincerely apologize, but there are no alternative vehicles available for your booking dates.' +
+            '</p>' +
+            '<button class="btn-primary" style="background:#ef4444; border:none; width:100%; padding:12px; font-weight:700; border-radius:12px; color:#fff;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+              '<i class="fas fa-check-circle" style="margin-right:6px;"></i> Confirm Full Refund (' + formatPHP(totalPaid) + ')' +
+            '</button>' +
+          '</div>';
+      }
+    })
+    .catch(function(err) {
+      card.innerHTML = '<div style="padding:15px;text-align:center;color:#ef4444;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>Failed to load options. <a href="#" onclick="loadConflictResolution(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\');return false;">Retry</a></div>';
+    });
+}
+
+function openConflictAlternativesOverlay(bookingId, conflictId, totalPaid, vehicleName, startDate, endDate) {
+  var el = document.getElementById('bookingDetailContent');
+  if (!el) return;
+  
+  el.innerHTML = 
+    '<div class="page-header">' +
+      '<button class="back-btn" onclick="reRenderBookingDetail(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>' +
+      '<h2 style="text-align:center;flex:1;">Alternative Vehicles</h2>' +
+    '</div>' +
+    '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
+      '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px;">' +
+        'Choose a replacement vehicle for your booking dates (' + formatBookingDate(startDate) + ' to ' + formatBookingDate(endDate) + ') at no extra cost to you.' +
+      '</p>' +
+      '<div id="alternatives-list-container">Loading alternatives...</div>' +
+      '<div style="border-top:1px solid var(--border);margin:20px 0;"></div>' +
+      '<p style="font-size:0.875rem;text-align:center;color:var(--text-secondary);margin-bottom:12px;">Or request full refund below</p>' +
+      '<button class="btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:12px;border-radius:12px;font-weight:700;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+        '<i class="fas fa-undo" style="margin-right:6px;"></i> Request ' + formatPHP(totalPaid) + ' Refund' +
+      '</button>' +
+    '</div>';
+    
+  var listContainer = document.getElementById('alternatives-list-container');
+  apiCall('/api/conflicts/' + conflictId + '/alternatives')
+    .then(function(res) {
+      if (!res.alternatives || !res.alternatives.length) {
+        listContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">No alternatives available.</div>';
+        return;
+      }
+      
+      var html = '';
+      res.alternatives.forEach(function(alt) {
+        var tierClass = '';
+        var tierIcon = 'fa-check-circle';
+        var tierColor = '#00b14f';
+        if (alt.tier === 1) {
+          tierClass = 'Perfect Match - Same brand and price';
+        } else if (alt.tier === 2) {
+          tierClass = 'Close Match - Similar to your original booking';
+          tierIcon = 'fa-info-circle';
+          tierColor = '#3b82f6';
+        } else {
+          tierClass = 'Alternative Available - Same category, different brand/price';
+          tierIcon = 'fa-info-circle';
+          tierColor = '#f59e0b';
+        }
+        
+        var imgUrl = alt.vehicle_image || 'img/default-car.png';
+        if (imgUrl.indexOf('http') !== 0 && imgUrl.indexOf('/') !== 0 && imgUrl.indexOf('img/') !== 0) {
+          imgUrl = API_BASE + '/static/uploads/' + imgUrl;
+        }
+        
+        html += 
+          '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 6px rgba(0,0,0,0.02);">' +
+            '<div style="font-size:0.75rem;font-weight:800;color:' + tierColor + ';margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
+              '<i class="fas ' + tierIcon + '"></i>' + tierClass +
+            '</div>' +
+            '<div style="display:flex;gap:12px;margin-bottom:12px;">' +
+              '<img src="' + imgUrl + '" style="width:100px;height:70px;object-fit:cover;border-radius:8px;background:var(--bg-body);" onerror="this.src=\'img/default-car.png\'">' +
+              '<div style="flex:1;">' +
+                '<h4 style="font-size:1rem;font-weight:700;margin-bottom:4px;color:var(--text-primary);">' + alt.brand + ' ' + alt.model + '</h4>' +
+                '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">' + alt.transmission + ' | ' + alt.fuel_type + ' | ' + alt.seats + ' Seats</p>' +
+                '<p style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(alt.daily_rate) + '/day</p>' +
+              '</div>' +
+            '</div>' +
+            '<button class="btn-primary" style="background:' + tierColor + ';border:none;width:100%;padding:10px;border-radius:10px;font-weight:700;color:#fff;" onclick="submitConflictAlternativeSelection(' + conflictId + ',' + bookingId + ',' + alt.vehicle_id + ')">' +
+              'Select This Vehicle' +
+            '</button>' +
+          '</div>';
+      });
+      listContainer.innerHTML = html;
+    })
+    .catch(function(err) {
+      listContainer.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;">Failed to load alternatives.</div>';
+    });
+}
+
+function submitConflictAlternativeSelection(conflictId, bookingId, vehicleId) {
+  showLoading(true);
+  apiCall('/api/conflicts/' + conflictId + '/select-alternative', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ selected_vehicle_id: vehicleId })
+  })
+  .then(function(res) {
+    showToast(res.message || 'Vehicle successfully swapped!', 'success');
+    closeOverlay('page-booking-detail');
+    if (typeof loadBookings === 'function') loadBookings();
+  })
+  .catch(function(err) {
+    showToast(err.message || 'Failed to select vehicle.', 'error');
+  })
+  .finally(function() {
+    showLoading(false);
+  });
+}
+
+function submitConflictRefund(conflictId, bookingId) {
+  if (!confirm('Are you sure you want to cancel this booking and get a 100% refund?')) return;
+  showLoading(true);
+  apiCall('/api/conflicts/' + conflictId + '/refund', {
+    method: 'POST'
+  })
+  .then(function(res) {
+    showToast(res.message || 'Booking cancelled. Refund pending.', 'success');
+    closeOverlay('page-booking-detail');
+    if (typeof loadBookings === 'function') loadBookings();
+  })
+  .catch(function(err) {
+    showToast(err.message || 'Failed to request refund.', 'error');
+  })
+  .finally(function() {
+    showLoading(false);
+  });
+}
+
+function reRenderBookingDetail(bookingId) {
+  if (typeof _allBookingsData !== 'undefined') {
+    for (var i = 0; i < _allBookingsData.length; i++) {
+      if (_allBookingsData[i].id === bookingId) {
+        renderBookingDetail(_allBookingsData[i]);
+        break;
+      }
+    }
+  }
 }
 
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {

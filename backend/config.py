@@ -34,3 +34,8 @@ SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
 SMTP_PORT = os.getenv('SMTP_PORT', 587)
 EMAIL_USER = os.getenv('EMAIL_USER', 'patrickciarjohn@gmail.com')
 EMAIL_PASS = os.getenv('EMAIL_PASS', 'lpif jsut hjzy cllw')
+
+# Twilio Configuration (for SMS notifications)
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', 'ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', 'your_auth_token_here')
+TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER', '+15017122661')
