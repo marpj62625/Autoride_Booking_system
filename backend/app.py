@@ -3723,6 +3723,51 @@ def profile():
 
 
 
+@app.route('/user/change-password', methods=['POST'])
+def user_change_password():
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not user_id or not new_password:
+            return jsonify({'error': 'Missing required fields.'}), 400
+
+        cur = get_cursor()
+        cur.execute("SELECT id, password FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            cur.close()
+            return jsonify({'error': 'User not found.'}), 404
+
+        stored_password = user['password'] or ''
+
+        # If they already have a password set, require them to provide the correct current password
+        if stored_password:
+            if not current_password:
+                cur.close()
+                return jsonify({'error': 'Current password is required to change password.'}), 400
+            
+            pw_ok = False
+            try:
+                pw_ok = bcrypt.checkpw(current_password.encode('utf-8'), stored_password.encode('utf-8'))
+            except:
+                pw_ok = (stored_password == current_password)
+            
+            if not pw_ok:
+                cur.close()
+                return jsonify({'error': 'Incorrect current password.'}), 400
+
+        hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user_id))
+        cur.close()
+
+        return jsonify({'message': 'Password updated successfully!'}), 200
+    except Exception as e:
+        print(f"Error updating password: {e}")
+        return jsonify({'error': 'Internal server error occurred.'}), 500
+
 @app.route('/update-profile', methods=['POST'])
 
 def update_profile():
@@ -8617,7 +8662,7 @@ def get_full_profile():
         cur = get_cursor()
         cur.execute(
             """SELECT id, full_name, email, phone, profile_picture, license_image_url,
-                      is_verified, loyalty_points,
+                      is_verified, loyalty_points, password,
                       license_number, license_expiry, license_type
                FROM users WHERE id = %s""",
             (user_id,)
@@ -8626,6 +8671,8 @@ def get_full_profile():
         if not user:
             return jsonify({'error': 'User not found'}), 404
         d = dict(user)
+        d['has_password'] = bool(d.get('password'))
+        d.pop('password', None)
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
         if d.get('license_expiry'):

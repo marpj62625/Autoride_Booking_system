@@ -6575,3 +6575,95 @@ function initializePushForUser() {
     console.log('Push initialization for user failed safely: ' + error);
   }
 }
+
+// UPDATE/CHANGE PASSWORD
+function openChangePasswordOverlay() {
+  document.getElementById('changePasswordCurrent').value = '';
+  document.getElementById('changePasswordNew').value = '';
+  document.getElementById('changePasswordConfirm').value = '';
+  
+  document.getElementById('changePasswordCurrentErr').textContent = '';
+  document.getElementById('changePasswordNewErr').textContent = '';
+  document.getElementById('changePasswordConfirmErr').textContent = '';
+  document.getElementById('changePasswordErr').textContent = '';
+  
+  validatePassword('', 'changePasswordNewErr', 'req-update-');
+
+  showLoading(true);
+  apiCall('/user/profile-full?user_id=' + currentUser.id, { method: 'GET' })
+    .then(function(profile) {
+      if (profile && profile.has_password === false) {
+        document.getElementById('changePasswordCurrentGroup').style.display = 'none';
+      } else {
+        document.getElementById('changePasswordCurrentGroup').style.display = 'block';
+      }
+      showOverlay('page-change-password');
+    })
+    .catch(function() {
+      document.getElementById('changePasswordCurrentGroup').style.display = 'block';
+      showOverlay('page-change-password');
+    })
+    .finally(function() {
+      showLoading(false);
+    });
+}
+
+function doUpdatePassword() {
+  var currentPasswordEl = document.getElementById('changePasswordCurrent');
+  var newPasswordEl = document.getElementById('changePasswordNew');
+  var confirmPasswordEl = document.getElementById('changePasswordConfirm');
+  var currentErrEl = document.getElementById('changePasswordCurrentErr');
+  var newErrEl = document.getElementById('changePasswordNewErr');
+  var confirmErrEl = document.getElementById('changePasswordConfirmErr');
+  var mainErrEl = document.getElementById('changePasswordErr');
+
+  if (currentErrEl) currentErrEl.textContent = '';
+  if (newErrEl) newErrEl.textContent = '';
+  if (confirmErrEl) confirmErrEl.textContent = '';
+  if (mainErrEl) mainErrEl.textContent = '';
+
+  var currentPassword = currentPasswordEl ? currentPasswordEl.value : '';
+  var newPassword = newPasswordEl ? newPasswordEl.value : '';
+  var confirmPassword = confirmPasswordEl ? confirmPasswordEl.value : '';
+
+  var isCurrentRequired = document.getElementById('changePasswordCurrentGroup').style.display !== 'none';
+  if (isCurrentRequired && !currentPassword) {
+    if (currentErrEl) currentErrEl.textContent = 'Current password is required.';
+    return;
+  }
+
+  if (!newPassword) {
+    if (newErrEl) newErrEl.textContent = 'New password is required.';
+    return;
+  }
+
+  if (!validatePassword(newPassword, 'changePasswordNewErr', 'req-update-')) {
+    if (newErrEl) newErrEl.textContent = 'Password does not meet the security requirements.';
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    if (confirmErrEl) confirmErrEl.textContent = 'Passwords do not match.';
+    return;
+  }
+
+  showLoading(true);
+  apiCall('/user/change-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_id: currentUser.id,
+      current_password: isCurrentRequired ? currentPassword : null,
+      new_password: newPassword
+    })
+  })
+    .then(function() {
+      showToast('Password updated successfully!', 'success');
+      closeOverlay('page-change-password');
+    })
+    .catch(function(err) {
+      if (mainErrEl) mainErrEl.textContent = err.message || 'Failed to update password.';
+    })
+    .finally(function() {
+      showLoading(false);
+    });
+}
