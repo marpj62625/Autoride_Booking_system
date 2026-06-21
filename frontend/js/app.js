@@ -2368,70 +2368,76 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         return '<option value="' + c + '"' + (c === (defaultUnit.color_display || defaultUnit.color) ? ' selected' : '') + '>' + c + '</option>';
       }).join('');
 
+      var galleryImages = [];
+      if (defaultUnit.gallery && defaultUnit.gallery.length) {
+        galleryImages = defaultUnit.gallery.map(buildImgUrl);
+      } else if (defaultUnit.vehicle_image) {
+        galleryImages = [buildImgUrl(defaultUnit.vehicle_image)];
+      }
+
+      var galleryHtml = '<div class="gallery-scroll">';
+      if (galleryImages.length) {
+        galleryHtml += galleryImages.map(function(imgUrl, idx) {
+          var idAttr = idx === 0 ? ' id="vd-img"' : '';
+          return '<img' + idAttr + ' class="gallery-img" src="' + imgUrl + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">';
+        }).join('');
+      } else {
+        galleryHtml += '<div style="width:100%;height:100%;min-height:200px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+      }
+      galleryHtml += '</div>';
+
       var cardHtml =
-        '<div class="card" style="margin-bottom:16px;">' +
-        // Gallery image
-        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
-        '</div>' +
-        // Title + status
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-        '<h4 style="font-weight:800;font-size:1rem;margin:0;">' + brand + ' ' + model + '</h4>' +
-        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
-        '</div>' +
-        // Specs grid - Transmission and Color are dropdowns
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
-
-        // Transmission dropdown
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-cog" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
-        transOptions + '</select>' +
-        '</div>' +
-
-        // Plate
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-id-card" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-plate" style="font-weight:600;">' + (defaultUnit.plate_number || 'N/A') + '</span>' +
-        '</div>' +
-
-        // Seats
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-users" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-seats">' + (defaultUnit.seats || '-') + ' seats</span>' +
-        '</div>' +
-
-        // Fuel
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-gas-pump" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-fuel">' + (defaultUnit.fuel_type || '-') + '</span>' +
-        '</div>' +
-
-        // Color dropdown
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
-        colorOptions + '</select>' +
-        '</div>' +
-
-        // Location
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
-        '</div>' +
-
-        '</div>' +
-        // Price + Book
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);">' +
-        '<div>' +
-        '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
-        '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
-        '</div>' +
-        '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;"' +
-        (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
-        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
-        '</button>' +
-        '</div></div>';
+        '<div class="veh-detail-desktop">' +
+          '<div class="veh-detail-gallery-col">' +
+            galleryHtml +
+          '</div>' +
+          '<div class="veh-detail-info-col">' +
+            '<div class="card" style="margin-bottom:16px; padding: 24px;">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+                '<h4 style="font-weight:800;font-size:1.2rem;margin:0;">' + brand + ' ' + model + '</h4>' +
+                '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+              '</div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-cog" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.85rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
+                  transOptions + '</select>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-id-card" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-plate" style="font-weight:600;">' + (defaultUnit.plate_number || 'N/A') + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-users" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-seats">' + (defaultUnit.seats || '-') + ' seats</span>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-gas-pump" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-fuel">' + (defaultUnit.fuel_type || '-') + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.85rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
+                  colorOptions + '</select>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--border);">' +
+                '<div>' +
+                  '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
+                  '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
+                '</div>' +
+                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.95rem;font-weight:800;"' +
+                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
+                  '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
 
       el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
         '<div class="scroll-content" style="padding-bottom:80px;">' + cardHtml + '</div>';
