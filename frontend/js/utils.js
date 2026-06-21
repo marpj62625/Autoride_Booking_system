@@ -104,6 +104,31 @@ function formatDateDisplay(dateStr) {
 }
 
 /**
+ * Formats a driver's license number as LNN-YY-NNNNNN (13 chars total).
+ * @param {string} value
+ * @returns {string}
+ */
+function formatLicenseNumberInput(value) {
+  if (!value) return '';
+  let cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (cleaned.length > 11) {
+    cleaned = cleaned.substring(0, 11);
+  }
+  let formatted = '';
+  if (cleaned.length > 0) {
+    formatted += cleaned.substring(0, 3);
+  }
+  if (cleaned.length > 3) {
+    formatted += '-' + cleaned.substring(3, 5);
+  }
+  if (cleaned.length > 5) {
+    formatted += '-' + cleaned.substring(5, 11);
+  }
+  return formatted;
+}
+
+
+/**
  * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
  * Property 7: File validation  -  format and size.
  * @param {{ type: string, size: number }} file

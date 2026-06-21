@@ -5350,6 +5350,14 @@ var Profile = {
       }
     }
 
+    // Validate driver's license number format (AAA-YY-NNNNNN)
+    var licenseNum = document.getElementById('editLicenseNumber').value.trim();
+    var licensePattern = /^[A-Z0-9]{3}-[A-Z0-9]{2}-[0-9]{6}$/i;
+    if (!licensePattern.test(licenseNum)) {
+      if (errEl) errEl.textContent = 'Invalid License Number format. Must be LNN-YY-NNNNNN (e.g., N01-23-456789).';
+      return;
+    }
+
     showLoading(true);
     
     // Compress both front and back images more aggressively (800x800, 0.6 quality) to fit Vercel payload limit (4.5MB) and speed up uploads

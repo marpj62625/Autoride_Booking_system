@@ -3037,7 +3037,7 @@
           <label>License Number</label>
 
 
-          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789">
+          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789" maxlength="13" oninput="this.value = formatLicenseNumberInput(this.value)">
 
 
         </div>
