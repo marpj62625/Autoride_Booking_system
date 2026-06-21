@@ -1513,7 +1513,9 @@
         }
 
         /* Auth hero panel: hidden on mobile */
-        .auth-hero-panel { display: none; }
+        @media (max-width: 767px) {
+          .auth-hero-panel { display: none; }
+        }
 
     </style>
 
