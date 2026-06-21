@@ -1242,11 +1242,11 @@
           .auth-hero-inner {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-start;
             max-width: 340px;
             position: relative;
             z-index: 1;
-            text-align: center;
+            text-align: left;
           }
 
           /* Right form panel */
@@ -1596,11 +1596,11 @@
   <!-- Desktop hero panel (hidden on mobile) -->
   <div class="auth-hero-panel">
     <div class="auth-hero-inner">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:auto;object-fit:contain;margin-bottom:24px;position:relative;z-index:1;flex-shrink:0;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:260px;height:auto;object-fit:contain;margin-bottom:32px;position:relative;z-index:1;flex-shrink:0;align-self:center;">
       <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Autoride</div>
-      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;text-align:center;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Your ride, your way.<br>Fast. Safe. Affordable.</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Your ride, your way.<br>Fast. Safe. Affordable.</div>
       <!-- Feature highlights -->
-      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;text-align:left;">
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
         <div style="display:flex;align-items:center;gap:16px;">
           <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:1rem;"></i></div>
           <div><div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div></div>
@@ -1615,7 +1615,7 @@
         </div>
       </div>
       <!-- Trust text -->
-      <div style="position:absolute;bottom:28px;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
+      <div style="position:absolute;bottom:28px;left:0;right:0;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
     </div>
   </div>
   <div class="auth-container">
@@ -1751,9 +1751,10 @@
 <!-- Desktop hero panel (hidden on mobile) -->
   <div class="auth-hero-panel">
     <div class="auth-hero-inner">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:auto;object-fit:contain;margin-bottom:24px;position:relative;z-index:1;flex-shrink:0;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:260px;height:auto;object-fit:contain;margin-bottom:32px;position:relative;z-index:1;flex-shrink:0;align-self:center;">
       <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Reset Password</div>
-      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;text-align:center;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Recover access to your account.<br>We'll send you a temporary password.</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;position:relative;z-index:1;letter-spacing:0.3px;">Recover access to your account.<br>We'll send you a temporary password.</div>
+      <div style="position:absolute;bottom:28px;left:0;right:0;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
     </div>
   </div>
   <div class="auth-container">
@@ -1835,19 +1836,24 @@
   <!-- Desktop hero panel (hidden on mobile) -->
   <div class="auth-hero-panel">
     <div class="auth-hero-inner">
-      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:auto;object-fit:contain;margin-bottom:24px;position:relative;z-index:1;flex-shrink:0;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:260px;height:auto;object-fit:contain;margin-bottom:32px;position:relative;z-index:1;flex-shrink:0;align-self:center;">
       <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Create Account</div>
-      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;text-align:center;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Join thousands of customers<br>who trust Autoride for their rides.</div>
-      <div style="display:flex;flex-direction:column;gap:20px;width:100%;">
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Join thousands of customers<br>who trust Autoride for their rides.</div>
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
         <div style="display:flex;align-items:center;gap:16px;">
-          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:#ffffff;font-size:1.1rem;"></i></div>
-          <div><div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Wide Vehicle Selection</div><div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Sedans, SUVs, vans and more</div></div>
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:16px;">
-          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:#ffffff;font-size:1.1rem;"></i></div>
-          <div><div style="color:#ffffff;font-weight:700;font-size:0.95rem;">Loyalty Rewards</div><div style="color:rgba(255,255,255,0.65);font-size:0.82rem;margin-top:2px;">Earn points on every booking</div></div>
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Safe &amp; Insured</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Verified vehicles with full coverage</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Loyalty Rewards</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Earn points and unlock exclusive deals</div></div>
         </div>
       </div>
+      <div style="position:absolute;bottom:28px;left:0;right:0;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
     </div>
   </div>
   <div class="auth-container">
