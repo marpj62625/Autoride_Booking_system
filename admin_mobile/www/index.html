@@ -724,7 +724,7 @@
             align-items: flex-end;
         }
         #inspectionModal .modal-content {
-            background: var(--surface-solid, #1e293b);
+            background: #ffffff;
             border-radius: 24px 24px 0 0;
             max-height: 92vh;
             width: 100%;
@@ -2136,12 +2136,12 @@
         </div>
     </div>    <!-- INSPECTION MODAL -->
     <div id="inspectionModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; background: var(--bg-card); border-top: 1px solid var(--border);">
-            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, var(--surface), var(--surface-container)); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0;">
-                <div style="width: 40px; height: 4px; background: var(--border); border-radius: 10px; margin: -6px auto 12px;"></div>
-                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-main);">Vehicle Inspection</h3>
-                <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
-                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; background: #ffffff; border-top: 1px solid var(--border);">
+            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, #00B14F, #007a35); border-bottom: 1px solid rgba(0,177,79,0.15); position: relative; flex-shrink: 0;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 10px; margin: -6px auto 12px;"></div>
+                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #ffffff;">Vehicle Inspection</h3>
+                <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.8);">Documenting vehicle condition</p>
+                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-times"></i></button>
             </div>
             
             <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
