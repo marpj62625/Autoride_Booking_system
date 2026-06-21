@@ -7676,8 +7676,14 @@ def update_vehicle(vehicle_id):
         cur = get_cursor()
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
         color = data.get('color') or None
-        # Handle image upload if file provided
-        vehicle_image = data.get('vehicle_image', '')
+        # Fetch existing vehicle_image from DB so it's preserved if no new photo is uploaded
+        cur.execute("SELECT vehicle_image FROM vehicles WHERE id = %s", (vehicle_id,))
+        existing = cur.fetchone()
+        vehicle_image = existing['vehicle_image'] if existing else ''
+        # Override with form-provided value if explicitly set (non-empty)
+        form_image = data.get('vehicle_image', '')
+        if form_image:
+            vehicle_image = form_image
         if 'gallery' in request.files:
             files = request.files.getlist('gallery')
             for i, f in enumerate(files):
@@ -7689,7 +7695,7 @@ def update_vehicle(vehicle_id):
                         img_url = supabase.storage.from_('uploads').get_public_url(filename)
                         cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (vehicle_id, img_url, i))
                         if i == 0:
-                            vehicle_image = img_url
+                            vehicle_image = img_url  # Update main image to first new photo
                     except Exception:
                         pass
         cur.execute(
