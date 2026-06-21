@@ -7680,16 +7680,18 @@ def update_vehicle(vehicle_id):
         vehicle_image = data.get('vehicle_image', '')
         if 'gallery' in request.files:
             files = request.files.getlist('gallery')
-            if files and files[0].filename:
-                file = files[0]
-                filename = 'vehicle_' + str(vehicle_id) + '_' + str(__import__('time').time()) + '_' + file.filename
-                file_data = file.read()
-                try:
-                    supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": file.content_type})
-                    vehicle_image = supabase.storage.from_('uploads').get_public_url(filename)
-                    cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (vehicle_id, vehicle_image, 0))
-                except Exception:
-                    pass
+            for i, f in enumerate(files):
+                if f.filename:
+                    filename = 'vehicle_' + str(vehicle_id) + '_' + str(__import__('time').time()) + '_' + str(i) + '_' + f.filename
+                    file_data = f.read()
+                    try:
+                        supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": f.content_type})
+                        img_url = supabase.storage.from_('uploads').get_public_url(filename)
+                        cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (vehicle_id, img_url, i))
+                        if i == 0:
+                            vehicle_image = img_url
+                    except Exception:
+                        pass
         cur.execute(
             "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
