@@ -29,9 +29,11 @@ node_modules/
 dist/
 build/
 
-# Firebase service account credentials — NEVER commit these
+# Firebase service account credentials ï¿½ NEVER commit these
 *service_account*.json
 *serviceAccount*.json
 firebase-adminsdk*.json
 firebase-credentials*.json
 firebase-service-account.json
+
+.vercel
