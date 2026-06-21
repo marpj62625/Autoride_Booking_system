@@ -3,25 +3,54 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
-// CONFIG  -  auto-detect API URL for web vs APK
+// CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
+  console.log('API_BASE detection:');
+  console.log('- window._API_BASE:', typeof window !== 'undefined' ? window._API_BASE : 'undefined');
+  console.log('- window.Capacitor:', typeof window !== 'undefined' ? !!window.Capacitor : 'undefined');
+  console.log('- window.Capacitor.isNative:', typeof window !== 'undefined' && window.Capacitor ? window.Capacitor.isNative : 'undefined');
+  console.log('- window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'undefined');
+  console.log('- window.location.protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
+  
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
+  
   // Always use production URL on native Capacitor APK
   if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
+    console.log('Using production API for Capacitor native app');
     return 'https://autoride-booking-system.vercel.app/api';
   }
+  
+  // Force production for mobile apps (fallback detection)
+  if (typeof window !== 'undefined' && (
+    window.location.protocol === 'capacitor:' || 
+    window.location.protocol === 'https:' && window.location.hostname === 'localhost'
+  )) {
+    console.log('Using production API for mobile protocol detection');
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
+  
+  // FORCE PRODUCTION - temporary fix
+  // Remove this after debugging
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    console.log('FORCED: Using production API instead of localhost');
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
+  
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
-    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:5000/api';
+    if (h === 'localhost' || h === '127.0.0.1') {
+      console.log('Using localhost API for web development');
+      return 'http://localhost:5000/api';
+    }
     if (window.location.protocol === 'https:') {
+      console.log('Using origin API for HTTPS');
       return window.location.origin + '/api';
     }
   }
+  
+  console.log('Using fallback production API');
   return 'https://autoride-booking-system.vercel.app/api';
 }());
-
-// Google OAuth2 Client ID (web) - must match Google Cloud Console
-var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
@@ -52,6 +81,8 @@ var gpsMarker = null;
 // SUPABASE REALTIME (in-app notifications)
 var SUPABASE_URL = 'https://fydfsgjrlowrrtlmefwq.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5ZGZzZ2pybG93cnJ0bG1lZndxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMjkwNTcsImV4cCI6MjA5MDYwNTA1N30.m94HHMC7852zw9xfkkOYTPY1IzoH_kNPLYpTe0myGB4';
+// Google OAuth2 Web Client ID (for browser-based Google Sign-In fallback)
+var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
 var supabaseClient = null;
 var notifChannel = null;
 var notifList = [];
@@ -63,6 +94,131 @@ function getPreferences() {
 function getCamera() {
   return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) || null;
 }
+function getPushNotifications() {
+  return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) || null;
+}
+
+// PUSH NOTIFICATIONS SERVICE
+var PushNotifications = {
+  isInitialized: false,
+  currentToken: null,
+  
+  init: function() {
+    if (this.isInitialized) return Promise.resolve();
+    
+    var pushPlugin = getPushNotifications();
+    if (!pushPlugin) {
+      console.log('Push notifications not available (web browser)');
+      return Promise.resolve();
+    }
+
+    console.log('Initializing push notifications...');
+    
+    // Request permission first
+    return pushPlugin.requestPermissions().then(function(result) {
+      console.log('Permission result:', result);
+      if (result.receive === 'granted') {
+        console.log('Push notification permission granted');
+        
+        // Register for push notifications
+        return pushPlugin.register().then(function() {
+          console.log('Push registration initiated successfully');
+        });
+      } else {
+        console.log('Push notification permission denied:', result.receive);
+        showToast('Push notifications disabled - permission denied', 'info');
+        return Promise.reject('Permission denied: ' + result.receive);
+      }
+    }).then(function() {
+      // Add event listeners
+      pushPlugin.addListener('registration', function(token) {
+        console.log('Push registration success, token: ' + token.value);
+        PushNotifications.currentToken = token.value;
+        PushNotifications.sendTokenToServer(token.value);
+        showToast('Push notifications enabled successfully!', 'success');
+      });
+
+      pushPlugin.addListener('registrationError', function(error) {
+        console.error('Push registration error: ' + JSON.stringify(error));
+        
+        var errorMsg = 'Push notification setup failed';
+        if (error.error && error.error.includes('FIS_AUTH_ERROR')) {
+          errorMsg = 'Firebase configuration needed for push notifications';
+          console.log('FIS_AUTH_ERROR detected - Firebase project not properly configured');
+        } else if (error.error) {
+          errorMsg = error.error;
+        }
+        showToast(errorMsg, 'warning');
+      });
+
+      pushPlugin.addListener('pushNotificationReceived', function(notification) {
+        console.log('Push notification received: ' + JSON.stringify(notification));
+        PushNotifications.handleNotification(notification);
+      });
+
+      pushPlugin.addListener('pushNotificationActionPerformed', function(notification) {
+        console.log('Push notification action performed: ' + JSON.stringify(notification));
+        PushNotifications.handleNotificationAction(notification);
+      });
+
+      PushNotifications.isInitialized = true;
+      console.log('Push notifications listeners initialized successfully');
+      
+    }).catch(function(error) {
+      console.error('Error initializing push notifications: ' + JSON.stringify(error));
+      
+      // Handle specific Firebase errors gracefully
+      if (error.includes && error.includes('FIS_AUTH_ERROR')) {
+        showToast('In-app notifications active (Firebase setup needed for push)', 'info');
+      } else if (!error.includes('Permission denied')) {
+        showToast('Push setup incomplete - in-app notifications will work', 'warning');
+      }
+    });
+  },
+
+  sendTokenToServer: function(token) {
+    if (!token || !currentUser.id) return;
+    
+    console.log('Sending FCM token to server for user: ' + currentUser.id);
+    saveFcmToken(token);
+  },
+
+  handleNotification: function(notification) {
+    console.log('Handling received notification:', notification);
+    
+    // Show toast notification in app
+    var title = notification.title || 'Autoride';
+    var body = notification.body || '';
+    
+    if (body) {
+      showToast(title + ': ' + body, 'info');
+    }
+    
+    // Add to local notification store
+    NotifStore.add(body || title);
+    
+    // Refresh notifications list if currently visible
+    var notifPage = document.getElementById('page-notifications');
+    if (notifPage && notifPage.classList.contains('active')) {
+      loadNotifications(currentUser.id);
+    }
+  },
+
+  handleNotificationAction: function(notification) {
+    console.log('Handling notification action:', notification);
+    
+    // Handle notification tap - could navigate to specific page
+    var data = notification.notification && notification.notification.data;
+    
+    if (data && data.page) {
+      // Navigate to specific page mentioned in notification
+      showPage(data.page);
+    } else {
+      // Default: show notifications page
+      showOverlay('page-notifications');
+    }
+  }
+};
 
 // SESSION - expires after 8 hours of inactivity
 var SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
@@ -123,7 +279,7 @@ var Session = {
   }
 };
 
-// ?? BOOKING SESSION: save/restore in-progress booking state (1 minute TTL) ??
+// BOOKING SESSION: save/restore in-progress booking state (1 minute TTL)
 var BOOKING_SESSION_KEY = 'autoride_booking_session';
 var BOOKING_SESSION_TTL = 60 * 1000; // 1 minute
 
@@ -154,8 +310,8 @@ var BookingSession = {
       // Booking form fields
       startDate: (document.getElementById('bfStartDate') || {}).value || null,
       endDate: (document.getElementById('bfEndDate') || {}).value || null,
-      pickupTime: (document.getElementById('bfPickupTime') || {}).value || '06:00',
-      returnTime: (document.getElementById('bfReturnTime') || {}).value || '06:00',
+      pickupTime: (document.getElementById('bfPickupTime') || {}).value || getCurrentTimeRounded(),
+      returnTime: (document.getElementById('bfReturnTime') || {}).value || getCurrentTimeRounded(),
       serviceType: (document.getElementById('bfServiceType') || {}).value || 'pickup',
       pickupLocation: (document.getElementById('bfPickupLocation') || {}).value || null,
       rentalType: (document.getElementById('bfRentalType') || {}).value || 'Self-Drive',
@@ -227,7 +383,9 @@ var BookingSession = {
 
     if (data.overlays.vehicleDetail && data.currentVehicle) {
       showToast('Restored your last viewed vehicle.', 'info');
-      openVehicleDetail(data.currentVehicle);
+      // Extract vehicle ID if currentVehicle is an object
+      var vehicleId = typeof data.currentVehicle === 'object' ? data.currentVehicle.id : data.currentVehicle;
+      openVehicleDetail(vehicleId);
       return true;
     }
 
@@ -418,28 +576,31 @@ function subscribeToNotifications(userId) {
                 if (type === 'license_approved' || type === 'license_rejected') {
                     if (type === 'license_approved') {
                         _showNotifPopup(title, msg, '#00b14f', 'fa-id-card');
+                        setTimeout(function() {
+                            forceLogoutSilent('Your license was approved! Please log in again to continue.');
+                        }, 2500);
                     } else {
                         _showNotifPopup(title, msg, '#f87171', 'fa-id-card');
+                        apiCall('/user/verify-status?user_id=' + userId)
+                            .then(function(v) {
+                                currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
+                                Session.save(currentUser);
+                                var badge = document.getElementById('profileVerifyBadge');
+                                if (badge) {
+                                    var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                    badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+                                    badge.className = 'verify-badge verify-' + currentUser.isVerified;
+                                }
+                                var statusEl = document.getElementById('viewLicenseStatus');
+                                if (statusEl) {
+                                    var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                                    var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+                                    var v2 = currentUser.isVerified;
+                                    statusEl.textContent = statusMap[v2] || '-';
+                                    statusEl.style.color = statusColor[v2] || 'var(--text-main)';
+                                }
+                            }).catch(function() {});
                     }
-                    apiCall('/user/verify-status?user_id=' + userId)
-                        .then(function(v) {
-                            currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
-                            Session.save(currentUser);
-                            var badge = document.getElementById('profileVerifyBadge');
-                            if (badge) {
-                                var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-                                badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
-                                badge.className = 'verify-badge verify-' + currentUser.isVerified;
-                            }
-                            var statusEl = document.getElementById('viewLicenseStatus');
-                            if (statusEl) {
-                                var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
-                                var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
-                                var v2 = currentUser.isVerified;
-                                statusEl.textContent = statusMap[v2] || '-';
-                                statusEl.style.color = statusColor[v2] || 'var(--text-main)';
-                            }
-                        }).catch(function() {});
                 }
             }
         })
@@ -552,31 +713,60 @@ function apiCall(endpoint, options) {
     });
 }
 
-function uploadFile(endpoint, formData) {
+function uploadFile(endpoint, formData, timeoutMs) {
   var url = API_BASE + endpoint;
-  return fetch(url, { method: 'POST', body: formData })
-    .then(function(res) {
-      return res.text().then(function(text) {
-        var data;
-        try { data = JSON.parse(text); } catch(e) {
-          var parseErr = new Error('Server error (status ' + res.status + ')');
-          parseErr.status = res.status;
-          throw parseErr;
+  timeoutMs = timeoutMs || 90000; // 90-second default for file uploads
+
+  function doFetch(attempt) {
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller
+      ? setTimeout(function() { controller.abort(); }, timeoutMs)
+      : null;
+
+    var opts = { method: 'POST', body: formData };
+    if (controller) opts.signal = controller.signal;
+
+    return fetch(url, opts)
+      .then(function(res) {
+        if (timer) clearTimeout(timer);
+        return res.text().then(function(text) {
+          var data;
+          try { data = JSON.parse(text); } catch(e) {
+            var parseErr = new Error('Server error (status ' + res.status + ')');
+            parseErr.status = res.status;
+            throw parseErr;
+          }
+          if (!res.ok) {
+            var err = new Error(data.error || 'Upload failed');
+            err.status = res.status;
+            throw err;
+          }
+          return data;
+        });
+      })
+      .catch(function(err) {
+        if (timer) clearTimeout(timer);
+        // If it's a known server error, don't retry
+        if (err.status && err.status !== 0) throw err;
+        // If it's abort (timeout) or network error, retry once
+        if (attempt < 2) {
+          console.warn('[uploadFile] Attempt ' + attempt + ' failed (' + (err.name || err.message) + '), retrying...');
+          return new Promise(function(resolve) { setTimeout(resolve, 2000); })
+            .then(function() { return doFetch(attempt + 1); });
         }
-        if (!res.ok) {
-          var err = new Error(data.error || 'Upload failed');
-          err.status = res.status;
-          throw err;
-        }
-        return data;
+        // Give up - give helpful error
+        var isTimeout = err.name === 'AbortError';
+        var netErr = new Error(
+          isTimeout
+            ? 'Upload timed out. Please check your connection and try again.'
+            : 'Network error during upload. Please try again.'
+        );
+        netErr.status = 0;
+        throw netErr;
       });
-    })
-    .catch(function(err) {
-      if (err.status) throw err;
-      var netErr = new Error('Network error during upload. Check connection.');
-      netErr.status = 0;
-      throw netErr;
-    });
+  }
+
+  return doFetch(1);
 }
 
 // UI HELPERS
@@ -593,7 +783,7 @@ function showLoading(show) {
     _loadingTimeout = setTimeout(function() {
       _loadingCount = 0;
       if (overlay) overlay.style.display = 'none';
-    }, 10000);
+    }, 120000); // 120s safety timeout (supports large file uploads)
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
@@ -718,11 +908,17 @@ function showPage(id) {
   if (id === 'page-more') loadMorePage();
 }
 
+var _overlayZBase = 500;
+var _overlayZCounter = 0;
+
 function showOverlay(id) {
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.add('active');
   el.style.display = 'block';
+  // Bump z-index so the most-recently opened overlay always sits on top
+  _overlayZCounter++;
+  el.style.zIndex = String(_overlayZBase + _overlayZCounter);
   if (id === 'page-notifications') openNotificationsPage();
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
@@ -737,8 +933,10 @@ function closeOverlay(id) {
   if (!el) return;
   el.classList.remove('active');
   el.style.display = 'none';
+  el.style.zIndex = '';
   if (id === 'page-gps-map') stopGpsPolling();
   if (id === 'page-livechat') LiveChat.stopPolling();
+  if (id === 'page-payment') stopPaymentPolling();
 }
 
 function statusPill(status) {
@@ -788,6 +986,21 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
+
+  // Initialize Google Auth as early as possible on cold start
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
+    console.log('[GoogleAuth] Initializing immediately in initApp');
+    window.Capacitor.Plugins.GoogleAuth.initialize({
+      clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true
+    }).then(function() {
+      console.log('[GoogleAuth] Initialized successfully in initApp');
+    }).catch(function(err) {
+      console.error('[GoogleAuth] Initialization error in initApp:', err);
+    });
+  }
+
   // Load theme - default to LIGHT
   var savedTheme = null;
   try { savedTheme = localStorage.getItem('theme'); } catch(e) {}
@@ -809,9 +1022,16 @@ function initApp() {
       // Always refresh verification status from server
       apiCall('/user/verify-status?user_id=' + user.id)
         .then(function(v) {
+          if (v.force_logout_at) {
+            forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+            return;
+          }
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : user.isVerified;
           Session.save(currentUser);
-        }).catch(function() {});
+          startBgSessionPolling();
+        }).catch(function() {
+          startBgSessionPolling();
+        });
       apiCall('/public/settings').then(function(s) {
         Object.assign(appSettings, s);
       }).catch(function() {});
@@ -981,6 +1201,29 @@ function handleBackButton() {
           }
         }
       });
+      // Foreground resumption - check status when app returns from background (user finished checkout and switched back)
+      window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
+        if (state.isActive) {
+          console.log('App resumed, checking active payment status...');
+          var paymentOverlay = document.getElementById('page-payment');
+          if (paymentOverlay && (paymentOverlay.style.display === 'block' || paymentOverlay.classList.contains('active'))) {
+            // Find wait overlay button data
+            var checkBtn = document.querySelector('#paymentContent .btn-primary');
+            if (checkBtn) {
+              var onclickStr = checkBtn.getAttribute('onclick') || '';
+              // Match e.g. checkPaymentStatus(123, 2500, 'gcash')
+              var match = onclickStr.match(/checkPaymentStatus\((\d+)\s*,\s*([\d.]+)\s*,\s*['"]([^'"]+)['"]/);
+              if (match) {
+                var bookingId = parseInt(match[1]);
+                var amount = parseFloat(match[2]);
+                var method = match[3];
+                console.log('Detected active payment waiting for booking #' + bookingId + ', auto verifying...');
+                autoCheckPaymentStatus(bookingId, amount, method);
+              }
+            }
+          }
+        }
+      });
     }
   }, false);
 })();
@@ -1005,7 +1248,10 @@ function doLogin() {
         .then(function(v) {
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (data.is_verified || 0);
           Session.save(currentUser);
-        }).catch(function() {});
+          startBgSessionPolling();
+        }).catch(function() {
+          startBgSessionPolling();
+        });
       apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
       // Initialise Supabase client and load notifications
       if (typeof supabase !== 'undefined') {
@@ -1013,6 +1259,7 @@ function doLogin() {
       }
       loadNotifications(data.user_id);
       subscribeToNotifications(data.user_id);
+      initializePushForUser();
       showPage('page-home');
     })
     .catch(function(err) {
@@ -1029,9 +1276,65 @@ function doLogin() {
     .finally(function() { showLoading(false); });
 }
 
+// AUTH: FORGOT PASSWORD
+function openForgotPasswordPage(e) {
+  if (e) e.preventDefault();
+  // Reset the form state
+  var emailEl = document.getElementById('forgotPwEmail');
+  var errEl = document.getElementById('forgotPwErr');
+  var successEl = document.getElementById('forgotPwSuccess');
+  var btnText = document.getElementById('forgotPwBtnText');
+  var btn = document.getElementById('forgotPwBtn');
+  if (emailEl) emailEl.value = '';
+  if (errEl) errEl.textContent = '';
+  if (successEl) { successEl.style.display = 'none'; successEl.textContent = ''; }
+  if (btnText) btnText.textContent = 'Send Temporary Password';
+  if (btn) btn.disabled = false;
+  showPage('page-forgot-password');
+}
+
+function doForgotPassword() {
+  var emailEl = document.getElementById('forgotPwEmail');
+  var errEl = document.getElementById('forgotPwErr');
+  var successEl = document.getElementById('forgotPwSuccess');
+  var btn = document.getElementById('forgotPwBtn');
+  var btnText = document.getElementById('forgotPwBtnText');
+  var email = emailEl ? emailEl.value.trim() : '';
+
+  if (errEl) errEl.textContent = '';
+  if (successEl) { successEl.style.display = 'none'; }
+
+  if (!email) {
+    if (errEl) errEl.textContent = 'Please enter your email address.';
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.textContent = 'Sending...';
+
+  apiCall('/user/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email: email })
+  })
+  .then(function(data) {
+    if (successEl) {
+      successEl.textContent = '✅ ' + (data.message || 'Temporary password sent! Check your email inbox.');
+      successEl.style.display = 'block';
+    }
+    if (btnText) btnText.textContent = 'Email Sent!';
+    if (emailEl) emailEl.value = '';
+  })
+  .catch(function(err) {
+    if (errEl) errEl.textContent = '❌ ' + (err.message || 'Failed to send email. Please try again.');
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'Send Temporary Password';
+  });
+}
+
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
+  stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
     try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
@@ -1051,16 +1354,54 @@ function doLogout() {
   showToast('Logged out successfully', 'success');
 }
 
+function forceLogoutSilent(message) {
+  stopBgSessionPolling();
+  Session.clear();
+  if (notifChannel && supabaseClient) {
+    try { supabaseClient.removeChannel(notifChannel); } catch(e) {}
+    notifChannel = null;
+  }
+  currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
+  notifList = [];
+  var plugins = window.Capacitor && window.Capacitor.Plugins;
+  var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
+  if (GoogleAuthPlugin) {
+    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+  }
+  var nav = document.getElementById('bottomNav');
+  if (nav) nav.classList.add('hidden');
+  document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  showPage('page-login');
+  showToast(message || 'You have been logged out.', 'info');
+}
+
 function doGoogleLogin() {
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
 
-  // Native APK  -  use Capacitor GoogleAuth plugin
+  // Native APK  - use Capacitor GoogleAuth plugin
   if (isCapacitorNative && GoogleAuthPlugin) {
     showLoading(true);
-    GoogleAuthPlugin.signIn()
+    var initPromise = Promise.resolve();
+    if (!window._googleAuthInitialized) {
+      console.log('[GoogleAuth] Not initialized yet, initializing on demand...');
+      initPromise = GoogleAuthPlugin.initialize({
+        clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true
+      }).then(function() {
+        window._googleAuthInitialized = true;
+        console.log('[GoogleAuth] Initialized successfully on demand');
+      }).catch(function(e) {
+        console.log('[GoogleAuth] Initialized error on demand: ' + e);
+      });
+    }
+
+    initPromise.then(function() {
+      return GoogleAuthPlugin.signIn();
+    })
       .then(function(result) {
         showLoading(false);
         var idToken = (result.authentication && result.authentication.idToken)
@@ -1088,13 +1429,13 @@ function doGoogleLogin() {
         } else if (msg.includes('10') || code === '10') {
           showToast('Google Sign-In configuration error. Please contact support.', 'error');
         } else {
-          showToast('Google Sign-In failed. Please try again.', 'error');
+          showToast('Google Sign-In failed: ' + msg, 'error');
         }
       });
     return;
   }
 
-  // Web browser  -  use OAuth2 popup
+  // Web browser  - use OAuth2 popup
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
@@ -1150,6 +1491,7 @@ function _finishGoogleLogin(idToken, email, name) {
         }
         loadNotifications(currentUser.id);
         subscribeToNotifications(currentUser.id);
+        initializePushForUser();
         startBgChatPolling();
         startBgSessionPolling();
         showPage('page-home');
@@ -1158,14 +1500,13 @@ function _finishGoogleLogin(idToken, email, name) {
       }
     })
     .catch(function(err) {
-      showToast('Google Sign-In failed. Please try again.', 'error');
+      showToast('Google Sign-In failed: ' + (err.message || 'Please try again.'), 'error');
     })
     .finally(function() { showLoading(false); });
 }
 
 function doLogout() {
   unsubscribeFromNotifications();
-  stopBgChatPolling();
   stopBgSessionPolling();
   notifList = [];
   Session.clear();
@@ -1245,6 +1586,7 @@ function doVerifyEmail() {
         }
         loadNotifications(data.user.id);
         subscribeToNotifications(data.user.id);
+        initializePushForUser();
         
         // Redirect to home page
         setTimeout(function() {
@@ -1368,7 +1710,7 @@ function _startActiveBookingCountdown(endDateStr) {
     el.style.color = result.urgent ? '#ef4444' : '#10b981';
     if (result.urgent && !_activeBookingNotified) {
       _activeBookingNotified = true;
-      showToast('?? Your rental ends in less than 24 hours!', 'error');
+      showToast('Your rental ends in less than 24 hours!', 'error');
       NotifStore.add('Your rental is ending soon - less than 24 hours remaining.');
     }
   }
@@ -1382,7 +1724,7 @@ function _normDateStr(d) {
   var s = String(d).trim();
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Has a T  -  strip time component (ISO datetime)
+  // Has a T  - strip time component (ISO datetime)
   if (s.indexOf('T') !== -1) {
     var iso = s.split('T')[0];
     if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
@@ -1390,7 +1732,7 @@ function _normDateStr(d) {
   // Parse as date string
   var dt = new Date(s);
   if (!isNaN(dt.getTime())) {
-    // HTTP-date format ends in 'GMT' and represents UTC midnight  -  use UTC date parts
+    // HTTP-date format ends in 'GMT' and represents UTC midnight  - use UTC date parts
     // to avoid timezone shift (e.g. UTC+8 would shift "01 Jun 00:00 GMT" to May 31 local)
     var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
     var y  = useUTC ? dt.getUTCFullYear()            : dt.getFullYear();
@@ -1430,11 +1772,76 @@ function loadHome() {
       var el2 = document.getElementById('homePoints2');
       if (el2) el2.textContent = pts_val.toLocaleString();
       currentUser.loyaltyPoints = pts_val;
-      var progress = Math.min(100, (pts_val / 2000) * 100);
+      
+      // Determine tier and next tier threshold
+      var tier, tierBg, tierColor, tierBorder, nextTier, nextThreshold;
+      if (pts_val < 1000) {
+        tier = 'BRONZE';
+        tierBg = 'rgba(205,127,50,0.2)';
+        tierColor = '#cd7f32';
+        tierBorder = 'rgba(205,127,50,0.3)';
+        nextTier = 'Silver';
+        nextThreshold = 1000;
+      } else if (pts_val < 2000) {
+        tier = 'SILVER';
+        tierBg = 'rgba(245,158,11,0.2)';
+        tierColor = '#fbbf24';
+        tierBorder = 'rgba(245,158,11,0.3)';
+        nextTier = 'Gold';
+        nextThreshold = 2000;
+      } else if (pts_val < 5000) {
+        tier = 'GOLD';
+        tierBg = 'rgba(251,191,36,0.2)';
+        tierColor = '#fbbf24';
+        tierBorder = 'rgba(251,191,36,0.3)';
+        nextTier = 'Platinum';
+        nextThreshold = 5000;
+      } else {
+        tier = 'PLATINUM';
+        tierBg = 'rgba(168,162,158,0.2)';
+        tierColor = '#a8a29e';
+        tierBorder = 'rgba(168,162,158,0.3)';
+        nextTier = 'Max';
+        nextThreshold = pts_val; // already at max
+      }
+      
+      // Update tier badge
+      var tierBadge = document.getElementById('loyaltyTierBadge');
+      if (tierBadge) {
+        tierBadge.textContent = tier;
+        tierBadge.style.background = tierBg;
+        tierBadge.style.color = tierColor;
+        tierBadge.style.border = '1px solid ' + tierBorder;
+      }
+      
+      // Update progress label and target
+      var progressLabel = document.getElementById('loyaltyProgressLabel');
+      if (progressLabel) {
+        if (tier === 'PLATINUM') {
+          progressLabel.textContent = 'Maximum Tier Achieved!';
+        } else {
+          progressLabel.textContent = 'Progress to ' + nextTier;
+        }
+      }
+      
+      var targetEl = document.getElementById('loyaltyTargetPoints');
+      if (targetEl) targetEl.textContent = nextThreshold.toLocaleString();
+      
+      // Calculate progress bar
+      var progress = tier === 'PLATINUM' ? 100 : Math.min(100, (pts_val / nextThreshold) * 100);
       var bar = document.getElementById('loyaltyBar');
       if (bar) bar.style.width = progress + '%';
+      
+      // Update progress text
       var ptsNeeded = document.getElementById('ptsNeeded');
-      if (ptsNeeded) ptsNeeded.textContent = Math.max(0, 2000 - pts_val).toLocaleString() + ' pts more to unlock Gold benefits';
+      if (ptsNeeded) {
+        if (tier === 'PLATINUM') {
+          ptsNeeded.textContent = 'You have unlocked all loyalty benefits!';
+        } else {
+          var remaining = Math.max(0, nextThreshold - pts_val);
+          ptsNeeded.textContent = remaining.toLocaleString() + ' pts more to unlock ' + nextTier + ' benefits';
+        }
+      }
     }).catch(function() {});
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(bookings) {
@@ -1637,7 +2044,7 @@ function filterVehicles(filter, chipEl) {
   renderVehicles(filtered);
 }
 
-// ?? INLINE BROWSE: Transmission selected ? populate Color dropdown ??????????
+// INLINE BROWSE: Transmission selected - populate Color dropdown
 function onVehicleTransmissionChange(brandEnc, modelEnc, cardId) {
   var transEl = document.getElementById('vtrans-' + cardId);
   var colorWrap = document.getElementById('vcolor-wrap-' + cardId);
@@ -1672,7 +2079,7 @@ function onVehicleTransmissionChange(brandEnc, modelEnc, cardId) {
     .catch(function(err) { showToast(err.message, 'error'); });
 }
 
-// ?? INLINE BROWSE: Color selected ? show plate + image + Book button ?????????
+// INLINE BROWSE: Color selected - show plate + image + Book button
 function onVehicleColorChange(brandEnc, modelEnc, cardId) {
   var transEl = document.getElementById('vtrans-' + cardId);
   var colorEl = document.getElementById('vcolor-' + cardId);
@@ -1929,8 +2336,8 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
       window._vdBrand = brand;
       window._vdModel = model;
 
-      // Get unique transmissions from available units only
-      var availUnits = allUnits.filter(function(u) { return u.status === 'Available'; });
+      // Get unique transmissions from operationally available units (not out of service)
+      var availUnits = allUnits.filter(function(u) { return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1; });
       var seenTrans = {};
       var transmissions = [];
       availUnits.forEach(function(u) {
@@ -1938,10 +2345,10 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         if (!seenTrans[t]) { seenTrans[t] = true; transmissions.push(t); }
       });
 
-      // Pick a default unit to show initially
-      var defaultUnit = availUnits[0] || allUnits[0];
-      var isAvailable = defaultUnit.status === 'Available';
-      var canBook = isAvailable && parseInt(currentUser.isVerified) === 2;
+      // Pick a default unit to show initially (prefer Available, fallback to Rented/Booked)
+      var defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
+      var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(defaultUnit.status) === -1;
+      var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
       var imgSrc = (defaultUnit.gallery && defaultUnit.gallery.length) ? buildImgUrl(defaultUnit.gallery[0]) : buildImgUrl(defaultUnit.vehicle_image);
 
       // Build transmission options
@@ -1968,9 +2375,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
         '</div>' +
         // Title + status
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
-        '<h4 style="font-weight:800;font-size:1rem;">' + brand + ' ' + model + '</h4>' +
-        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (isAvailable ? '#d1e7dd' : '#f8d7da') + ';color:' + (isAvailable ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<h4 style="font-weight:800;font-size:1rem;margin:0;">' + brand + ' ' + model + '</h4>' +
+        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
         '</div>' +
         // Specs grid - Transmission and Color are dropdowns
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
@@ -2002,7 +2409,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
         // Color dropdown
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-globe" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
         '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
         colorOptions + '</select>' +
         '</div>' +
@@ -2022,7 +2429,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '</div>' +
         '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;"' +
         (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
-        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isAvailable ? 'Verify License' : 'Unavailable')) +
+        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
         '</button>' +
         '</div></div>';
 
@@ -2037,7 +2444,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 function onVdTransChange() {
   var trans = document.getElementById('vd-trans').value;
   var availUnits = (window._vdUnits || []).filter(function(u) {
-    return u.status === 'Available' && u.transmission === trans;
+    return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && u.transmission === trans;
   });
   var seenColors = {};
   var colors = [];
@@ -2063,7 +2470,7 @@ function onVdColorChange() {
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
     var uColor = u.color_display || u.color || 'Not Specified';
-    if (u.status === 'Available' && uColor === color && (!trans || u.transmission === trans)) {
+    if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && uColor === color && (!trans || u.transmission === trans)) {
       unit = u; break;
     }
   }
@@ -2096,12 +2503,13 @@ function onVdColorChange() {
   // Update book button
   var bookBtn = document.getElementById('vd-book-btn');
   if (bookBtn) {
-    var canBook = unit.status === 'Available' && parseInt(currentUser.isVerified) === 2;
+    var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(unit.status) === -1;
+    var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
     bookBtn.disabled = !canBook;
     bookBtn.style.cssText = canBook
       ? 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;'
       : 'width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;';
-    bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (unit.status === 'Available' ? 'Verify License' : 'Unavailable'));
+    bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable'));
     if (canBook) {
       (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
     }
@@ -2133,72 +2541,27 @@ function toggleFav(vehicleId, btn) {
 }
 
 function openVehicleDetail(vehicleId) {
+  // Ensure vehicles/browse page is visible as base layer (without closing overlays)
+  var vehiclesPage = document.getElementById('page-vehicles');
+  if (vehiclesPage && !vehiclesPage.classList.contains('active')) {
+    // Manually show the page without calling showPage (which closes all overlays)
+    vehiclesPage.style.display = 'block';
+    vehiclesPage.classList.add('active');
+    // Load vehicles if not already loaded
+    if (!allVehicles || allVehicles.length === 0) {
+      loadVehicles();
+    }
+  }
   showOverlay('page-vehicle-detail');
   var vdEl = document.getElementById('vehicleDetailContent');
   if (vdEl) vdEl.innerHTML = '<div style=\"padding:20px;\"><div style=\"width:100%;aspect-ratio:16/9;border-radius:16px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:16px;\"></div><div style=\"background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:20px;\"><div style=\"height:22px;width:60%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:12px;\"></div><div style=\"height:12px;width:80%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;\"></div></div></div>';
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
     .then(function(v) {
       currentVehicleDetail = v;
-      renderVehicleDetail(v);
+      // Use compact vehicle detail (openVehicleUnits with 'all' colors to show first unit)
+      openVehicleUnits(encodeURIComponent(v.brand), encodeURIComponent(v.model), 'all');
     })
     .catch(function(err) { showToast(err.message, 'error'); closeOverlay('page-vehicle-detail'); });
-}
-
-function renderVehicleDetail(v) {
-  var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
-  var ltPct = parseInt(appSettings.long_term_discount_percent) || 10;
-  var mileage = appSettings.mileage_limit || '250';
-
-  // 1 booking per account  -  block if any active booking exists
-  var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
-  var hasActiveBooking = _allBookingsData.some(function(b) {
-    return ACTIVE_STATUSES.indexOf(b.status) !== -1;
-  });
-
-  var canBook = parseInt(currentUser.isVerified) === 2 && !hasActiveBooking;
-  var el = document.getElementById('vehicleDetailContent');
-  if (!el) return;
-  var galleryImgs = (v.gallery && v.gallery.length ? v.gallery : [v.vehicle_image]).filter(Boolean);
-  var galleryHtml = galleryImgs.map(function(img) {
-    return '<img class="gallery-img" src="' + buildImgUrl(img) + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'" alt="Vehicle">';
-  }).join('');
-  var reviewsHtml = (v.reviews && v.reviews.length) ? v.reviews.map(function(r) {
-    return '<div class="review-item"><div class="reviewer">' +
-      '<div class="avatar-placeholder">' + ((r.full_name || '₱')[0]) + '</div>' +
-      '<div><strong style="font-size:0.875rem;">' + (r.full_name || 'Customer') + '</strong></div></div>' +
-      (r.comment ? '<p style="font-size:0.875rem;color:var(--text-secondary);">' + r.comment + '</p>' : '') +
-      '</div>';
-  }).join('') : '<div class="empty-state" style="padding:20px 0;"><p>No reviews yet</p></div>';
-
-  var bookBtn;
-  if (parseInt(currentUser.isVerified) !== 2) {
-    bookBtn = '<div style="background:#f8d7da;border-radius:var(--radius-sm);padding:12px;text-align:center;font-size:0.875rem;color:#842029;margin-bottom:12px;"><i class="fas fa-lock"></i> License verification required before booking.</div>';
-  } else if (hasActiveBooking) {
-    bookBtn = '<div style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);border-radius:var(--radius-sm);padding:14px;text-align:center;font-size:0.875rem;color:#92400e;margin-bottom:12px;"><i class="fas fa-calendar-check" style="margin-right:6px;color:#f59e0b;"></i><strong>1 booking per account.</strong><br><span style="font-size:0.8rem;">Complete or cancel your current booking before making a new one.</span></div>';
-  } else {
-    bookBtn = '<button class="btn-primary" onclick="openBookingForm(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book Now</button>';
-  }
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>' + v.brand + ' ' + v.model + '</h2>' +
-    '</div>' +
-    '<div class="gallery-scroll">' + galleryHtml + '</div>' +
-    '<div class="scroll-content">' +
-    '<div class="card">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-    '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div>' +
-    '<div style="color:#ffc107;">&#9733; ' + ((v.avg_rating || 0).toFixed(1)) + '</div>' +
-    '</div>' +
-    '<div class="vehicle-meta">' + (v.vehicle_type || '-') + ' | ' + (v.transmission || '-') + ' | ' + (v.fuel_type || '-') + ' | ' + (v.seats || '-') + ' seats</div>' +
-    '<div class="vehicle-meta" style="margin-top:6px;"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
-    '<div style="background:#fff3cd;border-radius:var(--radius-sm);padding:10px;margin-top:10px;font-size:0.8rem;color:#856404;">' +
-    'Rentals of ' + ltDays + '+ days get a <strong>' + ltPct + '% discount</strong>!</div>' +
-    '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:10px;margin-top:8px;font-size:0.8rem;color:#084298;">' +
-    'Daily mileage limit: <strong>' + mileage + ' km</strong></div>' +
-    '</div>' +
-    bookBtn +
-    '<div style="margin-top:20px;"><h4 style="font-weight:700;margin-bottom:12px;">Customer Reviews</h4>' + reviewsHtml + '</div>' +
-    '</div>';
 }
 
 // BOOKING FORM
@@ -2219,8 +2582,42 @@ var ADDON_OPTIONS = [
   { name: 'Roadside Assistance', pricePerDay: 100 }
 ];
 
+function getCurrentTimeRounded() {
+  var now = new Date();
+  var currentHour = now.getHours();
+  var currentMin = now.getMinutes();
+  
+  // Round to nearest 30 minutes  
+  var roundedMin = currentMin < 15 ? 0 : currentMin < 45 ? 30 : 0;
+  if (currentMin >= 45) {
+    currentHour = (currentHour + 1) % 24;
+  }
+  
+  var hh = String(currentHour).padStart(2, '0');
+  var mm = String(roundedMin).padStart(2, '0');
+  return hh + ':' + mm;
+}
+
 function generateTimeOptions(selectedTime) {
   var times = [];
+  
+  // If no selectedTime provided, use current time rounded to nearest 30 minutes
+  if (!selectedTime) {
+    var now = new Date();
+    var currentHour = now.getHours();
+    var currentMin = now.getMinutes();
+    
+    // Round to nearest 30 minutes
+    var roundedMin = currentMin < 15 ? 0 : currentMin < 45 ? 30 : 0;
+    if (currentMin >= 45) {
+      currentHour = (currentHour + 1) % 24;
+    }
+    
+    var hh = String(currentHour).padStart(2, '0');
+    var mm = String(roundedMin).padStart(2, '0');
+    selectedTime = hh + ':' + mm;
+  }
+  
   for (var h = 0; h < 24; h++) {
     for (var m = 0; m < 60; m += 30) {
       var hh = String(h).padStart(2, '0');
@@ -2243,7 +2640,7 @@ function autoSetReturnTime() {
   var endDateEl    = document.getElementById('bfEndDate');
   if (!pickupTimeEl || !returnTimeEl) return;
 
-  var pickupTime = pickupTimeEl.value || '06:00';
+  var pickupTime = pickupTimeEl.value || getCurrentTimeRounded();
   var parts = pickupTime.split(':');
   var pickupHour = parseInt(parts[0]);
   var pickupMin  = parseInt(parts[1]);
@@ -2272,7 +2669,7 @@ function autoSetReturnTime() {
 }
 
 function openBookingForm(vehicleId) {
-  // 1 booking per account  -  hard block if active booking exists
+  // 1 booking per account  - hard block if active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
@@ -2310,7 +2707,7 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-booking-form\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
@@ -2320,12 +2717,12 @@ function openBookingForm(vehicleId) {
     '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
     '<div class="form-group"><label>Pickup Time</label>' +
     '<select id="bfPickupTime" onchange="autoSetReturnTime()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
-    generateTimeOptions('06:00') +
+    generateTimeOptions() +
     '</select></div>' +
     '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfEndErr"></span></div>' +
     '<div class="form-group"><label>Return Time</label>' +
     '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
-    generateTimeOptions('06:00') +
+    generateTimeOptions() +
     '</select>' +
     '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-info-circle"></i> Return time is auto-set to 24 hrs after pickup</small>' +
     '</div>' +
@@ -2381,7 +2778,9 @@ function openBookingForm(vehicleId) {
     // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
     '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:8px;">Available: <strong>' + (currentUser.loyaltyPoints || 0) + ' pts</strong></p>' +
-    '<div class="form-group"><label>Points to Redeem</label><input type="number" id="bfPoints" min="0" max="' + (currentUser.loyaltyPoints || 0) + '" value="0" onchange="updateBookingPrice()"></div>' +
+    '<p id="maxPointsInfo" style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;display:none;"><i class="fas fa-info-circle"></i> Max redeemable (50% of total): <strong id="maxPointsValue">0</strong> pts</p>' +
+    '<div class="form-group"><label>Points to Redeem</label><input type="number" id="bfPoints" min="0" max="' + (currentUser.loyaltyPoints || 0) + '" value="0" onchange="validateLoyaltyPoints(); updateBookingPrice()"></div>' +
+    '<span class="field-error" id="pointsErr" style="display:none;"></span>' +
     '</div>' +
 
     // Price Breakdown
@@ -2480,6 +2879,71 @@ function selectInsurance(type, price, el) {
   updateBookingPrice();
 }
 
+function validateLoyaltyPoints() {
+  var ptsEl = document.getElementById('bfPoints');
+  var pointsErrEl = document.getElementById('pointsErr');
+  var maxPointsInfoEl = document.getElementById('maxPointsInfo');
+  var maxPointsValueEl = document.getElementById('maxPointsValue');
+  
+  if (!ptsEl) return;
+  
+  var enteredPoints = parseInt(ptsEl.value) || 0;
+  
+  // Calculate the maximum allowed points based on 50% of booking subtotal
+  var startEl = document.getElementById('bfStartDate');
+  var endEl = document.getElementById('bfEndDate');
+  if (!startEl || !endEl || !startEl.value || !endEl.value) {
+    if (pointsErrEl) pointsErrEl.style.display = 'none';
+    return;
+  }
+  
+  var v = bookingFormVehicle;
+  if (!v) return;
+  
+  var start = startEl.value;
+  var end = endEl.value;
+  var days = getBookingDays();
+  var insPrice = (selectedInsurance.pricePerDay || 0) * days;
+  
+  // Calculate subtotal (before points)
+  var basePrice = v.daily_rate * days;
+  var addonPrice = selectedAddons.reduce(function(sum, a) { return sum + (a.price || 0); }, 0);
+  var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+  var ltPercent = parseInt(appSettings.long_term_discount_percent) || 10;
+  var longTermDiscount = days >= ltDays ? basePrice * (ltPercent / 100) : 0;
+  var subtotal = basePrice + addonPrice + insPrice - longTermDiscount;
+  
+  // Max points discount is 50% of subtotal
+  var maxPointsDiscount = subtotal * 0.50;
+  var maxPoints = Math.floor(maxPointsDiscount * 10); // 10 points = PHP 1
+  
+  // Cap by user's available points
+  maxPoints = Math.min(maxPoints, currentUser.loyaltyPoints || 0);
+  
+  // Show max points info
+  if (maxPointsInfoEl && maxPointsValueEl) {
+    maxPointsValueEl.textContent = maxPoints;
+    maxPointsInfoEl.style.display = maxPoints > 0 ? 'block' : 'none';
+  }
+  
+  // Validate and cap the entered value
+  if (enteredPoints > maxPoints) {
+    ptsEl.value = maxPoints;
+    if (pointsErrEl) {
+      pointsErrEl.textContent = 'Maximum ' + maxPoints + ' points can be redeemed (50% of booking total)';
+      pointsErrEl.style.display = 'block';
+      setTimeout(function() {
+        if (pointsErrEl) pointsErrEl.style.display = 'none';
+      }, 3000);
+    }
+  } else {
+    if (pointsErrEl) pointsErrEl.style.display = 'none';
+  }
+  
+  // Update the max attribute
+  ptsEl.setAttribute('max', maxPoints);
+}
+
 function updateBookingPrice() {
   var startEl = document.getElementById('bfStartDate');
   var endEl = document.getElementById('bfEndDate');
@@ -2498,6 +2962,9 @@ function updateBookingPrice() {
     return Object.assign({}, a, { price: a.pricePerDay * days });
   });
 
+  // Validate points before calculating price
+  validateLoyaltyPoints();
+  
   var ptsEl = document.getElementById('bfPoints');
   var pts = ptsEl ? (parseInt(ptsEl.value) || 0) : 0;
   var result = calculateBookingPrice(
@@ -2515,10 +2982,10 @@ function updateBookingPrice() {
     '<div class="price-row"><span>Base Rate (' + result.days + ' days - ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
     // Individual add-ons
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
-      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days - ₱' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
+      return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days - PHP ' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
     }).join('') : '') +
     // Insurance detail
-    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days - ₱' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
+    (insPrice > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);margin-right:6px;"></i>' + selectedInsurance.type + ' (' + result.days + ' days - PHP ' + selectedInsurance.pricePerDay + ')</span><span>' + formatPHP(insPrice) + '</span></div>' : '') +
     (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Long-term Discount (' + (appSettings.long_term_discount_percent || 10) + '%)</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
     (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-ticket-alt"></i> Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
@@ -2531,13 +2998,18 @@ function updateBookingPrice() {
 function submitBooking() {
   var start = document.getElementById('bfStartDate').value;
   var end = document.getElementById('bfEndDate').value;
+  var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
   document.getElementById('bfStartErr').textContent = '';
   document.getElementById('bfEndErr').textContent = '';
   document.getElementById('bfErr').textContent = '';
-  var dateCheck = validateDateRange(start, end);
+  var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
-    if (dateCheck.error && dateCheck.error.indexOf('Start') >= 0) document.getElementById('bfStartErr').textContent = dateCheck.error;
-    else document.getElementById('bfEndErr').textContent = dateCheck.error;
+    // Route pickup-time errors to start date error field
+    if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0 || dateCheck.error.indexOf('Pickup time') >= 0)) {
+      document.getElementById('bfStartErr').textContent = dateCheck.error;
+    } else {
+      document.getElementById('bfEndErr').textContent = dateCheck.error;
+    }
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
@@ -2575,8 +3047,8 @@ function submitBooking() {
     user_id: currentUser.id,
     vehicle_id: bookingFormVehicle.id,
     start_date: start, end_date: end,
-    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '06:00',
-    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : '06:00',
+    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
+    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
     pickup_location: pickupLocation,
     pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
     return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
@@ -2595,8 +3067,41 @@ function submitBooking() {
     service_type: serviceType,
     split_with_email: splitEmail || null
   };
-  // Show rental agreement before submitting
-  showRentalAgreement(payload, result, payType);
+
+  // Check availability on the server before proceeding
+  showLoading(true);
+  apiCall('/vehicles/check-availability', {
+    method: 'POST',
+    body: JSON.stringify({
+      vehicle_id: bookingFormVehicle.id,
+      start_date: start,
+      end_date: end
+    })
+  }).then(function(avail) {
+    showLoading(false);
+    if (!avail.available) {
+      var conflict = avail.conflict || {};
+      var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
+      var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
+        formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
+        '. Next available: ' + nextDate + '.';
+      document.getElementById('bfErr').textContent = msg;
+      return;
+    }
+    // Warn if the chosen end_date is close to an upcoming booking
+    if (avail.next_booking) {
+      var nb = avail.next_booking;
+      var nbStart = formatDateDisplay(nb.start_date);
+      showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
+    }
+    // Show rental agreement before submitting
+    showRentalAgreement(payload, result, payType);
+  }).catch(function(err) {
+    showLoading(false);
+    // If availability check fails, allow the booking to proceed (server will catch it)
+    console.warn('Availability check failed:', err);
+    showRentalAgreement(payload, result, payType);
+  });
 }
 
 // RENTAL AGREEMENT MODAL
@@ -2677,26 +3182,32 @@ function confirmAndBook() {
 }
 
 // PAYMENT - PayMongo Integration
-function openPaymentScreen(bookingId, priceResult, payType) {
+function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
   if (!el) return;
 
-  var breakdownHtml =
-    '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
-    // Render all available addons as toggleable on payment page
-    (ADDON_OPTIONS.map(function(opt, idx) {
-      var isSelected = selectedAddons.some(function(a) { return a.name === opt.name; });
-      var aPrice = opt.pricePerDay * priceResult.days;
-      return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;" onclick="togglePaymentAddon(' + idx + ', ' + bookingId + ')">' +
-             '<span><i class="fas ' + (isSelected ? 'fa-check-square' : 'fa-square') + '" style="color:var(--' + (isSelected ? 'success' : 'border') + ');margin-right:6px;font-size:1.1em;vertical-align:middle;"></i> ' + opt.name + '</span>' +
-             '<span>' + formatPHP(aPrice) + '</span></div>';
-    }).join('')) +
-    (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
-    (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
-    (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
-    '<div class="price-row total"><span>Total</span><span>' + formatPHP(priceResult.total) + '</span></div>' +
-    (payType === 'Downpayment' ?
+  var breakdownHtml = '';
+  if (isExistingBooking) {
+    breakdownHtml = '<div class="price-row"><span>Total Booking Price</span><span>' + formatPHP(priceResult.total) + '</span></div>';
+  } else {
+    breakdownHtml =
+      '<div class="price-row"><span>Base Rate (' + priceResult.days + ' days)</span><span>' + formatPHP(priceResult.basePrice) + '</span></div>' +
+      // Render all available addons as toggleable on payment page
+      (ADDON_OPTIONS.map(function(opt, idx) {
+        var isSelected = selectedAddons.some(function(a) { return a.name === opt.name; });
+        var aPrice = opt.pricePerDay * priceResult.days;
+        return '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;" onclick="togglePaymentAddon(' + idx + ', ' + bookingId + ')">' +
+               '<span><i class="fas ' + (isSelected ? 'fa-check-square' : 'fa-square') + '" style="color:var(--' + (isSelected ? 'success' : 'border') + ');margin-right:6px;font-size:1.1em;vertical-align:middle;"></i> ' + opt.name + '</span>' +
+               '<span>' + formatPHP(aPrice) + '</span></div>';
+      }).join('')) +
+      (priceResult.insurancePrice > 0 ? '<div class="price-row" style="padding-left:10px;font-size:0.8rem;color:var(--text-secondary);"><span><i class="fas fa-shield-alt" style="color:var(--info);"></i> ' + selectedInsurance.type + '</span><span>' + formatPHP(priceResult.insurancePrice) + '</span></div>' : '') +
+      (priceResult.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Long-term Discount</span><span>-' + formatPHP(priceResult.longTermDiscount) + '</span></div>' : '') +
+      (priceResult.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span>Coupon Discount</span><span>-' + formatPHP(priceResult.couponDiscount) + '</span></div>' : '') +
+      '<div class="price-row total"><span>Total</span><span>' + formatPHP(priceResult.total) + '</span></div>';
+  }
+
+  breakdownHtml += (payType === 'Downpayment' ?
       '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20%)</span><span>' + formatPHP(nowDue) + '</span></div>' +
       '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance</span><span>' + formatPHP(priceResult.balanceAmount) + '</span></div>' : '');
 
@@ -2715,74 +3226,78 @@ function openPaymentScreen(bookingId, priceResult, payType) {
     '<div style="color:#fff;font-size:1.4rem;font-weight:800;">' + formatPHP(nowDue) + '</div>' +
     '</div></div>' +
 
-    // PayMongo payment methods
+    // PayMongo payment methods - tapping GCash/Maya/Card immediately redirects to PayMongo
     '<div class="card">' +
     '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
-    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Secure payments powered by PayMongo</p>' +
+    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Tap a method to proceed — secure payments via PayMongo</p>' +
 
-    // GCash
-    '<div class="option-card" id="pmGcash" onclick="selectPayMethod(\'gcash\',this)" style="margin-bottom:8px;">' +
+    // GCash - immediate PayMongo redirect
+    '<div class="option-card" id="pmGcash" onclick="directPayMethod(\'gcash\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<span style="color:#fff;font-weight:900;font-size:0.85rem;">G</span></div>' +
-    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Pay via GCash e-wallet</small></div>' +
-    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Tap to pay via GCash</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#0070e0;margin-left:auto;"></i>' +
     '</div>' +
 
-    // Maya
-    '<div class="option-card" id="pmMaya" onclick="selectPayMethod(\'maya\',this)" style="margin-bottom:8px;">' +
+    // Maya - immediate PayMongo redirect
+    '<div class="option-card" id="pmMaya" onclick="directPayMethod(\'maya\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<span style="color:#fff;font-weight:900;font-size:0.85rem;">M</span></div>' +
-    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Pay via Maya e-wallet</small></div>' +
-    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Tap to pay via Maya</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#00b4d8;margin-left:auto;"></i>' +
     '</div>' +
 
-    // Credit/Debit Card
-    '<div class="option-card" id="pmCard" onclick="selectPayMethod(\'card\',this)" style="margin-bottom:8px;">' +
+    // Credit/Debit Card - immediate PayMongo redirect
+    '<div class="option-card" id="pmCard" onclick="directPayMethod(\'card\',' + bookingId + ',' + nowDue + ')" style="margin-bottom:8px;cursor:pointer;">' +
     '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
     '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--text-secondary);">Visa, Mastercard, JCB</small></div>' +
-    '<i class="fas fa-chevron-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '<i class="fas fa-arrow-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    // Cash
+    // Cash - manual flow, shows fields below
     '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'cash\',this)">' +
     '<div style="width:40px;height:40px;background:#2dc653;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
     '<i class="fas fa-money-bill-wave" style="color:#fff;font-size:1rem;"></i></div>' +
     '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay at our office upon pickup</small></div>' +
+    '<i class="fas fa-chevron-down" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    '<input type="hidden" id="payMethod" value="gcash">' +
+    '<input type="hidden" id="payMethod" value="">' +
     '</div>' +
 
-    // Cash reference fields (only for cash)
+    // Cash reference fields (only shown when Cash is selected)
     '<div class="card" id="cashPayFields" style="display:none;">' +
+    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-money-bill" style="color:#2dc653;margin-right:8px;"></i>Cash Payment Details</h4>' +
     '<div class="form-group"><label>Reference / Transaction Number (optional)</label>' +
     '<input type="text" id="payRef" placeholder="e.g. 1234567890"></div>' +
     '<div class="form-group"><label>Payment Screenshot / Proof (optional)</label>' +
     '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>' +
     '<img id="payProofPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;display:none;">' +
-    '</div></div>' +
+    '</div>' +
+    '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
+    '<button class="btn-primary" style="margin-bottom:8px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-check"></i> Confirm Cash Payment</button>' +
+    '</div>' +
 
-    // Split payment
+    // Split payment (new bookings only)
+    (!isExistingBooking ? 
     '<div class="card" style="border:1.5px dashed var(--primary);">' +
     '<button class="btn-outline" onclick="showOverlay(\'page-split-payment\')" style="width:100%;">' +
     '<i class="fas fa-users"></i> Split Payment with a Friend</button>' +
-    '</div>' +
+    '</div>' : '') +
 
-    '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
-    '<i class="fas fa-lock"></i> Pay ' + formatPHP(nowDue) + '</button>' +
+    '<span class="field-error" id="payErrOnline" style="display:none;margin-bottom:12px;text-align:center;"></span>' +
     '</div>';
-
-  // Auto-select GCash
-  var gcashEl = document.getElementById('pmGcash');
-  if (gcashEl) gcashEl.classList.add('selected');
 
   showOverlay('page-payment');
 }
 
 
 function togglePaymentAddon(idx, bookingId) {
+  if (activeBookingData && activeBookingData.id === bookingId) {
+    return;
+  }
   var opt = ADDON_OPTIONS[idx];
   var days = _pendingPriceResult.days;
   var existingIdx = selectedAddons.findIndex(function(a) { return a.name === opt.name; });
@@ -2810,6 +3325,20 @@ function togglePaymentAddon(idx, bookingId) {
   
   // Re-render payment screen
   openPaymentScreen(bookingId, _pendingPriceResult, _pendingPayType);
+}
+
+// directPayMethod: immediately triggers PayMongo for GCash/Maya/Card (no extra button needed)
+function directPayMethod(method, bookingId, amount) {
+  var methodEl = document.getElementById('payMethod');
+  if (methodEl) methodEl.value = method;
+  // Visual feedback - mark the tapped card as selected
+  var cards = document.querySelectorAll('#paymentContent .option-card');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+  var idMap = { gcash: 'pmGcash', maya: 'pmMaya', card: 'pmCard' };
+  var card = document.getElementById(idMap[method]);
+  if (card) card.classList.add('selected');
+  // Immediately call PayMongo
+  submitPayment(bookingId, amount);
 }
 
 function selectPayMethod(method, el) {
@@ -2879,12 +3408,17 @@ function submitPayment(bookingId, amount) {
 
   // Online payment - redirect to PayMongo
   showLoading(true);
+  var paymentTypeForPaymongo = _pendingPayType || 'Full';
+  if (activeBookingData && activeBookingData.payment_type) {
+    paymentTypeForPaymongo = activeBookingData.payment_type;
+  }
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
       booking_id: bookingId,
       amount: amount,
       method: method,
+      payment_type: paymentTypeForPaymongo,
       description: 'Autoride Booking #' + bookingId,
       customer_name: currentUser.fullName || '',
       customer_email: currentUser.email || ''
@@ -2911,31 +3445,118 @@ function submitPayment(bookingId, amount) {
     });
 }
 
+var _paymentPollInterval = null;
+
 function showPaymentWaiting(bookingId, amount, method) {
   var el = document.getElementById('paymentContent');
   if (!el) return;
+  
+  // Clear any existing polling interval
+  if (_paymentPollInterval) {
+    clearInterval(_paymentPollInterval);
+    _paymentPollInterval = null;
+  }
+  
+  // Remove any previous browser event listeners
+  if (window._browserFinishedListener) {
+    try { window._browserFinishedListener.remove(); } catch(e) {}
+    window._browserFinishedListener = null;
+  }
+  if (window._browserPageLoadedListener) {
+    try { window._browserPageLoadedListener.remove(); } catch(e) {}
+    window._browserPageLoadedListener = null;
+  }
+
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
   el.innerHTML =
     '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Waiting for Payment</h2></div>' +
     '<div class="scroll-content" style="padding-bottom:100px;text-align:center;padding-top:40px;">' +
     '<div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">' +
     '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">Complete Payment in ' + methodLabel + '</h3>' +
-    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there, then return here.</p>' +
+    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there. This page will update automatically.</p>' +
     '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
     '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
     '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
     '</div>' +
-    '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\')">' +
+    '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\', false)">' +
     '<i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>' +
-    '<button class="btn-secondary" onclick="closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
+    '<button class="btn-secondary" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
     '</div>';
+
+  // Add Capacitor Browser event listeners for automatic detection
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    // Auto-check when user closes the browser (back button or done)
+    window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
+      console.log('Browser closed, auto-checking payment status for booking #' + bookingId);
+      autoCheckPaymentStatus(bookingId, amount, method);
+    }).then(function(listener) {
+      window._browserFinishedListener = listener;
+    }).catch(function() {});
+
+    // Also check when browser navigates to success URL
+    window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', function() {
+      // Poll quickly after each page load in the browser
+      setTimeout(function() {
+        autoCheckPaymentStatus(bookingId, amount, method);
+      }, 1500);
+    }).then(function(listener) {
+      window._browserPageLoadedListener = listener;
+    }).catch(function() {});
+  }
+
+  // Start polling every 3 seconds
+  _paymentPollInterval = setInterval(function() {
+    autoCheckPaymentStatus(bookingId, amount, method);
+  }, 3000);
+}
+
+
+function stopPaymentPolling() {
+  if (_paymentPollInterval) {
+    clearInterval(_paymentPollInterval);
+    _paymentPollInterval = null;
+  }
+  // Clean up browser event listeners
+  if (window._browserFinishedListener) {
+    try { window._browserFinishedListener.remove(); } catch(e) {}
+    window._browserFinishedListener = null;
+  }
+  if (window._browserPageLoadedListener) {
+    try { window._browserPageLoadedListener.remove(); } catch(e) {}
+    window._browserPageLoadedListener = null;
+  }
+}
+
+var _paymentCheckInProgress = false;
+function autoCheckPaymentStatus(bookingId, amount, method) {
+  if (_paymentCheckInProgress) return; // Prevent concurrent checks
+  _paymentCheckInProgress = true;
+  apiCall('/paymongo/status/' + bookingId)
+    .then(function(data) {
+      _paymentCheckInProgress = false;
+      if (data.paid) {
+        stopPaymentPolling();
+        // Close in-app browser if still open
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.close().catch(function() {});
+        }
+        BookingSession.clear();
+        closeOverlay('page-payment');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
+        loadNotifications(currentUser.id);
+        loadBookings();
+        showPage('page-bookings');
+      }
+    })
+    .catch(function() { _paymentCheckInProgress = false; });
 }
 
 function checkPaymentStatus(bookingId, amount, method) {
   showLoading(true);
+  stopPaymentPolling();
   // Close in-app browser if still open
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
@@ -2986,12 +3607,17 @@ function showPaymentFailed(bookingId, amount, method, message) {
 
 function retryPayment(bookingId, amount, method) {
   showLoading(true);
+  var paymentTypeForPaymongo = _pendingPayType || 'Full';
+  if (activeBookingData && activeBookingData.payment_type) {
+    paymentTypeForPaymongo = activeBookingData.payment_type;
+  }
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
       booking_id: bookingId,
       amount: amount,
       method: method,
+      payment_type: paymentTypeForPaymongo,
       description: 'Autoride Booking #' + bookingId,
       customer_name: currentUser.fullName || currentUser.full_name || '',
       customer_email: currentUser.email || ''
@@ -3081,6 +3707,7 @@ function downloadReceipt(bookingId) {
 
 // BOOKINGS
 var _allBookingsData = [];
+var _currentBookingFilter = 'Confirmed';
 
 function loadBookings() {
   if (!currentUser.id) return;
@@ -3093,7 +3720,7 @@ function loadBookings() {
       var parsed = JSON.parse(cached);
       if (parsed.data && Date.now() - parsed.savedAt < 2 * 60 * 1000) {
         _allBookingsData = parsed.data;
-        renderBookingsList(parsed.data);
+        filterBookingsList(_currentBookingFilter);
         updateBookingStats(parsed.data);
       }
     }
@@ -3105,7 +3732,7 @@ function loadBookings() {
     .then(function(data) {
       _allBookingsData = data;
       updateBookingStats(data);
-      renderBookingsList(data);
+      filterBookingsList(_currentBookingFilter);
       try { localStorage.setItem('autoride_bookings_' + currentUser.id, JSON.stringify({ data: data, savedAt: Date.now() })); } catch(e) {}
     })
     .catch(function(err) {
@@ -3127,18 +3754,31 @@ function updateBookingStats(data) {
 }
 
 function filterBookingsList(filter, btn) {
+  _currentBookingFilter = filter;
   // Update tab styles
   var tabs = document.querySelectorAll('#bookingFilterTabs button');
   for (var i = 0; i < tabs.length; i++) {
     tabs[i].style.background = 'transparent';
     tabs[i].style.color = 'var(--text-secondary)';
   }
+  
+  if (!btn && tabs.length > 0) {
+    // Determine active tab button programmatically if called without element ref
+    var map = { 'Confirmed': 0, 'Completed': 1, 'Cancelled': 2, 'all': 3 };
+    var idx = map[filter];
+    if (idx !== undefined && tabs[idx]) {
+      btn = tabs[idx];
+    }
+  }
+
   if (btn) {
     btn.style.background = 'var(--primary)';
     btn.style.color = '#fff';
   }
   var filtered = filter === 'all' ? _allBookingsData : _allBookingsData.filter(function(b) {
-    if (filter === 'Confirmed') return b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up';
+    if (filter === 'Confirmed') {
+      return b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Pending';
+    }
     return b.status === filter;
   });
   renderBookingsList(filtered);
@@ -3208,9 +3848,43 @@ function renderBookingsList(data) {
 
 function openBookingDetail(bookingId) {
   if (!currentUser.id) return;
+
+  // Use cached data first for instant response (avoids slow PayMongo polling on each click)
+  var cachedBooking = null;
+  if (_allBookingsData && _allBookingsData.length) {
+    for (var ci = 0; ci < _allBookingsData.length; ci++) {
+      if (_allBookingsData[ci].id === bookingId) { cachedBooking = _allBookingsData[ci]; break; }
+    }
+  }
+  if (cachedBooking) {
+    activeBookingData = cachedBooking;
+    renderBookingDetail(cachedBooking);
+    showOverlay('page-booking-detail');
+    // Background refresh to get latest status without blocking UI
+    apiCall('/user-bookings?user_id=' + currentUser.id)
+      .then(function(bookings) {
+        var fresh = null;
+        for (var i = 0; i < bookings.length; i++) {
+          if (bookings[i].id === bookingId) { fresh = bookings[i]; break; }
+        }
+        if (fresh) {
+          _allBookingsData = bookings;
+          // Only re-render if status changed
+          if (fresh.payment_status !== cachedBooking.payment_status || fresh.status !== cachedBooking.status) {
+            activeBookingData = fresh;
+            renderBookingDetail(fresh);
+          }
+        }
+      })
+      .catch(function() {});
+    return;
+  }
+
+  // Fallback: fetch from API if not in cache
   showLoading(true);
   apiCall('/user-bookings?user_id=' + currentUser.id)
     .then(function(bookings) {
+      _allBookingsData = bookings;
       var b = null;
       for (var i = 0; i < bookings.length; i++) {
         if (bookings[i].id === bookingId) { b = bookings[i]; break; }
@@ -3228,6 +3902,7 @@ function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
+  var canPayNow = b.payment_status === 'Unpaid' && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
 
@@ -3278,9 +3953,13 @@ function renderBookingDetail(b) {
   // Primary action button - customer-relevant only
   var primaryAction = '';
   var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing');
+  if (canPayNow) {
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Now (' + formatPHP(b.total_price) + ')</button>';
+  }
   if (canPayBalance) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
-  } else if (canReview) {
+    primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
+  }
+  if (!canPayNow && !canPayBalance && canReview) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
   }
   if (canExtend) {
@@ -3342,6 +4021,9 @@ function renderBookingDetail(b) {
 
       // Divider
       '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
+
+      // Conflict affected card placeholder
+      (b.is_conflict_affected ? '<div id="conflict-resolution-card-' + b.id + '" style="margin-bottom:20px;"></div>' : '') +
 
       // Driver's License Details
       licenseHtml +
@@ -3419,7 +4101,7 @@ function renderBookingDetail(b) {
           (b.refund_note && nonRefundable > 0.01 ? (
             '<div style="margin-top:10px;padding:8px 10px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:8px;font-size:0.75rem;color:#f87171;">' +
               '<i class="fas fa-info-circle" style="margin-right:4px;"></i>' +
-              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee  -  cancelled <48h before pickup)' +
+              formatPHP(nonRefundable) + ' non-refundable (20% reservation fee - cancelled <48h before pickup)' +
             '</div>'
           ) : '') +
           (!isRefunded ? (
@@ -3447,6 +4129,188 @@ function renderBookingDetail(b) {
       secondaryActions +
 
     '</div>';
+
+  if (b.is_conflict_affected && b.conflict_id) {
+    setTimeout(function() {
+      loadConflictResolution(b.id, b.conflict_id, parseFloat(b.amount_paid || b.total_price || 0), ((b.brand || '') + ' ' + (b.model || '')).trim(), b.start_date, b.end_date);
+    }, 50);
+  }
+}
+
+function loadConflictResolution(bookingId, conflictId, totalPaid, vehicleName, startDate, endDate) {
+  var card = document.getElementById('conflict-resolution-card-' + bookingId);
+  if (!card) return;
+  card.innerHTML = '<div style="text-align:center;padding:15px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>Loading conflict options...</div>';
+  
+  apiCall('/api/conflicts/' + conflictId + '/alternatives')
+    .then(function(res) {
+      if (res.alternatives_available) {
+        card.innerHTML = 
+          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px;">' +
+            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">' +
+              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444;"></i>' +
+              '<span style="font-size:1rem; font-weight:800; color:#ef4444;">Booking Update Required</span>' +
+            '</div>' +
+            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.4; margin-bottom:12px;">' +
+              'Your upcoming booking is no longer available because the current renter extended their trip.' +
+            '</p>' +
+            '<div style="display:flex; flex-direction:column; gap:10px;">' +
+              '<button class="btn-primary" style="background:linear-gradient(135deg,#3b82f6,#2563eb); border:none; padding:12px; font-weight:700; border-radius:12px; color:#fff;" onclick="openConflictAlternativesOverlay(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\')">' +
+                '<i class="fas fa-exchange-alt" style="margin-right:6px;"></i> Choose Alternative Vehicle (' + res.alternatives.length + ' available)' +
+              '</button>' +
+              '<button class="btn-outline" style="color:#ef4444; border-color:#ef4444; padding:11px; font-weight:700; border-radius:12px;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+                '<i class="fas fa-undo" style="margin-right:6px;"></i> Get Full Refund (' + formatPHP(totalPaid) + ')' +
+              '</button>' +
+            '</div>' +
+            '<div style="font-size:0.75rem; color:var(--text-secondary); margin-top:12px; display:flex; align-items:center; gap:4px; justify-content:center;">' +
+              '<i class="fas fa-clock"></i> Respond within 48 hours to avoid auto-cancellation.' +
+            '</div>' +
+          '</div>';
+      } else {
+        card.innerHTML = 
+          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px;">' +
+            '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">' +
+              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444;"></i>' +
+              '<span style="font-size:1rem; font-weight:800; color:#ef4444;">No Alternative Vehicles Available</span>' +
+            '</div>' +
+            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.4; margin-bottom:12px;">' +
+              'We sincerely apologize, but there are no alternative vehicles available for your booking dates.' +
+            '</p>' +
+            '<button class="btn-primary" style="background:#ef4444; border:none; width:100%; padding:12px; font-weight:700; border-radius:12px; color:#fff;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+              '<i class="fas fa-check-circle" style="margin-right:6px;"></i> Confirm Full Refund (' + formatPHP(totalPaid) + ')' +
+            '</button>' +
+          '</div>';
+      }
+    })
+    .catch(function(err) {
+      card.innerHTML = '<div style="padding:15px;text-align:center;color:#ef4444;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>Failed to load options. <a href="#" onclick="loadConflictResolution(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\');return false;">Retry</a></div>';
+    });
+}
+
+function openConflictAlternativesOverlay(bookingId, conflictId, totalPaid, vehicleName, startDate, endDate) {
+  var el = document.getElementById('bookingDetailContent');
+  if (!el) return;
+  
+  el.innerHTML = 
+    '<div class="page-header">' +
+      '<button class="back-btn" onclick="reRenderBookingDetail(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>' +
+      '<h2 style="text-align:center;flex:1;">Alternative Vehicles</h2>' +
+    '</div>' +
+    '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
+      '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px;">' +
+        'Choose a replacement vehicle for your booking dates (' + formatBookingDate(startDate) + ' to ' + formatBookingDate(endDate) + ') at no extra cost to you.' +
+      '</p>' +
+      '<div id="alternatives-list-container">Loading alternatives...</div>' +
+      '<div style="border-top:1px solid var(--border);margin:20px 0;"></div>' +
+      '<p style="font-size:0.875rem;text-align:center;color:var(--text-secondary);margin-bottom:12px;">Or request full refund below</p>' +
+      '<button class="btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:12px;border-radius:12px;font-weight:700;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+        '<i class="fas fa-undo" style="margin-right:6px;"></i> Request ' + formatPHP(totalPaid) + ' Refund' +
+      '</button>' +
+    '</div>';
+    
+  var listContainer = document.getElementById('alternatives-list-container');
+  apiCall('/api/conflicts/' + conflictId + '/alternatives')
+    .then(function(res) {
+      if (!res.alternatives || !res.alternatives.length) {
+        listContainer.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary);">No alternatives available.</div>';
+        return;
+      }
+      
+      var html = '';
+      res.alternatives.forEach(function(alt) {
+        var tierClass = '';
+        var tierIcon = 'fa-check-circle';
+        var tierColor = '#00b14f';
+        if (alt.tier === 1) {
+          tierClass = 'Perfect Match - Same brand and price';
+        } else if (alt.tier === 2) {
+          tierClass = 'Close Match - Similar to your original booking';
+          tierIcon = 'fa-info-circle';
+          tierColor = '#3b82f6';
+        } else {
+          tierClass = 'Alternative Available - Same category, different brand/price';
+          tierIcon = 'fa-info-circle';
+          tierColor = '#f59e0b';
+        }
+        
+        var imgUrl = alt.vehicle_image || 'img/default-car.png';
+        if (imgUrl.indexOf('http') !== 0 && imgUrl.indexOf('/') !== 0 && imgUrl.indexOf('img/') !== 0) {
+          imgUrl = API_BASE + '/static/uploads/' + imgUrl;
+        }
+        
+        html += 
+          '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 6px rgba(0,0,0,0.02);">' +
+            '<div style="font-size:0.75rem;font-weight:800;color:' + tierColor + ';margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
+              '<i class="fas ' + tierIcon + '"></i>' + tierClass +
+            '</div>' +
+            '<div style="display:flex;gap:12px;margin-bottom:12px;">' +
+              '<img src="' + imgUrl + '" style="width:100px;height:70px;object-fit:cover;border-radius:8px;background:var(--bg-body);" onerror="this.src=\'img/default-car.png\'">' +
+              '<div style="flex:1;">' +
+                '<h4 style="font-size:1rem;font-weight:700;margin-bottom:4px;color:var(--text-primary);">' + alt.brand + ' ' + alt.model + '</h4>' +
+                '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">' + alt.transmission + ' | ' + alt.fuel_type + ' | ' + alt.seats + ' Seats</p>' +
+                '<p style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(alt.daily_rate) + '/day</p>' +
+              '</div>' +
+            '</div>' +
+            '<button class="btn-primary" style="background:' + tierColor + ';border:none;width:100%;padding:10px;border-radius:10px;font-weight:700;color:#fff;" onclick="submitConflictAlternativeSelection(' + conflictId + ',' + bookingId + ',' + alt.vehicle_id + ')">' +
+              'Select This Vehicle' +
+            '</button>' +
+          '</div>';
+      });
+      listContainer.innerHTML = html;
+    })
+    .catch(function(err) {
+      listContainer.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;">Failed to load alternatives.</div>';
+    });
+}
+
+function submitConflictAlternativeSelection(conflictId, bookingId, vehicleId) {
+  showLoading(true);
+  apiCall('/api/conflicts/' + conflictId + '/select-alternative', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ selected_vehicle_id: vehicleId })
+  })
+  .then(function(res) {
+    showToast(res.message || 'Vehicle successfully swapped!', 'success');
+    closeOverlay('page-booking-detail');
+    if (typeof loadBookings === 'function') loadBookings();
+  })
+  .catch(function(err) {
+    showToast(err.message || 'Failed to select vehicle.', 'error');
+  })
+  .finally(function() {
+    showLoading(false);
+  });
+}
+
+function submitConflictRefund(conflictId, bookingId) {
+  if (!confirm('Are you sure you want to cancel this booking and get a 100% refund?')) return;
+  showLoading(true);
+  apiCall('/api/conflicts/' + conflictId + '/refund', {
+    method: 'POST'
+  })
+  .then(function(res) {
+    showToast(res.message || 'Booking cancelled. Refund pending.', 'success');
+    closeOverlay('page-booking-detail');
+    if (typeof loadBookings === 'function') loadBookings();
+  })
+  .catch(function(err) {
+    showToast(err.message || 'Failed to request refund.', 'error');
+  })
+  .finally(function() {
+    showLoading(false);
+  });
+}
+
+function reRenderBookingDetail(bookingId) {
+  if (typeof _allBookingsData !== 'undefined') {
+    for (var i = 0; i < _allBookingsData.length; i++) {
+      if (_allBookingsData[i].id === bookingId) {
+        renderBookingDetail(_allBookingsData[i]);
+        break;
+      }
+    }
+  }
 }
 
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {
@@ -3495,7 +4359,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     // Parse any format (including HTTP-date "Mon, 01 Jun 2026 00:00:00 GMT")
     var dt = new Date(s);
     if (!isNaN(dt.getTime())) {
-      // HTTP-date is UTC midnight  -  use UTC parts to avoid timezone shift
+      // HTTP-date is UTC midnight  - use UTC parts to avoid timezone shift
       var useUTC = /GMT$/i.test(s) || /Z$/i.test(s);
       var y  = useUTC ? dt.getUTCFullYear()  : dt.getFullYear();
       var mo = useUTC ? dt.getUTCMonth() + 1 : dt.getMonth() + 1;
@@ -3505,7 +4369,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     return '';
   }
 
-  // Normalize date  -  prefer activeBookingData as most reliable source
+  // Normalize date  - prefer activeBookingData as most reliable source
   var endDateNorm = _toLocalDateStr(currentEndDate);
   if (!endDateNorm && typeof activeBookingData !== 'undefined' && activeBookingData) {
     endDateNorm = _toLocalDateStr(activeBookingData.end_date);
@@ -3518,7 +4382,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
     rate = parseFloat(activeBookingData.daily_rate || 0);
   }
 
-  // Calculate minDate (day after current end) using LOCAL date arithmetic  -  no UTC conversion
+  // Calculate minDate (day after current end) using LOCAL date arithmetic  - no UTC conversion
   var minDate = currentEndDate;
   if (currentEndDate) {
     try {
@@ -3880,29 +4744,33 @@ function _viewRefundProof(url) {
         '<span style="font-weight:700;font-size:0.9rem;color:#0f172a;">Transfer Proof</span>' +
         '<button onclick="document.getElementById(\'_refundProofModal\').remove();" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">&#10005;</button>' +
       '</div>' +
-      '<div id="_refundProofImgWrap" style="min-height:120px;display:flex;align-items:center;justify-content:center;">' +
-        '<p style="color:#94a3b8;font-size:0.85rem;">Loading...</p>' +
+      '<div id="_refundProofImgWrap" style="min-height:200px;display:flex;align-items:center;justify-content:center;">' +
+        '<p id="_refundProofStatus" style="color:#94a3b8;font-size:0.85rem;text-align:center;padding:20px;">Loading...</p>' +
+        '<img id="_refundProofImg" style="width:100%;display:none;max-height:70vh;object-fit:contain;" />' +
       '</div>' +
     '</div>';
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
 
-  // Fetch as blob to bypass Android WebView external image restrictions
-  fetch(url)
-    .then(function(r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.blob();
-    })
-    .then(function(blob) {
-      var objectUrl = URL.createObjectURL(blob);
-      var wrap = document.getElementById('_refundProofImgWrap');
-      if (!wrap) return;
-      wrap.innerHTML = '<img src="' + objectUrl + '" style="width:100%;display:block;max-height:70vh;object-fit:contain;">';
-    })
-    .catch(function() {
-      var wrap = document.getElementById('_refundProofImgWrap');
-      if (wrap) wrap.innerHTML = '<p style="padding:20px;text-align:center;color:#ef4444;">Could not load proof image.<br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;">Open in browser</a></p>';
-    });
+  var img = document.getElementById('_refundProofImg');
+  var statusEl = document.getElementById('_refundProofStatus');
+  
+  console.log('Loading refund proof image from:', url);
+  
+  // Simple direct image loading - no fetch, no CORS issues
+  img.onload = function() {
+    console.log('Image loaded successfully');
+    img.style.display = 'block';
+    statusEl.style.display = 'none';
+  };
+  
+  img.onerror = function() {
+    console.log('Image load failed');
+    statusEl.innerHTML = '<span style="color:#ef4444;">Could not load image.</span><br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;text-decoration:underline;">Open in browser</a>';
+  };
+  
+  // Set the image source - this triggers the load
+  img.src = url;
 }
 
 function openRefundDetailsForm(bookingId, refundAmount) {
@@ -4150,7 +5018,68 @@ function openPayBalanceScreen(bookingId, balance) {
     '<span class="field-error" id="balErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
     '<button class="btn-primary" onclick="submitBalancePayment(' + bookingId + ',' + balance + ')">Pay ' + formatPHP(balance) + '</button>' +
     '</div>';
+  // Force hide booking detail before showing payment overlay
+  var detailEl = document.getElementById('page-booking-detail');
+  if (detailEl) {
+    detailEl.classList.remove('active');
+    detailEl.style.display = 'none';
+    detailEl.style.zIndex = '';
+  }
   showOverlay('page-payment');
+}
+
+// Resume full payment for Unpaid bookings from the booking detail view
+function openPayNowFromDetail(bookingId) {
+  // Try activeBookingData first, then fall back to _allBookingsData cache
+  var b = activeBookingData;
+  if (!b || b.id !== bookingId) {
+    if (typeof _allBookingsData !== 'undefined' && _allBookingsData) {
+      for (var i = 0; i < _allBookingsData.length; i++) {
+        if (_allBookingsData[i].id === bookingId) { b = _allBookingsData[i]; break; }
+      }
+    }
+  }
+  if (!b || b.id !== bookingId) {
+    showToast('Booking data not available. Please try again.', 'error');
+    return;
+  }
+  var total = parseFloat(b.total_price) || 0;
+  var days = 1;
+  var start = b.start_date ? b.start_date.split('T')[0] : null;
+  var end = b.end_date ? b.end_date.split('T')[0] : null;
+  if (start && end) {
+    var s = new Date(start), e = new Date(end);
+    days = Math.max(1, Math.round((e - s) / 86400000));
+  }
+  var dailyRate = parseFloat(b.daily_rate) || 0;
+  var downpaymentAmount = parseFloat((total * 0.20).toFixed(2));
+  var balanceAmount = parseFloat((total * 0.80).toFixed(2));
+  // Build a synthetic priceResult from stored booking data
+  var priceResult = {
+    days: days,
+    basePrice: dailyRate * days,
+    addonPrice: 0,
+    insurancePrice: 0,
+    longTermDiscount: 0,
+    couponDiscount: 0,
+    pointsDiscount: 0,
+    downpaymentAmount: downpaymentAmount,
+    balanceAmount: balanceAmount,
+    total: total,
+    pointsEarned: Math.floor(total / 100)
+  };
+  _pendingPriceResult = priceResult;
+  _pendingPayType = 'Full';
+  activeBookingData = b;
+  // Force hide booking detail completely before opening payment
+  var detailEl = document.getElementById('page-booking-detail');
+  if (detailEl) {
+    detailEl.classList.remove('active');
+    detailEl.style.display = 'none';
+    detailEl.style.zIndex = '';
+  }
+  // Open payment screen immediately (no setTimeout needed since we force-hid the overlay above)
+  openPaymentScreen(bookingId, priceResult, 'Full', true);
 }
 
 function submitBalancePayment(bookingId, amount) {
@@ -4421,39 +5350,52 @@ var Profile = {
       }
     }
 
-    var fd = new FormData();
-    fd.append('user_id', currentUser.id);
-    fd.append('license_number', document.getElementById('editLicenseNumber').value.trim());
-    fd.append('expiry_date', document.getElementById('editLicenseExpiry').value.trim());
-    fd.append('issuing_country_state', document.getElementById('editLicenseCountry').value.trim());
-    fd.append('license_class', document.getElementById('editLicenseClass').value.trim());
-    fd.append('full_name', document.getElementById('editLicenseName').value.trim());
-    fd.append('date_of_birth', document.getElementById('editLicenseDob').value.trim());
-    fd.append('emergency_contact_name', document.getElementById('editLicenseEmName').value.trim());
-    fd.append('emergency_contact_phone', document.getElementById('editLicenseEmPhone').value.trim());
-    fd.append('emergency_contact_relationship', document.getElementById('editLicenseEmRel').value.trim());
-
-    // Keep existing URLs if no new files uploaded
-    if (_licenseFrontBlob) {
-      fd.append('license_front_file', _licenseFrontBlob, 'front.jpg');
-    } else {
-      fd.append('license_front_url', currentUser._licenseDetails?.license_front_url || '');
-    }
-    if (_licenseBackBlob) {
-      fd.append('license_back_file', _licenseBackBlob, 'back.jpg');
-    } else {
-      fd.append('license_back_url', currentUser._licenseDetails?.license_back_url || '');
-    }
-
     showLoading(true);
-    uploadFile('/user/license-details', fd)
-      .then(function() {
-        showToast('License details saved!', 'success');
-        Profile.cancelLicenseEdit();
-        loadProfile();
-      })
-      .catch(function(err) { if (errEl) errEl.textContent = err.message || 'Failed to save.'; })
-      .finally(function() { showLoading(false); });
+    
+    // Compress both front and back images more aggressively (800x800, 0.6 quality) to fit Vercel payload limit (4.5MB) and speed up uploads
+    var frontPromise = _licenseFrontBlob ? compressImage(_licenseFrontBlob, 800, 800, 0.6) : Promise.resolve(null);
+    var backPromise = _licenseBackBlob ? compressImage(_licenseBackBlob, 800, 800, 0.6) : Promise.resolve(null);
+
+    Promise.all([frontPromise, backPromise]).then(function(compressedBlobs) {
+      var compressedFront = compressedBlobs[0];
+      var compressedBack = compressedBlobs[1];
+      
+      var fd = new FormData();
+      fd.append('user_id', currentUser.id);
+      fd.append('license_number', document.getElementById('editLicenseNumber').value.trim());
+      fd.append('expiry_date', document.getElementById('editLicenseExpiry').value.trim());
+      fd.append('issuing_country_state', document.getElementById('editLicenseCountry').value.trim());
+      fd.append('license_class', document.getElementById('editLicenseClass').value.trim());
+      fd.append('full_name', document.getElementById('editLicenseName').value.trim());
+      fd.append('date_of_birth', document.getElementById('editLicenseDob').value.trim());
+      fd.append('emergency_contact_name', document.getElementById('editLicenseEmName').value.trim());
+      fd.append('emergency_contact_phone', document.getElementById('editLicenseEmPhone').value.trim());
+      fd.append('emergency_contact_relationship', document.getElementById('editLicenseEmRel').value.trim());
+
+      if (compressedFront) {
+        fd.append('license_front_file', compressedFront, 'front.jpg');
+      } else {
+        fd.append('license_front_url', currentUser._licenseDetails?.license_front_url || '');
+      }
+      if (compressedBack) {
+        fd.append('license_back_file', compressedBack, 'back.jpg');
+      } else {
+        fd.append('license_back_url', currentUser._licenseDetails?.license_back_url || '');
+      }
+
+      return uploadFile('/user/license-details', fd);
+    })
+    .then(function() {
+      showToast('License details saved!', 'success');
+      Profile.cancelLicenseEdit();
+      loadProfile();
+    })
+    .catch(function(err) { 
+      if (errEl) errEl.textContent = err.message || 'Failed to save.'; 
+    })
+    .finally(function() { 
+      showLoading(false); 
+    });
   }
 };
 
@@ -4480,18 +5422,41 @@ function handleLicenseFileSelect(e, side) {
 }
 
 function loadLicenseDetailsForEdit() {
+  console.log('loadLicenseDetailsForEdit() called');
   if (!currentUser.id) return;
   apiCall('/user/license-details?user_id=' + currentUser.id)
-    .then(function(data) {
-      if (!data || !data.license_number) return;
+    .then(function(response) {
+      console.log('License details for edit response:', response);
+      
+      // Handle the API response structure - license data is in the 'data' property
+      var data = response && response.data ? response.data : response;
+      console.log('Extracted license data for edit:', data);
+      
+      if (!data || !data.license_number) {
+        console.log('No license data found for editing');
+        return;
+      }
+      
+      console.log('Populating edit form with license data...');
       var el;
-      el = document.getElementById('editLicenseNumber'); if (el) el.value = data.license_number || '';
-      el = document.getElementById('editLicenseExpiry'); if (el) el.value = data.expiry_date || '';
+      el = document.getElementById('editLicenseNumber'); 
+      if (el) { 
+        el.value = data.license_number || '';
+        console.log('Set license number:', el.value);
+      }
+      
+      el = document.getElementById('editLicenseExpiry'); 
+      if (el) { 
+        el.value = data.expiry_date || '';
+        console.log('Set expiry date:', el.value);
+      }
+      
       // For select dropdowns, try exact match first, then partial match
       el = document.getElementById('editLicenseCountry');
       if (el) {
         var countryVal = data.issuing_country_state || '';
         el.value = countryVal;
+        console.log('Set country:', countryVal);
         if (!el.value && countryVal) {
           // Try partial match (e.g. "Ph" -> "Philippines")
           for (var i = 0; i < el.options.length; i++) {
@@ -4501,10 +5466,12 @@ function loadLicenseDetailsForEdit() {
           }
         }
       }
+      
       el = document.getElementById('editLicenseClass');
       if (el) {
         var classVal = data.license_class || '';
         el.value = classVal;
+        console.log('Set class:', classVal);
         if (!el.value && classVal) {
           // Try matching just the letter (e.g. "B" -> "B")
           for (var j = 0; j < el.options.length; j++) {
@@ -4514,14 +5481,36 @@ function loadLicenseDetailsForEdit() {
           }
         }
       }
-      el = document.getElementById('editLicenseName'); if (el) el.value = data.full_name || '';
-      el = document.getElementById('editLicenseDob'); if (el) el.value = data.date_of_birth || '';
-      el = document.getElementById('editLicenseEmName'); if (el) el.value = data.emergency_contact_name || '';
-      el = document.getElementById('editLicenseEmPhone'); if (el) el.value = data.emergency_contact_phone || '';
+      
+      el = document.getElementById('editLicenseName'); 
+      if (el) { 
+        el.value = data.full_name || '';
+        console.log('Set name:', el.value);
+      }
+      
+      el = document.getElementById('editLicenseDob'); 
+      if (el) { 
+        el.value = data.date_of_birth || '';
+        console.log('Set date of birth:', el.value);
+      }
+      
+      el = document.getElementById('editLicenseEmName'); 
+      if (el) { 
+        el.value = data.emergency_contact_name || '';
+        console.log('Set emergency contact name:', el.value);
+      }
+      
+      el = document.getElementById('editLicenseEmPhone'); 
+      if (el) { 
+        el.value = data.emergency_contact_phone || '';
+        console.log('Set emergency contact phone:', el.value);
+      }
+      
       el = document.getElementById('editLicenseEmRel');
       if (el) {
         var relVal = data.emergency_contact_relationship || '';
         el.value = relVal;
+        console.log('Set emergency contact relationship:', relVal);
         if (!el.value && relVal) {
           for (var k = 0; k < el.options.length; k++) {
             if (el.options[k].value.toLowerCase() === relVal.toLowerCase()) {
@@ -4530,25 +5519,86 @@ function loadLicenseDetailsForEdit() {
           }
         }
       }
-      // Show existing images in preview
-      if (data.license_front_url) {
+      
+      // Show existing images in preview (with admin mobile fallback pattern)
+      var frontUrl = data.license_front_url || data.license_image_url || '';
+      var backUrl = data.license_back_url || '';
+      
+      console.log('Edit form using fallback pattern:');
+      console.log('- Front URL (with fallback):', frontUrl);
+      console.log('- Back URL:', backUrl);
+      console.log('- Fallback license_image_url:', data.license_image_url);
+      
+      if (frontUrl && frontUrl !== 'null' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
         var prevF = document.getElementById('licenseEditPreviewFront');
-        if (prevF) { prevF.src = data.license_front_url; prevF.style.display = 'block'; }
+        if (prevF) { 
+          prevF.src = buildImgUrl(frontUrl); 
+          prevF.style.display = 'block';
+          console.log('Set front image preview using fallback:', buildImgUrl(frontUrl));
+        }
       }
-      if (data.license_back_url) {
+      if (backUrl && backUrl !== 'null' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
         var prevB = document.getElementById('licenseEditPreviewBack');
-        if (prevB) { prevB.src = data.license_back_url; prevB.style.display = 'block'; }
+        if (prevB) { 
+          prevB.src = buildImgUrl(backUrl); 
+          prevB.style.display = 'block';
+          console.log('Set back image preview:', buildImgUrl(backUrl));
+        }
       }
+      
+      console.log('License edit form populated successfully');
     })
-    .catch(function() { /* ignore */ });
+    .catch(function(err) { 
+      console.error('Failed to load license details for edit:', err);
+    });
+}
+
+function viewLicenseImage(url) {
+  var modal = document.getElementById('licensePreviewModal');
+  var img = document.getElementById('licensePreviewImg');
+  if (modal && img) {
+    img.src = url;
+    modal.style.display = 'flex';
+  } else {
+    window.open(url, '_system');
+  }
+}
+
+function closeLicensePreview() {
+  var modal = document.getElementById('licensePreviewModal');
+  if (modal) modal.style.display = 'none';
 }
 
 function loadProfile() {
-  if (!currentUser.id) return;
-    // Load main profile
+  console.log('loadProfile() called');
+  console.log('currentUser:', currentUser);
+  console.log('currentUser.id:', currentUser.id);
+  
+  if (!currentUser || !currentUser.id) {
+    console.warn('No currentUser.id available for loadProfile');
+    return;
+  }
+  
+  // Load main profile
   var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
-  // Load license details from new table
-  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id).catch(function() { return {}; });
+  // Load license details from new table with enhanced error handling
+  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
+    .then(function(data) {
+      console.log('License details API response:', data);
+      // Handle the API response structure - license data is in the 'data' property
+      var licenseData = data && data.data ? data.data : {};
+      console.log('Extracted license data:', licenseData);
+      return licenseData;
+    })
+    .catch(function(err) { 
+      console.error('Failed to load license details:', err);
+      console.error('Error details:', {
+        message: err.message || 'Unknown error',
+        status: err.status || 'No status',
+        response: err.response || 'No response'
+      });
+      return {}; 
+    });
 
   Promise.all([profilePromise, licensePromise])
     .then(function(results) {
@@ -4600,42 +5650,152 @@ function loadProfile() {
       var emailDisplay = document.getElementById('profileEmailDisplay');
       if (emailDisplay) emailDisplay.textContent = profile.email || '';
 
-      // License images thumbnail (from new license_details table)
+      // License images thumbnail (with admin mobile fallback pattern)
       var licenseThumb = document.getElementById('profileLicenseThumb');
       if (licenseThumb) {
+        console.log('Setting up license thumbnails with data:', licenseData);
         var html = '';
-        if (licenseData.license_front_url) {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p><img src="' + licenseData.license_front_url + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + licenseData.license_front_url + '\')"></div>';
+        
+        // Use admin mobile fallback pattern: license_front_url || license_image_url || ''
+        var frontUrl = licenseData.license_front_url || licenseData.license_image_url || '';
+        var backUrl = licenseData.license_back_url || '';
+        
+        frontUrl = frontUrl ? buildImgUrl(frontUrl) : null;
+        backUrl = backUrl ? buildImgUrl(backUrl) : null;
+        
+        console.log('License front URL (with fallback):', frontUrl);
+        console.log('License back URL:', backUrl);
+        console.log('Fallback license_image_url:', licenseData.license_image_url);
+        
+        if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
+                  '<img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
+                  'onclick="viewLicenseImage(\'' + frontUrl + '\')" ' +
+                  'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />' +
+                  '<div style="display:none;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Front Image<br>Not Available</div>' +
+                  '</div>';
+        } else {
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
+                  '<div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Front Image<br>Not Uploaded</div>' +
+                  '</div>';
         }
-        if (licenseData.license_back_url) {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p><img src="' + licenseData.license_back_url + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" onclick="viewLicenseImage(\'' + licenseData.license_back_url + '\')"></div>';
+        
+        if (backUrl && backUrl !== 'null' && backUrl.trim() !== '' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
+          html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
+                  '<img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
+                  'onclick="viewLicenseImage(\'' + backUrl + '\')" ' +
+                  'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />' +
+                  '<div style="display:none;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Back Image<br>Not Available</div>' +
+                  '</div>';
+        } else {
+          html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
+                  '<div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Back Image<br>Not Uploaded</div>' +
+                  '</div>';
         }
+        
         if (!html) {
-          html = '<p style="font-size:0.8rem;color:var(--text-muted);margin-top:6px;">No license photos uploaded yet.</p>';
+          html = '<div style="text-align:center;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);border:2px dashed var(--border);margin-bottom:10px;">' +
+                 '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;">No license photos available</p>' +
+                 '<p style="font-size:0.75rem;color:var(--text-secondary);">Please re-upload your license images through the Edit section</p>' +
+                 '</div>';
         }
+        
         licenseThumb.innerHTML = html;
+        console.log('License thumbnails HTML set with error handling');
       }
 
       // License detail fields - view mode (from new license_details table)
+      console.log('Populating license view fields with data:', licenseData);
+      console.log('Available license data keys:', Object.keys(licenseData));
+      
       var el;
       el = document.getElementById('viewLicenseNumber');
-      if (el) el.textContent = licenseData.license_number || '-';
+      if (el) {
+        el.textContent = licenseData.license_number || '-';
+        console.log('License number set to:', el.textContent);
+      } else {
+        console.log('viewLicenseNumber element not found');
+      }
+      
       el = document.getElementById('viewLicenseExpiry');
-      if (el) el.textContent = licenseData.expiry_date || '-';
+      if (el) {
+        el.textContent = licenseData.expiry_date || '-';
+        console.log('License expiry set to:', el.textContent);
+      } else {
+        console.log('viewLicenseExpiry element not found');
+      }
+      
       el = document.getElementById('viewLicenseClass');
-      if (el) el.textContent = licenseData.license_class || '-';
+      if (el) {
+        el.textContent = licenseData.license_class || '-';
+        console.log('License class set to:', el.textContent);
+      } else {
+        console.log('viewLicenseClass element not found');
+      }
+      
       el = document.getElementById('viewLicenseCountry');
-      if (el) el.textContent = licenseData.issuing_country_state || '-';
+      if (el) {
+        el.textContent = licenseData.issuing_country_state || '-';
+        console.log('License country set to:', el.textContent);
+      } else {
+        console.log('viewLicenseCountry element not found');
+      }
+      
       el = document.getElementById('viewLicenseName');
-      if (el) el.textContent = licenseData.full_name || '-';
+      if (el) {
+        el.textContent = licenseData.full_name || '-';
+        console.log('License name set to:', el.textContent);
+      } else {
+        console.log('viewLicenseName element not found');
+      }
+      
       el = document.getElementById('viewLicenseDob');
-      if (el) el.textContent = licenseData.date_of_birth || '-';
+      if (el) {
+        el.textContent = licenseData.date_of_birth || '-';
+        console.log('License DOB set to:', el.textContent);
+      } else {
+        console.log('viewLicenseDob element not found');
+      }
+      
       el = document.getElementById('viewLicenseEmName');
-      if (el) el.textContent = licenseData.emergency_contact_name || '-';
+      if (el) {
+        el.textContent = licenseData.emergency_contact_name || '-';
+        console.log('Emergency contact name set to:', el.textContent);
+      } else {
+        console.log('viewLicenseEmName element not found');
+      }
+      
       el = document.getElementById('viewLicenseEmPhone');
-      if (el) el.textContent = licenseData.emergency_contact_phone || '-';
+      if (el) {
+        el.textContent = licenseData.emergency_contact_phone || '-';
+        console.log('Emergency contact phone set to:', el.textContent);
+      } else {
+        console.log('viewLicenseEmPhone element not found');
+      }
+      
       el = document.getElementById('viewLicenseEmRel');
-      if (el) el.textContent = licenseData.emergency_contact_relationship || '-';
+      if (el) {
+        el.textContent = licenseData.emergency_contact_relationship || '-';
+        console.log('Emergency contact relationship set to:', el.textContent);
+      } else {
+        console.log('viewLicenseEmRel element not found');
+      }
+      
+      // Show message if no license details exist
+      if (!licenseData.license_number && !licenseData.full_name) {
+        console.log('No license data found, showing empty state');
+        var licenseCard = document.getElementById('viewLicenseNumber');
+        if (licenseCard && licenseCard.closest('.card')) {
+          var infoMsg = licenseCard.closest('.card').querySelector('.no-license-info');
+          if (!infoMsg) {
+            infoMsg = document.createElement('p');
+            infoMsg.className = 'no-license-info';
+            infoMsg.style.cssText = 'font-size:0.85rem;color:var(--text-muted);text-align:center;margin:20px 0;font-style:italic;';
+            infoMsg.textContent = 'No license details uploaded yet. Click Edit to add your license information.';
+            licenseCard.closest('.card').appendChild(infoMsg);
+          }
+        }
+      }
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
@@ -4731,16 +5891,21 @@ function submitLicense() {
   var errEl = document.getElementById('licenseErr');
   if (errEl) errEl.textContent = '';
   if (!licenseBlob) { if (errEl) errEl.textContent = 'Please select a license image first.'; return; }
-  var fd = new FormData();
-  fd.append('user_id', currentUser.id);
-  fd.append('license', licenseBlob, 'license.jpg');
+  
   showLoading(true);
-  uploadFile('/user/upload-license', fd)
+  compressImage(licenseBlob, 800, 800, 0.6)
+    .then(function(compressedBlob) {
+      var fd = new FormData();
+      fd.append('user_id', currentUser.id);
+      fd.append('license', compressedBlob, 'license.jpg');
+      
+      return uploadFile('/user/upload-license', fd);
+    })
     .then(function() {
       currentUser.isVerified = 1;
       Session.save(currentUser);
       showLoading(false);
-      // Force logout after upload Ã¯ user must wait for admin verification before re-logging in
+      // Force logout after upload - user must wait for admin verification before re-logging in
       showToast('License submitted! You have been logged out. Please wait for admin verification before logging in again.', 'info');
       setTimeout(function() {
         Session.clear();
@@ -4824,18 +5989,71 @@ function loadFavorites() {
 
 // CHATBOT
 function loadChatbot() {
+  var overlay = document.getElementById('page-chatbot');
   var el = document.getElementById('chatbotContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-chatbot\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Chat Assistant</h2></div>' +
-    '<div class="chat-messages" id="chatMessages">' +
-    '<div class="chat-msg bot">Hi! I\'m the Autoride assistant. How can I help you today?</div>' +
+  // Only initialize once - guard so clicking inside doesn't re-render
+  if (el.dataset.initialized === '1') return;
+  el.dataset.initialized = '1';
+
+  // Make the overlay a flex column so input is pinned at bottom
+  if (overlay) {
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.overflow = 'hidden';
+  }
+  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;';
+
+  el.innerHTML =
+    '<div class="page-header" style="flex-shrink:0;">' +
+    '<button class="back-btn" onclick="closeChatbot()"><i class="fas fa-arrow-left"></i></button>' +
+    '<h2>AI Assistant</h2></div>' +
+    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:100px;">' +
+    '<div class="chat-msg bot">Hi! 👋 I\'m the Autoride AI assistant. How can I help you today?</div>' +
+    '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;">' +
+    '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
+    '<button onclick="sendChatMsg(\'How to book?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 How to Book</button>' +
+    '<button onclick="sendChatMsg(\'What are the prices?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💰 Pricing</button>' +
+    '<button onclick="sendChatMsg(\'What are the requirements?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📄 Requirements</button>' +
+    '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
     '</div>' +
-    '<div class="chat-input-row">' +
+    '</div>' +
+    '<div class="chat-input-row" style="flex-shrink:0;position:sticky;bottom:0;left:0;right:0;z-index:100;background:var(--bg-card);">' +
     '<input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')sendChat()">' +
     '<button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>' +
     '</div>';
+}
+
+function closeChatbot() {
+  var overlay = document.getElementById('page-chatbot');
+  var el = document.getElementById('chatbotContent');
+  // Reset so next open re-initializes fresh
+  if (el) { el.dataset.initialized = ''; el.innerHTML = ''; }
+  if (overlay) { overlay.style.cssText = ''; }
+  closeOverlay('page-chatbot');
+}
+
+function sendChatMsg(msg) {
+  var inputEl = document.getElementById('chatInput');
+  if (inputEl) inputEl.value = msg;
+  // Hide quick replies
+  var qr = document.getElementById('chatQuickReplies');
+  if (qr) qr.style.display = 'none';
+  sendChat();
+}
+
+function chatLocalFallback(msg) {
+  var lower = msg.toLowerCase();
+  if (lower.match(/tutorial|guide|how.*use|how.*work|paano|gamitin|step by step|get started/)) {
+    return '📖 **How to Use Autoride:**\n\n1︝⃣ **Register** — Sign up with your Gmail & password, then verify your email\n2︝⃣ **Complete Profile** — Upload your Driver\'s License (front & back) in Profile\n3︝⃣ **Browse Cars** — Filter by type/date or search by name\n4︝⃣ **Book** — Pick dates, choose location, confirm booking\n5︝⃣ **Pay** — Use GCash, Maya, Credit Card, or Cash\n6︝⃣ **Track** — Monitor your booking status in My Bookings\n\n💬 Need more help? Use Live Chat!';
+  }
+  if (lower.match(/book|rent|reserve/)) return '📋 To book: Browse Cars → Select dates → Choose location → Confirm Booking!';
+  if (lower.match(/price|rate|cost|magkano/)) return '💰 Rates start at ₱1,500/day. Check each vehicle page for exact pricing.';
+  if (lower.match(/payment|pay|gcash|maya/)) return '💳 We accept GCash, Maya, Credit Card, Bank Transfer, and Cash.';
+  if (lower.match(/require|license|id|valid id/)) return '📄 Requirements: Valid Driver\'s License (uploaded in Profile), Government ID, and active Gmail account.';
+  if (lower.match(/cancel|refund/)) return '🔄 Free cancellation 48+ hours before pickup. Go to My Bookings → Cancel.';
+  if (lower.match(/thank|thanks|salamat/)) return 'You\'re welcome! 😊 Happy riding!';
+  return 'I\'m having trouble connecting right now. Please try again or use Live Chat for immediate support!';
 }
 
 function sendChat() {
@@ -4844,16 +6062,33 @@ function sendChat() {
   var msg = sanitizeInput(inputEl.value.trim());
   if (isBlank(msg)) return;
   inputEl.value = '';
+  // Hide quick replies after first message
+  var qr = document.getElementById('chatQuickReplies');
+  if (qr) qr.style.display = 'none';
   var msgs = document.getElementById('chatMessages');
   if (!msgs) return;
   msgs.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
   msgs.scrollTop = msgs.scrollHeight;
+  // Show typing indicator
+  var typingId = 'typing_' + Date.now();
+  msgs.innerHTML += '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>';
+  msgs.scrollTop = msgs.scrollHeight;
   apiCall('/chat', { method: 'POST', body: JSON.stringify({ message: msg, user_id: currentUser.id }) })
     .then(function(data) {
-      msgs.innerHTML += '<div class="chat-msg bot">' + (data.response || 'I\'m not sure about that. Please contact support.') + '</div>';
+      var typing = document.getElementById(typingId);
+      if (typing) typing.remove();
+      var resp = (data.response || 'I\'m not sure about that. Please contact support.');
+      // Format markdown-style bold **text** and bullet points
+      resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      resp = resp.replace(/\n/g, '<br>');
+      msgs.innerHTML += '<div class="chat-msg bot">' + resp + '</div>';
     })
     .catch(function() {
-      msgs.innerHTML += '<div class="chat-msg bot">Sorry, I couldn\'t process that. Please try again.</div>';
+      var typing = document.getElementById(typingId);
+      if (typing) typing.remove();
+      var fallback = chatLocalFallback(msg);
+      fallback = fallback.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+      msgs.innerHTML += '<div class="chat-msg bot">' + fallback + '</div>';
     })
     .finally(function() { msgs.scrollTop = msgs.scrollHeight; });
 }
@@ -4983,7 +6218,7 @@ var LiveChat = (function () {
   var _currentAdminId = null;
   var _lastMsgId = 0;
 
-  // ?? Inbox ??????????????????????????????????????????????????
+  // Inbox
   function loadInbox() {
     var el = document.getElementById('liveChatContent');
     if (!el) return;
@@ -5033,7 +6268,7 @@ var LiveChat = (function () {
       });
   }
 
-  // ?? Conversation ???????????????????????????????????????????
+  // Conversation
   function openConversation(adminId, adminName) {
     _currentAdminId = adminId;
     _lastMsgId = 0;
@@ -5241,6 +6476,45 @@ function stopBgChatPolling() {
   if (_bgChatPollTimer) { clearInterval(_bgChatPollTimer); _bgChatPollTimer = null; }
 }
 
+var _bgSessionPollTimer = null;
+function startBgSessionPolling() {
+  if (_bgSessionPollTimer) return;
+  _bgSessionPollTimer = setInterval(function() {
+    if (!currentUser.id) return;
+    apiCall('/user/verify-status?user_id=' + currentUser.id)
+      .then(function(v) {
+        if (v.force_logout_at) {
+          stopBgSessionPolling();
+          forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+          return;
+        }
+        var newVerify = v.is_verified !== undefined ? v.is_verified : currentUser.isVerified;
+        if (currentUser.isVerified !== newVerify) {
+          currentUser.isVerified = newVerify;
+          Session.save(currentUser);
+          var badge = document.getElementById('profileVerifyBadge');
+          if (badge) {
+            var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+            badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+            badge.className = 'verify-badge verify-' + currentUser.isVerified;
+          }
+          var statusEl = document.getElementById('viewLicenseStatus');
+          if (statusEl) {
+            var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+            var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+            statusEl.textContent = statusMap[currentUser.isVerified] || '-';
+            statusEl.style.color = statusColor[currentUser.isVerified] || 'var(--text-main)';
+          }
+        }
+      })
+      .catch(function() {});
+  }, 20000);
+}
+
+function stopBgSessionPolling() {
+  if (_bgSessionPollTimer) { clearInterval(_bgSessionPollTimer); _bgSessionPollTimer = null; }
+}
+
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)
@@ -5251,5 +6525,45 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// PUSH NOTIFICATIONS INITIALIZATION
+// Push notifications are initialized ONLY after user logs in (via initializePushForUser)
+// This prevents the permission dialog from appearing at cold start before login
 
+// Also initialize when Capacitor is ready (for native apps) - but only if user is logged in
+document.addEventListener('deviceready', function() {
+  console.log('Capacitor device ready, checking push notifications...');
+  setTimeout(function() {
+    try {
+      // Only init push if user is already logged in (returning user)
+      if (currentUser && currentUser.id) {
+        var pushPlugin = getPushNotifications();
+        if (pushPlugin) {
+          PushNotifications.init().catch(function(error) {
+            console.log('Push notifications init failed: ' + error);
+          });
+        }
+      } else {
+        console.log('No logged in user - skipping push notification init on deviceready');
+      }
+    } catch (error) {
+      console.log('Push notification deviceready check failed safely: ' + error);
+    }
+  }, 500);
+});
 
+// Re-register FCM token when user logs in (call this after successful login)
+function initializePushForUser() {
+  try {
+    if (currentUser.id && PushNotifications.currentToken) {
+      console.log('Re-registering FCM token for logged in user: ' + currentUser.id);
+      PushNotifications.sendTokenToServer(PushNotifications.currentToken);
+    } else if (currentUser.id) {
+      console.log('User logged in, initializing push notifications...');
+      PushNotifications.init().catch(function(error) {
+        console.log('Push init after login failed (normal without Firebase): ' + error);
+      });
+    }
+  } catch (error) {
+    console.log('Push initialization for user failed safely: ' + error);
+  }
+}
