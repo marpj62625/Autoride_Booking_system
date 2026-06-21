@@ -1186,13 +1186,13 @@ def user_forgot_password():
         
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, full_name, auth_provider FROM users WHERE LOWER(email) = %s", (email,))
+        cur.execute("SELECT id, full_name, auth_provider, password FROM users WHERE LOWER(email) = %s", (email,))
         user = cur.fetchone()
         
         if not user:
             return jsonify({'error': 'Email address not found'}), 404
             
-        if user.get('auth_provider') == 'google':
+        if user.get('auth_provider') == 'google' and not user.get('password'):
             return jsonify({'error': 'This email is registered using Google Sign-In. Please log in using Google.'}), 400
 
         # Generate random 8-character temporary password
