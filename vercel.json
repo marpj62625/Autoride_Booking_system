@@ -21,10 +21,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.py",
-      "headers": {
-        "Access-Control-Allow-Origin": "*"
-      }
+      "dest": "/api/index.py"
     },
     {
       "src": "/admin_mobile/(.*)",
@@ -35,71 +32,8 @@
       "dest": "/admin_app/$1"
     },
     {
-      "src": "/admin/(.*)",
-      "dest": "/admin_app/$1"
-    },
-    {
-      "src": "/admin",
-      "dest": "/admin_app/index.html"
-    },
-    {
-      "src": "/frontend/(.*)",
-      "dest": "/frontend/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/frontend/$1",
-      "headers": {
-        "cache-control": "public, max-age=0, must-revalidate"
-      }
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/admin/:path*",
-      "destination": "/admin_app/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "(?!autorideadmin\\.vercel\\.app).*"
-        }
-      ]
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        }
-      ]
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/:path((?!api|frontend|admin_app|admin_mobile).*)*",
-      "has": [
-        {
-          "type": "host",
-          "value": "autorideadmin\\.vercel\\.app"
-        }
-      ],
-      "destination": "/admin_app/:path*",
-      "permanent": false
+      "dest": "/frontend/$1"
     }
   ]
 }
