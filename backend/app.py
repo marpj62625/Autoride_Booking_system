@@ -748,7 +748,7 @@ def log_activity(admin_id, admin_name, action, target_type=None, target_id=None,
 
 
 
-from flask import send_from_directory
+from flask import send_from_directory, render_template
 
 
 
@@ -765,6 +765,16 @@ def serve_admin_app(filename):
 def serve_admin_mobile(filename):
 
     return send_from_directory('../admin_mobile/www', filename)
+
+
+
+@app.route('/privacy-policy')
+
+def privacy_policy():
+
+    """Serve the Privacy Policy page for Google Play Console compliance"""
+
+    return render_template('privacy_policy.html')
 
 
 
