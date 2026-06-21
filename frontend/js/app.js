@@ -1863,11 +1863,11 @@ function loadHome() {
         var startNorm = _normDateStr(active.start_date);
         var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
         var imgHtml = imgSrc
-          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:200px;object-fit:cover;display:block;">'
-          : '<div style="width:100%;height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:100%;object-fit:cover;display:block;">'
+          : '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
         card.innerHTML =
-          imgHtml +
-          '<div style="padding:14px;">' +
+          '<div class="active-rental-img">' + imgHtml + '</div>' +
+          '<div class="active-rental-info">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
               '<div>' +
                 '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
@@ -1890,7 +1890,7 @@ function loadHome() {
                 '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
               '</div>' +
             '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;">' +
               '<button onclick="openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
               '<button onclick="showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
             '</div>' +
