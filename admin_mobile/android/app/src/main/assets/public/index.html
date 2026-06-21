@@ -2134,23 +2134,21 @@
                 <button onclick="submitChangePassword()" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Update</button>
             </div>
         </div>
-    </div>
-
-    <!-- INSPECTION MODAL -->
+    </div>    <!-- INSPECTION MODAL -->
     <div id="inspectionModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out;">
-            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, var(--surface), #1e293b); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0;">
-                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: -6px auto 12px;"></div>
-                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: white;">Vehicle Inspection</h3>
+        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; background: var(--bg-card); border-top: 1px solid var(--border);">
+            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, var(--surface), var(--surface-container)); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0;">
+                <div style="width: 40px; height: 4px; background: var(--border); border-radius: 10px; margin: -6px auto 12px;"></div>
+                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-main);">Vehicle Inspection</h3>
                 <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
-                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
+                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-times"></i></button>
             </div>
             
             <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
                 <input type="hidden" id="inspectBookingId">
                 <input type="hidden" id="inspectType">
 
-                <!-- Receipt section � populated by openModal -->
+                <!-- Receipt section -->
                 <div id="inspectReceiptSection" style="margin-bottom:20px;padding:14px;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.3);border-radius:12px;">
                     <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;letter-spacing:0.05em;">
                         <i class="fas fa-receipt" style="color:#00B14F;margin-right:5px;"></i>Customer Receipt
@@ -2165,11 +2163,11 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
-                        <input type="number" id="inspectMileage" placeholder="0" required style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-weight: 600;">
+                        <input type="number" id="inspectMileage" placeholder="0" required style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-weight: 600;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fuel Level</label>
-                        <select id="inspectFuel" style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-weight: 600;">
+                        <select id="inspectFuel" style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-weight: 600;">
                             <option value="Full">Full</option>
                             <option value="3/4">3/4</option>
                             <option value="1/2">1/2</option>
@@ -2182,16 +2180,16 @@
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Vehicle Photos</label>
                     <div id="inspectPhotoPreview" style="display: flex; gap: 10px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 5px;"></div>
-                    <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 15px; background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--primary); color: var(--primary); box-shadow: none;">
+                    <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; padding: 15px; background: rgba(0, 177, 79, 0.08); border: 1px dashed var(--primary); color: var(--primary); box-shadow: none;">
                         <i class="fas fa-camera"></i> Take Photos
-                        <input type="file" accept="image/*" id="inspectPhotos" multiple accept="image/*" style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
+                        <input type="file" accept="image/*" id="inspectPhotos" multiple style="display: none;" onchange="Inspections.handlePhotoSelect(this)">
                     </label>
                     <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; text-align: center;">Take photos of all 4 sides and interior.</p>
                 </div>
 
                 <div style="margin-bottom: 25px;">
                     <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Notes / Issues</label>
-                    <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleaness issues..." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
+                    <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleanness issues..." style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; height: 80px; resize: none;"></textarea>
                 </div>
 
                 <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,177,79,0.4); margin-bottom: 20px;">
@@ -3150,11 +3148,7 @@
             }
             
             const btn = document.getElementById('loginBtn');
-            
-            if (!btn) {
-                alert('CRITICAL: Login button not found in DOM');
-                return;
-            }
+            if (!btn) return;
             const originalText = btn.innerHTML;
             
             btn.disabled = true;
@@ -3181,7 +3175,6 @@
                 }
             } catch (err) { 
                 console.error('Login error:', err);
-                alert('FETCH ERROR: ' + err.message + '\nTarget: ' + API_BASE + '/api/admin/login');
                 document.getElementById('loginError').style.display = 'block';
                 document.getElementById('loginError').textContent = 'Connection error: ' + err.message;
             } finally {
