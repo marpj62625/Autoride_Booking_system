@@ -19,85 +19,144 @@
         </nav>
     </header>
 
-    <div class="auth-container" id="authContainer">
-        <div style="text-align: left;">
-            <a href="vehicles.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 1.5rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                Back to Vehicles
-            </a>
-        </div>
+    <div id="authContainer" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;display:flex;overflow:hidden;background:#ffffff;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
-        <!-- STEP 1: Login/Auth Forms -->
-        <div class="auth-form-step">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h2 id="loginTitle" style="margin:0; font-size: 2rem; background: linear-gradient(to right, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Welcome Back</h2>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Sign in to continue your journey</p>
+        <!-- LEFT — Green Branding Panel -->
+        <div style="flex:0 0 58%;background:linear-gradient(145deg,#00c853 0%,#00b14f 45%,#007a36 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 48px;position:relative;overflow:hidden;box-sizing:border-box;">
+            <!-- Decorative circles -->
+            <div style="position:absolute;top:-100px;right:-100px;width:380px;height:380px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
+            <div style="position:absolute;bottom:-140px;left:-80px;width:460px;height:460px;border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none;"></div>
+            
+            <!-- Logo (Circular border wrapper) -->
+            <div style="width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.08);border:2.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:24px;position:relative;z-index:1;box-shadow:0 12px 30px rgba(0,0,0,0.15);">
+                <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:96px;height:96px;object-fit:contain;">
             </div>
             
-            <!-- Default Email Login -->
-            <div id="emailAuthSection">
-                <form id="loginForm">
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <input type="email" id="email" class="form-input" required placeholder="example@gmail.com">
+            <!-- Brand name -->
+            <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Autoride</div>
+            <!-- Tagline -->
+            <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;text-align:center;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Your ride, your way.<br>Fast. Safe. Affordable.</div>
+            
+            <!-- Feature highlights -->
+            <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:1rem;"></i></div>
+                    <div>
+                        <div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <div class="password-input-wrapper">
-                            <input type="password" id="password" class="form-input" required placeholder="••••••••">
-                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <div style="text-align:right; margin-top:0.5rem;">
-                            <a href="#" id="forgotPasswordLink" onclick="openForgotPassword(event)" style="color: var(--primary-color); font-size: 0.85rem; text-decoration: none; font-weight: 500; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">Forgot Password?</a>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn">Sign In</button>
-                </form>
-                
-                <div class="divider" style="display:flex; align-items:center; text-align:center; margin: 1.5rem 0; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
-                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-right: 1rem;"></div>
-                    OR
-                    <div style="flex:1; border-bottom:1px solid var(--border-color); margin-left: 1rem;"></div>
                 </div>
-                
-                <button type="button" id="btnGoogleLogin" onclick="doGoogleLogin()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 20px;background:#fff;color:#3c4043;border:1px solid #dadce0;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;transition:box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='none'">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;">
-                    Continue with Google
-                </button>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt" style="color:white;font-size:1rem;"></i></div>
+                    <div>
+                        <div style="font-weight:700;color:white;font-size:0.95rem;">Safe &amp; Insured</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Verified vehicles with full coverage</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:white;font-size:1rem;"></i></div>
+                    <div>
+                        <div style="font-weight:700;color:white;font-size:0.95rem;">Loyalty Rewards</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Earn points and unlock exclusive deals</div>
+                    </div>
+                </div>
             </div>
-
-        <!-- STEP 2: Email Verification (Hidden by default) -->
-        <div class="verification-step" id="stepVerification">
-            <h2 style="font-size: 1.75rem; margin-bottom: 1rem; text-align: center;">Verify Your Account</h2>
-            <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; font-size: 0.95rem;">
-                Your email <strong id="displayEmail" style="color: var(--text-main);"></strong> is not yet verified.<br>
-                Please enter the 6-digit code sent during registration.
-            </p>
             
-            <div class="otp-input-group">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+            <!-- Footer trust -->
+            <div style="position:absolute;bottom:28px;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
+        </div>
+
+        <!-- RIGHT — White Login Form Panel -->
+        <div style="flex:1;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:48px 40px;overflow-y:auto;box-sizing:border-box;">
+            <div style="width:100%;max-width:360px;">
+                
+                <!-- STEP 1: Login Form -->
+                <div class="auth-form-step">
+                    <!-- Heading -->
+                    <h1 style="font-size:2rem;font-weight:800;color:#111827;letter-spacing:-0.03em;margin:0 0 6px;">Welcome back</h1>
+                    <p style="font-size:0.88rem;color:#6b7280;margin:0 0 30px;">Sign in to your account</p>
+
+                    <form id="loginForm">
+                        <!-- Email -->
+                        <div class="form-group" style="margin-bottom:18px;">
+                            <label for="email" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:6px;text-transform:none;letter-spacing:normal;">Email Address</label>
+                            <input type="email" id="email" class="form-input" required placeholder="yourname@gmail.com"
+                                style="width:100%;padding:13px 15px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.95rem;color:#111827;outline:none;box-sizing:border-box;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label for="password" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:6px;text-transform:none;letter-spacing:normal;">Password</label>
+                            <div class="password-input-wrapper" style="position:relative;">
+                                <input type="password" id="password" class="form-input" required placeholder="Enter your password"
+                                    style="width:100%;padding:13px 46px 13px 15px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.95rem;color:#111827;outline:none;box-sizing:border-box;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;"
+                                    onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                    onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)"
+                                    style="position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9ca3af;cursor:pointer;font-size:1rem;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div style="text-align:right; margin-top:8px;">
+                                <a href="#" id="forgotPasswordLink" onclick="openForgotPassword(event)" style="color:#00b14f;font-size:0.82rem;text-decoration:none;font-weight:600;">Forgot Password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn" style="width:100%;margin-top:16px;padding:14px;background:#00b14f;border:none;border-radius:9px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,177,79,0.3);transition:background 0.2s,transform 0.15s,box-shadow 0.15s;box-sizing:border-box;"
+                            onmouseover="this.style.background='#009944';this.style.boxShadow='0 8px 24px rgba(0,177,79,0.42)';"
+                            onmouseout="this.style.background='#00b14f';this.style.boxShadow='0 4px 16px rgba(0,177,79,0.3)';"
+                            onmousedown="this.style.transform='scale(0.98)';" onmouseup="this.style.transform='';">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                    </form>
+
+                    <div class="divider" style="display:flex; align-items:center; text-align:center; margin:22px 0; color:#9ca3af; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
+                        <div style="flex:1; border-bottom:1px solid #e5e7eb; margin-right:1rem;"></div>
+                        or
+                        <div style="flex:1; border-bottom:1px solid #e5e7eb; margin-left:1rem;"></div>
+                    </div>
+
+                    <button type="button" id="btnGoogleLogin" onclick="doGoogleLogin()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px 20px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.95rem;font-weight:600;cursor:pointer;transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;"
+                        onmouseover="this.style.background='#f9fafb';this.style.borderColor='#9ca3af';"
+                        onmouseout="this.style.background='#fff';this.style.borderColor='#d1d5db';">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:18px;height:18px;">
+                        Sign in with Google
+                    </button>
+                    
+                    <div class="auth-links" id="authLinks" style="margin-top:28px; text-align:center; font-size:0.88rem;">
+                        <p style="color:#6b7280;margin:0;">Don't have an account? <a href="register.html" style="color:#00b14f; font-weight:700; text-decoration:none;">Register</a></p>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Email Verification (Hidden by default) -->
+                <div class="verification-step" id="stepVerification" style="box-sizing:border-box;">
+                    <h2 style="font-size:1.75rem;font-weight:800;color:#111827;letter-spacing:-0.02em;margin-bottom:10px;text-align:center;">Verify Your Account</h2>
+                    <p style="color:#6b7280;text-align:center;margin-bottom:28px;font-size:0.88rem;line-height:1.5;">
+                        Your email <strong id="displayEmail" style="color:#111827;"></strong> is not yet verified.<br>
+                        Please enter the 6-digit code sent during registration.
+                    </p>
+                    
+                    <div class="otp-input-group" style="display:flex;gap:8px;justify-content:center;margin:24px 0;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                    </div>
+
+                    <button type="button" class="btn" id="verifyBtn" style="width:100%;padding:14px;background:#00b14f;border:none;border-radius:9px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,177,79,0.3);box-sizing:border-box;">Verify & Sign In</button>
+                    <p style="margin-top:24px;text-align:center;font-size:0.88rem;margin-bottom:0;">
+                        <a href="#" onclick="location.reload()" style="color:#00b14f;text-decoration:none;font-weight:600;">Back to Login</a>
+                    </p>
+                </div>
+
+                <div id="message" style="text-align:center; margin-top:20px; font-weight:600; font-size:0.88rem;"></div>
             </div>
-
-            <button type="button" class="btn" id="verifyBtn">Verify & Sign In</button>
-            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
-                <a href="#" onclick="location.reload()" style="color: var(--primary-color); text-decoration: none;">Back to Login</a>
-            </p>
         </div>
 
-        <div id="message" style="text-align:center; margin-top: 1.5rem; font-weight: 500;"></div>
-
-        <div class="auth-links" id="authLinks" style="margin-top: 2rem; text-align:center; font-size: 0.95rem;">
-            <p style="color: var(--text-muted);">Don't have an account? <a href="register.html" style="color: var(--primary-color); font-weight: 600;">Sign up</a></p>
-        </div>
     </div>
 
     <!-- Forgot Password Modal -->
