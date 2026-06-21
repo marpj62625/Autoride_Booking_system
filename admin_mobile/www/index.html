@@ -3150,11 +3150,7 @@
             }
             
             const btn = document.getElementById('loginBtn');
-            
-            if (!btn) {
-                alert('CRITICAL: Login button not found in DOM');
-                return;
-            }
+            if (!btn) return;
             const originalText = btn.innerHTML;
             
             btn.disabled = true;
@@ -3181,7 +3177,6 @@
                 }
             } catch (err) { 
                 console.error('Login error:', err);
-                alert('FETCH ERROR: ' + err.message + '\nTarget: ' + API_BASE + '/api/admin/login');
                 document.getElementById('loginError').style.display = 'block';
                 document.getElementById('loginError').textContent = 'Connection error: ' + err.message;
             } finally {
