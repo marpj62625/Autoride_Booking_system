@@ -4017,7 +4017,7 @@ function renderBookingDetail(b) {
         '</div>' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">?' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">₱' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
         '</div>' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
