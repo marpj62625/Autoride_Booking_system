@@ -126,7 +126,6 @@ var PushNotifications = {
         });
       } else {
         console.log('Push notification permission denied:', result.receive);
-        showToast('Push notifications disabled - permission denied', 'info');
         return Promise.reject('Permission denied: ' + result.receive);
       }
     }).then(function() {
@@ -135,7 +134,6 @@ var PushNotifications = {
         console.log('Push registration success, token: ' + token.value);
         PushNotifications.currentToken = token.value;
         PushNotifications.sendTokenToServer(token.value);
-        showToast('Push notifications enabled successfully!', 'success');
       });
 
       pushPlugin.addListener('registrationError', function(error) {
@@ -148,7 +146,6 @@ var PushNotifications = {
         } else if (error.error) {
           errorMsg = error.error;
         }
-        showToast(errorMsg, 'warning');
       });
 
       pushPlugin.addListener('pushNotificationReceived', function(notification) {
@@ -169,9 +166,9 @@ var PushNotifications = {
       
       // Handle specific Firebase errors gracefully
       if (error.includes && error.includes('FIS_AUTH_ERROR')) {
-        showToast('In-app notifications active (Firebase setup needed for push)', 'info');
+        console.log('Firebase setup needed for push notifications');
       } else if (!error.includes('Permission denied')) {
-        showToast('Push setup incomplete - in-app notifications will work', 'warning');
+        console.log('Push setup incomplete - in-app notifications will work');
       }
     });
   },
