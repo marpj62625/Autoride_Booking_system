@@ -5,52 +5,35 @@
 
 // CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
-  console.log('API_BASE detection:');
-  console.log('- window._API_BASE:', typeof window !== 'undefined' ? window._API_BASE : 'undefined');
-  console.log('- window.Capacitor:', typeof window !== 'undefined' ? !!window.Capacitor : 'undefined');
-  console.log('- window.Capacitor.isNative:', typeof window !== 'undefined' && window.Capacitor ? window.Capacitor.isNative : 'undefined');
-  console.log('- window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'undefined');
-  console.log('- window.location.protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
-  
+
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
-  
+
   // Always use production URL on native Capacitor APK
   if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
-    console.log('Using production API for Capacitor native app');
     return 'https://autoride-booking-system.vercel.app/api';
   }
-  
-  // Force production for mobile apps (fallback detection)
+
+  // Force production for mobile apps (protocol-based detection)
   if (typeof window !== 'undefined' && (
-    window.location.protocol === 'capacitor:' || 
-    window.location.protocol === 'https:' && window.location.hostname === 'localhost'
+    window.location.protocol === 'capacitor:' ||
+    (window.location.protocol === 'https:' && window.location.hostname === 'localhost')
   )) {
-    console.log('Using production API for mobile protocol detection');
     return 'https://autoride-booking-system.vercel.app/api';
   }
-  
-  // FORCE PRODUCTION - temporary fix
-  // Remove this after debugging
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    console.log('FORCED: Using production API instead of localhost');
-    return 'https://autoride-booking-system.vercel.app/api';
-  }
-  
+
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') {
-      console.log('Using localhost API for web development');
-      return 'http://localhost:5000/api';
+      return 'https://autoride-booking-system.vercel.app/api';
     }
     if (window.location.protocol === 'https:') {
-      console.log('Using origin API for HTTPS');
       return window.location.origin + '/api';
     }
   }
-  
-  console.log('Using fallback production API');
+
   return 'https://autoride-booking-system.vercel.app/api';
 }());
+
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
@@ -108,34 +91,25 @@ var PushNotifications = {
     
     var pushPlugin = getPushNotifications();
     if (!pushPlugin) {
-      console.log('Push notifications not available (web browser)');
       return Promise.resolve();
     }
 
-    console.log('Initializing push notifications...');
     
     // Request permission first
     return pushPlugin.requestPermissions().then(function(result) {
-      console.log('Permission result:', result);
       if (result.receive === 'granted') {
-        console.log('Push notification permission granted');
         
         // Register for push notifications
         return pushPlugin.register().then(function() {
-          console.log('Push registration initiated successfully');
         });
       } else {
-        console.log('Push notification permission denied:', result.receive);
-        showToast('Push notifications disabled - permission denied', 'info');
         return Promise.reject('Permission denied: ' + result.receive);
       }
     }).then(function() {
       // Add event listeners
       pushPlugin.addListener('registration', function(token) {
-        console.log('Push registration success, token: ' + token.value);
         PushNotifications.currentToken = token.value;
         PushNotifications.sendTokenToServer(token.value);
-        showToast('Push notifications enabled successfully!', 'success');
       });
 
       pushPlugin.addListener('registrationError', function(error) {
@@ -144,34 +118,27 @@ var PushNotifications = {
         var errorMsg = 'Push notification setup failed';
         if (error.error && error.error.includes('FIS_AUTH_ERROR')) {
           errorMsg = 'Firebase configuration needed for push notifications';
-          console.log('FIS_AUTH_ERROR detected - Firebase project not properly configured');
         } else if (error.error) {
           errorMsg = error.error;
         }
-        showToast(errorMsg, 'warning');
       });
 
       pushPlugin.addListener('pushNotificationReceived', function(notification) {
-        console.log('Push notification received: ' + JSON.stringify(notification));
         PushNotifications.handleNotification(notification);
       });
 
       pushPlugin.addListener('pushNotificationActionPerformed', function(notification) {
-        console.log('Push notification action performed: ' + JSON.stringify(notification));
         PushNotifications.handleNotificationAction(notification);
       });
 
       PushNotifications.isInitialized = true;
-      console.log('Push notifications listeners initialized successfully');
       
     }).catch(function(error) {
       console.error('Error initializing push notifications: ' + JSON.stringify(error));
       
       // Handle specific Firebase errors gracefully
       if (error.includes && error.includes('FIS_AUTH_ERROR')) {
-        showToast('In-app notifications active (Firebase setup needed for push)', 'info');
       } else if (!error.includes('Permission denied')) {
-        showToast('Push setup incomplete - in-app notifications will work', 'warning');
       }
     });
   },
@@ -179,12 +146,10 @@ var PushNotifications = {
   sendTokenToServer: function(token) {
     if (!token || !currentUser.id) return;
     
-    console.log('Sending FCM token to server for user: ' + currentUser.id);
     saveFcmToken(token);
   },
 
   handleNotification: function(notification) {
-    console.log('Handling received notification:', notification);
     
     // Show toast notification in app
     var title = notification.title || 'Autoride';
@@ -205,7 +170,6 @@ var PushNotifications = {
   },
 
   handleNotificationAction: function(notification) {
-    console.log('Handling notification action:', notification);
     
     // Handle notification tap - could navigate to specific page
     var data = notification.notification && notification.notification.data;
@@ -989,13 +953,11 @@ function initApp() {
 
   // Initialize Google Auth as early as possible on cold start
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-    console.log('[GoogleAuth] Initializing immediately in initApp');
     window.Capacitor.Plugins.GoogleAuth.initialize({
       clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true
     }).then(function() {
-      console.log('[GoogleAuth] Initialized successfully in initApp');
     }).catch(function(err) {
       console.error('[GoogleAuth] Initialization error in initApp:', err);
     });
@@ -1065,13 +1027,11 @@ document.addEventListener('deviceready', function() {
   
   // Initialize Google Auth with explicit configuration
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-            console.log('Google Auth plugin available - initializing with config');
             window.Capacitor.Plugins.GoogleAuth.initialize({
       clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true
     }).then(function() {
-      console.log('[GoogleAuth] Initialized successfully');
     }).catch(function(err) {
       console.error('[GoogleAuth] Initialization error:', err);
             });
@@ -1204,7 +1164,6 @@ function handleBackButton() {
       // Foreground resumption - check status when app returns from background (user finished checkout and switched back)
       window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
         if (state.isActive) {
-          console.log('App resumed, checking active payment status...');
           var paymentOverlay = document.getElementById('page-payment');
           if (paymentOverlay && (paymentOverlay.style.display === 'block' || paymentOverlay.classList.contains('active'))) {
             // Find wait overlay button data
@@ -1217,7 +1176,6 @@ function handleBackButton() {
                 var bookingId = parseInt(match[1]);
                 var amount = parseFloat(match[2]);
                 var method = match[3];
-                console.log('Detected active payment waiting for booking #' + bookingId + ', auto verifying...');
                 autoCheckPaymentStatus(bookingId, amount, method);
               }
             }
@@ -1386,16 +1344,13 @@ function doGoogleLogin() {
     showLoading(true);
     var initPromise = Promise.resolve();
     if (!window._googleAuthInitialized) {
-      console.log('[GoogleAuth] Not initialized yet, initializing on demand...');
       initPromise = GoogleAuthPlugin.initialize({
         clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true
       }).then(function() {
         window._googleAuthInitialized = true;
-        console.log('[GoogleAuth] Initialized successfully on demand');
       }).catch(function(e) {
-        console.log('[GoogleAuth] Initialized error on demand: ' + e);
       });
     }
 
@@ -2707,7 +2662,7 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick=" closeOverlay(\'page-booking-form\');  if(currentVehicleDetail){ openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); } else {}"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
@@ -3490,7 +3445,6 @@ function showPaymentWaiting(bookingId, amount, method) {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     // Auto-check when user closes the browser (back button or done)
     window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
-      console.log('Browser closed, auto-checking payment status for booking #' + bookingId);
       autoCheckPaymentStatus(bookingId, amount, method);
     }).then(function(listener) {
       window._browserFinishedListener = listener;
@@ -4755,17 +4709,14 @@ function _viewRefundProof(url) {
   var img = document.getElementById('_refundProofImg');
   var statusEl = document.getElementById('_refundProofStatus');
   
-  console.log('Loading refund proof image from:', url);
   
   // Simple direct image loading - no fetch, no CORS issues
   img.onload = function() {
-    console.log('Image loaded successfully');
     img.style.display = 'block';
     statusEl.style.display = 'none';
   };
   
   img.onerror = function() {
-    console.log('Image load failed');
     statusEl.innerHTML = '<span style="color:#ef4444;">Could not load image.</span><br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;text-decoration:underline;">Open in browser</a>';
   };
   
@@ -5422,33 +5373,26 @@ function handleLicenseFileSelect(e, side) {
 }
 
 function loadLicenseDetailsForEdit() {
-  console.log('loadLicenseDetailsForEdit() called');
   if (!currentUser.id) return;
   apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(response) {
-      console.log('License details for edit response:', response);
       
       // Handle the API response structure - license data is in the 'data' property
       var data = response && response.data ? response.data : response;
-      console.log('Extracted license data for edit:', data);
       
       if (!data || !data.license_number) {
-        console.log('No license data found for editing');
         return;
       }
       
-      console.log('Populating edit form with license data...');
       var el;
       el = document.getElementById('editLicenseNumber'); 
       if (el) { 
         el.value = data.license_number || '';
-        console.log('Set license number:', el.value);
       }
       
       el = document.getElementById('editLicenseExpiry'); 
       if (el) { 
         el.value = data.expiry_date || '';
-        console.log('Set expiry date:', el.value);
       }
       
       // For select dropdowns, try exact match first, then partial match
@@ -5456,7 +5400,6 @@ function loadLicenseDetailsForEdit() {
       if (el) {
         var countryVal = data.issuing_country_state || '';
         el.value = countryVal;
-        console.log('Set country:', countryVal);
         if (!el.value && countryVal) {
           // Try partial match (e.g. "Ph" -> "Philippines")
           for (var i = 0; i < el.options.length; i++) {
@@ -5471,7 +5414,6 @@ function loadLicenseDetailsForEdit() {
       if (el) {
         var classVal = data.license_class || '';
         el.value = classVal;
-        console.log('Set class:', classVal);
         if (!el.value && classVal) {
           // Try matching just the letter (e.g. "B" -> "B")
           for (var j = 0; j < el.options.length; j++) {
@@ -5485,32 +5427,27 @@ function loadLicenseDetailsForEdit() {
       el = document.getElementById('editLicenseName'); 
       if (el) { 
         el.value = data.full_name || '';
-        console.log('Set name:', el.value);
       }
       
       el = document.getElementById('editLicenseDob'); 
       if (el) { 
         el.value = data.date_of_birth || '';
-        console.log('Set date of birth:', el.value);
       }
       
       el = document.getElementById('editLicenseEmName'); 
       if (el) { 
         el.value = data.emergency_contact_name || '';
-        console.log('Set emergency contact name:', el.value);
       }
       
       el = document.getElementById('editLicenseEmPhone'); 
       if (el) { 
         el.value = data.emergency_contact_phone || '';
-        console.log('Set emergency contact phone:', el.value);
       }
       
       el = document.getElementById('editLicenseEmRel');
       if (el) {
         var relVal = data.emergency_contact_relationship || '';
         el.value = relVal;
-        console.log('Set emergency contact relationship:', relVal);
         if (!el.value && relVal) {
           for (var k = 0; k < el.options.length; k++) {
             if (el.options[k].value.toLowerCase() === relVal.toLowerCase()) {
@@ -5524,17 +5461,12 @@ function loadLicenseDetailsForEdit() {
       var frontUrl = data.license_front_url || data.license_image_url || '';
       var backUrl = data.license_back_url || '';
       
-      console.log('Edit form using fallback pattern:');
-      console.log('- Front URL (with fallback):', frontUrl);
-      console.log('- Back URL:', backUrl);
-      console.log('- Fallback license_image_url:', data.license_image_url);
       
       if (frontUrl && frontUrl !== 'null' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
         var prevF = document.getElementById('licenseEditPreviewFront');
         if (prevF) { 
           prevF.src = buildImgUrl(frontUrl); 
           prevF.style.display = 'block';
-          console.log('Set front image preview using fallback:', buildImgUrl(frontUrl));
         }
       }
       if (backUrl && backUrl !== 'null' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
@@ -5542,11 +5474,9 @@ function loadLicenseDetailsForEdit() {
         if (prevB) { 
           prevB.src = buildImgUrl(backUrl); 
           prevB.style.display = 'block';
-          console.log('Set back image preview:', buildImgUrl(backUrl));
         }
       }
       
-      console.log('License edit form populated successfully');
     })
     .catch(function(err) { 
       console.error('Failed to load license details for edit:', err);
@@ -5570,9 +5500,6 @@ function closeLicensePreview() {
 }
 
 function loadProfile() {
-  console.log('loadProfile() called');
-  console.log('currentUser:', currentUser);
-  console.log('currentUser.id:', currentUser.id);
   
   if (!currentUser || !currentUser.id) {
     console.warn('No currentUser.id available for loadProfile');
@@ -5584,10 +5511,8 @@ function loadProfile() {
   // Load license details from new table with enhanced error handling
   var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(data) {
-      console.log('License details API response:', data);
       // Handle the API response structure - license data is in the 'data' property
       var licenseData = data && data.data ? data.data : {};
-      console.log('Extracted license data:', licenseData);
       return licenseData;
     })
     .catch(function(err) { 
@@ -5653,7 +5578,6 @@ function loadProfile() {
       // License images thumbnail (with admin mobile fallback pattern)
       var licenseThumb = document.getElementById('profileLicenseThumb');
       if (licenseThumb) {
-        console.log('Setting up license thumbnails with data:', licenseData);
         var html = '';
         
         // Use admin mobile fallback pattern: license_front_url || license_image_url || ''
@@ -5663,9 +5587,6 @@ function loadProfile() {
         frontUrl = frontUrl ? buildImgUrl(frontUrl) : null;
         backUrl = backUrl ? buildImgUrl(backUrl) : null;
         
-        console.log('License front URL (with fallback):', frontUrl);
-        console.log('License back URL:', backUrl);
-        console.log('Fallback license_image_url:', licenseData.license_image_url);
         
         if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
           html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
@@ -5701,89 +5622,67 @@ function loadProfile() {
         }
         
         licenseThumb.innerHTML = html;
-        console.log('License thumbnails HTML set with error handling');
       }
 
       // License detail fields - view mode (from new license_details table)
-      console.log('Populating license view fields with data:', licenseData);
-      console.log('Available license data keys:', Object.keys(licenseData));
       
       var el;
       el = document.getElementById('viewLicenseNumber');
       if (el) {
         el.textContent = licenseData.license_number || '-';
-        console.log('License number set to:', el.textContent);
       } else {
-        console.log('viewLicenseNumber element not found');
       }
       
       el = document.getElementById('viewLicenseExpiry');
       if (el) {
         el.textContent = licenseData.expiry_date || '-';
-        console.log('License expiry set to:', el.textContent);
       } else {
-        console.log('viewLicenseExpiry element not found');
       }
       
       el = document.getElementById('viewLicenseClass');
       if (el) {
         el.textContent = licenseData.license_class || '-';
-        console.log('License class set to:', el.textContent);
       } else {
-        console.log('viewLicenseClass element not found');
       }
       
       el = document.getElementById('viewLicenseCountry');
       if (el) {
         el.textContent = licenseData.issuing_country_state || '-';
-        console.log('License country set to:', el.textContent);
       } else {
-        console.log('viewLicenseCountry element not found');
       }
       
       el = document.getElementById('viewLicenseName');
       if (el) {
         el.textContent = licenseData.full_name || '-';
-        console.log('License name set to:', el.textContent);
       } else {
-        console.log('viewLicenseName element not found');
       }
       
       el = document.getElementById('viewLicenseDob');
       if (el) {
         el.textContent = licenseData.date_of_birth || '-';
-        console.log('License DOB set to:', el.textContent);
       } else {
-        console.log('viewLicenseDob element not found');
       }
       
       el = document.getElementById('viewLicenseEmName');
       if (el) {
         el.textContent = licenseData.emergency_contact_name || '-';
-        console.log('Emergency contact name set to:', el.textContent);
       } else {
-        console.log('viewLicenseEmName element not found');
       }
       
       el = document.getElementById('viewLicenseEmPhone');
       if (el) {
         el.textContent = licenseData.emergency_contact_phone || '-';
-        console.log('Emergency contact phone set to:', el.textContent);
       } else {
-        console.log('viewLicenseEmPhone element not found');
       }
       
       el = document.getElementById('viewLicenseEmRel');
       if (el) {
         el.textContent = licenseData.emergency_contact_relationship || '-';
-        console.log('Emergency contact relationship set to:', el.textContent);
       } else {
-        console.log('viewLicenseEmRel element not found');
       }
       
       // Show message if no license details exist
       if (!licenseData.license_number && !licenseData.full_name) {
-        console.log('No license data found, showing empty state');
         var licenseCard = document.getElementById('viewLicenseNumber');
         if (licenseCard && licenseCard.closest('.card')) {
           var infoMsg = licenseCard.closest('.card').querySelector('.no-license-info');
@@ -6238,7 +6137,6 @@ var LiveChat = (function () {
 
         if (!admins || !admins.length) {
           // Default to admin_id=20 if no admins returned
-          console.log('[LiveChat] No admins returned, using default admin_id=20');
           admins = [{ id: 20, username: 'Support Team' }];
         }
 
@@ -6298,13 +6196,9 @@ var LiveChat = (function () {
 
   function fetchMessages(initial) {
     if (!_currentAdminId || !currentUser.id) return;
-    console.log('[LiveChat] Fetching messages: user_id=' + currentUser.id + ', admin_id=' + _currentAdminId);
     apiCall('/chat/messages?user_id=' + currentUser.id + '&admin_id=' + _currentAdminId + '&limit=100')
       .then(function (msgs) {
-        console.log('[LiveChat] Received ' + (msgs ? msgs.length : 0) + ' messages');
         if (msgs && msgs.length > 0) {
-          console.log('[LiveChat] First message:', JSON.stringify(msgs[0]));
-          console.log('[LiveChat] Last message:', JSON.stringify(msgs[msgs.length - 1]));
         }
         
         var container = document.getElementById('lcMessages');
@@ -6315,9 +6209,7 @@ var LiveChat = (function () {
           return;
         }
         var latestId = msgs[msgs.length - 1].id;
-        console.log('[LiveChat] Latest ID: ' + latestId + ', Last ID: ' + _lastMsgId);
         if (String(latestId) === String(_lastMsgId) && !initial) {
-          console.log('[LiveChat] Skipping update - same message ID');
           return;
         }
 
@@ -6332,7 +6224,6 @@ var LiveChat = (function () {
         }
 
         var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
-        console.log('[LiveChat] Rendering ' + msgs.length + ' messages');
         container.innerHTML = msgs.map(function (m) {
           var isMe = m.sender_type === 'user';
           var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -6531,7 +6422,6 @@ function escapeHtml(str) {
 
 // Also initialize when Capacitor is ready (for native apps) - but only if user is logged in
 document.addEventListener('deviceready', function() {
-  console.log('Capacitor device ready, checking push notifications...');
   setTimeout(function() {
     try {
       // Only init push if user is already logged in (returning user)
@@ -6539,14 +6429,11 @@ document.addEventListener('deviceready', function() {
         var pushPlugin = getPushNotifications();
         if (pushPlugin) {
           PushNotifications.init().catch(function(error) {
-            console.log('Push notifications init failed: ' + error);
           });
         }
       } else {
-        console.log('No logged in user - skipping push notification init on deviceready');
       }
     } catch (error) {
-      console.log('Push notification deviceready check failed safely: ' + error);
     }
   }, 500);
 });
@@ -6555,15 +6442,11 @@ document.addEventListener('deviceready', function() {
 function initializePushForUser() {
   try {
     if (currentUser.id && PushNotifications.currentToken) {
-      console.log('Re-registering FCM token for logged in user: ' + currentUser.id);
       PushNotifications.sendTokenToServer(PushNotifications.currentToken);
     } else if (currentUser.id) {
-      console.log('User logged in, initializing push notifications...');
       PushNotifications.init().catch(function(error) {
-        console.log('Push init after login failed (normal without Firebase): ' + error);
       });
     }
   } catch (error) {
-    console.log('Push initialization for user failed safely: ' + error);
   }
 }

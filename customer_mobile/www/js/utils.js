@@ -73,7 +73,7 @@ function isValidLastFour(s) {
 function formatPHP(value) {
   // Ensure value is a valid number, default to 0 if not
   const num = (value !== null && value !== undefined && !isNaN(Number(value))) ? Number(value) : 0;
-  return 'PHP ' + num.toLocaleString('en-PH', {
+  return '&#8369;' + num.toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
@@ -342,7 +342,6 @@ function compressImage(file, maxW, maxH, quality) {
               type: 'image/jpeg',
               lastModified: Date.now()
             });
-            console.log('Compressed image from ' + (file.size / 1024 / 1024).toFixed(2) + 'MB to ' + (compressedFile.size / 1024).toFixed(2) + 'KB');
             resolve(compressedFile);
           } else {
             resolve(file);
