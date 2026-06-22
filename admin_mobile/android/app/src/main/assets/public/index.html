@@ -724,7 +724,7 @@
             align-items: flex-end;
         }
         #inspectionModal .modal-content {
-            background: var(--surface-solid, #1e293b);
+            background: #ffffff;
             border-radius: 24px 24px 0 0;
             max-height: 92vh;
             width: 100%;
@@ -2136,12 +2136,12 @@
         </div>
     </div>    <!-- INSPECTION MODAL -->
     <div id="inspectionModal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; background: var(--bg-card); border-top: 1px solid var(--border);">
-            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, var(--surface), var(--surface-container)); border-bottom: 1px solid var(--border); position: relative; flex-shrink: 0;">
-                <div style="width: 40px; height: 4px; background: var(--border); border-radius: 10px; margin: -6px auto 12px;"></div>
-                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-main);">Vehicle Inspection</h3>
-                <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: var(--text-muted);">Documenting vehicle condition</p>
-                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; background: #ffffff; border-top: 1px solid var(--border);">
+            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, #00B14F, #007a35); border-bottom: 1px solid rgba(0,177,79,0.15); position: relative; flex-shrink: 0;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 10px; margin: -6px auto 12px;"></div>
+                <h3 id="inspectTitle" style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #ffffff;">Vehicle Inspection</h3>
+                <p id="inspectSubtitle" style="margin: 5px 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.8);">Documenting vehicle condition</p>
+                <button onclick="document.getElementById('inspectionModal').style.display='none';modalClose()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-times"></i></button>
             </div>
             
             <form id="inspectionForm" onsubmit="Inspections.submit(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
@@ -2163,11 +2163,11 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
-                        <input type="number" id="inspectMileage" placeholder="0" required style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-weight: 600;">
+                        <input type="number" id="inspectMileage" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fuel Level</label>
-                        <select id="inspectFuel" style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-weight: 600;">
+                        <select id="inspectFuel" style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
                             <option value="Full">Full</option>
                             <option value="3/4">3/4</option>
                             <option value="1/2">1/2</option>
@@ -2189,7 +2189,7 @@
 
                 <div style="margin-bottom: 25px;">
                     <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Notes / Issues</label>
-                    <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleanness issues..." style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; height: 80px; resize: none;"></textarea>
+                    <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleanness issues..." style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
                 </div>
 
                 <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,177,79,0.4); margin-bottom: 20px;">
@@ -7112,6 +7112,40 @@ async edit(id) { this.openModal(id); }
         openModal(bookingId, type) {
             const b = Bookings.data.find(x => x.id === bookingId);
             if (!b) return;
+
+            // ── Frontend Guard: Pickup date not yet reached ────────────────
+            if (type === 'pickup') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const pickupDate = b.start_date ? new Date(b.start_date) : null;
+                if (pickupDate) pickupDate.setHours(0, 0, 0, 0);
+
+                if (pickupDate && today < pickupDate) {
+                    const opts = { year: 'numeric', month: 'long', day: 'numeric' };
+                    const fmtDate = pickupDate.toLocaleDateString('en-PH', opts);
+                    const diffMs = pickupDate - today;
+                    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                    showNotification(
+                        `Cannot do pickup inspection yet. Scheduled pickup is on ${fmtDate} (${daysLeft} day${daysLeft !== 1 ? 's' : ''} from today).`,
+                        'error'
+                    );
+                    return;
+                }
+
+                // ── Frontend Guard: Same car already picked up ─────────────
+                const sameCarActive = Bookings.data.find(x =>
+                    x.id !== bookingId &&
+                    x.vehicle_id === b.vehicle_id &&
+                    (x.status?.toLowerCase() === 'picked up' || x.status?.toLowerCase() === 'ongoing')
+                );
+                if (sameCarActive) {
+                    showNotification(
+                        `This vehicle is currently in use by Booking #${sameCarActive.id} (${sameCarActive.customer_name || 'another customer'}). It must be returned first.`,
+                        'error'
+                    );
+                    return;
+                }
+            }
 
             // Reset first, then set values (order matters!)
             document.getElementById('inspectionForm').reset();

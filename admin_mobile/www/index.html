@@ -7113,6 +7113,40 @@ async edit(id) { this.openModal(id); }
             const b = Bookings.data.find(x => x.id === bookingId);
             if (!b) return;
 
+            // ── Frontend Guard: Pickup date not yet reached ────────────────
+            if (type === 'pickup') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const pickupDate = b.start_date ? new Date(b.start_date) : null;
+                if (pickupDate) pickupDate.setHours(0, 0, 0, 0);
+
+                if (pickupDate && today < pickupDate) {
+                    const opts = { year: 'numeric', month: 'long', day: 'numeric' };
+                    const fmtDate = pickupDate.toLocaleDateString('en-PH', opts);
+                    const diffMs = pickupDate - today;
+                    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                    showNotification(
+                        `Cannot do pickup inspection yet. Scheduled pickup is on ${fmtDate} (${daysLeft} day${daysLeft !== 1 ? 's' : ''} from today).`,
+                        'error'
+                    );
+                    return;
+                }
+
+                // ── Frontend Guard: Same car already picked up ─────────────
+                const sameCarActive = Bookings.data.find(x =>
+                    x.id !== bookingId &&
+                    x.vehicle_id === b.vehicle_id &&
+                    (x.status?.toLowerCase() === 'picked up' || x.status?.toLowerCase() === 'ongoing')
+                );
+                if (sameCarActive) {
+                    showNotification(
+                        `This vehicle is currently in use by Booking #${sameCarActive.id} (${sameCarActive.customer_name || 'another customer'}). It must be returned first.`,
+                        'error'
+                    );
+                    return;
+                }
+            }
+
             // Reset first, then set values (order matters!)
             document.getElementById('inspectionForm').reset();
             this.currentPhotos = [];

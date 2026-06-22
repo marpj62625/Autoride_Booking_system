@@ -5009,11 +5009,40 @@ def submit_inspection():
 
         if inspection_type == 'pickup':
 
+            # ── Guard 1: pickup date not yet reached ──────────────────────
+            cur.execute("SELECT start_date, vehicle_id FROM bookings WHERE id = %s", (booking_id,))
+            bk = cur.fetchone()
+            if not bk:
+                return jsonify({"error": "Booking not found."}), 404
+
+            from datetime import date as _date
+            today = _date.today()
+            pickup_date = bk['start_date']
+            if hasattr(pickup_date, 'date'):
+                pickup_date = pickup_date.date()
+            if today < pickup_date:
+                days_left = (pickup_date - today).days
+                return jsonify({
+                    "error": f"Pickup inspection cannot be done yet. The customer's scheduled pickup date is {pickup_date.strftime('%B %d, %Y')} ({days_left} day(s) from today)."
+                }), 409
+
+            # ── Guard 2: same vehicle already picked up by another booking ─
+            vehicle_id = bk['vehicle_id']
+            cur.execute("""
+                SELECT id FROM bookings
+                WHERE vehicle_id = %s
+                  AND id != %s
+                  AND LOWER(status) IN ('picked up', 'ongoing')
+            """, (vehicle_id, booking_id))
+            conflict = cur.fetchone()
+            if conflict:
+                return jsonify({
+                    "error": f"This vehicle is currently in use by Booking #{conflict['id']}. It must be returned first before it can be picked up for another booking."
+                }), 409
+
             # Mark booking as Picked Up and vehicle as Rented
-
             cur.execute("UPDATE bookings SET status = 'Picked Up' WHERE id = %s", (booking_id,))
-
-            cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)", (booking_id,))
+            cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (vehicle_id,))
 
         elif inspection_type == 'return':
 
