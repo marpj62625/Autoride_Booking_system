@@ -204,11 +204,65 @@ def start_deadline_monitor():
                     if exists:
                         from services.extension_service import check_expired_deadlines
                         check_expired_deadlines()
+
+                    # ── Check for no-show alerts (2hrs past pickup, still Confirmed/Approved, not yet notified) ──
+                    try:
+                        from datetime import datetime, timezone, timedelta
+                        from psycopg.rows import dict_row
+                        PH = timezone(timedelta(hours=8))
+                        now_ph = datetime.now(tz=PH)
+
+                        # We run a separate query with dict_row or manual fetch to get bookings
+                        # Select Confirmed/Approved bookings where no_show_notified_at is null
+                        cur.close()
+                        cur = conn.cursor(row_factory=dict_row)
+                        cur.execute("""
+                            SELECT id, start_date, pickup_time, customer_name
+                            FROM bookings
+                            WHERE status IN ('Confirmed', 'Approved')
+                              AND no_show_notified_at IS NULL
+                        """)
+                        active_bookings = cur.fetchall()
+
+                        for bk in active_bookings:
+                            pickup_date = bk['start_date']
+                            if hasattr(pickup_date, 'date'):
+                                pickup_date = pickup_date.date()
+                            pickup_time_str = bk.get('pickup_time') or '06:00'
+                            try:
+                                ph_hour, ph_min = map(int, pickup_time_str.split(':'))
+                            except Exception:
+                                ph_hour, ph_min = 6, 0
+
+                            pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
+                            deadline_dt = pickup_dt + timedelta(hours=2)
+
+                            if now_ph >= deadline_dt:
+                                # Trigger alert!
+                                print(f"[MONITOR] Booking #{bk['id']} is 2 hours past pickup time. Alerting admins.")
+                                from notifications import notification_service
+                                try:
+                                    notification_service.notify_admins_inapp(
+                                        f"⚠️ No Show Alert: Booking #{bk['id']}",
+                                        f"Customer '{bk['customer_name']}' has not shown up. Scheduled pickup was {pickup_date} at {pickup_time_str}. Please mark as No Show.",
+                                        "no_show_alert"
+                                    )
+                                except Exception as n_err:
+                                    print(f"Failed to send admin no-show alert push: {n_err}")
+
+                                # Update notified status
+                                # Use a raw cursor or connection to execute UPDATE
+                                cur.execute("UPDATE bookings SET no_show_notified_at = NOW() WHERE id = %s", (bk['id'],))
+                                conn.commit()
+                    except Exception as ns_err:
+                        print("Deadline monitor thread no-show check failed:", ns_err)
+
                 except Exception as e:
                     print("Deadline monitor thread table check failed:", e)
                 finally:
                     if conn:
                         release_connection(conn)
+
             except Exception as e:
                 print("Deadline monitor thread error:", e)
             time.sleep(3600)  # Check every 1 hour
@@ -699,11 +753,26 @@ def migrate_google_auth_columns():
     finally:
         if 'cur' in locals(): cur.close()
 
+
+def migrate_no_show_column():
+    """Ensures no_show_notified_at column exists in the bookings table for no show email/push alerts tracking."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS no_show_notified_at TIMESTAMPTZ")
+        commit_db()
+        print("[MIGRATION] migrate_no_show_column completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_no_show_column error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 try:
     with app.app_context():
         migrate_google_auth_columns()
+        migrate_no_show_column()
 except Exception as _e:
     pass
+
 
 
 
@@ -4915,6 +4984,87 @@ def approve_booking(booking_id):
 
 
 
+@app.route('/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
+def mark_no_show(booking_id):
+    """Mark a booking as No Show. Full forfeit if Paid; cancel if Unpaid."""
+    try:
+        from datetime import datetime, timezone, timedelta
+        PH = timezone(timedelta(hours=8))
+        now_ph = datetime.now(tz=PH)
+
+        cur = get_cursor()
+        cur.execute("""
+            SELECT b.id, b.status, b.payment_status, b.vehicle_id, b.user_id,
+                   b.start_date, b.pickup_time, b.customer_name
+            FROM bookings b WHERE b.id = %s
+        """, (booking_id,))
+        bk = cur.fetchone()
+        if not bk:
+            return jsonify({"error": "Booking not found."}), 404
+
+        st = (bk['status'] or '').lower()
+        if st not in ('confirmed', 'approved'):
+            return jsonify({"error": f"Cannot mark as No Show — booking status is '{bk['status']}'."}), 409
+
+        # Verify pickup time has already passed
+        pickup_date = bk['start_date']
+        if hasattr(pickup_date, 'date'):
+            pickup_date = pickup_date.date()
+        pickup_time_str = bk.get('pickup_time') or '06:00'
+        try:
+            ph_hour, ph_min = map(int, pickup_time_str.split(':'))
+        except Exception:
+            ph_hour, ph_min = 6, 0
+        pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
+        if now_ph < pickup_dt:
+            fmt = pickup_dt.strftime('%B %d, %Y at %I:%M %p')
+            return jsonify({"error": f"Cannot mark as No Show before the scheduled pickup time ({fmt})."}), 409
+
+        # Mark booking as No Show
+        cur.execute("UPDATE bookings SET status = 'No Show' WHERE id = %s", (booking_id,))
+
+        # Release vehicle
+        if bk['vehicle_id']:
+            cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (bk['vehicle_id'],))
+
+        # Refund policy: Paid → full forfeit (keep Paid), Unpaid → set to Cancelled
+        if (bk['payment_status'] or '').lower() not in ('paid',):
+            cur.execute("UPDATE bookings SET payment_status = 'Cancelled' WHERE id = %s", (booking_id,))
+
+        commit_db()
+
+        # Notify customer in-app
+        if bk['user_id']:
+            try:
+                notification_service.notify_user(
+                    bk['user_id'],
+                    "Booking Marked as No Show",
+                    f"Your booking #{booking_id} has been marked as No Show because you did not arrive at the scheduled pickup time. "
+                    + ("Your payment has been forfeited per our no-show policy." if (bk['payment_status'] or '').lower() == 'paid' else "No charge was applied."),
+                    'no_show'
+                )
+            except Exception as n_err:
+                print(f"[mark_no_show] customer notify error: {n_err}")
+
+        # Notify all admins in-app
+        try:
+            notification_service.notify_admins_inapp(
+                f"🚫 No Show: Booking #{booking_id}",
+                f"Booking #{booking_id} for '{bk['customer_name']}' has been marked as No Show by admin.",
+                'no_show_alert'
+            )
+        except Exception as n_err:
+            print(f"[mark_no_show] admin notify error: {n_err}")
+
+        return jsonify({"message": "Booking marked as No Show.", "booking_id": booking_id}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 @app.route('/inspections/submit', methods=['POST'])
 
 def submit_inspection():
@@ -5009,22 +5159,36 @@ def submit_inspection():
 
         if inspection_type == 'pickup':
 
-            # ── Guard 1: pickup date not yet reached ──────────────────────
-            cur.execute("SELECT start_date, vehicle_id FROM bookings WHERE id = %s", (booking_id,))
+            # ── Guard 1: pickup datetime not yet reached (allow 1 hour before) ──
+            cur.execute("SELECT start_date, pickup_time, vehicle_id FROM bookings WHERE id = %s", (booking_id,))
             bk = cur.fetchone()
             if not bk:
                 return jsonify({"error": "Booking not found."}), 404
 
-            from datetime import date as _date
-            today = _date.today()
+            from datetime import datetime, timezone, timedelta
+            PH = timezone(timedelta(hours=8))
+            now_ph = datetime.now(tz=PH)
+
             pickup_date = bk['start_date']
             if hasattr(pickup_date, 'date'):
                 pickup_date = pickup_date.date()
-            if today < pickup_date:
-                days_left = (pickup_date - today).days
+
+            pickup_time_str = bk.get('pickup_time') or '06:00'
+            try:
+                ph_hour, ph_min = map(int, pickup_time_str.split(':'))
+            except Exception:
+                ph_hour, ph_min = 6, 0
+
+            pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
+            allow_from = pickup_dt - timedelta(hours=1)
+
+            if now_ph < allow_from:
+                fmt_time = pickup_dt.strftime('%I:%M %p')
+                fmt_allow = allow_from.strftime('%I:%M %p')
                 return jsonify({
-                    "error": f"Pickup inspection cannot be done yet. The customer's scheduled pickup date is {pickup_date.strftime('%B %d, %Y')} ({days_left} day(s) from today)."
+                    "error": f"Pickup inspection can be done starting at {fmt_allow} (1 hour before scheduled pickup on {pickup_dt.strftime('%B %d, %Y')} at {fmt_time})."
                 }), 409
+
 
             # ── Guard 2: same vehicle already picked up by another booking ─
             vehicle_id = bk['vehicle_id']
@@ -5068,7 +5232,9 @@ def submit_inspection():
 
 
 
-@app.route('/inspections/<int:booking_id>', methods=['GET'])
+
+
+
 
 def get_inspections(booking_id):
 

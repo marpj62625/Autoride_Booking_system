@@ -4159,6 +4159,7 @@ async edit(id) { this.openModal(id); }
                                      style="flex:1; min-width:110px; padding:10px 8px; background:${b.payment_status === 'Paid' ? 'var(--amber,#f59e0b)' : '#94a3b8'}; color:white; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:${b.payment_status === 'Paid' ? 'pointer' : 'not-allowed'}; opacity:${b.payment_status === 'Paid' ? '1' : '0.6'};">
                                      <i class="fas fa-search-plus" style="margin-right:4px;"></i>Pickup Inspect
                                  </button>
+                                 ${Bookings.isPickupPast(b) ? `<button onclick="Bookings.markNoShow(${b.id})" style="flex:1; min-width:110px; padding:10px 8px; background:#ef4444; color:#fff; border:none; border-radius:10px; font-size:0.75rem; font-weight:800; cursor:pointer;"><i class="fas fa-user-slash" style="margin-right:4px;"></i>No Show</button>` : ''}
                             ` : ''}
 
                             ${(b.status?.toLowerCase() === 'picked up' || b.status?.toLowerCase() === 'ongoing') ? `
@@ -4196,6 +4197,7 @@ async edit(id) { this.openModal(id); }
                 'completed': { bg:'#d1fae5', color:'#065f46', border:'#6ee7b7' },
                 'cancelled': { bg:'#fee2e2', color:'#991b1b', border:'#fca5a5' },
                 'rejected':  { bg:'#fee2e2', color:'#991b1b', border:'#fca5a5' },
+                'no show':   { bg:'#f1f5f9', color:'#374151', border:'#9ca3af' },
             };
             const ss = statusStyles[(b.status||'').toLowerCase()] || { bg:'#f1f5f9', color:'#475569', border:'#cbd5e1' };
 
@@ -4224,6 +4226,9 @@ async edit(id) { this.openModal(id); }
             }
             if (st === 'confirmed' || st === 'approved') {
                 actionBtns += `<button onclick="${b.payment_status === 'Paid' ? `Inspections.openModal(${b.id},'pickup')` : 'showNotification(\'Booking must be fully paid before starting inspection\', \'error\')'}" style="flex:1;min-width:120px;padding:11px 10px;background:${b.payment_status === 'Paid' ? '#f59e0b' : '#94a3b8'};color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:${b.payment_status === 'Paid' ? 'pointer' : 'not-allowed'};opacity:${b.payment_status === 'Paid' ? '1' : '0.6'};display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-search-plus"></i>Pickup Inspect</button>`;
+                if (Bookings.isPickupPast(b)) {
+                    actionBtns += `<button onclick="Bookings.markNoShow(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#ef4444;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-user-slash"></i>No Show</button>`;
+                }
             }
             if (st === 'picked up' || st === 'ongoing') {
                 actionBtns += `<button onclick="Inspections.openModal(${b.id},'return')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-clipboard-check"></i>Return Inspect</button>`;
@@ -4498,6 +4503,34 @@ async edit(id) { this.openModal(id); }
                     const data = await res.json();
                     showNotification(data.error || 'Failed to cancel', 'error');
                 }
+            } catch (err) { showNotification('Network error', 'error'); }
+        },
+
+        // Returns true if the booking's pickup datetime has already passed
+        isPickupPast(b) {
+            if (!b || !b.start_date) return false;
+            const pt = b.pickup_time || '06:00';
+            const [h, m] = pt.split(':').map(Number);
+            const dt = new Date(b.start_date);
+            dt.setHours(h, m, 0, 0);
+            return new Date() >= dt;
+        },
+
+        async markNoShow(bookingId) {
+            if (!confirm('Mark this booking as No Show?\n\n⚠️ If the booking is PAID, the payment will be forfeited (0% refund).\nIf UNPAID, the booking will simply be cancelled.\n\nThis action cannot be undone.')) return;
+            try {
+                const res = await fetch(`${API_URL}/bookings/${bookingId}/mark-no-show`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotification(data.error || 'Failed to mark No Show', 'error');
+                    return;
+                }
+                showNotification('Booking marked as No Show.', 'success');
+                document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
+                this.refresh();
             } catch (err) { showNotification('Network error', 'error'); }
         },
 
@@ -7113,23 +7146,24 @@ async edit(id) { this.openModal(id); }
             const b = Bookings.data.find(x => x.id === bookingId);
             if (!b) return;
 
-            // ── Frontend Guard: Pickup date not yet reached ────────────────
+            // ── Frontend Guard: Pickup datetime not yet reached (allow 1 hour before) ──
             if (type === 'pickup') {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const pickupDate = b.start_date ? new Date(b.start_date) : null;
-                if (pickupDate) pickupDate.setHours(0, 0, 0, 0);
-
-                if (pickupDate && today < pickupDate) {
-                    const opts = { year: 'numeric', month: 'long', day: 'numeric' };
-                    const fmtDate = pickupDate.toLocaleDateString('en-PH', opts);
-                    const diffMs = pickupDate - today;
-                    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                    showNotification(
-                        `Cannot do pickup inspection yet. Scheduled pickup is on ${fmtDate} (${daysLeft} day${daysLeft !== 1 ? 's' : ''} from today).`,
-                        'error'
-                    );
-                    return;
+                const now = new Date();
+                const pickupTime = b.pickup_time || '06:00';
+                const [ph, pm] = pickupTime.split(':').map(Number);
+                const pickupDT = b.start_date ? new Date(b.start_date) : null;
+                if (pickupDT) {
+                    pickupDT.setHours(ph, pm, 0, 0);
+                    const allowFrom = new Date(pickupDT.getTime() - 60 * 60 * 1000); // 1 hour before
+                    if (now < allowFrom) {
+                        const fmtAllow = allowFrom.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+                        const fmtDate = pickupDT.toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+                        showNotification(
+                            `Cannot do pickup inspection yet. Allowed starting ${fmtAllow} (1 hour before scheduled pickup on ${fmtDate} at ${pickupDT.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}).`,
+                            'error'
+                        );
+                        return;
+                    }
                 }
 
                 // ── Frontend Guard: Same car already picked up ─────────────
