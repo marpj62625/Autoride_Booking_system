@@ -1015,6 +1015,37 @@ function initApp() {
   }
   // Clear stale booking session at every app start
   try { BookingSession.clear(); } catch(e) {}
+  // Smart App Banner & Download Promotion Detection
+  try {
+    var isNativeApp = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
+    var isMobileDevice = typeof navigator !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+    
+    if (!isNativeApp) {
+      // 1. More page card is visible on web
+      var moreCard = document.getElementById('moreDownloadAppCard');
+      if (moreCard) moreCard.style.display = 'flex';
+      
+      // 2. Smart top banner: only if they are on mobile device AND have not dismissed it
+      if (isMobileDevice) {
+        var sabDismissed = localStorage.getItem('sab_dismissed');
+        if (sabDismissed !== 'true') {
+          var banner = document.getElementById('smartAppBanner');
+          if (banner) banner.style.display = 'block';
+        }
+      }
+    }
+  } catch(e) {
+    console.error('Error initializing Smart App Banner:', e);
+  }
+
+  // Global dismiss function
+  window.dismissSmartAppBanner = function() {
+    var banner = document.getElementById('smartAppBanner');
+    if (banner) banner.style.display = 'none';
+    try {
+      localStorage.setItem('sab_dismissed', 'true');
+    } catch(e) {}
+  };
 
   Session.load().then(function(user) {
     if (user && user.id) {
