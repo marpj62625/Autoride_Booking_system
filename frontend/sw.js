@@ -21,8 +21,8 @@ const CORE_ASSETS = [
     '/chat.js',
     '/manifest.json',
     '/mobile.css',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
+    '/Autoride-logo-nobg.png',
+    '/Autoride-logo.png',
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
 
