@@ -1,0 +1,27 @@
+{
+    "name": "Autoride Admin",
+    "short_name": "Autoride Admin",
+    "description": "Premium Car Rental Admin Console — manage bookings, vehicles, inspections, and reports.",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#0f172a",
+    "theme_color": "#00B14F",
+    "icons": [
+        {
+            "src": "Autoride-logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "Autoride-logo-nobg.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "lang": "en",
+    "scope": "/",
+    "prefer_related_applications": false
+}

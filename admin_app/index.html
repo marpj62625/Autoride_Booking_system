@@ -23,6 +23,21 @@
 
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Autoride Admin">
+    <link rel="apple-touch-icon" href="Autoride-logo.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('[Admin PWA] Service Worker registered:', reg.scope))
+                    .catch(err => console.error('[Admin PWA] Service Worker registration failed:', err));
+            });
+        }
+    </script>
+
 
 
 
