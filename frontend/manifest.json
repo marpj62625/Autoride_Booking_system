@@ -2,7 +2,7 @@
     "name": "Autoride Car Rental",
     "short_name": "Autoride",
     "description": "Premium car rental service — browse vehicles, book rides, and manage your rentals on the go.",
-    "start_url": "/login.html",
+    "start_url": "/",
     "display": "standalone",
     "orientation": "portrait",
     "background_color": "#f8fafc",
