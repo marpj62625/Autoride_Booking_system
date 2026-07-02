@@ -31,7 +31,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('sw.js', { scope: '/admin_app/' })
                     .then(reg => console.log('[Admin PWA] Service Worker registered:', reg.scope))
                     .catch(err => console.error('[Admin PWA] Service Worker registration failed:', err));
             });
