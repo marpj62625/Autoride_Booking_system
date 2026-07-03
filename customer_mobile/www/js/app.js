@@ -5792,13 +5792,15 @@ function submitLicense() {
   if (!licenseBlob) { if (errEl) errEl.textContent = 'Please select a license image first.'; return; }
   
   showLoading(true);
-  compressImage(licenseBlob, 800, 800, 0.6)
+  compressImage(licenseBlob, 600, 600, 0.5)
     .then(function(compressedBlob) {
       var fd = new FormData();
       fd.append('user_id', currentUser.id);
       fd.append('license', compressedBlob, 'license.jpg');
       
-      return uploadFile('/user/upload-license', fd);
+      // Compress more aggressively to stay well under Vercel's 4.5 MB body limit
+      // and reduce upload time on slow mobile connections
+      return uploadFile('/user/upload-license', fd, 45000);
     })
     .then(function() {
       currentUser.isVerified = 1;
@@ -5812,8 +5814,14 @@ function submitLicense() {
       }, 2500);
     })
     .catch(function(err) {
-      if (errEl) errEl.textContent = err.message;
       showLoading(false);
+      var msg = err.message || 'Upload failed. Please try again.';
+      // Give a more helpful message for timeout/network errors
+      if (!err.status || err.status === 0) {
+        msg = 'Upload failed. Please check your internet connection and try again. If the problem continues, try using a smaller or clearer photo.';
+      }
+      if (errEl) errEl.textContent = msg;
+      showToast(msg, 'error');
     });
 }
 
