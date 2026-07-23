@@ -5444,37 +5444,17 @@ function handleLicenseFileSelect(e, side) {
         }
 
         // --- 3. Find Name on License ---
-        // Anchor search on the printed LTO labels: "Last Name", "First Name", "Middle Name"
+        // OCR output: "d DE RAMOS, XEDRIC YASONA" - may have 1-2 char prefix
+        // DON'T anchor to start of line - search pattern ANYWHERE in the line
         var lines = text.split('\n');
         var nameLine = '';
-        var labelLineIndex = -1;
 
         for (var i = 0; i < lines.length; i++) {
-          var upperLine = lines[i].toUpperCase();
-          if (upperLine.indexOf("LAST NAME") !== -1 || upperLine.indexOf("FIRST NAME") !== -1 || upperLine.indexOf("MIDDLE") !== -1) {
-            labelLineIndex = i;
-            break;
-          }
-        }
-
-        if (labelLineIndex !== -1) {
-          // The name is typically 1 to 3 lines below the label
-          for (var j = labelLineIndex + 1; j <= labelLineIndex + 3 && j < lines.length; j++) {
-            var cand = lines[j].trim();
-            // Reject if empty, contains numbers (address/dates), or contains field labels
-            if (cand.length > 5 && !/\d/.test(cand) && !/Nationality|Address|Sex|Date|Weight|Height/i.test(cand)) {
-              nameLine = cand;
-              break;
-            }
-          }
-        }
-
-        // Fallback: If label not found, look for any line with a comma, period, or semicolon, all-caps, no digits
-        if (!nameLine) {
-          for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            if (/^[A-Z\s]{2,}[,\.\;]\s*[A-Z\s]{2,}/.test(line) && line.length > 5 && line.length < 60 && !/\d/.test(line)) {
-              nameLine = line;
+          var line = lines[i].trim();
+          if (!/\d/.test(line)) {
+            var nameMatch = line.match(/([A-Z][A-Z\s]{2,}),\s*([A-Z][A-Z\s]{2,})/);
+            if (nameMatch && nameMatch[0].length > 8 && nameMatch[0].length < 60) {
+              nameLine = nameMatch[0].trim();
               break;
             }
           }
@@ -5486,26 +5466,29 @@ function handleLicenseFileSelect(e, side) {
           document.getElementById('editLicenseName').style.borderColor = "var(--success)";
         }
 
-        // --- 4. Find License Class (DL Codes: A, B, B1, B2, C, D, BE, etc.) ---
+        // --- 4. Find License Class (DL Codes) ---
+        // OCR reads "A" as "@". The code appears BEFORE the "DLcodes" label.
+        // Raw OCR: "@ DLcodes Conditions" → "@" is actually "A"
         var classVal = '';
-        // Tolerance for Tesseract misreading "DL CODES" as "DI CODES", "D1 CODES", "D| CODES"
-        var dlLabelRegex = /[D|1][L|I|1|\|]\s*CODES?/i;
-        var dlLabelMatch = text.match(dlLabelRegex);
-        
+        var normalizedText = text.replace(/@/g, 'A');
+        var dlLabelRegex = /[DdO][LlI1]\s*[Cc]odes?/i;
+        var dlLabelMatch = normalizedText.match(dlLabelRegex);
+
         if (dlLabelMatch) {
-          var dlIndex = text.indexOf(dlLabelMatch[0]);
-          var afterDl = text.substring(dlIndex).split(/EXPIRED|EXPIRY|DATE|LICENSE|CONDITIONS|SIGNATURE/i)[0];
-          var dlRegex = /\b([A-E][12]?|[1-8])\b/gi;
-          var matches = [];
-          var m;
-          while ((m = dlRegex.exec(afterDl)) !== null) {
-            var code = m[1].toUpperCase();
-            if (matches.indexOf(code) === -1) {
-              matches.push(code);
+          var dlIndex = normalizedText.indexOf(dlLabelMatch[0]);
+          var startSearch = Math.max(0, dlIndex - 25);
+          var searchArea = normalizedText.substring(startSearch).split(/CONDITIONS?|SIGNATURE|BLOOD\s*TYPE/i)[0];
+          var dlRegex = /\b([A-E][12]?|[1-8])\b/g;
+          var dlMatches = [];
+          var dlM;
+          while ((dlM = dlRegex.exec(searchArea)) !== null) {
+            var code = dlM[1].toUpperCase();
+            if (dlMatches.indexOf(code) === -1 && !/DL/i.test(searchArea.substring(Math.max(0, dlM.index-2), dlM.index+4))) {
+              dlMatches.push(code);
             }
           }
-          if (matches.length > 0) {
-            classVal = matches.join(', ');
+          if (dlMatches.length > 0) {
+            classVal = dlMatches.join(', ');
           }
         }
         if (classVal && document.getElementById('editLicenseClass')) {
