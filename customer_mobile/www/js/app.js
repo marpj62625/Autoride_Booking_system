@@ -5467,8 +5467,7 @@ function handleLicenseFileSelect(e, side) {
         }
 
         // --- 4. Find License Class (DL Codes) ---
-        // OCR reads "A" as "@". The code appears BEFORE the "DLcodes" label.
-        // Raw OCR: "@ DLcodes Conditions" → "@" is actually "A"
+        // OCR raw: "@ DLcodes Conditions" — "@" is OCR misread of "A", appears BEFORE the label
         var classVal = '';
         var normalizedText = text.replace(/@/g, 'A');
         var dlLabelRegex = /[DdO][LlI1]\s*[Cc]odes?/i;
@@ -5476,14 +5475,18 @@ function handleLicenseFileSelect(e, side) {
 
         if (dlLabelMatch) {
           var dlIndex = normalizedText.indexOf(dlLabelMatch[0]);
-          var startSearch = Math.max(0, dlIndex - 25);
-          var searchArea = normalizedText.substring(startSearch).split(/CONDITIONS?|SIGNATURE|BLOOD\s*TYPE/i)[0];
+          // The code is RIGHT BEFORE the label (within ~10 chars) — use tight window
+          var beforeLabel = normalizedText.substring(Math.max(0, dlIndex - 10), dlIndex);
+          var afterLabelRaw = normalizedText.substring(dlIndex + dlLabelMatch[0].length);
+          var afterLabel = afterLabelRaw.split(/[\n\r]|CONDITIONS?|SIGNATURE/i)[0];
+          var searchArea = beforeLabel + ' ' + afterLabel;
+
           var dlRegex = /\b([A-E][12]?|[1-8])\b/g;
           var dlMatches = [];
           var dlM;
           while ((dlM = dlRegex.exec(searchArea)) !== null) {
             var code = dlM[1].toUpperCase();
-            if (dlMatches.indexOf(code) === -1 && !/DL/i.test(searchArea.substring(Math.max(0, dlM.index-2), dlM.index+4))) {
+            if (dlMatches.indexOf(code) === -1) {
               dlMatches.push(code);
             }
           }

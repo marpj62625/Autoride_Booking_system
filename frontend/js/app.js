@@ -5568,29 +5568,28 @@ function handleLicenseFileSelect(e, side) {
         }
 
         // --- 4. Find License Class (DL Codes) ---
-        // OCR reads "A" as "@" and the code appears BEFORE the "DLcodes" label.
-        // Example raw text: "@ DLcodes Conditions"  → "@" = "A"
+        // OCR raw: "@ DLcodes Conditions" — "@" is OCR misread of "A", appears BEFORE the label
         var classVal = '';
-        // Normalize common OCR misreads: @ → A, 0 → O where appropriate
         var normalizedText = text.replace(/@/g, 'A');
 
-        // Find "DLcodes" or "DL Codes" label (case-insensitive, tolerant of misreads)
         var dlLabelRegex = /[DdO][LlI1]\s*[Cc]odes?/i;
         var dlLabelMatch = normalizedText.match(dlLabelRegex);
 
         if (dlLabelMatch) {
           var dlIndex = normalizedText.indexOf(dlLabelMatch[0]);
-          // Look 25 characters BEFORE the label (code appears before the label text)
-          var startSearch = Math.max(0, dlIndex - 25);
-          // And up to the CONDITIONS keyword
-          var searchArea = normalizedText.substring(startSearch).split(/CONDITIONS?|SIGNATURE|BLOOD\s*TYPE/i)[0];
+          // The code is RIGHT BEFORE the label (within ~10 chars) — use tight window
+          var beforeLabel = normalizedText.substring(Math.max(0, dlIndex - 10), dlIndex);
+          // Also check same line after the label (codes can appear after too)
+          var afterLabelRaw = normalizedText.substring(dlIndex + dlLabelMatch[0].length);
+          var afterLabel = afterLabelRaw.split(/[\n\r]|CONDITIONS?|SIGNATURE/i)[0];
+          var searchArea = beforeLabel + ' ' + afterLabel;
+
           var dlRegex = /\b([A-E][12]?|[1-8])\b/g;
           var dlMatches = [];
           var dlM;
           while ((dlM = dlRegex.exec(searchArea)) !== null) {
             var code = dlM[1].toUpperCase();
-            // Skip letters that are part of "DLcodes" itself or other words
-            if (dlMatches.indexOf(code) === -1 && !/DL/i.test(searchArea.substring(Math.max(0, dlM.index-2), dlM.index+4))) {
+            if (dlMatches.indexOf(code) === -1) {
               dlMatches.push(code);
             }
           }
