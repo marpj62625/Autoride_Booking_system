@@ -4,318 +4,380 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register | Autoride</title>
-    <!-- Add Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="config.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: #f9fafb; }
+        header { display: none; }
+
+        /* ---- Password requirements ---- */
+        .password-requirements { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+        .requirement { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #9ca3af; transition: color 0.2s; }
+        .requirement i { font-size: 0.65rem; width: 14px; text-align: center; }
+        .requirement.valid { color: #00b14f; }
+        .requirement.invalid { color: #ef4444; }
+
+        /* ---- OTP ---- */
+        .otp-input-group { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+        .otp-digit { width: 46px; height: 52px; text-align: center; font-size: 1.4rem; font-weight: 700; border: 1.5px solid #d1d5db; border-radius: 9px; outline: none; color: #111827; transition: border-color 0.2s, box-shadow 0.2s; }
+        .otp-digit:focus { border-color: #00b14f; box-shadow: 0 0 0 3px rgba(0,177,79,0.12); }
+
+        /* ---- Domain warning ---- */
+        .domain-warning { display: none; align-items: center; gap: 6px; color: #ef4444; font-size: 0.75rem; margin-top: 5px; }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            #brandingPanel { display: none !important; }
+            #formPanel { padding: 32px 20px !important; }
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Autoride</h1>
-        <nav>
-            <a href="login.html">Login</a>
-            <a href="register.html">Register</a>
-        </nav>
-    </header>
 
-    <div class="auth-container" id="authContainer">
-        <a href="vehicles.html" style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 1.5rem; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Back to Dashboard
-        </a>
-        
-        <!-- STEP 1: Registration Form -->
-        <div class="auth-form-step" id="stepRegistration">
-            <h2 style="font-size: 1.75rem; margin-bottom: 1.5rem;">Create an Account</h2>
-            <form id="registerForm">
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label for="first_name">First Name</label>
-                        <input type="text" id="first_name" class="form-input" required placeholder="Juan">
-                    </div>
-                    <div style="flex: 1;">
-                        <label for="middle_name">Middle Name</label>
-                        <input type="text" id="middle_name" class="form-input" placeholder="M. (Optional)">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="last_name">Last Name</label>
-                    <input type="text" id="last_name" class="form-input" required placeholder="Dela Cruz">
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Gmail Address</label>
-                    <input type="email" id="email" class="form-input" required placeholder="example@gmail.com">
-                    <div id="domainWarning" class="domain-warning">
-                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
-                        Please use a @gmail.com address
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="password-input-wrapper">
-                        <input type="password" id="password" class="form-input" required placeholder="••••••••" oninput="validatePassword(this.value, 'passwordErr')">
-                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                    <div class="password-requirements">
-                        <div class="requirement" id="req-uppercase">
-                            <i class="fas fa-times"></i> At least one uppercase letter
-                        </div>
-                        <div class="requirement" id="req-lowercase">
-                            <i class="fas fa-times"></i> At least one lowercase letter
-                        </div>
-                        <div class="requirement" id="req-number">
-                            <i class="fas fa-times"></i> At least one number
-                        </div>
-                        <div class="requirement" id="req-length">
-                            <i class="fas fa-times"></i> At least 8 characters
-                        </div>
-                    </div>
-                    <span class="field-error" id="passwordErr"></span>
-                </div>
+<div id="authContainer" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;display:flex;overflow:hidden;background:#ffffff;">
 
-                <div class="form-group" style="margin-top: 1rem; border: 1px dashed var(--border-color); padding: 1rem; border-radius: 8px;">
-                    <label style="margin-bottom: 5px;">Driver's License (Optional)</label>
-                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Upload now to skip verification during checkout.</p>
-                    <input type="file" id="license" name="license" class="form-input" accept="image/*" style="font-size: 0.8rem; padding: 0.5rem;">
-                </div>
-                
-                <button type="submit" class="btn" id="regBtn">Register</button>
-            </form>
+    <!-- LEFT — Green Branding Panel -->
+    <div id="brandingPanel" style="flex:0 0 52%;background:linear-gradient(145deg,#00c853 0%,#00b14f 45%,#007a36 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 48px;position:relative;overflow:hidden;">
+        <!-- Decorative circles -->
+        <div style="position:absolute;top:-100px;right:-100px;width:380px;height:380px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-140px;left:-80px;width:460px;height:460px;border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none;"></div>
+
+        <!-- Logo -->
+        <div style="width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,0.08);border:2.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:22px;position:relative;z-index:1;box-shadow:0 12px 30px rgba(0,0,0,0.15);">
+            <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:82px;height:82px;object-fit:contain;">
         </div>
 
-        <!-- STEP 2: Email Verification -->
-        <div class="verification-step" id="stepVerification">
-            <h2 style="font-size: 1.75rem; margin-bottom: 1rem;">Verify Your Email</h2>
-            <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem; font-size: 0.95rem;">
-                We've sent a 6-digit code to <strong id="displayEmail" style="color: var(--text-main);"></strong>.<br>
-                Please check your **Terminal Console** for the code.
-            </p>
-            
-            <div class="otp-input-group">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
-                <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+        <!-- Brand name -->
+        <div style="font-size:3rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:6px;position:relative;z-index:1;">Autoride</div>
+        <div style="font-size:0.95rem;color:rgba(255,255,255,0.9);font-weight:500;text-align:center;line-height:1.7;margin-bottom:40px;position:relative;z-index:1;">Your ride, your way.<br>Fast. Safe. Affordable.</div>
+
+        <!-- Feature highlights -->
+        <div style="width:100%;max-width:300px;display:flex;flex-direction:column;gap:18px;position:relative;z-index:1;">
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:0.95rem;"></i></div>
+                <div>
+                    <div style="font-weight:700;color:white;font-size:0.9rem;">Wide Vehicle Selection</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div>
+                </div>
             </div>
-
-            <button type="button" class="btn" id="verifyBtn">Verify & Complete</button>
-            <p style="margin-top: 1.5rem; text-align: center; font-size: 0.9rem;">
-                <a href="#" onclick="location.reload()" style="color: var(--primary-color); text-decoration: none;">Try again with another email</a>
-            </p>
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt" style="color:white;font-size:0.95rem;"></i></div>
+                <div>
+                    <div style="font-weight:700;color:white;font-size:0.9rem;">Safe &amp; Insured</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);">Verified vehicles with full coverage</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;">
+                <div style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:white;font-size:0.95rem;"></i></div>
+                <div>
+                    <div style="font-weight:700;color:white;font-size:0.9rem;">Loyalty Rewards</div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);">Earn points and unlock exclusive deals</div>
+                </div>
+            </div>
         </div>
-        
-        <div id="message" style="text-align:center; margin-top: 1.5rem; font-weight: 500;"></div>
 
-        <div class="auth-links" id="authLinks" style="margin-top: 2rem; text-align:center; font-size: 0.95rem;">
-            <p style="color: var(--text-muted);">Already have an account? <a href="login.html" style="color: var(--primary-color); font-weight: 600;">Log in here</a></p>
-        </div>
+        <div style="position:absolute;bottom:28px;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectParam = urlParams.get('redirect') ? '?redirect=' + encodeURIComponent(urlParams.get('redirect')) : '';
-        
-        const emailInput = document.getElementById('email');
-        const domainWarning = document.getElementById('domainWarning');
-        const regForm = document.getElementById('registerForm');
-        const messageEl = document.getElementById('message');
-        const authContainer = document.getElementById('authContainer');
-        const displayEmail = document.getElementById('displayEmail');
+    <!-- RIGHT — Register Form Panel -->
+    <div id="formPanel" style="flex:1;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:40px 36px;overflow-y:auto;">
+        <div style="width:100%;max-width:400px;">
 
-        // Real-time gmail validation
-        emailInput.addEventListener('input', () => {
-            const val = emailInput.value;
-            if (val && !val.toLowerCase().endsWith('@gmail.com')) {
-                domainWarning.style.display = 'flex';
-                emailInput.classList.add('input-invalid');
+            <!-- STEP 1: Registration Form -->
+            <div id="stepRegistration">
+                <div style="margin-bottom:28px;">
+                    <h1 style="font-size:1.85rem;font-weight:800;color:#111827;letter-spacing:-0.03em;margin-bottom:5px;">Create Account</h1>
+                    <p style="font-size:0.88rem;color:#6b7280;">Fill in the details below to get started</p>
+                </div>
+
+                <form id="registerForm">
+                    <!-- First Name & Middle Name row -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+                        <div>
+                            <label for="first_name" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">First Name <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="first_name" required placeholder="Juan"
+                                style="width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                        </div>
+                        <div>
+                            <label for="middle_name" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Middle Name</label>
+                            <input type="text" id="middle_name" placeholder="M. (Optional)"
+                                style="width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                        </div>
+                    </div>
+
+                    <!-- Last Name -->
+                    <div style="margin-bottom:14px;">
+                        <label for="last_name" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Name <span style="color:#ef4444;">*</span></label>
+                        <input type="text" id="last_name" required placeholder="Dela Cruz"
+                            style="width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
+                            onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                    </div>
+
+                    <!-- Email -->
+                    <div style="margin-bottom:14px;">
+                        <label for="email" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Gmail Address <span style="color:#ef4444;">*</span></label>
+                        <input type="email" id="email" required placeholder="example@gmail.com"
+                            style="width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
+                            onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                            onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                        <div class="domain-warning" id="domainWarning">
+                            <i class="fas fa-exclamation-circle"></i> Please use a @gmail.com address
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div style="margin-bottom:14px;">
+                        <label for="password" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Password <span style="color:#ef4444;">*</span></label>
+                        <div style="position:relative;">
+                            <input type="password" id="password" required placeholder="••••••••"
+                                style="width:100%;padding:11px 42px 11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';"
+                                oninput="validatePassword(this.value, 'passwordErr')">
+                            <button type="button" onclick="togglePasswordVisibility('password', this)"
+                                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;padding:0;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-requirements">
+                            <div class="requirement" id="req-uppercase"><i class="fas fa-times"></i> At least one uppercase letter</div>
+                            <div class="requirement" id="req-lowercase"><i class="fas fa-times"></i> At least one lowercase letter</div>
+                            <div class="requirement" id="req-number"><i class="fas fa-times"></i> At least one number</div>
+                            <div class="requirement" id="req-length"><i class="fas fa-times"></i> At least 8 characters</div>
+                        </div>
+                        <span id="passwordErr" style="font-size:0.75rem;color:#ef4444;margin-top:4px;display:none;"></span>
+                    </div>
+
+                    <!-- Driver's License (Optional) -->
+                    <div style="margin-bottom:20px;border:1.5px dashed #d1d5db;padding:14px;border-radius:9px;background:#f9fafb;">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:3px;">
+                            <i class="fas fa-id-card" style="color:#00b14f;margin-right:5px;"></i> Driver's License <span style="color:#6b7280;font-weight:400;">(Optional)</span>
+                        </label>
+                        <p style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;">Upload now to skip verification during checkout.</p>
+                        <input type="file" id="license" name="license" accept="image/*"
+                            style="width:100%;font-size:0.82rem;color:#374151;border:1.5px solid #d1d5db;border-radius:7px;padding:8px;background:white;cursor:pointer;">
+                    </div>
+
+                    <!-- Error message -->
+                    <div id="message" style="font-size:0.82rem;margin-bottom:12px;min-height:18px;font-weight:500;"></div>
+
+                    <!-- Submit button -->
+                    <button type="submit" id="regBtn"
+                        style="width:100%;padding:13px;background:linear-gradient(135deg,#00c853,#00b14f);color:white;border:none;border-radius:9px;font-size:0.95rem;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:opacity 0.2s,transform 0.1s;box-shadow:0 4px 14px rgba(0,177,79,0.3);"
+                        onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'"
+                        onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+                        <i class="fas fa-user-plus" style="margin-right:7px;"></i>Create Account
+                    </button>
+                </form>
+
+                <p style="margin-top:20px;text-align:center;font-size:0.87rem;color:#6b7280;">
+                    Already have an account? <a href="login.html" style="color:#00b14f;font-weight:600;text-decoration:none;">Log in here</a>
+                </p>
+            </div>
+
+            <!-- STEP 2: Email Verification -->
+            <div id="stepVerification" style="display:none;">
+                <div style="text-align:center;margin-bottom:24px;">
+                    <div style="width:64px;height:64px;background:linear-gradient(135deg,#00c853,#00b14f);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                        <i class="fas fa-envelope" style="color:white;font-size:1.5rem;"></i>
+                    </div>
+                    <h2 style="font-size:1.5rem;font-weight:800;color:#111827;margin-bottom:6px;">Verify Your Email</h2>
+                    <p style="font-size:0.88rem;color:#6b7280;line-height:1.6;">
+                        We've sent a 6-digit code to<br>
+                        <strong id="displayEmail" style="color:#111827;"></strong>
+                    </p>
+                </div>
+
+                <div class="otp-input-group">
+                    <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                    <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric">
+                </div>
+
+                <div id="otpMessage" style="font-size:0.82rem;margin-bottom:12px;min-height:18px;font-weight:500;text-align:center;"></div>
+
+                <button type="button" id="verifyBtn"
+                    style="width:100%;padding:13px;background:linear-gradient(135deg,#00c853,#00b14f);color:white;border:none;border-radius:9px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:opacity 0.2s;box-shadow:0 4px 14px rgba(0,177,79,0.3);"
+                    onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    <i class="fas fa-check-circle" style="margin-right:7px;"></i>Verify &amp; Complete
+                </button>
+                <p style="margin-top:16px;text-align:center;font-size:0.87rem;">
+                    <a href="#" onclick="location.reload()" style="color:#6b7280;text-decoration:none;">← Try again with another email</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectParam = urlParams.get('redirect') ? '?redirect=' + encodeURIComponent(urlParams.get('redirect')) : '';
+
+    const emailInput = document.getElementById('email');
+    const domainWarning = document.getElementById('domainWarning');
+    const regForm = document.getElementById('registerForm');
+    const messageEl = document.getElementById('message');
+    const displayEmail = document.getElementById('displayEmail');
+
+    // Gmail validation
+    emailInput.addEventListener('input', () => {
+        const val = emailInput.value;
+        if (val && !val.toLowerCase().endsWith('@gmail.com')) {
+            domainWarning.style.display = 'flex';
+        } else {
+            domainWarning.style.display = 'none';
+        }
+    });
+
+    // OTP auto-focus
+    const digits = document.querySelectorAll('.otp-digit');
+    digits.forEach((d, idx) => {
+        d.addEventListener('input', (e) => {
+            if (e.target.value && idx < digits.length - 1) digits[idx + 1].focus();
+        });
+        d.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !e.target.value && idx > 0) digits[idx - 1].focus();
+        });
+    });
+
+    let registeredEmail = '';
+
+    regForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const firstName = document.getElementById('first_name').value.trim();
+        const middleName = document.getElementById('middle_name').value.trim();
+        const lastName = document.getElementById('last_name').value.trim();
+        const email = emailInput.value.trim();
+        const password = document.getElementById('password').value;
+        const licenseFile = document.getElementById('license').files[0];
+
+        if (!email.toLowerCase().endsWith('@gmail.com')) {
+            messageEl.textContent = 'Only @gmail.com addresses are allowed.';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+        if (!validatePassword(password, 'passwordErr')) {
+            messageEl.textContent = 'Please ensure your password meets all requirements.';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+
+        const regBtn = document.getElementById('regBtn');
+        regBtn.disabled = true;
+        regBtn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:7px;"></i>Creating Account...';
+        messageEl.textContent = '';
+
+        const formData = new FormData();
+        formData.append('first_name', firstName);
+        formData.append('middle_name', middleName);
+        formData.append('last_name', lastName);
+        formData.append('email', email);
+        formData.append('password', password);
+        if (licenseFile) formData.append('license', licenseFile);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/register`, { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (response.ok && data.verification_required) {
+                registeredEmail = email;
+                displayEmail.textContent = email;
+                document.getElementById('stepRegistration').style.display = 'none';
+                document.getElementById('stepVerification').style.display = 'block';
+                digits[0].focus();
             } else {
-                domainWarning.style.display = 'none';
-                emailInput.classList.remove('input-invalid');
+                messageEl.textContent = 'Error: ' + (data.error || 'Failed to register');
+                messageEl.style.color = '#ef4444';
+                regBtn.disabled = false;
+                regBtn.innerHTML = '<i class="fas fa-user-plus" style="margin-right:7px;"></i>Create Account';
             }
-        });
+        } catch (err) {
+            messageEl.textContent = 'Server connection error. Please try again.';
+            messageEl.style.color = '#ef4444';
+            regBtn.disabled = false;
+            regBtn.innerHTML = '<i class="fas fa-user-plus" style="margin-right:7px;"></i>Create Account';
+        }
+    });
 
-        // OTP Input Auto-focus
-        const digits = document.querySelectorAll('.otp-digit');
-        digits.forEach((d, idx) => {
-            d.addEventListener('input', (e) => {
-                if (e.target.value && idx < digits.length - 1) {
-                    digits[idx + 1].focus();
-                }
+    document.getElementById('verifyBtn').addEventListener('click', async () => {
+        const otp = Array.from(digits).map(d => d.value).join('');
+        const otpMsg = document.getElementById('otpMessage');
+        if (otp.length < 6) {
+            otpMsg.textContent = 'Please enter all 6 digits.';
+            otpMsg.style.color = '#ef4444';
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: registeredEmail, otp })
             });
-            d.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !e.target.value && idx > 0) {
-                    digits[idx - 1].focus();
-                }
-            });
-        });
-
-        let registeredEmail = "";
-
-        regForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const firstName = document.getElementById('first_name').value;
-            const middleName = document.getElementById('middle_name').value;
-            const lastName = document.getElementById('last_name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const licenseFile = document.getElementById('license').files[0];
-            
-            if (!email.toLowerCase().endsWith('@gmail.com')) {
-                messageEl.textContent = 'Only @gmail.com addresses are allowed.';
-                messageEl.style.color = 'var(--error)';
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('first_name', firstName);
-            formData.append('middle_name', middleName);
-            formData.append('last_name', lastName);
-            formData.append('email', email);
-            formData.append('password', password);
-            if (licenseFile) formData.append('license', licenseFile);
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/register`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
+            if (response.ok) {
+                otpMsg.textContent = '✓ Email verified! Redirecting to login...';
+                otpMsg.style.color = '#00b14f';
+                setTimeout(() => { window.location.href = 'login.html' + redirectParam; }, 2000);
+            } else {
                 const data = await response.json();
-                
-                if (response.ok && data.verification_required) {
-                    registeredEmail = email;
-                    displayEmail.textContent = email;
-                    authContainer.classList.add('verification-active');
-                    messageEl.textContent = '';
-                } else {
-                    messageEl.textContent = 'Error: ' + (data.error || 'Failed to register');
-                    messageEl.style.color = 'var(--error)';
-                }
-            } catch (err) {
-                messageEl.textContent = 'Server connection error.';
-                messageEl.style.color = 'var(--error)';
+                otpMsg.textContent = 'Error: ' + data.error;
+                otpMsg.style.color = '#ef4444';
             }
-        });
+        } catch (err) {
+            otpMsg.textContent = 'Verification error. Please try again.';
+            otpMsg.style.color = '#ef4444';
+        }
+    });
 
-        document.getElementById('verifyBtn').addEventListener('click', async () => {
-            const otp = Array.from(digits).map(d => d.value).join('');
-            if (otp.length < 6) {
-                messageEl.textContent = 'Please enter all 6 digits.';
-                messageEl.style.color = 'var(--error)';
-                return;
-            }
+    function togglePasswordVisibility(inputId, button) {
+        const input = document.getElementById(inputId);
+        const icon = button.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: registeredEmail, otp })
-                });
-
-                if (response.ok) {
-                    messageEl.textContent = 'Email verified! Redirecting to login...';
-                    messageEl.style.color = 'var(--success)';
-                    setTimeout(() => {
-                        window.location.href = 'login.html' + redirectParam;
-                    }, 2000);
-                } else {
-                    const data = await response.json();
-                    messageEl.textContent = 'Error: ' + data.error;
-                    messageEl.style.color = 'var(--error)';
-                }
-            } catch (err) {
-                messageEl.textContent = 'Verification error.';
-                messageEl.style.color = 'var(--error)';
-            }
-        });
-    </script>
+    function validatePassword(password, errorElementId) {
+        const requirements = {
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /\d/.test(password),
+            length: password.length >= 8
+        };
+        const update = (id, isValid) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const icon = el.querySelector('i');
+            if (isValid) { el.classList.add('valid'); el.classList.remove('invalid'); icon.className = 'fas fa-check'; }
+            else { el.classList.add('invalid'); el.classList.remove('valid'); icon.className = 'fas fa-times'; }
+        };
+        update('req-uppercase', requirements.uppercase);
+        update('req-lowercase', requirements.lowercase);
+        update('req-number', requirements.number);
+        update('req-length', requirements.length);
+        const isValid = Object.values(requirements).every(r => r);
+        const errEl = document.getElementById(errorElementId);
+        if (errEl) {
+            errEl.textContent = password.length > 0 && !isValid ? 'Password does not meet all requirements' : '';
+            errEl.style.display = password.length > 0 && !isValid ? 'block' : 'none';
+        }
+        return isValid;
+    }
+</script>
 </body>
 </html>
-    <script>
-        // Password visibility toggle function
-        function togglePasswordVisibility(inputId, button) {
-            const input = document.getElementById(inputId);
-            const icon = button.querySelector('i');
-            
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'fas fa-eye-slash';
-            } else {
-                input.type = 'password';
-                icon.className = 'fas fa-eye';
-            }
-        }
-
-        // Password validation function
-        function validatePassword(password, errorElementId) {
-            const requirements = {
-                uppercase: /[A-Z]/.test(password),
-                lowercase: /[a-z]/.test(password),
-                number: /\d/.test(password),
-                length: password.length >= 8
-            };
-
-            // Update requirement indicators
-            const updateRequirement = (id, isValid) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    const icon = element.querySelector('i');
-                    if (isValid) {
-                        element.classList.add('valid');
-                        element.classList.remove('invalid');
-                        icon.className = 'fas fa-check';
-                    } else {
-                        element.classList.add('invalid');
-                        element.classList.remove('valid');
-                        icon.className = 'fas fa-times';
-                    }
-                }
-            };
-
-            updateRequirement('req-uppercase', requirements.uppercase);
-            updateRequirement('req-lowercase', requirements.lowercase);
-            updateRequirement('req-number', requirements.number);
-            updateRequirement('req-length', requirements.length);
-
-            // Check if all requirements are met
-            const isValid = Object.values(requirements).every(req => req);
-            
-            // Update error message
-            const errorElement = document.getElementById(errorElementId);
-            if (errorElement) {
-                if (password.length > 0 && !isValid) {
-                    errorElement.textContent = 'Password does not meet all requirements';
-                    errorElement.style.display = 'block';
-                } else {
-                    errorElement.textContent = '';
-                    errorElement.style.display = 'none';
-                }
-            }
-
-            return isValid;
-        }
-
-        // Initialize form validation when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            const registerForm = document.getElementById('registerForm');
-            const passwordInput = document.getElementById('password');
-            
-            if (registerForm && passwordInput) {
-                registerForm.addEventListener('submit', function(e) {
-                    const password = passwordInput.value;
-                    if (!validatePassword(password, 'passwordErr')) {
-                        e.preventDefault();
-                        alert('Please ensure your password meets all requirements before submitting.');
-                        return false;
-                    }
-                });
-            }
-        });
-    </script>
