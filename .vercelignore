@@ -2,7 +2,6 @@
 !frontend/
 !admin_app/
 !admin_mobile/
-!customer_mobile/
 
 # Ignore Python cache and test files
 __pycache__/
@@ -12,6 +11,7 @@ __pycache__/
 .Python
 *.pytest_cache/
 .hypothesis/
+backend/.hypothesis/
 
 # Ignore development files
 .vscode/
@@ -19,3 +19,27 @@ __pycache__/
 scratch/
 *.md
 !README.md
+
+# Ignore large APK and build files
+*.apk
+*.aab
+customer_mobile/
+android/
+*.bat
+temp.js
+test_script_0.js
+test_script_1.js
+test_script_2.js
+fix_*.py
+generate_*.py
+migrate_*.py
+scan_*.py
+update_*.py
+check_*.py
+test_*.py
+create_*.py
+convert_*.py
+debug_*.py
+diag_*.py
+verify_*.ps1
+fix_*.ps1
