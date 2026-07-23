@@ -5538,13 +5538,13 @@ function handleLicenseFileSelect(e, side) {
         }
 
         // --- 3. Find Name on License ---
-        // Philippine LTO IDs usually have name in format: LASTNAME, FIRSTNAME MIDDLENAME (all caps)
+        // Philippine LTO IDs have name in format: LASTNAME, FIRSTNAME MIDDLENAME (all caps, no digits)
         var lines = text.split('\n');
         var nameLine = '';
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i].trim();
-          // Look for all-caps line with a comma (typical of LTO name format)
-          if (/^[A-Z\s]{2,},\s*[A-Z\s]{2,}/.test(line) && line.length > 5 && line.length < 60) {
+          // Must be all-caps with a comma, no digits (addresses have numbers), reasonable length
+          if (/^[A-Z\s]{2,},\s*[A-Z\s]{2,}/.test(line) && line.length > 5 && line.length < 60 && !/\d/.test(line)) {
             nameLine = line;
             break;
           }
@@ -5555,18 +5555,14 @@ function handleLicenseFileSelect(e, side) {
         }
 
         // --- 4. Find License Class (DL Codes: A, B, B1, B2, C, D, etc.) ---
-        // Look for patterns near "DL CODES", "Restriction", or standalone class codes
-        var classMatch = text.match(/(?:DL\s*CODES?|RESTRICTION|CODE)[:\s]*([A-Z0-9,\s]{1,20})/i);
-        if (!classMatch) {
-          // Fallback: look for standalone class codes like "1,2,3" or "A,B" or "B1 B2"
-          classMatch = text.match(/\b([1-9](?:[,\s]+[1-9])*)\b/) ||
-                       text.match(/\b([AB][12]?(?:[,\s]+[AB][12]?)*)\b/);
-        }
-        if (classMatch && classMatch[1] && document.getElementById('editLicenseClass')) {
-          var rawClass = classMatch[1].trim().replace(/\s+/g, ', ');
+        // Only match "DL Codes" label specifically (not "Agency Code" or other "Code" words)
+        var classMatch = text.match(/DL\s*CODES?[:\s]+([A-Z0-9,\s]{1,15})/i);
+        if (classMatch && classMatch[1]) {
+          // Clean up extracted class value — remove trailing words/garbage
+          var rawClass = classMatch[1].trim().split(/[\n\r]/)[0].trim();
+          rawClass = rawClass.replace(/[^A-Z0-9,\s]/gi, '').trim();
           var classVal = rawClass.toUpperCase();
-          // Only auto-fill if it looks like a valid class (not too long / not garbage text)
-          if (classVal.length <= 20) {
+          if (classVal.length >= 1 && classVal.length <= 15 && document.getElementById('editLicenseClass')) {
             document.getElementById('editLicenseClass').value = classVal;
             document.getElementById('editLicenseClass').style.borderColor = 'var(--success, #22c55e)';
           }

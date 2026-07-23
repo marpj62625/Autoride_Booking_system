@@ -5443,12 +5443,13 @@ function handleLicenseFileSelect(e, side) {
           document.getElementById('editLicenseDob').style.borderColor = "var(--success)";
         }
 
-        // --- 3. Find Name on License (LASTNAME, FIRSTNAME MIDDLENAME all-caps pattern) ---
+        // --- 3. Find Name on License (LASTNAME, FIRSTNAME MIDDLENAME all-caps, no digits) ---
         var lines = text.split('\n');
         var nameLine = '';
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i].trim();
-          if (/^[A-Z\s]{2,},\s*[A-Z\s]{2,}/.test(line) && line.length > 5 && line.length < 60) {
+          // Must be all-caps with comma, no digits (addresses have numbers), reasonable length
+          if (/^[A-Z\s]{2,},\s*[A-Z\s]{2,}/.test(line) && line.length > 5 && line.length < 60 && !/\d/.test(line)) {
             nameLine = line;
             break;
           }
@@ -5458,16 +5459,13 @@ function handleLicenseFileSelect(e, side) {
           document.getElementById('editLicenseName').style.borderColor = "var(--success)";
         }
 
-        // --- 4. Find License Class (DL Codes) ---
-        var classMatch = text.match(/(?:DL\s*CODES?|RESTRICTION|CODE)[:\s]*([A-Z0-9,\s]{1,20})/i);
-        if (!classMatch) {
-          classMatch = text.match(/\b([1-9](?:[,\s]+[1-9])*)\b/) ||
-                       text.match(/\b([AB][12]?(?:[,\s]+[AB][12]?)*)\b/);
-        }
-        if (classMatch && classMatch[1] && document.getElementById('editLicenseClass')) {
-          var rawClass = classMatch[1].trim().replace(/\s+/g, ', ');
+        // --- 4. Find License Class (DL Codes only, not Agency Code) ---
+        var classMatch = text.match(/DL\s*CODES?[:\s]+([A-Z0-9,\s]{1,15})/i);
+        if (classMatch && classMatch[1]) {
+          var rawClass = classMatch[1].trim().split(/[\n\r]/)[0].trim();
+          rawClass = rawClass.replace(/[^A-Z0-9,\s]/gi, '').trim();
           var classVal = rawClass.toUpperCase();
-          if (classVal.length <= 20) {
+          if (classVal.length >= 1 && classVal.length <= 15 && document.getElementById('editLicenseClass')) {
             document.getElementById('editLicenseClass').value = classVal;
             document.getElementById('editLicenseClass').style.borderColor = "var(--success)";
           }
