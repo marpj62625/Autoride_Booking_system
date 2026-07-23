@@ -1989,18 +1989,24 @@
       <p class="subtitle">Join Autoride today</p>
 
 
-      <div class="form-group">
+      <div style="display:flex; gap:10px;">
 
+        <div class="form-group" style="flex:1; margin-bottom:0;">
+          <label>First Name</label>
+          <input type="text" id="regFirstName" placeholder="Juan" maxlength="40">
+        </div>
 
-        <label>Full Name</label>
+        <div class="form-group" style="flex:1; margin-bottom:0;">
+          <label>Middle Name</label>
+          <input type="text" id="regMiddleName" placeholder="M. (Optional)" maxlength="40">
+        </div>
 
+      </div>
 
-        <input type="text" id="regName" placeholder="Juan dela Cruz" maxlength="40">
-
-
+      <div class="form-group" style="margin-top:15px;">
+        <label>Last Name</label>
+        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40">
         <span class="field-error" id="regNameErr"></span>
-
-
       </div>
 
 

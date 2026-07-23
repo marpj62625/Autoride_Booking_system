@@ -1547,20 +1547,17 @@ function doLogout() {
 
 // AUTH: REGISTER
 function doRegister() {
-  var name = sanitizeInput(document.getElementById('regName').value.trim());
+  var firstName = sanitizeInput(document.getElementById('regFirstName').value.trim());
+  var middleName = sanitizeInput(document.getElementById('regMiddleName').value.trim());
+  var lastName = sanitizeInput(document.getElementById('regLastName').value.trim());
   var email = sanitizeInput(document.getElementById('regEmail').value.trim());
   var password = document.getElementById('regPassword').value;
   ['regNameErr','regEmailErr','regPasswordErr','regErr'].forEach(function(id) {
     document.getElementById(id).textContent = '';
   });
-  if (isBlank(name)) { document.getElementById('regNameErr').textContent = 'Full name is required.'; return; }
+  if (isBlank(firstName) || isBlank(lastName)) { document.getElementById('regNameErr').textContent = 'First and Last name are required.'; return; }
   if (!isGmailAddress(email)) { document.getElementById('regEmailErr').textContent = 'Only @gmail.com emails are allowed for registration.'; return; }
   if (isBlank(password) || password.length < 8) { document.getElementById('regPasswordErr').textContent = 'Password must be at least 8 characters.'; return; }
-  // Split full name into first / middle / last for backend
-  var nameParts = name.split(/\s+/).filter(Boolean);
-  var firstName = nameParts[0] || '';
-  var lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-  var middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
   showLoading(true);
   apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password }) })
     .then(function() {
