@@ -5554,18 +5554,28 @@ function handleLicenseFileSelect(e, side) {
           document.getElementById('editLicenseName').style.borderColor = 'var(--success, #22c55e)';
         }
 
-        // --- 4. Find License Class (DL Codes: A, B, B1, B2, C, D, etc.) ---
-        // Only match "DL Codes" label specifically (not "Agency Code" or other "Code" words)
-        var classMatch = text.match(/DL\s*CODES?[:\s]+([A-Z0-9,\s]{1,15})/i);
-        if (classMatch && classMatch[1]) {
-          // Clean up extracted class value — remove trailing words/garbage
-          var rawClass = classMatch[1].trim().split(/[\n\r]/)[0].trim();
-          rawClass = rawClass.replace(/[^A-Z0-9,\s]/gi, '').trim();
-          var classVal = rawClass.toUpperCase();
-          if (classVal.length >= 1 && classVal.length <= 15 && document.getElementById('editLicenseClass')) {
-            document.getElementById('editLicenseClass').value = classVal;
-            document.getElementById('editLicenseClass').style.borderColor = 'var(--success, #22c55e)';
+        // --- 4. Find License Class (DL Codes: A, B, B1, B2, C, D, BE, etc.) ---
+        var classVal = '';
+        var dlIndex = text.toUpperCase().indexOf("DL CODE");
+        if (dlIndex !== -1) {
+          // Limit search to the immediate area to prevent picking up unrelated numbers
+          var afterDl = text.substring(dlIndex).split(/EXPIRED|EXPIRY|DATE|LICENSE|CONDITIONS/i)[0];
+          var dlRegex = /\b([A-E][12]?|[1-8])\b/gi;
+          var matches = [];
+          var m;
+          while ((m = dlRegex.exec(afterDl)) !== null) {
+            var code = m[1].toUpperCase();
+            if (matches.indexOf(code) === -1) {
+              matches.push(code);
+            }
           }
+          if (matches.length > 0) {
+            classVal = matches.join(', ');
+          }
+        }
+        if (classVal && document.getElementById('editLicenseClass')) {
+          document.getElementById('editLicenseClass').value = classVal;
+          document.getElementById('editLicenseClass').style.borderColor = 'var(--success, #22c55e)';
         }
 
       }).catch(function(ocrErr) {
