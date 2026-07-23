@@ -5394,24 +5394,85 @@ function handleLicenseFileSelect(e, side) {
         var text = result.data.text;
         if (statusText) statusText.style.display = 'none';
         if (detailsBox) detailsBox.style.display = 'block';
+
+        console.log('OCR Raw Text:', text);
         
-        // Find License Number: e.g., N01-12-123456
+        // --- 1. Find License Number: e.g., N01-12-123456 ---
         var licRegex = /[A-Z]\d{2}-\d{2}-\d{6}/g;
         var matchLic = text.match(licRegex);
         if (matchLic && document.getElementById('editLicenseNumber')) {
           document.getElementById('editLicenseNumber').value = matchLic[0];
-          // Trigger visual feedback (e.g. green border)
           document.getElementById('editLicenseNumber').style.borderColor = "var(--success)";
         }
         
-        // Find Expiry Date (YYYY/MM/DD or YYYY-MM-DD)
-        var dateRegex = /(20\d{2})[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])/g;
-        var matchDate = text.match(dateRegex);
-        if (matchDate && document.getElementById('editLicenseExpiry')) {
-          var formattedDate = matchDate[0].replace(/\//g, '-');
-          document.getElementById('editLicenseExpiry').value = formattedDate;
+        // --- 2. Find ALL dates (YYYY/MM/DD, YYYY-MM-DD, MM/DD/YYYY, MM-DD-YYYY) ---
+        var allDates = [];
+
+        var dateRegex1 = /((?:19|20)\d{2})[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])/g;
+        var m1;
+        while ((m1 = dateRegex1.exec(text)) !== null) {
+          allDates.push({ year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) });
+        }
+
+        var dateRegex2 = /(0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])[\/\-]((?:19|20)\d{2})/g;
+        var m2;
+        while ((m2 = dateRegex2.exec(text)) !== null) {
+          allDates.push({ year: parseInt(m2[3]), month: parseInt(m2[1]), day: parseInt(m2[2]) });
+        }
+
+        var currentYear = new Date().getFullYear();
+        var pastDates = allDates.filter(function(d) { return d.year < currentYear || (d.year === currentYear && d.month <= new Date().getMonth() + 1); });
+        var futureDates = allDates.filter(function(d) { return d.year > currentYear || (d.year === currentYear && d.month > new Date().getMonth() + 1); });
+
+        // Expiry Date = earliest future date
+        if (futureDates.length > 0 && document.getElementById('editLicenseExpiry')) {
+          futureDates.sort(function(a, b) { return a.year - b.year || a.month - b.month || a.day - b.day; });
+          var expDate = futureDates[0];
+          var expStr = expDate.year + '-' + String(expDate.month).padStart(2,'0') + '-' + String(expDate.day).padStart(2,'0');
+          document.getElementById('editLicenseExpiry').value = expStr;
           document.getElementById('editLicenseExpiry').style.borderColor = "var(--success)";
         }
+
+        // Date of Birth = latest past date (year >= 1940)
+        var dobCandidates = pastDates.filter(function(d) { return d.year >= 1940; });
+        if (dobCandidates.length > 0 && document.getElementById('editLicenseDob')) {
+          dobCandidates.sort(function(a, b) { return b.year - a.year || b.month - a.month || b.day - a.day; });
+          var dobDate = dobCandidates[0];
+          var dobStr = dobDate.year + '-' + String(dobDate.month).padStart(2,'0') + '-' + String(dobDate.day).padStart(2,'0');
+          document.getElementById('editLicenseDob').value = dobStr;
+          document.getElementById('editLicenseDob').style.borderColor = "var(--success)";
+        }
+
+        // --- 3. Find Name on License (LASTNAME, FIRSTNAME MIDDLENAME all-caps pattern) ---
+        var lines = text.split('\n');
+        var nameLine = '';
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (/^[A-Z\s]{2,},\s*[A-Z\s]{2,}/.test(line) && line.length > 5 && line.length < 60) {
+            nameLine = line;
+            break;
+          }
+        }
+        if (nameLine && document.getElementById('editLicenseName')) {
+          document.getElementById('editLicenseName').value = nameLine.trim();
+          document.getElementById('editLicenseName').style.borderColor = "var(--success)";
+        }
+
+        // --- 4. Find License Class (DL Codes) ---
+        var classMatch = text.match(/(?:DL\s*CODES?|RESTRICTION|CODE)[:\s]*([A-Z0-9,\s]{1,20})/i);
+        if (!classMatch) {
+          classMatch = text.match(/\b([1-9](?:[,\s]+[1-9])*)\b/) ||
+                       text.match(/\b([AB][12]?(?:[,\s]+[AB][12]?)*)\b/);
+        }
+        if (classMatch && classMatch[1] && document.getElementById('editLicenseClass')) {
+          var rawClass = classMatch[1].trim().replace(/\s+/g, ', ');
+          var classVal = rawClass.toUpperCase();
+          if (classVal.length <= 20) {
+            document.getElementById('editLicenseClass').value = classVal;
+            document.getElementById('editLicenseClass').style.borderColor = "var(--success)";
+          }
+        }
+
       }).catch(function(err) {
         console.error('OCR Error:', err);
         if (statusText) statusText.style.display = 'none';
