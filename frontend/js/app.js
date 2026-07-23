@@ -5696,12 +5696,13 @@ function loadProfile() {
 
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
-      var editNameEl = document.getElementById('editName');
-      var editPhoneEl = document.getElementById('editPhone');
-      var pointsEl = document.getElementById('profilePoints');
-      if (nameEl) nameEl.textContent = profile.full_name || '';
-      if (emailEl) emailEl.textContent = profile.email || '';
-      if (editNameEl) editNameEl.value = profile.full_name || '';
+      var editFirstEl = document.getElementById('editFirstName');
+      var editMiddleEl = document.getElementById('editMiddleName');
+      var editLastEl = document.getElementById('editLastName');
+      var nameParts = (profile.full_name || '').split(/\\s+/).filter(Boolean);
+      if (editFirstEl) editFirstEl.value = nameParts[0] || '';
+      if (editLastEl) editLastEl.value = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      if (editMiddleEl) editMiddleEl.value = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
       var editEmailEl = document.getElementById('editEmail');
       if (editEmailEl) editEmailEl.value = profile.email || '';
@@ -5904,12 +5905,17 @@ function pickProfilePicture() {
 }
 
 function doUpdateProfile() {
-  var nameEl = document.getElementById('editName');
+  var firstEl = document.getElementById('editFirstName');
+  var middleEl = document.getElementById('editMiddleName');
+  var lastEl = document.getElementById('editLastName');
   var phoneEl = document.getElementById('editPhone');
   var emailEl = document.getElementById('editEmail');
   var phoneErrEl = document.getElementById('editPhoneErr');
   var emailErrEl = document.getElementById('editEmailErr');
-  var name = nameEl ? sanitizeInput(nameEl.value.trim()) : '';
+  var firstName = firstEl ? sanitizeInput(firstEl.value.trim()) : '';
+  var middleName = middleEl ? sanitizeInput(middleEl.value.trim()) : '';
+  var lastName = lastEl ? sanitizeInput(lastEl.value.trim()) : '';
+  var name = [firstName, middleName, lastName].filter(Boolean).join(' ');
   var phone = phoneEl ? phoneEl.value.trim() : '';
   var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
   if (phoneErrEl) phoneErrEl.textContent = '';
@@ -5920,11 +5926,6 @@ function doUpdateProfile() {
   if (email && !isGmailAddress(email)) {
     if (emailErrEl) emailErrEl.textContent = 'Only @gmail.com emails are allowed.'; return;
   }
-  // Split full name into first / middle / last for generated column backend
-  var nameParts = name.split(/\s+/).filter(Boolean);
-  var firstName = nameParts[0] || '';
-  var lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
-  var middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
   fd.append('first_name', firstName);
