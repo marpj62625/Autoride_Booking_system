@@ -5487,6 +5487,11 @@ function handleLicenseFileSelect(e, side) {
         if (statusText) statusText.style.display = 'none';
         if (detailsBox) detailsBox.style.display = 'block';
 
+        var rawContainer = document.getElementById('ocrRawTextContainer');
+        if (rawContainer) {
+          rawContainer.textContent = text || "(No text recognized by OCR)";
+        }
+
         console.log('OCR Raw Text:', text);
 
         // --- 1. Find License Number: e.g., N01-12-123456 (Philippine LTO format) ---

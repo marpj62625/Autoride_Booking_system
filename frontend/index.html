@@ -3408,9 +3408,11 @@
           </div>
 
           <div id="ocrExtractedDetails" style="margin-top: 15px; display: none; background: var(--surface-container, #f1f5f9); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-            <p style="font-size: 0.85rem; color: var(--success, #22c55e); margin-top: 0; margin-bottom: 0; font-weight: 500;">
-              <i class="fas fa-check-circle"></i> License details extracted! Please verify the License Number and Expiry Date above.
+            <p style="font-size: 0.85rem; color: var(--success, #22c55e); margin-top: 0; margin-bottom: 5px; font-weight: 500;">
+              <i class="fas fa-check-circle"></i> License details extracted! Please verify the details below.
             </p>
+            <div id="ocrRawTextContainer" style="display:none; margin-top: 8px; font-family: monospace; font-size: 0.75rem; color: var(--text-main); border-top: 1px solid var(--border); padding-top: 8px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; text-align: left; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 4px;"></div>
+            <button type="button" id="btnToggleOcrDebug" style="background: none; border: none; color: var(--primary, #3b82f6); font-size: 0.75rem; cursor: pointer; padding: 0; text-decoration: underline; display: block; margin-top: 5px;" onclick="var box=document.getElementById('ocrRawTextContainer'); box.style.display = box.style.display === 'none' ? 'block' : 'none';">Show raw text read by AI</button>
           </div>
 
 
