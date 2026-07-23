@@ -5397,6 +5397,14 @@ var Profile = {
       return;
     }
 
+    var licenseClass = document.getElementById('editLicenseClass').value.trim().toUpperCase();
+    var classes = licenseClass.split(/[\s,]+/).filter(Boolean);
+    var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1', '1'].indexOf(c) !== -1; });
+    if (isMotorcycleOnly) {
+      if (errEl) errEl.textContent = 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.';
+      return;
+    }
+
     showLoading(true);
     
     // Compress both front and back images more aggressively (800x800, 0.6 quality) to fit Vercel payload limit (4.5MB) and speed up uploads
@@ -5555,17 +5563,7 @@ function loadLicenseDetailsForEdit() {
       
       el = document.getElementById('editLicenseClass');
       if (el) {
-        var classVal = data.license_class || '';
-        el.value = classVal;
-        console.log('Set class:', classVal);
-        if (!el.value && classVal) {
-          // Try matching just the letter (e.g. "B" -> "B")
-          for (var j = 0; j < el.options.length; j++) {
-            if (el.options[j].value === classVal || el.options[j].value.startsWith(classVal + ' ')) {
-              el.value = el.options[j].value; break;
-            }
-          }
-        }
+        el.value = data.license_class || '';
       }
       
       el = document.getElementById('editLicenseName'); 
