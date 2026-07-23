@@ -1556,8 +1556,13 @@ function doRegister() {
   if (isBlank(name)) { document.getElementById('regNameErr').textContent = 'Full name is required.'; return; }
   if (!isGmailAddress(email)) { document.getElementById('regEmailErr').textContent = 'Only @gmail.com emails are allowed for registration.'; return; }
   if (isBlank(password) || password.length < 8) { document.getElementById('regPasswordErr').textContent = 'Password must be at least 8 characters.'; return; }
+  // Split full name into first / middle / last for backend
+  var nameParts = name.split(/\s+/).filter(Boolean);
+  var firstName = nameParts[0] || '';
+  var lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+  var middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
   showLoading(true);
-  apiCall('/register', { method: 'POST', body: JSON.stringify({ name: name, email: email, password: password }) })
+  apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password }) })
     .then(function() {
       pendingOtpEmail = email;
       document.getElementById('otpEmailDisplay').textContent = email;
@@ -5455,10 +5460,49 @@ function handleLicenseFileSelect(e, side) {
   if (!file) return;
   var err = validateUploadFile(file);
   if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
+
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
     if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+
+    // Tesseract OCR Logic
+    var statusText = document.getElementById('ocrStatusText');
+    var detailsBox = document.getElementById('ocrExtractedDetails');
+    if (statusText) statusText.style.display = 'block';
+    if (detailsBox) detailsBox.style.display = 'none';
+
+    if (typeof Tesseract !== 'undefined') {
+      Tesseract.recognize(
+        file,
+        'eng',
+        { logger: function(m) { /* console.log(m); */ } }
+      ).then(function(result) {
+        var text = result.data.text;
+        if (statusText) statusText.style.display = 'none';
+        if (detailsBox) detailsBox.style.display = 'block';
+
+        // Find License Number: e.g., N01-12-123456 (Philippine LTO format)
+        var licRegex = /[A-Z]\d{2}-\d{2}-\d{6}/g;
+        var matchLic = text.match(licRegex);
+        if (matchLic && document.getElementById('editLicenseNumber')) {
+          document.getElementById('editLicenseNumber').value = matchLic[0];
+          document.getElementById('editLicenseNumber').style.borderColor = 'var(--success, #22c55e)';
+        }
+
+        // Find Expiry Date (YYYY/MM/DD or YYYY-MM-DD)
+        var dateRegex = /(20\d{2})[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])/g;
+        var matchDate = text.match(dateRegex);
+        if (matchDate && document.getElementById('editLicenseExpiry')) {
+          var formattedDate = matchDate[0].replace(/\//g, '-');
+          document.getElementById('editLicenseExpiry').value = formattedDate;
+          document.getElementById('editLicenseExpiry').style.borderColor = 'var(--success, #22c55e)';
+        }
+      }).catch(function(ocrErr) {
+        console.error('OCR Error:', ocrErr);
+        if (statusText) statusText.style.display = 'none';
+      });
+    }
   } else {
     _licenseBackBlob = file;
     var preview = document.getElementById('licenseEditPreviewBack');
@@ -5879,9 +5923,16 @@ function doUpdateProfile() {
   if (email && !isGmailAddress(email)) {
     if (emailErrEl) emailErrEl.textContent = 'Only @gmail.com emails are allowed.'; return;
   }
+  // Split full name into first / middle / last for generated column backend
+  var nameParts = name.split(/\s+/).filter(Boolean);
+  var firstName = nameParts[0] || '';
+  var lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+  var middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
-  fd.append('full_name', name);
+  fd.append('first_name', firstName);
+  fd.append('middle_name', middleName);
+  fd.append('last_name', lastName);
   fd.append('phone', phone);
   if (email) fd.append('email', email);
   if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');

@@ -28,7 +28,9 @@ def create_tables_and_data():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users(
                 id SERIAL PRIMARY KEY,
-                full_name VARCHAR(100),
+                first_name VARCHAR(50),
+                middle_name VARCHAR(50),
+                last_name VARCHAR(50),
                 email VARCHAR(100) UNIQUE,
                 phone VARCHAR(20),
                 password VARCHAR(255),

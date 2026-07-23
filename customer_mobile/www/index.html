@@ -1001,14 +1001,11 @@
 
 
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
-
-
         }
-
-
     </style>
 
-
+    <!-- Tesseract.js for OCR License Scanner -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 
 
@@ -1315,16 +1312,49 @@
       <p class="subtitle">Join Autoride today</p>
 
 
+      <div class="form-group" style="display:flex;gap:10px;">
+
+
+        <div style="flex:1;">
+
+
+          <label>First Name</label>
+
+
+          <input type="text" id="regFirstName" placeholder="Juan" maxlength="40">
+
+
+          <span class="field-error" id="regFirstNameErr"></span>
+
+
+        </div>
+
+
+        <div style="flex:1;">
+
+
+          <label>Middle Name</label>
+
+
+          <input type="text" id="regMiddleName" placeholder="(Opt)" maxlength="40">
+
+
+        </div>
+
+
+      </div>
+
+
       <div class="form-group">
 
 
-        <label>Full Name</label>
+        <label>Last Name</label>
 
 
-        <input type="text" id="regName" placeholder="Juan dela Cruz" maxlength="40">
+        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40">
 
 
-        <span class="field-error" id="regNameErr"></span>
+        <span class="field-error" id="regLastNameErr"></span>
 
 
       </div>
@@ -2191,13 +2221,43 @@
       </div>
 
 
+      <div class="form-group" style="display:flex;gap:10px;">
+
+
+        <div style="flex:1;">
+
+
+          <label>First Name</label>
+
+
+          <input type="text" id="editFirstName" placeholder="Juan" maxlength="40">
+
+
+        </div>
+
+
+        <div style="flex:1;">
+
+
+          <label>Middle Name</label>
+
+
+          <input type="text" id="editMiddleName" placeholder="(Opt)" maxlength="40">
+
+
+        </div>
+
+
+      </div>
+
+
       <div class="form-group">
 
 
-        <label>Full Name</label>
+        <label>Last Name</label>
 
 
-        <input type="text" id="editName" placeholder="Full Name" maxlength="40">
+        <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="40">
 
 
       </div>
@@ -2755,16 +2815,34 @@
         <div class="form-group">
 
 
-          <label>Front of License</label>
+          <label>Front of License (For Scanning)</label>
 
 
-          <button class="btn-secondary" onclick="pickLicenseForProfile('front')"><i class="fas fa-camera"></i> Upload Front</button>
+          <button class="btn-secondary" onclick="pickLicenseForProfile('front')"><i class="fas fa-camera"></i> Scan or Upload Front</button>
 
 
           <img id="licenseEditPreviewFront" style="width:100%;border-radius:var(--radius-sm);margin-top:10px;display:none;">
 
 
-          <input type="file" accept="image/*" id="licenseFileInputFront" accept="image/*" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
+          <input type="file" accept="image/*" capture="environment" id="licenseFileInputFront" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
+
+
+
+          <div id="ocrStatusText" style="font-size:0.85rem; color:var(--primary); margin-top: 8px; font-weight: 500; display:none;">
+
+
+            <i class="fas fa-spinner fa-spin"></i> Scanning license details using AI...
+
+
+          </div>
+
+
+          
+          <div id="ocrExtractedDetails" style="margin-top: 15px; display: none; background: var(--surface-container); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <p style="font-size: 0.85rem; color: var(--success); margin-top: 0; margin-bottom: 0; font-weight: 500;">
+              <i class="fas fa-check-circle"></i> License details extracted successfully! Please verify the License Number and Expiry Date above.
+            </p>
+          </div>
 
 
         </div>

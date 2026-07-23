@@ -6,7 +6,7 @@
     <title>Register | Autoride</title>
     <!-- Add Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=4">
+    
     <script src="config.js"></script>
 </head>
 <body>
@@ -28,9 +28,19 @@
         <div class="auth-form-step" id="stepRegistration">
             <h2 style="font-size: 1.75rem; margin-bottom: 1.5rem;">Create an Account</h2>
             <form id="registerForm">
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label for="first_name">First Name</label>
+                        <input type="text" id="first_name" class="form-input" required placeholder="Juan">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="middle_name">Middle Name</label>
+                        <input type="text" id="middle_name" class="form-input" placeholder="M. (Optional)">
+                    </div>
+                </div>
                 <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" class="form-input" required placeholder="John Doe">
+                    <label for="last_name">Last Name</label>
+                    <input type="text" id="last_name" class="form-input" required placeholder="Dela Cruz">
                 </div>
                 
                 <div class="form-group">
@@ -150,7 +160,9 @@
         regForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const name = document.getElementById('name').value;
+            const firstName = document.getElementById('first_name').value;
+            const middleName = document.getElementById('middle_name').value;
+            const lastName = document.getElementById('last_name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const licenseFile = document.getElementById('license').files[0];
@@ -162,7 +174,9 @@
             }
 
             const formData = new FormData();
-            formData.append('name', name);
+            formData.append('first_name', firstName);
+            formData.append('middle_name', middleName);
+            formData.append('last_name', lastName);
             formData.append('email', email);
             formData.append('password', password);
             if (licenseFile) formData.append('license', licenseFile);

@@ -1471,17 +1471,21 @@ function doLogout() {
 
 // AUTH: REGISTER
 function doRegister() {
-  var name = sanitizeInput(document.getElementById('regName').value.trim());
+  var firstName = sanitizeInput(document.getElementById('regFirstName').value.trim());
+  var middleName = sanitizeInput(document.getElementById('regMiddleName').value.trim());
+  var lastName = sanitizeInput(document.getElementById('regLastName').value.trim());
   var email = sanitizeInput(document.getElementById('regEmail').value.trim());
   var password = document.getElementById('regPassword').value;
-  ['regNameErr','regEmailErr','regPasswordErr','regErr'].forEach(function(id) {
-    document.getElementById(id).textContent = '';
+  ['regFirstNameErr','regLastNameErr','regEmailErr','regPasswordErr','regErr'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = '';
   });
-  if (isBlank(name)) { document.getElementById('regNameErr').textContent = 'Full name is required.'; return; }
+  if (isBlank(firstName)) { document.getElementById('regFirstNameErr').textContent = 'First name is required.'; return; }
+  if (isBlank(lastName)) { document.getElementById('regLastNameErr').textContent = 'Last name is required.'; return; }
   if (!isGmailAddress(email)) { document.getElementById('regEmailErr').textContent = 'Only @gmail.com emails are allowed for registration.'; return; }
   if (isBlank(password) || password.length < 8) { document.getElementById('regPasswordErr').textContent = 'Password must be at least 8 characters.'; return; }
   showLoading(true);
-  apiCall('/register', { method: 'POST', body: JSON.stringify({ name: name, email: email, password: password }) })
+  apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password }) })
     .then(function() {
       pendingOtpEmail = email;
       document.getElementById('otpEmailDisplay').textContent = email;
@@ -5361,10 +5365,50 @@ function handleLicenseFileSelect(e, side) {
   if (!file) return;
   var err = validateUploadFile(file);
   if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
+  
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
     if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    
+    // Tesseract OCR Logic
+    var statusText = document.getElementById('ocrStatusText');
+    var detailsBox = document.getElementById('ocrExtractedDetails');
+    if (statusText) statusText.style.display = 'block';
+    if (detailsBox) detailsBox.style.display = 'none';
+    
+    if (typeof Tesseract !== 'undefined') {
+      Tesseract.recognize(
+        file,
+        'eng',
+        { logger: function(m) { /* console.log(m); */ } }
+      ).then(function(result) {
+        var text = result.data.text;
+        if (statusText) statusText.style.display = 'none';
+        if (detailsBox) detailsBox.style.display = 'block';
+        
+        // Find License Number: e.g., N01-12-123456
+        var licRegex = /[A-Z]\d{2}-\d{2}-\d{6}/g;
+        var matchLic = text.match(licRegex);
+        if (matchLic && document.getElementById('editLicenseNumber')) {
+          document.getElementById('editLicenseNumber').value = matchLic[0];
+          // Trigger visual feedback (e.g. green border)
+          document.getElementById('editLicenseNumber').style.borderColor = "var(--success)";
+        }
+        
+        // Find Expiry Date (YYYY/MM/DD or YYYY-MM-DD)
+        var dateRegex = /(20\d{2})[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])/g;
+        var matchDate = text.match(dateRegex);
+        if (matchDate && document.getElementById('editLicenseExpiry')) {
+          var formattedDate = matchDate[0].replace(/\//g, '-');
+          document.getElementById('editLicenseExpiry').value = formattedDate;
+          document.getElementById('editLicenseExpiry').style.borderColor = "var(--success)";
+        }
+      }).catch(function(err) {
+        console.error('OCR Error:', err);
+        if (statusText) statusText.style.display = 'none';
+      });
+    }
   } else {
     _licenseBackBlob = file;
     var preview = document.getElementById('licenseEditPreviewBack');
@@ -5535,12 +5579,22 @@ function loadProfile() {
 
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
-      var editNameEl = document.getElementById('editName');
+      var editFnEl = document.getElementById('editFirstName');
+      var editMnEl = document.getElementById('editMiddleName');
+      var editLnEl = document.getElementById('editLastName');
       var editPhoneEl = document.getElementById('editPhone');
       var pointsEl = document.getElementById('profilePoints');
       if (nameEl) nameEl.textContent = profile.full_name || '';
       if (emailEl) emailEl.textContent = profile.email || '';
-      if (editNameEl) editNameEl.value = profile.full_name || '';
+      
+      var nameParts = (profile.full_name || '').split(/\s+/).filter(Boolean);
+      var fn = profile.first_name || nameParts[0] || '';
+      var ln = profile.last_name || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
+      var mn = profile.middle_name || (nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '');
+      
+      if (editFnEl) editFnEl.value = fn;
+      if (editMnEl) editMnEl.value = mn;
+      if (editLnEl) editLnEl.value = ln;
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
       var editEmailEl = document.getElementById('editEmail');
       if (editEmailEl) editEmailEl.value = profile.email || '';
@@ -5717,12 +5771,16 @@ function pickProfilePicture() {
 }
 
 function doUpdateProfile() {
-  var nameEl = document.getElementById('editName');
+  var fnEl = document.getElementById('editFirstName');
+  var mnEl = document.getElementById('editMiddleName');
+  var lnEl = document.getElementById('editLastName');
   var phoneEl = document.getElementById('editPhone');
   var emailEl = document.getElementById('editEmail');
   var phoneErrEl = document.getElementById('editPhoneErr');
   var emailErrEl = document.getElementById('editEmailErr');
-  var name = nameEl ? sanitizeInput(nameEl.value.trim()) : '';
+  var firstName = fnEl ? sanitizeInput(fnEl.value.trim()) : '';
+  var middleName = mnEl ? sanitizeInput(mnEl.value.trim()) : '';
+  var lastName = lnEl ? sanitizeInput(lnEl.value.trim()) : '';
   var phone = phoneEl ? phoneEl.value.trim() : '';
   var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
   if (phoneErrEl) phoneErrEl.textContent = '';
@@ -5735,7 +5793,9 @@ function doUpdateProfile() {
   }
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
-  fd.append('full_name', name);
+  fd.append('first_name', firstName);
+  fd.append('middle_name', middleName);
+  fd.append('last_name', lastName);
   fd.append('phone', phone);
   if (email) fd.append('email', email);
   if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');

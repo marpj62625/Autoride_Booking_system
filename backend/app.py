@@ -1132,7 +1132,11 @@ def register():
 
         data = request.json
 
-        name = data.get('name')
+        first_name = data.get('first_name')
+
+        middle_name = data.get('middle_name', '')
+
+        last_name = data.get('last_name')
 
         email = data.get('email')
 
@@ -1140,7 +1144,11 @@ def register():
 
     else:
 
-        name = request.form.get('name')
+        first_name = request.form.get('first_name')
+
+        middle_name = request.form.get('middle_name', '')
+
+        last_name = request.form.get('last_name')
 
         email = request.form.get('email')
 
@@ -1152,7 +1160,11 @@ def register():
 
         return jsonify({"error": "Only @gmail.com emails are allowed for registration."}), 400
 
-    
+    if not first_name or not first_name.strip():
+
+        return jsonify({"error": "First name is required."}), 400
+
+
 
     try:
 
@@ -1202,10 +1214,10 @@ def register():
         hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
         cur.execute("""
-            INSERT INTO users(full_name, email, password, is_email_verified, is_verified, license_image_url, role)
-            VALUES(%s, %s, %s, False, %s, %s, 'customer')
+            INSERT INTO users(first_name, middle_name, last_name, email, password, is_email_verified, is_verified, license_image_url, role)
+            VALUES(%s, %s, %s, %s, %s, False, %s, %s, 'customer')
             RETURNING id
-        """, (name, email, hashed_pw, is_verified, license_url))
+        """, (first_name, middle_name, last_name, email, hashed_pw, is_verified, license_url))
 
         
 
@@ -1602,15 +1614,23 @@ def upload_license():
 
         file_data = file.read()
 
-        res = supabase.storage.from_('uploads').upload(
+        try:
 
-            path=filename,
+            res = supabase.storage.from_('uploads').upload(
 
-            file=file_data,
+                path=filename,
 
-            file_options={"content-type": "image/jpeg"}
+                file=file_data,
 
-        )
+                file_options={"content-type": "image/jpeg", "upsert": "true"}
+
+            )
+
+        except Exception as storage_exc:
+
+            print(f"[upload_license] Supabase storage error for user {user_id}: {storage_exc}")
+
+            return jsonify({"error": "Failed to upload license image. Please try again."}), 500
 
         
 
@@ -1644,6 +1664,9 @@ def upload_license():
         return jsonify({"message": "License uploaded for verification", "url": url}), 200
 
     except Exception as e:
+
+        import traceback as _tb
+        print(f"[upload_license] Unexpected error: {_tb.format_exc()}")
 
         return jsonify({"error": str(e)}), 500
 
@@ -1828,15 +1851,17 @@ def admin_freeze_user(user_id):
 def admin_edit_user(user_id):
     """Edit user basic info."""
     data = request.get_json(silent=True) or {}
-    full_name = data.get('full_name', '').strip()
+    first_name = data.get('first_name', '').strip()
+    middle_name = data.get('middle_name', '').strip()
+    last_name = data.get('last_name', '').strip()
     phone = data.get('phone', '').strip()
-    if not full_name:
-        return jsonify({"error": "Full name is required"}), 400
+    if not first_name or not last_name:
+        return jsonify({"error": "First name and last name are required"}), 400
     try:
         cur = get_cursor()
         cur.execute(
-            "UPDATE users SET full_name = %s, phone = %s WHERE id = %s",
-            (full_name, phone or None, user_id)
+            "UPDATE users SET first_name = %s, middle_name = %s, last_name = %s, phone = %s WHERE id = %s",
+            (first_name, middle_name or None, last_name, phone or None, user_id)
         )
         commit_db()
         return jsonify({"message": "User updated successfully."}), 200
@@ -2201,11 +2226,14 @@ def google_auth():
                     }), 200
 
                 else:
-                    # 2b. New user — insert
+                    # 2b. New user — insert (split Google name into first/last)
+                    _name_parts = (name or '').strip().split(' ', 1)
+                    _first = _name_parts[0] if _name_parts else name
+                    _last = _name_parts[1] if len(_name_parts) > 1 else ''
                     try:
                         _gc.execute(
-                            "INSERT INTO users (full_name, email, google_id, auth_provider, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, 'google', %s, %s, 0) RETURNING id",
-                            (name, email, google_id, is_driver, google_email_verified)
+                            "INSERT INTO users (first_name, last_name, email, google_id, auth_provider, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, %s, 'google', %s, %s, 0) RETURNING id",
+                            (_first, _last, email, google_id, is_driver, google_email_verified)
                         )
                         new_row = _gc.fetchone()
                         new_user_id = new_row['id'] if new_row else None
@@ -2215,8 +2243,8 @@ def google_auth():
                         # Insert might fail if google_id/auth_provider columns don't exist yet
                         print(f"[GOOGLE_AUTH] INSERT with google columns failed: {_ie}, trying basic insert")
                         _gc.execute(
-                            "INSERT INTO users (full_name, email, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, %s, 0) RETURNING id",
-                            (name, email, is_driver, google_email_verified)
+                            "INSERT INTO users (first_name, last_name, email, is_driver, is_email_verified, is_verified) VALUES (%s, %s, %s, %s, %s, 0) RETURNING id",
+                            (_first, _last, email, is_driver, google_email_verified)
                         )
                         new_row = _gc.fetchone()
                         new_user_id = new_row['id'] if new_row else None
@@ -3854,9 +3882,9 @@ def update_profile():
     try:
 
         user_id = request.form.get('user_id')
-
-        full_name = request.form.get('full_name')
-
+        first_name = request.form.get('first_name')
+        middle_name = request.form.get('middle_name', '')
+        last_name = request.form.get('last_name')
         phone = request.form.get('phone')
 
         
@@ -3926,7 +3954,7 @@ def update_profile():
 
 
 
-        cur.execute("UPDATE users SET full_name=%s, phone=%s WHERE id=%s", (full_name, phone, user_id))
+        cur.execute("UPDATE users SET first_name=%s, middle_name=%s, last_name=%s, phone=%s WHERE id=%s", (first_name, middle_name, last_name, phone, user_id))
 
         # Update email if provided and not taken by another user
         new_email = request.form.get('email', '').strip().lower()
@@ -7709,11 +7737,15 @@ def create_admin():
 
 
         hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Split name into first/last for generated full_name column
+        _admin_name_parts = (name or '').strip().split(' ', 1)
+        _admin_first = _admin_name_parts[0] if _admin_name_parts else name
+        _admin_last = _admin_name_parts[1] if len(_admin_name_parts) > 1 else ''
         cur.execute("""
-            INSERT INTO users (full_name, email, password, role, assigned_location, is_email_verified, is_verified)
-            VALUES (%s, %s, %s, %s, %s, True, 1)
+            INSERT INTO users (first_name, last_name, email, password, role, assigned_location, is_email_verified, is_verified)
+            VALUES (%s, %s, %s, %s, %s, %s, True, 1)
             RETURNING id
-        """, (name, email, hashed_pw, role, assigned_location))
+        """, (_admin_first, _admin_last, email, hashed_pw, role, assigned_location))
 
         new_id = cur.fetchone()['id']
 
@@ -9424,8 +9456,15 @@ def save_license_details():
                   emergency_contact_name, emergency_contact_phone, 
                   emergency_contact_relationship, front_url, back_url))
             
-        # Update user verification status
-        cur.execute("UPDATE users SET is_verified = 1 WHERE id = %s", (user_id,))
+        # Update user verification status and sync license info to users table
+        cur.execute("""
+            UPDATE users 
+            SET is_verified = 1, 
+                license_number = %s, 
+                license_expiry = %s, 
+                license_image_url = %s 
+            WHERE id = %s
+        """, (license_number, expiry_date, front_url, user_id))
         commit_db()
 
         # Notify admins (with error handling to prevent notification failures from breaking the main flow)
