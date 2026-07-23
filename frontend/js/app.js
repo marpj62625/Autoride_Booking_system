@@ -5696,10 +5696,14 @@ function loadProfile() {
 
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
+      var editPhoneEl = document.getElementById('editPhone');
+      var pointsEl = document.getElementById('profilePoints');
+      if (nameEl) nameEl.textContent = profile.full_name || '';
+      if (emailEl) emailEl.textContent = profile.email || '';
       var editFirstEl = document.getElementById('editFirstName');
       var editMiddleEl = document.getElementById('editMiddleName');
       var editLastEl = document.getElementById('editLastName');
-      var nameParts = (profile.full_name || '').split(/\\s+/).filter(Boolean);
+      var nameParts = (profile.full_name || '').split(/\s+/).filter(Boolean);
       if (editFirstEl) editFirstEl.value = nameParts[0] || '';
       if (editLastEl) editLastEl.value = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
       if (editMiddleEl) editMiddleEl.value = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
