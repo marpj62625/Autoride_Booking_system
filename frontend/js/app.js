@@ -819,6 +819,23 @@ function showToast(message, type) {
   }, 3500);
 }
 
+// --- BUTTON LOADING STATE HELPER ---
+// Usage: var restore = setButtonLoading(btn, 'Saving...');  then call restore() when done.
+function setButtonLoading(btn, loadingText) {
+  if (!btn) return function() {};
+  var original = btn.innerHTML;
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  btn.style.cursor = 'not-allowed';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>' + (loadingText || 'Loading...');
+  return function() {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.innerHTML = original;
+  };
+}
+
 var MAIN_PAGES = ['page-home', 'page-vehicles', 'page-bookings', 'page-profile', 'page-more'];
 var NAV_MAP = {
   'page-home': 'nav-home',
@@ -1280,6 +1297,8 @@ function doLogin() {
   if (isBlank(email)) { document.getElementById('loginEmailErr').textContent = 'Email is required.'; return; }
   if (!isGmailAddress(email)) { document.getElementById('loginEmailErr').textContent = 'Only @gmail.com emails are allowed.'; return; }
   if (isBlank(password)) { document.getElementById('loginPasswordErr').textContent = 'Password is required.'; return; }
+  var loginBtn = document.querySelector('button[onclick="doLogin()"]');
+  var restoreBtn = setButtonLoading(loginBtn, 'Signing in...');
   showLoading(true);
   apiCall('/login', { method: 'POST', body: JSON.stringify({ email: email, password: password }) })
     .then(function(data) {
@@ -1315,7 +1334,7 @@ function doLogin() {
         document.getElementById('loginErr').textContent = err.message || 'Invalid credentials.';
       }
     })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // AUTH: FORGOT PASSWORD
@@ -1569,6 +1588,8 @@ function doRegister() {
   if (isBlank(firstName) || isBlank(lastName)) { document.getElementById('regNameErr').textContent = 'First and Last name are required.'; return; }
   if (!isGmailAddress(email)) { document.getElementById('regEmailErr').textContent = 'Only @gmail.com emails are allowed for registration.'; return; }
   if (isBlank(password) || password.length < 8) { document.getElementById('regPasswordErr').textContent = 'Password must be at least 8 characters.'; return; }
+  var regBtn = document.querySelector('button[onclick="doRegister()"]');
+  var restoreBtn = setButtonLoading(regBtn, 'Creating Account...');
   showLoading(true);
   apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password }) })
     .then(function() {
@@ -1590,7 +1611,7 @@ function doRegister() {
         document.getElementById('regErr').textContent = err.message || 'Registration failed.';
       }
     })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // AUTH: OTP
@@ -3135,7 +3156,8 @@ function submitBooking() {
     split_with_email: splitEmail || null
   };
 
-  // Check availability on the server before proceeding
+  var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
+  var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
   showLoading(true);
   apiCall('/vehicles/check-availability', {
     method: 'POST',
@@ -3146,6 +3168,7 @@ function submitBooking() {
     })
   }).then(function(avail) {
     showLoading(false);
+    restoreBtn();
     if (!avail.available) {
       var conflict = avail.conflict || {};
       var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
@@ -3165,6 +3188,7 @@ function submitBooking() {
     showRentalAgreement(payload, result, payType);
   }).catch(function(err) {
     showLoading(false);
+    restoreBtn();
     // If availability check fails, allow the booking to proceed (server will catch it)
     console.warn('Availability check failed:', err);
     showRentalAgreement(payload, result, payType);
@@ -3230,7 +3254,8 @@ function confirmAndBook() {
   }
   var modal = document.getElementById('rentalAgreementModal');
   if (modal) modal.remove();
-
+  var confirmBtn = document.getElementById('confirmPayBtn');
+  var restoreBtn = setButtonLoading(confirmBtn, 'Booking...');
   showLoading(true);
   apiCall('/book', { method: 'POST', body: JSON.stringify(_pendingBookingPayload) })
     .then(function(data) {
@@ -3245,7 +3270,7 @@ function confirmAndBook() {
       var errEl = document.getElementById('bfErr');
       if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
     })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // PAYMENT - PayMongo Integration
@@ -5467,7 +5492,8 @@ var Profile = {
     } else {
       classEl.style.borderColor = 'var(--border, #e5e7eb)';
     }
-
+    var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
+    var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
     showLoading(true);
     
     // Compress both front and back images more aggressively (800x800, 0.6 quality) to fit Vercel payload limit (4.5MB) and speed up uploads
@@ -5513,6 +5539,7 @@ var Profile = {
     })
     .finally(function() { 
       showLoading(false); 
+      restoreBtn();
     });
   }
 };
@@ -6103,6 +6130,8 @@ function doUpdateProfile() {
   fd.append('phone', phone);
   if (email) fd.append('email', email);
   if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');
+  var saveBtn = document.querySelector('button[onclick="doUpdateProfile()"]');
+  var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
   showLoading(true);
   uploadFile('/update-profile', fd)
     .then(function() {
@@ -6114,7 +6143,7 @@ function doUpdateProfile() {
       loadProfile();
     })
     .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // LICENSE UPLOAD
