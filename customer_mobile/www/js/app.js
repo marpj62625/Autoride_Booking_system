@@ -5467,32 +5467,35 @@ function handleLicenseFileSelect(e, side) {
         }
 
         // --- 4. Find License Class (DL Codes) ---
-        // OCR raw: "@ DLcodes Conditions" — "@" is OCR misread of "A", appears BEFORE the label
+        // OCR raw example: "@ DLcodes Conditions" where "@" = "A" (OCR misread)
+        // Strategy: find the line with DLcodes, grab it + prev line, replace @ with A, extract codes
         var classVal = '';
-        var normalizedText = text.replace(/@/g, 'A');
-        var dlLabelRegex = /[DdO][LlI1]\s*[Cc]odes?/i;
-        var dlLabelMatch = normalizedText.match(dlLabelRegex);
-
-        if (dlLabelMatch) {
-          var dlIndex = normalizedText.indexOf(dlLabelMatch[0]);
-          // The code is RIGHT BEFORE the label (within ~10 chars) — use tight window
-          var beforeLabel = normalizedText.substring(Math.max(0, dlIndex - 10), dlIndex);
-          var afterLabelRaw = normalizedText.substring(dlIndex + dlLabelMatch[0].length);
-          var afterLabel = afterLabelRaw.split(/[\n\r]|CONDITIONS?|SIGNATURE/i)[0];
-          var searchArea = beforeLabel + ' ' + afterLabel;
-
-          var dlRegex = /\b([A-E][12]?|[1-8])\b/g;
-          var dlMatches = [];
-          var dlM;
-          while ((dlM = dlRegex.exec(searchArea)) !== null) {
-            var code = dlM[1].toUpperCase();
-            if (dlMatches.indexOf(code) === -1) {
-              dlMatches.push(code);
-            }
+        var textLines2 = text.split(/[\n\r]+/);
+        var dlLineIndex = -1;
+        for (var i = 0; i < textLines2.length; i++) {
+          if (/[DdO][LlI1]\s*[Cc]odes?/i.test(textLines2[i])) {
+            dlLineIndex = i;
+            break;
           }
-          if (dlMatches.length > 0) {
-            classVal = dlMatches.join(', ');
+        }
+        console.log('DL line index:', dlLineIndex, dlLineIndex >= 0 ? 'Line: [' + textLines2[dlLineIndex] + ']' : 'NOT FOUND');
+        if (dlLineIndex >= 0) {
+          var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
+          var dlLineText = textLines2[dlLineIndex];
+          var combined = (prevLine + ' ' + dlLineText).replace(/@/g, 'A');
+          console.log('DL combined search area:', combined);
+          var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?/gi, ' ');
+          stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
+          console.log('DL stripped search:', stripped);
+          var dlCodeRegex = /\b([A-E][12]?|[1-8])\b/g;
+          var dlFound = [];
+          var dlMx;
+          while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
+            var c = dlMx[1].toUpperCase();
+            if (dlFound.indexOf(c) === -1) dlFound.push(c);
           }
+          console.log('DL codes found:', dlFound);
+          if (dlFound.length > 0) classVal = dlFound.join(', ');
         }
         if (classVal && document.getElementById('editLicenseClass')) {
           document.getElementById('editLicenseClass').value = classVal;
