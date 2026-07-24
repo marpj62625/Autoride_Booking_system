@@ -701,6 +701,11 @@ function uploadFile(endpoint, formData, timeoutMs) {
             throw parseErr;
           }
           if (!res.ok) {
+            if (res.status === 413) {
+              var sizeErr = new Error('File is too large. Please use a smaller image (max ~4MB).');
+              sizeErr.status = 413;
+              throw sizeErr;
+            }
             var err = new Error(data.error || 'Upload failed');
             err.status = res.status;
             throw err;
@@ -781,6 +786,30 @@ function showToast(message, type) {
     t.classList.remove('show');
     setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
   }, 3500);
+}
+
+// --- INLINE FIELD ERROR HELPERS ---
+// Attaches a small red error message directly below a form field.
+function showInlineError(el, message) {
+  if (!el) return;
+  el.style.borderColor = 'var(--danger, #f87171)';
+  el.style.outline = '0';
+  var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+  if (existing) existing.remove();
+  var errSpan = document.createElement('span');
+  errSpan.setAttribute('data-inline-err', el.id);
+  errSpan.style.cssText = 'display:block;color:var(--danger,#f87171);font-size:0.78rem;margin-top:3px;';
+  errSpan.textContent = message;
+  if (el.parentNode) el.parentNode.insertBefore(errSpan, el.nextSibling);
+  el.focus();
+}
+
+function clearInlineError(el) {
+  if (!el) return;
+  el.style.borderColor = '';
+  el.style.outline = '';
+  var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+  if (existing) existing.remove();
 }
 
 var MAIN_PAGES = ['page-home', 'page-vehicles', 'page-bookings', 'page-profile', 'page-more'];
@@ -1210,12 +1239,14 @@ function handleBackButton() {
 function doLogin() {
   var email = sanitizeInput(document.getElementById('loginEmail').value.trim());
   var password = document.getElementById('loginPassword').value;
-  document.getElementById('loginEmailErr').textContent = '';
-  document.getElementById('loginPasswordErr').textContent = '';
   document.getElementById('loginErr').textContent = '';
-  if (isBlank(email)) { document.getElementById('loginEmailErr').textContent = 'Email is required.'; return; }
-  if (!isGmailAddress(email)) { document.getElementById('loginEmailErr').textContent = 'Only @gmail.com emails are allowed.'; return; }
-  if (isBlank(password)) { document.getElementById('loginPasswordErr').textContent = 'Password is required.'; return; }
+  var emailEl = document.getElementById('loginEmail');
+  var passwordEl = document.getElementById('loginPassword');
+  clearInlineError(emailEl);
+  clearInlineError(passwordEl);
+  if (isBlank(email)) { showInlineError(emailEl, 'Email is required.'); return; }
+  if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed.'); return; }
+  if (isBlank(password)) { showInlineError(passwordEl, 'Password is required.'); return; }
   var loginBtn = document.querySelector('button[onclick="doLogin()"]');
   var restoreBtn = setButtonLoading(loginBtn, 'Signing in...');
   showLoading(true);
@@ -1498,14 +1529,23 @@ function doRegister() {
   var lastName = sanitizeInput(document.getElementById('regLastName').value.trim());
   var email = sanitizeInput(document.getElementById('regEmail').value.trim());
   var password = document.getElementById('regPassword').value;
-  ['regFirstNameErr','regLastNameErr','regEmailErr','regPasswordErr','regErr'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.textContent = '';
-  });
-  if (isBlank(firstName)) { document.getElementById('regFirstNameErr').textContent = 'First name is required.'; return; }
-  if (isBlank(lastName)) { document.getElementById('regLastNameErr').textContent = 'Last name is required.'; return; }
-  if (!isGmailAddress(email)) { document.getElementById('regEmailErr').textContent = 'Only @gmail.com emails are allowed for registration.'; return; }
-  if (isBlank(password) || password.length < 8) { document.getElementById('regPasswordErr').textContent = 'Password must be at least 8 characters.'; return; }
+  var firstNameEl = document.getElementById('regFirstName');
+  var lastNameEl = document.getElementById('regLastName');
+  var emailEl = document.getElementById('regEmail');
+  var passwordEl = document.getElementById('regPassword');
+
+  clearInlineError(firstNameEl);
+  clearInlineError(lastNameEl);
+  clearInlineError(emailEl);
+  clearInlineError(passwordEl);
+  
+  var hasErr = false;
+  if (isBlank(firstName)) { showInlineError(firstNameEl, 'First name is required.'); hasErr = true; }
+  if (isBlank(lastName)) { showInlineError(lastNameEl, 'Last name is required.'); hasErr = true; }
+  if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed for registration.'); hasErr = true; }
+  if (isBlank(password) || password.length < 8) { showInlineError(passwordEl, 'Password must be at least 8 characters.'); hasErr = true; }
+  
+  if (hasErr) return;
   var regBtn = document.querySelector('button[onclick="doRegister()"]');
   var restoreBtn = setButtonLoading(regBtn, 'Creating Account...');
   showLoading(true);
@@ -1524,9 +1564,10 @@ function doRegister() {
     })
     .catch(function(err) {
       if (err.status === 409) {
-        document.getElementById('regEmailErr').textContent = 'Email already registered.';
+        showInlineError(document.getElementById('regEmail'), 'Email already registered.');
       } else {
-        document.getElementById('regErr').textContent = err.message || 'Registration failed.';
+        var errEl = document.getElementById('regErr');
+        if (errEl) errEl.textContent = err.message || 'Registration failed.';
       }
     })
     .finally(function() { showLoading(false); restoreBtn(); });
@@ -2989,26 +3030,21 @@ function submitBooking() {
   var endEl = document.getElementById('bfEndDate');
   var pickupEl = document.getElementById('bfPickupTime');
 
-  // reset borders
-  if (startEl) startEl.style.borderColor = 'var(--border, #e5e7eb)';
-  if (endEl) endEl.style.borderColor = 'var(--border, #e5e7eb)';
-  if (pickupEl) pickupEl.style.borderColor = 'var(--border, #e5e7eb)';
+  clearInlineError(startEl);
+  clearInlineError(endEl);
+  clearInlineError(pickupEl);
 
   var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
     if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
-      document.getElementById('bfStartErr').textContent = dateCheck.error;
-      if (pickupEl) { pickupEl.style.borderColor = 'var(--danger, #f87171)'; pickupEl.focus(); }
+      showInlineError(pickupEl, dateCheck.error);
     } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
-      document.getElementById('bfStartErr').textContent = dateCheck.error;
-      if (startEl) { startEl.style.borderColor = 'var(--danger, #f87171)'; startEl.focus(); }
+      showInlineError(startEl, dateCheck.error);
     } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
-      document.getElementById('bfStartErr').textContent = dateCheck.error;
-      if (!start && startEl) { startEl.style.borderColor = 'var(--danger, #f87171)'; startEl.focus(); }
-      else if (!end && endEl) { endEl.style.borderColor = 'var(--danger, #f87171)'; endEl.focus(); }
+      if (!start && startEl) { showInlineError(startEl, 'Start date is required'); }
+      else if (!end && endEl) { showInlineError(endEl, 'End date is required'); }
     } else {
-      document.getElementById('bfEndErr').textContent = dateCheck.error;
-      if (endEl) { endEl.style.borderColor = 'var(--danger, #f87171)'; endEl.focus(); }
+      showInlineError(endEl, dateCheck.error);
     }
     return;
   }
@@ -5347,14 +5383,13 @@ var Profile = {
       var el = document.getElementById(fid);
       var val = (el.value || '').trim();
       if (!val) {
-        if (errEl) errEl.textContent = fields[fid] + ' is required.';
+        if (errEl) errEl.textContent = 'Please fill out all required fields.';
         if (el) {
-          el.style.borderColor = 'var(--danger, #f87171)';
-          el.focus();
+          showInlineError(el, fields[fid] + ' is required.');
         }
         return;
       } else if (el) {
-        el.style.borderColor = 'var(--border, #e5e7eb)';
+        clearInlineError(el);
       }
     }
 
@@ -5362,12 +5397,11 @@ var Profile = {
     var licenseNum = licenseNumEl.value.trim();
     var licensePattern = /^[A-Z0-9]{3}-[A-Z0-9]{2}-[0-9]{6}$/i;
     if (!licensePattern.test(licenseNum)) {
-      if (errEl) errEl.textContent = 'Invalid License Number format. Must be LNN-YY-NNNNNN (e.g., N01-23-456789).';
-      licenseNumEl.style.borderColor = 'var(--danger, #f87171)';
-      licenseNumEl.focus();
+      if (errEl) errEl.textContent = 'Please fix the errors below.';
+      showInlineError(licenseNumEl, 'Invalid format. Must be LNN-YY-NNNNNN (e.g., N01-23-456789).');
       return;
     } else {
-      licenseNumEl.style.borderColor = 'var(--border, #e5e7eb)';
+      clearInlineError(licenseNumEl);
     }
 
     var dobEl = document.getElementById('editLicenseDob');
@@ -5380,12 +5414,11 @@ var Profile = {
         age--;
       }
       if (age < 18) {
-        if (errEl) errEl.textContent = 'You must be at least 18 years old to use this service.';
-        dobEl.style.borderColor = 'var(--danger, #f87171)';
-        dobEl.focus();
+        if (errEl) errEl.textContent = 'Please fix the errors below.';
+        showInlineError(dobEl, 'You must be at least 18 years old to use this service.');
         return;
       } else {
-        dobEl.style.borderColor = 'var(--border, #e5e7eb)';
+        clearInlineError(dobEl);
       }
     }
 
@@ -5394,12 +5427,11 @@ var Profile = {
     var classes = licenseClass.split(/[\s,]+/).filter(Boolean);
     var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1', '1'].indexOf(c) !== -1; });
     if (isMotorcycleOnly) {
-      if (errEl) errEl.textContent = 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.';
-      classEl.style.borderColor = 'var(--danger, #f87171)';
-      classEl.focus();
+      if (errEl) errEl.textContent = 'Please fix the errors below.';
+      showInlineError(classEl, 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.');
       return;
     } else {
-      classEl.style.borderColor = 'var(--border, #e5e7eb)';
+      clearInlineError(classEl);
     }
 
     var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
@@ -5965,13 +5997,15 @@ function doUpdateProfile() {
   var lastName = lnEl ? sanitizeInput(lnEl.value.trim()) : '';
   var phone = phoneEl ? phoneEl.value.trim() : '';
   var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  clearInlineError(phoneEl);
+  clearInlineError(emailEl);
   if (phoneErrEl) phoneErrEl.textContent = '';
   if (emailErrEl) emailErrEl.textContent = '';
   if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11)) {
-    if (phoneErrEl) phoneErrEl.textContent = 'Phone must be 10-11 digits.'; return;
+    showInlineError(phoneEl, 'Phone must be 10-11 digits.'); return;
   }
   if (email && !isGmailAddress(email)) {
-    if (emailErrEl) emailErrEl.textContent = 'Only @gmail.com emails are allowed.'; return;
+    showInlineError(emailEl, 'Only @gmail.com emails are allowed.'); return;
   }
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
