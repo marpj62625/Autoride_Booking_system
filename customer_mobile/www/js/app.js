@@ -5482,7 +5482,7 @@ function handleLicenseFileSelect(e, side) {
         if (dlLineIndex >= 0) {
           var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
           var dlLineText = textLines2[dlLineIndex];
-          var combined = (prevLine + ' ' + dlLineText).replace(/@/g, 'A');
+          var combined = (prevLine + ' ' + dlLineText).replace(/[@©]/g, 'A');
           console.log('DL combined search area:', combined);
           var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?/gi, ' ');
           stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
