@@ -759,17 +759,28 @@ function showLoading(show) {
 
 function showToast(message, type) {
   type = type || 'info';
-  var existing = document.querySelector('.toast');
-  if (existing) existing.remove();
+  var icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  var container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
   var t = document.createElement('div');
   t.className = 'toast toast-' + type;
-  t.textContent = message;
-  document.body.appendChild(t);
+  var icon = document.createElement('span');
+  icon.className = 'toast-icon';
+  icon.textContent = icons[type] || 'ℹ️';
+  var msg = document.createElement('span');
+  msg.textContent = message;
+  t.appendChild(icon);
+  t.appendChild(msg);
+  container.appendChild(t);
   requestAnimationFrame(function() { t.classList.add('show'); });
   setTimeout(function() {
     t.classList.remove('show');
     setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
-  }, 3000);
+  }, 3500);
 }
 
 var MAIN_PAGES = ['page-home', 'page-vehicles', 'page-bookings', 'page-profile', 'page-more'];
