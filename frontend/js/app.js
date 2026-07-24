@@ -5535,6 +5535,21 @@ var Profile = {
     } else {
       clearInlineError(classEl);
     }
+
+    // Validate license expiry date — must not be expired
+    var expiryEl = document.getElementById('editLicenseExpiry');
+    if (expiryEl && expiryEl.value) {
+      var expiryDate = new Date(expiryEl.value);
+      var todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      if (expiryDate < todayStart) {
+        if (errEl) errEl.textContent = 'Please fix the errors below.';
+        showInlineError(expiryEl, 'Your license has already expired. Please renew your license before registering.');
+        return;
+      } else {
+        clearInlineError(expiryEl);
+      }
+    }
     var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
     var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
     showLoading(true);
