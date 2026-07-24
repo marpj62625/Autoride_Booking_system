@@ -1033,6 +1033,15 @@ initApp();
 
 // Also listen for events as fallback
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Network Connection Listeners
+window.addEventListener('offline', function() {
+  showToast('You are currently offline. Please check your internet connection.', 'error');
+});
+window.addEventListener('online', function() {
+  showToast('You are back online!', 'success');
+});
+
 document.addEventListener('deviceready', function() {
   initApp();
   
