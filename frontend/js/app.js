@@ -5382,27 +5382,62 @@ var Profile = {
       'editLicenseEmRel': 'Relationship'
     };
     for (var fid in fields) {
-      var val = (document.getElementById(fid).value || '').trim();
+      var el = document.getElementById(fid);
+      var val = (el.value || '').trim();
       if (!val) {
         if (errEl) errEl.textContent = fields[fid] + ' is required.';
+        if (el) {
+          el.style.borderColor = 'var(--danger, #f87171)';
+          el.focus();
+        }
         return;
+      } else if (el) {
+        el.style.borderColor = 'var(--border, #e5e7eb)';
       }
     }
 
-    // Validate driver's license number format (AAA-YY-NNNNNN)
-    var licenseNum = document.getElementById('editLicenseNumber').value.trim();
+    var licenseNumEl = document.getElementById('editLicenseNumber');
+    var licenseNum = licenseNumEl.value.trim();
     var licensePattern = /^[A-Z0-9]{3}-[A-Z0-9]{2}-[0-9]{6}$/i;
     if (!licensePattern.test(licenseNum)) {
       if (errEl) errEl.textContent = 'Invalid License Number format. Must be LNN-YY-NNNNNN (e.g., N01-23-456789).';
+      licenseNumEl.style.borderColor = 'var(--danger, #f87171)';
+      licenseNumEl.focus();
       return;
+    } else {
+      licenseNumEl.style.borderColor = 'var(--border, #e5e7eb)';
     }
 
-    var licenseClass = document.getElementById('editLicenseClass').value.trim().toUpperCase();
+    var dobEl = document.getElementById('editLicenseDob');
+    if (dobEl && dobEl.value) {
+      var dob = new Date(dobEl.value);
+      var today = new Date();
+      var age = today.getFullYear() - dob.getFullYear();
+      var m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        if (errEl) errEl.textContent = 'You must be at least 18 years old to use this service.';
+        dobEl.style.borderColor = 'var(--danger, #f87171)';
+        dobEl.focus();
+        return;
+      } else {
+        dobEl.style.borderColor = 'var(--border, #e5e7eb)';
+      }
+    }
+
+    var classEl = document.getElementById('editLicenseClass');
+    var licenseClass = classEl.value.trim().toUpperCase();
     var classes = licenseClass.split(/[\s,]+/).filter(Boolean);
     var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1', '1'].indexOf(c) !== -1; });
     if (isMotorcycleOnly) {
       if (errEl) errEl.textContent = 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.';
+      classEl.style.borderColor = 'var(--danger, #f87171)';
+      classEl.focus();
       return;
+    } else {
+      classEl.style.borderColor = 'var(--border, #e5e7eb)';
     }
 
     showLoading(true);
