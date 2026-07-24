@@ -5591,11 +5591,12 @@ function handleLicenseFileSelect(e, side) {
           // Remove known non-code words
           stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
           console.log('DL stripped search:', stripped);
-          var dlCodeRegex = /\b([A-E][12]?|[1-8])\b/g;
+          var dlCodeRegex = /(?:^|\s)([A-E][12]?|[1-8]|[@©＠0O])(?=\s|$)/gi;
           var dlFound = [];
           var dlMx;
           while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
             var c = dlMx[1].toUpperCase();
+            if (['@', '©', '＠', '0', 'O'].indexOf(c) !== -1) c = 'A';
             if (dlFound.indexOf(c) === -1) dlFound.push(c);
           }
           console.log('DL codes found:', dlFound);
