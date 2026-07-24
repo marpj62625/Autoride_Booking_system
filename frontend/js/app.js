@@ -783,17 +783,20 @@ function showLoading(show) {
   if (show) {
     _loadingCount++;
     if (overlay) overlay.style.display = 'flex';
-    // Safety: auto-hide after 10s to prevent spinner getting stuck
+    document.body.style.pointerEvents = 'none'; // Block clicks globally
+    // Safety: auto-hide after 120s to prevent spinner getting stuck
     clearTimeout(_loadingTimeout);
     _loadingTimeout = setTimeout(function() {
       _loadingCount = 0;
       if (overlay) overlay.style.display = 'none';
+      document.body.style.pointerEvents = ''; // Restore clicks
     }, 120000); // 120s safety timeout (supports large file uploads)
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
       clearTimeout(_loadingTimeout);
       if (overlay) overlay.style.display = 'none';
+      document.body.style.pointerEvents = ''; // Restore clicks
     }
   }
 }
