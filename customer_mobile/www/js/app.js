@@ -2961,13 +2961,30 @@ function submitBooking() {
   document.getElementById('bfStartErr').textContent = '';
   document.getElementById('bfEndErr').textContent = '';
   document.getElementById('bfErr').textContent = '';
+  var startEl = document.getElementById('bfStartDate');
+  var endEl = document.getElementById('bfEndDate');
+  var pickupEl = document.getElementById('bfPickupTime');
+
+  // reset borders
+  if (startEl) startEl.style.borderColor = 'var(--border, #e5e7eb)';
+  if (endEl) endEl.style.borderColor = 'var(--border, #e5e7eb)';
+  if (pickupEl) pickupEl.style.borderColor = 'var(--border, #e5e7eb)';
+
   var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
-    // Route pickup-time errors to start date error field
-    if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0 || dateCheck.error.indexOf('Pickup time') >= 0)) {
+    if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
       document.getElementById('bfStartErr').textContent = dateCheck.error;
+      if (pickupEl) { pickupEl.style.borderColor = 'var(--danger, #f87171)'; pickupEl.focus(); }
+    } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
+      document.getElementById('bfStartErr').textContent = dateCheck.error;
+      if (startEl) { startEl.style.borderColor = 'var(--danger, #f87171)'; startEl.focus(); }
+    } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
+      document.getElementById('bfStartErr').textContent = dateCheck.error;
+      if (!start && startEl) { startEl.style.borderColor = 'var(--danger, #f87171)'; startEl.focus(); }
+      else if (!end && endEl) { endEl.style.borderColor = 'var(--danger, #f87171)'; endEl.focus(); }
     } else {
       document.getElementById('bfEndErr').textContent = dateCheck.error;
+      if (endEl) { endEl.style.borderColor = 'var(--danger, #f87171)'; endEl.focus(); }
     }
     return;
   }
