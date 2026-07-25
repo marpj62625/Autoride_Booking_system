@@ -205,13 +205,29 @@
                 <div class="status-badge status-available" id="vehicleStatus" style="margin-top: 0.5rem;">Available</div>
                 <div class="star-rating" id="vehicleRating" style="margin-top: 0.5rem; font-size: 1.1rem;"></div>
                 
-                <ul class="info-list">
-                    <li><span>Plate Number</span> <strong id="vehiclePlate">-</strong></li>
-                    <li><span>Type</span> <strong id="vehicleType">-</strong></li>
-                    <li><span>Transmission</span> <strong id="vehicleTrans">-</strong></li>
-                    <li><span>Seats</span> <strong id="vehicleSeats">-</strong></li>
-                    <li><span>Daily Rate</span> <strong class="vehicle-price" id="vehicleRate">-</strong></li>
-                </ul>
+                <div class="vehicle-specs-grid" id="vehicleSpecsGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; padding: 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card);">
+                    <!-- Column 1 -->
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+                        <div>⚙️ <span id="vehicleTrans">-</span></div>
+                        <div>👥 <span id="vehicleSeats">-</span> seats</div>
+                        <div>🎨 <span id="vehicleColor">-</span></div>
+                    </div>
+                    <!-- Column 2 -->
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+                        <div>⛽ <span id="vehicleFuel">-</span></div>
+                        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📍 <span id="vehicleLoc">-</span></div>
+                        <div id="vehicleMileage">🛣️ -</div>
+                    </div>
+                    <!-- Column 3 -->
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+                        <div id="vehicleLuggage">🧳 -</div>
+                        <div id="vehicleYear">📅 -</div>
+                        <div>🎫 <span id="vehiclePlate">-</span></div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; font-size: 1.25rem; font-weight: bold; color: var(--text-color);">
+                    <span class="vehicle-price" id="vehicleRate">-</span> <span style="font-size: 0.9rem; font-weight: normal; color: var(--text-muted);">/ day</span>
+                </div>
             </div>
 
             <!-- Right: Booking Form -->
@@ -461,11 +477,23 @@
                     
                     document.getElementById('vehicleName').textContent = `${data.brand} ${data.model}`;
                     document.getElementById('vehiclePlate').textContent = data.plate_number;
-                    document.getElementById('vehicleType').textContent = data.vehicle_type;
+                    // Handle Luggage Capacity based on seats
+                    const s = parseInt(data.seats) || 5;
+                    let luggage = '4 Bags';
+                    if (s <= 2) luggage = '1 Bag';
+                    else if (s <= 5) luggage = '2 Bags';
+                    else if (s <= 7) luggage = '3 Bags';
+
                     document.getElementById('vehicleTrans').textContent = data.transmission;
                     document.getElementById('vehicleSeats').textContent = data.seats;
-                    document.getElementById('vehicleRate').textContent = `₱${data.daily_rate}/day`;
+                    document.getElementById('vehicleColor').textContent = data.color || 'Not Specified';
+                    document.getElementById('vehicleFuel').textContent = data.fuel_type || '-';
+                    document.getElementById('vehicleLoc').textContent = data.location || '-';
+                    document.getElementById('vehicleRate').textContent = `₱${data.daily_rate}`;
                     
+                    document.getElementById('vehicleMileage').textContent = data.mileage_type === 'unlimited' ? '🛣️ Unlimited Mileage' : `🛣️ ${data.mileage_km_per_day || 250} km/day`;
+                    document.getElementById('vehicleLuggage').textContent = `🧳 ${luggage}`;
+                    document.getElementById('vehicleYear').textContent = data.year_model ? `📅 ${data.year_model} Model` : '📅 Model N/A';
                     // Display status
                     const statusEl = document.getElementById('vehicleStatus');
                     statusEl.textContent = data.status;

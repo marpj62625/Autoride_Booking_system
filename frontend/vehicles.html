@@ -207,6 +207,14 @@
             }
         }
 
+        function getLuggageCount(seats) {
+            const s = parseInt(seats) || 5;
+            if (s <= 2) return '1 Bag';
+            if (s <= 5) return '2 Bags';
+            if (s <= 7) return '3 Bags';
+            return '4 Bags';
+        }
+
         function renderVehicles(vehicles) {
             const grid = document.getElementById('vehiclesGrid');
             grid.innerHTML = '';
@@ -249,11 +257,21 @@
                             </div>
                             <div class="star-rating">${stars} <span style="font-size: 0.8rem; color: var(--text-muted);">(${v.avg_rating ? v.avg_rating.toFixed(1) : 'No reviews'})</span></div>
                             <div class="vehicle-price">₱${v.daily_rate}/day</div>
-                            <div class="vehicle-specs">
-                                <span><b>Seats:</b> ${v.seats}</span>
-                                <span><b>Trans:</b> ${v.transmission}</span>
-                                <span><b>Fuel:</b> ${v.fuel_type}</span>
-                                <span><b>Loc:</b> ${v.location}</span>
+                            <div class="vehicle-specs" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; font-size: 0.8rem; margin-bottom: 12px;">
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <span>⚙️ ${v.transmission}</span>
+                                    <span>👥 ${v.seats} seats</span>
+                                    <span>🎨 ${v.color || 'Not Specified'}</span>
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <span>⛽ ${v.fuel_type}</span>
+                                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${v.location}">📍 ${v.location}</span>
+                                    <span>${v.mileage_type === 'unlimited' ? '🛣️ Unlimited Mileage' : '🛣️ ' + (v.mileage_km_per_day || 250) + ' km/day'}</span>
+                                </div>
+                                <div style="display:flex; flex-direction:column; gap:6px;">
+                                    <span>🧳 ${getLuggageCount(v.seats)}</span>
+                                    <span>📅 ${v.year_model ? v.year_model + ' Model' : 'Model N/A'}</span>
+                                </div>
                             </div>
                             <a href="vehicle-details.html?id=${v.id}" class="btn-outline">View Details</a>
                         </div>
