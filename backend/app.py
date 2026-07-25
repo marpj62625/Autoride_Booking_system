@@ -7870,7 +7870,13 @@ def add_vehicle():
         cur = get_cursor()
         # Ensure color column exists
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_type VARCHAR(20) DEFAULT 'limited'")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_km_per_day INT DEFAULT 250")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS year_model INT DEFAULT NULL")
         color = data.get('color') or None
+        mileage_type = data.get('mileage_type') or 'limited'
+        mileage_km_per_day = data.get('mileage_km_per_day') or 250
+        year_model = data.get('year_model') or None
         # Handle image upload if file provided
         vehicle_image = data.get('vehicle_image', '')
         if 'gallery' in request.files:
@@ -7885,10 +7891,10 @@ def add_vehicle():
                 except Exception:
                     pass
         cur.execute(
-            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
-             data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color)
+             data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model)
         )
         new_id = cur.fetchone()['id']
         # Handle additional gallery files
@@ -7922,7 +7928,13 @@ def update_vehicle(vehicle_id):
     try:
         cur = get_cursor()
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_type VARCHAR(20) DEFAULT 'limited'")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_km_per_day INT DEFAULT 250")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS year_model INT DEFAULT NULL")
         color = data.get('color') or None
+        mileage_type = data.get('mileage_type') or 'limited'
+        mileage_km_per_day = data.get('mileage_km_per_day') or 250
+        year_model = data.get('year_model') or None
         # Fetch existing vehicle_image from DB so it's preserved if no new photo is uploaded
         cur.execute("SELECT vehicle_image FROM vehicles WHERE id = %s", (vehicle_id,))
         existing = cur.fetchone()
@@ -7946,10 +7958,10 @@ def update_vehicle(vehicle_id):
                     except Exception:
                         pass
         cur.execute(
-            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s WHERE id=%s",
+            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
-             data.get('status'), data.get('daily_rate'), vehicle_image, color, vehicle_id)
+             data.get('status'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model, vehicle_id)
         )
         commit_db()
         return jsonify({"message": "Vehicle updated"}), 200
