@@ -16869,45 +16869,40 @@ async edit(id) { this.openModal(id); }
 
 
         async submit(e) {
-
-
-
             e.preventDefault();
-
-
-
             const id = this.editingId;
-
-
-
             const user = adminAuth.getUser();
 
+            const nameEl = document.getElementById('staffName');
+            const emailEl = document.getElementById('staffEmail');
+            const passEl = document.getElementById('staffPass');
+            const roleEl = document.getElementById('staffRole');
 
+            [nameEl, emailEl, passEl, roleEl].forEach(el => clearInlineError(el));
+            let hasError = false;
+
+            const name = nameEl.value.trim();
+            if (!name) { showInlineError(nameEl, 'Name is required'); hasError = true; }
+
+            const email = emailEl.value.trim();
+            if (!email) { showInlineError(emailEl, 'Email is required'); hasError = true; }
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showInlineError(emailEl, 'Please enter a valid email address'); hasError = true; }
+
+            const password = passEl.value;
+            if (!id && !password) { showInlineError(passEl, 'Password is required for new staff'); hasError = true; }
+            else if (password && password.length < 6) { showInlineError(passEl, 'Password must be at least 6 characters long'); hasError = true; }
+
+            const role = roleEl.value;
+            if (!role) { showInlineError(roleEl, 'Role is required'); hasError = true; }
+
+            if (hasError) return;
 
             const payload = {
-
-
-
                 requester_id: user.id,
-
-
-
-                name: document.getElementById('staffName').value,
-
-
-
-                email: document.getElementById('staffEmail').value,
-
-
-
-                password: document.getElementById('staffPass').value,
-
-
-
-                role: document.getElementById('staffRole').value
-
-
-
+                name: name,
+                email: email,
+                password: password,
+                role: role
             };
 
 
@@ -23844,17 +23839,27 @@ async edit(id) { this.openModal(id); }
 
 
         async submit(event) {
-
-
-
             event.preventDefault();
 
+            const mileageEl = document.getElementById('inspectMileage');
+            const fuelEl = document.getElementById('inspectFuel');
 
+            if (mileageEl) clearInlineError(mileageEl);
+            if (fuelEl) clearInlineError(fuelEl);
+            let hasError = false;
+
+            if (mileageEl && (!mileageEl.value.trim() || isNaN(mileageEl.value) || parseInt(mileageEl.value) < 0)) {
+                showInlineError(mileageEl, 'Valid mileage is required');
+                hasError = true;
+            }
+            if (fuelEl && (!fuelEl.value.trim() || isNaN(fuelEl.value) || parseInt(fuelEl.value) < 0 || parseInt(fuelEl.value) > 100)) {
+                showInlineError(fuelEl, 'Fuel level (0-100) is required');
+                hasError = true;
+            }
+
+            if (hasError) return;
 
             const btn = document.getElementById('inspectSubmitBtn');
-
-
-
             const originalText = btn.innerHTML;
 
 
@@ -26804,17 +26809,13 @@ async edit(id) { this.openModal(id); }
 
 
             if (freeze) {
-
-
-
-                reason = (document.getElementById('umFreezeReason') || {}).value || '';
-
-
-
-                if (!reason.trim()) { alert('Please enter a reason for freezing'); return; }
-
-
-
+                const reasonEl = document.getElementById('umFreezeReason');
+                if (reasonEl) clearInlineError(reasonEl);
+                reason = (reasonEl || {}).value || '';
+                if (!reason.trim()) { 
+                    if (reasonEl) showInlineError(reasonEl, 'Please enter a reason for freezing'); 
+                    return; 
+                }
             }
 
 
