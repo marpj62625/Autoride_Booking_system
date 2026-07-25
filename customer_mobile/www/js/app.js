@@ -4047,16 +4047,21 @@ function renderBookingDetail(b) {
       '</div>' +
 
       // Status grid: payment status / total price / booking status
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">' +
-        '<div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:20px;margin-bottom:24px;">' +
+        '<div style="flex:1;min-width:110px;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
           '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + pColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
         '</div>' +
-        '<div>' +
+        (b.discount_amount && parseFloat(b.discount_amount) > 0 ? 
+        '<div style="flex:1;min-width:110px;">' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Discount Applied</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--success);">-₱' + (parseFloat(b.discount_amount) || 0).toFixed(2) + '</div>' +
+        '</div>' : '') +
+        '<div style="flex:1;min-width:110px;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">?' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">₱' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
         '</div>' +
-        '<div>' +
+        '<div style="flex:1;min-width:110px;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
           '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + sColor + ';color:#fff;">' + b.status.toUpperCase() + '</span>' +
         '</div>' +
