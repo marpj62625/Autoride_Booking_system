@@ -203,9 +203,8 @@ def payment_success():
                         except Exception:
                             pass
                     
-                    pay_type = booking['payment_type'] or 'Full'
-                    if booking['payment_status'] == 'Partially Paid':
-                        pay_type = 'Balance'
+                    link_metadata = link['attributes'].get('metadata', {})
+                    pay_type = link_metadata.get('payment_type') or booking['payment_type'] or 'Full'
                     
                     _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
 
@@ -343,10 +342,7 @@ def paymongo_webhook():
                     cur.execute("SELECT payment_type, payment_status FROM bookings WHERE id = %s", (booking_id,))
                     booking = cur.fetchone()
                     if booking:
-                        pay_type = booking['payment_type'] or 'Full'
-                        if booking['payment_status'] == 'Partially Paid':
-                            pay_type = 'Balance'
-                        _confirm_payment(booking_id, amount, method, ref_num, pay_type)
+                        _confirm_payment(booking_id, amount, method, ref_num, payment_type)
 
         return jsonify({'received': True}), 200
 
@@ -375,7 +371,7 @@ def check_payment_status(booking_id):
             return jsonify({'error': 'Booking not found'}), 404
 
         # Already confirmed in DB (Only applies if we aren't checking a specific new link)
-        if not query_link_id and booking['payment_status'] in ('Paid', 'Partially Paid'):
+        if not query_link_id and booking['payment_status'] == 'Paid':
             return jsonify({
                 'booking_id': booking_id,
                 'status': booking['status'],
@@ -426,9 +422,9 @@ def check_payment_status(booking_id):
                             except Exception as parse_err:
                                 debug_info['parse_error'] = str(parse_err)
 
-                        pay_type = booking['payment_type'] or 'Full'
-                        if booking['payment_status'] == 'Partially Paid':
-                            pay_type = 'Balance'
+                        link_metadata = link_data['attributes'].get('metadata', {})
+                        pay_type = link_metadata.get('payment_type') or booking['payment_type'] or 'Full'
+                        
                         _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
                         new_status = 'Partially Paid' if pay_type == 'Downpayment' else 'Paid'
                         return jsonify({
@@ -518,9 +514,9 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                             except Exception:
                                 pass
                         
-                        pay_type = booking['payment_type'] or 'Full'
-                        if booking['payment_status'] == 'Partially Paid':
-                            pay_type = 'Balance'
+                        link_metadata = link_data['attributes'].get('metadata', {})
+                        pay_type = link_metadata.get('payment_type') or booking['payment_type'] or 'Full'
+                        
                         _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
             except Exception as pm_err:
                 print(f"Automatic PayMongo status check error for booking {booking_id}: {pm_err}")
@@ -539,8 +535,11 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
         # Check if already paid (idempotency)
         cur.execute("SELECT payment_status FROM bookings WHERE id = %s", (booking_id,))
         b = cur.fetchone()
-        if b and b['payment_status'] == 'Paid':
-            return  # Already processed
+        if b:
+            if b['payment_status'] == 'Paid':
+                return  # Already processed
+            if payment_type == 'Downpayment' and b['payment_status'] == 'Partially Paid':
+                return  # Downpayment already processed
 
         # Insert payment record
         cur.execute("""
