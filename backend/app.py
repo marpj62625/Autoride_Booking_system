@@ -4372,14 +4372,14 @@ def modify_booking():
 
         new_total = new_base_price + new_addon_price + new_insurance_price
 
-        # Check for long term discount in app_settings
-        cur.execute("SELECT setting_value FROM app_settings WHERE setting_key = 'long_term_discount_days'")
+        # Check for long term discount in settings table
+        cur.execute("SELECT value FROM settings WHERE key = 'long_term_discount_days'")
         row = cur.fetchone()
-        lt_days = int(row['setting_value']) if row else 7
+        lt_days = int(row['value']) if row else 7
         
-        cur.execute("SELECT setting_value FROM app_settings WHERE setting_key = 'long_term_discount_percent'")
+        cur.execute("SELECT value FROM settings WHERE key = 'long_term_discount_percent'")
         row = cur.fetchone()
-        lt_pct = int(row['setting_value']) if row else 10
+        lt_pct = int(row['value']) if row else 10
         
         discount = 0
         if new_days >= lt_days:
