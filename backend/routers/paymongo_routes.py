@@ -172,7 +172,7 @@ def payment_success():
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT paymongo_link_id, payment_type, total_price FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute("SELECT paymongo_link_id, payment_type, payment_status, total_price FROM bookings WHERE id = %s", (booking_id,))
         booking = cur.fetchone()
 
         if booking and booking['paymongo_link_id']:
@@ -202,7 +202,12 @@ def payment_success():
                                 amount_paid = raw_amount / 100
                         except Exception:
                             pass
-                    _confirm_payment(booking_id, amount_paid, method, ref_num, booking['payment_type'])
+                    
+                    pay_type = booking['payment_type'] or 'Full'
+                    if booking['payment_status'] == 'Partially Paid':
+                        pay_type = 'Balance'
+                    
+                    _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
 
         # Redirect back to app with deep link
         return f'''
@@ -335,10 +340,13 @@ def paymongo_webhook():
                     pass
                 else:
                     cur = get_cursor()
-                    cur.execute("SELECT payment_type FROM bookings WHERE id = %s", (booking_id,))
+                    cur.execute("SELECT payment_type, payment_status FROM bookings WHERE id = %s", (booking_id,))
                     booking = cur.fetchone()
                     if booking:
-                        _confirm_payment(booking_id, amount, method, ref_num, booking['payment_type'])
+                        pay_type = booking['payment_type'] or 'Full'
+                        if booking['payment_status'] == 'Partially Paid':
+                            pay_type = 'Balance'
+                        _confirm_payment(booking_id, amount, method, ref_num, pay_type)
 
         return jsonify({'received': True}), 200
 
@@ -419,6 +427,8 @@ def check_payment_status(booking_id):
                                 debug_info['parse_error'] = str(parse_err)
 
                         pay_type = booking['payment_type'] or 'Full'
+                        if booking['payment_status'] == 'Partially Paid':
+                            pay_type = 'Balance'
                         _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
                         new_status = 'Partially Paid' if pay_type == 'Downpayment' else 'Paid'
                         return jsonify({
@@ -509,6 +519,8 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                                 pass
                         
                         pay_type = booking['payment_type'] or 'Full'
+                        if booking['payment_status'] == 'Partially Paid':
+                            pay_type = 'Balance'
                         _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
             except Exception as pm_err:
                 print(f"Automatic PayMongo status check error for booking {booking_id}: {pm_err}")
