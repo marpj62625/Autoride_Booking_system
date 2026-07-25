@@ -9662,18 +9662,34 @@
 
 
         login: async function() {
-            const email = (document.getElementById('loginEmail') || {}).value || '';
-            const password = (document.getElementById('loginPass') || {}).value || '';
+            const emailEl = document.getElementById('loginEmail');
+            const passEl = document.getElementById('loginPass');
+            const email = (emailEl || {}).value || '';
+            const password = (passEl || {}).value || '';
             const btn = document.getElementById('loginBtn');
             const errEl = document.getElementById('loginError');
 
-            // Empty-field validation (same as mobile)
+            if (emailEl) clearInlineError(emailEl);
+            if (passEl) clearInlineError(passEl);
+
+            let hasError = false;
+
+            // Empty-field and format validation
             if (!email.trim()) {
-                if (errEl) { errEl.textContent = 'Please enter your email address'; errEl.style.display = 'block'; }
-                return;
+                if (emailEl) showInlineError(emailEl, 'Please enter your email address');
+                hasError = true;
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+                if (emailEl) showInlineError(emailEl, 'Please enter a valid email address');
+                hasError = true;
             }
+
             if (!password.trim()) {
-                if (errEl) { errEl.textContent = 'Please enter your password'; errEl.style.display = 'block'; }
+                if (passEl) showInlineError(passEl, 'Please enter your password');
+                hasError = true;
+            }
+
+            if (hasError) {
+                if (errEl) { errEl.style.display = 'none'; }
                 return;
             }
 
