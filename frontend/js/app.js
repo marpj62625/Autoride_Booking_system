@@ -2344,26 +2344,56 @@ function renderVehicleUnits(brand, model, color, units) {
     var isAvailable = ['Available'].indexOf(v.status) >= 0;
     var statusColor = isAvailable ? 'var(--success)' : (v.status === 'Booked' ? 'var(--info)' : 'var(--warning)');
     var imgSrc = (v.gallery && v.gallery.length) ? buildImgUrl(v.gallery[0]) : buildImgUrl(v.vehicle_image);
+
+    // Luggage based on seats
+    var seats = parseInt(v.seats) || 5;
+    var luggage = seats <= 2 ? '1 Bag' : seats <= 5 ? '2 Bags' : seats <= 7 ? '3 Bags' : '4 Bags';
+
+    // Mileage display
+    var mileageText = v.mileage_type === 'unlimited'
+      ? '🛣️ Unlimited Mileage'
+      : '🛣️ ' + (v.mileage_km_per_day || 250) + ' km/day';
+    var mileageExtra = v.mileage_type !== 'unlimited'
+      ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Extra: ₱10/km over limit</div>'
+      : '';
+
+    // Year model
+    var yearText = v.year_model ? '📅 ' + v.year_model + ' Model' : '📅 Model N/A';
+
     return '<div class="card" style="margin-bottom:14px;">' +
       '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
       '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
       (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Plate</span><br><strong>' + (v.plate_number || 'N/A') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Seats</span><br><strong>' + (v.seats || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Fuel</span><br><strong>' + (v.fuel_type || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Transmission</span><br><strong>' + (v.transmission || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Location</span><br><strong>' + (v.location || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Rate</span><br><strong style="color:var(--primary);">' + formatPHP(v.daily_rate) + '/day</strong></div>' +
+      // 3-column grid specs
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;font-size:0.8rem;">' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div>⚙️ ' + (v.transmission || '-') + '</div>' +
+          '<div>👥 ' + (v.seats || '-') + ' seats</div>' +
+          '<div>🎨 ' + (v.color_display || v.color || 'N/A') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div>⛽ ' + (v.fuel_type || '-') + '</div>' +
+          '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ' + (v.location || '-') + '</div>' +
+          '<div>' + mileageText + '</div>' +
+          mileageExtra +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div>🧳 ' + luggage + '</div>' +
+          '<div>' + yearText + '</div>' +
+          '<div>🎫 ' + (v.plate_number || 'N/A') + '</div>' +
+        '</div>' +
       '</div>' +
+      // Price
+      '<div style="font-size:1.2rem;font-weight:800;color:var(--primary);margin-bottom:12px;">' + formatPHP(v.daily_rate) + ' <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted);">/day</span></div>' +
       (isAvailable
-        ? '<button class="btn-primary" onclick="openVehicleDetail(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book This Vehicle</button>'
+        ? '<button class="btn-primary" onclick="selectVehicleUnit(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book This Vehicle</button>'
         : '<button class="btn-secondary" disabled style="opacity:0.5;cursor:not-allowed;"><i class="fas fa-ban"></i> Not Available (' + v.status + ')</button>'
       ) +
       '</div>';
   }).join('');
+
 
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-units\')"><i class="fas fa-arrow-left"></i></button>' +
