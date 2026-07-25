@@ -12,6 +12,7 @@ const refreshBtn = document.getElementById("refreshBtn");
 
 const nameInput = document.getElementById("name");
 const modelInput = document.getElementById("model");
+const categoryInput = document.getElementById("vehicle_type");
 const priceInput = document.getElementById("pricePerDay");
 const availabilityInput = document.getElementById("availability");
 const imageInput = document.getElementById("image");
@@ -80,6 +81,7 @@ function renderVehicles(vehicles) {
             <td>${escapeHtml(v.plate_number || "N/A")}</td>
             <td>${escapeHtml(displayName)}</td>
             <td>${escapeHtml(v.model || "")}</td>
+            <td>${escapeHtml(v.vehicle_type || "")}</td>
             <td>₱${formatMoney(v.daily_rate)}</td>
             <td><span class="pill ${status === "available" ? "available" : "unavailable"}">${escapeHtml(v.status || "Unavailable")}</span></td>
             <td>${renderImage(v.vehicle_image)}</td>
@@ -105,14 +107,15 @@ async function onSubmitVehicle(event) {
     event.preventDefault();
 
     const payload = {
-        name: nameInput.value.trim(),
+        brand: nameInput.value.trim(),
         model: modelInput.value.trim(),
-        price_per_day: Number(priceInput.value),
+        vehicle_type: categoryInput.value,
+        daily_rate: Number(priceInput.value),
         status: availabilityInput.value,
-        image: imageInput.value.trim()
+        vehicle_image: imageInput.value.trim()
     };
 
-    if (!payload.name || !payload.model || Number.isNaN(payload.price_per_day)) {
+    if (!payload.brand || !payload.model || Number.isNaN(payload.daily_rate)) {
         alert("Please fill in Name, Model, and Price per day.");
         return;
     }
@@ -151,6 +154,7 @@ function startEdit(vehicleId) {
 
     nameInput.value = vehicle.name || vehicle.brand || "";
     modelInput.value = vehicle.model || "";
+    categoryInput.value = vehicle.vehicle_type || "";
     priceInput.value = vehicle.daily_rate ?? "";
     availabilityInput.value = vehicle.status || "Available";
     imageInput.value = vehicle.vehicle_image || "";
@@ -158,17 +162,11 @@ function startEdit(vehicleId) {
 }
 
 async function deleteVehicle(vehicleId) {
-    const ok = confirm("Delete this vehicle?");
-    if (!ok) {
-        return;
-    }
+    if (!confirm("Are you sure you want to delete this vehicle?")) return;
 
     try {
         const res = await fetch(`${API_BASE}/vehicles/${vehicleId}`, { method: "DELETE" });
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.error || "Failed to delete vehicle");
-        }
+        if (!res.ok) throw new Error("Failed to delete");
         await fetchVehicles();
     } catch (err) {
         alert(err.message);
@@ -180,8 +178,13 @@ function resetForm() {
     formTitle.textContent = "Add New Vehicle";
     submitBtn.textContent = "Add Vehicle";
     cancelEditBtn.classList.add("hidden");
-    vehicleForm.reset();
+
+    nameInput.value = "";
+    modelInput.value = "";
+    categoryInput.value = "";
+    priceInput.value = "";
     availabilityInput.value = "Available";
+    imageInput.value = "";
 }
 
 function showLoading(show) {

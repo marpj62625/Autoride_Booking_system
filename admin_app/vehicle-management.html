@@ -29,6 +29,19 @@
                         <input id="model" type="text" required>
                     </label>
                     <label>
+                        Category
+                        <select id="vehicle_type" required>
+                            <option value="">Select Category</option>
+                            <option value="Sedan">Sedan</option>
+                            <option value="SUV">SUV</option>
+                            <option value="Van">Van</option>
+                            <option value="Hatchback">Hatchback</option>
+                            <option value="Pick-up">Pick-up</option>
+                            <option value="MPV">MPV</option>
+                            <option value="Motorcycle">Motorcycle</option>
+                        </select>
+                    </label>
+                    <label>
                         Price per day
                         <input id="pricePerDay" type="number" min="0" step="0.01" required>
                     </label>
@@ -64,6 +77,7 @@
                             <th>Plate #</th>
                             <th>Name</th>
                             <th>Model</th>
+                            <th>Category</th>
                             <th>Price/Day</th>
                             <th>Availability</th>
                             <th>Image</th>
