@@ -5231,18 +5231,52 @@ function submitModifyBooking(bookingId) {
 function openPayBalanceScreen(bookingId, balance) {
   var el = document.getElementById('paymentContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
+  balance = parseFloat(balance || 0);
+  el.innerHTML =
+    '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Pay Balance</h2></div>' +
-    '<div class="scroll-content">' +
-    '<div class="card"><div class="price-row total"><span>Balance Due</span><span>' + formatPHP(balance) + '</span></div></div>' +
+    '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Balance summary
     '<div class="card">' +
-    '<div class="form-group"><label>Method</label><select id="balMethod"><option>GCash</option><option>Credit Card</option><option>Cash (Over the counter)</option></select></div>' +
-    '<div class="form-group"><label>Reference Number</label><input type="text" id="balRef" placeholder="Reference number"></div>' +
+    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:8px;"></i>Balance for Booking #' + bookingId + '</h4>' +
+    '<div class="price-row total"><span>Balance Due</span><span style="color:var(--primary);font-weight:800;">' + formatPHP(balance) + '</span></div>' +
+    '<div style="margin-top:10px;padding:10px;background:var(--primary);border-radius:var(--radius-sm);text-align:center;">' +
+    '<div style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Amount Due Now</div>' +
+    '<div style="color:#fff;font-size:1.4rem;font-weight:800;">' + formatPHP(balance) + '</div>' +
+    '</div></div>' +
+
+    // PayMongo methods
+    '<div class="card">' +
+    '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
+    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Tap a method to proceed — secure payments via PayMongo</p>' +
+
+    '<div class="option-card" id="balPmGcash" onclick="submitBalancePayment(\'gcash\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:900;font-size:0.85rem;">G</span></div>' +
+    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Tap to pay via GCash</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#0070e0;margin-left:auto;"></i>' +
     '</div>' +
-    '<span class="field-error" id="balErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" onclick="submitBalancePayment(' + bookingId + ',' + balance + ')">Pay ' + formatPHP(balance) + '</button>' +
+
+    '<div class="option-card" id="balPmMaya" onclick="submitBalancePayment(\'maya\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:900;font-size:0.85rem;">M</span></div>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Tap to pay via Maya</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#00b4d8;margin-left:auto;"></i>' +
+    '</div>' +
+
+    '<div class="option-card" id="balPmCard" onclick="submitBalancePayment(\'card\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
+    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--text-secondary);">Visa, Mastercard, JCB</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '</div>' +
+
+    '<span class="field-error" id="balErr" style="display:block;margin-top:8px;text-align:center;"></span>' +
+    '</div>' +
     '</div>';
+
   // Force hide booking detail before showing payment overlay
   var detailEl = document.getElementById('page-booking-detail');
   if (detailEl) {
@@ -5307,24 +5341,46 @@ function openPayNowFromDetail(bookingId) {
   openPaymentScreen(bookingId, priceResult, 'Full', true);
 }
 
-function submitBalancePayment(bookingId, amount) {
-  var methodEl = document.getElementById('balMethod');
-  var refEl = document.getElementById('balRef');
-  var method = methodEl ? methodEl.value : 'GCash';
-  var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
+function submitBalancePayment(method, bookingId, amount) {
+  var errEl = document.getElementById('balErr');
+  if (errEl) errEl.textContent = '';
+  // Visual feedback
+  var idMap = { gcash: 'balPmGcash', maya: 'balPmMaya', card: 'balPmCard' };
+  var cards = document.querySelectorAll('#paymentContent .option-card');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+  var selCard = document.getElementById(idMap[method]);
+  if (selCard) selCard.classList.add('selected');
+
   showLoading(true);
-  apiCall('/bookings/' + bookingId + '/pay-balance', { method: 'POST', body: JSON.stringify({ amount: amount, method: method, reference_number: ref }) })
-    .then(function() {
-      showToast('Balance paid successfully!', 'success');
-      closeOverlay('page-payment');
-      closeOverlay('page-booking-detail');
-      loadBookings();
+  apiCall('/paymongo/create-payment', {
+    method: 'POST',
+    body: JSON.stringify({
+      booking_id: bookingId,
+      amount: amount,
+      method: method,
+      payment_type: 'Balance',
+      description: 'Autoride Booking #' + bookingId + ' Balance Payment',
+      customer_name: currentUser ? (currentUser.fullName || '') : '',
+      customer_email: currentUser ? (currentUser.email || '') : ''
+    })
+  })
+    .then(function(data) {
+      showLoading(false);
+      if (data.checkout_url) {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
+        } else {
+          window.open(data.checkout_url, '_blank');
+        }
+        showPaymentWaiting(bookingId, amount, method);
+      } else {
+        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+      }
     })
     .catch(function(err) {
-      var errEl = document.getElementById('balErr');
-      if (errEl) errEl.textContent = err.message;
-    })
-    .finally(function() { showLoading(false); });
+      showLoading(false);
+      if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+    });
 }
 
 // INSPECTION
