@@ -4305,14 +4305,11 @@ def modify_booking():
 
         cur.execute("""
 
-            SELECT b.total_price, v.daily_rate, b.status 
-
+            SELECT b.total_price, v.daily_rate, b.status, b.amount_paid, b.payment_status,
+                   b.addon_price, b.insurance_price, b.start_date AS old_start, b.end_date AS old_end
             FROM bookings b 
-
             JOIN vehicles v ON b.vehicle_id = v.id 
-
             WHERE b.id = %s
-
         """, (booking_id,))
 
         bk = cur.fetchone()
@@ -4352,47 +4349,69 @@ def modify_booking():
 
         rate = float(bk['daily_rate'])
 
-        # Simple days calc (reusing logic from frontend usually, but here for total_price update)
-
+        # Calculate new days
         from datetime import datetime
-
         d1 = datetime.strptime(new_start, "%Y-%m-%d")
-
         d2 = datetime.strptime(new_end, "%Y-%m-%d")
+        new_days = (d2 - d1).days + 1
 
-        days = (d2 - d1).days + 1
-
-        
-
-        if days <= 0:
-
+        if new_days <= 0:
             return jsonify({"error": "Invalid dates"}), 400
 
-            
+        # Calculate old days to find out daily rate of addons and insurance
+        od1 = datetime.strptime(str(bk['old_start']).split(' ')[0], "%Y-%m-%d")
+        od2 = datetime.strptime(str(bk['old_end']).split(' ')[0], "%Y-%m-%d")
+        old_days = (od2 - od1).days + 1
 
-        new_total = days * rate
+        daily_addon = float(bk['addon_price'] or 0) / old_days if old_days > 0 else 0
+        daily_insurance = float(bk['insurance_price'] or 0) / old_days if old_days > 0 else 0
 
-        # Apply 10% discount if days >= 7
+        new_addon_price = daily_addon * new_days
+        new_insurance_price = daily_insurance * new_days
+        new_base_price = rate * new_days
 
-        if days >= 7:
+        new_total = new_base_price + new_addon_price + new_insurance_price
 
-            new_total *= 0.90
+        # Check for long term discount in app_settings
+        cur.execute("SELECT setting_value FROM app_settings WHERE setting_key = 'long_term_discount_days'")
+        row = cur.fetchone()
+        lt_days = int(row['setting_value']) if row else 7
+        
+        cur.execute("SELECT setting_value FROM app_settings WHERE setting_key = 'long_term_discount_percent'")
+        row = cur.fetchone()
+        lt_pct = int(row['setting_value']) if row else 10
+        
+        discount = 0
+        if new_days >= lt_days:
+            # apply discount to base_price, mirroring frontend calculation
+            discount = new_base_price * (lt_pct / 100.0)
 
-        # Preview mode - return new total without saving
+        new_total -= discount
+
         if preview:
             return jsonify({"new_total": float(f"{new_total:.2f}")}), 200
+            
+        amount_paid = float(bk['amount_paid'] or 0)
+        new_balance = new_total - amount_paid
+        
+        new_payment_status = bk['payment_status']
+        if new_balance > 0:
+            if amount_paid > 0:
+                new_payment_status = 'Partially Paid'
+            else:
+                new_payment_status = 'Unpaid'
+        elif new_balance <= 0:
+            new_payment_status = 'Paid'
+            new_balance = 0.0
 
         cur.execute("""
-
             UPDATE bookings 
-
-            SET start_date = %s, end_date = %s, total_price = %s 
-
+            SET start_date = %s, end_date = %s, total_price = %s, base_price = %s, 
+                addon_price = %s, insurance_price = %s, discount_amount = %s,
+                balance_amount = %s, payment_status = %s
             WHERE id = %s
-
-        """, (new_start, new_end, new_total, booking_id))
-
-        
+        """, (new_start, new_end, new_total, new_base_price, new_addon_price, 
+              new_insurance_price, discount, new_balance, new_payment_status, booking_id))
 
         commit_db()
 
@@ -4401,6 +4420,7 @@ def modify_booking():
             cur.execute("SELECT user_id FROM bookings WHERE id = %s", (booking_id,))
             bk_row = cur.fetchone()
             if bk_row:
+                from notifications import notification_service
                 notification_service.notify_user(
                     bk_row['user_id'],
                     "Booking Updated",
@@ -4410,7 +4430,7 @@ def modify_booking():
         except Exception as notif_err:
             print(f"ERROR SENDING MODIFY BOOKING NOTIFICATION: {notif_err}")
 
-        return jsonify({"message": "Booking modified", "new_total": float(f"{new_total:.2f}")}), 200
+        return jsonify({"message": "Booking modified", "new_total": float(f"{new_total:.2f}"), "new_balance": float(f"{new_balance:.2f}")}), 200
 
     except Exception as e:
 

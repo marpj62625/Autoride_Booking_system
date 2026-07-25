@@ -5198,9 +5198,15 @@ function submitModifyBooking(bookingId) {
     body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, start_date: start, end_date: end })
   })
     .then(function(data) {
-      showToast('Booking dates updated! New total: ' + formatPHP(data.new_total), 'success');
-      closeOverlay('page-booking-detail');
-      loadBookings();
+      if (data.new_balance && data.new_balance > 0) {
+        showToast('Booking updated. Please pay the remaining balance of ' + formatPHP(data.new_balance), 'info');
+        closeOverlay('page-booking-detail');
+        openPayBalanceScreen(bookingId, data.new_balance);
+      } else {
+        showToast('Booking dates updated! New total: ' + formatPHP(data.new_total), 'success');
+        closeOverlay('page-booking-detail');
+        loadBookings();
+      }
     })
     .catch(function(err) { if (errEl) errEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
