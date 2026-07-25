@@ -4523,18 +4523,25 @@ function _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days) {
   parts.push('<div style="background:var(--bg-card);border-radius:12px;padding:16px;margin-bottom:24px;">');
   parts.push('<div style="font-size:0.75rem;color:var(--text-secondary);">' + days + '-day extension fee</div>');
   parts.push('<div style="font-size:1.4rem;font-weight:900;color:var(--primary);">' + formatPHP(price) + '</div></div>');
-  parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
+  
+  // Extract linkId if it was passed in arguments
+  var linkIdArg = arguments.length > 5 ? arguments[5] : '';
+  
+  parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ',\'' + linkIdArg + '\')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
   parts.push('<button class="btn-secondary" onclick="closeOverlay(\'page-booking-detail\')" style="width:100%;">Cancel</button>');
   parts.push('</div>');
   container.innerHTML = parts.join('');
 }
 
-function _checkExtPayment(bookingId, newEnd, price, methodLabel, days) {
+function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId) {
   showLoading(true);
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
   }
-  apiCall('/paymongo/status/' + bookingId)
+  var url = '/paymongo/status/' + bookingId;
+  if (linkId) url += '?link_id=' + linkId;
+  
+  apiCall(url)
     .then(function(data) {
       showLoading(false);
       if (data.paid) {
@@ -4587,14 +4594,46 @@ function calcExtPrice(currentEndDate, dailyRate) {
     var orig = new Date(origStr + 'T00:00:00');
     var next = new Date(newEnd + 'T00:00:00');
     if (isNaN(orig.getTime()) || isNaN(next.getTime())) return;
-    var days = Math.round((next - orig) / (1000 * 60 * 60 * 24));
-    if (days <= 0) { document.getElementById('extPriceBox').style.display = 'none'; return; }
-    var price = days * (parseFloat(dailyRate) || 0);
-    document.getElementById('extDaysLabel').textContent = days + ' day' + (days !== 1 ? 's' : '') + ' extension';
-    document.getElementById('extPriceLabel').textContent = formatPHP(price);
+    var extDays = Math.round((next - orig) / (1000 * 60 * 60 * 24));
+    if (extDays <= 0) { document.getElementById('extPriceBox').style.display = 'none'; return; }
+    
+    var totalDays = extDays;
+    var origDays = 0;
+    if (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.start_date) {
+      var start = new Date(activeBookingData.start_date.toString().split('T')[0] + 'T00:00:00');
+      if (!isNaN(start.getTime())) {
+        origDays = Math.round((orig - start) / (1000 * 60 * 60 * 24));
+        if (origDays > 0) totalDays = origDays + extDays;
+      }
+    }
+    
+    var extBasePrice = extDays * rate;
+    var finalPrice = extBasePrice;
+    var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+    var ltPercent = parseInt(appSettings.long_term_discount_percent) || 10;
+    var discountMsg = '';
+    
+    if (totalDays >= ltDays) {
+      if (origDays >= ltDays) {
+        // Already discounted before, apply to extension only
+        finalPrice = extBasePrice - (extBasePrice * (ltPercent / 100));
+        discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied</small>';
+      } else {
+        // Retroactive discount on entire duration
+        var totalBasePrice = totalDays * rate;
+        var totalDiscount = totalBasePrice * (ltPercent / 100);
+        var origPaidBase = origDays * rate;
+        finalPrice = (totalBasePrice - totalDiscount) - origPaidBase;
+        if (finalPrice < 0) finalPrice = 0;
+        discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied retroactively</small>';
+      }
+    }
+    
+    document.getElementById('extDaysLabel').innerHTML = extDays + ' day' + (extDays !== 1 ? 's' : '') + ' extension' + discountMsg;
+    document.getElementById('extPriceLabel').textContent = formatPHP(finalPrice);
     document.getElementById('extPriceBox').style.display = 'block';
-    document.getElementById('extPriceBox').dataset.price = price;
-    document.getElementById('extPriceBox').dataset.days = days;
+    document.getElementById('extPriceBox').dataset.price = finalPrice;
+    document.getElementById('extPriceBox').dataset.days = extDays;
   } catch(e) {}
 }
 
@@ -4617,7 +4656,29 @@ function submitExtension(bookingId) {
       var orig = new Date(origEnd + 'T00:00:00');
       var next = new Date(newEnd + 'T00:00:00');
       days = Math.round((next - orig) / (1000 * 60 * 60 * 24));
-      price = days * rate;
+      
+      var origDays = 0;
+      if (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.start_date) {
+        var start = new Date(activeBookingData.start_date.toString().split('T')[0] + 'T00:00:00');
+        if (!isNaN(start.getTime())) origDays = Math.round((orig - start) / (1000 * 60 * 60 * 24));
+      }
+      var totalDays = (origDays > 0) ? (origDays + days) : days;
+      var extBasePrice = days * rate;
+      price = extBasePrice;
+      
+      var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+      var ltPercent = parseInt(appSettings.long_term_discount_percent) || 10;
+      if (totalDays >= ltDays) {
+        if (origDays >= ltDays) {
+          price = extBasePrice - (extBasePrice * (ltPercent / 100));
+        } else {
+          var totalBasePrice = totalDays * rate;
+          var totalDiscount = totalBasePrice * (ltPercent / 100);
+          var origPaidBase = origDays * rate;
+          price = (totalBasePrice - totalDiscount) - origPaidBase;
+          if (price < 0) price = 0;
+        }
+      }
     } catch(e) {}
   }
 
@@ -4644,7 +4705,8 @@ function submitExtension(bookingId) {
         method: method,
         description: 'Booking #' + bookingId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
         customer_name: currentUser.fullName || '',
-        customer_email: currentUser.email || ''
+        customer_email: currentUser.email || '',
+        payment_type: 'Extension'
       })
     }).then(function(data) {
       showLoading(false);
@@ -4654,7 +4716,7 @@ function submitExtension(bookingId) {
         } else {
           window.open(data.checkout_url, '_blank');
         }
-        _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days);
+        _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days, data.link_id);
       } else {
         if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
       }

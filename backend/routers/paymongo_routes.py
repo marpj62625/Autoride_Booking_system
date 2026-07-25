@@ -135,13 +135,14 @@ def create_payment():
         checkout_url = link_data['attributes']['checkout_url']
         reference_number = link_data['attributes']['reference_number']
 
-        # Store the PayMongo link ID in the booking for webhook matching
-        cur = get_cursor()
-        cur.execute(
-            "UPDATE bookings SET paymongo_link_id = %s WHERE id = %s",
-            (link_id, booking_id)
-        )
-        commit_db()
+        # Store the PayMongo link ID in the booking for webhook matching (only for non-extensions)
+        if payment_type != 'Extension':
+            cur = get_cursor()
+            cur.execute(
+                "UPDATE bookings SET paymongo_link_id = %s WHERE id = %s",
+                (link_id, booking_id)
+            )
+            commit_db()
 
         return jsonify({
             'checkout_url': checkout_url,
@@ -327,11 +328,17 @@ def paymongo_webhook():
             ref_num = event['data']['attributes']['data']['id']
 
             if booking_id:
-                cur = get_cursor()
-                cur.execute("SELECT payment_type FROM bookings WHERE id = %s", (booking_id,))
-                booking = cur.fetchone()
-                if booking:
-                    _confirm_payment(booking_id, amount, method, ref_num, booking['payment_type'])
+                payment_type = metadata.get('payment_type', 'Full')
+                if payment_type == 'Extension':
+                    # Extension payment is confirmed by the frontend calling check_payment_status,
+                    # and the extension is submitted to the backend as pending.
+                    pass
+                else:
+                    cur = get_cursor()
+                    cur.execute("SELECT payment_type FROM bookings WHERE id = %s", (booking_id,))
+                    booking = cur.fetchone()
+                    if booking:
+                        _confirm_payment(booking_id, amount, method, ref_num, booking['payment_type'])
 
         return jsonify({'received': True}), 200
 
@@ -348,6 +355,8 @@ def check_payment_status(booking_id):
     Poll payment status. Actively checks PayMongo API if not yet confirmed in DB.
     """
     try:
+        query_link_id = request.args.get('link_id')
+        
         cur = get_cursor()
         cur.execute(
             "SELECT status, payment_status, paymongo_link_id, payment_type, total_price FROM bookings WHERE id = %s",
@@ -357,8 +366,8 @@ def check_payment_status(booking_id):
         if not booking:
             return jsonify({'error': 'Booking not found'}), 404
 
-        # Already confirmed in DB
-        if booking['payment_status'] in ('Paid', 'Partially Paid'):
+        # Already confirmed in DB (Only applies if we aren't checking a specific new link)
+        if not query_link_id and booking['payment_status'] in ('Paid', 'Partially Paid'):
             return jsonify({
                 'booking_id': booking_id,
                 'status': booking['status'],
@@ -367,7 +376,7 @@ def check_payment_status(booking_id):
             }), 200
 
         # Not yet confirmed - actively check PayMongo API
-        link_id = booking['paymongo_link_id']
+        link_id = query_link_id or booking['paymongo_link_id']
         debug_info = {'link_id': link_id, 'has_key': bool(PAYMONGO_SECRET_KEY)}
         if link_id and PAYMONGO_SECRET_KEY:
             try:
@@ -386,6 +395,11 @@ def check_payment_status(booking_id):
 
                     # PayMongo paid link - process payment
                     if link_status == 'paid':
+                        # If this is an extension payment, we just return paid status without triggering full payment confirmation
+                        is_extension = bool(query_link_id and query_link_id != booking['paymongo_link_id'])
+                        if is_extension:
+                            return jsonify({'booking_id': booking_id, 'paid': True, 'is_extension': True}), 200
+                            
                         # Try to get payment details from payments array
                         method = 'online'
                         ref_num = link_id
