@@ -4842,26 +4842,27 @@
 
 
 
-        <div style="position:relative; margin-bottom: 12px;">
-
-
-
-            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-
-
-
-            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
-
-
-
-                oninput="Vehicles.applyFilters()"
-
-
-
-                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
-
-
-
+        <div style="display:flex;gap:12px;margin-bottom:16px;">
+            <div style="position:relative;flex:1;">
+                <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
+                <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
+                    oninput="Vehicles.applyFilters()"
+                    style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div style="position:relative;width:200px;flex-shrink:0;">
+                <select id="vehicleCategoryFilter" onchange="Vehicles.applyFilters()"
+                    style="width:100%;padding:11px 30px 11px 14px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;appearance:none;cursor:pointer;">
+                    <option value="all">All Categories</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Van">Van</option>
+                    <option value="Hatchback">Hatchback</option>
+                    <option value="Pick-up">Pick-up</option>
+                    <option value="MPV">MPV</option>
+                    <option value="Motorcycle">Motorcycle</option>
+                </select>
+                <i class="fas fa-chevron-down" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.75rem;pointer-events:none;"></i>
+            </div>
         </div>
 
 
@@ -10332,50 +10333,26 @@
 
 
         applyFilters() {
-
-
-
             const q = (document.getElementById('vehicleSearch')?.value || '').toLowerCase().trim();
-
-
-
+            const categoryFilter = document.getElementById('vehicleCategoryFilter')?.value || 'all';
             const f = this._filter;
 
-
-
             const filtered = this.data.filter(v => {
-
-
-
                 const status = (v.status || '').toLowerCase();
-
-
-
                 const matchF = f === 'all' || status === f;
 
-
+                let matchCat = true;
+                if (categoryFilter !== 'all') {
+                    matchCat = (v.vehicle_type || '') === categoryFilter;
+                }
 
                 const matchQ = !q ||
-
-
-
                     (v.brand        || '').toLowerCase().includes(q) ||
-
-
-
                     (v.model        || '').toLowerCase().includes(q) ||
-
-
-
                     (v.plate_number || '').toLowerCase().includes(q) ||
-
-
-
                     (v.vehicle_type || '').toLowerCase().includes(q);
 
-
-
-                return matchF && matchQ;
+                return matchF && matchCat && matchQ;
 
 
 
