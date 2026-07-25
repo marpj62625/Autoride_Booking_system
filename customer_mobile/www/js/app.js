@@ -5056,24 +5056,29 @@ function openModifyBooking(bookingId, currentStart, currentEnd, amountPaid) {
         '<input type="hidden" id="modAmountPaid" value="' + amountPaid + '">' +
         '<span class="field-error" id="modErr" style="display:block;margin-bottom:12px;"></span>' +
         '<div id="modNewTotal" style="margin-bottom:14px;"></div>' +
-        '<button class="btn-primary" onclick="submitModifyBooking(' + bookingId + ')"><i class="fas fa-check"></i> Confirm Changes</button>' +
+        '<button class="btn-primary" id="modConfirmBtn" onclick="submitModifyBooking(' + bookingId + ')" disabled><i class="fas fa-check"></i> Confirm Changes</button>' +
       '</div>' +
     '</div>';
   el.innerHTML = formHtml;
   // Show new total preview when dates change
   ['modStart','modEnd'].forEach(function(id) {
     var inp = document.getElementById(id);
-    if (inp) inp.addEventListener('change', function() { previewModifyTotal(bookingId); });
+    if (inp) inp.addEventListener('change', function() { previewModifyTotal(bookingId, currentStart, currentEnd); });
   });
 }
 
-function previewModifyTotal(bookingId) {
+function previewModifyTotal(bookingId, origStart, origEnd) {
   var start = document.getElementById('modStart') ? document.getElementById('modStart').value : '';
   var end = document.getElementById('modEnd') ? document.getElementById('modEnd').value : '';
   var amountPaid = parseFloat((document.getElementById('modAmountPaid') || {}).value || 0);
   var el = document.getElementById('modNewTotal');
   if (!el || !start || !end) return;
   var v = validateDateRange(start, end);
+  var confirmBtn = document.getElementById('modConfirmBtn');
+  if (confirmBtn) {
+    // Disable button if dates are unchanged or invalid
+    confirmBtn.disabled = (!v.valid || (start === origStart && end === origEnd));
+  }
   if (!v.valid) { el.innerHTML = '<p style="color:var(--danger);font-size:0.82rem;">' + v.error + '</p>'; return; }
   el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);">Calculating new total...</p>';
   apiCall('/modify-booking', {
