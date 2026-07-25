@@ -4113,7 +4113,7 @@ function renderBookingDetail(b) {
   var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
   secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')">Download Receipt</button>';
   if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
-  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
+  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
   else secondaryActions += '</div>';
 
   var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
@@ -5140,9 +5140,10 @@ function promptCancelBooking(bookingId) {
     .finally(function() { showLoading(false); });
 }
 
-function openModifyBooking(bookingId, currentStart, currentEnd) {
+function openModifyBooking(bookingId, currentStart, currentEnd, amountPaid) {
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
+  amountPaid = parseFloat(amountPaid || 0);
   // Inject a modify form at the top of the detail content
   var formHtml =
     '<div class="page-header">' +
@@ -5154,6 +5155,7 @@ function openModifyBooking(bookingId, currentStart, currentEnd) {
         '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Select new rental dates. The price will be recalculated.</p>' +
         '<div class="form-group"><label>New Start Date</label><input type="date" id="modStart" value="' + currentStart + '"></div>' +
         '<div class="form-group"><label>New End Date</label><input type="date" id="modEnd" value="' + currentEnd + '"></div>' +
+        '<input type="hidden" id="modAmountPaid" value="' + amountPaid + '">' +
         '<span class="field-error" id="modErr" style="display:block;margin-bottom:12px;"></span>' +
         '<div id="modNewTotal" style="margin-bottom:14px;"></div>' +
         '<button class="btn-primary" onclick="submitModifyBooking(' + bookingId + ')"><i class="fas fa-check"></i> Confirm Changes</button>' +
@@ -5170,6 +5172,7 @@ function openModifyBooking(bookingId, currentStart, currentEnd) {
 function previewModifyTotal(bookingId) {
   var start = document.getElementById('modStart') ? document.getElementById('modStart').value : '';
   var end = document.getElementById('modEnd') ? document.getElementById('modEnd').value : '';
+  var amountPaid = parseFloat((document.getElementById('modAmountPaid') || {}).value || 0);
   var el = document.getElementById('modNewTotal');
   if (!el || !start || !end) return;
   var v = validateDateRange(start, end);
@@ -5180,7 +5183,19 @@ function previewModifyTotal(bookingId) {
     body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, start_date: start, end_date: end, preview: true })
   }).then(function(data) {
     if (data.new_total !== undefined) {
-      el.innerHTML = '<div class="price-row total"><span>New Total</span><span>' + formatPHP(data.new_total) + '</span></div>';
+      var html = '<div class="price-row total"><span>New Total</span><span>' + formatPHP(data.new_total) + '</span></div>';
+      // Show non-refundable notice if new total is less than amount paid
+      if (amountPaid > 0 && data.new_total < amountPaid) {
+        var excess = amountPaid - data.new_total;
+        html += '<div style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.4);border-radius:10px;padding:12px 14px;margin-top:10px;display:flex;gap:10px;align-items:flex-start;">' +
+          '<i class="fas fa-exclamation-triangle" style="color:#f59e0b;margin-top:2px;flex-shrink:0;"></i>' +
+          '<div>' +
+            '<p style="font-size:0.8rem;font-weight:700;color:#f59e0b;margin:0 0 4px;">Non-Refundable Notice</p>' +
+            '<p style="font-size:0.78rem;color:var(--text-secondary);margin:0;line-height:1.5;">Shortening your booking will reduce the total to <strong>' + formatPHP(data.new_total) + '</strong>. The difference of <strong>' + formatPHP(excess) + '</strong> from your previous payment is <strong>non-refundable</strong> per our rental policy.</p>' +
+          '</div>' +
+        '</div>';
+      }
+      el.innerHTML = html;
     }
   }).catch(function() { el.innerHTML = ''; });
 }

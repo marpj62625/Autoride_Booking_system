@@ -16,6 +16,32 @@ function isGmailAddress(email) {
   return email.toLowerCase().endsWith('@gmail.com');
 }
 
+function showInlineError(inputElement, errorMessage) {
+  if (!inputElement) return;
+  var errSpan = inputElement.nextElementSibling;
+  if (!errSpan || !errSpan.classList.contains('inline-error-msg')) {
+    errSpan = document.createElement('span');
+    errSpan.className = 'inline-error-msg';
+    errSpan.style.color = 'var(--danger, #f87171)';
+    errSpan.style.fontSize = '0.75rem';
+    errSpan.style.marginTop = '4px';
+    errSpan.style.display = 'block';
+    inputElement.parentNode.insertBefore(errSpan, inputElement.nextSibling);
+  }
+  errSpan.textContent = errorMessage;
+  inputElement.style.borderColor = 'var(--danger, #f87171)';
+  inputElement.focus();
+}
+
+function clearInlineError(inputElement) {
+  if (!inputElement) return;
+  var errSpan = inputElement.nextElementSibling;
+  if (errSpan && errSpan.classList.contains('inline-error-msg')) {
+    errSpan.textContent = '';
+  }
+  inputElement.style.borderColor = 'var(--border, #e5e7eb)';
+}
+
 /**
  * Returns true if the value is null, undefined, or a string whose trimmed form is empty.
  * Property 4: Whitespace-only input rejection.
