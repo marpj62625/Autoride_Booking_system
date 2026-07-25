@@ -9071,8 +9071,26 @@
 
 
 <script>
+    function showInlineError(el, message) {
+        if (!el) return;
+        el.style.borderColor = '#dc2626';
+        el.style.outline = '0';
+        var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+        if (existing) existing.remove();
+        var errSpan = document.createElement('span');
+        errSpan.setAttribute('data-inline-err', el.id);
+        errSpan.style.cssText = 'display:block;color:#dc2626;font-size:0.78rem;margin-top:3px;font-weight:500;';
+        errSpan.textContent = message;
+        el.parentNode.insertBefore(errSpan, el.nextSibling);
+    }
 
-
+    function clearInlineError(el) {
+        if (!el) return;
+        el.style.borderColor = '';
+        el.style.outline = '';
+        var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+        if (existing) existing.remove();
+    }
 
     // API URL: auto-detect � works on Vercel (web) and Android APK (hardcoded)
 
@@ -11417,28 +11435,47 @@
 
 
             // Validate photos for new vehicles
-
-
-
             if (!VehiclePhotos.validate(isEdit)) return;
 
+            // Clear previous inline errors
+            const fieldIds = ['vBrand', 'vModel', 'vPlate', 'vRate', 'vYear', 'vMileageKm'];
+            fieldIds.forEach(fid => {
+                const el = document.getElementById(fid);
+                if (el) clearInlineError(el);
+            });
 
+            let hasError = false;
 
+            const brandEl = document.getElementById('vBrand');
+            if (!brandEl.value.trim()) { showInlineError(brandEl, 'Brand is required'); hasError = true; }
 
+            const modelEl = document.getElementById('vModel');
+            if (!modelEl.value.trim()) { showInlineError(modelEl, 'Model is required'); hasError = true; }
 
+            const plateEl = document.getElementById('vPlate');
+            if (!plateEl.value.trim()) { showInlineError(plateEl, 'Plate Number is required'); hasError = true; }
 
+            const rateEl = document.getElementById('vRate');
+            if (!rateEl.value || parseFloat(rateEl.value) <= 0) { showInlineError(rateEl, 'Valid daily rate is required'); hasError = true; }
 
-            const brand = document.getElementById('vBrand').value;
+            const yearEl = document.getElementById('vYear');
+            if (yearEl.value && (yearEl.value.length !== 4 || isNaN(yearEl.value) || parseInt(yearEl.value) < 1990 || parseInt(yearEl.value) > 2030)) {
+                showInlineError(yearEl, 'Must be a valid 4-digit year (1990-2030)'); hasError = true;
+            }
 
+            const mileageTypeEl = document.getElementById('vMileageType');
+            const mileageKmEl = document.getElementById('vMileageKm');
+            if (mileageTypeEl.value === 'limited' && (!mileageKmEl.value || parseInt(mileageKmEl.value) <= 0)) {
+                showInlineError(mileageKmEl, 'Limit must be greater than 0'); hasError = true;
+            }
 
+            if (hasError) {
+                showNotification('Please fix the highlighted errors.', 'error');
+                return;
+            }
 
-            const model = document.getElementById('vModel').value;
-
-
-
-
-
-
+            const brand = brandEl.value.trim();
+            const model = modelEl.value.trim();
 
             const formData = new FormData();
 
