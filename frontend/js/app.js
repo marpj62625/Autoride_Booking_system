@@ -2574,7 +2574,27 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                   '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
                   '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
                 '</div>' +
+                // Mileage
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-road" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span>' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited Mileage' : (defaultUnit.mileage_km_per_day || 250) + ' km/day') + '</span>' +
+                '</div>' +
+                // Luggage
+                (function() {
+                  var s = parseInt(defaultUnit.seats) || 5;
+                  var lug = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
+                  return '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                    '<i class="fas fa-suitcase" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                    '<span>' + lug + ' luggage</span>' +
+                  '</div>';
+                })() +
+                // Year Model
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
+                '</div>' +
               '</div>' +
+
               '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--border);">' +
                 '<div>' +
                   '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
