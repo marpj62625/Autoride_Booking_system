@@ -8892,20 +8892,21 @@ async edit(id) { this.openModal(id); }
 
     // === Full-screen blocking UI for write operations ===
     function showAdminBlockingUI(show) {
-        var el = document.getElementById('adminBlockingOverlay');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'adminBlockingOverlay';
-            el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;'
-                + 'display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;'
-                + 'backdrop-filter:blur(2px);';
-            el.innerHTML = '<div style="width:52px;height:52px;border:4px solid rgba(255,255,255,0.3);'
-                + 'border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;"></div>'
-                + '<p style="color:#fff;font-size:0.9rem;font-weight:700;letter-spacing:0.3px;">Processing...</p>';
-            document.body.appendChild(el);
+        // Use the existing small bottom-right spinner
+        var spinner = document.getElementById('adminLoadingOverlay');
+        if (spinner) spinner.style.display = show ? 'flex' : 'none';
+        // Block all clicks/taps without showing a full-screen dim
+        document.body.style.pointerEvents = show ? 'none' : '';
+        // Safety: auto-reset after 10s so nothing gets stuck
+        if (show) {
+            clearTimeout(window._adminBlockTimeout);
+            window._adminBlockTimeout = setTimeout(function() {
+                if (spinner) spinner.style.display = 'none';
+                document.body.style.pointerEvents = '';
+            }, 10000);
+        } else {
+            clearTimeout(window._adminBlockTimeout);
         }
-        el.style.display = show ? 'flex' : 'none';
-        document.body.style.overflow = show ? 'hidden' : '';
     }
 
 
@@ -9005,3 +9006,4 @@ window.adminDbg = function() {};
 </div>
 
 </body>
+
