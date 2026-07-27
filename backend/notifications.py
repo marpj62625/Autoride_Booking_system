@@ -110,17 +110,30 @@ class Notification_Service:
             try:
                 cur = conn.cursor(row_factory=dict_row)
 
-                # Admin accounts live in the users table with role admin/super_admin
+                # Look up admins from users table (role=admin/super_admin)
                 cur.execute("SELECT id, fcm_token FROM users WHERE role IN ('admin', 'super_admin')")
-                rows = cur.fetchall()
-                admins = rows if rows else []
+                rows_users = cur.fetchall() or []
+
+                # Also look up from admins table (linked to users via user_id or id)
+                admin_user_ids = set()
+                try:
+                    cur.execute("SELECT user_id, fcm_token FROM admins WHERE user_id IS NOT NULL")
+                    rows_admins = cur.fetchall() or []
+                    for a in rows_admins:
+                        uid = a.get('user_id')
+                        if uid and uid not in [r['id'] for r in rows_users]:
+                            rows_users.append({'id': uid, 'fcm_token': a.get('fcm_token')})
+                except Exception:
+                    pass  # admins table may not have user_id column, that's fine
+
+                admins = rows_users if rows_users else []
 
                 if not admins:
-                    print("notify_admins_inapp: no admin users found in users table", file=sys.stderr)
+                    print("notify_admins_inapp: no admin users found in users or admins table", file=sys.stderr)
                     conn.close()
                     return []
 
-                print(f"notify_admins_inapp: found {len(admins)} admin(s) in users table", file=sys.stderr)
+                print(f"notify_admins_inapp: found {len(admins)} admin(s)", file=sys.stderr)
 
                 results = []
                 for admin in admins:
