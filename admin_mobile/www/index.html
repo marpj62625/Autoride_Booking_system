@@ -1227,7 +1227,6 @@
                     <option value="Van">Van</option>
                     <option value="Hatchback">Hatchback</option>
                     <option value="Pickup">Pickup</option>
-                    <option value="Motorcycle">Motorcycle</option>
                 </select>
                 <i class="fas fa-chevron-down" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;font-size:0.8rem;"></i>
             </div>
@@ -3753,6 +3752,7 @@
             
             allBtns.forEach(b => b.disabled = true);
             submitBtn.textContent = 'Saving...';
+            if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Saving vehicle...');
 
             try {
                 const res = await fetch(url, { method, body: formData });
@@ -3778,6 +3778,7 @@
                 showNotification('Connection failed', 'error');
             } finally {
                 allBtns.forEach(b => b.disabled = false);
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false);
                 submitBtn.textContent = origText;
             }
         },
@@ -6837,6 +6838,7 @@ async edit(id) { this.openModal(id); }
             const user = adminAuth.getUser();
 
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Saving settings...');
                 const res = await fetch(`${API_BASE}/api/admin/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -6849,6 +6851,7 @@ async edit(id) { this.openModal(id); }
                     showNotification('Save failed', 'error');
                 }
             } catch (err) { showNotification('Network error', 'error'); }
+            finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
         }
     };
 
@@ -7417,6 +7420,7 @@ async edit(id) { this.openModal(id); }
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
 
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Submitting report...');
                 const res = await fetch(`${API_URL}/inspections/submit`, { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
@@ -7429,6 +7433,7 @@ async edit(id) { this.openModal(id); }
             } catch (err) {
                 showNotification('Network error', 'error');
             } finally {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
@@ -7551,6 +7556,7 @@ async edit(id) { this.openModal(id); }
         }
 
         try {
+            if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Updating password...');
             const res = await fetch(`${API_BASE}/api/admin/change-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -7566,6 +7572,7 @@ async edit(id) { this.openModal(id); }
                 showNotification(data.error || 'Failed to update', 'error');
             }
         } catch (err) { showNotification('Network error', 'error'); }
+        finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
     }
 
     function showNotification(message, type = 'info') {
@@ -8129,6 +8136,7 @@ async edit(id) { this.openModal(id); }
             const phone = document.getElementById('umEditPhone').value.trim();
             if (!name) { alert('Full name is required'); return; }
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Saving...');
                 const res = await apiFetch(`admin/users/${userId}/edit`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json'},
@@ -8140,12 +8148,14 @@ async edit(id) { this.openModal(id); }
                 this.refresh();
                 this.openModal(userId);
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
         },
 
         async setLoyalty(userId) {
             const pts = document.getElementById('umLoyaltyInput').value;
             if (pts === '' || isNaN(pts)) { alert('Enter a valid number'); return; }
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Saving...');
                 const res = await apiFetch(`admin/users/${userId}/loyalty`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json'},
@@ -8157,6 +8167,7 @@ async edit(id) { this.openModal(id); }
                 this.refresh();
                 this.openModal(userId);
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
         },
 
         async resetPassword(userId) {
@@ -8164,6 +8175,7 @@ async edit(id) { this.openModal(id); }
             if (pass.length < 8) { alert('Password must be at least 8 characters'); return; }
             if (!confirm('Reset this user\'s password?')) return;
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Resetting password...');
                 const res = await apiFetch(`admin/users/${userId}/reset-password`, {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
@@ -8174,6 +8186,7 @@ async edit(id) { this.openModal(id); }
                 showNotification(d.message || 'Password reset', 'success');
                 document.getElementById('umNewPass').value = '';
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
         },
 
         async toggleFreeze(userId, currentlyFrozen) {
@@ -8190,6 +8203,7 @@ async edit(id) { this.openModal(id); }
             }
             if (!confirm(freeze ? 'Freeze this account?' : 'Unfreeze this account?')) return;
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Processing...');
                 const res = await apiFetch(`admin/users/${userId}/freeze`, {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
@@ -8201,12 +8215,14 @@ async edit(id) { this.openModal(id); }
                 this.refresh();
                 this.openModal(userId);
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
         },
 
         async deleteUser(userId, name) {
             if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
             if (!confirm('Are you absolutely sure? All bookings and data will be removed.')) return;
             try {
+                if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(true, 'Deleting...');
                 const res = await apiFetch(`admin/users/${userId}`, {method: 'DELETE'});
                 const d = await res.json();
                 if (!res.ok) throw new Error(d.error);
@@ -8214,6 +8230,7 @@ async edit(id) { this.openModal(id); }
                 this.closeModal();
                 this.refresh();
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingOverlay !== 'undefined') showAdminBlockingOverlay(false); }
         },
 
         async exportCSV() {
