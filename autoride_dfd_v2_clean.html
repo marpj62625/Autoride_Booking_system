@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTORIDE Level 1 DFD - Clean Version</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f2f5; 
+  padding: 20px;
+  overflow-x: auto;
+}
+.header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.header h1 {
+  font-size: 1.8rem;
+  color: #1a202c;
+  margin-bottom: 8px;
+}
+.header p {
+  font-size: 0.95rem;
+  color: #718096;
+}
+.legend {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+  padding: 15px 25px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #4a5568;
+  font-weight: 600;
+}
+.legend-box {
+  width: 32px;
+  height: 22px;
+  border-radius: 4px;
+  background: #edf2f7;
+  border: 2.5px solid #4a5568;
+}
+.legend-ellipse {
+  width: 34px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ebf8ff;
+  border: 2.5px solid #3182ce;
+}
+.legend-store {
+  width: 40px;
+  height: 16px;
+  border-top: 3px solid #2d3748;
+  border-bottom: 3px solid #2d3748;
+}
+.svg-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+  padding: 30px;
+  overflow: auto;
+  max-width: 100%;
+}
+svg {
+  display: block;
+  margin: 0 auto;
+}
+text {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.label-bg {
+  fill: white;
+  opacity: 0.95;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>AUTORIDE SYSTEM – Level 1 Data Flow Diagram</h1>
+  <p>Car Rental Booking System | Clean Architecture View</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-box"></div>
+    <span>External Entity</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-ellipse"></div>
+    <span>Process</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-store"></div>
+    <span>Data Store</span>
+  </div>
+  <div class="legend-item">
+    <svg width="45" height="16">
+      <line x1="0" y1="8" x2="35" y2="8" stroke="#555" stroke-width="2"/>
+      <polygon points="31,4 41,8 31,12" fill="#555"/>
+    </svg>
+    <span>Data Flow</span>
+  </div>
+  <div class="legend-item">
+    <svg width="45" height="16">
+      <line x1="0" y1="8" x2="35" y2="8" stroke="#999" stroke-width="2" stroke-dasharray="5,3"/>
+      <polygon points="31,4 41,8 31,12" fill="#999"/>
+    </svg>
+    <span>Config/File Flow</span>
+  </div>
+</div>
+
+<div class="svg-container">
+<svg width="2400" height="3200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Arrow markers -->
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3182ce"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#38a169"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#dd6b20"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#805ad5"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#e53e3e"/>
+    </marker>
+    <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2c7a7b"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#718096"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="10" y="10" width="2380" height="3180" rx="16" fill="#fafbfc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Title bar -->
+  <rect x="800" y="30" width="800" height="60" rx="10" fill="#2d3748"/>
+  <text x="1200" y="57" text-anchor="middle" font-size="18" font-weight="800" fill="white">
+    AUTORIDE BOOKING SYSTEM
+  </text>
+  <text x="1200" y="78" text-anchor="middle" font-size="12" fill="#cbd5e0">
+    Level 1 Data Flow Diagram
+  </text>
+  

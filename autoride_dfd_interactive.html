@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTORIDE Level 1 DFD - Interactive</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #e8edf2;
+  overflow: hidden;
+}
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 15px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-left {
+  flex: 1;
+}
+.header-left h1 {
+  font-size: 1.3rem;
+  color: #1a202c;
+  margin-bottom: 3px;
+}
+.header-left p {
+  font-size: 0.85rem;
+  color: #718096;
+}
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary {
+  background: #3182ce;
+  color: white;
+}
+.btn-primary:hover {
+  background: #2c5aa0;
+}
+.btn-secondary {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+.btn-secondary:hover {
+  background: #cbd5e0;
+}
+.zoom-info {
+  padding: 6px 12px;
+  background: #f7fafc;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #4a5568;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+}
+.canvas-container {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  cursor: grab;
+  background: #f7fafc;
+}
+.canvas-container.grabbing {
+  cursor: grabbing;
+}
+.svg-wrapper {
+  transform-origin: 0 0;
+  transition: transform 0.1s ease-out;
+}
+.legend {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: flex;
+  gap: 25px;
+  z-index: 999;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+.legend-box {
+  width: 28px;
+  height: 20px;
+  border-radius: 3px;
+  background: #edf2f7;
+  border: 2px solid #4a5568;
+}
+.legend-ellipse {
+  width: 30px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ebf8ff;
+  border: 2px solid #3182ce;
+}
+.legend-store {
+  width: 36px;
+  height: 16px;
+  border-top: 2.5px solid #2d3748;
+  border-bottom: 2.5px solid #2d3748;
+}
+.instructions {
+  position: fixed;
+  top: 90px;
+  right: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  font-size: 0.8rem;
+  color: #4a5568;
+  z-index: 999;
+}
+.instructions h3 {
+  font-size: 0.9rem;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+.instructions ul {
+  list-style: none;
+  padding: 0;
+}
+.instructions li {
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.instructions li::before {
+  content: "?";
+  color: #3182ce;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>AUTORIDE SYSTEM – Level 1 Data Flow Diagram</h1>
+    <p>Interactive View with Zoom & Pan Controls</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="zoomOut()">
+      <span>?</span> Zoom Out
+    </button>
+    <div class="zoom-info" id="zoomLevel">100%</div>
+    <button class="btn btn-secondary" onclick="zoomIn()">
+      <span>+</span> Zoom In
+    </button>
+    <button class="btn btn-primary" onclick="resetView()">
+      ? Reset View
+    </button>
+  </div>
+</div>
+
+<div class="instructions">
+  <h3>?? Controls</h3>
+  <ul>
+    <li>Drag to pan</li>
+    <li>Scroll to zoom</li>
+    <li>+/? buttons to zoom</li>
+    <li>Reset to center</li>
+  </ul>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <div class="legend-box"></div>
+    <span>External Entity</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-ellipse"></div>
+    <span>Process</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-store"></div>
+    <span>Data Store</span>
+  </div>
+  <div class="legend-item">
+    <svg width="40" height="16">
+      <line x1="2" y1="8" x2="30" y2="8" stroke="#555" stroke-width="2"/>
+      <polygon points="26,4 36,8 26,12" fill="#555"/>
+    </svg>
+    <span>Data Flow</span>
+  </div>
+</div>
+
+<div class="canvas-container" id="canvasContainer">
+  <div class="svg-wrapper" id="svgWrapper">
+<svg width="3600" height="4200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Arrow markers -->
+    <marker id="arrow-blue" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#3182ce"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#38a169"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#dd6b20"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#805ad5"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#e53e3e"/>
+    </marker>
+    <marker id="arrow-teal" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#2c7a7b"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="11" markerHeight="11" refX="10" refY="3.5" orient="auto">
+      <path d="M0,0 L0,7 L10,3.5 z" fill="#718096"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="3600" height="4200" fill="#fafbfc"/>
+  
+  <!-- Grid pattern for reference -->
+  <defs>
+    <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#e2e8f0" stroke-width="1" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="3600" height="4200" fill="url(#grid)" />
+
+  <!-- Title Section -->
+  <rect x="1100" y="60" width="1400" height="100" rx="15" fill="#2d3748"/>
+  <text x="1800" y="105" text-anchor="middle" font-size="28" font-weight="800" fill="white">
+    AUTORIDE BOOKING SYSTEM
+  </text>
+  <text x="1800" y="138" text-anchor="middle" font-size="16" fill="#a0aec0">
+    Level 1 Data Flow Diagram - Zero Overlapping Design
+  </text>
+
+  <!-- ==================== EXTERNAL ENTITIES ==================== -->
+  
+  <!-- Customer (Left Top) - Lane 1 -->
+  <rect x="120" y="300" width="220" height="100" rx="12" fill="#edf2f7" stroke="#4a5568" stroke-width="3.5"/>
+  <text x="230" y="340" text-anchor="middle" font-size="19" font-weight="700" fill="#2d3748">Customer</text>
+  <text x="230" y="368" text-anchor="middle" font-size="14" fill="#718096">(Mobile App)</text>
+  
+  <!-- Admin (Right Top) - Lane 2 -->
+  <rect x="3260" y="300" width="220" height="100" rx="12" fill="#edf2f7" stroke="#4a5568" stroke-width="3.5"/>
+  <text x="3370" y="340" text-anchor="middle" font-size="19" font-weight="700" fill="#2d3748">Admin</text>
+  <text x="3370" y="368" text-anchor="middle" font-size="14" fill="#718096">(Admin Panel)</text>
+  
+  <!-- Payment Gateway (Right Mid) -->
+  <rect x="3260" y="1950" width="220" height="110" rx="12" fill="#edf2f7" stroke="#4a5568" stroke-width="3.5"/>
+  <text x="3370" y="1992" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Payment</text>
+  <text x="3370" y="2018" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Gateway</text>
+  <text x="3370" y="2045" text-anchor="middle" font-size="13" fill="#718096">(PayMongo)</text>
+  
+  <!-- Supabase Storage (Bottom Left) -->
+  <rect x="120" y="3750" width="220" height="110" rx="12" fill="#edf2f7" stroke="#4a5568" stroke-width="3.5"/>
+  <text x="230" y="3792" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Supabase</text>
+  <text x="230" y="3818" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Storage</text>
+  <text x="230" y="3845" text-anchor="middle" font-size="13" fill="#718096">(Cloud Files)</text>
+  
+  <!-- Email/Push Service (Bottom Right) -->
+  <rect x="3260" y="3750" width="220" height="110" rx="12" fill="#edf2f7" stroke="#4a5568" stroke-width="3.5"/>
+  <text x="3370" y="3790" text-anchor="middle" font-size="17" font-weight="700" fill="#2d3748">Email / Push</text>
+  <text x="3370" y="3816" text-anchor="middle" font-size="17" font-weight="700" fill="#2d3748">Service</text>
+  <text x="3370" y="3843" text-anchor="middle" font-size="13" fill="#718096">(SMTP / Firebase)</text>
+
+  <!-- ==================== PROCESSES (Left Column) ==================== -->
+  
+  <!-- 1.0 Authentication & Registration -->
+  <ellipse cx="800" cy="350" rx="180" ry="95" fill="#ebf8ff" stroke="#3182ce" stroke-width="3.5"/>
+  <text x="800" y="320" text-anchor="middle" font-size="18" font-weight="700" fill="#1a365d">1.0</text>
+  <text x="800" y="350" text-anchor="middle" font-size="17" font-weight="700" fill="#1a365d">Authentication &amp;</text>
+  <text x="800" y="380" text-anchor="middle" font-size="17" font-weight="700" fill="#1a365d">Registration</text>
+  
+  <!-- 3.0 Vehicle Browse & Search -->
+  <ellipse cx="800" cy="900" rx="180" ry="95" fill="#f0fff4" stroke="#38a169" stroke-width="3.5"/>
+  <text x="800" y="870" text-anchor="middle" font-size="18" font-weight="700" fill="#1c4532">3.0</text>
+  <text x="800" y="900" text-anchor="middle" font-size="17" font-weight="700" fill="#1c4532">Vehicle Browse</text>
+  <text x="800" y="930" text-anchor="middle" font-size="17" font-weight="700" fill="#1c4532">&amp; Search</text>
+  
+  <!-- 5.0 Booking Processing -->
+  <ellipse cx="800" cy="1450" rx="180" ry="95" fill="#fffaf0" stroke="#dd6b20" stroke-width="3.5"/>
+  <text x="800" y="1420" text-anchor="middle" font-size="18" font-weight="700" fill="#7b341e">5.0</text>
+  <text x="800" y="1450" text-anchor="middle" font-size="17" font-weight="700" fill="#7b341e">Booking</text>
+  <text x="800" y="1480" text-anchor="middle" font-size="17" font-weight="700" fill="#7b341e">Processing</text>
+  
+  <!-- 7.0 Payment Processing -->
+  <ellipse cx="800" cy="2000" rx="180" ry="95" fill="#faf5ff" stroke="#805ad5" stroke-width="3.5"/>
+  <text x="800" y="1970" text-anchor="middle" font-size="18" font-weight="700" fill="#44337a">7.0</text>
+  <text x="800" y="2000" text-anchor="middle" font-size="17" font-weight="700" fill="#44337a">Payment</text>
+  <text x="800" y="2030" text-anchor="middle" font-size="17" font-weight="700" fill="#44337a">Processing</text>
+  
+  <!-- 9.0 License Verification -->
+  <ellipse cx="800" cy="2600" rx="180" ry="95" fill="#fff5f5" stroke="#e53e3e" stroke-width="3.5"/>
+  <text x="800" y="2570" text-anchor="middle" font-size="18" font-weight="700" fill="#742a2a">9.0</text>
+  <text x="800" y="2600" text-anchor="middle" font-size="17" font-weight="700" fill="#742a2a">License</text>
+  <text x="800" y="2630" text-anchor="middle" font-size="17" font-weight="700" fill="#742a2a">Verification</text>
+  
+  <!-- 11.0 Notification Service -->
+  <ellipse cx="800" cy="3200" rx="180" ry="95" fill="#e6fffa" stroke="#2c7a7b" stroke-width="3.5"/>
+  <text x="800" y="3170" text-anchor="middle" font-size="18" font-weight="700" fill="#1d4044">11.0</text>
+  <text x="800" y="3200" text-anchor="middle" font-size="17" font-weight="700" fill="#1d4044">Notification</text>
+  <text x="800" y="3230" text-anchor="middle" font-size="17" font-weight="700" fill="#1d4044">Service</text>
+
+  <!-- ==================== PROCESSES (Right Column) ==================== -->
+  
+  <!-- 2.0 User Management -->
+  <ellipse cx="2800" cy="350" rx="180" ry="95" fill="#ebf8ff" stroke="#3182ce" stroke-width="3.5"/>
+  <text x="2800" y="320" text-anchor="middle" font-size="18" font-weight="700" fill="#1a365d">2.0</text>
+  <text x="2800" y="350" text-anchor="middle" font-size="17" font-weight="700" fill="#1a365d">User</text>
+  <text x="2800" y="380" text-anchor="middle" font-size="17" font-weight="700" fill="#1a365d">Management</text>
+  
+  <!-- 4.0 Vehicle Management -->
+  <ellipse cx="2800" cy="900" rx="180" ry="95" fill="#f0fff4" stroke="#38a169" stroke-width="3.5"/>
+  <text x="2800" y="870" text-anchor="middle" font-size="18" font-weight="700" fill="#1c4532">4.0</text>
+  <text x="2800" y="900" text-anchor="middle" font-size="17" font-weight="700" fill="#1c4532">Vehicle</text>
+  <text x="2800" y="930" text-anchor="middle" font-size="17" font-weight="700" fill="#1c4532">Management</text>
+  
+  <!-- 6.0 Booking Management -->
+  <ellipse cx="2800" cy="1450" rx="180" ry="95" fill="#fffaf0" stroke="#dd6b20" stroke-width="3.5"/>
+  <text x="2800" y="1420" text-anchor="middle" font-size="18" font-weight="700" fill="#7b341e">6.0</text>
+  <text x="2800" y="1450" text-anchor="middle" font-size="17" font-weight="700" fill="#7b341e">Booking</text>
+  <text x="2800" y="1480" text-anchor="middle" font-size="17" font-weight="700" fill="#7b341e">Management</text>
+  
+  <!-- 8.0 Payment Verification -->
+  <ellipse cx="2800" cy="2000" rx="180" ry="95" fill="#faf5ff" stroke="#805ad5" stroke-width="3.5"/>
+  <text x="2800" y="1970" text-anchor="middle" font-size="18" font-weight="700" fill="#44337a">8.0</text>
+  <text x="2800" y="2000" text-anchor="middle" font-size="17" font-weight="700" fill="#44337a">Payment</text>
+  <text x="2800" y="2030" text-anchor="middle" font-size="17" font-weight="700" fill="#44337a">Verification</text>
+  
+  <!-- 10.0 Reports & Analytics -->
+  <ellipse cx="2800" cy="2600" rx="180" ry="95" fill="#fff5f5" stroke="#e53e3e" stroke-width="3.5"/>
+  <text x="2800" y="2570" text-anchor="middle" font-size="18" font-weight="700" fill="#742a2a">10.0</text>
+  <text x="2800" y="2600" text-anchor="middle" font-size="17" font-weight="700" fill="#742a2a">Reports &amp;</text>
+  <text x="2800" y="2630" text-anchor="middle" font-size="17" font-weight="700" fill="#742a2a">Analytics</text>
+  
+  <!-- 12.0 System Settings -->
+  <ellipse cx="2800" cy="3200" rx="180" ry="95" fill="#e6fffa" stroke="#2c7a7b" stroke-width="3.5"/>
+  <text x="2800" y="3170" text-anchor="middle" font-size="18" font-weight="700" fill="#1d4044">12.0</text>
+  <text x="2800" y="3200" text-anchor="middle" font-size="17" font-weight="700" fill="#1d4044">System</text>
+  <text x="2800" y="3230" text-anchor="middle" font-size="17" font-weight="700" fill="#1d4044">Settings</text>
+
+  <!-- ==================== DATA STORES (Center) ==================== -->
+  
+  <!-- D1: Users -->
+  <rect x="1550" y="325" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="325" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="360" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D1</text>
+  <text x="1753" y="350" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Users</text>
+  <text x="1753" y="372" text-anchor="middle" font-size="12" fill="#718096">(customers / accounts)</text>
+  
+  <!-- D2: Vehicles -->
+  <rect x="1550" y="875" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="875" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="910" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D2</text>
+  <text x="1753" y="900" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Vehicles</text>
+  <text x="1753" y="922" text-anchor="middle" font-size="12" fill="#718096">(fleet units / categories)</text>
+  
+  <!-- D3: Bookings -->
+  <rect x="1550" y="1425" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="1425" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="1460" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D3</text>
+  <text x="1753" y="1450" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Bookings</text>
+  <text x="1753" y="1472" text-anchor="middle" font-size="12" fill="#718096">(reservations / status)</text>
+  
+  <!-- D4: Payments -->
+  <rect x="1550" y="1975" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="1975" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="2010" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D4</text>
+  <text x="1753" y="2000" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Payments</text>
+  <text x="1753" y="2022" text-anchor="middle" font-size="12" fill="#718096">(transactions / status)</text>
+  
+  <!-- D5: Licenses -->
+  <rect x="1550" y="2575" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="2575" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="2610" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D5</text>
+  <text x="1753" y="2600" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Licenses</text>
+  <text x="1753" y="2622" text-anchor="middle" font-size="12" fill="#718096">(verification / images)</text>
+  
+  <!-- D6: Notifications -->
+  <rect x="1550" y="3175" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="3175" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="3210" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D6</text>
+  <text x="1753" y="3200" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Notifications</text>
+  <text x="1753" y="3222" text-anchor="middle" font-size="12" fill="#718096">(alerts / history)</text>
+  
+  <!-- D7: Settings -->
+  <rect x="1550" y="3500" width="28" height="55" fill="white" stroke="#4a5568" stroke-width="3"/>
+  <rect x="1578" y="3500" width="350" height="55" fill="#edf2f7" stroke="#4a5568" stroke-width="3"/>
+  <text x="1565" y="3535" text-anchor="middle" font-size="15" font-weight="700" fill="#4a5568">D7</text>
+  <text x="1753" y="3525" text-anchor="middle" font-size="18" font-weight="700" fill="#2d3748">Settings</text>
+  <text x="1753" y="3547" text-anchor="middle" font-size="12" fill="#718096">(rates / system config)</text>
+
+
+  <!-- ==================== ROW 1: AUTHENTICATION (Blue) ==================== -->
+  
+  <!-- Customer -> P1.0: Login/Register (Lane 1) -->
+  <path d="M340,320 L450,320 L450,310 L620,310" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="420" y="285" width="90" height="20" fill="white" opacity="0.9"/>
+  <text x="465" y="300" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Login / Register</text>
+  
+  <!-- P1.0 -> Customer: Auth Token (Lane 2) -->
+  <path d="M620,380 L460,380 L460,390 L340,390" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="430" y="400" width="80" height="20" fill="white" opacity="0.9"/>
+  <text x="470" y="415" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Auth Token</text>
+  
+  <!-- P1.0 -> D1: Store User Data -->
+  <path d="M980,335 L1550,335" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="1180" y="315" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="1240" y="330" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Store User Data</text>
+  
+  <!-- D1 -> P1.0: Fetch Credentials -->
+  <path d="M1550,365 L980,365" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="1180" y="375" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="1245" y="390" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Fetch Credentials</text>
+  
+  <!-- Admin -> P2.0: Manage Users (Lane 1) -->
+  <path d="M3260,320 L3150,320 L3150,310 L2980,310" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="3090" y="285" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="3145" y="300" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Manage Users</text>
+  
+  <!-- P2.0 -> Admin: Account Details (Lane 2) -->
+  <path d="M2980,380 L3140,380 L3140,390 L3260,390" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="3070" y="400" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="3130" y="415" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Account Details</text>
+  
+  <!-- P2.0 -> D1: Update Accounts -->
+  <path d="M2620,335 L1928,335" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="2180" y="315" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="2245" y="330" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">Update Accounts</text>
+  
+  <!-- D1 -> P2.0: User List -->
+  <path d="M1928,365 L2620,365" fill="none" stroke="#3182ce" stroke-width="3" marker-end="url(#arrow-blue)"/>
+  <rect x="2180" y="375" width="80" height="20" fill="white" opacity="0.9"/>
+  <text x="2220" y="390" text-anchor="middle" font-size="12" font-weight="600" fill="#2b6cb0">User List</text>
+
+  <!-- ==================== ROW 2: VEHICLE (Green) ==================== -->
+  
+  <!-- Customer -> P3.0: Browse/Search (Dedicated left lane 1) -->
+  <path d="M230,400 L230,760 L450,760 L450,860 L620,860" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="400" y="845" width="100" height="20" fill="white" opacity="0.9"/>
+  <text x="450" y="860" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Browse / Search</text>
+  
+  <!-- P3.0 -> Customer: Vehicle List/Details (Dedicated left lane 2) -->
+  <path d="M620,930 L460,930 L460,790 L260,790 L260,400" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="405" y="945" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="460" y="960" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Vehicle List</text>
+  
+  <!-- P3.0 -> D2: Query Vehicles -->
+  <path d="M980,885 L1550,885" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="1180" y="865" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="1240" y="880" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Query Vehicles</text>
+  
+  <!-- D2 -> P3.0: Vehicle Records -->
+  <path d="M1550,915 L980,915" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="1180" y="925" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="1245" y="940" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Vehicle Records</text>
+  
+  <!-- Admin -> P4.0: Add/Edit Vehicle (Dedicated right lane 1) -->
+  <path d="M3370,400 L3370,760 L3150,760 L3150,860 L2980,860" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="3090" y="845" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="3145" y="860" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Add / Edit Vehicle</text>
+  
+  <!-- P4.0 -> Admin: Fleet Status (Dedicated right lane 2) -->
+  <path d="M2980,930 L3140,930 L3140,790 L3340,790 L3340,400" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="3075" y="945" width="90" height="20" fill="white" opacity="0.9"/>
+  <text x="3120" y="960" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Fleet Status</text>
+  
+  <!-- P4.0 -> D2: Store Vehicle -->
+  <path d="M2620,885 L1928,885" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="2180" y="865" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="2235" y="880" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Store Vehicle</text>
+  
+  <!-- D2 -> P4.0: Vehicle Data -->
+  <path d="M1928,915 L2620,915" fill="none" stroke="#38a169" stroke-width="3" marker-end="url(#arrow-green)"/>
+  <rect x="2180" y="925" width="100" height="20" fill="white" opacity="0.9"/>
+  <text x="2230" y="940" text-anchor="middle" font-size="12" font-weight="600" fill="#276749">Vehicle Data</text>
+  
+  <!-- P4.0 -> Supabase: Upload Files (dashed, far left lane) -->
+  <path d="M2800,995 L2800,3600 L340,3600 L340,3750" fill="none" stroke="#718096" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#arrow-gray)"/>
+  <rect x="1480" y="3580" width="140" height="20" fill="white" opacity="0.9"/>
+  <text x="1550" y="3595" text-anchor="middle" font-size="12" font-weight="600" fill="#718096">Upload Vehicle Images</text>
+  
+  <!-- Supabase -> P4.0: Image URL (dashed, parallel lane) -->
+  <path d="M230,3750 L230,3620 L2770,3620 L2770,995" fill="none" stroke="#718096" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#arrow-gray)"/>
+  <rect x="1480" y="3640" width="90" height="20" fill="white" opacity="0.9"/>
+  <text x="1525" y="3655" text-anchor="middle" font-size="12" font-weight="600" fill="#718096">Image URL</text>
+
+  <!-- ==================== ROW 3: BOOKING (Orange) ==================== -->
+  
+  <!-- Customer -> P5.0: Submit Booking (Left lane 3) -->
+  <path d="M200,400 L200,1310 L430,1310 L430,1410 L620,1410" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="380" y="1395" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="435" y="1410" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Submit Booking</text>
+  
+  <!-- P5.0 -> Customer: Booking Confirmation (Left lane 4) -->
+  <path d="M620,1480 L440,1480 L440,1340 L170,1340 L170,400" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="365" y="1495" width="150" height="20" fill="white" opacity="0.9"/>
+  <text x="440" y="1510" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Booking Confirmation</text>
+  
+  <!-- P5.0 -> D3: Save Booking -->
+  <path d="M980,1435 L1550,1435" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="1180" y="1415" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="1235" y="1430" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Save Booking</text>
+  
+  <!-- D3 -> P5.0: Booking Record -->
+  <path d="M1550,1465 L980,1465" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="1180" y="1475" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="1245" y="1490" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Booking Record</text>
+  
+  <!-- P5.0 -> D2: Check Availability (up, dedicated channel) -->
+  <path d="M750,1355 L750,1150 L1450,1150 L1450,902 L1550,902" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="1330" y="1130" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="1395" y="1145" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Check Availability</text>
+  
+  <!-- D2 -> P5.0: Available Units (return, parallel channel) -->
+  <path d="M1550,922 L1470,922 L1470,1170 L770,1170 L770,1355" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="1350" y="1180" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="1405" y="1195" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Available Units</text>
+  
+  <!-- Admin -> P6.0: Approve/Reject (Right lane 3) -->
+  <path d="M3400,400 L3400,1310 L3170,1310 L3170,1410 L2980,1410" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="3100" y="1395" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="3160" y="1410" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Approve / Reject</text>
+  
+  <!-- P6.0 -> Admin: Booking Data (Right lane 4) -->
+  <path d="M2980,1480 L3160,1480 L3160,1340 L3430,1340 L3430,400" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="3085" y="1495" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="3140" y="1510" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Booking Data</text>
+  
+  <!-- P6.0 -> D3: Update Status -->
+  <path d="M2620,1435 L1928,1435" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="2180" y="1415" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="2235" y="1430" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Update Status</text>
+  
+  <!-- D3 -> P6.0: Booking List -->
+  <path d="M1928,1465 L2620,1465" fill="none" stroke="#dd6b20" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <rect x="2180" y="1475" width="100" height="20" fill="white" opacity="0.9"/>
+  <text x="2230" y="1490" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Booking List</text>
+  
+  <!-- P5.0 <-> P6.0: Booking Status Sync (dashed, below) -->
+  <path d="M800,1545 L800,1610 L2800,1610 L2800,1545" fill="none" stroke="#dd6b20" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#arrow-orange)"/>
+  <rect x="1700" y="1630" width="170" height="20" fill="white" opacity="0.9"/>
+  <text x="1785" y="1645" text-anchor="middle" font-size="12" font-weight="600" fill="#c05621">Booking Status Sync</text>
+
+
+  <!-- ==================== ROW 4: PAYMENT (Purple) ==================== -->
+  
+  <!-- Customer -> P7.0: Pay/Upload Proof (Left lane 5) -->
+  <path d="M170,400 L170,1860 L410,1860 L410,1960 L620,1960" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="355" y="1945" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="420" y="1960" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Pay / Upload Proof</text>
+  
+  <!-- P7.0 -> Customer: Receipt/URL (Left lane 6) -->
+  <path d="M620,2030 L420,2030 L420,1890 L140,1890 L140,400" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="345" y="2045" width="90" height="20" fill="white" opacity="0.9"/>
+  <text x="390" y="2060" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Receipt / URL</text>
+  
+  <!-- P7.0 -> D4: Save Payment -->
+  <path d="M980,1985 L1550,1985" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="1180" y="1965" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="1235" y="1980" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Save Payment</text>
+  
+  <!-- D4 -> P7.0: Payment Record -->
+  <path d="M1550,2015 L980,2015" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="1180" y="2025" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="1245" y="2040" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Payment Record</text>
+  
+  <!-- P7.0 -> D3: Link to Booking (up, dedicated channel) -->
+  <path d="M740,1905 L740,1680 L1430,1680 L1430,1452 L1550,1452" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="1300" y="1660" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="1360" y="1675" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Link to Booking</text>
+  
+  <!-- P7.0 -> Payment Gateway: Payment Request -->
+  <path d="M980,1970 L3260,1970" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="2020" y="1950" width="240" height="20" fill="white" opacity="0.9"/>
+  <text x="2140" y="1965" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Payment Request (GCash / Maya)</text>
+  
+  <!-- Payment Gateway -> P7.0: Payment Result -->
+  <path d="M3260,2030 L980,2030" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="2000" y="2045" width="260" height="20" fill="white" opacity="0.9"/>
+  <text x="2130" y="2060" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Payment Result / Transaction ID</text>
+  
+  <!-- Admin -> P8.0: Verify Cash/Manual (Right lane 5) -->
+  <path d="M3430,400 L3430,1860 L3190,1860 L3190,1960 L2980,1960" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="3115" y="1945" width="140" height="20" fill="white" opacity="0.9"/>
+  <text x="3185" y="1960" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Verify Cash / Manual</text>
+  
+  <!-- P8.0 -> Admin: Payment Status (Right lane 6) -->
+  <path d="M2980,2030 L3180,2030 L3180,1890 L3460,1890 L3460,400" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="3100" y="2045" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="3160" y="2060" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Payment Status</text>
+  
+  <!-- P8.0 -> D4: Approve Payment -->
+  <path d="M2620,1985 L1928,1985" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="2180" y="1965" width="140" height="20" fill="white" opacity="0.9"/>
+  <text x="2250" y="1980" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Approve Payment</text>
+  
+  <!-- D4 -> P8.0: Payment List -->
+  <path d="M1928,2015 L2620,2015" fill="none" stroke="#805ad5" stroke-width="3" marker-end="url(#arrow-purple)"/>
+  <rect x="2180" y="2025" width="100" height="20" fill="white" opacity="0.9"/>
+  <text x="2230" y="2040" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Payment List</text>
+  
+  <!-- P7.0 <-> P8.0: Payment Verification Sync (dashed, below) -->
+  <path d="M800,2095 L800,2160 L2800,2160 L2800,2095" fill="none" stroke="#805ad5" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#arrow-purple)"/>
+  <rect x="1660" y="2180" width="200" height="20" fill="white" opacity="0.9"/>
+  <text x="1760" y="2195" text-anchor="middle" font-size="12" font-weight="600" fill="#6b46c1">Payment Verification Sync</text>
+
+  <!-- ==================== ROW 5: LICENSE & REPORTS (Red) ==================== -->
+  
+  <!-- Customer -> P9.0: Submit License (Left lane 7) -->
+  <path d="M140,400 L140,2460 L390,2460 L390,2560 L620,2560" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="335" y="2545" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="395" y="2560" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Submit License</text>
+  
+  <!-- P9.0 -> Customer: Verification Status (Left lane 8) -->
+  <path d="M620,2630 L400,2630 L400,2490 L110,2490 L110,400" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="320" y="2645" width="150" height="20" fill="white" opacity="0.9"/>
+  <text x="395" y="2660" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Verification Status</text>
+  
+  <!-- P9.0 -> D5: Store License -->
+  <path d="M980,2585 L1550,2585" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="1180" y="2565" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="1235" y="2580" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Store License</text>
+  
+  <!-- D5 -> P9.0: License Record -->
+  <path d="M1550,2615 L980,2615" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="1180" y="2625" width="120" height="20" fill="white" opacity="0.9"/>
+  <text x="1240" y="2640" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">License Record</text>
+  
+  <!-- P9.0 -> D1: Update Verification Status (long up) -->
+  <path d="M760,2505 L760,600 L1420,600 L1420,352 L1550,352" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="1300" y="580" width="200" height="20" fill="white" opacity="0.9"/>
+  <text x="1400" y="595" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Update Verification Status</text>
+  
+  <!-- P9.0 -> Supabase: Upload License Image (dashed) -->
+  <path d="M740,2695 L740,3650 L340,3650 L340,3750" fill="none" stroke="#718096" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#arrow-gray)"/>
+  <rect x="480" y="3140" width="170" height="20" fill="white" opacity="0.9"/>
+  <text x="565" y="3155" text-anchor="middle" font-size="12" font-weight="600" fill="#718096">Upload License Image</text>
+  
+  <!-- Admin -> P10.0: Request Reports (Right lane 7) -->
+  <path d="M3460,400 L3460,2460 L3210,2460 L3210,2560 L2980,2560" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="3130" y="2545" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="3195" y="2560" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Request Reports</text>
+  
+  <!-- P10.0 -> Admin: Analytics/Reports (Right lane 8) -->
+  <path d="M2980,2630 L3200,2630 L3200,2490 L3490,2490 L3490,400" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="3110" y="2645" width="150" height="20" fill="white" opacity="0.9"/>
+  <text x="3185" y="2660" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Analytics / Reports</text>
+  
+  <!-- D2 -> P10.0: Fleet Data (from D2, dedicated channel) -->
+  <path d="M1928,902 L2100,902 L2100,2380 L2740,2380 L2740,2505" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="2150" y="2360" width="80" height="20" fill="white" opacity="0.9"/>
+  <text x="2190" y="2375" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Fleet Data</text>
+  
+  <!-- D3 -> P10.0: Booking Data -->
+  <path d="M1928,1452 L2130,1452 L2130,2400 L2770,2400 L2770,2505" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="2180" y="2380" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="2235" y="2395" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Booking Data</text>
+  
+  <!-- D4 -> P10.0: Revenue Data -->
+  <path d="M1928,2000 L2160,2000 L2160,2420 L2800,2420 L2800,2505" fill="none" stroke="#e53e3e" stroke-width="3" marker-end="url(#arrow-red)"/>
+  <rect x="2210" y="2400" width="110" height="20" fill="white" opacity="0.9"/>
+  <text x="2265" y="2415" text-anchor="middle" font-size="12" font-weight="600" fill="#c53030">Revenue Data</text>
+
+  <!-- ==================== ROW 6: NOTIFICATION & SETTINGS (Teal) ==================== -->
+  
+  <!-- P5.0 -> P11.0: Trigger Notification (vertical) -->
+  <path d="M750,1545 L750,3105" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="670" y="2300" width="70" height="35" fill="white" opacity="0.9"/>
+  <text x="705" y="2315" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Trigger</text>
+  <text x="705" y="2330" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Notification</text>
+  
+  <!-- P6.0 -> P11.0: Status Changed Trigger -->
+  <path d="M2800,1545 L2800,2800 L980,2800 L980,3105" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="1770" y="2780" width="180" height="20" fill="white" opacity="0.9"/>
+  <text x="1860" y="2795" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Status Changed Trigger</text>
+  
+  <!-- P11.0 -> D6: Store Notification -->
+  <path d="M980,3185 L1550,3185" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="1180" y="3165" width="150" height="20" fill="white" opacity="0.9"/>
+  <text x="1255" y="3180" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Store Notification</text>
+  
+  <!-- D6 -> P11.0: Notification History -->
+  <path d="M1550,3215 L980,3215" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="1170" y="3225" width="160" height="20" fill="white" opacity="0.9"/>
+  <text x="1250" y="3240" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Notification History</text>
+  
+  <!-- P11.0 -> Customer: Push/Email Notification (Left lane 9) -->
+  <path d="M620,3230 L380,3230 L380,3010 L110,3010 L110,400" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="305" y="3245" width="120" height="35" fill="white" opacity="0.9"/>
+  <text x="365" y="3260" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Push / Email</text>
+  <text x="365" y="3275" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Notification</text>
+  
+  <!-- P11.0 -> Email Service: Send Email/Push Message -->
+  <path d="M980,3230 L2900,3230 L2900,3670 L3260,3670" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="1820" y="3210" width="200" height="20" fill="white" opacity="0.9"/>
+  <text x="1920" y="3225" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Send Email / Push Message</text>
+  
+  <!-- Admin -> P12.0: Configure Settings (Right lane 9) -->
+  <path d="M3490,400 L3490,3010 L3230,3010 L3230,3160 L2980,3160" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="3145" y="3145" width="150" height="20" fill="white" opacity="0.9"/>
+  <text x="3220" y="3160" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Configure Settings</text>
+  
+  <!-- P12.0 -> Admin: Config Saved (Right lane 10) -->
+  <path d="M2980,3230 L3220,3230 L3220,3040 L3520,3040 L3520,400" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="3130" y="3245" width="100" height="20" fill="white" opacity="0.9"/>
+  <text x="3180" y="3260" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Config Saved</text>
+  
+  <!-- P12.0 -> D7: Save Config -->
+  <path d="M2620,3185 L1928,3185 L1928,3420 L1928,3510" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="2180" y="3165" width="100" height="20" fill="white" opacity="0.9"/>
+  <text x="2230" y="3180" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Save Config</text>
+  
+  <!-- D7 -> P12.0: Current Settings -->
+  <path d="M1550,3520 L1380,3520 L1380,3330 L2740,3330 L2740,3295" fill="none" stroke="#2c7a7b" stroke-width="3" marker-end="url(#arrow-teal)"/>
+  <rect x="1920" y="3310" width="130" height="20" fill="white" opacity="0.9"/>
+  <text x="1985" y="3325" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Current Settings</text>
+  
+  <!-- D7 -> P5.0: Rates/Discount Rules (dashed, long up) -->
+  <path d="M1550,3510 L1360,3510 L1360,1700 L780,1700 L780,1545" fill="none" stroke="#2c7a7b" stroke-width="2.5" stroke-dasharray="10,6" marker-end="url(#arrow-teal)"/>
+  <rect x="1050" y="2560" width="170" height="20" fill="white" opacity="0.9"/>
+  <text x="1135" y="2575" text-anchor="middle" font-size="12" font-weight="600" fill="#2c7a7b">Rates / Discount Rules</text>
+
+</svg>
+  </div>
+</div>
+
+<script>
+// Interactive controls
+let scale = 1;
+let translateX = 0;
+let translateY = 0;
+let isDragging = false;
+let startX, startY;
+
+const container = document.getElementById('canvasContainer');
+const wrapper = document.getElementById('svgWrapper');
+const zoomLevel = document.getElementById('zoomLevel');
+
+// Mouse drag for panning
+container.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  startX = e.clientX - translateX;
+  startY = e.clientY - translateY;
+  container.classList.add('grabbing');
+});
+
+container.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  e.preventDefault();
+  translateX = e.clientX - startX;
+  translateY = e.clientY - startY;
+  updateTransform();
+});
+
+container.addEventListener('mouseup', () => {
+  isDragging = false;
+  container.classList.remove('grabbing');
+});
+
+container.addEventListener('mouseleave', () => {
+  isDragging = false;
+  container.classList.remove('grabbing');
+});
+
+// Mouse wheel for zooming
+container.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.max(0.3, Math.min(3, scale * delta));
+  
+  // Zoom towards mouse position
+  const rect = container.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  
+  translateX = mouseX - (mouseX - translateX) * (newScale / scale);
+  translateY = mouseY - (mouseY - translateY) * (newScale / scale);
+  
+  scale = newScale;
+  updateTransform();
+  updateZoomDisplay();
+}, { passive: false });
+
+function updateTransform() {
+  wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+}
+
+function updateZoomDisplay() {
+  zoomLevel.textContent = Math.round(scale * 100) + '%';
+}
+
+function zoomIn() {
+  scale = Math.min(3, scale * 1.2);
+  updateTransform();
+  updateZoomDisplay();
+}
+
+function zoomOut() {
+  scale = Math.max(0.3, scale / 1.2);
+  updateTransform();
+  updateZoomDisplay();
+}
+
+function resetView() {
+  scale = 1;
+  translateX = 0;
+  translateY = 0;
+  updateTransform();
+  updateZoomDisplay();
+}
+
+// Touch support for mobile
+let touchDistance = 0;
+container.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    touchDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  } else if (e.touches.length === 1) {
+    isDragging = true;
+    startX = e.touches[0].clientX - translateX;
+    startY = e.touches[0].clientY - translateY;
+  }
+});
+
+container.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 2) {
+    const newDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    scale = Math.max(0.3, Math.min(3, scale * (newDistance / touchDistance)));
+    touchDistance = newDistance;
+    updateTransform();
+    updateZoomDisplay();
+  } else if (isDragging && e.touches.length === 1) {
+    translateX = e.touches[0].clientX - startX;
+    translateY = e.touches[0].clientY - startY;
+    updateTransform();
+  }
+}, { passive: false });
+
+container.addEventListener('touchend', () => {
+  isDragging = false;
+  touchDistance = 0;
+});
+
+// Initialize
+updateZoomDisplay();
+</script>
+</body>
+</html>

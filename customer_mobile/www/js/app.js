@@ -3397,6 +3397,45 @@ function selectPayMethod(method, el) {
   }
 }
 
+function _processProfilePicture(file) {
+    var err = validateUploadFile(file);
+    if (err) { showToast(err, 'error'); return; }
+    profilePicBlob = file;
+    var preview = document.getElementById('profilePicPreview');
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+  }
+
+  async function pickProfilePicture() {
+    var camera = getCamera();
+    if (camera) {
+      try {
+        var image = await camera.getPhoto({
+          quality: 80,
+          allowEditing: false,
+          resultType: 'uri',
+          source: 'PROMPT'
+        });
+        var res = await fetch(image.webPath);
+        var file = await res.blob();
+        file.name = 'profile.jpg';
+        openCropperAndCallback(file, 1.0, _processProfilePicture);
+      } catch(e) {
+        console.log('Camera error or cancelled', e);
+      }
+      return;
+    }
+    
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      openCropperAndCallback(file, 1.0, _processProfilePicture);
+    };
+    input.click();
+  }
+
 function pickPaymentProof() {
   var input = document.createElement('input');
   input.type = 'file';
@@ -5653,13 +5692,47 @@ var Profile = {
   }
 };
 
-function pickLicenseForProfile(side) {
+async function pickLicenseForProfile(side) {
+  var camera = getCamera();
+  if (camera) {
+    try {
+      var image = await camera.getPhoto({
+        quality: 80,
+        allowEditing: false,
+        resultType: 'uri',
+        source: 'PROMPT'
+      });
+      var res = await fetch(image.webPath);
+      var blob = await res.blob();
+      blob.name = 'license_' + side + '.jpg';
+      handleLicenseFileSelect({ target: { files: [blob] } }, side);
+    } catch(e) {
+      console.log('Camera error or cancelled', e);
+    }
+    return;
+  }
   var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
   var el = document.getElementById(inputId);
   if (el) el.click();
 }
 
-function handleLicenseFileSelect(e, side) {
+  function handleLicenseFileSelect(e, side) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    if (e.isCropped) {
+      _processLicenseFileSelect(e, side);
+      return;
+    }
+
+    openCropperAndCallback(file, 1.58, function(croppedBlob) {
+      croppedBlob.name = 'license_' + side + '.jpg';
+      var customEvent = { target: { files: [croppedBlob] }, isCropped: true };
+      handleLicenseFileSelect(customEvent, side);
+    });
+  }
+
+  function _processLicenseFileSelect(e, side) {
   var file = e.target.files[0];
   if (!file) return;
   var err = validateUploadFile(file);

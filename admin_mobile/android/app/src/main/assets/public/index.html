@@ -707,7 +707,6 @@
         /* ---- DARK OVERLAY PANELS - keep white text ---- */
         /* These elements have dark backgrounds and must stay white */
         #exitConfirmModal *,
-        #adminNotifPanel *,
         #adminNotifToast *,
         .premium-modal .modal-content,
         .premium-modal .modal-content * {
@@ -1131,10 +1130,10 @@
 </header>
 
 <!-- Admin Notification Panel -->
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
+<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:var(--surface-container);border:1px solid var(--border-color);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.15);z-index:9000;padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <h4 style="font-weight:700;font-size:0.95rem;color:#f1f5f9;">Notifications</h4>
-        <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
+        <h4 style="font-weight:700;font-size:0.95rem;color:var(--text-color);">Notifications</h4>
+        <button onclick="toggleAdminNotifPanel()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;"><i class="fas fa-times"></i></button>
     </div>
     <div id="adminNotifList"><p style="color:var(--text-muted);text-align:center;padding:16px 0;font-size:0.875rem;">No notifications yet</p></div>
 </div>
@@ -1227,7 +1226,6 @@
                     <option value="Van">Van</option>
                     <option value="Hatchback">Hatchback</option>
                     <option value="Pickup">Pickup</option>
-                    <option value="Motorcycle">Motorcycle</option>
                 </select>
                 <i class="fas fa-chevron-down" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;font-size:0.8rem;"></i>
             </div>
@@ -3137,13 +3135,15 @@
                         iconHtml = '<i class="fas fa-hand-holding-usd" style="color:#f59e0b;"></i>';
                     } else if (n.type === 'admin_extension_request') {
                         iconHtml = '<i class="fas fa-calendar-plus" style="color:#3b82f6;"></i>';
+                    } else if (n.type === 'admin_no_show') {
+                        iconHtml = '<i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>';
                     }
-                    return `<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}display:flex;gap:10px;align-items:flex-start;">
+                    return `<div style="padding:10px 0;border-bottom:1px solid var(--border-color);${unreadStyle}display:flex;gap:10px;align-items:flex-start;">
                         <div style="font-size:1.1rem;margin-top:2px;flex-shrink:0;">${iconHtml}</div>
                         <div style="flex:1;">
-                            <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
-                            <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
-                            <small style="color:var(--text-muted);">${ts}</small>
+                            <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;color:var(--text-color);">${n.title}</div>
+                            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:6px;line-height:1.4;">${n.message}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);opacity:0.8;">${ts}</div>
                         </div>
                     </div>`;
                 }).join('');
@@ -3753,6 +3753,7 @@
             
             allBtns.forEach(b => b.disabled = true);
             submitBtn.textContent = 'Saving...';
+            if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
 
             try {
                 const res = await fetch(url, { method, body: formData });
@@ -3778,6 +3779,7 @@
                 showNotification('Connection failed', 'error');
             } finally {
                 allBtns.forEach(b => b.disabled = false);
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false);
                 submitBtn.textContent = origText;
             }
         },
@@ -6837,6 +6839,7 @@ async edit(id) { this.openModal(id); }
             const user = adminAuth.getUser();
 
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await fetch(`${API_BASE}/api/admin/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -6849,6 +6852,7 @@ async edit(id) { this.openModal(id); }
                     showNotification('Save failed', 'error');
                 }
             } catch (err) { showNotification('Network error', 'error'); }
+            finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
         }
     };
 
@@ -7417,6 +7421,7 @@ async edit(id) { this.openModal(id); }
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
 
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await fetch(`${API_URL}/inspections/submit`, { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
@@ -7429,6 +7434,7 @@ async edit(id) { this.openModal(id); }
             } catch (err) {
                 showNotification('Network error', 'error');
             } finally {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
@@ -7551,6 +7557,7 @@ async edit(id) { this.openModal(id); }
         }
 
         try {
+            if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
             const res = await fetch(`${API_BASE}/api/admin/change-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -7566,6 +7573,7 @@ async edit(id) { this.openModal(id); }
                 showNotification(data.error || 'Failed to update', 'error');
             }
         } catch (err) { showNotification('Network error', 'error'); }
+        finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
     }
 
     function showNotification(message, type = 'info') {
@@ -8129,6 +8137,7 @@ async edit(id) { this.openModal(id); }
             const phone = document.getElementById('umEditPhone').value.trim();
             if (!name) { alert('Full name is required'); return; }
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await apiFetch(`admin/users/${userId}/edit`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json'},
@@ -8140,12 +8149,14 @@ async edit(id) { this.openModal(id); }
                 this.refresh();
                 this.openModal(userId);
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
         },
 
         async setLoyalty(userId) {
             const pts = document.getElementById('umLoyaltyInput').value;
             if (pts === '' || isNaN(pts)) { alert('Enter a valid number'); return; }
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await apiFetch(`admin/users/${userId}/loyalty`, {
                     method: 'PUT',
                     headers: {'Content-Type':'application/json'},
@@ -8157,6 +8168,7 @@ async edit(id) { this.openModal(id); }
                 this.refresh();
                 this.openModal(userId);
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
         },
 
         async resetPassword(userId) {
@@ -8164,6 +8176,7 @@ async edit(id) { this.openModal(id); }
             if (pass.length < 8) { alert('Password must be at least 8 characters'); return; }
             if (!confirm('Reset this user\'s password?')) return;
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await apiFetch(`admin/users/${userId}/reset-password`, {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
@@ -8174,6 +8187,7 @@ async edit(id) { this.openModal(id); }
                 showNotification(d.message || 'Password reset', 'success');
                 document.getElementById('umNewPass').value = '';
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
         },
 
         async toggleFreeze(userId, currentlyFrozen) {
@@ -8190,6 +8204,7 @@ async edit(id) { this.openModal(id); }
             }
             if (!confirm(freeze ? 'Freeze this account?' : 'Unfreeze this account?')) return;
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await apiFetch(`admin/users/${userId}/freeze`, {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
@@ -8201,12 +8216,14 @@ async edit(id) { this.openModal(id); }
                 this.refresh();
                 this.openModal(userId);
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
         },
 
         async deleteUser(userId, name) {
             if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return;
             if (!confirm('Are you absolutely sure? All bookings and data will be removed.')) return;
             try {
+                if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
                 const res = await apiFetch(`admin/users/${userId}`, {method: 'DELETE'});
                 const d = await res.json();
                 if (!res.ok) throw new Error(d.error);
@@ -8214,6 +8231,7 @@ async edit(id) { this.openModal(id); }
                 this.closeModal();
                 this.refresh();
             } catch (e) { alert(e.message); }
+            finally { if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(false); }
         },
 
         async exportCSV() {
@@ -8875,20 +8893,21 @@ async edit(id) { this.openModal(id); }
 
     // === Full-screen blocking UI for write operations ===
     function showAdminBlockingUI(show) {
-        var el = document.getElementById('adminBlockingOverlay');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'adminBlockingOverlay';
-            el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999999;'
-                + 'display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;'
-                + 'backdrop-filter:blur(2px);';
-            el.innerHTML = '<div style="width:52px;height:52px;border:4px solid rgba(255,255,255,0.3);'
-                + 'border-top-color:#00B14F;border-radius:50%;animation:adminSpin 0.75s linear infinite;"></div>'
-                + '<p style="color:#fff;font-size:0.9rem;font-weight:700;letter-spacing:0.3px;">Processing...</p>';
-            document.body.appendChild(el);
+        // Use the existing small bottom-right spinner
+        var spinner = document.getElementById('adminLoadingOverlay');
+        if (spinner) spinner.style.display = show ? 'flex' : 'none';
+        // Block all clicks/taps without showing a full-screen dim
+        document.body.style.pointerEvents = show ? 'none' : '';
+        // Safety: auto-reset after 10s so nothing gets stuck
+        if (show) {
+            clearTimeout(window._adminBlockTimeout);
+            window._adminBlockTimeout = setTimeout(function() {
+                if (spinner) spinner.style.display = 'none';
+                document.body.style.pointerEvents = '';
+            }, 10000);
+        } else {
+            clearTimeout(window._adminBlockTimeout);
         }
-        el.style.display = show ? 'flex' : 'none';
-        document.body.style.overflow = show ? 'hidden' : '';
     }
 
 
@@ -8988,3 +9007,4 @@ window.adminDbg = function() {};
 </div>
 
 </body>
+

@@ -1,0 +1,59 @@
+========================================
+BUILD DEBUG APK - QUICK INSTRUCTIONS
+========================================
+
+UPDATES IN THIS BUILD:
+? Loyalty points redemption limited to 50% of booking total
+? Palette emoji ?? icon for color selector
+? All previous fixes included
+
+========================================
+METHOD 1: Double-click the batch file
+========================================
+1. Open File Explorer
+2. Navigate to: customer_mobile folder
+3. Double-click: BUILD_DEBUG_APK.bat
+4. Wait for build to complete
+5. APK will be at: customer_mobile\autoride-customer-debug-latest.apk
+
+========================================
+METHOD 2: Command Prompt
+========================================
+1. Open Command Prompt
+2. Run:
+   cd "c:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\customer_mobile"
+   BUILD_DEBUG_APK.bat
+
+========================================
+METHOD 3: Manual Gradle Build
+========================================
+1. Open Command Prompt
+2. Run:
+   cd "c:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\customer_mobile\android"
+   gradlew.bat clean assembleDebug
+
+3. APK will be at:
+   android\app\build\outputs\apk\debug\app-debug.apk
+
+========================================
+INSTALL ON DEVICE:
+========================================
+1. Enable "Install from Unknown Sources" on your Android device
+2. Transfer the APK to your device
+3. Open the APK file and install
+
+OR use ADB:
+   adb install -r autoride-customer-debug-latest.apk
+
+========================================
+TROUBLESHOOTING:
+========================================
+- If build fails, make sure Android SDK is installed
+- Check that ANDROID_HOME environment variable is set
+- Ensure Java JDK 11 or higher is installed
+- Try running Android Studio first to ensure SDK is properly configured
+
+========================================
+BUILD DATE: June 17, 2026
+COMMIT: 68bb2eb
+========================================

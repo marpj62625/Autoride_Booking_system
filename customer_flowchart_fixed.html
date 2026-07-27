@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AUTORIDE - Customer Flowchart</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #e8edf2;
+  overflow: hidden;
+}
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 15px 20px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-left h1 {
+  font-size: 1.4rem;
+  color: white;
+  margin-bottom: 3px;
+}
+.header-left p {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.9);
+}
+.controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: white;
+  color: #667eea;
+}
+.btn-primary:hover {
+  background: #f0f0f0;
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.3);
+}
+.zoom-info {
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: white;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+.canvas-container {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  cursor: grab;
+  background: white;
+}
+.canvas-container.grabbing {
+  cursor: grabbing;
+}
+.svg-wrapper {
+  transform-origin: 0 0;
+  transition: transform 0.1s ease-out;
+}
+.legend {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  display: flex;
+  gap: 20px;
+  z-index: 999;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #2d3748;
+  font-weight: 600;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>?? AUTORIDE - Customer Journey</h1>
+    <p>Detailed Process Flow for Mobile App Users</p>
+  </div>
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="zoomOut()">? Zoom</button>
+    <div class="zoom-info" id="zoomLevel">100%</div>
+    <button class="btn btn-secondary" onclick="zoomIn()">+ Zoom</button>
+    <button class="btn btn-primary" onclick="resetView()">? Reset</button>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item">
+    <svg width="30" height="30">
+      <circle cx="15" cy="15" r="13" fill="#48bb78" stroke="#2f855a" stroke-width="2"/>
+    </svg>
+    <span>Start/End</span>
+  </div>
+  <div class="legend-item">
+    <svg width="50" height="30">
+      <rect x="2" y="4" width="46" height="22" rx="4" fill="#4299e1" stroke="#3182ce" stroke-width="2"/>
+    </svg>
+    <span>Process</span>
+  </div>
+  <div class="legend-item">
+    <svg width="40" height="40">
+      <path d="M20,5 L35,20 L20,35 L5,20 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2"/>
+    </svg>
+    <span>Decision</span>
+  </div>
+  <div class="legend-item">
+    <svg width="50" height="30">
+      <path d="M5,4 L45,4 L48,26 L2,26 Z" fill="#9f7aea" stroke="#805ad5" stroke-width="2"/>
+    </svg>
+    <span>Data/Input</span>
+  </div>
+</div>
+
+<div class="canvas-container" id="canvasContainer">
+  <div class="svg-wrapper" id="svgWrapper">
+<svg width="1600" height="5500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#2d3748" />
+    </marker>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="5500" fill="white"/>
+  
+  <!-- Title -->
+  <rect x="100" y="40" width="1400" height="70" rx="10" fill="#667eea" filter="url(#shadow)"/>
+  <text x="800" y="85" text-anchor="middle" font-size="28" font-weight="800" fill="white">
+    CUSTOMER BOOKING JOURNEY
+  </text>
+
+  <!-- ========== START ========== -->
+  <circle cx="800" cy="180" r="40" fill="#48bb78" stroke="#2f855a" stroke-width="3" filter="url(#shadow)"/>
+  <text x="800" y="188" text-anchor="middle" font-size="16" font-weight="700" fill="white">START</text>
+  
+  <line x1="800" y1="220" x2="800" y2="270" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Open App -->
+  <rect x="650" y="270" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="300" text-anchor="middle" font-size="15" font-weight="700" fill="white">Open Autoride App</text>
+  <text x="800" y="322" text-anchor="middle" font-size="12" fill="white">(Mobile Device)</text>
+  
+  <line x1="800" y1="340" x2="800" y2="400" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Has Account? Decision -->
+  <path d="M800,400 L920,480 L800,560 L680,480 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="475" text-anchor="middle" font-size="14" font-weight="700" fill="white">Has</text>
+  <text x="800" y="493" text-anchor="middle" font-size="14" font-weight="700" fill="white">Account?</text>
+  
+  <!-- NO - Register -->
+  <line x1="920" y1="480" x2="1050" y2="480" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="1050" y1="480" x2="1050" y2="640" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="960" y="470" font-size="13" font-weight="700" fill="#c53030">NO</text>
+  
+  <rect x="900" y="640" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="1050" y="670" text-anchor="middle" font-size="15" font-weight="700" fill="white">Register New Account</text>
+  <text x="1050" y="692" text-anchor="middle" font-size="12" fill="white">(Email/Phone/Google)</text>
+  
+  <line x1="1050" y1="710" x2="1050" y2="760" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="1050" y1="760" x2="800" y2="760" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="800" y1="760" x2="800" y2="820" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- YES - Login -->
+  <line x1="680" y1="480" x2="550" y2="480" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="550" y1="480" x2="550" y2="640" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="640" y="470" font-size="13" font-weight="700" fill="#38a169">YES</text>
+  
+  <rect x="400" y="640" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="550" y="670" text-anchor="middle" font-size="15" font-weight="700" fill="white">Login</text>
+  <text x="550" y="692" text-anchor="middle" font-size="12" fill="white">(Email/Phone/Biometric)</text>
+  
+  <line x1="550" y1="710" x2="550" y2="760" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="550" y1="760" x2="800" y2="760" stroke="#2d3748" stroke-width="2.5"/>
+  
+  <!-- Verify Credentials -->
+  <rect x="650" y="820" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="850" text-anchor="middle" font-size="15" font-weight="700" fill="white">Verify Credentials</text>
+  <text x="800" y="872" text-anchor="middle" font-size="12" fill="white">(Check Database)</text>
+  
+  <line x1="800" y1="890" x2="800" y2="960" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Valid Login? Decision -->
+  <path d="M800,960 L920,1040 L800,1120 L680,1040 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="1035" text-anchor="middle" font-size="14" font-weight="700" fill="white">Valid</text>
+  <text x="800" y="1053" text-anchor="middle" font-size="14" font-weight="700" fill="white">Login?</text>
+  
+  <!-- NO - Retry -->
+  <line x1="680" y1="1040" x2="350" y2="1040" stroke="#c53030" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="350" y1="1040" x2="350" y2="675" stroke="#c53030" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="350" y1="675" x2="400" y2="675" stroke="#c53030" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowhead)"/>
+  <text x="520" y="1030" font-size="13" font-weight="700" fill="#c53030">NO - Retry</text>
+  
+  <!-- YES - Continue -->
+  <line x1="800" y1="1120" x2="800" y2="1200" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="830" y="1170" font-size="13" font-weight="700" fill="#38a169">YES</text>
+
+  <!-- ========== SECTION 2: BROWSE ========== -->
+  
+  <!-- Dashboard -->
+  <path d="M650,1200 L950,1200 L965,1270 L635,1270 Z" fill="#9f7aea" stroke="#805ad5" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="1230" text-anchor="middle" font-size="15" font-weight="700" fill="white">View Dashboard</text>
+  <text x="800" y="1252" text-anchor="middle" font-size="12" fill="white">(Available Vehicles)</text>
+  
+  <line x1="800" y1="1270" x2="800" y2="1330" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Browse Vehicles -->
+  <rect x="650" y="1330" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="1360" text-anchor="middle" font-size="15" font-weight="700" fill="white">Browse Vehicles</text>
+  <text x="800" y="1382" text-anchor="middle" font-size="12" fill="white">(Filter/Search/Sort)</text>
+  
+  <line x1="800" y1="1400" x2="800" y2="1460" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Select Vehicle -->
+  <rect x="650" y="1460" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="1490" text-anchor="middle" font-size="15" font-weight="700" fill="white">Select Vehicle</text>
+  <text x="800" y="1512" text-anchor="middle" font-size="12" fill="white">(View Details/Photos)</text>
+  
+  <line x1="800" y1="1530" x2="800" y2="1610" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- License Verified? Decision -->
+  <path d="M800,1610 L930,1690 L800,1770 L670,1690 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="1680" text-anchor="middle" font-size="14" font-weight="700" fill="white">License</text>
+  <text x="800" y="1698" text-anchor="middle" font-size="14" font-weight="700" fill="white">Verified?</text>
+  
+  <!-- NO - Upload -->
+  <line x1="930" y1="1690" x2="1080" y2="1690" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="1080" y1="1690" x2="1080" y2="1830" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="990" y="1680" font-size="13" font-weight="700" fill="#c53030">NO</text>
+  
+  <rect x="930" y="1830" width="300" height="90" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="1080" y="1860" text-anchor="middle" font-size="15" font-weight="700" fill="white">Upload License</text>
+  <text x="1080" y="1882" text-anchor="middle" font-size="12" fill="white">(Front & Back Photo)</text>
+  <text x="1080" y="1904" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.9)">[Admin Approval Needed]</text>
+  
+  <line x1="1080" y1="1920" x2="1080" y2="1980" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="1080" y1="1980" x2="800" y2="1980" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="800" y1="1980" x2="800" y2="2050" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- YES -->
+  <line x1="800" y1="1770" x2="800" y2="2050" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="830" y="1920" font-size="13" font-weight="700" fill="#38a169">YES</text>
+
+
+  <!-- ========== SECTION 3: BOOKING ========== -->
+  
+  <!-- Enter Details -->
+  <path d="M650,2050 L950,2050 L965,2140 L635,2140 Z" fill="#9f7aea" stroke="#805ad5" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="2075" text-anchor="middle" font-size="15" font-weight="700" fill="white">Enter Booking Details</text>
+  <text x="800" y="2097" text-anchor="middle" font-size="12" fill="white">Pickup & Return Date/Time</text>
+  <text x="800" y="2119" text-anchor="middle" font-size="12" fill="white">Location & Add-ons</text>
+  
+  <line x1="800" y1="2140" x2="800" y2="2200" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Calculate Price -->
+  <rect x="650" y="2200" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="2230" text-anchor="middle" font-size="15" font-weight="700" fill="white">Calculate Total</text>
+  <text x="800" y="2252" text-anchor="middle" font-size="12" fill="white">(Days × Rate + Extras)</text>
+  
+  <line x1="800" y1="2270" x2="800" y2="2330" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Display Summary -->
+  <path d="M650,2330 L950,2330 L965,2420 L635,2420 Z" fill="#9f7aea" stroke="#805ad5" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="2360" text-anchor="middle" font-size="15" font-weight="700" fill="white">View Summary</text>
+  <text x="800" y="2382" text-anchor="middle" font-size="12" fill="white">Vehicle Info & Amount</text>
+  
+  <line x1="800" y1="2420" x2="800" y2="2500" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Confirm? -->
+  <path d="M800,2500 L930,2580 L800,2660 L670,2580 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="2575" text-anchor="middle" font-size="14" font-weight="700" fill="white">Confirm</text>
+  <text x="800" y="2593" text-anchor="middle" font-size="14" font-weight="700" fill="white">Booking?</text>
+  
+  <!-- NO - Go back -->
+  <line x1="670" y1="2580" x2="450" y2="2580" stroke="#c53030" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="450" y1="2580" x2="450" y2="1495" stroke="#c53030" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="450" y1="1495" x2="650" y2="1495" stroke="#c53030" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowhead)"/>
+  <text x="570" y="2570" font-size="13" font-weight="700" fill="#c53030">NO - Change</text>
+  
+  <!-- YES -->
+  <line x1="800" y1="2660" x2="800" y2="2740" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="830" y="2710" font-size="13" font-weight="700" fill="#38a169">YES</text>
+
+  <!-- ========== SECTION 4: PAYMENT ========== -->
+  
+  <!-- Select Payment -->
+  <path d="M650,2740 L950,2740 L965,2840 L635,2840 Z" fill="#9f7aea" stroke="#805ad5" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="2770" text-anchor="middle" font-size="15" font-weight="700" fill="white">Select Payment</text>
+  <text x="800" y="2792" text-anchor="middle" font-size="12" fill="white">GCash/Maya or Cash</text>
+  
+  <line x1="800" y1="2840" x2="800" y2="2920" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Online? -->
+  <path d="M800,2920 L930,3000 L800,3080 L670,3000 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="2995" text-anchor="middle" font-size="14" font-weight="700" fill="white">Online</text>
+  <text x="800" y="3013" text-anchor="middle" font-size="14" font-weight="700" fill="white">Payment?</text>
+  
+  <!-- YES - PayMongo -->
+  <line x1="930" y1="3000" x2="1100" y2="3000" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="1100" y1="3000" x2="1100" y2="3150" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="1000" y="2990" font-size="13" font-weight="700" fill="#38a169">YES</text>
+  
+  <rect x="950" y="3150" width="300" height="80" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="1100" y="3180" text-anchor="middle" font-size="15" font-weight="700" fill="white">PayMongo Gateway</text>
+  <text x="1100" y="3202" text-anchor="middle" font-size="12" fill="white">Enter Card/E-wallet</text>
+  <text x="1100" y="3219" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.9)">Verify Transaction</text>
+  
+  <line x1="1100" y1="3230" x2="1100" y2="3290" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="1100" y1="3290" x2="800" y2="3290" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="800" y1="3290" x2="800" y2="3370" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- NO - Manual -->
+  <line x1="670" y1="3000" x2="500" y2="3000" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="500" y1="3000" x2="500" y2="3150" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="600" y="2990" font-size="13" font-weight="700" fill="#c53030">NO</text>
+  
+  <rect x="350" y="3150" width="300" height="80" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="500" y="3180" text-anchor="middle" font-size="15" font-weight="700" fill="white">Upload Proof</text>
+  <text x="500" y="3202" text-anchor="middle" font-size="12" fill="white">Photo/Screenshot</text>
+  <text x="500" y="3219" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.9)">[Admin will verify]</text>
+  
+  <line x1="500" y1="3230" x2="500" y2="3290" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="500" y1="3290" x2="800" y2="3290" stroke="#2d3748" stroke-width="2.5"/>
+  
+  <!-- Save Booking -->
+  <rect x="650" y="3370" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="3400" text-anchor="middle" font-size="15" font-weight="700" fill="white">Save Booking</text>
+  <text x="800" y="3422" text-anchor="middle" font-size="12" fill="white">(Status: Pending)</text>
+  
+  <line x1="800" y1="3440" x2="800" y2="3500" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Send Notification -->
+  <rect x="650" y="3500" width="300" height="70" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="3530" text-anchor="middle" font-size="15" font-weight="700" fill="white">Send Confirmation</text>
+  <text x="800" y="3552" text-anchor="middle" font-size="12" fill="white">(Email + Push)</text>
+  
+  <line x1="800" y1="3570" x2="800" y2="3650" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ========== SECTION 5: APPROVAL ========== -->
+  
+  <!-- Wait -->
+  <rect x="650" y="3650" width="300" height="80" rx="8" fill="#fc8181" stroke="#e53e3e" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="3680" text-anchor="middle" font-size="15" font-weight="700" fill="white">Wait for Admin</text>
+  <text x="800" y="3702" text-anchor="middle" font-size="12" fill="white">License & Payment Check</text>
+  
+  <line x1="800" y1="3730" x2="800" y2="3810" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Approved? -->
+  <path d="M800,3810 L930,3890 L800,3970 L670,3890 Z" fill="#f6ad55" stroke="#dd6b20" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="3885" text-anchor="middle" font-size="14" font-weight="700" fill="white">Booking</text>
+  <text x="800" y="3903" text-anchor="middle" font-size="14" font-weight="700" fill="white">Approved?</text>
+  
+  <!-- NO - Rejected -->
+  <line x1="670" y1="3890" x2="450" y2="3890" stroke="#2d3748" stroke-width="2.5"/>
+  <line x1="450" y1="3890" x2="450" y2="4050" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="580" y="3880" font-size="13" font-weight="700" fill="#c53030">REJECTED</text>
+  
+  <rect x="300" y="4050" width="300" height="80" rx="8" fill="#fc8181" stroke="#e53e3e" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="450" y="4080" text-anchor="middle" font-size="15" font-weight="700" fill="white">Receive Rejection</text>
+  <text x="450" y="4102" text-anchor="middle" font-size="12" fill="white">View Reason & Refund</text>
+  
+  <line x1="450" y1="4130" x2="450" y2="4190" stroke="#2d3748" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="450" y1="4190" x2="800" y2="4190" stroke="#2d3748" stroke-width="2.5" stroke-dasharray="8,4"/>
+  <line x1="800" y1="4190" x2="800" y2="4270" stroke="#2d3748" stroke-width="2.5" stroke-dasharray="8,4" marker-end="url(#arrowhead)"/>
+  
+  <!-- YES - Approved -->
+  <line x1="800" y1="3970" x2="800" y2="4100" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  <text x="840" y="4040" font-size="13" font-weight="700" fill="#38a169">APPROVED</text>
+  
+  <rect x="650" y="4100" width="300" height="80" rx="8" fill="#68d391" stroke="#38a169" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="4130" text-anchor="middle" font-size="16" font-weight="700" fill="white">? Confirmed!</text>
+  <text x="800" y="4152" text-anchor="middle" font-size="12" fill="white">Booking ID & Details</text>
+  
+  <line x1="800" y1="4180" x2="800" y2="4270" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+
+  <!-- ========== SECTION 6: PICKUP ========== -->
+  
+  <!-- Pickup -->
+  <rect x="650" y="4270" width="300" height="80" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="4300" text-anchor="middle" font-size="15" font-weight="700" fill="white">Pickup Vehicle</text>
+  <text x="800" y="4322" text-anchor="middle" font-size="12" fill="white">Inspect & Sign</text>
+  
+  <line x1="800" y1="4350" x2="800" y2="4420" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Use -->
+  <rect x="650" y="4420" width="300" height="70" rx="8" fill="#68d391" stroke="#38a169" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="4450" text-anchor="middle" font-size="15" font-weight="700" fill="white">Use Vehicle</text>
+  <text x="800" y="4472" text-anchor="middle" font-size="12" fill="white">(Rental Period)</text>
+  
+  <line x1="800" y1="4490" x2="800" y2="4560" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Return -->
+  <rect x="650" y="4560" width="300" height="80" rx="8" fill="#4299e1" stroke="#3182ce" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="4590" text-anchor="middle" font-size="15" font-weight="700" fill="white">Return Vehicle</text>
+  <text x="800" y="4612" text-anchor="middle" font-size="12" fill="white">Inspection & Payment</text>
+  
+  <line x1="800" y1="4640" x2="800" y2="4710" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- Review -->
+  <path d="M650,4710 L950,4710 L965,4780 L635,4780 Z" fill="#9f7aea" stroke="#805ad5" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="800" y="4740" text-anchor="middle" font-size="15" font-weight="700" fill="white">Leave Review (Optional)</text>
+  <text x="800" y="4762" text-anchor="middle" font-size="12" fill="white">Rate Experience</text>
+  
+  <line x1="800" y1="4780" x2="800" y2="4840" stroke="#2d3748" stroke-width="2.5" marker-end="url(#arrowhead)"/>
+  
+  <!-- END -->
+  <circle cx="800" cy="4880" r="40" fill="#f56565" stroke="#e53e3e" stroke-width="3" filter="url(#shadow)"/>
+  <text x="800" y="4888" text-anchor="middle" font-size="16" font-weight="700" fill="white">END</text>
+
+</svg>
+  </div>
+</div>
+
+<script>
+let scale = 1;
+let translateX = 0;
+let translateY = 0;
+let isDragging = false;
+let startX, startY;
+
+const container = document.getElementById('canvasContainer');
+const wrapper = document.getElementById('svgWrapper');
+const zoomLevel = document.getElementById('zoomLevel');
+
+container.addEventListener('mousedown', (e) => {
+  isDragging = true;
+  startX = e.clientX - translateX;
+  startY = e.clientY - translateY;
+  container.classList.add('grabbing');
+});
+
+container.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  e.preventDefault();
+  translateX = e.clientX - startX;
+  translateY = e.clientY - startY;
+  updateTransform();
+});
+
+container.addEventListener('mouseup', () => {
+  isDragging = false;
+  container.classList.remove('grabbing');
+});
+
+container.addEventListener('mouseleave', () => {
+  isDragging = false;
+  container.classList.remove('grabbing');
+});
+
+container.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.max(0.3, Math.min(3, scale * delta));
+  
+  const rect = container.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+  
+  translateX = mouseX - (mouseX - translateX) * (newScale / scale);
+  translateY = mouseY - (mouseY - translateY) * (newScale / scale);
+  
+  scale = newScale;
+  updateTransform();
+  updateZoomDisplay();
+}, { passive: false });
+
+function updateTransform() {
+  wrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+}
+
+function updateZoomDisplay() {
+  zoomLevel.textContent = Math.round(scale * 100) + '%';
+}
+
+function zoomIn() {
+  scale = Math.min(3, scale * 1.2);
+  updateTransform();
+  updateZoomDisplay();
+}
+
+function zoomOut() {
+  scale = Math.max(0.3, scale / 1.2);
+  updateTransform();
+  updateZoomDisplay();
+}
+
+function resetView() {
+  scale = 1;
+  translateX = 0;
+  translateY = 0;
+  updateTransform();
+  updateZoomDisplay();
+}
+
+updateZoomDisplay();
+</script>
+</body>
+</html>

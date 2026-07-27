@@ -1,0 +1,4 @@
+# file: C:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\backend\routers\conflict_routes.py
+# hypothesis_version: 6.131.15
+
+[200, 400, 500, 'GET', 'POST', 'alternatives', 'conflicts', 'created_at', 'end_date', 'error', 'message', 'resolution_deadline', 'selected_vehicle_id', 'start_date', 'user_id', 'user_id is required']

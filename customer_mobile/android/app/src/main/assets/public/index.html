@@ -244,22 +244,15 @@
         @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
 
 
-        /* Toast */
-
-
-        .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:#333; color:#fff; padding:12px 24px; border-radius:var(--radius-sm); font-size:0.875rem; font-weight:500; z-index:10000; opacity:0; transition:all 0.3s; max-width:88vw; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.25); }
-
-
-        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-
-
-        .toast.toast-success { background:var(--success); }
-
-
-        .toast.toast-error { background:var(--danger); }
-
-
-        .toast.toast-info { background:var(--info); }
+        /* Toast Notifications */
+        #toast-container { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); z-index:10000; display:flex; flex-direction:column-reverse; align-items:center; gap:8px; pointer-events:none; }
+        .toast { display:flex; align-items:center; gap:10px; background:#1e1e2e; color:#fff; padding:12px 20px; border-radius:12px; font-size:0.875rem; font-weight:500; opacity:0; transform:translateY(16px) scale(0.97); transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1); max-width:90vw; text-align:left; box-shadow:0 8px 32px rgba(0,0,0,0.35); border-left:4px solid transparent; pointer-events:all; }
+        .toast.show { opacity:1; transform:translateY(0) scale(1); }
+        .toast-icon { font-size:1.1rem; flex-shrink:0; }
+        .toast.toast-success { background:#14532d; border-left-color:#22c55e; }
+        .toast.toast-error { background:#450a0a; border-left-color:#f87171; }
+        .toast.toast-info { background:#1e3a5f; border-left-color:#60a5fa; }
+        .toast.toast-warning { background:#451a03; border-left-color:#fb923c; }
 
 
         /* Bottom Nav */
@@ -1009,7 +1002,19 @@
     </style>
 
 
+
+    <!-- Tesseract.js for OCR License Scanner -->
+
+
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+
+    <link rel="stylesheet" href="css/cropper.min.css">
+
+
 </head>
+
+
 
 
 <body>
@@ -1315,16 +1320,49 @@
       <p class="subtitle">Join Autoride today</p>
 
 
+      <div class="form-group" style="display:flex;gap:10px;">
+
+
+        <div style="flex:1;">
+
+
+          <label>First Name</label>
+
+
+          <input type="text" id="regFirstName" placeholder="Juan" maxlength="40">
+
+
+          <span class="field-error" id="regFirstNameErr"></span>
+
+
+        </div>
+
+
+        <div style="flex:1;">
+
+
+          <label>Middle Name</label>
+
+
+          <input type="text" id="regMiddleName" placeholder="(Opt)" maxlength="40">
+
+
+        </div>
+
+
+      </div>
+
+
       <div class="form-group">
 
 
-        <label>Full Name</label>
+        <label>Last Name</label>
 
 
-        <input type="text" id="regName" placeholder="Juan dela Cruz" maxlength="40">
+        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40">
 
 
-        <span class="field-error" id="regNameErr"></span>
+        <span class="field-error" id="regLastNameErr"></span>
 
 
       </div>
@@ -2191,13 +2229,43 @@
       </div>
 
 
+      <div class="form-group" style="display:flex;gap:10px;">
+
+
+        <div style="flex:1;">
+
+
+          <label>First Name</label>
+
+
+          <input type="text" id="editFirstName" placeholder="Juan" maxlength="40">
+
+
+        </div>
+
+
+        <div style="flex:1;">
+
+
+          <label>Middle Name</label>
+
+
+          <input type="text" id="editMiddleName" placeholder="(Opt)" maxlength="40">
+
+
+        </div>
+
+
+      </div>
+
+
       <div class="form-group">
 
 
-        <label>Full Name</label>
+        <label>Last Name</label>
 
 
-        <input type="text" id="editName" placeholder="Full Name" maxlength="40">
+        <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="40">
 
 
       </div>
@@ -2368,7 +2436,7 @@
           <div>
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Full Name</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Name on License</div>
 
 
             <div id="viewLicenseName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
@@ -2578,46 +2646,7 @@
           <label>License Class / Category</label>
 
 
-          <select id="editLicenseClass" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
-
-
-            <option value="">Select Class</option>
-
-
-            <option value="A">A - Motorcycle</option>
-
-
-            <option value="A1">A1 - Motorcycle (restricted)</option>
-
-
-            <option value="B">B - Non-Professional (Light Vehicle)</option>
-
-
-            <option value="B1">B1 - Non-Professional (restricted)</option>
-
-
-            <option value="B2">B2 - Non-Professional (automatic)</option>
-
-
-            <option value="C">C - Professional (Light Vehicle)</option>
-
-
-            <option value="D">D - Professional (Heavy Vehicle)</option>
-
-
-            <option value="BE">BE - Non-Professional with trailer</option>
-
-
-            <option value="CE">CE - Professional with trailer</option>
-
-
-            <option value="Non-Professional">Non-Professional</option>
-
-
-            <option value="Professional">Professional</option>
-
-
-          </select>
+          <input type="text" id="editLicenseClass" placeholder="e.g. A, B, B1 (Separate with commas)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
 
         </div>
@@ -2635,10 +2664,10 @@
         <div class="form-group">
 
 
-          <label>Full Name</label>
+          <label>Name on License</label>
 
 
-          <input type="text" id="editLicenseName" placeholder="Juan Dela Cruz">
+          <input type="text" id="editLicenseName" placeholder="First Name, Middle Name, Last Name">
 
 
         </div>
@@ -2755,16 +2784,34 @@
         <div class="form-group">
 
 
-          <label>Front of License</label>
+          <label>Front of License (For Scanning)</label>
 
 
-          <button class="btn-secondary" onclick="pickLicenseForProfile('front')"><i class="fas fa-camera"></i> Upload Front</button>
+          <button class="btn-secondary" onclick="pickLicenseForProfile('front')"><i class="fas fa-camera"></i> Scan or Upload Front</button>
 
 
           <img id="licenseEditPreviewFront" style="width:100%;border-radius:var(--radius-sm);margin-top:10px;display:none;">
 
 
-          <input type="file" accept="image/*" id="licenseFileInputFront" accept="image/*" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
+          <input type="file" accept="image/*" id="licenseFileInputFront" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
+
+
+
+          <div id="ocrStatusText" style="font-size:0.85rem; color:var(--primary); margin-top: 8px; font-weight: 500; display:none;">
+
+
+            <i class="fas fa-spinner fa-spin"></i> Scanning license details using AI...
+
+
+          </div>
+
+
+          
+          <div id="ocrExtractedDetails" style="margin-top: 15px; display: none; background: var(--surface-container); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <p style="font-size: 0.85rem; color: var(--success); margin-top: 0; margin-bottom: 0; font-weight: 500;">
+              <i class="fas fa-check-circle"></i> License details extracted successfully! Please verify the License Number and Expiry Date above.
+            </p>
+          </div>
 
 
         </div>
@@ -3034,7 +3081,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
-<script src="js/app.js"></script>
+<script src="js/app.js?v=4"></script>
 
 
 
@@ -3376,6 +3423,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+  <!-- CROPPER MODAL -->
+  <div id="cropperModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999999;flex-direction:column;">
+    <div style="flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+      <img id="cropperImage" src="" style="max-width:100%;max-height:100%;">
+    </div>
+    <div style="padding:20px;background:#1e293b;display:flex;gap:15px;justify-content:center;">
+      <button onclick="closeCropper()" style="flex:1;padding:14px;background:#475569;border:none;border-radius:12px;color:white;font-weight:700;font-size:1rem;cursor:pointer;">Cancel</button>
+      <button id="cropperConfirmBtn" style="flex:1;padding:14px;background:var(--primary);border:none;border-radius:12px;color:white;font-weight:700;font-size:1rem;cursor:pointer;">Crop &amp; Use</button>
+    </div>
+  </div>
+
+  <script src="js/cropper.min.js"></script><script src="js/cropper_logic.js"></script>
 </body>
 
 

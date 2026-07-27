@@ -1,0 +1,4 @@
+# file: C:\Users\patri\OneDrive\Desktop\AutorideSystem2sides\AutorideSystem\backend\booking_extension_routes.py
+# hypothesis_version: 6.131.15
+
+[200, 400, 404, 500, ' - ', ' via ', '%Y-%m-%d', '.', '.jpg', '/admin/extensions', 'Approved', 'Booking #', 'Booking not found', 'Confirmed', 'Extension Approved', 'Extension Rejected', 'Extension Request', 'Extension approved', 'Extension not found', 'GET', 'Ongoing', 'POST', 'PUT', 'Picked Up', 'T', '^\\d{4}-\\d{2}-\\d{2}$', '_', 'booking_conflict', 'booking_id', 'created_at', 'end_date', 'error', 'extend_', 'extension_approved', 'extension_days', 'extension_id', 'extension_price', 'extension_rejected', 'extensions', 'has_conflicts', 'id', 'message', 'multipart/form-data', 'new_end_date', 'note', 'original_end_date', 'payment_method', 'payment_proof', 'pending', 'reference_number', 'refund_amount', 'requested_by', 'start_date', 'status', 'updated_at', 'uploads', 'user_id']

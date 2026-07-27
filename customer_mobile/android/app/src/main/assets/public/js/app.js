@@ -701,6 +701,11 @@ function uploadFile(endpoint, formData, timeoutMs) {
             throw parseErr;
           }
           if (!res.ok) {
+            if (res.status === 413) {
+              var sizeErr = new Error('File is too large. Please use a smaller image (max ~4MB).');
+              sizeErr.status = 413;
+              throw sizeErr;
+            }
             var err = new Error(data.error || 'Upload failed');
             err.status = res.status;
             throw err;
@@ -742,34 +747,72 @@ function showLoading(show) {
   if (show) {
     _loadingCount++;
     if (overlay) overlay.style.display = 'flex';
-    // Safety: auto-hide after 10s to prevent spinner getting stuck
+    document.body.style.pointerEvents = 'none'; // Block clicks globally
+    // Safety: auto-hide after 120s to prevent spinner getting stuck
     clearTimeout(_loadingTimeout);
     _loadingTimeout = setTimeout(function() {
       _loadingCount = 0;
       if (overlay) overlay.style.display = 'none';
+      document.body.style.pointerEvents = ''; // Restore clicks
     }, 120000); // 120s safety timeout (supports large file uploads)
   } else {
     _loadingCount = Math.max(0, _loadingCount - 1);
     if (_loadingCount === 0) {
       clearTimeout(_loadingTimeout);
       if (overlay) overlay.style.display = 'none';
+      document.body.style.pointerEvents = ''; // Restore clicks
     }
   }
 }
 
 function showToast(message, type) {
   type = type || 'info';
-  var existing = document.querySelector('.toast');
-  if (existing) existing.remove();
+  var icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  var container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
   var t = document.createElement('div');
   t.className = 'toast toast-' + type;
-  t.textContent = message;
-  document.body.appendChild(t);
+  var icon = document.createElement('span');
+  icon.className = 'toast-icon';
+  icon.textContent = icons[type] || 'ℹ️';
+  var msg = document.createElement('span');
+  msg.textContent = message;
+  t.appendChild(icon);
+  t.appendChild(msg);
+  container.appendChild(t);
   requestAnimationFrame(function() { t.classList.add('show'); });
   setTimeout(function() {
     t.classList.remove('show');
     setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
-  }, 3000);
+  }, 3500);
+}
+
+// --- INLINE FIELD ERROR HELPERS ---
+// Attaches a small red error message directly below a form field.
+function showInlineError(el, message) {
+  if (!el) return;
+  el.style.borderColor = 'var(--danger, #f87171)';
+  el.style.outline = '0';
+  var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+  if (existing) existing.remove();
+  var errSpan = document.createElement('span');
+  errSpan.setAttribute('data-inline-err', el.id);
+  errSpan.style.cssText = 'display:block;color:var(--danger,#f87171);font-size:0.78rem;margin-top:3px;';
+  errSpan.textContent = message;
+  if (el.parentNode) el.parentNode.insertBefore(errSpan, el.nextSibling);
+  el.focus();
+}
+
+function clearInlineError(el) {
+  if (!el) return;
+  el.style.borderColor = '';
+  el.style.outline = '';
+  var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+  if (existing) existing.remove();
 }
 
 var MAIN_PAGES = ['page-home', 'page-vehicles', 'page-bookings', 'page-profile', 'page-more'];
@@ -1022,6 +1065,15 @@ initApp();
 
 // Also listen for events as fallback
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Network Connection Listeners
+window.addEventListener('offline', function() {
+  showToast('You are currently offline. Please check your internet connection.', 'error');
+});
+window.addEventListener('online', function() {
+  showToast('You are back online!', 'success');
+});
+
 document.addEventListener('deviceready', function() {
   initApp();
   
@@ -1190,12 +1242,16 @@ function handleBackButton() {
 function doLogin() {
   var email = sanitizeInput(document.getElementById('loginEmail').value.trim());
   var password = document.getElementById('loginPassword').value;
-  document.getElementById('loginEmailErr').textContent = '';
-  document.getElementById('loginPasswordErr').textContent = '';
   document.getElementById('loginErr').textContent = '';
-  if (isBlank(email)) { document.getElementById('loginEmailErr').textContent = 'Email is required.'; return; }
-  if (!isGmailAddress(email)) { document.getElementById('loginEmailErr').textContent = 'Only @gmail.com emails are allowed.'; return; }
-  if (isBlank(password)) { document.getElementById('loginPasswordErr').textContent = 'Password is required.'; return; }
+  var emailEl = document.getElementById('loginEmail');
+  var passwordEl = document.getElementById('loginPassword');
+  clearInlineError(emailEl);
+  clearInlineError(passwordEl);
+  if (isBlank(email)) { showInlineError(emailEl, 'Email is required.'); return; }
+  if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed.'); return; }
+  if (isBlank(password)) { showInlineError(passwordEl, 'Password is required.'); return; }
+  var loginBtn = document.querySelector('button[onclick="doLogin()"]');
+  var restoreBtn = setButtonLoading(loginBtn, 'Signing in...');
   showLoading(true);
   apiCall('/login', { method: 'POST', body: JSON.stringify({ email: email, password: password }) })
     .then(function(data) {
@@ -1231,7 +1287,7 @@ function doLogin() {
         document.getElementById('loginErr').textContent = err.message || 'Invalid credentials.';
       }
     })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // AUTH: FORGOT PASSWORD
@@ -1471,17 +1527,32 @@ function doLogout() {
 
 // AUTH: REGISTER
 function doRegister() {
-  var name = sanitizeInput(document.getElementById('regName').value.trim());
+  var firstName = sanitizeInput(document.getElementById('regFirstName').value.trim());
+  var middleName = sanitizeInput(document.getElementById('regMiddleName').value.trim());
+  var lastName = sanitizeInput(document.getElementById('regLastName').value.trim());
   var email = sanitizeInput(document.getElementById('regEmail').value.trim());
   var password = document.getElementById('regPassword').value;
-  ['regNameErr','regEmailErr','regPasswordErr','regErr'].forEach(function(id) {
-    document.getElementById(id).textContent = '';
-  });
-  if (isBlank(name)) { document.getElementById('regNameErr').textContent = 'Full name is required.'; return; }
-  if (!isGmailAddress(email)) { document.getElementById('regEmailErr').textContent = 'Only @gmail.com emails are allowed for registration.'; return; }
-  if (isBlank(password) || password.length < 8) { document.getElementById('regPasswordErr').textContent = 'Password must be at least 8 characters.'; return; }
+  var firstNameEl = document.getElementById('regFirstName');
+  var lastNameEl = document.getElementById('regLastName');
+  var emailEl = document.getElementById('regEmail');
+  var passwordEl = document.getElementById('regPassword');
+
+  clearInlineError(firstNameEl);
+  clearInlineError(lastNameEl);
+  clearInlineError(emailEl);
+  clearInlineError(passwordEl);
+  
+  var hasErr = false;
+  if (isBlank(firstName)) { showInlineError(firstNameEl, 'First name is required.'); hasErr = true; }
+  if (isBlank(lastName)) { showInlineError(lastNameEl, 'Last name is required.'); hasErr = true; }
+  if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed for registration.'); hasErr = true; }
+  if (isBlank(password) || password.length < 8) { showInlineError(passwordEl, 'Password must be at least 8 characters.'); hasErr = true; }
+  
+  if (hasErr) return;
+  var regBtn = document.querySelector('button[onclick="doRegister()"]');
+  var restoreBtn = setButtonLoading(regBtn, 'Creating Account...');
   showLoading(true);
-  apiCall('/register', { method: 'POST', body: JSON.stringify({ name: name, email: email, password: password }) })
+  apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password }) })
     .then(function() {
       pendingOtpEmail = email;
       document.getElementById('otpEmailDisplay').textContent = email;
@@ -1496,12 +1567,13 @@ function doRegister() {
     })
     .catch(function(err) {
       if (err.status === 409) {
-        document.getElementById('regEmailErr').textContent = 'Email already registered.';
+        showInlineError(document.getElementById('regEmail'), 'Email already registered.');
       } else {
-        document.getElementById('regErr').textContent = err.message || 'Registration failed.';
+        var errEl = document.getElementById('regErr');
+        if (errEl) errEl.textContent = err.message || 'Registration failed.';
       }
     })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // AUTH: OTP
@@ -2957,13 +3029,25 @@ function submitBooking() {
   document.getElementById('bfStartErr').textContent = '';
   document.getElementById('bfEndErr').textContent = '';
   document.getElementById('bfErr').textContent = '';
+  var startEl = document.getElementById('bfStartDate');
+  var endEl = document.getElementById('bfEndDate');
+  var pickupEl = document.getElementById('bfPickupTime');
+
+  clearInlineError(startEl);
+  clearInlineError(endEl);
+  clearInlineError(pickupEl);
+
   var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
-    // Route pickup-time errors to start date error field
-    if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0 || dateCheck.error.indexOf('Pickup time') >= 0)) {
-      document.getElementById('bfStartErr').textContent = dateCheck.error;
+    if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
+      showInlineError(pickupEl, dateCheck.error);
+    } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
+      showInlineError(startEl, dateCheck.error);
+    } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
+      if (!start && startEl) { showInlineError(startEl, 'Start date is required'); }
+      else if (!end && endEl) { showInlineError(endEl, 'End date is required'); }
     } else {
-      document.getElementById('bfEndErr').textContent = dateCheck.error;
+      showInlineError(endEl, dateCheck.error);
     }
     return;
   }
@@ -3024,6 +3108,8 @@ function submitBooking() {
   };
 
   // Check availability on the server before proceeding
+  var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
+  var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
   showLoading(true);
   apiCall('/vehicles/check-availability', {
     method: 'POST',
@@ -3034,6 +3120,7 @@ function submitBooking() {
     })
   }).then(function(avail) {
     showLoading(false);
+    restoreBtn();
     if (!avail.available) {
       var conflict = avail.conflict || {};
       var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
@@ -3053,6 +3140,7 @@ function submitBooking() {
     showRentalAgreement(payload, result, payType);
   }).catch(function(err) {
     showLoading(false);
+    restoreBtn();
     // If availability check fails, allow the booking to proceed (server will catch it)
     console.warn('Availability check failed:', err);
     showRentalAgreement(payload, result, payType);
@@ -3119,6 +3207,8 @@ function confirmAndBook() {
   var modal = document.getElementById('rentalAgreementModal');
   if (modal) modal.remove();
 
+  var confirmBtn = document.getElementById('confirmPayBtn');
+  var restoreBtn = setButtonLoading(confirmBtn, 'Booking...');
   showLoading(true);
   apiCall('/book', { method: 'POST', body: JSON.stringify(_pendingBookingPayload) })
     .then(function(data) {
@@ -3130,10 +3220,9 @@ function confirmAndBook() {
       openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      var errEl = document.getElementById('bfErr');
       if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
     })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // PAYMENT - PayMongo Integration
@@ -3307,6 +3396,45 @@ function selectPayMethod(method, el) {
     cashFields.style.display = (method === 'cash') ? 'block' : 'none';
   }
 }
+
+function _processProfilePicture(file) {
+    var err = validateUploadFile(file);
+    if (err) { showToast(err, 'error'); return; }
+    profilePicBlob = file;
+    var preview = document.getElementById('profilePicPreview');
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+  }
+
+  async function pickProfilePicture() {
+    var camera = getCamera();
+    if (camera) {
+      try {
+        var image = await camera.getPhoto({
+          quality: 80,
+          allowEditing: false,
+          resultType: 'uri',
+          source: 'PROMPT'
+        });
+        var res = await fetch(image.webPath);
+        var file = await res.blob();
+        file.name = 'profile.jpg';
+        openCropperAndCallback(file, 1.0, _processProfilePicture);
+      } catch(e) {
+        console.log('Camera error or cancelled', e);
+      }
+      return;
+    }
+    
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      openCropperAndCallback(file, 1.0, _processProfilePicture);
+    };
+    input.click();
+  }
 
 function pickPaymentProof() {
   var input = document.createElement('input');
@@ -3925,7 +4053,7 @@ function renderBookingDetail(b) {
   var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
   secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')">Download Receipt</button>';
   if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
-  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\')"><i class="fas fa-edit"></i> Modify Dates</button>';
+  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
   else secondaryActions += '</div>';
 
   var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
@@ -3958,16 +4086,21 @@ function renderBookingDetail(b) {
       '</div>' +
 
       // Status grid: payment status / total price / booking status
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px;">' +
-        '<div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:20px;margin-bottom:24px;">' +
+        '<div style="flex:1;min-width:110px;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
           '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + pColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
         '</div>' +
-        '<div>' +
+        (b.discount_amount && parseFloat(b.discount_amount) > 0 ? 
+        '<div style="flex:1;min-width:110px;">' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Discount Applied</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--success);">-₱' + (parseFloat(b.discount_amount) || 0).toFixed(2) + '</div>' +
+        '</div>' : '') +
+        '<div style="flex:1;min-width:110px;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">?' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
+          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">₱' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
         '</div>' +
-        '<div>' +
+        '<div style="flex:1;min-width:110px;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
           '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + sColor + ';color:#fff;">' + b.status.toUpperCase() + '</span>' +
         '</div>' +
@@ -4434,18 +4567,25 @@ function _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days) {
   parts.push('<div style="background:var(--bg-card);border-radius:12px;padding:16px;margin-bottom:24px;">');
   parts.push('<div style="font-size:0.75rem;color:var(--text-secondary);">' + days + '-day extension fee</div>');
   parts.push('<div style="font-size:1.4rem;font-weight:900;color:var(--primary);">' + formatPHP(price) + '</div></div>');
-  parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
+  
+  // Extract linkId if it was passed in arguments
+  var linkIdArg = arguments.length > 5 ? arguments[5] : '';
+  
+  parts.push('<button class="btn-primary" style="margin-bottom:12px;" onclick="_checkExtPayment(' + bookingId + ',\'' + newEnd + '\',' + price + ',\'' + methodLabel + '\',' + days + ',\'' + linkIdArg + '\')"><i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>');
   parts.push('<button class="btn-secondary" onclick="closeOverlay(\'page-booking-detail\')" style="width:100%;">Cancel</button>');
   parts.push('</div>');
   container.innerHTML = parts.join('');
 }
 
-function _checkExtPayment(bookingId, newEnd, price, methodLabel, days) {
+function _checkExtPayment(bookingId, newEnd, price, methodLabel, days, linkId) {
   showLoading(true);
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
   }
-  apiCall('/paymongo/status/' + bookingId)
+  var url = '/paymongo/status/' + bookingId;
+  if (linkId) url += '?link_id=' + linkId;
+  
+  apiCall(url)
     .then(function(data) {
       showLoading(false);
       if (data.paid) {
@@ -4498,14 +4638,46 @@ function calcExtPrice(currentEndDate, dailyRate) {
     var orig = new Date(origStr + 'T00:00:00');
     var next = new Date(newEnd + 'T00:00:00');
     if (isNaN(orig.getTime()) || isNaN(next.getTime())) return;
-    var days = Math.round((next - orig) / (1000 * 60 * 60 * 24));
-    if (days <= 0) { document.getElementById('extPriceBox').style.display = 'none'; return; }
-    var price = days * (parseFloat(dailyRate) || 0);
-    document.getElementById('extDaysLabel').textContent = days + ' day' + (days !== 1 ? 's' : '') + ' extension';
-    document.getElementById('extPriceLabel').textContent = formatPHP(price);
+    var extDays = Math.round((next - orig) / (1000 * 60 * 60 * 24));
+    if (extDays <= 0) { document.getElementById('extPriceBox').style.display = 'none'; return; }
+    
+    var totalDays = extDays;
+    var origDays = 0;
+    if (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.start_date) {
+      var start = new Date(activeBookingData.start_date.toString().split('T')[0] + 'T00:00:00');
+      if (!isNaN(start.getTime())) {
+        origDays = Math.round((orig - start) / (1000 * 60 * 60 * 24));
+        if (origDays > 0) totalDays = origDays + extDays;
+      }
+    }
+    
+    var extBasePrice = extDays * rate;
+    var finalPrice = extBasePrice;
+    var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+    var ltPercent = parseInt(appSettings.long_term_discount_percent) || 10;
+    var discountMsg = '';
+    
+    if (totalDays >= ltDays) {
+      if (origDays >= ltDays) {
+        // Already discounted before, apply to extension only
+        finalPrice = extBasePrice - (extBasePrice * (ltPercent / 100));
+        discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied</small>';
+      } else {
+        // Retroactive discount on entire duration
+        var totalBasePrice = totalDays * rate;
+        var totalDiscount = totalBasePrice * (ltPercent / 100);
+        var origPaidBase = origDays * rate;
+        finalPrice = (totalBasePrice - totalDiscount) - origPaidBase;
+        if (finalPrice < 0) finalPrice = 0;
+        discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied retroactively</small>';
+      }
+    }
+    
+    document.getElementById('extDaysLabel').innerHTML = extDays + ' day' + (extDays !== 1 ? 's' : '') + ' extension' + discountMsg;
+    document.getElementById('extPriceLabel').textContent = formatPHP(finalPrice);
     document.getElementById('extPriceBox').style.display = 'block';
-    document.getElementById('extPriceBox').dataset.price = price;
-    document.getElementById('extPriceBox').dataset.days = days;
+    document.getElementById('extPriceBox').dataset.price = finalPrice;
+    document.getElementById('extPriceBox').dataset.days = extDays;
   } catch(e) {}
 }
 
@@ -4528,7 +4700,29 @@ function submitExtension(bookingId) {
       var orig = new Date(origEnd + 'T00:00:00');
       var next = new Date(newEnd + 'T00:00:00');
       days = Math.round((next - orig) / (1000 * 60 * 60 * 24));
-      price = days * rate;
+      
+      var origDays = 0;
+      if (typeof activeBookingData !== 'undefined' && activeBookingData && activeBookingData.start_date) {
+        var start = new Date(activeBookingData.start_date.toString().split('T')[0] + 'T00:00:00');
+        if (!isNaN(start.getTime())) origDays = Math.round((orig - start) / (1000 * 60 * 60 * 24));
+      }
+      var totalDays = (origDays > 0) ? (origDays + days) : days;
+      var extBasePrice = days * rate;
+      price = extBasePrice;
+      
+      var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+      var ltPercent = parseInt(appSettings.long_term_discount_percent) || 10;
+      if (totalDays >= ltDays) {
+        if (origDays >= ltDays) {
+          price = extBasePrice - (extBasePrice * (ltPercent / 100));
+        } else {
+          var totalBasePrice = totalDays * rate;
+          var totalDiscount = totalBasePrice * (ltPercent / 100);
+          var origPaidBase = origDays * rate;
+          price = (totalBasePrice - totalDiscount) - origPaidBase;
+          if (price < 0) price = 0;
+        }
+      }
     } catch(e) {}
   }
 
@@ -4555,7 +4749,8 @@ function submitExtension(bookingId) {
         method: method,
         description: 'Booking #' + bookingId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
         customer_name: currentUser.fullName || '',
-        customer_email: currentUser.email || ''
+        customer_email: currentUser.email || '',
+        payment_type: 'Extension'
       })
     }).then(function(data) {
       showLoading(false);
@@ -4565,7 +4760,7 @@ function submitExtension(bookingId) {
         } else {
           window.open(data.checkout_url, '_blank');
         }
-        _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days);
+        _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days, data.link_id);
       } else {
         if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
       }
@@ -4887,9 +5082,10 @@ function promptCancelBooking(bookingId) {
     .finally(function() { showLoading(false); });
 }
 
-function openModifyBooking(bookingId, currentStart, currentEnd) {
+function openModifyBooking(bookingId, currentStart, currentEnd, amountPaid) {
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
+  amountPaid = parseFloat(amountPaid || 0);
   // Inject a modify form at the top of the detail content
   var formHtml =
     '<div class="page-header">' +
@@ -4901,25 +5097,32 @@ function openModifyBooking(bookingId, currentStart, currentEnd) {
         '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Select new rental dates. The price will be recalculated.</p>' +
         '<div class="form-group"><label>New Start Date</label><input type="date" id="modStart" value="' + currentStart + '"></div>' +
         '<div class="form-group"><label>New End Date</label><input type="date" id="modEnd" value="' + currentEnd + '"></div>' +
+        '<input type="hidden" id="modAmountPaid" value="' + amountPaid + '">' +
         '<span class="field-error" id="modErr" style="display:block;margin-bottom:12px;"></span>' +
         '<div id="modNewTotal" style="margin-bottom:14px;"></div>' +
-        '<button class="btn-primary" onclick="submitModifyBooking(' + bookingId + ')"><i class="fas fa-check"></i> Confirm Changes</button>' +
+        '<button class="btn-primary" id="modConfirmBtn" onclick="submitModifyBooking(' + bookingId + ')" disabled><i class="fas fa-check"></i> Confirm Changes</button>' +
       '</div>' +
     '</div>';
   el.innerHTML = formHtml;
   // Show new total preview when dates change
   ['modStart','modEnd'].forEach(function(id) {
     var inp = document.getElementById(id);
-    if (inp) inp.addEventListener('change', function() { previewModifyTotal(bookingId); });
+    if (inp) inp.addEventListener('change', function() { previewModifyTotal(bookingId, currentStart, currentEnd); });
   });
 }
 
-function previewModifyTotal(bookingId) {
+function previewModifyTotal(bookingId, origStart, origEnd) {
   var start = document.getElementById('modStart') ? document.getElementById('modStart').value : '';
   var end = document.getElementById('modEnd') ? document.getElementById('modEnd').value : '';
+  var amountPaid = parseFloat((document.getElementById('modAmountPaid') || {}).value || 0);
   var el = document.getElementById('modNewTotal');
   if (!el || !start || !end) return;
   var v = validateDateRange(start, end);
+  var confirmBtn = document.getElementById('modConfirmBtn');
+  if (confirmBtn) {
+    // Disable button if dates are unchanged or invalid
+    confirmBtn.disabled = (!v.valid || (start === origStart && end === origEnd));
+  }
   if (!v.valid) { el.innerHTML = '<p style="color:var(--danger);font-size:0.82rem;">' + v.error + '</p>'; return; }
   el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-muted);">Calculating new total...</p>';
   apiCall('/modify-booking', {
@@ -4927,7 +5130,19 @@ function previewModifyTotal(bookingId) {
     body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, start_date: start, end_date: end, preview: true })
   }).then(function(data) {
     if (data.new_total !== undefined) {
-      el.innerHTML = '<div class="price-row total"><span>New Total</span><span>' + formatPHP(data.new_total) + '</span></div>';
+      var html = '<div class="price-row total"><span>New Total</span><span>' + formatPHP(data.new_total) + '</span></div>';
+      // Show non-refundable notice if new total is less than amount paid
+      if (amountPaid > 0 && data.new_total < amountPaid) {
+        var excess = amountPaid - data.new_total;
+        html += '<div style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.4);border-radius:10px;padding:12px 14px;margin-top:10px;display:flex;gap:10px;align-items:flex-start;">' +
+          '<i class="fas fa-exclamation-triangle" style="color:#f59e0b;margin-top:2px;flex-shrink:0;"></i>' +
+          '<div>' +
+            '<p style="font-size:0.8rem;font-weight:700;color:#f59e0b;margin:0 0 4px;">Non-Refundable Notice</p>' +
+            '<p style="font-size:0.78rem;color:var(--text-secondary);margin:0;line-height:1.5;">Shortening your booking will reduce the total to <strong>' + formatPHP(data.new_total) + '</strong>. The difference of <strong>' + formatPHP(excess) + '</strong> from your previous payment is <strong>non-refundable</strong> per our rental policy.</p>' +
+          '</div>' +
+        '</div>';
+      }
+      el.innerHTML = html;
     }
   }).catch(function() { el.innerHTML = ''; });
 }
@@ -4945,9 +5160,15 @@ function submitModifyBooking(bookingId) {
     body: JSON.stringify({ booking_id: bookingId, user_id: currentUser.id, start_date: start, end_date: end })
   })
     .then(function(data) {
-      showToast('Booking dates updated! New total: ' + formatPHP(data.new_total), 'success');
-      closeOverlay('page-booking-detail');
-      loadBookings();
+      if (data.new_balance && data.new_balance > 0) {
+        showToast('Booking updated. Please pay the remaining balance of ' + formatPHP(data.new_balance), 'info');
+        closeOverlay('page-booking-detail');
+        openPayBalanceScreen(bookingId, data.new_balance);
+      } else {
+        showToast('Booking dates updated! New total: ' + formatPHP(data.new_total), 'success');
+        closeOverlay('page-booking-detail');
+        loadBookings();
+      }
     })
     .catch(function(err) { if (errEl) errEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
@@ -4957,18 +5178,52 @@ function submitModifyBooking(bookingId) {
 function openPayBalanceScreen(bookingId, balance) {
   var el = document.getElementById('paymentContent');
   if (!el) return;
-  el.innerHTML = '<div class="page-header">' +
+  balance = parseFloat(balance || 0);
+  el.innerHTML =
+    '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Pay Balance</h2></div>' +
-    '<div class="scroll-content">' +
-    '<div class="card"><div class="price-row total"><span>Balance Due</span><span>' + formatPHP(balance) + '</span></div></div>' +
+    '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Balance summary
     '<div class="card">' +
-    '<div class="form-group"><label>Method</label><select id="balMethod"><option>GCash</option><option>Credit Card</option><option>Cash (Over the counter)</option></select></div>' +
-    '<div class="form-group"><label>Reference Number</label><input type="text" id="balRef" placeholder="Reference number"></div>' +
+    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:8px;"></i>Balance for Booking #' + bookingId + '</h4>' +
+    '<div class="price-row total"><span>Balance Due</span><span style="color:var(--primary);font-weight:800;">' + formatPHP(balance) + '</span></div>' +
+    '<div style="margin-top:10px;padding:10px;background:var(--primary);border-radius:var(--radius-sm);text-align:center;">' +
+    '<div style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Amount Due Now</div>' +
+    '<div style="color:#fff;font-size:1.4rem;font-weight:800;">' + formatPHP(balance) + '</div>' +
+    '</div></div>' +
+
+    // PayMongo methods
+    '<div class="card">' +
+    '<h4 style="font-weight:700;margin-bottom:6px;">Select Payment Method</h4>' +
+    '<p style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:14px;">Tap a method to proceed — secure payments via PayMongo</p>' +
+
+    '<div class="option-card" id="balPmGcash" onclick="submitBalancePayment(\'gcash\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:#0070e0;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:900;font-size:0.85rem;">G</span></div>' +
+    '<div><strong>GCash</strong><br><small style="color:var(--text-secondary);">Tap to pay via GCash</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#0070e0;margin-left:auto;"></i>' +
     '</div>' +
-    '<span class="field-error" id="balErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" onclick="submitBalancePayment(' + bookingId + ',' + balance + ')">Pay ' + formatPHP(balance) + '</button>' +
+
+    '<div class="option-card" id="balPmMaya" onclick="submitBalancePayment(\'maya\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:#00b4d8;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<span style="color:#fff;font-weight:900;font-size:0.85rem;">M</span></div>' +
+    '<div><strong>Maya</strong><br><small style="color:var(--text-secondary);">Tap to pay via Maya</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:#00b4d8;margin-left:auto;"></i>' +
+    '</div>' +
+
+    '<div class="option-card" id="balPmCard" onclick="submitBalancePayment(\'card\',' + bookingId + ',' + balance + ')" style="margin-bottom:8px;cursor:pointer;">' +
+    '<div style="width:40px;height:40px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
+    '<i class="fas fa-credit-card" style="color:#fff;font-size:1rem;"></i></div>' +
+    '<div><strong>Credit / Debit Card</strong><br><small style="color:var(--text-secondary);">Visa, Mastercard, JCB</small></div>' +
+    '<i class="fas fa-arrow-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
+    '</div>' +
+
+    '<span class="field-error" id="balErr" style="display:block;margin-top:8px;text-align:center;"></span>' +
+    '</div>' +
     '</div>';
+
   // Force hide booking detail before showing payment overlay
   var detailEl = document.getElementById('page-booking-detail');
   if (detailEl) {
@@ -5033,24 +5288,46 @@ function openPayNowFromDetail(bookingId) {
   openPaymentScreen(bookingId, priceResult, 'Full', true);
 }
 
-function submitBalancePayment(bookingId, amount) {
-  var methodEl = document.getElementById('balMethod');
-  var refEl = document.getElementById('balRef');
-  var method = methodEl ? methodEl.value : 'GCash';
-  var ref = refEl ? sanitizeInput(refEl.value.trim()) : '';
+function submitBalancePayment(method, bookingId, amount) {
+  var errEl = document.getElementById('balErr');
+  if (errEl) errEl.textContent = '';
+  // Visual feedback
+  var idMap = { gcash: 'balPmGcash', maya: 'balPmMaya', card: 'balPmCard' };
+  var cards = document.querySelectorAll('#paymentContent .option-card');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+  var selCard = document.getElementById(idMap[method]);
+  if (selCard) selCard.classList.add('selected');
+
   showLoading(true);
-  apiCall('/bookings/' + bookingId + '/pay-balance', { method: 'POST', body: JSON.stringify({ amount: amount, method: method, reference_number: ref }) })
-    .then(function() {
-      showToast('Balance paid successfully!', 'success');
-      closeOverlay('page-payment');
-      closeOverlay('page-booking-detail');
-      loadBookings();
+  apiCall('/paymongo/create-payment', {
+    method: 'POST',
+    body: JSON.stringify({
+      booking_id: bookingId,
+      amount: amount,
+      method: method,
+      payment_type: 'Balance',
+      description: 'Autoride Booking #' + bookingId + ' Balance Payment',
+      customer_name: currentUser ? (currentUser.fullName || '') : '',
+      customer_email: currentUser ? (currentUser.email || '') : ''
+    })
+  })
+    .then(function(data) {
+      showLoading(false);
+      if (data.checkout_url) {
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
+        } else {
+          window.open(data.checkout_url, '_blank');
+        }
+        showPaymentWaiting(bookingId, amount, method);
+      } else {
+        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+      }
     })
     .catch(function(err) {
-      var errEl = document.getElementById('balErr');
-      if (errEl) errEl.textContent = err.message;
-    })
-    .finally(function() { showLoading(false); });
+      showLoading(false);
+      if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+    });
 }
 
 // INSPECTION
@@ -5294,13 +5571,77 @@ var Profile = {
       'editLicenseEmRel': 'Relationship'
     };
     for (var fid in fields) {
-      var val = (document.getElementById(fid).value || '').trim();
+      var el = document.getElementById(fid);
+      var val = (el.value || '').trim();
       if (!val) {
-        if (errEl) errEl.textContent = fields[fid] + ' is required.';
+        if (errEl) errEl.textContent = 'Please fill out all required fields.';
+        if (el) {
+          showInlineError(el, fields[fid] + ' is required.');
+        }
         return;
+      } else if (el) {
+        clearInlineError(el);
       }
     }
 
+    var licenseNumEl = document.getElementById('editLicenseNumber');
+    var licenseNum = licenseNumEl.value.trim();
+    var licensePattern = /^[A-Z0-9]{3}-[A-Z0-9]{2}-[0-9]{6}$/i;
+    if (!licensePattern.test(licenseNum)) {
+      if (errEl) errEl.textContent = 'Please fix the errors below.';
+      showInlineError(licenseNumEl, 'Invalid format. Must be LNN-YY-NNNNNN (e.g., N01-23-456789).');
+      return;
+    } else {
+      clearInlineError(licenseNumEl);
+    }
+
+    var dobEl = document.getElementById('editLicenseDob');
+    if (dobEl && dobEl.value) {
+      var dob = new Date(dobEl.value);
+      var today = new Date();
+      var age = today.getFullYear() - dob.getFullYear();
+      var m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        if (errEl) errEl.textContent = 'Please fix the errors below.';
+        showInlineError(dobEl, 'You must be at least 18 years old to use this service.');
+        return;
+      } else {
+        clearInlineError(dobEl);
+      }
+    }
+
+    var classEl = document.getElementById('editLicenseClass');
+    var licenseClass = classEl.value.trim().toUpperCase();
+    var classes = licenseClass.split(/[\s,]+/).filter(Boolean);
+    var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1', '1'].indexOf(c) !== -1; });
+    if (isMotorcycleOnly) {
+      if (errEl) errEl.textContent = 'Please fix the errors below.';
+      showInlineError(classEl, 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.');
+      return;
+    } else {
+      clearInlineError(classEl);
+    }
+
+    // Validate license expiry date — must not be expired
+    var expiryEl = document.getElementById('editLicenseExpiry');
+    if (expiryEl && expiryEl.value) {
+      var expiryDate = new Date(expiryEl.value);
+      var todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      if (expiryDate < todayStart) {
+        if (errEl) errEl.textContent = 'Please fix the errors below.';
+        showInlineError(expiryEl, 'Your license has already expired. Please renew your license before registering.');
+        return;
+      } else {
+        clearInlineError(expiryEl);
+      }
+    }
+
+    var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
+    var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
     showLoading(true);
     
     // Compress both front and back images more aggressively (800x800, 0.6 quality) to fit Vercel payload limit (4.5MB) and speed up uploads
@@ -5346,25 +5687,191 @@ var Profile = {
     })
     .finally(function() { 
       showLoading(false); 
+      restoreBtn();
     });
   }
 };
 
-function pickLicenseForProfile(side) {
+async function pickLicenseForProfile(side) {
+  var camera = getCamera();
+  if (camera) {
+    try {
+      var image = await camera.getPhoto({
+        quality: 80,
+        allowEditing: false,
+        resultType: 'uri',
+        source: 'PROMPT'
+      });
+      var res = await fetch(image.webPath);
+      var blob = await res.blob();
+      blob.name = 'license_' + side + '.jpg';
+      handleLicenseFileSelect({ target: { files: [blob] } }, side);
+    } catch(e) {
+      console.log('Camera error or cancelled', e);
+    }
+    return;
+  }
   var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
   var el = document.getElementById(inputId);
   if (el) el.click();
 }
 
-function handleLicenseFileSelect(e, side) {
+  function handleLicenseFileSelect(e, side) {
+    var file = e.target.files[0];
+    if (!file) return;
+
+    if (e.isCropped) {
+      _processLicenseFileSelect(e, side);
+      return;
+    }
+
+    openCropperAndCallback(file, 1.58, function(croppedBlob) {
+      croppedBlob.name = 'license_' + side + '.jpg';
+      var customEvent = { target: { files: [croppedBlob] }, isCropped: true };
+      handleLicenseFileSelect(customEvent, side);
+    });
+  }
+
+  function _processLicenseFileSelect(e, side) {
   var file = e.target.files[0];
   if (!file) return;
   var err = validateUploadFile(file);
   if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
+  
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
     if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    
+    // Tesseract OCR Logic
+    var statusText = document.getElementById('ocrStatusText');
+    var detailsBox = document.getElementById('ocrExtractedDetails');
+    if (statusText) statusText.style.display = 'block';
+    if (detailsBox) detailsBox.style.display = 'none';
+    
+    if (typeof Tesseract !== 'undefined') {
+      Tesseract.recognize(
+        file,
+        'eng',
+        { logger: function(m) { /* console.log(m); */ } }
+      ).then(function(result) {
+        var text = result.data.text;
+        if (statusText) statusText.style.display = 'none';
+        if (detailsBox) detailsBox.style.display = 'block';
+
+        console.log('OCR Raw Text:', text);
+        
+        // --- 1. Find License Number: e.g., N01-12-123456 ---
+        var licRegex = /[A-Z]\d{2}-\d{2}-\d{6}/g;
+        var matchLic = text.match(licRegex);
+        if (matchLic && document.getElementById('editLicenseNumber')) {
+          document.getElementById('editLicenseNumber').value = matchLic[0];
+          document.getElementById('editLicenseNumber').style.borderColor = "var(--success)";
+        }
+        
+        // --- 2. Find ALL dates (YYYY/MM/DD, YYYY-MM-DD, MM/DD/YYYY, MM-DD-YYYY) ---
+        var allDates = [];
+
+        var dateRegex1 = /((?:19|20)\d{2})[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])/g;
+        var m1;
+        while ((m1 = dateRegex1.exec(text)) !== null) {
+          allDates.push({ year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) });
+        }
+
+        var dateRegex2 = /(0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])[\/\-]((?:19|20)\d{2})/g;
+        var m2;
+        while ((m2 = dateRegex2.exec(text)) !== null) {
+          allDates.push({ year: parseInt(m2[3]), month: parseInt(m2[1]), day: parseInt(m2[2]) });
+        }
+
+        var currentYear = new Date().getFullYear();
+        var pastDates = allDates.filter(function(d) { return d.year < currentYear || (d.year === currentYear && d.month <= new Date().getMonth() + 1); });
+        var futureDates = allDates.filter(function(d) { return d.year > currentYear || (d.year === currentYear && d.month > new Date().getMonth() + 1); });
+
+        // Expiry Date = earliest future date
+        if (futureDates.length > 0 && document.getElementById('editLicenseExpiry')) {
+          futureDates.sort(function(a, b) { return a.year - b.year || a.month - b.month || a.day - b.day; });
+          var expDate = futureDates[0];
+          var expStr = expDate.year + '-' + String(expDate.month).padStart(2,'0') + '-' + String(expDate.day).padStart(2,'0');
+          document.getElementById('editLicenseExpiry').value = expStr;
+          document.getElementById('editLicenseExpiry').style.borderColor = "var(--success)";
+        }
+
+        // Date of Birth = latest past date (year >= 1940)
+        var dobCandidates = pastDates.filter(function(d) { return d.year >= 1940; });
+        if (dobCandidates.length > 0 && document.getElementById('editLicenseDob')) {
+          dobCandidates.sort(function(a, b) { return b.year - a.year || b.month - a.month || b.day - a.day; });
+          var dobDate = dobCandidates[0];
+          var dobStr = dobDate.year + '-' + String(dobDate.month).padStart(2,'0') + '-' + String(dobDate.day).padStart(2,'0');
+          document.getElementById('editLicenseDob').value = dobStr;
+          document.getElementById('editLicenseDob').style.borderColor = "var(--success)";
+        }
+
+        // --- 3. Find Name on License ---
+        // OCR output: "d DE RAMOS, XEDRIC YASONA" - may have 1-2 char prefix
+        // DON'T anchor to start of line - search pattern ANYWHERE in the line
+        var lines = text.split('\n');
+        var nameLine = '';
+
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!/\d/.test(line)) {
+            var nameMatch = line.match(/([A-Z][A-Z\s]{2,}),\s*([A-Z][A-Z\s]{2,})/);
+            if (nameMatch && nameMatch[0].length > 8 && nameMatch[0].length < 60) {
+              nameLine = nameMatch[0].trim();
+              break;
+            }
+          }
+        }
+
+        if (nameLine && document.getElementById('editLicenseName')) {
+          var cleanedName = nameLine.replace(/[.;]/g, ',').replace(/\s+/g, ' ').trim();
+          document.getElementById('editLicenseName').value = cleanedName;
+          document.getElementById('editLicenseName').style.borderColor = "var(--success)";
+        }
+
+        // --- 4. Find License Class (DL Codes) ---
+        // OCR raw example: "@ DLcodes Conditions" where "@" = "A" (OCR misread)
+        // Strategy: find the line with DLcodes, grab it + prev line, replace @ with A, extract codes
+        var classVal = '';
+        var textLines2 = text.split(/[\n\r]+/);
+        var dlLineIndex = -1;
+        for (var i = 0; i < textLines2.length; i++) {
+          if (/[DdO][LlI1]\s*[Cc]odes?/i.test(textLines2[i])) {
+            dlLineIndex = i;
+            break;
+          }
+        }
+        console.log('DL line index:', dlLineIndex, dlLineIndex >= 0 ? 'Line: [' + textLines2[dlLineIndex] + ']' : 'NOT FOUND');
+        if (dlLineIndex >= 0) {
+          var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
+          var dlLineText = textLines2[dlLineIndex];
+          var combined = (prevLine + ' ' + dlLineText).replace(/[@©]/g, 'A');
+          console.log('DL combined search area:', combined);
+          var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?/gi, ' ');
+          stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
+          console.log('DL stripped search:', stripped);
+          var dlCodeRegex = /(?:^|\s)([A-E][12]?|[1-8]|[@©＠0O])(?=\s|$)/gi;
+          var dlFound = [];
+          var dlMx;
+          while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
+            var c = dlMx[1].toUpperCase();
+            if (['@', '©', '＠', '0', 'O'].indexOf(c) !== -1) c = 'A';
+            if (dlFound.indexOf(c) === -1) dlFound.push(c);
+          }
+          console.log('DL codes found:', dlFound);
+          if (dlFound.length > 0) classVal = dlFound.join(', ');
+        }
+        if (classVal && document.getElementById('editLicenseClass')) {
+          document.getElementById('editLicenseClass').value = classVal;
+          document.getElementById('editLicenseClass').style.borderColor = "var(--success)";
+        }
+
+      }).catch(function(err) {
+        console.error('OCR Error:', err);
+        if (statusText) statusText.style.display = 'none';
+      });
+    }
   } else {
     _licenseBackBlob = file;
     var preview = document.getElementById('licenseEditPreviewBack');
@@ -5412,16 +5919,7 @@ function loadLicenseDetailsForEdit() {
       
       el = document.getElementById('editLicenseClass');
       if (el) {
-        var classVal = data.license_class || '';
-        el.value = classVal;
-        if (!el.value && classVal) {
-          // Try matching just the letter (e.g. "B" -> "B")
-          for (var j = 0; j < el.options.length; j++) {
-            if (el.options[j].value === classVal || el.options[j].value.startsWith(classVal + ' ')) {
-              el.value = el.options[j].value; break;
-            }
-          }
-        }
+        el.value = data.license_class || '';
       }
       
       el = document.getElementById('editLicenseName'); 
@@ -5535,12 +6033,22 @@ function loadProfile() {
 
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
-      var editNameEl = document.getElementById('editName');
+      var editFnEl = document.getElementById('editFirstName');
+      var editMnEl = document.getElementById('editMiddleName');
+      var editLnEl = document.getElementById('editLastName');
       var editPhoneEl = document.getElementById('editPhone');
       var pointsEl = document.getElementById('profilePoints');
       if (nameEl) nameEl.textContent = profile.full_name || '';
       if (emailEl) emailEl.textContent = profile.email || '';
-      if (editNameEl) editNameEl.value = profile.full_name || '';
+      
+      var nameParts = (profile.full_name || '').split(/\s+/).filter(Boolean);
+      var fn = profile.first_name || nameParts[0] || '';
+      var ln = profile.last_name || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
+      var mn = profile.middle_name || (nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '');
+      
+      if (editFnEl) editFnEl.value = fn;
+      if (editMnEl) editMnEl.value = mn;
+      if (editLnEl) editLnEl.value = ln;
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
       var editEmailEl = document.getElementById('editEmail');
       if (editEmailEl) editEmailEl.value = profile.email || '';
@@ -5717,28 +6225,38 @@ function pickProfilePicture() {
 }
 
 function doUpdateProfile() {
-  var nameEl = document.getElementById('editName');
+  var fnEl = document.getElementById('editFirstName');
+  var mnEl = document.getElementById('editMiddleName');
+  var lnEl = document.getElementById('editLastName');
   var phoneEl = document.getElementById('editPhone');
   var emailEl = document.getElementById('editEmail');
   var phoneErrEl = document.getElementById('editPhoneErr');
   var emailErrEl = document.getElementById('editEmailErr');
-  var name = nameEl ? sanitizeInput(nameEl.value.trim()) : '';
+  var firstName = fnEl ? sanitizeInput(fnEl.value.trim()) : '';
+  var middleName = mnEl ? sanitizeInput(mnEl.value.trim()) : '';
+  var lastName = lnEl ? sanitizeInput(lnEl.value.trim()) : '';
   var phone = phoneEl ? phoneEl.value.trim() : '';
   var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  clearInlineError(phoneEl);
+  clearInlineError(emailEl);
   if (phoneErrEl) phoneErrEl.textContent = '';
   if (emailErrEl) emailErrEl.textContent = '';
   if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11)) {
-    if (phoneErrEl) phoneErrEl.textContent = 'Phone must be 10-11 digits.'; return;
+    showInlineError(phoneEl, 'Phone must be 10-11 digits.'); return;
   }
   if (email && !isGmailAddress(email)) {
-    if (emailErrEl) emailErrEl.textContent = 'Only @gmail.com emails are allowed.'; return;
+    showInlineError(emailEl, 'Only @gmail.com emails are allowed.'); return;
   }
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
-  fd.append('full_name', name);
+  fd.append('first_name', firstName);
+  fd.append('middle_name', middleName);
+  fd.append('last_name', lastName);
   fd.append('phone', phone);
   if (email) fd.append('email', email);
   if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');
+  var saveBtn = document.querySelector('button[onclick="doUpdateProfile()"]');
+  var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
   showLoading(true);
   uploadFile('/update-profile', fd)
     .then(function() {
@@ -5750,7 +6268,7 @@ function doUpdateProfile() {
       loadProfile();
     })
     .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
+    .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // LICENSE UPLOAD
@@ -5792,13 +6310,15 @@ function submitLicense() {
   if (!licenseBlob) { if (errEl) errEl.textContent = 'Please select a license image first.'; return; }
   
   showLoading(true);
-  compressImage(licenseBlob, 800, 800, 0.6)
+  compressImage(licenseBlob, 600, 600, 0.5)
     .then(function(compressedBlob) {
       var fd = new FormData();
       fd.append('user_id', currentUser.id);
       fd.append('license', compressedBlob, 'license.jpg');
       
-      return uploadFile('/user/upload-license', fd);
+      // Compress more aggressively to stay well under Vercel's 4.5 MB body limit
+      // and reduce upload time on slow mobile connections
+      return uploadFile('/user/upload-license', fd, 45000);
     })
     .then(function() {
       currentUser.isVerified = 1;
@@ -5812,8 +6332,14 @@ function submitLicense() {
       }, 2500);
     })
     .catch(function(err) {
-      if (errEl) errEl.textContent = err.message;
       showLoading(false);
+      var msg = err.message || 'Upload failed. Please try again.';
+      // Give a more helpful message for timeout/network errors
+      if (!err.status || err.status === 0) {
+        msg = 'Upload failed. Please check your internet connection and try again. If the problem continues, try using a smaller or clearer photo.';
+      }
+      if (errEl) errEl.textContent = msg;
+      showToast(msg, 'error');
     });
 }
 

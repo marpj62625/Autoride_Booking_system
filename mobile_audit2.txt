@@ -1,0 +1,3 @@
+﻿=== MOBILE: OCR DL extraction (line numbers) ===
+
+=== WEB: OCR DL extraction ===

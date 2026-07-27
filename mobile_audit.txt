@@ -1,0 +1,48 @@
+﻿=== OCR / DL Code extraction ===
+// --- 4. Find License Class (DL Codes) ---
+// OCR raw example: "@ DLcodes Conditions" where "@" = "A" (OCR misread)
+// Strategy: find the line with DLcodes, grab it + prev line, replace @ with A, extract codes
+
+=== Expired License block ===
+if (age > SESSION_TTL_MS) return null; // expired
+forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+document.getElementById('otpErr').textContent = err.message || 'Invalid or expired verification code.';
+
+=== Underage validation ===
+var y  = useUTC ? dt.getUTCFullYear()            : dt.getFullYear();
+var y  = useUTC ? dt.getUTCFullYear()  : dt.getFullYear();
+var y = d.getFullYear();
+
+=== Discount display booking ===
+long_term_discount_days: '7',
+long_term_discount_percent: '10',
+var ltDays = parseInt(appSettings.long_term_discount_days) || 7;
+
+=== Non-refundable on modify ===
+if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
+function openModifyBooking(bookingId, currentStart, currentEnd, amountPaid) {
+'<button class="btn-primary" id="modConfirmBtn" onclick="submitModifyBooking(' + bookingId + ')" disabled><i class="fas fa-check"></i> Confirm Changes</button>' +
+
+=== Confirm Changes disabled ===
+'<button class="btn-primary" id="modConfirmBtn" onclick="submitModifyBooking(' + bookingId + ')" disabled><i class="fas fa-check"></i> Confirm Changes</button>' +
+
+=== Toast with icons ===
+showToast(title + ': ' + body, 'info');
+showToast('Restored your payment session.', 'info');
+showToast('Restored your booking session.', 'info');
+showToast('Restored your last viewed vehicle.', 'info');
+_showNotifPopup(title, msg, '#00b14f', 'fa-check-circle');
+
+=== Global pointer-events block ===
+document.body.style.pointerEvents = 'none'; // Block clicks globally
+
+=== Vehicle cards (year/mileage emoji grid) ===
+renderVehicleUnits(brand, model, color, units);
+function renderVehicleUnits(brand, model, color, units) {
+
+=== Button loading states (fa-spinner) ===
+el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div><div class="scroll-content"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div></div>';
+el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div><div class="scroll-content"><div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div></div>';
+var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
+var restoreBtn = setButtonLoading(confirmBtn, 'Booking...');
+'<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>' +

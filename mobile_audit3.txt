@@ -1,0 +1,39 @@
+﻿=== MOBILE: Expired license SAVE block ===
+5518: saveLicenseInfo: function() {
+5604: var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
+
+=== WEB: Expired license SAVE block ===
+5670: saveLicenseInfo: function() {
+5755: var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
+
+=== MOBILE: Underage ===
+1549: if (isBlank(password) || password.length < 8) { showInlineError(passwordEl, 'Password must be at least 8 characters.'); hasErr = true; }
+3177: '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
+5570: showInlineError(dobEl, 'You must be at least 18 years old to use this service.');
+
+=== WEB: Underage ===
+1643: if (isBlank(password) || password.length < 8) { showInlineError(passwordEl, 'Password must be at least 8 characters.'); hasErr = true; }
+3325: '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
+5722: showInlineError(dobEl, 'You must be at least 18 years old to use this service.');
+
+=== MOBILE: Vehicle card mileage/year ===
+
+=== WEB: Vehicle card mileage/year ===
+2355: : '🛣️ ' + (v.mileage_km_per_day || 250) + ' km/day';
+2580: '<span>' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited Mileage' : (defaultUnit.mileage_km_per_day || 250) + ' km/day') + '</span>' +
+
+=== MOBILE: Discount applied display ===
+4057: '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Discount Applied</div>' +
+4625: discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied</small>';
+4633: discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied retroactively</small>';
+
+=== WEB: Discount applied display ===
+4206: '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Discount Applied</div>' +
+4774: discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied</small>';
+4782: discountMsg = '<br><small style="color:var(--success);font-weight:700;"><i class="fas fa-tag"></i> ' + ltPercent + '% discount applied retroactively</small>';
+
+=== MOBILE: Non-refundable on shorten dates ===
+5102: '<p style="font-size:0.78rem;color:var(--text-secondary);margin:0;line-height:1.5;">Shortening your booking will reduce the total to <strong>' + formatPHP(data.new_total) + '</strong>. The difference of <strong>' + formatPHP(excess) + '</strong> from your previous payment is <strong>non-refundable</strong> per our rental policy.</p>' +
+
+=== WEB: Non-refundable on shorten dates ===
+5254: '<p style="font-size:0.78rem;color:var(--text-secondary);margin:0;line-height:1.5;">Shortening your booking will reduce the total to <strong>' + formatPHP(data.new_total) + '</strong>. The difference of <strong>' + formatPHP(excess) + '</strong> from your previous payment is <strong>non-refundable</strong> per our rental policy.</p>' +

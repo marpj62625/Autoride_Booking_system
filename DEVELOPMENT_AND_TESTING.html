@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Development and Testing - Autoride System</title>
+    <style>
+        @media print {
+            body { margin: 0.5in; }
+            .page-break { page-break-before: always; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 8.5in;
+            margin: 0 auto;
+            padding: 1in;
+            color: #333;
+            background: white;
+        }
+        
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 30px; font-size: 28px; }
+        h2 { color: #34495e; margin-top: 25px; font-size: 22px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; }
+        h3 { color: #7f8c8d; margin-top: 20px; font-size: 18px; }
+        h4 { color: #95a5a6; margin-top: 15px; font-size: 16px; }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+        
+        pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            overflow-x: auto;
+            border-radius: 4px;
+            font-family: 'Courier New', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.3;
+            white-space: pre;
+        }
+        
+        pre code { background: none; padding: 0; color: #333; }
+        
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px 8px; text-align: left; }
+        th { background-color: #3498db; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        
+        ul, ol { margin: 10px 0; padding-left: 30px; }
+        li { margin: 5px 0; }
+        
+        .title-page { text-align: center; margin-top: 3in; }
+        .title-page h1 { font-size: 36px; border: none; margin-bottom: 20px; }
+        .title-page .subtitle { font-size: 24px; color: #7f8c8d; margin-bottom: 40px; }
+        .title-page .meta { font-size: 14px; color: #95a5a6; }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .print-button:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">??? Print/Save as PDF</button>
+    
+    <!-- Title Page -->
+    <div class="title-page page-break">
+        <h1>DEVELOPMENT AND TESTING FRAMEWORK</h1>
+        <div class="subtitle">Autoride Car Rental Booking System</div>
+        <div class="meta">
+            Document Version: 1.0<br>
+            Last Updated: June 22, 2026
+        </div>
+    </div>
+    
+    <div class="page-break"></div>
+    
+    <!-- Content -->
+    <h1>Development and Testing Framework</h1>
+<h2>Autoride Car Rental Booking System</h2>
+<hr />
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#system-overview">System Overview</a></li>
+<li><a href="#development-framework">Development Framework</a></li>
+<li><a href="#testing-framework">Testing Framework</a></li>
+<li><a href="#quality-assurance-process">Quality Assurance Process</a></li>
+<li><a href="#tools-and-technologies">Tools and Technologies</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+</ol>
+<hr />
+<h2>System Overview</h2>
+<h3>What is the Autoride System?</h3>
+<p>The Autoride Car Rental Booking System is a comprehensive <strong>mobile-first</strong> application that enables customers to rent vehicles and administrators to manage the rental business operations.</p>
+<h3>Architecture</h3>
+<div class="codehilite"><pre><span></span><code>???????????????????????????????????????????????????????????
+?                    AUTORIDE SYSTEM                       ?
+???????????????????????????????????????????????????????????
+?                                                          ?
+?  ????????????????    ????????????????                  ?
+?  ?   Customer   ?    ?    Admin     ?                  ?
+?  ?  Mobile App  ?    ?  Mobile App  ?                  ?
+?  ?  (Capacitor) ?    ?  (Capacitor) ?                  ?
+?  ????????????????    ????????????????                  ?
+?         ?                    ?                          ?
+?         ??????????????????????                          ?
+?                  ?                                      ?
+?         ???????????????????                            ?
+?         ?   Backend API   ?                            ?
+?         ?  (Flask/Python) ?                            ?
+?         ???????????????????                            ?
+?                  ?                                      ?
+?         ???????????????????                            ?
+?         ?    Database     ?                            ?
+?         ?  (PostgreSQL)   ?                            ?
+?         ???????????????????                            ?
+?                                                          ?
+?  External Services:                                     ?
+?  • Google Sign-In (Authentication)                      ?
+?  • Firebase (Push Notifications)                        ?
+?  • Supabase (Storage &amp; Database)                        ?
+?  • PayMongo (Payment Gateway)                           ?
+?  • Twilio (SMS Notifications)                           ?
+?                                                          ?
+???????????????????????????????????????????????????????????
+</code></pre></div>
+
+<hr />
+<h2>Development Framework</h2>
+<h3>1. <strong>Planning Phase</strong></h3>
+<p>The foundation of our development process:</p>
+<h4>Requirements Gathering</h4>
+<ul>
+<li><strong>Business Requirements</strong>: What features does the car rental business need?</li>
+<li>Vehicle inventory management</li>
+<li>Booking system with conflict detection</li>
+<li>Payment processing (full/downpayment)</li>
+<li>GPS tracking for rented vehicles</li>
+<li>License verification system</li>
+<li>
+<p>Extension requests with conflict resolution</p>
+</li>
+<li>
+<p><strong>User Requirements</strong>: What do customers and admins need?</p>
+</li>
+<li><strong>Customers</strong>: Easy booking, real-time notifications, secure payments</li>
+<li><strong>Admins</strong>: Dashboard for managing bookings, vehicles, and users</li>
+</ul>
+<h4>Technical Design</h4>
+<ul>
+<li><strong>Database Schema</strong>: Designed relational database with tables for:</li>
+<li><code>users</code>, <code>admins</code>, <code>vehicles</code>, <code>bookings</code>, <code>payments</code></li>
+<li><code>booking_extensions</code>, <code>booking_conflicts</code>, <code>notifications</code></li>
+<li>
+<p><code>license_details</code>, <code>vehicle_inspections</code></p>
+</li>
+<li>
+<p><strong>API Design</strong>: RESTful API endpoints:
+  <code>/api/auth/google           - Google OAuth authentication
+  /api/bookings              - CRUD operations for bookings
+  /api/vehicles              - Vehicle management
+  /api/notifications         - In-app notifications
+  /api/extensions            - Booking extension requests
+  /api/conflicts             - Conflict resolution</code></p>
+</li>
+<li>
+<p><strong>Mobile App Architecture</strong>: Hybrid app using Capacitor</p>
+</li>
+<li>HTML/CSS/JavaScript frontend</li>
+<li>Native Android build with Capacitor</li>
+<li>Cordova plugins for GPS, camera, notifications</li>
+</ul>
+<h3>2. <strong>Development Phase</strong></h3>
+<h4>Backend Development (Flask + Python)</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Example: Booking Creation Flow</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/api/bookings&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_booking</span><span class="p">():</span>
+    <span class="c1"># 1. Validate input data</span>
+    <span class="c1"># 2. Check vehicle availability</span>
+    <span class="c1"># 3. Detect booking conflicts</span>
+    <span class="c1"># 4. Calculate pricing (base + addons + insurance - discount)</span>
+    <span class="c1"># 5. Create booking record</span>
+    <span class="c1"># 6. Send notifications (email, SMS, push)</span>
+    <span class="c1"># 7. Return booking confirmation</span>
+</code></pre></div>
+
+<p><strong>Key Development Practices:</strong>
+- <strong>Modular Code</strong>: Separate files for routes, services, utilities
+  <code>backend/
+    ??? app.py              # Main application
+    ??? config.py           # Configuration
+    ??? database.py         # Database connection pool
+    ??? routers/            # API route blueprints
+    ?   ??? booking_routes.py
+    ?   ??? payment_routes.py
+    ?   ??? conflict_routes.py
+    ??? services/           # Business logic
+    ?   ??? extension_service.py
+    ?   ??? notification_service.py
+    ??? utils/              # Helper functions
+        ??? pdf_generator.py
+        ??? validators.py</code></p>
+<ul>
+<li>
+<p><strong>Database Migrations</strong>: Incremental schema updates
+  <code>python
+  def migrate_extensions_v1():
+      # Adds new tables without breaking existing data
+      cur.execute("""
+          CREATE TABLE IF NOT EXISTS booking_extensions (...)
+      """)
+      cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS has_active_extension")</code></p>
+</li>
+<li>
+<p><strong>Error Handling</strong>: Graceful error responses
+  <code>python
+  try:
+      # Business logic
+  except Exception as e:
+      return jsonify({'error': str(e)}), 500</code></p>
+</li>
+</ul>
+<h4>Frontend Development (Mobile Apps)</h4>
+<p><strong>Customer Mobile App:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Example: Booking Flow</span>
+<span class="kd">function</span><span class="w"> </span><span class="nx">createBooking</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// 1. Collect form data</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">bookingData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">vehicleId</span><span class="o">:</span><span class="w"> </span><span class="nx">selectedVehicle</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">startDate</span><span class="o">:</span><span class="w"> </span><span class="nx">pickupDate</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">endDate</span><span class="o">:</span><span class="w"> </span><span class="nx">returnDate</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">addons</span><span class="o">:</span><span class="w"> </span><span class="nx">selectedAddons</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">insurance</span><span class="o">:</span><span class="w"> </span><span class="nx">insuranceType</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="c1">// 2. Call backend API</span>
+<span class="w">    </span><span class="nx">fetch</span><span class="p">(</span><span class="sb">`</span><span class="si">${</span><span class="nx">API_URL</span><span class="si">}</span><span class="sb">/api/bookings`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">headers</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="s1">&#39;Content-Type&#39;</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;application/json&#39;</span><span class="p">},</span>
+<span class="w">        </span><span class="nx">body</span><span class="o">:</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">bookingData</span><span class="p">)</span>
+<span class="w">    </span><span class="p">})</span>
+<span class="w">    </span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">response</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">())</span>
+<span class="w">    </span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">data</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// 3. Show confirmation</span>
+<span class="w">        </span><span class="c1">// 4. Navigate to payment</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Key Features Implemented:</strong>
+- Google Sign-In integration
+- Real-time GPS tracking with Geolocation API
+- Push notifications via Firebase
+- Camera integration for license uploads
+- Responsive UI with Bootstrap</p>
+<h4>Integration Development</h4>
+<ul>
+<li><strong>Google OAuth</strong>: Secure authentication without passwords</li>
+<li><strong>Firebase Cloud Messaging</strong>: Cross-platform push notifications</li>
+<li><strong>PayMongo API</strong>: Credit card and e-wallet payments</li>
+<li><strong>Twilio SMS</strong>: Text message notifications</li>
+<li><strong>Supabase Storage</strong>: Cloud storage for images (licenses, payment proofs)</li>
+</ul>
+<h3>3. <strong>Deployment Phase</strong></h3>
+<h4>Backend Deployment (Vercel)</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// vercel.json</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;builds&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;src&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;backend/app.py&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;use&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;@vercel/python&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;routes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;src&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/(.*)&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;dest&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;backend/app.py&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Deployment URL</strong>: <code>https://autoride-booking-system.vercel.app</code></p>
+<h4>Mobile App Deployment</h4>
+<ol>
+<li>
+<p><strong>Development Build</strong> (Debug APK):
+   <code>bash
+   cd customer_mobile/android
+   gradlew assembleDebug</code></p>
+</li>
+<li>
+<p><strong>Production Build</strong> (Release Bundle):
+   <code>bash
+   gradlew bundleRelease</code></p>
+</li>
+<li>
+<p><strong>Google Play Console Upload</strong>:</p>
+</li>
+<li>Upload AAB bundle</li>
+<li>Configure app details</li>
+<li>Submit for review</li>
+</ol>
+<hr />
+<h2>Testing Framework</h2>
+<h3>1. <strong>Unit Testing</strong></h3>
+<p>Testing individual components in isolation.</p>
+<h4>Backend Unit Tests</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Example: Test booking validation</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_booking_date_validation</span><span class="p">():</span>
+    <span class="c1"># Test case: Start date must be before end date</span>
+    <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+    <span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>  <span class="c1"># Invalid!</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">validate_booking_dates</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;valid&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span>
+    <span class="k">assert</span> <span class="s1">&#39;must be before&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_pricing_calculation</span><span class="p">():</span>
+    <span class="c1"># Test case: 3-day rental with insurance</span>
+    <span class="n">days</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">daily_rate</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">insurance</span> <span class="o">=</span> <span class="mi">200</span>
+
+    <span class="n">total</span> <span class="o">=</span> <span class="n">calculate_booking_price</span><span class="p">(</span><span class="n">days</span><span class="p">,</span> <span class="n">daily_rate</span><span class="p">,</span> <span class="n">insurance</span><span class="p">,</span> <span class="n">addons</span><span class="o">=</span><span class="p">[])</span>
+    <span class="k">assert</span> <span class="n">total</span> <span class="o">==</span> <span class="mi">3600</span>  <span class="c1"># (1000 * 3) + 200 + 200 + 200</span>
+</code></pre></div>
+
+<p><strong>What We Test:</strong>
+- ? Input validation (dates, prices, IDs)
+- ? Business logic (pricing, availability, conflicts)
+- ? Data formatting (JSON responses, date formats)
+- ? Error handling (invalid inputs, missing data)</p>
+<h4>Frontend Unit Tests</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Example: Test booking form validation</span>
+<span class="nx">test</span><span class="p">(</span><span class="s1">&#39;validateBookingForm returns errors for invalid dates&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">formData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">startDate</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;2026-06-25&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">endDate</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;2026-06-20&#39;</span><span class="w">  </span><span class="c1">// Invalid!</span>
+<span class="w">    </span><span class="p">};</span>
+
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">validateBookingForm</span><span class="p">(</span><span class="nx">formData</span><span class="p">);</span>
+<span class="w">    </span><span class="nx">expect</span><span class="p">(</span><span class="nx">errors</span><span class="p">.</span><span class="nx">endDate</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="s1">&#39;End date must be after start date&#39;</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3>2. <strong>Integration Testing</strong></h3>
+<p>Testing how different components work together.</p>
+<h4>API Integration Tests</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test: Complete booking flow</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_create_booking_api</span><span class="p">():</span>
+    <span class="c1"># 1. Authenticate user</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">login_user</span><span class="p">(</span><span class="s1">&#39;test@gmail.com&#39;</span><span class="p">,</span> <span class="s1">&#39;password123&#39;</span><span class="p">)</span>
+
+    <span class="c1"># 2. Select vehicle</span>
+    <span class="n">vehicles</span> <span class="o">=</span> <span class="n">get_available_vehicles</span><span class="p">(</span><span class="s1">&#39;2026-06-25&#39;</span><span class="p">,</span> <span class="s1">&#39;2026-06-28&#39;</span><span class="p">)</span>
+    <span class="n">vehicle_id</span> <span class="o">=</span> <span class="n">vehicles</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+
+    <span class="c1"># 3. Create booking</span>
+    <span class="n">booking_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;vehicle_id&#39;</span><span class="p">:</span> <span class="n">vehicle_id</span><span class="p">,</span>
+        <span class="s1">&#39;start_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2026-06-25&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;end_date&#39;</span><span class="p">:</span> <span class="s1">&#39;2026-06-28&#39;</span>
+    <span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">create_booking</span><span class="p">(</span><span class="n">booking_data</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+
+    <span class="c1"># 4. Verify response</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Pending&#39;</span>
+</code></pre></div>
+
+<p><strong>What We Test:</strong>
+- ? API endpoints (request/response formats)
+- ? Database operations (CRUD operations)
+- ? External service integrations (Google, Firebase, PayMongo)
+- ? Authentication flow (login, token validation)
+- ? Notification delivery (email, SMS, push)</p>
+<h3>3. <strong>System Testing</strong></h3>
+<p>Testing the entire system as a whole.</p>
+<h4>End-to-End Test Scenarios</h4>
+<p><strong>Scenario 1: Customer Booking Journey</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">opens</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">Mobile</span><span class="w"> </span><span class="n">App</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">signs</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">Google</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">browses</span><span class="w"> </span><span class="n">available</span><span class="w"> </span><span class="n">vehicles</span>
+<span class="mf">4.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">selects</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">vehicle</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">dates</span>
+<span class="mf">5.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">adds</span><span class="w"> </span><span class="n">insurance</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">addons</span>
+<span class="mf">6.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">uploads</span><span class="w"> </span><span class="n">driver</span><span class="s1">&#39;s license</span>
+<span class="mf">7.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">proceeds</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">payment</span>
+<span class="mf">8.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">uploads</span><span class="w"> </span><span class="n">payment</span><span class="w"> </span><span class="n">proof</span>
+<span class="mf">9.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">approves</span><span class="w"> </span><span class="n">booking</span>
+<span class="mf">10.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">receives</span><span class="w"> </span><span class="n">confirmation</span><span class="w"> </span><span class="n">notification</span>
+<span class="mf">11.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">tracks</span><span class="w"> </span><span class="n">vehicle</span><span class="w"> </span><span class="n">GPS</span><span class="w"> </span><span class="n">during</span><span class="w"> </span><span class="n">rental</span>
+<span class="mf">12.</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">returns</span><span class="w"> </span><span class="n">vehicle</span>
+</code></pre></div>
+
+<p><strong>Scenario 2: Admin Management Journey</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="kr">open</span><span class="n">s</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">Mobile</span><span class="w"> </span><span class="n">App</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">signs</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">credentials</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">views</span><span class="w"> </span><span class="n">pending</span><span class="w"> </span><span class="n">bookings</span>
+<span class="mf">4.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">approves</span><span class="w"> </span><span class="n">booking</span>
+<span class="mf">5.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="n">vehicle</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="s">&quot;Rented&quot;</span>
+<span class="mf">6.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">monitors</span><span class="w"> </span><span class="n">GPS</span><span class="w"> </span><span class="n">tracking</span>
+<span class="mf">7.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">processes</span><span class="w"> </span><span class="n">extension</span><span class="w"> </span><span class="n">request</span>
+<span class="mf">8.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">resolves</span><span class="w"> </span><span class="n">booking</span><span class="w"> </span><span class="n">conflicts</span>
+<span class="mf">9.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">marks</span><span class="w"> </span><span class="n">vehicle</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="s">&quot;Available&quot;</span>
+<span class="mf">10.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">generates</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="n">reports</span>
+</code></pre></div>
+
+<p><strong>Scenario 3: Extension with Conflict</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="n">Booking</span><span class="w"> </span><span class="err">#</span><span class="mf">1</span><span class="w"> </span><span class="p">(</span><span class="n">June</span><span class="w"> </span><span class="mf">1</span><span class="o">-</span><span class="mf">5</span><span class="p">,</span><span class="w"> </span><span class="n">Vehicle</span><span class="w"> </span><span class="n">X</span><span class="p">)</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">has</span><span class="w"> </span><span class="n">Booking</span><span class="w"> </span><span class="err">#</span><span class="mf">2</span><span class="w"> </span><span class="p">(</span><span class="n">June</span><span class="w"> </span><span class="mf">6</span><span class="o">-</span><span class="mf">10</span><span class="p">,</span><span class="w"> </span><span class="n">Vehicle</span><span class="w"> </span><span class="n">X</span><span class="p">)</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">requests</span><span class="w"> </span><span class="n">extension</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">June</span><span class="w"> </span><span class="mf">8</span><span class="w"> </span><span class="p">(</span><span class="n">conflicts</span><span class="err">!</span><span class="p">)</span>
+<span class="mf">4.</span><span class="w"> </span><span class="kr">Sys</span><span class="n">tem</span><span class="w"> </span><span class="n">detects</span><span class="w"> </span><span class="n">conflict</span>
+<span class="mf">5.</span><span class="w"> </span><span class="kr">Sys</span><span class="n">tem</span><span class="w"> </span><span class="n">creates</span><span class="w"> </span><span class="n">conflict</span><span class="w"> </span><span class="n">record</span>
+<span class="mf">6.</span><span class="w"> </span><span class="kr">Sys</span><span class="n">tem</span><span class="w"> </span><span class="ow">not</span><span class="kr">if</span><span class="n">ies</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="n">conflict</span>
+<span class="mf">7.</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">chooses</span><span class="w"> </span><span class="n">alternative</span><span class="w"> </span><span class="n">vehicle</span>
+<span class="mf">8.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">approves</span><span class="w"> </span><span class="n">extension</span>
+<span class="mf">9.</span><span class="w"> </span><span class="n">Admin</span><span class="w"> </span><span class="n">updates</span><span class="w"> </span><span class="n">both</span><span class="w"> </span><span class="n">bookings</span>
+<span class="mf">10.</span><span class="w"> </span><span class="kr">Sys</span><span class="n">tem</span><span class="w"> </span><span class="n">sends</span><span class="w"> </span><span class="n">confirmations</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">both</span><span class="w"> </span><span class="n">customers</span>
+</code></pre></div>
+
+<h3>4. <strong>User Acceptance Testing (UAT)</strong></h3>
+<p>Real users test the system in real-world scenarios.</p>
+<h4>UAT Test Cases</h4>
+<table>
+<thead>
+<tr>
+<th>Test Case</th>
+<th>User Type</th>
+<th>Expected Result</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sign in with Google</td>
+<td>Customer</td>
+<td>Successful login, profile created</td>
+<td>? Pass</td>
+</tr>
+<tr>
+<td>Book a vehicle</td>
+<td>Customer</td>
+<td>Booking created, notification sent</td>
+<td>? Pass</td>
+</tr>
+<tr>
+<td>Upload license</td>
+<td>Customer</td>
+<td>Image uploaded, admin can view</td>
+<td>? Pass</td>
+</tr>
+<tr>
+<td>Approve booking</td>
+<td>Admin</td>
+<td>Status changes to "Approved"</td>
+<td>? Pass</td>
+</tr>
+<tr>
+<td>Track vehicle GPS</td>
+<td>Customer</td>
+<td>Real-time location updates</td>
+<td>? Pass</td>
+</tr>
+<tr>
+<td>Request extension</td>
+<td>Customer</td>
+<td>Extension request submitted</td>
+<td>? Pass</td>
+</tr>
+<tr>
+<td>Resolve conflict</td>
+<td>Admin</td>
+<td>Alternative vehicle assigned</td>
+<td>? Pass</td>
+</tr>
+</tbody>
+</table>
+<h3>5. <strong>Performance Testing</strong></h3>
+<p>Testing system performance under load.</p>
+<h4>Load Testing Scenarios</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Simulate 100 concurrent users</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_concurrent_bookings</span><span class="p">():</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="p">[</span><span class="n">create_test_user</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)]</span>
+
+    <span class="c1"># All users book at the same time</span>
+    <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">create_booking</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">]</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">result</span><span class="p">()</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">futures</span><span class="p">]</span>
+
+    <span class="c1"># Verify no double-bookings occurred</span>
+    <span class="k">assert</span> <span class="n">no_duplicate_bookings</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>What We Test:</strong>
+- ? Response time under load (&lt; 2 seconds)
+- ? Database connection pool handling (100+ concurrent connections)
+- ? API rate limiting
+- ? Memory usage and leaks
+- ? File upload performance (images)</p>
+<h3>6. <strong>Security Testing</strong></h3>
+<p>Testing for vulnerabilities and security flaws.</p>
+<h4>Security Test Cases</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Test: SQL Injection Prevention</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_sql_injection</span><span class="p">():</span>
+    <span class="n">malicious_input</span> <span class="o">=</span> <span class="s2">&quot;1&#39; OR &#39;1&#39;=&#39;1&quot;</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">login_user</span><span class="p">(</span><span class="n">malicious_input</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span>  <span class="c1"># Should fail, not succeed!</span>
+
+<span class="c1"># Test: Authentication Required</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_protected_endpoint_without_token</span><span class="p">():</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">get_bookings</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span>  <span class="c1"># Unauthorized</span>
+
+<span class="c1"># Test: Authorization (User can only see their own bookings)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_user_cannot_access_other_bookings</span><span class="p">():</span>
+    <span class="n">user1_token</span> <span class="o">=</span> <span class="n">login_user</span><span class="p">(</span><span class="s1">&#39;user1@gmail.com&#39;</span><span class="p">)</span>
+    <span class="n">user2_booking_id</span> <span class="o">=</span> <span class="mi">999</span>
+
+    <span class="n">response</span> <span class="o">=</span> <span class="n">get_booking_details</span><span class="p">(</span><span class="n">user2_booking_id</span><span class="p">,</span> <span class="n">user1_token</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">403</span>  <span class="c1"># Forbidden</span>
+</code></pre></div>
+
+<p><strong>Security Measures Tested:</strong>
+- ? SQL Injection prevention (parameterized queries)
+- ? XSS prevention (input sanitization)
+- ? CSRF protection (token validation)
+- ? Authentication enforcement (JWT tokens)
+- ? Authorization checks (role-based access)
+- ? Secure password hashing (bcrypt)
+- ? HTTPS enforcement (SSL certificates)
+- ? File upload validation (image type checking)</p>
+<h3>7. <strong>Regression Testing</strong></h3>
+<p>Testing that new changes don't break existing features.</p>
+<h4>Regression Test Suite</h4>
+<p>After every code change, we run:
+1. ? All unit tests (backend + frontend)
+2. ? Critical path integration tests
+3. ? Smoke tests (basic functionality)</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># After adding &quot;booking extensions&quot; feature, verify:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_regression_basic_booking_still_works</span><span class="p">():</span>
+    <span class="c1"># Ensure basic booking flow is not broken</span>
+    <span class="n">booking</span> <span class="o">=</span> <span class="n">create_booking</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">booking</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Pending&#39;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_regression_existing_bookings_unaffected</span><span class="p">():</span>
+    <span class="c1"># Ensure old bookings still display correctly</span>
+    <span class="n">old_bookings</span> <span class="o">=</span> <span class="n">get_user_bookings</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">old_bookings</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+</code></pre></div>
+
+<hr />
+<h2>Quality Assurance Process</h2>
+<h3>QA Checklist Before Release</h3>
+<h4>Backend QA</h4>
+<ul>
+<li>[ ] All API endpoints return correct status codes</li>
+<li>[ ] Database migrations run successfully</li>
+<li>[ ] Error messages are user-friendly</li>
+<li>[ ] Logs are properly configured</li>
+<li>[ ] Environment variables are set</li>
+<li>[ ] CORS is configured correctly</li>
+<li>[ ] Rate limiting is enabled</li>
+<li>[ ] Backup system is in place</li>
+</ul>
+<h4>Frontend QA</h4>
+<ul>
+<li>[ ] All screens render correctly</li>
+<li>[ ] Forms validate input properly</li>
+<li>[ ] Loading indicators display during API calls</li>
+<li>[ ] Error messages display for failed requests</li>
+<li>[ ] Navigation flows logically</li>
+<li>[ ] Images load correctly</li>
+<li>[ ] GPS tracking works</li>
+<li>[ ] Push notifications work</li>
+<li>[ ] App doesn't crash on invalid input</li>
+</ul>
+<h4>Mobile App QA</h4>
+<ul>
+<li>[ ] APK builds successfully</li>
+<li>[ ] App installs on Android device</li>
+<li>[ ] Google Sign-In works</li>
+<li>[ ] Camera permission works</li>
+<li>[ ] Location permission works</li>
+<li>[ ] Notification permission works</li>
+<li>[ ] App works on different screen sizes</li>
+<li>[ ] App works on different Android versions (8.0+)</li>
+</ul>
+<h4>Deployment QA</h4>
+<ul>
+<li>[ ] Backend is accessible at production URL</li>
+<li>[ ] Database connection works</li>
+<li>[ ] External APIs are reachable (Google, Firebase, PayMongo)</li>
+<li>[ ] SSL certificate is valid</li>
+<li>[ ] Privacy policy page is accessible</li>
+<li>[ ] Mobile apps connect to production backend</li>
+</ul>
+<hr />
+<h2>Tools and Technologies</h2>
+<h3>Development Tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>VS Code</strong></td>
+<td>Code editor</td>
+</tr>
+<tr>
+<td><strong>Git</strong></td>
+<td>Version control</td>
+</tr>
+<tr>
+<td><strong>GitHub</strong></td>
+<td>Code repository</td>
+</tr>
+<tr>
+<td><strong>Postman</strong></td>
+<td>API testing</td>
+</tr>
+<tr>
+<td><strong>Chrome DevTools</strong></td>
+<td>Frontend debugging</td>
+</tr>
+<tr>
+<td><strong>Android Studio</strong></td>
+<td>Mobile app building</td>
+</tr>
+<tr>
+<td><strong>Python</strong></td>
+<td>Backend language</td>
+</tr>
+<tr>
+<td><strong>Flask</strong></td>
+<td>Web framework</td>
+</tr>
+</tbody>
+</table>
+<h3>Testing Tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>pytest</strong></td>
+<td>Python unit testing</td>
+</tr>
+<tr>
+<td><strong>Jest</strong></td>
+<td>JavaScript unit testing</td>
+</tr>
+<tr>
+<td><strong>Postman</strong></td>
+<td>API integration testing</td>
+</tr>
+<tr>
+<td><strong>Chrome DevTools</strong></td>
+<td>Frontend testing</td>
+</tr>
+<tr>
+<td><strong>Android Emulator</strong></td>
+<td>Mobile app testing</td>
+</tr>
+<tr>
+<td><strong>Real Android Device</strong></td>
+<td>Real-world testing</td>
+</tr>
+</tbody>
+</table>
+<h3>Deployment Tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vercel</strong></td>
+<td>Backend hosting</td>
+</tr>
+<tr>
+<td><strong>Supabase</strong></td>
+<td>Database &amp; storage</td>
+</tr>
+<tr>
+<td><strong>Google Play Console</strong></td>
+<td>App distribution</td>
+</tr>
+<tr>
+<td><strong>GitHub Actions</strong></td>
+<td>CI/CD automation</td>
+</tr>
+</tbody>
+</table>
+<h3>Monitoring Tools</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vercel Logs</strong></td>
+<td>Backend error monitoring</td>
+</tr>
+<tr>
+<td><strong>Supabase Logs</strong></td>
+<td>Database query monitoring</td>
+</tr>
+<tr>
+<td><strong>Firebase Console</strong></td>
+<td>Push notification analytics</td>
+</tr>
+<tr>
+<td><strong>Google Play Console</strong></td>
+<td>App crash reports</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Best Practices</h2>
+<h3>Development Best Practices</h3>
+<h4>1. <strong>Code Organization</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span><span class="w"> </span><span class="n">DO</span><span class="p">:</span><span class="w"> </span><span class="n">Organize</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="n">into</span><span class="w"> </span><span class="n">logical</span><span class="w"> </span><span class="n">modules</span>
+<span class="err">?</span><span class="w"> </span><span class="n">DON</span><span class="s1">&#39;T: Put all code in one giant file</span>
+
+<span class="err">?</span><span class="w"> </span><span class="n">DO</span><span class="p">:</span><span class="w"> </span><span class="n">Use</span><span class="w"> </span><span class="n">meaningful</span><span class="w"> </span><span class="n">variable</span><span class="w"> </span><span class="n">names</span><span class="w"> </span><span class="p">(</span><span class="n">customer_email</span><span class="p">)</span>
+<span class="err">?</span><span class="w"> </span><span class="n">DON</span><span class="s1">&#39;T: Use cryptic names (ce, x, temp)</span>
+</code></pre></div>
+
+<h4>2. <strong>Error Handling</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span> <span class="n">DO</span><span class="p">:</span> <span class="n">Handle</span> <span class="n">errors</span> <span class="n">gracefully</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">process_payment</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">PaymentError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="s1">&#39;Payment failed: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}),</span> <span class="mi">400</span>
+
+<span class="err">?</span> <span class="n">DON</span><span class="s1">&#39;T: Let errors crash the app</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">process_payment</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># What if it fails?</span>
+</code></pre></div>
+
+<h4>3. <strong>Database Safety</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span> <span class="n">DO</span><span class="p">:</span> <span class="n">Use</span> <span class="n">parameterized</span> <span class="n">queries</span>
+<span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM users WHERE email = </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">email</span><span class="p">,))</span>
+
+<span class="err">?</span> <span class="n">DON</span><span class="s1">&#39;T: Use string concatenation (SQL injection risk!)</span>
+<span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT * FROM users WHERE email = &#39;</span><span class="si">{</span><span class="n">email</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4>4. <strong>Input Validation</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span> <span class="n">DO</span><span class="p">:</span> <span class="n">Validate</span> <span class="nb">all</span> <span class="n">user</span> <span class="nb">input</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">email</span> <span class="ow">or</span> <span class="s1">&#39;@&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">({</span><span class="s1">&#39;error&#39;</span><span class="p">:</span> <span class="s1">&#39;Invalid email&#39;</span><span class="p">}),</span> <span class="mi">400</span>
+
+<span class="err">?</span> <span class="n">DON</span><span class="s1">&#39;T: Trust user input blindly</span>
+<span class="n">user</span> <span class="o">=</span> <span class="n">create_user</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">])</span>  <span class="c1"># What if it&#39;s missing?</span>
+</code></pre></div>
+
+<h3>Testing Best Practices</h3>
+<h4>1. <strong>Test Coverage</strong></h4>
+<div class="codehilite"><pre><span></span><code>? DO: Test happy path AND error cases
+test_valid_booking()
+test_invalid_dates()
+test_missing_vehicle_id()
+
+? DON&#39;T: Only test happy path
+test_valid_booking()  # What about errors?
+</code></pre></div>
+
+<h4>2. <strong>Test Independence</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span> <span class="n">DO</span><span class="p">:</span> <span class="n">Each</span> <span class="n">test</span> <span class="n">should</span> <span class="n">be</span> <span class="n">independent</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_create_booking</span><span class="p">():</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">create_test_user</span><span class="p">()</span>  <span class="c1"># Fresh user for this test</span>
+    <span class="n">booking</span> <span class="o">=</span> <span class="n">create_booking</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">booking</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Pending&#39;</span>
+
+<span class="err">?</span> <span class="n">DON</span><span class="s1">&#39;T: Tests that depend on each other</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_create_booking</span><span class="p">():</span>
+    <span class="n">booking</span> <span class="o">=</span> <span class="n">create_booking</span><span class="p">(</span><span class="n">global_user</span><span class="p">)</span>  <span class="c1"># Depends on other test!</span>
+</code></pre></div>
+
+<h4>3. <strong>Realistic Test Data</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span> <span class="n">DO</span><span class="p">:</span> <span class="n">Use</span> <span class="n">realistic</span> <span class="n">test</span> <span class="n">data</span>
+<span class="n">test_user</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="s1">&#39;john.doe@gmail.com&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;John Doe&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;phone&#39;</span><span class="p">:</span> <span class="s1">&#39;+639171234567&#39;</span>
+<span class="p">}</span>
+
+<span class="err">?</span> <span class="n">DON</span><span class="s1">&#39;T: Use dummy data that doesn&#39;</span><span class="n">t</span> <span class="n">represent</span> <span class="n">reality</span>
+<span class="n">test_user</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="s1">&#39;test&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;x&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;phone&#39;</span><span class="p">:</span> <span class="s1">&#39;123&#39;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4>4. <strong>Test Documentation</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="err">?</span> <span class="n">DO</span><span class="p">:</span> <span class="n">Document</span> <span class="n">what</span> <span class="n">you</span><span class="s1">&#39;re testing</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_booking_conflict_detection</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that the system detects when two bookings overlap</span>
+<span class="sd">    for the same vehicle and prevents double-booking.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="o">...</span>
+
+<span class="err">?</span> <span class="n">DON</span><span class="s1">&#39;T: Leave tests unexplained</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_booking</span><span class="p">():</span>  <span class="c1"># Test what about booking?</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<hr />
+<h2>Summary</h2>
+<h3>Development Process</h3>
+<ol>
+<li><strong>Plan</strong> ? Define requirements and design</li>
+<li><strong>Build</strong> ? Write code for backend, frontend, and mobile apps</li>
+<li><strong>Integrate</strong> ? Connect all components and external services</li>
+<li><strong>Deploy</strong> ? Release to production (Vercel, Google Play)</li>
+</ol>
+<h3>Testing Process</h3>
+<ol>
+<li><strong>Unit Test</strong> ? Test individual functions</li>
+<li><strong>Integration Test</strong> ? Test component interactions</li>
+<li><strong>System Test</strong> ? Test entire system end-to-end</li>
+<li><strong>UAT</strong> ? Real users test in real scenarios</li>
+<li><strong>Performance Test</strong> ? Test under load</li>
+<li><strong>Security Test</strong> ? Test for vulnerabilities</li>
+<li><strong>Regression Test</strong> ? Ensure no features break</li>
+</ol>
+<h3>Key Takeaways</h3>
+<ul>
+<li>? <strong>Development and testing go hand-in-hand</strong> - test as you build</li>
+<li>? <strong>Catch bugs early</strong> - unit tests catch issues before integration</li>
+<li>? <strong>Think like a user</strong> - UAT reveals real-world problems</li>
+<li>? <strong>Security first</strong> - always validate input and protect data</li>
+<li>? <strong>Monitor in production</strong> - use logs to catch issues after release</li>
+</ul>
+<hr />
+<p><strong>Document Version</strong>: 1.0<br />
+<strong>Last Updated</strong>: June 22, 2026<br />
+<strong>System</strong>: Autoride Car Rental Booking System</p>
+    
+</body>
+</html>
