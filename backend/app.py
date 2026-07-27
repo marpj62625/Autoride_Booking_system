@@ -5046,8 +5046,10 @@ def mark_no_show(booking_id):
         cur = get_cursor()
         cur.execute("""
             SELECT b.id, b.status, b.payment_status, b.vehicle_id, b.user_id,
-                   b.start_date, b.pickup_time, b.customer_name
-            FROM bookings b WHERE b.id = %s
+                   b.start_date, b.start_time, COALESCE(u.full_name, 'Unknown') as customer_name
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            WHERE b.id = %s
         """, (booking_id,))
         bk = cur.fetchone()
         if not bk:
@@ -5061,7 +5063,11 @@ def mark_no_show(booking_id):
         pickup_date = bk['start_date']
         if hasattr(pickup_date, 'date'):
             pickup_date = pickup_date.date()
-        pickup_time_str = bk.get('pickup_time') or '06:00'
+        pickup_time_raw = bk.get('start_time') or '06:00'
+        if hasattr(pickup_time_raw, 'strftime'):
+            pickup_time_str = pickup_time_raw.strftime('%H:%M')
+        else:
+            pickup_time_str = str(pickup_time_raw)[:5]
         try:
             ph_hour, ph_min = map(int, pickup_time_str.split(':'))
         except Exception:
