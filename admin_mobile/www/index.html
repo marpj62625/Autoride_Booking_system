@@ -1035,6 +1035,7 @@
                             <option value="Sedan">Sedan</option>
                             <option value="Hatchback">Hatchback</option>
                             <option value="Van">Van</option>
+                            <option value="Pickup">Pickup</option>
                         </select>
                     </div>
                     <div id="popupMetricFilterContainer" style="display:none;">
@@ -1209,12 +1210,27 @@
             <button onclick="Vehicles.openModal()" class="btn-primary" style="padding: 10px 18px; border-radius: 24px; font-size: 0.85rem; font-weight: 700;"><i class="fas fa-plus" style="margin-right:6px;"></i>Add New</button>
         </div>
 
-        <!-- Search -->
-        <div style="position:relative; margin-bottom: 12px;">
-            <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-            <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
-                oninput="Vehicles.applyFilters()"
-                style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+        <!-- Search and Filter Row -->
+        <div style="display:flex; gap:10px; margin-bottom: 12px;">
+            <div style="position:relative;flex:1;">
+                <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
+                <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
+                    oninput="Vehicles.applyFilters()"
+                    style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
+            </div>
+            <div style="position:relative;width:40%;flex-shrink:0;">
+                <select id="vehicleCategoryFilter" onchange="Vehicles.applyFilters()"
+                    style="width:100%;padding:11px 30px 11px 14px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;appearance:none;cursor:pointer;">
+                    <option value="all">All Categories</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Van">Van</option>
+                    <option value="Hatchback">Hatchback</option>
+                    <option value="Pickup">Pickup</option>
+                    <option value="Motorcycle">Motorcycle</option>
+                </select>
+                <i class="fas fa-chevron-down" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none;font-size:0.8rem;"></i>
+            </div>
         </div>
 
         <!-- Filter chips -->
@@ -1928,7 +1944,7 @@
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button type="button" onclick="Staff.closeModal()" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
-                    <button type="submit" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Save Account</button>
+                    <button type="submit" id="staffSubmitBtn" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Save Account</button>
                 </div>
             </form>
         </div>
@@ -2026,7 +2042,6 @@
                             <option value="SUV">SUV</option>
                             <option value="Van">Van</option>
                             <option value="Hatchback">Hatchback</option>
-                            <option value="MPV">MPV</option>
                             <option value="Pickup">Pickup</option>
                         </select>
                     </div>
@@ -2068,6 +2083,32 @@
                     <div>
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (&#8369;)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" required
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                    </div>
+
+                    <!-- Year Model - half width -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Year Model</label>
+                        <input type="text" id="vYear" placeholder="e.g. 2023"
+                            maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
+                            oninput="this.value = this.value.replace(/[^0-9]/g,'').slice(0,4);"
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                    </div>
+
+                    <!-- Mileage Type - half width -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Mileage Type</label>
+                        <select id="vMileageType" required onchange="document.getElementById('vMileageKmDiv').style.display = this.value === 'limited' ? 'block' : 'none'"
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
+                            <option value="limited">Limited</option>
+                            <option value="unlimited">Unlimited</option>
+                        </select>
+                    </div>
+
+                    <!-- Mileage km/day - half width -->
+                    <div id="vMileageKmDiv">
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Limit (km/day)</label>
+                        <input type="number" id="vMileageKm" value="250" placeholder="e.g. 250"
                             style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
 
@@ -3347,15 +3388,24 @@
         applyFilters() {
             const q = (document.getElementById('vehicleSearch')?.value || '').toLowerCase().trim();
             const f = this._filter;
+            const categoryFilter = document.getElementById('vehicleCategoryFilter')?.value || 'all';
+            
             const filtered = this.data.filter(v => {
                 const status = (v.status || '').toLowerCase();
                 const matchF = f === 'all' || status === f;
+                
+                let matchCat = true;
+                if (categoryFilter !== 'all') {
+                    matchCat = (v.vehicle_type || '') === categoryFilter;
+                }
+                
                 const matchQ = !q ||
                     (v.brand        || '').toLowerCase().includes(q) ||
                     (v.model        || '').toLowerCase().includes(q) ||
                     (v.plate_number || '').toLowerCase().includes(q) ||
                     (v.vehicle_type || '').toLowerCase().includes(q);
-                return matchF && matchQ;
+                    
+                return matchF && matchCat && matchQ;
             });
             this._render(filtered);
         },
@@ -3369,9 +3419,11 @@
                 const res = await fetch(`${API_URL}/vehicles`);
                 if (!res.ok) throw new Error('Server not reachable');
                 this.data = await res.json();
-                // Reset search + chips
+                // Reset search + chips + category
                 const s = document.getElementById('vehicleSearch');
                 if (s) s.value = '';
+                const cat = document.getElementById('vehicleCategoryFilter');
+                if (cat) cat.value = 'all';
                 this._filter = 'all';
                 document.querySelectorAll('.veh-chip').forEach(b => {
                     const active = b.dataset.filter === 'all';
@@ -3530,6 +3582,10 @@
                 document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
                 document.getElementById('vStatus').value = v.status;
                 document.getElementById('vRate').value = v.daily_rate;
+                document.getElementById('vYear').value = v.year_model || '';
+                document.getElementById('vMileageType').value = v.mileage_type || 'limited';
+                document.getElementById('vMileageKm').value = v.mileage_km_per_day || 250;
+                document.getElementById('vMileageKmDiv').style.display = (v.mileage_type === 'unlimited') ? 'none' : 'block';
                 
                 // Gallery Details
                 this.galleryDetails = v.gallery_details || [];
@@ -3539,6 +3595,10 @@
                 this.updateModels();
                 document.getElementById('vExistingGallery').style.display = 'none';
                 this.galleryDetails = [];
+                document.getElementById('vYear').value = '';
+                document.getElementById('vMileageType').value = 'limited';
+                document.getElementById('vMileageKm').value = 250;
+                document.getElementById('vMileageKmDiv').style.display = 'block';
             }
             // Always clear new-photo selections when opening the modal
             VehiclePhotos.clear();
@@ -3623,8 +3683,45 @@
             // Validate photos for new vehicles
             if (!VehiclePhotos.validate(isEdit)) return;
 
-            const brand = document.getElementById('vBrand').value;
-            const model = document.getElementById('vModel').value;
+            // Clear previous inline errors
+            const fieldIds = ['vBrand', 'vModel', 'vPlate', 'vRate', 'vYear', 'vMileageKm'];
+            fieldIds.forEach(fid => {
+                const el = document.getElementById(fid);
+                if (el) clearInlineError(el);
+            });
+
+            let hasError = false;
+
+            const brandEl = document.getElementById('vBrand');
+            if (!brandEl.value.trim()) { showInlineError(brandEl, 'Brand is required'); hasError = true; }
+
+            const modelEl = document.getElementById('vModel');
+            if (!modelEl.value.trim()) { showInlineError(modelEl, 'Model is required'); hasError = true; }
+
+            const plateEl = document.getElementById('vPlate');
+            if (!plateEl.value.trim()) { showInlineError(plateEl, 'Plate Number is required'); hasError = true; }
+
+            const rateEl = document.getElementById('vRate');
+            if (!rateEl.value || parseFloat(rateEl.value) <= 0) { showInlineError(rateEl, 'Valid daily rate is required'); hasError = true; }
+
+            const yearEl = document.getElementById('vYear');
+            if (yearEl.value && (yearEl.value.length !== 4 || isNaN(yearEl.value) || parseInt(yearEl.value) < 1990 || parseInt(yearEl.value) > 2030)) {
+                showInlineError(yearEl, 'Must be a valid 4-digit year (1990-2030)'); hasError = true;
+            }
+
+            const mileageTypeEl = document.getElementById('vMileageType');
+            const mileageKmEl = document.getElementById('vMileageKm');
+            if (mileageTypeEl && mileageTypeEl.value === 'limited' && (!mileageKmEl.value || parseInt(mileageKmEl.value) <= 0)) {
+                showInlineError(mileageKmEl, 'Limit must be greater than 0'); hasError = true;
+            }
+
+            if (hasError) {
+                showNotification('Please fix the highlighted errors.', 'error');
+                return;
+            }
+
+            const brand = brandEl.value.trim();
+            const model = modelEl.value.trim();
 
             const formData = new FormData();
             formData.append('brand', brand);
@@ -3639,6 +3736,9 @@
             formData.append('location', document.getElementById('vLocation').value);
             formData.append('status', document.getElementById('vStatus').value);
             formData.append('daily_rate', document.getElementById('vRate').value);
+            formData.append('year_model', document.getElementById('vYear').value || '');
+            formData.append('mileage_type', document.getElementById('vMileageType').value);
+            formData.append('mileage_km_per_day', document.getElementById('vMileageKm').value || 250);
 
             // Append new photos
             VehiclePhotos.appendTo(formData);
@@ -3648,11 +3748,11 @@
 
             // Disable submit buttons during upload
             const submitBtn = document.getElementById('submitBtnText');
-            const addAnotherBtn = document.getElementById('saveAddAnotherBtn');
+            const allBtns = document.querySelectorAll('#vehicleModal button');
             const origText = submitBtn.textContent;
-            submitBtn.disabled = true;
+            
+            allBtns.forEach(b => b.disabled = true);
             submitBtn.textContent = 'Saving...';
-            if (addAnotherBtn) addAnotherBtn.disabled = true;
 
             try {
                 const res = await fetch(url, { method, body: formData });
@@ -3677,9 +3777,8 @@
             } catch (err) {
                 showNotification('Connection failed', 'error');
             } finally {
-                submitBtn.disabled = false;
+                allBtns.forEach(b => b.disabled = false);
                 submitBtn.textContent = origText;
-                if (addAnotherBtn) addAnotherBtn.disabled = false;
             }
         },
 
@@ -3705,13 +3804,15 @@
                 ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:12px 16px 0;">` +
                   galleryArr.slice(1,7).map(g => `<img src="${g}" style="width:100%;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="window.open('${g}','_blank')">`).join('') +
                   `</div>` : '';
+            const mileageDisplay = v.mileage_type === 'unlimited' ? 'Unlimited' : (v.mileage_km_per_day ? v.mileage_km_per_day + ' km/day' : '-');
             const fields = [
                 ['Brand', v.brand || '-'], ['Model', v.model || '-'],
                 ['Plate Number', v.plate_number || '-'], ['Type', v.vehicle_type || '-'],
                 ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
                 ['Seats', v.seats || '-'], ['Daily Rate', '&#8369;' + Number(v.daily_rate||0).toLocaleString()],
                 ['Location', v.location || '-'], ['Status', v.status || '-'],
-                ['Color', v.color_display || '-'], ['Year', v.year || '-'],
+                ['Color', v.color_display || '-'], ['Year Model', v.year_model || '-'],
+                ['Mileage', mileageDisplay],
             ];
             const fieldsHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:16px;">`
                 + fields.map(([label,val]) => `<div><div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div><div style="font-size:0.88rem;font-weight:600;color:var(--text-main);">${val}</div></div>`).join('')
@@ -5267,12 +5368,45 @@ async edit(id) { this.openModal(id); }
             e.preventDefault();
             const id = this.editingId;
             const user = adminAuth.getUser();
+
+            const nameEl = document.getElementById('staffName');
+            const emailEl = document.getElementById('staffEmail');
+            const passEl = document.getElementById('staffPass');
+            const roleEl = document.getElementById('staffRole');
+
+            [nameEl, emailEl, passEl, roleEl].forEach(el => clearInlineError(el));
+            let hasError = false;
+
+            const name = nameEl.value.trim();
+            if (!name) { showInlineError(nameEl, 'Name is required'); hasError = true; }
+
+            const email = emailEl.value.trim();
+            if (!email) { showInlineError(emailEl, 'Email is required'); hasError = true; }
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showInlineError(emailEl, 'Please enter a valid email address'); hasError = true; }
+
+            const password = passEl.value;
+            if (!id && !password) { showInlineError(passEl, 'Password is required for new staff'); hasError = true; }
+            else if (password && password.length < 6) { showInlineError(passEl, 'Password must be at least 6 characters long'); hasError = true; }
+
+            const role = roleEl.value;
+            if (!role) { showInlineError(roleEl, 'Role is required'); hasError = true; }
+
+            if (hasError) return;
+
+            const submitBtn = document.getElementById('staffSubmitBtn');
+            let origText = 'Save Account';
+            if (submitBtn) {
+                origText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
             const payload = {
                 requester_id: user.id,
-                name: document.getElementById('staffName').value,
-                email: document.getElementById('staffEmail').value,
-                password: document.getElementById('staffPass').value,
-                role: document.getElementById('staffRole').value
+                name: name,
+                email: email,
+                password: password,
+                role: role
             };
             const method = id ? 'PUT' : 'POST';
             const url = id ? `${API_BASE}/api/admin/update/${id}` : `${API_BASE}/api/admin/create`;
@@ -5289,6 +5423,9 @@ async edit(id) { this.openModal(id); }
                     alert('Error: ' + (data.error || 'Operation failed'));
                 }
             } catch (err) { alert('Connection error'); }
+            finally {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origText; }
+            }
         }
     };
 
@@ -7242,6 +7379,25 @@ async edit(id) { this.openModal(id); }
 
         async submit(event) {
             event.preventDefault();
+
+            const mileageEl = document.getElementById('inspectMileage');
+            const fuelEl = document.getElementById('inspectFuel');
+
+            if (mileageEl) clearInlineError(mileageEl);
+            if (fuelEl) clearInlineError(fuelEl);
+            let hasError = false;
+
+            if (mileageEl && (!mileageEl.value.trim() || isNaN(mileageEl.value) || parseInt(mileageEl.value) < 0)) {
+                showInlineError(mileageEl, 'Valid mileage is required');
+                hasError = true;
+            }
+            if (fuelEl && (!fuelEl.value.trim() || isNaN(fuelEl.value) || parseInt(fuelEl.value) < 0 || parseInt(fuelEl.value) > 100)) {
+                showInlineError(fuelEl, 'Fuel level (0-100) is required');
+                hasError = true;
+            }
+
+            if (hasError) return;
+
             const btn = document.getElementById('inspectSubmitBtn');
             const originalText = btn.innerHTML;
             const bookingId = document.getElementById('inspectBookingId').value;
@@ -7251,8 +7407,8 @@ async edit(id) { this.openModal(id); }
             const formData = new FormData();
             formData.append('booking_id', bookingId);
             formData.append('inspection_type', type);
-            formData.append('mileage', document.getElementById('inspectMileage').value);
-            formData.append('fuel_level', document.getElementById('inspectFuel').value);
+            formData.append('mileage', mileageEl.value);
+            formData.append('fuel_level', fuelEl.value);
             formData.append('notes', document.getElementById('inspectNotes').value);
             formData.append('inspector_id', user.id);
             this.currentPhotos.forEach(file => formData.append('photos', file));
@@ -7434,6 +7590,27 @@ async edit(id) { this.openModal(id); }
             notification.classList.remove('show');
             setTimeout(() => notification.remove(), 400);
         }, 3500);
+    }
+
+    function showInlineError(el, message) {
+        if (!el) return;
+        el.style.borderColor = '#dc2626';
+        el.style.outline = '0';
+        var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+        if (existing) existing.remove();
+        var errSpan = document.createElement('span');
+        errSpan.setAttribute('data-inline-err', el.id);
+        errSpan.style.cssText = 'display:block;color:#dc2626;font-size:0.78rem;margin-top:3px;font-weight:500;';
+        errSpan.textContent = message;
+        el.parentNode.insertBefore(errSpan, el.nextSibling);
+    }
+
+    function clearInlineError(el) {
+        if (!el) return;
+        el.style.borderColor = '';
+        el.style.outline = '';
+        var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
+        if (existing) existing.remove();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -8003,8 +8180,13 @@ async edit(id) { this.openModal(id); }
             const freeze = !currentlyFrozen;
             let reason = '';
             if (freeze) {
-                reason = (document.getElementById('umFreezeReason') || {}).value || '';
-                if (!reason.trim()) { alert('Please enter a reason for freezing'); return; }
+                const reasonEl = document.getElementById('umFreezeReason');
+                if (reasonEl) clearInlineError(reasonEl);
+                reason = (reasonEl || {}).value || '';
+                if (!reason.trim()) {
+                    if (reasonEl) showInlineError(reasonEl, 'Please enter a reason for freezing');
+                    return;
+                }
             }
             if (!confirm(freeze ? 'Freeze this account?' : 'Unfreeze this account?')) return;
             try {
