@@ -2031,17 +2031,18 @@ function renderVehicles(list) {
 
   grid.innerHTML = available.map(function(v) {
     var avail = parseInt(v.available_units) || 0;
-    var bEnc = encodeURIComponent(v.brand);
-    var mEnc = encodeURIComponent(v.model);
+    var bEnc = encodeURIComponent(v.brand || '');
+    var mEnc = encodeURIComponent(v.model || '');
+    var displayName = ((v.brand || '') + ' ' + (v.model || '')).trim() || 'Unknown Vehicle';
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + displayName + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
       '<div>' +
-      '<h3>' + v.brand + ' ' + v.model + '</h3>' +
+      '<h3>' + displayName + '</h3>' +
       '<div style="display:flex;gap:6px;margin-top:4px;">' +
       '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
       '</div></div>' +
