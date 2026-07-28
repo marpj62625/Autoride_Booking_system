@@ -2489,12 +2489,6 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
         '</div>' +
 
-        // Odometer
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-tachometer-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-odom" style="font-weight:600;">' + (defaultUnit.odometer ? (Number(defaultUnit.odometer).toLocaleString() + ' km') : '0 km') + '</span>' +
-        '</div>' +
-
         // Fuel Level
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
