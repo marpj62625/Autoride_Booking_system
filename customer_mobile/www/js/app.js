@@ -3096,137 +3096,137 @@ function updateBookingPrice() {
     '<div class="price-row total" style="margin-top:4px;"><span>Total</span><span>' + formatPHP(result.total) + '</span></div>' +
     (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
     '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' : '') +
-    '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>' +
-    '<div style="margin-top:20px;padding:0 10px;">' +
-    '<button onclick="submitBooking()" class="btn btn-success btn-lg w-100" style="display:flex;align-items:center;justify-content:center;gap:8px;">' +
-    '<i class="fas fa-check"></i> Confirm Booking' +
-    '</button>' +
-    '</div>';
+    '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
 }
 
 function submitBooking() {
-  var start = document.getElementById('bfStartDate').value;
-  var end = document.getElementById('bfEndDate').value;
-  var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
-  document.getElementById('bfStartErr').textContent = '';
-  document.getElementById('bfEndErr').textContent = '';
-  document.getElementById('bfErr').textContent = '';
-  var startEl = document.getElementById('bfStartDate');
-  var endEl = document.getElementById('bfEndDate');
-  var pickupEl = document.getElementById('bfPickupTime');
+  try {
+    var start = document.getElementById('bfStartDate').value;
+    var end = document.getElementById('bfEndDate').value;
+    var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
+    document.getElementById('bfStartErr').textContent = '';
+    document.getElementById('bfEndErr').textContent = '';
+    document.getElementById('bfErr').textContent = '';
+    var startEl = document.getElementById('bfStartDate');
+    var endEl = document.getElementById('bfEndDate');
+    var pickupEl = document.getElementById('bfPickupTime');
 
-  clearInlineError(startEl);
-  clearInlineError(endEl);
-  clearInlineError(pickupEl);
+    clearInlineError(startEl);
+    clearInlineError(endEl);
+    clearInlineError(pickupEl);
 
-  var dateCheck = validateDateRange(start, end, pickupTime);
-  if (!dateCheck.valid) {
-    if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
-      showInlineError(pickupEl, dateCheck.error);
-    } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
-      showInlineError(startEl, dateCheck.error);
-    } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
-      if (!start && startEl) { showInlineError(startEl, 'Start date is required'); }
-      else if (!end && endEl) { showInlineError(endEl, 'End date is required'); }
-    } else {
-      showInlineError(endEl, dateCheck.error);
-    }
-    return;
-  }
-  var pts = parseInt(document.getElementById('bfPoints').value) || 0;
-  var result = calculateBookingPrice(
-    bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
-    parseInt(appSettings.long_term_discount_days) || 7,
-    parseInt(appSettings.long_term_discount_percent) || 10,
-    0, pts
-  );
-  var payType = document.getElementById('bfPaymentType').value;
-  var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
-  var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
-  var returnLocation, returnProvince, returnMunicipality, returnBarangay;
-
-  if (serviceType === 'pickup') {
-    var pickupSel = document.getElementById('bfPickupLocation');
-    var returnSel = document.getElementById('bfReturnLocation');
-    pickupLocation = pickupSel ? pickupSel.value : '';
-    returnLocation = returnSel ? returnSel.value : '';
-    var pickupData = PICKUP_LOCATIONS.find(function(l) { return l.value === pickupLocation; }) || {};
-    var returnData = PICKUP_LOCATIONS.find(function(l) { return l.value === returnLocation; }) || {};
-    pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
-    returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
-  } else {
-    pickupLocation = [document.getElementById('bfDeliveryBarangay').value, document.getElementById('bfDeliveryMunicipality').value, document.getElementById('bfDeliveryProvince').value].filter(Boolean).join(', ');
-    pickupProvince = sanitizeInput(document.getElementById('bfDeliveryProvince').value);
-    pickupMunicipality = sanitizeInput(document.getElementById('bfDeliveryMunicipality').value);
-    pickupBarangay = sanitizeInput(document.getElementById('bfDeliveryBarangay').value);
-    returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
-  }
-
-  var splitEmail = document.getElementById('bfSplitEmail') ? document.getElementById('bfSplitEmail').value.trim() : '';
-
-  var payload = {
-    user_id: currentUser.id,
-    vehicle_id: bookingFormVehicle.id,
-    start_date: start, end_date: end,
-    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
-    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
-    pickup_location: pickupLocation,
-    pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
-    return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
-    rental_type: document.getElementById('bfRentalType').value,
-    addons: selectedAddons.map(function(a) { return a.name; }),
-    insurance_type: selectedInsurance.type,
-    insurance_price: selectedInsurance.price,
-    base_price: result.basePrice,
-    addon_price: result.addonPrice,
-    total_price: result.total,
-    payment_type: payType,
-    applied_coupon_id: null,
-    discount_amount: result.longTermDiscount,
-    points_redeemed: pts,
-    points_earned: result.pointsEarned,
-    service_type: serviceType,
-    split_with_email: splitEmail || null
-  };
-
-  // Check availability on the server before proceeding
-  var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
-  var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
-  showLoading(true);
-  apiCall('/vehicles/check-availability', {
-    method: 'POST',
-    body: JSON.stringify({
-      vehicle_id: bookingFormVehicle.id,
-      start_date: start,
-      end_date: end
-    })
-  }).then(function(avail) {
-    showLoading(false);
-    restoreBtn();
-    if (!avail.available) {
-      var conflict = avail.conflict || {};
-      var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
-      var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
-        formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
-        '. Next available: ' + nextDate + '.';
-      document.getElementById('bfErr').textContent = msg;
+    var dateCheck = validateDateRange(start, end, pickupTime);
+    if (!dateCheck.valid) {
+      if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
+        showInlineError(pickupEl, dateCheck.error);
+      } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
+        showInlineError(startEl, dateCheck.error);
+      } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
+        if (!start && startEl) { showInlineError(startEl, 'Start date is required'); }
+        else if (!end && endEl) { showInlineError(endEl, 'End date is required'); }
+      } else {
+        showInlineError(endEl, dateCheck.error);
+      }
       return;
     }
-    // Warn if the chosen end_date is close to an upcoming booking
-    if (avail.next_booking) {
-      var nb = avail.next_booking;
-      var nbStart = formatDateDisplay(nb.start_date);
-      showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
+    var pts = parseInt(document.getElementById('bfPoints').value) || 0;
+    var result = calculateBookingPrice(
+      bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
+      parseInt(appSettings.long_term_discount_days) || 7,
+      parseInt(appSettings.long_term_discount_percent) || 10,
+      0, pts
+    );
+    var payType = document.getElementById('bfPaymentType').value;
+    var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
+    var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
+    var returnLocation, returnProvince, returnMunicipality, returnBarangay;
+
+    if (serviceType === 'pickup') {
+      var pickupSel = document.getElementById('bfPickupLocation');
+      var returnSel = document.getElementById('bfReturnLocation');
+      pickupLocation = pickupSel ? pickupSel.value : '';
+      returnLocation = returnSel ? returnSel.value : '';
+      var pickupData = PICKUP_LOCATIONS.find(function(l) { return l.value === pickupLocation; }) || {};
+      var returnData = PICKUP_LOCATIONS.find(function(l) { return l.value === returnLocation; }) || {};
+      pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
+      returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
+    } else {
+      pickupLocation = [document.getElementById('bfDeliveryBarangay').value, document.getElementById('bfDeliveryMunicipality').value, document.getElementById('bfDeliveryProvince').value].filter(Boolean).join(', ');
+      pickupProvince = sanitizeInput(document.getElementById('bfDeliveryProvince').value);
+      pickupMunicipality = sanitizeInput(document.getElementById('bfDeliveryMunicipality').value);
+      pickupBarangay = sanitizeInput(document.getElementById('bfDeliveryBarangay').value);
+      returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
     }
-    // Show rental agreement before submitting
-    showRentalAgreement(payload, result, payType);
-  }).catch(function(err) {
+
+    var splitEmail = document.getElementById('bfSplitEmail') ? document.getElementById('bfSplitEmail').value.trim() : '';
+
+    var payload = {
+      user_id: currentUser.id,
+      vehicle_id: bookingFormVehicle.id,
+      start_date: start, end_date: end,
+      pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
+      return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
+      pickup_location: pickupLocation,
+      pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
+      return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
+      rental_type: document.getElementById('bfRentalType').value,
+      addons: selectedAddons.map(function(a) { return a.name; }),
+      insurance_type: selectedInsurance.type,
+      insurance_price: selectedInsurance.price,
+      base_price: result.basePrice,
+      addon_price: result.addonPrice,
+      total_price: result.total,
+      payment_type: payType,
+      applied_coupon_id: null,
+      discount_amount: result.longTermDiscount,
+      points_redeemed: pts,
+      points_earned: result.pointsEarned,
+      service_type: serviceType,
+      split_with_email: splitEmail || null
+    };
+
+    // Check availability on the server before proceeding
+    var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
+    var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
+    showLoading(true);
+    apiCall('/vehicles/check-availability', {
+      method: 'POST',
+      body: JSON.stringify({
+        vehicle_id: bookingFormVehicle.id,
+        start_date: start,
+        end_date: end
+      })
+    }).then(function(avail) {
+      showLoading(false);
+      restoreBtn();
+      if (!avail.available) {
+        var conflict = avail.conflict || {};
+        var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
+        var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
+          formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
+          '. Next available: ' + nextDate + '.';
+        document.getElementById('bfErr').textContent = msg;
+        return;
+      }
+      // Warn if the chosen end_date is close to an upcoming booking
+      if (avail.next_booking) {
+        var nb = avail.next_booking;
+        var nbStart = formatDateDisplay(nb.start_date);
+        showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
+      }
+      // Show rental agreement before submitting
+      showRentalAgreement(payload, result, payType);
+    }).catch(function(err) {
+      showLoading(false);
+      restoreBtn();
+      // If availability check fails, allow the booking to proceed (server will catch it)
+      console.warn('Availability check failed:', err);
+      showRentalAgreement(payload, result, payType);
+    });
+  } catch (error) {
     showLoading(false);
-    restoreBtn();
-    // If availability check fails, allow the booking to proceed (server will catch it)
-    console.warn('Availability check failed:', err);
-    showRentalAgreement(payload, result, payType);
-  });
+    alert('Booking runtime error: ' + error.message + '\nStack: ' + error.stack);
+  }
 }
 
 // RENTAL AGREEMENT MODAL
