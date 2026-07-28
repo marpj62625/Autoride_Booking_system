@@ -2421,9 +2421,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
         var cardHtml =
         '<div class="card" style="margin-bottom:16px;">' +
-        // Gallery image
-        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+        // Gallery image slideshow wrapper
+        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;position:relative;">' +
+        renderVdGallery(defaultUnit) +
         '</div>' +
         // Title + status
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
@@ -2577,11 +2577,10 @@ function onVdColorChange() {
   }
   if (!unit) return;
 
-  // Update image
-  var imgEl = document.getElementById('vd-img');
-  if (imgEl) {
-    var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
-    imgEl.src = imgSrc;
+  // Update image gallery slideshow
+  var imgWrapEl = document.getElementById('vd-img-wrap');
+  if (imgWrapEl) {
+    imgWrapEl.innerHTML = renderVdGallery(unit);
   }
   // Update specs
   var plateEl = document.getElementById('vd-plate');
@@ -7096,4 +7095,83 @@ function initializePushForUser() {
     }
   } catch (error) {
   }
+}
+
+// Global variables for vehicle details slideshow
+window._vdActiveImgIdx = 0;
+window._vdGalleryImages = [];
+
+function renderVdGallery(unit) {
+  var galleryImages = [];
+  if (unit.gallery && unit.gallery.length) {
+    galleryImages = unit.gallery.map(buildImgUrl);
+  } else if (unit.vehicle_image) {
+    galleryImages = [buildImgUrl(unit.vehicle_image)];
+  }
+  
+  window._vdActiveImgIdx = 0;
+  window._vdGalleryImages = galleryImages;
+
+  if (!galleryImages.length) {
+    return '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+  }
+
+  // Slide wrapper
+  var html = '<div class="vd-slideshow-container" style="position:relative;width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;">';
+  
+  // Image tag
+  html += '<img id="vd-img" src="' + galleryImages[0] + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">';
+
+  // Navigation Arrows (if 2 or more images)
+  if (galleryImages.length > 1) {
+    html += '<button onclick="prevVdImage()" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;z-index:2;transition:background 0.2s;"><i class="fas fa-chevron-left"></i></button>';
+    html += '<button onclick="nextVdImage()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;z-index:2;transition:background 0.2s;"><i class="fas fa-chevron-right"></i></button>';
+    
+    // Pagination Dots
+    html += '<div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2;">';
+    for (var i = 0; i < galleryImages.length; i++) {
+      var activeStyle = i === 0 ? 'background:var(--primary);opacity:1;' : 'background:#fff;opacity:0.6;';
+      html += '<span class="vd-dot" onclick="setVdImage(' + i + ')" style="width:8px;height:8px;border-radius:50%;display:inline-block;cursor:pointer;transition:all 0.2s;' + activeStyle + '"></span>';
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function updateVdSlideshow() {
+  var imgEl = document.getElementById('vd-img');
+  if (!imgEl) return;
+  if (window._vdGalleryImages.length > 0) {
+    imgEl.src = window._vdGalleryImages[window._vdActiveImgIdx];
+  }
+  
+  var dots = document.querySelectorAll('.vd-dot');
+  dots.forEach(function(dot, idx) {
+    if (idx === window._vdActiveImgIdx) {
+      dot.style.background = 'var(--primary)';
+      dot.style.opacity = '1';
+    } else {
+      dot.style.background = '#fff';
+      dot.style.opacity = '0.6';
+    }
+  });
+}
+
+function nextVdImage() {
+  if (!window._vdGalleryImages.length) return;
+  window._vdActiveImgIdx = (window._vdActiveImgIdx + 1) % window._vdGalleryImages.length;
+  updateVdSlideshow();
+}
+
+function prevVdImage() {
+  if (!window._vdGalleryImages.length) return;
+  window._vdActiveImgIdx = (window._vdActiveImgIdx - 1 + window._vdGalleryImages.length) % window._vdGalleryImages.length;
+  updateVdSlideshow();
+}
+
+function setVdImage(idx) {
+  window._vdActiveImgIdx = idx;
+  updateVdSlideshow();
 }

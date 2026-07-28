@@ -2031,17 +2031,18 @@ function renderVehicles(list) {
 
   grid.innerHTML = available.map(function(v) {
     var avail = parseInt(v.available_units) || 0;
-    var bEnc = encodeURIComponent(v.brand);
-    var mEnc = encodeURIComponent(v.model);
+    var bEnc = encodeURIComponent(v.brand || '');
+    var mEnc = encodeURIComponent(v.model || '');
+    var displayName = ((v.brand || '') + ' ' + (v.model || '')).trim() || 'Unknown Vehicle';
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + displayName + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
       '<div>' +
-      '<h3>' + v.brand + ' ' + v.model + '</h3>' +
+      '<h3>' + displayName + '</h3>' +
       '<div style="display:flex;gap:6px;margin-top:4px;">' +
       '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
       '</div></div>' +
@@ -2372,8 +2373,21 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         if (!seenTrans[t]) { seenTrans[t] = true; transmissions.push(t); }
       });
 
-      // Pick a default unit to show initially (prefer Available, fallback to Rented/Booked)
-      var defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
+      // Pick a default unit to show initially (respect chosen color if any, prefer Available, fallback to Rented/Booked)
+      var chosenColor = colorEnc ? decodeURIComponent(colorEnc) : 'all';
+      var defaultUnit = null;
+      if (chosenColor && chosenColor !== 'all') {
+        defaultUnit = availUnits.filter(function(u) {
+          var uColor = u.color_display || u.color || '';
+          return u.status === 'Available' && uColor.toLowerCase() === chosenColor.toLowerCase();
+        })[0] || availUnits.filter(function(u) {
+          var uColor = u.color_display || u.color || '';
+          return uColor.toLowerCase() === chosenColor.toLowerCase();
+        })[0];
+      }
+      if (!defaultUnit) {
+        defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
+      }
       var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(defaultUnit.status) === -1;
       var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
       var imgSrc = (defaultUnit.gallery && defaultUnit.gallery.length) ? buildImgUrl(defaultUnit.gallery[0]) : buildImgUrl(defaultUnit.vehicle_image);
@@ -2383,11 +2397,11 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         return '<option value="' + t + '"' + (t === defaultUnit.transmission ? ' selected' : '') + '>' + t + '</option>';
       }).join('');
 
-      // Build color options for default transmission
-      var defaultTrans = defaultUnit.transmission || transmissions[0];
+      // Build color options from ALL available units (not just default transmission)
+      // so all color variants are always visible in the dropdown
       var seenColors = {};
       var colors = [];
-      availUnits.filter(function(u) { return u.transmission === defaultTrans; }).forEach(function(u) {
+      availUnits.forEach(function(u) {
         var c = u.color_display || u.color || 'Not Specified';
         if (!seenColors[c]) { seenColors[c] = true; colors.push(c); }
       });
@@ -2395,33 +2409,21 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         return '<option value="' + c + '"' + (c === (defaultUnit.color_display || defaultUnit.color) ? ' selected' : '') + '>' + c + '</option>';
       }).join('');
 
-      var cardHtml =
-        '<div class="card" style="margin-bottom:16px;">' +
-        // Gallery image
-        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
-        '</div>' +
-        // Title + status
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-        '<h4 style="font-weight:800;font-size:1rem;margin:0;">' + brand + ' ' + model + '</h4>' +
-        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
-        '</div>' +
-        // Specs grid - Transmission and Color are dropdowns
         // Transmission display: clean span if 1 option, styled select if multiple
         var transHtml = transmissions.length > 1
           ? '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + transOptions + '</select>'
           : '<span id="vd-trans" style="font-weight:600;">' + (defaultUnit.transmission || '-') + '</span>';
 
-        // Color display: clean span if 1 option, styled select if multiple
+        // Color display: always show select dropdown so user can pick any available color
         var colorHtml = colors.length > 1
           ? '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + colorOptions + '</select>'
           : '<span id="vd-color" style="font-weight:600;">' + (defaultUnit.color_display || defaultUnit.color || '-') + '</span>';
 
         var cardHtml =
         '<div class="card" style="margin-bottom:16px;">' +
-        // Gallery image
-        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
-        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+        // Gallery image slideshow wrapper
+        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;position:relative;">' +
+        renderVdGallery(defaultUnit) +
         '</div>' +
         // Title + status
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
@@ -2467,16 +2469,32 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
         '</div>' +
 
-        // Odometer
+        // KM Limit
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-tachometer-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-odom" style="font-weight:600;">' + (defaultUnit.odometer ? (Number(defaultUnit.odometer).toLocaleString() + ' km') : 'N/A') + '</span>' +
+        '<i class="fas fa-road" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-mileage">' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited km' : ((defaultUnit.mileage_km_per_day || 250) + ' km/day')) + '</span>' +
+        '</div>' +
+
+        // Baggage Capacity
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        (function() {
+          var s = parseInt(defaultUnit.seats) || 5;
+          var bags = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
+          return '<i class="fas fa-suitcase-rolling" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+            '<span>' + bags + '</span>';
+        })() +
+        '</div>' +
+
+        // Year Model
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
         '</div>' +
 
         // Fuel Level
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || 'Full Tank') + '</span>' +
+        '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || '-') + '</span>' +
         '</div>' +
 
         '</div>' +
@@ -2529,6 +2547,7 @@ function onVdColorChange() {
   var color = colorEl && colorEl.value ? colorEl.value : (colorEl ? colorEl.textContent : '');
   var unit = null;
   var units = window._vdUnits || [];
+  // 1. Try to find unit matching both color and transmission
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
     var uColor = u.color_display || u.color || 'Not Specified';
@@ -2536,13 +2555,32 @@ function onVdColorChange() {
       unit = u; break;
     }
   }
+  // 2. Fallback: if no unit matches both, find any unit of the chosen color and auto-update transmission
+  if (!unit && color) {
+    for (var i = 0; i < units.length; i++) {
+      var u = units[i];
+      var uColor = u.color_display || u.color || 'Not Specified';
+      if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && uColor === color) {
+        unit = u;
+        // Auto-update transmission dropdown to match this unit
+        if (transEl) {
+          if (transEl.tagName === 'SELECT') { transEl.value = u.transmission; }
+          else { transEl.textContent = u.transmission; }
+        }
+        break;
+      }
+    }
+  }
+  // 3. Last fallback: any available unit
+  if (!unit) {
+    unit = units.filter(function(u) { return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1; })[0];
+  }
   if (!unit) return;
 
-  // Update image
-  var imgEl = document.getElementById('vd-img');
-  if (imgEl) {
-    var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
-    imgEl.src = imgSrc;
+  // Update image gallery slideshow
+  var imgWrapEl = document.getElementById('vd-img-wrap');
+  if (imgWrapEl) {
+    imgWrapEl.innerHTML = renderVdGallery(unit);
   }
   // Update specs
   var plateEl = document.getElementById('vd-plate');
@@ -3259,7 +3297,12 @@ function confirmAndBook() {
       openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
+      var errEl = document.getElementById('bfErr');
+      if (errEl) {
+        errEl.textContent = err.message || 'Booking failed. Please try again.';
+      } else {
+        showToast(err.message || 'Booking failed', 'error');
+      }
     })
     .finally(function() { showLoading(false); restoreBtn(); });
 }
@@ -7052,4 +7095,83 @@ function initializePushForUser() {
     }
   } catch (error) {
   }
+}
+
+// Global variables for vehicle details slideshow
+window._vdActiveImgIdx = 0;
+window._vdGalleryImages = [];
+
+function renderVdGallery(unit) {
+  var galleryImages = [];
+  if (unit.gallery && unit.gallery.length) {
+    galleryImages = unit.gallery.map(buildImgUrl);
+  } else if (unit.vehicle_image) {
+    galleryImages = [buildImgUrl(unit.vehicle_image)];
+  }
+  
+  window._vdActiveImgIdx = 0;
+  window._vdGalleryImages = galleryImages;
+
+  if (!galleryImages.length) {
+    return '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+  }
+
+  // Slide wrapper
+  var html = '<div class="vd-slideshow-container" style="position:relative;width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;">';
+  
+  // Image tag
+  html += '<img id="vd-img" src="' + galleryImages[0] + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">';
+
+  // Navigation Arrows (if 2 or more images)
+  if (galleryImages.length > 1) {
+    html += '<button onclick="prevVdImage()" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;z-index:2;transition:background 0.2s;"><i class="fas fa-chevron-left"></i></button>';
+    html += '<button onclick="nextVdImage()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;z-index:2;transition:background 0.2s;"><i class="fas fa-chevron-right"></i></button>';
+    
+    // Pagination Dots
+    html += '<div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:2;">';
+    for (var i = 0; i < galleryImages.length; i++) {
+      var activeStyle = i === 0 ? 'background:var(--primary);opacity:1;' : 'background:#fff;opacity:0.6;';
+      html += '<span class="vd-dot" onclick="setVdImage(' + i + ')" style="width:8px;height:8px;border-radius:50%;display:inline-block;cursor:pointer;transition:all 0.2s;' + activeStyle + '"></span>';
+    }
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function updateVdSlideshow() {
+  var imgEl = document.getElementById('vd-img');
+  if (!imgEl) return;
+  if (window._vdGalleryImages.length > 0) {
+    imgEl.src = window._vdGalleryImages[window._vdActiveImgIdx];
+  }
+  
+  var dots = document.querySelectorAll('.vd-dot');
+  dots.forEach(function(dot, idx) {
+    if (idx === window._vdActiveImgIdx) {
+      dot.style.background = 'var(--primary)';
+      dot.style.opacity = '1';
+    } else {
+      dot.style.background = '#fff';
+      dot.style.opacity = '0.6';
+    }
+  });
+}
+
+function nextVdImage() {
+  if (!window._vdGalleryImages.length) return;
+  window._vdActiveImgIdx = (window._vdActiveImgIdx + 1) % window._vdGalleryImages.length;
+  updateVdSlideshow();
+}
+
+function prevVdImage() {
+  if (!window._vdGalleryImages.length) return;
+  window._vdActiveImgIdx = (window._vdActiveImgIdx - 1 + window._vdGalleryImages.length) % window._vdGalleryImages.length;
+  updateVdSlideshow();
+}
+
+function setVdImage(idx) {
+  window._vdActiveImgIdx = idx;
+  updateVdSlideshow();
 }
