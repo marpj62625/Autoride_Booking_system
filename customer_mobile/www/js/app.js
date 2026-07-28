@@ -2373,8 +2373,21 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         if (!seenTrans[t]) { seenTrans[t] = true; transmissions.push(t); }
       });
 
-      // Pick a default unit to show initially (prefer Available, fallback to Rented/Booked)
-      var defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
+      // Pick a default unit to show initially (respect chosen color if any, prefer Available, fallback to Rented/Booked)
+      var chosenColor = colorEnc ? decodeURIComponent(colorEnc) : 'all';
+      var defaultUnit = null;
+      if (chosenColor && chosenColor !== 'all') {
+        defaultUnit = availUnits.filter(function(u) {
+          var uColor = u.color_display || u.color || '';
+          return u.status === 'Available' && uColor.toLowerCase() === chosenColor.toLowerCase();
+        })[0] || availUnits.filter(function(u) {
+          var uColor = u.color_display || u.color || '';
+          return uColor.toLowerCase() === chosenColor.toLowerCase();
+        })[0];
+      }
+      if (!defaultUnit) {
+        defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
+      }
       var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(defaultUnit.status) === -1;
       var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
       var imgSrc = (defaultUnit.gallery && defaultUnit.gallery.length) ? buildImgUrl(defaultUnit.gallery[0]) : buildImgUrl(defaultUnit.vehicle_image);
@@ -2532,6 +2545,8 @@ function onVdColorChange() {
   var trans = transEl && transEl.value ? transEl.value : (transEl ? transEl.textContent : '');
   var colorEl = document.getElementById('vd-color');
   var color = colorEl && colorEl.value ? colorEl.value : (colorEl ? colorEl.textContent : '');
+  var unit = null;
+  var units = window._vdUnits || [];
   // 1. Try to find unit matching both color and transmission
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
