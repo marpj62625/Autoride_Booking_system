@@ -99,7 +99,7 @@ function isValidLastFour(s) {
 function formatPHP(value) {
   // Ensure value is a valid number, default to 0 if not
   const num = (value !== null && value !== undefined && !isNaN(Number(value))) ? Number(value) : 0;
-  return '&#8369;' + num.toLocaleString('en-PH', {
+  return '₱' + num.toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });

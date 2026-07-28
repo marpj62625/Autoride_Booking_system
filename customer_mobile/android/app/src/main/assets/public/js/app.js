@@ -2407,13 +2407,34 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
         '</div>' +
         // Specs grid - Transmission and Color are dropdowns
+        // Transmission display: clean span if 1 option, styled select if multiple
+        var transHtml = transmissions.length > 1
+          ? '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + transOptions + '</select>'
+          : '<span id="vd-trans" style="font-weight:600;">' + (defaultUnit.transmission || '-') + '</span>';
+
+        // Color display: clean span if 1 option, styled select if multiple
+        var colorHtml = colors.length > 1
+          ? '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + colorOptions + '</select>'
+          : '<span id="vd-color" style="font-weight:600;">' + (defaultUnit.color_display || defaultUnit.color || '-') + '</span>';
+
+        var cardHtml =
+        '<div class="card" style="margin-bottom:16px;">' +
+        // Gallery image
+        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;">' +
+        '<img id="vd-img" src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+        '</div>' +
+        // Title + status
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<h4 style="font-weight:800;font-size:1rem;margin:0;">' + brand + ' ' + model + '</h4>' +
+        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+        '</div>' +
+        // Specs grid
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
 
-        // Transmission dropdown
+        // Transmission
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-cog" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
-        transOptions + '</select>' +
+        transHtml +
         '</div>' +
 
         // Plate
@@ -2434,17 +2455,28 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<span id="vd-fuel">' + (defaultUnit.fuel_type || '-') + '</span>' +
         '</div>' +
 
-        // Color dropdown
+        // Color
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' +
-        colorOptions + '</select>' +
+        colorHtml +
         '</div>' +
 
         // Location
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
         '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
         '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
+        '</div>' +
+
+        // Odometer
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-tachometer-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-odom" style="font-weight:600;">' + (defaultUnit.odometer ? (Number(defaultUnit.odometer).toLocaleString() + ' km') : 'N/A') + '</span>' +
+        '</div>' +
+
+        // Fuel Level
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || 'Full Tank') + '</span>' +
         '</div>' +
 
         '</div>' +
@@ -2469,9 +2501,10 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
 // Called when transmission dropdown changes - repopulate colors and update card
 function onVdTransChange() {
-  var trans = document.getElementById('vd-trans').value;
+  var transEl = document.getElementById('vd-trans');
+  var trans = transEl && transEl.value ? transEl.value : (transEl ? transEl.textContent : '');
   var availUnits = (window._vdUnits || []).filter(function(u) {
-    return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && u.transmission === trans;
+    return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && (!trans || u.transmission === trans);
   });
   var seenColors = {};
   var colors = [];
@@ -2480,7 +2513,7 @@ function onVdTransChange() {
     if (!seenColors[c]) { seenColors[c] = true; colors.push(c); }
   });
   var colorSel = document.getElementById('vd-color');
-  if (colorSel) {
+  if (colorSel && colorSel.tagName === 'SELECT') {
     colorSel.innerHTML = colors.map(function(c) {
       return '<option value="' + c + '">' + c + '</option>';
     }).join('');
@@ -2490,14 +2523,16 @@ function onVdTransChange() {
 
 // Called when color dropdown changes - update plate, image, book button
 function onVdColorChange() {
-  var trans = document.getElementById('vd-trans') ? document.getElementById('vd-trans').value : '';
-  var color = document.getElementById('vd-color') ? document.getElementById('vd-color').value : '';
+  var transEl = document.getElementById('vd-trans');
+  var trans = transEl && transEl.value ? transEl.value : (transEl ? transEl.textContent : '');
+  var colorEl = document.getElementById('vd-color');
+  var color = colorEl && colorEl.value ? colorEl.value : (colorEl ? colorEl.textContent : '');
   var unit = null;
   var units = window._vdUnits || [];
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
     var uColor = u.color_display || u.color || 'Not Specified';
-    if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && uColor === color && (!trans || u.transmission === trans)) {
+    if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && (!color || uColor === color) && (!trans || u.transmission === trans)) {
       unit = u; break;
     }
   }
@@ -2518,6 +2553,10 @@ function onVdColorChange() {
   if (fuelEl) fuelEl.textContent = unit.fuel_type || '-';
   var locEl = document.getElementById('vd-location');
   if (locEl) locEl.textContent = unit.location || '-';
+  var odomEl = document.getElementById('vd-odom');
+  if (odomEl) odomEl.textContent = unit.odometer ? (Number(unit.odometer).toLocaleString() + ' km') : 'N/A';
+  var fuelLvlEl = document.getElementById('vd-fuel-level');
+  if (fuelLvlEl) fuelLvlEl.textContent = unit.fuel_level || 'Full Tank';
   var rateEl = document.getElementById('vd-rate');
   if (rateEl) rateEl.textContent = formatPHP(unit.daily_rate);
   // Update status badge

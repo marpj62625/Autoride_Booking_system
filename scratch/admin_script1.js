@@ -481,7 +481,7 @@
                             ${imgHtml}
                         </div>
                         <div style="flex:1;min-width:0;">
-                            <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;margin-bottom:1px;">&#8369;${Number(v.daily_rate||0).toLocaleString()}</div>
+                            <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;margin-bottom:1px;">₱${Number(v.daily_rate||0).toLocaleString()}</div>
                             <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.brand||''} ${v.model||''}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-bottom:5px;">${v.plate_number||'NO PLATE'}</div>
                             <span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;">${(v.status||'Unavailable')}</span>
@@ -695,7 +695,7 @@
                 ['Brand', v.brand || '-'], ['Model', v.model || '-'],
                 ['Plate Number', v.plate_number || '-'], ['Type', v.vehicle_type || '-'],
                 ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
-                ['Seats', v.seats || '-'], ['Daily Rate', '&#8369;' + Number(v.daily_rate||0).toLocaleString()],
+                ['Seats', v.seats || '-'], ['Daily Rate', '₱' + Number(v.daily_rate||0).toLocaleString()],
                 ['Location', v.location || '-'], ['Status', v.status || '-'],
                 ['Color', v.color_display || '-'], ['Year', v.year || '-'],
             ];
@@ -1043,7 +1043,7 @@ async edit(id) { this.openModal(id); }
                     </div>
                     <div style="padding-top: 16px; border-top: 1px solid var(--border);">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">&#8369;${parseFloat(b.total_price||0).toLocaleString()}</div>
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">₱${parseFloat(b.total_price||0).toLocaleString()}</div>
                             <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; font-weight: 700; border-radius: 10px;">
                                 <i class="fas fa-eye" style="margin-right:4px;"></i>Details
                             </button>
@@ -1125,7 +1125,7 @@ async edit(id) { this.openModal(id); }
                     <div style="padding-top: 16px; border-top: 1px solid var(--border);">
                         <!-- Price row -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${parseFloat(b.total_price || 0).toLocaleString()}</div>
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${parseFloat(b.total_price || 0).toLocaleString()}</div>
                             <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 8px 14px; font-size: 0.72rem; border-radius: 10px; font-weight: 700;">
                                 <i class="fas fa-eye" style="margin-right:4px;"></i>Details
                             </button>
@@ -1184,7 +1184,7 @@ async edit(id) { this.openModal(id); }
             if (!b) { console.error('Booking not found:', id); return; }
 
             const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : 'N/A';
-            const fmtMoney = v => '&#8369;' + parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+            const fmtMoney = v => '₱' + parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 
             const statusStyles = {
                 'pending':   { bg:'#fef9c3', color:'#854d0e', border:'#fde047' },
@@ -2840,7 +2840,7 @@ async edit(id) { this.openModal(id); }
                         <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${b.car || b.vehicle || 'N/A'}</td>
                         <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${rentalDates}</td>
                         <td style="padding: 12px 10px; font-size: 0.8rem; color: var(--text-secondary);">${completionDateStr}</td>
-                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">&#8369;${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">₱${totalPrice}</td>
                         <td style="padding: 12px 10px; text-align: center;">
                             <button onclick="Bookings.view(${b.id})" style="padding: 6px 12px; background: var(--primary); border: none; color: white; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
                                 <i class="fas fa-eye" style="margin-right: 4px;"></i> View
@@ -2985,7 +2985,7 @@ async edit(id) { this.openModal(id); }
                                 <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Current End</div><div style="font-weight:700;color:var(--text-main);">${e.original_end_date}</div></div>
                                 <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Requested End</div><div style="font-weight:700;color:#f59e0b;">${e.new_end_date}</div></div>
                                 <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Extension</div><div style="font-weight:700;color:var(--text-main);">${e.extension_days} day${e.extension_days !== 1 ? 's' : ''}</div></div>
-                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Amount Paid</div><div style="font-weight:800;color:#00B14F;">&#8369;${parseFloat(e.extension_price||0).toLocaleString()}</div></div>
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Amount Paid</div><div style="font-weight:800;color:#00B14F;">₱${parseFloat(e.extension_price||0).toLocaleString()}</div></div>
                             </div>
                             <div style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);">Method: <span style="color:var(--text-main);font-weight:600;">${e.payment_method || 'N/A'}</span>${e.reference_number ? ' &bull; Ref: ' + e.reference_number : ''}</div>
                             ${e.payment_proof_url ? `<img src="${e.payment_proof_url}" style="width:100%;border-radius:8px;margin-top:8px;max-height:150px;object-fit:contain;background:rgba(0,0,0,0.2);">` : ''}
@@ -3375,7 +3375,7 @@ async edit(id) { this.openModal(id); }
                             <div style="font-size:0.65rem;color:var(--text-muted);">${c.booking_count} bookings</div>
                         </div>
                     </div>
-                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">&#8369;${(c.revenue||0).toLocaleString()}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">₱${(c.revenue||0).toLocaleString()}</span>
                 </div>
             `).join('');
         },
@@ -3606,7 +3606,7 @@ async edit(id) { this.openModal(id); }
                     <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">${c.booking_count}</span>
                 </td>
                 <td style="padding: 16px 8px; text-align: right;">
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${c.revenue.toLocaleString()}</span>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${c.revenue.toLocaleString()}</span>
                 </td>
             </tr>
         `).join('');
@@ -3991,7 +3991,7 @@ async edit(id) { this.openModal(id); }
                         <div style="margin-top:8px;">
                             <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
                                 ${p.method || 'Payment'}${p.reference_number ? ' &bull; ' + p.reference_number : ''}
-                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
+                                <span style="float:right;color:#00B14F;font-weight:700;">₱${parseFloat(p.amount||0).toLocaleString()}</span>
                             </div>
                             <img src="${p.payment_proof_url}" onclick="window.open('${p.payment_proof_url}','_blank')"
                                 style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;max-height:180px;object-fit:contain;background:rgba(0,0,0,0.3);">
@@ -4099,7 +4099,7 @@ async edit(id) { this.openModal(id); }
                         <div style="margin-bottom:8px;">
                             <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
                                 ${p.method||'Payment'}${p.reference_number?' &bull; '+p.reference_number:''}
-                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+                                <span style="float:right;color:#00B14F;font-weight:700;">₱${fmt(p.amount)}</span>
                             </div>
                             <img src="${p.payment_proof_url}" style="width:100%;border-radius:8px;max-height:200px;object-fit:contain;background:rgba(0,0,0,0.3);">
                         </div>
@@ -4131,7 +4131,7 @@ async edit(id) { this.openModal(id); }
                     <div style="font-size:0.65rem;color:rgba(255,255,255,0.4);text-transform:uppercase;margin-bottom:8px;">Payment</div>
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.3);border-radius:10px;">
                         <span style="font-weight:800;color:white;">Total Amount</span>
-                        <span style="font-weight:900;color:#00B14F;font-size:1.1rem;">&#8369;${fmt(b.total_price)}</span>
+                        <span style="font-weight:900;color:#00B14F;font-size:1.1rem;">₱${fmt(b.total_price)}</span>
                     </div>
                     <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
                         <span>Payment: <span style="color:${b.payment_status==='paid'?'#4ade80':'#fbbf24'};font-weight:700;">${(b.payment_status||'pending').toUpperCase()}</span></span>
@@ -4140,7 +4140,7 @@ async edit(id) { this.openModal(id); }
                         <div style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                                 <span style="font-size:0.72rem;color:rgba(255,255,255,0.5);">${p.method||'Payment'}</span>
-                                <span style="font-size:0.75rem;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+                                <span style="font-size:0.75rem;color:#00B14F;font-weight:700;">₱${fmt(p.amount)}</span>
                             </div>
                             ${p.reference_number ? `<div style="font-size:0.78rem;color:white;font-weight:600;">Ref #: <span style="color:#a5f3fc;font-family:monospace;">${p.reference_number}</span></div>` : ''}
                             <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-top:2px;">Status: ${(p.status||'pending').toUpperCase()}</div>
@@ -4560,7 +4560,7 @@ async edit(id) { this.openModal(id); }
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Completed</div>
                 </div>
                 <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:12px;text-align:center;">
-                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">&#8369;${(u.total_spent||0).toLocaleString()}</div>
+                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">₱${(u.total_spent||0).toLocaleString()}</div>
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Spent</div>
                 </div>
             </div>

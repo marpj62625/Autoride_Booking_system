@@ -415,7 +415,7 @@
                             ${imgHtml}
                         </div>
                         <div style="flex:1;min-width:0;">
-                            <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;margin-bottom:1px;">&#8369;${Number(v.daily_rate||0).toLocaleString()}</div>
+                            <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;margin-bottom:1px;">₱${Number(v.daily_rate||0).toLocaleString()}</div>
                             <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.brand||''} ${v.model||''}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-bottom:5px;">${v.plate_number||'NO PLATE'}</div>
                             <span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;">${(v.status||'Unavailable')}</span>
@@ -909,7 +909,7 @@
                     </div>
  
                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--border);">
-                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
+                        <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${b.total_price ? b.total_price.toLocaleString() : '0'}</div>
                         <div style="display: flex; gap: 8px;">
                             <button onclick="Bookings.view(${b.id})" class="btn-outline" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 12px; min-width: 70px;">Details</button>
                             
@@ -1111,7 +1111,7 @@
                         </div>
                         <div>
                             <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Total Price</label>
-                            <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 6px;">&#8369;${b.total_price ? b.total_price.toFixed(2) : '0.00'}</div>
+                            <div style="font-weight: 600; color: #0f172a; font-size: 0.95rem; margin-top: 6px;">₱${b.total_price ? b.total_price.toFixed(2) : '0.00'}</div>
                         </div>
                         <div>
                             <label style="color: #64748b; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">Booking Status</label>
@@ -2636,7 +2636,7 @@
                             <div style="font-size:0.65rem;color:var(--text-muted);">${c.booking_count} bookings</div>
                         </div>
                     </div>
-                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">&#8369;${(c.revenue||0).toLocaleString()}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">₱${(c.revenue||0).toLocaleString()}</span>
                 </div>
             `).join('');
         },
@@ -2730,7 +2730,7 @@
             const totalRev = data.totalRevenue || 0;
             const totalBook = data.totalBookings || 0;
             const tableRows = (data.topVehicles || []).map((c, i) =>
-                '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">&#8369;' + (c.revenue||0).toLocaleString() + '</td></tr>'
+                '<tr><td style="border:1px solid #ddd;padding:8px;color:#000;">' + (i+1) + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.brand + ' ' + c.model + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">' + c.booking_count + '</td><td style="border:1px solid #ddd;padding:8px;color:#000;">₱' + (c.revenue||0).toLocaleString() + '</td></tr>'
             ).join('');
 
             // Build HTML report content
@@ -2739,7 +2739,7 @@
             htmlReport += '</head><body>';
             htmlReport += '<h1>Autoride Sales Report</h1>';
             htmlReport += '<p>Generated: ' + new Date().toLocaleString() + '</p>';
-            htmlReport += '<p><strong>Total Revenue:</strong> &#8369;' + totalRev.toLocaleString() + '</p>';
+            htmlReport += '<p><strong>Total Revenue:</strong> ₱' + totalRev.toLocaleString() + '</p>';
             htmlReport += '<p><strong>Total Bookings:</strong> ' + totalBook + '</p>';
             htmlReport += '<table><thead><tr><th>#</th><th>Vehicle</th><th>Bookings</th><th>Revenue</th></tr></thead>';
             htmlReport += '<tbody>' + tableRows + '</tbody></table>';
@@ -2914,7 +2914,7 @@
                     <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">${c.booking_count}</span>
                 </td>
                 <td style="padding: 16px 8px; text-align: right;">
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${c.revenue.toLocaleString()}</span>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${c.revenue.toLocaleString()}</span>
                 </td>
             </tr>
         `).join('');
@@ -3745,7 +3745,7 @@
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Completed</div>
                 </div>
                 <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:12px;text-align:center;">
-                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">&#8369;${(u.total_spent||0).toLocaleString()}</div>
+                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">₱${(u.total_spent||0).toLocaleString()}</div>
                     <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Spent</div>
                 </div>
             </div>

@@ -6758,7 +6758,7 @@
 
 
 
-                <div class="value" id="repAvgRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
+                <div class="value" id="repAvgRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">₱0</div>
 
 
 
@@ -6790,7 +6790,7 @@
 
 
 
-                <div class="value" id="repTotalRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">&#8369;0</div>
+                <div class="value" id="repTotalRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">₱0</div>
 
 
 
@@ -8010,7 +8010,7 @@
 
                     <!-- Daily Rate - half width -->
                     <div>
-                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (&#8369;)</label>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Daily Rate (₱)</label>
                         <input type="number" id="vRate" placeholder="e.g. 2500" required
                             style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                     </div>
@@ -10944,7 +10944,7 @@
                         </div>
                         <div style="flex:1;min-width:0;">
                             <div style="display:flex;align-items:center;justify-space-between;margin-bottom:2px;">
-                                <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;">&#8369;${Number(v.daily_rate||0).toLocaleString()}</div>
+                                <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;">₱${Number(v.daily_rate||0).toLocaleString()}</div>
                                 <div style="display:flex;align-items:center;gap:3px;">${transBadge}${fuelBadge}</div>
                             </div>
                             <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.brand||''} ${v.model||''}</div>
@@ -11728,7 +11728,7 @@
                 ['Brand', v.brand || '-'], ['Model', v.model || '-'],
                 ['Plate Number', v.plate_number || '-'], ['Type', v.vehicle_type || '-'],
                 ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
-                ['Seats', v.seats || '-'], ['Daily Rate', '&#8369;' + Number(v.daily_rate||0).toLocaleString()],
+                ['Seats', v.seats || '-'], ['Daily Rate', '₱' + Number(v.daily_rate||0).toLocaleString()],
                 ['Location', v.location || '-'], ['Status', v.status || '-'],
                 ['Color', v.color || v.color_display || '-'], ['Year Model', v.year_model || v.year || '-'],
                 ['Odometer', v.odometer ? (Number(v.odometer).toLocaleString() + ' km') : '0 km'],
@@ -13070,7 +13070,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">&#8369;${parseFloat(b.total_price||0).toLocaleString()}</div>
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success);">₱${parseFloat(b.total_price||0).toLocaleString()}</div>
 
 
 
@@ -13347,7 +13347,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${parseFloat(b.total_price || 0).toLocaleString()}</div>
+                            <div style="font-size: 1.2rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${parseFloat(b.total_price || 0).toLocaleString()}</div>
 
 
 
@@ -13507,7 +13507,7 @@ async edit(id) { this.openModal(id); }
             if (!b) { console.error('Booking not found:', id); return; }
 
             const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : 'N/A';
-            const fmtMoney = v => '&#8369;' + parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+            const fmtMoney = v => '₱' + parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
 
             const statusStyles = {
                 'pending':   { bg:'#fef9c3', color:'#854d0e', border:'#fde047' },
@@ -18916,7 +18916,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">&#8369;${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 700; color: var(--success);">₱${totalPrice}</td>
 
 
 
@@ -19496,7 +19496,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Amount Paid</div><div style="font-weight:800;color:#00B14F;">&#8369;${parseFloat(e.extension_price||0).toLocaleString()}</div></div>
+                                <div><div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Amount Paid</div><div style="font-weight:800;color:#00B14F;">₱${parseFloat(e.extension_price||0).toLocaleString()}</div></div>
 
 
 
@@ -20492,7 +20492,7 @@ async edit(id) { this.openModal(id); }
                         </div>
                         <div style="text-align:right;">
                             <div style="font-size:0.72rem;color:var(--text-muted);font-weight:700;">Amount Paid</div>
-                            <div style="font-size:1rem;font-weight:900;color:${accentColor};">&#8369;${type === 'done' ? amount : refundAmt}</div>
+                            <div style="font-size:1rem;font-weight:900;color:${accentColor};">₱${type === 'done' ? amount : refundAmt}</div>
                         </div>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -21210,7 +21210,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">&#8369;${(c.revenue||0).toLocaleString()}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:var(--success);">₱${(c.revenue||0).toLocaleString()}</span>
 
 
 
@@ -22136,7 +22136,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">&#8369;${c.revenue.toLocaleString()}</span>
+                    <span style="font-size: 0.95rem; font-weight: 900; color: var(--success); letter-spacing: -0.5px;">₱${c.revenue.toLocaleString()}</span>
 
 
 
@@ -23648,7 +23648,7 @@ async edit(id) { this.openModal(id); }
                         <div style="margin-top:8px;">
                             <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
                                 ${p.method || 'Payment'}${p.reference_number ? ' &bull; ' + p.reference_number : ''}
-                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
+                                <span style="float:right;color:#00B14F;font-weight:700;">₱${parseFloat(p.amount||0).toLocaleString()}</span>
                             </div>
                             <img src="${p.payment_proof_url}" onclick="window.open('${p.payment_proof_url}','_blank')"
                                 style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;max-height:180px;object-fit:contain;background:rgba(0,0,0,0.3);">
@@ -23965,7 +23965,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                                <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+                                <span style="float:right;color:#00B14F;font-weight:700;">₱${fmt(p.amount)}</span>
 
 
 
@@ -24093,7 +24093,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                        <span style="font-weight:900;color:#00B14F;font-size:1.1rem;">&#8369;${fmt(b.total_price)}</span>
+                        <span style="font-weight:900;color:#00B14F;font-size:1.1rem;">₱${fmt(b.total_price)}</span>
 
 
 
@@ -24129,7 +24129,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                                <span style="font-size:0.75rem;color:#00B14F;font-weight:700;">&#8369;${fmt(p.amount)}</span>
+                                <span style="font-size:0.75rem;color:#00B14F;font-weight:700;">₱${fmt(p.amount)}</span>
 
 
 
@@ -26069,7 +26069,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">&#8369;${(u.total_spent||0).toLocaleString()}</div>
+                    <div style="font-size:1rem;font-weight:900;color:var(--amber);">₱${(u.total_spent||0).toLocaleString()}</div>
 
 
 
