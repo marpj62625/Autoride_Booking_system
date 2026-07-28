@@ -3264,7 +3264,12 @@ function confirmAndBook() {
       openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
+      var errEl = document.getElementById('bfErr');
+      if (errEl) {
+        errEl.textContent = err.message || 'Booking failed. Please try again.';
+      } else {
+        showToast(err.message || 'Booking failed', 'error');
+      }
     })
     .finally(function() { showLoading(false); restoreBtn(); });
 }
