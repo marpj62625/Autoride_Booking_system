@@ -5123,161 +5123,118 @@ def mark_no_show(booking_id):
 
 
 @app.route('/inspections/submit', methods=['POST'])
-
 def submit_inspection():
-
     """Submit a vehicle inspection (pickup or return)."""
-
     try:
-
-        # Handle Multipart Form (for images)
-
         booking_id = request.form.get('booking_id')
-
         inspection_type = request.form.get('inspection_type') # 'pickup' or 'return'
-
         mileage = request.form.get('mileage')
-
         fuel_level = request.form.get('fuel_level')
-
         notes = request.form.get('notes')
-
         inspector_id = request.form.get('inspector_id')
-
         
-
         if not booking_id or not inspection_type:
-
             return jsonify({"error": "Missing required fields"}), 400
-
-
-
-        photo_urls = []
-
-        # Handle multiple photo uploads
-
-        if 'photos' in request.files:
-
-            files = request.files.getlist('photos')
-
-            for file in files:
-
-                if file.filename != '':
-
-                    filename = f"inspect_{booking_id}_{inspection_type}_{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
-
-                    
-
-                    # Upload to Supabase Storage
-
-                    file_data = file.read()
-
-                    supabase.storage.from_('uploads').upload(
-
-                        path=filename,
-
-                        file=file_data,
-
-                        file_options={"content-type": file.content_type}
-
-                    )
-
-                    url = supabase.storage.from_('uploads').get_public_url(filename)
-
-                    photo_urls.append(url)
-
-
 
         cur = get_cursor()
 
-        
+        # Fetch booking details first to validate status & dates
+        cur.execute("SELECT start_date, pickup_time, vehicle_id, status FROM bookings WHERE id = %s", (booking_id,))
+        bk = cur.fetchone()
+        if not bk:
+            return jsonify({"error": "Booking not found."}), 404
 
-        # Save to database
+        b_status = (bk.get('status') or '').strip().lower()
 
-        import json
+        # Guard: Cannot inspect cancelled or no-show bookings
+        if b_status in ('cancelled', 'no show', 'noshow', 'rejected'):
+            return jsonify({"error": f"Cannot submit inspection for a booking marked as '{bk.get('status')}'. Please update booking status first."}), 400
 
-        cur.execute("""
-
-            INSERT INTO vehicle_inspections (booking_id, inspection_type, photos, mileage, fuel_level, notes, inspector_id)
-
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-
-            RETURNING id
-
-        """, (booking_id, inspection_type, json.dumps(photo_urls), mileage, fuel_level, notes, inspector_id))
-
-        
-
-        inspection_id = cur.fetchone()['id']
-
-        
-
-        # Auto-update booking and vehicle status based on inspection type
+        from datetime import datetime, timezone, timedelta, date
+        PH = timezone(timedelta(hours=8))
+        now_ph = datetime.now(tz=PH)
 
         if inspection_type == 'pickup':
-
             # ── Guard 1: pickup datetime not yet reached (allow 1 hour before) ──
-            cur.execute("SELECT start_date, pickup_time, vehicle_id FROM bookings WHERE id = %s", (booking_id,))
-            bk = cur.fetchone()
-            if not bk:
-                return jsonify({"error": "Booking not found."}), 404
-
-            from datetime import datetime, timezone, timedelta
-            PH = timezone(timedelta(hours=8))
-            now_ph = datetime.now(tz=PH)
-
             pickup_date = bk['start_date']
-            if hasattr(pickup_date, 'date'):
+            if isinstance(pickup_date, str):
+                try:
+                    pickup_date = datetime.strptime(pickup_date[:10], '%Y-%m-%d').date()
+                except Exception:
+                    pickup_date = None
+            elif hasattr(pickup_date, 'date'):
                 pickup_date = pickup_date.date()
 
-            pickup_time_str = bk.get('pickup_time') or '06:00'
-            try:
-                ph_hour, ph_min = map(int, pickup_time_str.split(':'))
-            except Exception:
-                ph_hour, ph_min = 6, 0
+            if pickup_date:
+                pickup_time_str = bk.get('pickup_time') or '06:00'
+                try:
+                    ph_hour, ph_min = map(int, pickup_time_str.split(':'))
+                except Exception:
+                    ph_hour, ph_min = 6, 0
 
-            pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
-            allow_from = pickup_dt - timedelta(hours=1)
+                pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
+                allow_from = pickup_dt - timedelta(hours=1)
 
-            if now_ph < allow_from:
-                fmt_time = pickup_dt.strftime('%I:%M %p')
-                fmt_allow = allow_from.strftime('%I:%M %p')
-                return jsonify({
-                    "error": f"Pickup inspection can be done starting at {fmt_allow} (1 hour before scheduled pickup on {pickup_dt.strftime('%B %d, %Y')} at {fmt_time})."
-                }), 409
-
+                if now_ph < allow_from:
+                    fmt_time = pickup_dt.strftime('%I:%M %p')
+                    fmt_allow = allow_from.strftime('%I:%M %p')
+                    return jsonify({
+                        "error": f"Pickup inspection can be done starting at {fmt_allow} (1 hour before scheduled pickup on {pickup_dt.strftime('%B %d, %Y')} at {fmt_time})."
+                    }), 409
 
             # ── Guard 2: same vehicle already picked up by another booking ─
             vehicle_id = bk['vehicle_id']
-            cur.execute("""
-                SELECT id FROM bookings
-                WHERE vehicle_id = %s
-                  AND id != %s
-                  AND LOWER(status) IN ('picked up', 'ongoing')
-            """, (vehicle_id, booking_id))
-            conflict = cur.fetchone()
-            if conflict:
-                return jsonify({
-                    "error": f"This vehicle is currently in use by Booking #{conflict['id']}. It must be returned first before it can be picked up for another booking."
-                }), 409
+            if vehicle_id:
+                cur.execute("""
+                    SELECT id FROM bookings
+                    WHERE vehicle_id = %s
+                      AND id != %s
+                      AND LOWER(status) IN ('picked up', 'ongoing')
+                """, (vehicle_id, booking_id))
+                conflict = cur.fetchone()
+                if conflict:
+                    return jsonify({
+                        "error": f"This vehicle is currently in use by Booking #{conflict['id']}. It must be returned first before it can be picked up for another booking."
+                    }), 409
 
-            # Mark booking as Picked Up and vehicle as Rented
+        # Handle photos upload
+        photo_urls = []
+        if 'photos' in request.files:
+            files = request.files.getlist('photos')
+            for file in files:
+                if file.filename != '':
+                    filename = f"inspect_{booking_id}_{inspection_type}_{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
+                    file_data = file.read()
+                    supabase.storage.from_('uploads').upload(
+                        path=filename,
+                        file=file_data,
+                        file_options={"content-type": file.content_type}
+                    )
+                    url = supabase.storage.from_('uploads').get_public_url(filename)
+                    photo_urls.append(url)
+
+        # Save to database only after all guards pass
+        import json
+        cur.execute("""
+            INSERT INTO vehicle_inspections (booking_id, inspection_type, photos, mileage, fuel_level, notes, inspector_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (booking_id, inspection_type, json.dumps(photo_urls), mileage, fuel_level, notes, inspector_id))
+        
+        inspection_id = cur.fetchone()['id']
+
+        # Auto-update booking and vehicle status based on inspection type
+        vehicle_id = bk['vehicle_id']
+        if inspection_type == 'pickup':
             cur.execute("UPDATE bookings SET status = 'Picked Up' WHERE id = %s", (booking_id,))
-            cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (vehicle_id,))
-
+            if vehicle_id:
+                cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (vehicle_id,))
         elif inspection_type == 'return':
-
-            # Mark booking as Completed and vehicle as Available
-
             cur.execute("UPDATE bookings SET status = 'Completed' WHERE id = %s", (booking_id,))
-
-            cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)", (booking_id,))
+            if vehicle_id:
+                cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (vehicle_id,))
 
         # ── Auto-update Vehicle Master Odometer and Fuel Level ──
-        cur.execute("SELECT vehicle_id FROM bookings WHERE id = %s", (booking_id,))
-        bk_row = cur.fetchone()
-        vehicle_id = bk_row['vehicle_id'] if bk_row else None
-        
         distance_driven = None
         if vehicle_id:
             try:
@@ -5289,7 +5246,6 @@ def submit_inspection():
             except Exception as _ve:
                 print(f"[submit_inspection] Vehicle master update warning: {_ve}")
 
-            # If return inspection, calculate distance driven from pickup inspection
             if inspection_type == 'return':
                 try:
                     cur.execute("SELECT mileage FROM vehicle_inspections WHERE booking_id = %s AND inspection_type = 'pickup' ORDER BY id DESC LIMIT 1", (booking_id,))
@@ -5316,11 +5272,8 @@ def submit_inspection():
         return jsonify(res_payload), 201
 
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals(): cur.close()
 
 
