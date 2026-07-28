@@ -23544,56 +23544,89 @@ async edit(id) { this.openModal(id); }
 
 
 
-        openModal(bookingId, type) {
-
-
-
-            const b = Bookings.data.find(x => x.id === bookingId);
-
-
-
+        async openModal(bookingId, type) {
+            let b = (Bookings.data || []).find(x => String(x.id) === String(bookingId));
+            if (!b) {
+                try {
+                    const bRes = await fetch(`${API_BASE}/api/bookings/${bookingId}`);
+                    if (bRes.ok) b = await bRes.json();
+                } catch(e) {}
+            }
             if (!b) return;
 
-
-
-
-
-
-
             // Reset first, then set values (order matters!)
-
-
-
             document.getElementById('inspectionForm').reset();
-
-
-
             this.currentPhotos = [];
-
-
-
             document.getElementById('inspectPhotoPreview').innerHTML = '';
+            document.getElementById('inspectProofImages').innerHTML = '';
 
-
-
-            document.getElementById('inspectProofImages').innerHTML = '';            document.getElementById('inspectBookingId').value = bookingId;
+            document.getElementById('inspectBookingId').value = bookingId;
             document.getElementById('inspectType').value = type;
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
-            document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
+            document.getElementById('inspectSubtitle').textContent = `Car: ${b.car || b.vehicle_name || ''}`;
 
-            // Pre-fill initial Odometer and Fuel Level from Vehicle Master
-            const veh = (typeof Vehicles !== 'undefined' && Vehicles.data) ? Vehicles.data.find(v => v.id === b.vehicle_id) : null;
-            const currentOdom = veh ? (veh.odometer || 0) : 0;
-            const currentFuel = veh ? (veh.fuel_level || 'Full Tank') : 'Full Tank';
+            // Pre-fill initial Odometer and Fuel Level from Vehicle Master with robust lookup
+            let veh = null;
+            if (typeof Vehicles !== 'undefined' && Array.isArray(Vehicles.data) && Vehicles.data.length > 0) {
+                veh = Vehicles.data.find(v => 
+                    (b.vehicle_id && String(v.id) === String(b.vehicle_id)) ||
+                    (b.car_id && String(v.id) === String(b.car_id)) ||
+                    (b.plate_number && v.plate_number && String(v.plate_number).toLowerCase().trim() === String(b.plate_number).toLowerCase().trim()) ||
+                    (b.car && v.plate_number && String(b.car).toLowerCase().includes(String(v.plate_number).toLowerCase().trim())) ||
+                    (b.car && (v.brand + ' ' + v.model).toLowerCase().trim() === String(b.car).toLowerCase().trim())
+                );
+            }
+
+            // API fallback if vehicle not found in client cache
+            if (!veh || veh.odometer === undefined || veh.odometer === null) {
+                try {
+                    const targetId = b.vehicle_id || b.car_id;
+                    if (targetId) {
+                        const vRes = await fetch(`${API_BASE}/api/vehicles/${targetId}`);
+                        if (vRes.ok) veh = await vRes.json();
+                    }
+                    if (!veh) {
+                        const vResAll = await fetch(`${API_BASE}/api/vehicles`);
+                        if (vResAll.ok) {
+                            const vData = await vResAll.json();
+                            const allVeh = Array.isArray(vData) ? vData : (vData.vehicles || []);
+                            veh = allVeh.find(v => 
+                                (b.vehicle_id && String(v.id) === String(b.vehicle_id)) ||
+                                (b.car_id && String(v.id) === String(b.car_id)) ||
+                                (b.plate_number && v.plate_number && String(v.plate_number).toLowerCase().trim() === String(b.plate_number).toLowerCase().trim()) ||
+                                (b.car && v.plate_number && String(b.car).toLowerCase().includes(String(v.plate_number).toLowerCase().trim()))
+                            );
+                        }
+                    }
+                } catch(e) { console.warn('Vehicle fetch fallback error:', e); }
+            }
+
+            const currentOdom = (veh && veh.odometer !== undefined && veh.odometer !== null) ? veh.odometer : 0;
+            const currentFuel = (veh && veh.fuel_level) ? veh.fuel_level : 'Full Tank';
 
             const mileageEl = document.getElementById('inspectMileage');
             if (mileageEl) mileageEl.value = currentOdom;
 
             const fuelEl = document.getElementById('inspectFuel');
             if (fuelEl) {
-                const options = Array.from(fuelEl.options).map(o => o.value);
-                if (options.includes(currentFuel)) {
-                    fuelEl.value = currentFuel;
+                let matched = false;
+                const cFuelLower = String(currentFuel).toLowerCase().trim();
+                for (let opt of fuelEl.options) {
+                    const optValLower = opt.value.toLowerCase().trim();
+                    if (optValLower === cFuelLower ||
+                        (cFuelLower.includes('full') && optValLower.includes('full')) ||
+                        (cFuelLower.includes('3/4') && optValLower.includes('3/4')) ||
+                        (cFuelLower.includes('half') && (optValLower.includes('half') || optValLower.includes('1/2'))) ||
+                        (cFuelLower.includes('1/2') && (optValLower.includes('half') || optValLower.includes('1/2'))) ||
+                        (cFuelLower.includes('1/4') && optValLower.includes('1/4')) ||
+                        (cFuelLower.includes('reserve') && optValLower.includes('reserve'))) {
+                        fuelEl.value = opt.value;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched && fuelEl.options.length > 0) {
+                    fuelEl.selectedIndex = 0;
                 }
             }
 
