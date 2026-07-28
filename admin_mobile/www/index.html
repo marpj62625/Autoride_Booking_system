@@ -2120,6 +2120,40 @@
                         </select>
                     </div>
 
+                    <!-- Odometer (km) -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Odometer (km)</label>
+                        <input type="number" id="vOdometer" value="0" placeholder="e.g. 15000" min="0" step="1"
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                    </div>
+
+                    <!-- Fuel Level -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Fuel Level</label>
+                        <select id="vFuelLevel" required
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
+                            <option value="Full Tank">Full Tank</option>
+                            <option value="3/4 Tank">3/4 Tank</option>
+                            <option value="Half Tank">Half Tank</option>
+                            <option value="1/4 Tank">1/4 Tank</option>
+                            <option value="Reserve / Low">Reserve / Low</option>
+                        </select>
+                    </div>
+
+                    <!-- Next Service Schedule -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Next Service / PMS</label>
+                        <input type="date" id="vNextService"
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                    </div>
+
+                    <!-- LTO Expiry Date -->
+                    <div>
+                        <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">LTO Expiry Date</label>
+                        <input type="date" id="vLtoExpiry"
+                            style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                    </div>
+
                     <!-- Status - full width -->
                     <div style="grid-column:span 2;">
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Status</label>
@@ -2127,8 +2161,10 @@
                             style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;">
                             <option value="Available">Available</option>
                             <option value="Booked">Booked</option>
+                            <option value="Rented">Rented</option>
                             <option value="Maintenance">Maintenance</option>
                             <option value="Repair">Repair</option>
+                            <option value="Unavailable">Unavailable</option>
                         </select>
                     </div>
 
@@ -3529,28 +3565,47 @@
             const statusColor = s => {
                 switch ((s||'').toLowerCase()) {
                     case 'available':   return '#00B14F';
-                    case 'rented':      return '#00B14F';
+                    case 'rented':      return '#3b82f6';
+                    case 'booked':      return '#8b5cf6';
                     case 'maintenance': return '#f59e0b';
-                    default:            return '#ef4444';
+                    case 'repair':      return '#ef4444';
+                    default:            return '#64748b';
                 }
             };
 
             listContainer.innerHTML = `<ul style="list-style:none;margin:0;padding:0;">` +
                 vehicles.map((v, i) => {
                     const sc = statusColor(v.status);
-                    const imgHtml = v.vehicle_image
-                        ? `<img src="${v.vehicle_image}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`
+                    const isDocImg = (v.vehicle_image || '').match(/license|cropped|driver|id_card|passport|doc/i);
+                    const carImgSrc = (v.vehicle_image && !isDocImg) ? v.vehicle_image : '';
+                    
+                    const imgHtml = carImgSrc
+                        ? `<img src="${carImgSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`
                         : `<i class="fas fa-car" style="font-size:1.6rem;color:var(--primary);opacity:0.4;"></i>`;
+                    
+                    const transBadge = v.transmission ? `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(59,130,246,0.1);color:#3b82f6;font-size:0.65rem;font-weight:700;margin-left:4px;">${v.transmission}</span>` : '';
+                    const fuelBadge = v.fuel_type ? `<span style="display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(234,179,8,0.1);color:#d97706;font-size:0.65rem;font-weight:700;margin-left:2px;">${v.fuel_type}</span>` : '';
+
                     return `
-                    <li style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--surface-card,var(--surface));${i === 0 ? 'border-radius:16px 16px 0 0;' : ''}${i === vehicles.length-1 ? 'border-radius:0 0 16px 16px;' : ''}border-bottom:${i < vehicles.length-1 ? '1px solid var(--border)' : 'none'};">
+                    <li style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface-card,var(--surface));${i === 0 ? 'border-radius:16px 16px 0 0;' : ''}${i === vehicles.length-1 ? 'border-radius:0 0 16px 16px;' : ''}border-bottom:${i < vehicles.length-1 ? '1px solid var(--border)' : 'none'};">
                         <div style="flex-shrink:0;width:72px;height:56px;background:var(--surface-container);border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
                             ${imgHtml}
                         </div>
                         <div style="flex:1;min-width:0;">
-                            <div style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;margin-bottom:1px;">&#8369;${Number(v.daily_rate||0).toLocaleString()}</div>
+                            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-bottom:1px;">
+                                <span style="font-size:0.95rem;font-weight:900;color:var(--primary);letter-spacing:-0.3px;">&#8369;${Number(v.daily_rate||0).toLocaleString()}</span>
+                                ${transBadge}${fuelBadge}
+                            </div>
                             <div style="font-size:0.85rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.brand||''} ${v.model||''}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);font-weight:600;margin-bottom:5px;">${v.plate_number||'NO PLATE'}</div>
-                            <span style="display:inline-block;padding:3px 10px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;">${(v.status||'Unavailable')}</span>
+                            <select onchange="Vehicles.quickChangeStatus(${v.id}, this.value)" style="padding:2px 8px;border-radius:20px;background:${sc};color:#fff;font-size:0.65rem;font-weight:800;border:none;outline:none;cursor:pointer;appearance:auto;">
+                                <option value="Available" ${v.status === 'Available' ? 'selected' : ''}>Available</option>
+                                <option value="Booked" ${v.status === 'Booked' ? 'selected' : ''}>Booked</option>
+                                <option value="Rented" ${v.status === 'Rented' ? 'selected' : ''}>Rented</option>
+                                <option value="Maintenance" ${v.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                                <option value="Repair" ${v.status === 'Repair' ? 'selected' : ''}>Repair</option>
+                                <option value="Unavailable" ${v.status === 'Unavailable' ? 'selected' : ''}>Unavailable</option>
+                            </select>
                         </div>
                         <div style="flex-shrink:0;display:flex;flex-direction:column;gap:12px;align-items:center;">
                             <button onclick="Vehicles.view(${v.id})" style="background:none;border:none;color:var(--primary);font-size:1.05rem;padding:4px;cursor:pointer;" title="View Details"><i class="fas fa-eye"></i></button>
@@ -3560,6 +3615,30 @@
                     </li>`;
                 }).join('') + `</ul>`;
         },
+
+        async quickChangeStatus(id, newStatus) {
+            try {
+                const formData = new FormData();
+                formData.append('status', newStatus);
+                const res = await fetch(`${API_URL}/vehicles/${id}/`, {
+                    method: 'PUT',
+                    body: formData
+                });
+                if (res.ok) {
+                    showNotification(`Vehicle status changed to ${newStatus}`, 'success');
+                    const v = this.data.find(x => x.id === id);
+                    if (v) v.status = newStatus;
+                    this.render();
+                } else {
+                    showNotification('Failed to update status', 'error');
+                    this.refresh();
+                }
+            } catch (err) {
+                showNotification('Network error changing status', 'error');
+                this.refresh();
+            }
+        },
+
         openModal(id = null) {
             document.getElementById('editId').value = id || '';
             document.getElementById('modalTitle').textContent = id ? 'Edit Vehicle' : 'Add New Vehicle';
@@ -3580,6 +3659,10 @@
                 document.getElementById('vFuel').value = v.fuel_type || 'Gasoline';
                 document.getElementById('vSeats').value = v.seats || 5;
                 document.getElementById('vLocation').value = v.location || 'Tanauan/Sto. Tomas, Batangas';
+                document.getElementById('vOdometer').value = v.odometer || 0;
+                document.getElementById('vFuelLevel').value = v.fuel_level || 'Full Tank';
+                document.getElementById('vNextService').value = v.next_service_schedule || '';
+                document.getElementById('vLtoExpiry').value = v.lto_expiry_date || '';
                 document.getElementById('vStatus').value = v.status;
                 document.getElementById('vRate').value = v.daily_rate;
                 document.getElementById('vYear').value = v.year_model || '';
@@ -3595,6 +3678,10 @@
                 this.updateModels();
                 document.getElementById('vExistingGallery').style.display = 'none';
                 this.galleryDetails = [];
+                document.getElementById('vOdometer').value = 0;
+                document.getElementById('vFuelLevel').value = 'Full Tank';
+                document.getElementById('vNextService').value = '';
+                document.getElementById('vLtoExpiry').value = '';
                 document.getElementById('vYear').value = '';
                 document.getElementById('vMileageType').value = 'limited';
                 document.getElementById('vMileageKm').value = 250;
@@ -3734,6 +3821,10 @@
             formData.append('fuel_type', document.getElementById('vFuel').value);
             formData.append('seats', document.getElementById('vSeats').value);
             formData.append('location', document.getElementById('vLocation').value);
+            formData.append('odometer', document.getElementById('vOdometer').value || 0);
+            formData.append('fuel_level', document.getElementById('vFuelLevel').value || 'Full Tank');
+            formData.append('next_service_schedule', document.getElementById('vNextService').value || '');
+            formData.append('lto_expiry_date', document.getElementById('vLtoExpiry').value || '');
             formData.append('status', document.getElementById('vStatus').value);
             formData.append('daily_rate', document.getElementById('vRate').value);
             formData.append('year_model', document.getElementById('vYear').value || '');
@@ -3797,9 +3888,22 @@
         view(id) {
             const v = this.data.find(x => x.id === id);
             if (!v) { console.error('Vehicle not found:', id); return; }
-            const sc = v.status === 'Available' ? '#00B14F' : v.status === 'Rented' ? '#3b82f6' : v.status === 'Maintenance' ? '#f59e0b' : '#ef4444';
-            const imgHtml = v.vehicle_image
-                ? `<img src="${v.vehicle_image}" style="width:100%;height:220px;object-fit:cover;">`
+            const statusColor = s => {
+                switch ((s||'').toLowerCase()) {
+                    case 'available':   return '#00B14F';
+                    case 'rented':      return '#3b82f6';
+                    case 'booked':      return '#8b5cf6';
+                    case 'maintenance': return '#f59e0b';
+                    case 'repair':      return '#ef4444';
+                    default:            return '#64748b';
+                }
+            };
+            const sc = statusColor(v.status);
+            const isDocImg = (v.vehicle_image || '').match(/license|cropped|driver|id_card|passport|doc/i);
+            const carImgSrc = (v.vehicle_image && !isDocImg) ? v.vehicle_image : '';
+
+            const imgHtml = carImgSrc
+                ? `<img src="${carImgSrc}" style="width:100%;height:220px;object-fit:cover;">`
                 : `<div style="width:100%;height:180px;background:var(--surface-container,#f4f6fb);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:4rem;color:var(--primary);opacity:0.3;"></i></div>`;
             const galleryArr = Array.isArray(v.gallery) ? v.gallery : [];
             const galleryHtml = galleryArr.length > 1
@@ -3813,8 +3917,12 @@
                 ['Transmission', v.transmission || '-'], ['Fuel Type', v.fuel_type || '-'],
                 ['Seats', v.seats || '-'], ['Daily Rate', '&#8369;' + Number(v.daily_rate||0).toLocaleString()],
                 ['Location', v.location || '-'], ['Status', v.status || '-'],
-                ['Color', v.color_display || '-'], ['Year Model', v.year_model || '-'],
-                ['Mileage', mileageDisplay],
+                ['Color', v.color || v.color_display || '-'], ['Year Model', v.year_model || v.year || '-'],
+                ['Mileage Limit', mileageDisplay],
+                ['Odometer', v.odometer ? (Number(v.odometer).toLocaleString() + ' km') : '0 km'],
+                ['Fuel Level', v.fuel_level || '-'],
+                ['Next Service Date', v.next_service_schedule || '-'],
+                ['LTO Expiry Date', v.lto_expiry_date || '-'],
             ];
             const fieldsHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:16px;">`
                 + fields.map(([label,val]) => `<div><div style="font-size:0.62rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">${label}</div><div style="font-size:0.88rem;font-weight:600;color:var(--text-main);">${val}</div></div>`).join('')

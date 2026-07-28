@@ -7877,15 +7877,25 @@ def add_vehicle():
         data = request.form
     try:
         cur = get_cursor()
-        # Ensure color column exists
+        # Ensure vehicle monitoring columns exist
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS color VARCHAR(50) DEFAULT NULL")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_type VARCHAR(20) DEFAULT 'limited'")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_km_per_day INT DEFAULT 250")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS year_model INT DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS odometer INT DEFAULT 0")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_level VARCHAR(20) DEFAULT 'Full Tank'")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS next_service_schedule DATE DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS lto_expiry_date DATE DEFAULT NULL")
+        
         color = data.get('color') or None
         mileage_type = data.get('mileage_type') or 'limited'
         mileage_km_per_day = data.get('mileage_km_per_day') or 250
         year_model = data.get('year_model') or None
+        odometer = data.get('odometer') or 0
+        fuel_level = data.get('fuel_level') or 'Full Tank'
+        next_service_schedule = data.get('next_service_schedule') or None
+        lto_expiry_date = data.get('lto_expiry_date') or None
+
         # Handle image upload if file provided
         vehicle_image = data.get('vehicle_image', '')
         if 'gallery' in request.files:
@@ -7900,10 +7910,11 @@ def add_vehicle():
                 except Exception:
                     pass
         cur.execute(
-            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
-             data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model)
+             data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
+             odometer, fuel_level, next_service_schedule, lto_expiry_date)
         )
         new_id = cur.fetchone()['id']
         # Handle additional gallery files
@@ -7940,10 +7951,20 @@ def update_vehicle(vehicle_id):
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_type VARCHAR(20) DEFAULT 'limited'")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS mileage_km_per_day INT DEFAULT 250")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS year_model INT DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS odometer INT DEFAULT 0")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_level VARCHAR(20) DEFAULT 'Full Tank'")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS next_service_schedule DATE DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS lto_expiry_date DATE DEFAULT NULL")
+        
         color = data.get('color') or None
         mileage_type = data.get('mileage_type') or 'limited'
         mileage_km_per_day = data.get('mileage_km_per_day') or 250
         year_model = data.get('year_model') or None
+        odometer = data.get('odometer') or 0
+        fuel_level = data.get('fuel_level') or 'Full Tank'
+        next_service_schedule = data.get('next_service_schedule') or None
+        lto_expiry_date = data.get('lto_expiry_date') or None
+
         # Fetch existing vehicle_image from DB so it's preserved if no new photo is uploaded
         cur.execute("SELECT vehicle_image FROM vehicles WHERE id = %s", (vehicle_id,))
         existing = cur.fetchone()
@@ -7967,13 +7988,31 @@ def update_vehicle(vehicle_id):
                     except Exception:
                         pass
         cur.execute(
-            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s WHERE id=%s",
+            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
-             data.get('status'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model, vehicle_id)
+             data.get('status'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
+             odometer, fuel_level, next_service_schedule, lto_expiry_date, vehicle_id)
         )
         commit_db()
         return jsonify({"message": "Vehicle updated"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT'])
+def update_vehicle_status(vehicle_id):
+    data = request.json or request.form
+    new_status = data.get('status')
+    if not new_status:
+        return jsonify({"error": "Status is required"}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("UPDATE vehicles SET status = %s WHERE id = %s", (new_status, vehicle_id))
+        commit_db()
+        return jsonify({"message": "Status updated successfully", "status": new_status}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
