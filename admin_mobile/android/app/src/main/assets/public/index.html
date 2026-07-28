@@ -7441,6 +7441,23 @@ async edit(id) { this.openModal(id); }
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
             document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
 
+            // Pre-fill initial Odometer and Fuel Level from Vehicle Master
+            const veh = (typeof Vehicles !== 'undefined' && Vehicles.data) ? Vehicles.data.find(v => v.id === b.vehicle_id) : null;
+            const currentOdom = veh ? (veh.odometer || 0) : 0;
+            const currentFuel = veh ? (veh.fuel_level || 'Full Tank') : 'Full Tank';
+
+            const mileageEl = document.getElementById('inspectMileage');
+            if (mileageEl) mileageEl.value = currentOdom;
+
+            const fuelEl = document.getElementById('inspectFuel');
+            if (fuelEl) {
+                // Try matching fuel level option or default
+                const options = Array.from(fuelEl.options).map(o => o.value);
+                if (options.includes(currentFuel)) {
+                    fuelEl.value = currentFuel;
+                }
+            }
+
             // Set receipt button
             const receiptUrl = `${API_BASE}/api/bookings/${bookingId}/receipt`;
             document.getElementById('inspectReceiptBtn').onclick = () => {
@@ -7503,10 +7520,6 @@ async edit(id) { this.openModal(id); }
                 showInlineError(mileageEl, 'Valid mileage is required');
                 hasError = true;
             }
-            if (fuelEl && (!fuelEl.value.trim() || isNaN(fuelEl.value) || parseInt(fuelEl.value) < 0 || parseInt(fuelEl.value) > 100)) {
-                showInlineError(fuelEl, 'Fuel level (0-100) is required');
-                hasError = true;
-            }
 
             if (hasError) return;
 
@@ -7520,9 +7533,9 @@ async edit(id) { this.openModal(id); }
             formData.append('booking_id', bookingId);
             formData.append('inspection_type', type);
             formData.append('mileage', mileageEl.value);
-            formData.append('fuel_level', fuelEl.value);
+            formData.append('fuel_level', fuelEl ? fuelEl.value : 'Full');
             formData.append('notes', document.getElementById('inspectNotes').value);
-            formData.append('inspector_id', user.id);
+            formData.append('inspector_id', user ? user.id : 1);
             this.currentPhotos.forEach(file => formData.append('photos', file));
 
             btn.disabled = true;
@@ -7533,9 +7546,14 @@ async edit(id) { this.openModal(id); }
                 const res = await fetch(`${API_URL}/inspections/submit`, { method: 'POST', body: formData });
                 const data = await res.json();
                 if (res.ok) {
-                    showNotification('Inspection report submitted!', 'success');
+                    let msg = 'Inspection report submitted!';
+                    if (data.distance_driven !== undefined && data.distance_driven !== null) {
+                        msg += ` Distance driven: ${data.distance_driven} km.`;
+                    }
+                    showNotification(msg, 'success');
                     document.getElementById('inspectionModal').style.display = 'none'; modalClose();
                     Bookings.refresh();
+                    if (typeof Vehicles !== 'undefined' && Vehicles.refresh) Vehicles.refresh();
                 } else {
                     showNotification(data.error || 'Submission failed', 'error');
                 }
