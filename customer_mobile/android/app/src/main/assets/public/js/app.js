@@ -34,6 +34,18 @@ var API_BASE = (function() {
   return 'https://autoride-booking-system.vercel.app/api';
 }());
 
+function setButtonLoading(button, text) {
+  if (!button) return function() {};
+  var originalHtml = button.innerHTML;
+  var originalDisabled = button.disabled;
+  button.disabled = true;
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (text || 'Processing...');
+  return function restore() {
+    button.disabled = originalDisabled;
+    button.innerHTML = originalHtml;
+  };
+}
+
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
