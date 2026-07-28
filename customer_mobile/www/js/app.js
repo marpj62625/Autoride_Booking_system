@@ -2384,11 +2384,11 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         return '<option value="' + t + '"' + (t === defaultUnit.transmission ? ' selected' : '') + '>' + t + '</option>';
       }).join('');
 
-      // Build color options for default transmission
-      var defaultTrans = defaultUnit.transmission || transmissions[0];
+      // Build color options from ALL available units (not just default transmission)
+      // so all color variants are always visible in the dropdown
       var seenColors = {};
       var colors = [];
-      availUnits.filter(function(u) { return u.transmission === defaultTrans; }).forEach(function(u) {
+      availUnits.forEach(function(u) {
         var c = u.color_display || u.color || 'Not Specified';
         if (!seenColors[c]) { seenColors[c] = true; colors.push(c); }
       });
@@ -2401,7 +2401,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
           ? '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + transOptions + '</select>'
           : '<span id="vd-trans" style="font-weight:600;">' + (defaultUnit.transmission || '-') + '</span>';
 
-        // Color display: clean span if 1 option, styled select if multiple
+        // Color display: always show select dropdown so user can pick any available color
         var colorHtml = colors.length > 1
           ? '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + colorOptions + '</select>'
           : '<span id="vd-color" style="font-weight:600;">' + (defaultUnit.color_display || defaultUnit.color || '-') + '</span>';
