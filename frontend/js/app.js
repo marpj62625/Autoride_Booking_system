@@ -2582,28 +2582,18 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                   '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
                   '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
                 '</div>' +
-                // Odometer
-                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
-                  '<i class="fas fa-tachometer-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-                  '<span id="vd-odom" style="font-weight:600;">' + (defaultUnit.odometer ? (Number(defaultUnit.odometer).toLocaleString() + ' km') : 'N/A') + '</span>' +
-                '</div>' +
-                // Fuel Level
-                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
-                  '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-                  '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || 'Full Tank') + '</span>' +
-                '</div>' +
-                // Mileage policy
+                // KM Limit
                 '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
                   '<i class="fas fa-road" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-                  '<span>' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited Mileage' : (defaultUnit.mileage_km_per_day || 250) + ' km/day') + '</span>' +
+                  '<span>' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited km' : ((defaultUnit.mileage_km_per_day || 250) + ' km/day')) + '</span>' +
                 '</div>' +
-                // Luggage
+                // Baggage Capacity
                 (function() {
                   var s = parseInt(defaultUnit.seats) || 5;
-                  var lug = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
+                  var bags = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
                   return '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
-                    '<i class="fas fa-suitcase" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-                    '<span>' + lug + ' luggage</span>' +
+                    '<i class="fas fa-suitcase-rolling" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                    '<span>' + bags + '</span>' +
                   '</div>';
                 })() +
                 // Year Model

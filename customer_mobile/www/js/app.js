@@ -2467,16 +2467,26 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
         '</div>' +
 
-        // Odometer
+        // KM Limit
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-tachometer-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-odom" style="font-weight:600;">' + (defaultUnit.odometer ? (Number(defaultUnit.odometer).toLocaleString() + ' km') : 'N/A') + '</span>' +
+        '<i class="fas fa-road" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span id="vd-mileage">' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited km' : ((defaultUnit.mileage_km_per_day || 250) + ' km/day')) + '</span>' +
         '</div>' +
 
-        // Fuel Level
+        // Baggage Capacity
         '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || 'Full Tank') + '</span>' +
+        (function() {
+          var s = parseInt(defaultUnit.seats) || 5;
+          var bags = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
+          return '<i class="fas fa-suitcase-rolling" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+            '<span>' + bags + '</span>';
+        })() +
+        '</div>' +
+
+        // Year Model
+        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+        '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
         '</div>' +
 
         '</div>' +
