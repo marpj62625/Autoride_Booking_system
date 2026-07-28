@@ -362,17 +362,23 @@ function compressImage(file, maxW, maxH, quality) {
         var ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0, width, height);
         
-        canvas.toBlob(function(blob) {
-          if (blob) {
-            var compressedFile = new File([blob], file.name || 'image.jpg', {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(compressedFile);
-          } else {
-            resolve(file);
-          }
-        }, 'image/jpeg', quality);
+        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+        var arr = dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+        var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        var blob = new Blob([u8arr], {type:mime});
+        if (blob) {
+          var compressedFile = new File([blob], file.name || 'image.jpg', {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          compressedFile.previewUrl = dataUrl;
+          resolve(compressedFile);
+        } else {
+          resolve(file);
+        }
       };
       image.onerror = function() {
         resolve(file);

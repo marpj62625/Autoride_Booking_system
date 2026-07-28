@@ -3401,8 +3401,11 @@ function _processProfilePicture(file) {
     var err = validateUploadFile(file);
     if (err) { showToast(err, 'error'); return; }
     profilePicBlob = file;
+    var src = file.previewUrl || (typeof URL !== 'undefined' && URL.createObjectURL ? URL.createObjectURL(file) : '');
     var preview = document.getElementById('profilePicPreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = src; preview.style.display = 'block'; }
+    var avatars = document.querySelectorAll('.profile-avatar, .user-avatar, #profileAvatar, #sidebarAvatar');
+    avatars.forEach(function(img) { if (img && img.tagName === 'IMG') img.src = src; });
   }
 
   async function pickProfilePicture() {
@@ -3447,7 +3450,7 @@ function pickPaymentProof() {
     if (err) { document.getElementById('payProofErr').textContent = err; return; }
     paymentProofBlob = file;
     var preview = document.getElementById('payProofPreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
@@ -4622,7 +4625,7 @@ function pickExtProof() {
     if (!file) return;
     _extProofBlob = file;
     var preview = document.getElementById('extProofPreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
@@ -5741,7 +5744,7 @@ async function pickLicenseForProfile(side) {
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
     
     // Tesseract OCR Logic
     var statusText = document.getElementById('ocrStatusText');
@@ -5750,8 +5753,9 @@ async function pickLicenseForProfile(side) {
     if (detailsBox) detailsBox.style.display = 'none';
     
     if (typeof Tesseract !== 'undefined') {
+      var imageInput = file.previewUrl || file;
       Tesseract.recognize(
-        file,
+        imageInput,
         'eng',
         { logger: function(m) { /* console.log(m); */ } }
       ).then(function(result) {
@@ -5808,8 +5812,6 @@ async function pickLicenseForProfile(side) {
         }
 
         // --- 3. Find Name on License ---
-        // OCR output: "d DE RAMOS, XEDRIC YASONA" - may have 1-2 char prefix
-        // DON'T anchor to start of line - search pattern ANYWHERE in the line
         var lines = text.split('\n');
         var nameLine = '';
 
@@ -5830,41 +5832,67 @@ async function pickLicenseForProfile(side) {
           document.getElementById('editLicenseName').style.borderColor = "var(--success)";
         }
 
-        // --- 4. Find License Class (DL Codes) ---
-        // OCR raw example: "@ DLcodes Conditions" where "@" = "A" (OCR misread)
-        // Strategy: find the line with DLcodes, grab it + prev line, replace @ with A, extract codes
+        // --- 4. Find License Class / DL Codes / Restrictions ---
         var classVal = '';
-        var textLines2 = text.split(/[\n\r]+/);
-        var dlLineIndex = -1;
+        var dlFound = [];
+        var validDlCodes = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'];
+        var validOldRestrictions = ['1', '2', '3', '4', '5', '6', '7', '8'];
+
+        var normalizedText = text.replace(/[@©＠]/g, 'A');
+        var textLines2 = normalizedText.split(/[\n\r]+/);
+
+        // Strategy A: Find line containing any DL keyword (DL, CODES, REST, CLASS, CATEGORY, CONDITIONS)
         for (var i = 0; i < textLines2.length; i++) {
-          if (/[DdO][LlI1]\s*[Cc]odes?/i.test(textLines2[i])) {
-            dlLineIndex = i;
-            break;
+          var l = textLines2[i].trim();
+          if (/\b(?:DL|CODES?|[DdO][LlI1]\s*[Cc]odes?|RESTRICTIONS?|REST\b|CLASS|CATEGORY|CONDITIONS?)\b/i.test(l)) {
+            var block = [textLines2[i], textLines2[i+1] || '', textLines2[i+2] || ''].join(' ');
+            var cleanedBlock = block.replace(/\b(?:DL|CODES?|[DdO][LlI1]\s*[Cc]odes?|RESTRICTIONS?|REST\b|CLASS|CATEGORY|CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR|SIGNATURE|LICENSEE)\b/gi, ' ');
+            
+            var tokens = cleanedBlock.match(/\b([A-E][12]?|BE|CE)\b/gi);
+            if (tokens) {
+              tokens.forEach(function(tok) {
+                var code = tok.toUpperCase();
+                if (validDlCodes.indexOf(code) !== -1 && dlFound.indexOf(code) === -1) {
+                  dlFound.push(code);
+                }
+              });
+            }
           }
         }
-        console.log('DL line index:', dlLineIndex, dlLineIndex >= 0 ? 'Line: [' + textLines2[dlLineIndex] + ']' : 'NOT FOUND');
-        if (dlLineIndex >= 0) {
-          var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
-          var dlLineText = textLines2[dlLineIndex];
-          var combined = (prevLine + ' ' + dlLineText).replace(/[@©]/g, 'A');
-          console.log('DL combined search area:', combined);
-          var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?/gi, ' ');
-          stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
-          console.log('DL stripped search:', stripped);
-          var dlCodeRegex = /(?:^|\s)([A-E][12]?|[1-8]|[@©＠0O])(?=\s|$)/gi;
-          var dlFound = [];
-          var dlMx;
-          while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
-            var c = dlMx[1].toUpperCase();
-            if (['@', '©', '＠', '0', 'O'].indexOf(c) !== -1) c = 'A';
-            if (dlFound.indexOf(c) === -1) dlFound.push(c);
+
+        // Strategy B: Search whole OCR text for valid letter DL codes (excluding dates & address lines)
+        if (dlFound.length === 0) {
+          var safeLines = textLines2.filter(function(l) {
+            return !/\b(?:\d{4}[\/\-]\d{2}[\/\-]\d{2}|D\d{2}-\d{2}-\d{6}|BONIFACIO|ADDRESS|BIRTH|HEIGHT|WEIGHT)\b/i.test(l);
+          });
+          var safeText = safeLines.join(' ');
+          var globalTokens = safeText.match(/\b([A-E][12]?|BE|CE)\b/gi);
+          if (globalTokens) {
+            globalTokens.forEach(function(tok) {
+              var code = tok.toUpperCase();
+              if (validDlCodes.indexOf(code) !== -1 && ['M', 'F'].indexOf(code) === -1 && dlFound.indexOf(code) === -1) {
+                dlFound.push(code);
+              }
+            });
           }
-          console.log('DL codes found:', dlFound);
-          if (dlFound.length > 0) classVal = dlFound.join(', ');
         }
-        if (classVal && document.getElementById('editLicenseClass')) {
-          document.getElementById('editLicenseClass').value = classVal;
-          document.getElementById('editLicenseClass').style.borderColor = "var(--success)";
+
+        if (dlFound.length > 0) {
+          classVal = dlFound.join(', ');
+        }
+
+        var classEl = document.getElementById('editLicenseClass');
+        if (classEl) {
+          if (classVal) {
+            classEl.value = classVal;
+            classEl.style.borderColor = "var(--success)";
+            if (typeof clearInlineError === 'function') clearInlineError(classEl);
+          } else {
+            // If OCR couldn't detect DL Code, clear old single-digit "1" from database so user is prompted to set A/B
+            if (classEl.value === '1') {
+              classEl.value = '';
+            }
+          }
         }
 
       }).catch(function(err) {
@@ -5875,7 +5903,7 @@ async function pickLicenseForProfile(side) {
   } else {
     _licenseBackBlob = file;
     var preview = document.getElementById('licenseEditPreviewBack');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
   }
 }
 
@@ -6219,7 +6247,7 @@ function pickProfilePicture() {
     if (err) { showToast(err, 'error'); return; }
     profilePicBlob = file;
     var preview = document.getElementById('profilePicPreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
@@ -6295,11 +6323,21 @@ function pickLicense() {
   input.onchange = function(e) {
     var file = e.target.files[0];
     if (!file) return;
-    var err = validateUploadFile(file);
-    if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
-    licenseBlob = file;
-    var preview = document.getElementById('licensePreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (typeof openCropperAndCallback === 'function') {
+      openCropperAndCallback(file, 1.58, function(croppedBlob) {
+        var err = validateUploadFile(croppedBlob);
+        if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+        licenseBlob = croppedBlob;
+        var preview = document.getElementById('licensePreview');
+        if (preview) { preview.src = croppedBlob.previewUrl || URL.createObjectURL(croppedBlob); preview.style.display = 'block'; }
+      });
+    } else {
+      var err = validateUploadFile(file);
+      if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+      licenseBlob = file;
+      var preview = document.getElementById('licensePreview');
+      if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
+    }
   };
   input.click();
 }
