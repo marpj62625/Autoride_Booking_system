@@ -23576,142 +23576,54 @@ async edit(id) { this.openModal(id); }
 
 
 
-            document.getElementById('inspectProofImages').innerHTML = '';
-
-
-
-
-
-
-
-            document.getElementById('inspectBookingId').value = bookingId;
-
-
-
+            document.getElementById('inspectProofImages').innerHTML = '';            document.getElementById('inspectBookingId').value = bookingId;
             document.getElementById('inspectType').value = type;
-
-
-
             document.getElementById('inspectTitle').textContent = type === 'pickup' ? 'Pickup Inspection' : 'Return Inspection';
-
-
-
             document.getElementById('inspectSubtitle').textContent = `Car: ${b.car}`;
 
+            // Pre-fill initial Odometer and Fuel Level from Vehicle Master
+            const veh = (typeof Vehicles !== 'undefined' && Vehicles.data) ? Vehicles.data.find(v => v.id === b.vehicle_id) : null;
+            const currentOdom = veh ? (veh.odometer || 0) : 0;
+            const currentFuel = veh ? (veh.fuel_level || 'Full Tank') : 'Full Tank';
 
+            const mileageEl = document.getElementById('inspectMileage');
+            if (mileageEl) mileageEl.value = currentOdom;
 
-
-
-
+            const fuelEl = document.getElementById('inspectFuel');
+            if (fuelEl) {
+                const options = Array.from(fuelEl.options).map(o => o.value);
+                if (options.includes(currentFuel)) {
+                    fuelEl.value = currentFuel;
+                }
+            }
 
             // Set receipt button
-
-
-
             const receiptUrl = `${API_BASE}/api/bookings/${bookingId}/receipt`;
-
-
-
             document.getElementById('inspectReceiptBtn').onclick = () => {
-
-
-
                 Inspections.showReceiptModal(bookingId);
-
-
-
             };
 
-
-
-
-
-
-
             // Load payment proof images asynchronously
-
-
-
             fetch(`${API_BASE}/api/admin/bookings/${bookingId}/payment-proof`)
-
-
-
                 .then(r => r.json())
-
-
-
                 .then(data => {
-
-
-
                     const proofs = Array.isArray(data) ? data.filter(p => p.payment_proof_url) : [];
-
-
-
                     const container = document.getElementById('inspectProofImages');
-
-
-
                     if (!container) return;
-
-
-
                     if (proofs.length === 0) { container.innerHTML = ''; return; }
-
-
-
                     container.innerHTML = proofs.map(p => `
-
-
-
                         <div style="margin-top:8px;">
-
-
-
                             <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">
-
-
-
                                 ${p.method || 'Payment'}${p.reference_number ? ' &bull; ' + p.reference_number : ''}
-
-
-
                                 <span style="float:right;color:#00B14F;font-weight:700;">&#8369;${parseFloat(p.amount||0).toLocaleString()}</span>
-
-
-
                             </div>
-
-
-
                             <img src="${p.payment_proof_url}" onclick="window.open('${p.payment_proof_url}','_blank')"
-
-
-
                                 style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;max-height:180px;object-fit:contain;background:rgba(0,0,0,0.3);">
-
-
-
                         </div>
-
-
-
                     `).join('');
-
-
-
                 }).catch(() => {});
 
-
-
-
-
-
-
             document.getElementById('inspectionModal').style.display = 'flex'; modalOpen();
-
-
-
         },
 
 
@@ -23810,146 +23722,48 @@ async edit(id) { this.openModal(id); }
                 showInlineError(mileageEl, 'Valid mileage is required');
                 hasError = true;
             }
-            if (fuelEl && (!fuelEl.value.trim() || isNaN(fuelEl.value) || parseInt(fuelEl.value) < 0 || parseInt(fuelEl.value) > 100)) {
-                showInlineError(fuelEl, 'Fuel level (0-100) is required');
-                hasError = true;
-            }
 
             if (hasError) return;
 
             const btn = document.getElementById('inspectSubmitBtn');
             const originalText = btn.innerHTML;
-
-
-
             const bookingId = document.getElementById('inspectBookingId').value;
-
-
-
             const type = document.getElementById('inspectType').value;
-
-
-
             const user = adminAuth.getUser();
 
-
-
-            
-
-
-
             const formData = new FormData();
-
-
-
             formData.append('booking_id', bookingId);
-
-
-
             formData.append('inspection_type', type);
-
-
-
-            formData.append('mileage', document.getElementById('inspectMileage').value);
-
-
-
-            formData.append('fuel_level', document.getElementById('inspectFuel').value);
-
-
-
+            formData.append('mileage', mileageEl.value);
+            formData.append('fuel_level', fuelEl ? fuelEl.value : 'Full');
             formData.append('notes', document.getElementById('inspectNotes').value);
-
-
-
-            formData.append('inspector_id', user.id);
-
-
-
+            formData.append('inspector_id', user ? user.id : 1);
             this.currentPhotos.forEach(file => formData.append('photos', file));
 
-
-
-
-
-
-
             btn.disabled = true;
-
-
-
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Submitting...';
 
-
-
-
-
-
-
             try {
-
-
-
                 const res = await fetch(`${API_URL}/inspections/submit`, { method: 'POST', body: formData });
-
-
-
                 const data = await res.json();
-
-
-
                 if (res.ok) {
-
-
-
-                    showNotification('Inspection report submitted!', 'success');
-
-
-
+                    let msg = 'Inspection report submitted!';
+                    if (data.distance_driven !== undefined && data.distance_driven !== null) {
+                        msg += ` Distance driven: ${data.distance_driven} km.`;
+                    }
+                    showNotification(msg, 'success');
                     document.getElementById('inspectionModal').style.display = 'none'; modalClose();
-
-
-
                     Bookings.refresh();
-
-
-
+                    if (typeof Vehicles !== 'undefined' && Vehicles.refresh) Vehicles.refresh();
                 } else {
-
-
-
                     showNotification(data.error || 'Submission failed', 'error');
-
-
-
                 }
-
-
-
             } catch (err) {
-
-
-
                 showNotification('Network error', 'error');
-
-
-
             } finally {
-
-
-
                 btn.disabled = false;
-
-
-
                 btn.innerHTML = originalText;
-
-
-
             }
-
-
-
         },
 
 

@@ -5273,11 +5273,47 @@ def submit_inspection():
 
             cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = (SELECT vehicle_id FROM bookings WHERE id = %s)", (booking_id,))
 
+        # ── Auto-update Vehicle Master Odometer and Fuel Level ──
+        cur.execute("SELECT vehicle_id FROM bookings WHERE id = %s", (booking_id,))
+        bk_row = cur.fetchone()
+        vehicle_id = bk_row['vehicle_id'] if bk_row else None
+        
+        distance_driven = None
+        if vehicle_id:
+            try:
+                if mileage and str(mileage).strip().isdigit() and int(mileage) >= 0:
+                    new_odom = int(mileage)
+                    cur.execute("UPDATE vehicles SET odometer = %s WHERE id = %s", (new_odom, vehicle_id))
+                if fuel_level and str(fuel_level).strip():
+                    cur.execute("UPDATE vehicles SET fuel_level = %s WHERE id = %s", (str(fuel_level).strip(), vehicle_id))
+            except Exception as _ve:
+                print(f"[submit_inspection] Vehicle master update warning: {_ve}")
 
+            # If return inspection, calculate distance driven from pickup inspection
+            if inspection_type == 'return':
+                try:
+                    cur.execute("SELECT mileage FROM vehicle_inspections WHERE booking_id = %s AND inspection_type = 'pickup' ORDER BY id DESC LIMIT 1", (booking_id,))
+                    p_row = cur.fetchone()
+                    if p_row and p_row['mileage'] and str(p_row['mileage']).strip().isdigit() and mileage and str(mileage).strip().isdigit():
+                        p_mileage = int(p_row['mileage'])
+                        r_mileage = int(mileage)
+                        if r_mileage >= p_mileage:
+                            distance_driven = r_mileage - p_mileage
+                except Exception as _de:
+                    print(f"[submit_inspection] Distance calc warning: {_de}")
 
         commit_db()
 
-        return jsonify({"message": "Inspection submitted successfully", "id": inspection_id}), 201
+        res_payload = {
+            "message": "Inspection submitted successfully",
+            "id": inspection_id,
+            "updated_odometer": mileage,
+            "updated_fuel_level": fuel_level
+        }
+        if distance_driven is not None:
+            res_payload["distance_driven"] = distance_driven
+
+        return jsonify(res_payload), 201
 
     except Exception as e:
 
