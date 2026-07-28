@@ -2532,14 +2532,33 @@ function onVdColorChange() {
   var trans = transEl && transEl.value ? transEl.value : (transEl ? transEl.textContent : '');
   var colorEl = document.getElementById('vd-color');
   var color = colorEl && colorEl.value ? colorEl.value : (colorEl ? colorEl.textContent : '');
-  var unit = null;
-  var units = window._vdUnits || [];
+  // 1. Try to find unit matching both color and transmission
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
     var uColor = u.color_display || u.color || 'Not Specified';
     if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && (!color || uColor === color) && (!trans || u.transmission === trans)) {
       unit = u; break;
     }
+  }
+  // 2. Fallback: if no unit matches both, find any unit of the chosen color and auto-update transmission
+  if (!unit && color) {
+    for (var i = 0; i < units.length; i++) {
+      var u = units[i];
+      var uColor = u.color_display || u.color || 'Not Specified';
+      if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && uColor === color) {
+        unit = u;
+        // Auto-update transmission dropdown to match this unit
+        if (transEl) {
+          if (transEl.tagName === 'SELECT') { transEl.value = u.transmission; }
+          else { transEl.textContent = u.transmission; }
+        }
+        break;
+      }
+    }
+  }
+  // 3. Last fallback: any available unit
+  if (!unit) {
+    unit = units.filter(function(u) { return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1; })[0];
   }
   if (!unit) return;
 
