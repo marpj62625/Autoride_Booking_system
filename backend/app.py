@@ -248,7 +248,8 @@ def start_deadline_monitor():
                                     notification_service.notify_admins_inapp(
                                         f"⚠️ No Show Alert: Booking #{bk['id']}",
                                         f"Customer '{bk['customer_name']}' has not shown up. Scheduled pickup was {pickup_date} at {pickup_time_str}. Please mark as No Show.",
-                                        "admin_no_show"
+                                        "admin_no_show",
+                                        booking_id=bk['id']
                                     )
                                 except Exception as n_err:
                                     print(f"Failed to send admin no-show alert push: {n_err}")
@@ -268,7 +269,7 @@ def start_deadline_monitor():
 
             except Exception as e:
                 print("Deadline monitor thread error:", e)
-            time.sleep(3600)  # Check every 1 hour
+            time.sleep(600)  # Check every 10 minutes
 
     t = threading.Thread(target=monitor_loop, daemon=True)
     t.start()
