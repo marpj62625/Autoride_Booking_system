@@ -3002,6 +3002,13 @@ function openBookingForm(vehicleId) {
     // Mileage notice
     '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;font-size:0.8rem;color:#084298;">Daily mileage limit: <strong>' + (appSettings.mileage_limit || 250) + ' km</strong></div>' +
 
+    // GPS Tracking Consent
+    '<div class="card" style="margin-top:14px; background: rgba(var(--primary-rgb), 0.05); border-left: 3px solid var(--primary);">' +
+    '<label style="display:flex; align-items:start; gap:8px; cursor:pointer;">' +
+    '<input type="checkbox" id="bfGpsConsent" style="margin-top:2px;" checked>' +
+    '<span style="font-size:0.85rem; line-height:1.4;"><strong>Allow GPS Tracking:</strong> I allow the company to track this vehicle via GPS for tracking, navigation assistance, and anti-theft monitoring.</span>' +
+    '</label></div>' +
+
     '<span class="field-error" id="bfErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
     '<button class="btn-primary" style="margin-bottom:20px;" onclick="submitBooking()"><i class="fas fa-check"></i> Confirm Booking</button>' +
     '</div>';
