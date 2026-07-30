@@ -5141,7 +5141,7 @@ def submit_inspection():
         cur = get_cursor()
 
         # Fetch booking details first to validate status & dates
-        cur.execute("SELECT start_date, pickup_time, vehicle_id, status FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute("SELECT start_date, start_time, vehicle_id, status FROM bookings WHERE id = %s", (booking_id,))
         bk = cur.fetchone()
         if not bk:
             return jsonify({"error": "Booking not found."}), 404
@@ -5168,9 +5168,11 @@ def submit_inspection():
                 pickup_date = pickup_date.date()
 
             if pickup_date:
-                pickup_time_str = bk.get('pickup_time') or '06:00'
+                pickup_time_str = bk.get('start_time') or '06:00'
+                if hasattr(pickup_time_str, 'strftime'):
+                    pickup_time_str = pickup_time_str.strftime('%H:%M')
                 try:
-                    ph_hour, ph_min = map(int, pickup_time_str.split(':'))
+                    ph_hour, ph_min = map(int, str(pickup_time_str)[:5].split(':'))
                 except Exception:
                     ph_hour, ph_min = 6, 0
 
