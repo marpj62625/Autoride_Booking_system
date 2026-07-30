@@ -9285,7 +9285,7 @@
 
 
 
-                        if (newOnes[0].type === 'admin_payment_proof' || newOnes[0].type === 'admin_booking_cancelled' || newOnes[0].type === 'admin_refund_request' || newOnes[0].type === 'admin_new_booking') {
+                        if (newOnes[0].type === 'admin_payment_proof' || newOnes[0].type === 'admin_booking_cancelled' || newOnes[0].type === 'admin_refund_request' || newOnes[0].type === 'admin_new_booking' || newOnes[0].type === 'admin_no_show') {
 
 
 
@@ -9337,7 +9337,7 @@
 
 
 
-                        if (newOnes.some(n => n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request' || n.type === 'admin_new_booking')) {
+                        if (newOnes.some(n => n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request' || n.type === 'admin_new_booking' || n.type === 'admin_no_show')) {
 
 
 
@@ -9537,24 +9537,29 @@
 
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
 
-                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);';
+                    const isNoShow = n.type === 'admin_no_show';
+                    const unreadStyle = n.is_read ? '' : (isNoShow ? 'border-left:3px solid #ef4444;padding-left:8px;background:rgba(239,68,68,0.08);' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);');
 
                     let onClickAction = '';
                     if (n.type === 'license' || n.type === 'admin_license_upload') {
                         onClickAction = "onclick=\"switchTab('users');\" style=\"cursor:pointer;\"";
-                    } else if (n.type === 'admin_new_booking' || n.type === 'admin_booking_cancelled' || n.type === 'admin_payment_proof' || n.type === 'admin_extension_request' || n.type === 'admin_refund_request') {
+                    } else if (n.type === 'admin_new_booking' || n.type === 'admin_booking_cancelled' || n.type === 'admin_payment_proof' || n.type === 'admin_extension_request' || n.type === 'admin_refund_request' || n.type === 'admin_no_show') {
                         onClickAction = "onclick=\"switchTab('bookings');\" style=\"cursor:pointer;\"";
                     } else {
                         onClickAction = "onclick=\"switchTab('chat');\" style=\"cursor:pointer;\"";
                     }
 
+                    const noShowBtn = (isNoShow && n.booking_id) ? `<div style="margin-top:6px;"><button onclick="event.stopPropagation();Bookings.markNoShow(${n.booking_id})" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;"><i class='fas fa-user-slash' style='margin-right:4px;'></i>Mark No Show</button></div>` : '';
+
                     return `<div ${onClickAction} style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
 
-                        <strong style="font-size:0.85rem;color:#f1f5f9;">${n.title || ''}</strong>
+                        <strong style="font-size:0.85rem;color:${isNoShow ? '#fca5a5' : '#f1f5f9'};">${isNoShow ? '🚫 ' : ''}${n.title || ''}</strong>
 
                         <p style="font-size:0.78rem;color:#94a3b8;margin-top:3px;">${n.message || ''}</p>
 
                         <small style="color:var(--text-muted);">${ts}</small>
+
+                        ${noShowBtn}
 
                     </div>`;
 
