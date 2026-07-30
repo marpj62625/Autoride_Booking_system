@@ -217,10 +217,11 @@ def start_deadline_monitor():
                         cur.close()
                         cur = conn.cursor(row_factory=dict_row)
                         cur.execute("""
-                            SELECT id, start_date, start_time, customer_name
-                            FROM bookings
-                            WHERE status IN ('Confirmed', 'Approved')
-                              AND no_show_notified_at IS NULL
+                            SELECT b.id, b.start_date, b.start_time, COALESCE(u.full_name, 'Unknown') as customer_name
+                            FROM bookings b
+                            LEFT JOIN users u ON b.user_id = u.id
+                            WHERE b.status IN ('Confirmed', 'Approved')
+                              AND b.no_show_notified_at IS NULL
                         """)
                         active_bookings = cur.fetchall()
 
