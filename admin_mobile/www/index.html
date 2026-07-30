@@ -3160,7 +3160,8 @@
             } else {
                 list.innerHTML = notifs.map(n => {
                     const ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-                    const unreadStyle = n.is_read ? '' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);';
+                    const isNoShow = n.type === 'admin_no_show';
+                    const unreadStyle = n.is_read ? '' : (isNoShow ? 'border-left:3px solid #ef4444;padding-left:8px;background:rgba(239,68,68,0.08);' : 'border-left:3px solid #00B14F;padding-left:8px;background:rgba(0,177,79,0.08);');
                     // Type-specific icon and color
                     let iconHtml = '<i class="fas fa-bell" style="color:#94a3b8;"></i>';
                     if (n.type === 'admin_payment_proof') {
@@ -3174,12 +3175,20 @@
                     } else if (n.type === 'admin_no_show') {
                         iconHtml = '<i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>';
                     }
+                    // Extract booking ID (fallback: parse from title if not in record)
+                    let bId = n.booking_id;
+                    if (isNoShow && !bId && n.title) {
+                        const match = n.title.match(/Booking #(\d+)/);
+                        if (match) bId = match[1];
+                    }
+                    const noShowBtn = (isNoShow && bId) ? `<div style="margin-top:8px;"><button onclick="event.stopPropagation();Bookings.markNoShow(${bId})" style="padding:6px 14px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class='fas fa-user-slash' style='margin-right:5px;'></i>Mark No Show</button></div>` : '';
                     return `<div style="padding:10px 0;border-bottom:1px solid var(--border-color);${unreadStyle}display:flex;gap:10px;align-items:flex-start;">
                         <div style="font-size:1.1rem;margin-top:2px;flex-shrink:0;">${iconHtml}</div>
                         <div style="flex:1;">
-                            <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;color:var(--text-color);">${n.title}</div>
+                            <div style="font-size:0.9rem;font-weight:600;margin-bottom:4px;color:${isNoShow ? '#fca5a5' : 'var(--text-color)'};">${isNoShow ? '🚫 ' : ''}${n.title}</div>
                             <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:6px;line-height:1.4;">${n.message}</div>
                             <div style="font-size:0.75rem;color:var(--text-muted);opacity:0.8;">${ts}</div>
+                            ${noShowBtn}
                         </div>
                     </div>`;
                 }).join('');
@@ -5175,9 +5184,7 @@ async edit(id) { this.openModal(id); }
         async refresh() {
             const list = document.getElementById('verificationsList');
             if (!list) return;
-            if (!list.innerHTML.trim() || list.innerHTML.includes('Fetching')) {
-                list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading verifications...</div>';
-            }
+            showSkeleton('verificationsList', 'list');
             
             try {
                 const url = `${API_URL}/admin/pending-verifications`;
@@ -5334,6 +5341,7 @@ async edit(id) { this.openModal(id); }
         data: [],
         async refresh() {
             const list = document.getElementById('instructionsList');
+            showSkeleton('instructionsList', 'list');
             try {
                 const res = await fetch(`${API_BASE}/api/admin/instructions`);
                 this.data = await res.json();
@@ -5751,7 +5759,7 @@ async edit(id) { this.openModal(id); }
                 exportBtn.style.display = isSuperAdmin ? 'flex' : 'none';
             }
 
-            list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
+            showSkeleton('activityList', 'list');
             try {
                 const res = await apiFetch(`admin/activity-logs`);
                 const logs = await res.json();
@@ -8017,7 +8025,7 @@ async edit(id) { this.openModal(id); }
         _filter: 'all',
 
         async refresh() {
-            document.getElementById('umList').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.5rem;"></i></div>';
+            showSkeleton('umList', 'list');
             try {
                 const res = await apiFetch('admin/users/list');
                 const data = await res.json();

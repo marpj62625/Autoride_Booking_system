@@ -9549,7 +9549,12 @@
                         onClickAction = "onclick=\"switchTab('chat');\" style=\"cursor:pointer;\"";
                     }
 
-                    const noShowBtn = (isNoShow && n.booking_id) ? `<div style="margin-top:6px;"><button onclick="event.stopPropagation();Bookings.markNoShow(${n.booking_id})" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;"><i class='fas fa-user-slash' style='margin-right:4px;'></i>Mark No Show</button></div>` : '';
+                    let bId = n.booking_id;
+                    if (isNoShow && !bId && n.title) {
+                        const match = n.title.match(/Booking #(\d+)/);
+                        if (match) bId = match[1];
+                    }
+                    const noShowBtn = (isNoShow && bId) ? `<div style="margin-top:6px;"><button onclick="event.stopPropagation();Bookings.markNoShow(${bId})" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:7px;font-size:0.72rem;font-weight:700;cursor:pointer;"><i class='fas fa-user-slash' style='margin-right:4px;'></i>Mark No Show</button></div>` : '';
 
                     return `<div ${onClickAction} style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);${unreadStyle}">
 

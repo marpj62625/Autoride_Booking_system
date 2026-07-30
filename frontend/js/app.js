@@ -2790,6 +2790,7 @@ var INSURANCE_OPTIONS = [
 ];
 
 var ADDON_OPTIONS = [
+  { name: 'GPS Navigation', pricePerDay: 200 },
   { name: 'Child Safety Seat', pricePerDay: 150 },
   { name: 'Roadside Assistance', pricePerDay: 100 }
 ];
