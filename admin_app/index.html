@@ -11038,66 +11038,6 @@
             document.getElementById('vehicleModal').style.display = 'block';
         },
 
-
-
-                
-
-
-
-                // Gallery Details
-
-
-
-                this.galleryDetails = v.gallery_details || [];
-
-
-
-                this.renderGalleryManager();
-
-
-
-            } else {
-                document.getElementById('vehicleForm').reset();
-                this.updateModels();
-                document.getElementById('vYear').value = '';
-                document.getElementById('vMileageType').value = 'limited';
-                document.getElementById('vMileageKm').value = 250;
-                document.getElementById('vMileageKmDiv').style.display = 'block';
-
-
-
-                document.getElementById('vExistingGallery').style.display = 'none';
-
-
-
-                this.galleryDetails = [];
-
-
-
-            }
-
-
-
-            // Always clear new-photo selections when opening the modal
-
-
-
-            VehiclePhotos.clear();
-
-
-
-            document.getElementById('vehicleModal').style.display = 'block';
-
-
-
-        },
-
-
-
-
-
-
-
         renderGalleryManager() {
 
 
