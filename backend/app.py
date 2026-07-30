@@ -3427,48 +3427,25 @@ def book():
         # Ensure time columns exist
 
         try:
-
-            cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS pickup_time VARCHAR(5) DEFAULT '06:00'")
-
-            cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS return_time VARCHAR(5) DEFAULT '06:00'")
-
-            commit_db()
-
+            pass # No need to alter table since we're using start_time and end_time
         except Exception:
-
             pass
 
-
-
         cur.execute("""
-
             INSERT INTO bookings (
-
                 user_id, vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
-
                 base_price, addon_price, tax_amount, total_price, status,
-
                 pickup_province, pickup_municipality, pickup_barangay,
-
                 return_province, return_municipality, return_barangay,
-
-                pickup_time, return_time
-
+                start_time, end_time
             )
-
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
-
               base_price, addon_price, tax_amount, total_price,
-
               pickup_province, pickup_municipality, pickup_barangay,
-
               return_province, return_municipality, return_barangay,
-
               pickup_time, return_time))
 
-        
 
         booking_id = cur.fetchone()['id']
 
