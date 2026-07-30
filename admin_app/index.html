@@ -10969,7 +10969,7 @@
                 });
                 if (res.ok) {
                     if (typeof showNotification === 'function') showNotification(`Status changed to ${newStatus}`, 'success');
-                    const v = this.data.find(x => x.id === id);
+                    const v = this.data.find(x => x.id == id);
                     if (v) v.status = newStatus;
                     this.renderVehicles();
                 } else {
@@ -10991,7 +10991,7 @@
             if (addAnotherBtn) addAnotherBtn.style.display = id ? 'none' : 'inline-flex';
 
             if (id) {
-                const v = this.data.find(x => x.id === id);
+                const v = this.data.find(x => x.id == id);
                 if (!v) return;
 
                 document.getElementById('vBrand').value = v.brand;
@@ -11649,8 +11649,16 @@
         
 
         view(id) {
-            const v = this.data.find(x => x.id === id);
+            const v = this.data.find(x => x.id == id);
             if (!v) { console.error('Vehicle not found:', id); return; }
+            const statusColor = s => {
+                switch ((s||'').toLowerCase()) {
+                    case 'available': return '#10b981';
+                    case 'rented': return '#3b82f6';
+                    case 'maintenance': return '#f59e0b';
+                    default: return '#64748b';
+                }
+            };
             const sc = statusColor(v.status);
             
             const isDocImg = (v.vehicle_image || '').match(/license|cropped|driver|id_card|passport|doc/i);
@@ -13443,7 +13451,7 @@ async edit(id) { this.openModal(id); }
 
 
         view(id) {
-            const b = this.data.find(x => x.id === id);
+            const b = this.data.find(x => x.id == id);
             if (!b) { console.error('Booking not found:', id); return; }
 
             const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : 'N/A';
@@ -13592,7 +13600,7 @@ async edit(id) { this.openModal(id); }
             if (typeof modalOpen === 'function') modalOpen();
         },
         async triggerRefund(id) {
-            const b = this.data.find(x => x.id === id);
+            const b = this.data.find(x => x.id == id);
             const ps = b ? b.payment_status : 'Paid';
             if (!confirm(`Trigger refund for Booking #${id}?\n\nThis will calculate the refund based on cancellation time vs pickup date (48h policy).\n\nCurrent status: ${ps}`)) return;
             try {
@@ -16609,7 +16617,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                const s = this.data.find(x => x.id === id);
+                const s = this.data.find(x => x.id == id);
 
 
 
