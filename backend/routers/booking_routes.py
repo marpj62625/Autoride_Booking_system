@@ -303,6 +303,52 @@ def admin_mark_paid(booking_id):
         return jsonify({"error": str(e)}), 500
 
 
+@booking_bp.route('/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
+def mark_no_show(booking_id):
+    """Mark a booking as No Show."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, status, payment_status, user_id, total_price, vehicle_id FROM bookings WHERE id = %s", (booking_id,))
+        booking = cur.fetchone()
+        if not booking:
+            return jsonify({"error": "Booking not found"}), 404
+
+        # Update booking status to 'No Show'
+        # If paid/partially paid, the payment is forfeited (keep amount_paid, but status is No Show)
+        # If unpaid, it's just marked as No Show
+        cur.execute("""
+            UPDATE bookings
+            SET status = 'No Show'
+            WHERE id = %s
+        """, (booking_id,))
+
+        # Free the vehicle
+        cur.execute("""
+            UPDATE vehicles
+            SET status = 'Available'
+            WHERE id = %s
+        """, (booking['vehicle_id'],))
+
+        commit_db()
+
+        # Notify customer
+        try:
+            notification_service.notify_user(
+                booking['user_id'],
+                "Booking Marked as No Show",
+                f"Your booking #{booking_id} was marked as No Show because you did not arrive for pickup.",
+                'booking_no_show'
+            )
+        except Exception as e:
+            print(f"DEBUG: notify_user no-show failed: {e}")
+
+        return jsonify({"message": "Booking marked as No Show successfully"}), 200
+
+    except Exception as e:
+        print(f"MARK NO SHOW ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 @booking_bp.route('/bookings/past', methods=['GET'])
 def get_past_bookings():
     """Fetch past/completed bookings with pagination and sorting."""
