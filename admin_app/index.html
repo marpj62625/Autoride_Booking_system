@@ -13492,6 +13492,9 @@ async edit(id) { this.openModal(id); }
             }
             if (st === 'confirmed' || st === 'approved') {
                 actionBtns += `<button onclick="${b.payment_status === 'Paid' ? `Inspections.openModal(${b.id},'pickup')` : 'showNotification(\'Booking must be fully paid before starting inspection\', \'error\')'}" style="flex:1;min-width:120px;padding:11px 10px;background:${b.payment_status === 'Paid' ? '#f59e0b' : '#94a3b8'};color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:${b.payment_status === 'Paid' ? 'pointer' : 'not-allowed'};opacity:${b.payment_status === 'Paid' ? '1' : '0.6'};display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-search-plus"></i>Pickup Inspect</button>`;
+                if (Bookings.isPickupPast(b)) {
+                    actionBtns += `<button onclick="Bookings.markNoShow(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:#ef4444;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-user-slash"></i>No Show</button>`;
+                }
             }
             if (st === 'picked up' || st === 'ongoing') {
                 actionBtns += `<button onclick="Inspections.openModal(${b.id},'return')" style="flex:1;min-width:120px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-clipboard-check"></i>Return Inspect</button>`;
@@ -13770,6 +13773,34 @@ async edit(id) { this.openModal(id); }
 
 
 
+
+        // Returns true if the booking's pickup datetime has already passed
+        isPickupPast(b) {
+            if (!b || !b.start_date) return false;
+            const pt = b.pickup_time || '06:00';
+            const [h, m] = pt.split(':').map(Number);
+            const dt = new Date(b.start_date);
+            dt.setHours(h, m, 0, 0);
+            return new Date() >= dt;
+        },
+
+        async markNoShow(bookingId) {
+            if (!confirm('Mark this booking as No Show?\n\n⚠️ If the booking is PAID, the payment will be forfeited (0% refund).\nIf UNPAID, the booking will simply be cancelled.\n\nThis action cannot be undone.')) return;
+            try {
+                const res = await fetch(`${API_URL}/bookings/${bookingId}/mark-no-show`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    showNotification(data.error || 'Failed to mark No Show', 'error');
+                    return;
+                }
+                showNotification('Booking marked as No Show.', 'success');
+                document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
+                this.refresh();
+            } catch (err) { showNotification('Network error', 'error'); }
+        },
 
         async cancel(id) {
 
