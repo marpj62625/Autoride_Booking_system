@@ -29,6 +29,17 @@ def book_vehicle():
         discount_amount = data.get('discount_amount', 0)
         points_redeemed = data.get('points_redeemed', 0)
         points_earned = int(float(total_price) / 100)
+        
+        start_time = data.get('pickup_time', '06:00')
+        end_time = data.get('return_time', '06:00')
+        service_type = data.get('service_type', 'pickup')
+        
+        pickup_province = data.get('pickup_province')
+        pickup_municipality = data.get('pickup_municipality')
+        pickup_barangay = data.get('pickup_barangay')
+        return_province = data.get('return_province')
+        return_municipality = data.get('return_municipality')
+        return_barangay = data.get('return_barangay')
 
         cur = get_cursor()
 
@@ -75,15 +86,21 @@ def book_vehicle():
                 pickup_location, rental_type, addons, insurance_type, insurance_price,
                 base_price, addon_price, total_price,
                 applied_coupon_id, discount_amount, points_redeemed, points_earned,
-                status, payment_type, amount_paid, balance_amount
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                status, payment_type, amount_paid, balance_amount,
+                start_time, end_time, service_type,
+                pickup_province, pickup_municipality, pickup_barangay,
+                return_province, return_municipality, return_barangay
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             user_id, vehicle_id, start_date, end_date,
             pickup_location, rental_type, addons, insurance_type, insurance_price,
             base_price, addon_price, total_price,
             applied_coupon_id, discount_amount, points_redeemed, points_earned,
-            'Pending', payment_type, amount_paid, balance_amount
+            'Pending', payment_type, amount_paid, balance_amount,
+            start_time, end_time, service_type,
+            pickup_province, pickup_municipality, pickup_barangay,
+            return_province, return_municipality, return_barangay
         ))
 
         booking_data = cur.fetchone()
