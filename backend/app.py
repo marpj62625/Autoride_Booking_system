@@ -1646,10 +1646,15 @@ def upload_license():
 
         
 
+        # Check previous is_verified status to see if it is a re-upload after rejection
+        cur.execute("SELECT is_verified, license_image_url FROM users WHERE id = %s", (user_id,))
+        user_row = cur.fetchone()
+        prev_is_verified = user_row['is_verified'] if user_row else 0
+        has_existing_license = bool(user_row['license_image_url']) if user_row else False
+        is_reupload = (prev_is_verified == 0 and has_existing_license)
+
         # is_verified = 1 means 'Pending Review'
-
         cur.execute("UPDATE users SET license_image_url = %s, is_verified = 1 WHERE id = %s", (url, user_id))
-
         commit_db()
 
         # Notify admins
@@ -1657,9 +1662,17 @@ def upload_license():
             cur.execute("SELECT full_name FROM users WHERE id = %s", (user_id,))
             u = cur.fetchone()
             uname = u['full_name'] if u else f'User #{user_id}'
+            
+            if is_reupload:
+                title = "Re-uploaded License for Review"
+                msg = f"⚠️ RE-UPLOAD: {uname} has re-uploaded their driver's license after rejection. Awaiting review."
+            else:
+                title = "License Uploaded for Review"
+                msg = f"{uname} has uploaded a driver's license and is awaiting verification."
+
             notification_service.notify_admins_inapp(
-                "License Uploaded for Review",
-                f"{uname} has uploaded a driver's license and is awaiting verification.",
+                title,
+                msg,
                 'admin_license_upload',
                 type='license',
                 user_id=user_id
@@ -5305,6 +5318,54 @@ def submit_inspection():
                             distance_driven = r_mileage - p_mileage
                 except Exception as _de:
                     print(f"[submit_inspection] Distance calc warning: {_de}")
+
+                # Low Fuel / Maintenance Warnings push notifications to Admins
+                try:
+                    is_low_fuel = False
+                    if fuel_level:
+                        fl_lower = str(fuel_level).strip().lower()
+                        if fl_lower in ('empty', '1/4', 'low', 'quarter') or 'empty' in fl_lower or '1/4' in fl_lower:
+                            is_low_fuel = True
+                    
+                    is_due_maintenance = False
+                    cur.execute("SELECT name, next_service_schedule, odometer FROM vehicles WHERE id = %s", (vehicle_id,))
+                    veh_info = cur.fetchone()
+                    if veh_info:
+                        svc_date = veh_info['next_service_schedule']
+                        if svc_date:
+                            from datetime import timedelta, date
+                            if isinstance(svc_date, str):
+                                try:
+                                    svc_date = datetime.strptime(svc_date[:10], '%Y-%m-%d').date()
+                                except Exception:
+                                    svc_date = None
+                            elif hasattr(svc_date, 'date'):
+                                svc_date = svc_date.date()
+                            
+                            # Alert if next service is within 7 days or past
+                            if svc_date and svc_date <= (datetime.now().date() + timedelta(days=7)):
+                                is_due_maintenance = True
+
+                        v_name = veh_info['name'] or f"Vehicle #{vehicle_id}"
+                        from notifications import notification_service
+                        if is_low_fuel:
+                            notification_service.notify_admins_inapp(
+                                "⛽ Low Fuel Alert",
+                                f"Vehicle '{v_name}' (Odometer: {mileage} km) was returned with low fuel level: {fuel_level}.",
+                                'admin_low_fuel_alert',
+                                type='admin_low_fuel_alert',
+                                booking_id=booking_id
+                            )
+                        if is_due_maintenance:
+                            notification_service.notify_admins_inapp(
+                                "🔧 Maintenance Schedule Alert",
+                                f"Vehicle '{v_name}' is due for maintenance. Next service date: {veh_info['next_service_schedule']}.",
+                                'admin_maintenance_alert',
+                                type='admin_maintenance_alert',
+                                booking_id=booking_id
+                            )
+                except Exception as warning_err:
+                    print(f"[submit_inspection] Warnings check error: {warning_err}")
 
         commit_db()
 
