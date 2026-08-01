@@ -7984,8 +7984,10 @@ async edit(id) { this.openModal(id); }
                         
                         if (type === 'license' || type === 'admin_license_upload') {
                             switchTab('verifications');
-                        } else if (type === 'admin_new_booking' || type === 'admin_booking_cancelled' || type === 'admin_payment_proof' || type === 'admin_refund_request' || type === 'admin_extension_request') {
+                        } else if (type === 'admin_new_booking' || type === 'admin_booking_cancelled' || type === 'admin_payment_proof' || type === 'admin_refund_request' || type === 'admin_extension_request' || type === 'admin_no_show' || type === 'no_show_alert') {
                             switchTab('bookings');
+                        } else if (type === 'admin_low_fuel_alert' || type === 'admin_maintenance_alert') {
+                            switchTab('vehicles');
                         } else {
                             switchTab('chat');
                         }
