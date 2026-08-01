@@ -182,15 +182,25 @@ var PushNotifications = {
   },
 
   handleNotificationAction: function(notification) {
+    var data = (notification.notification && notification.notification.data) ? notification.notification.data : {};
+    var type = data.type || '';
+    var bookingId = data.booking_id ? parseInt(data.booking_id, 10) : null;
     
-    // Handle notification tap - could navigate to specific page
-    var data = notification.notification && notification.notification.data;
-    
-    if (data && data.page) {
-      // Navigate to specific page mentioned in notification
+    if (type === 'license' || type === 'license_approved' || type === 'license_rejected' || type === 'admin_license_upload') {
+      if (typeof openLicenseUpload === 'function') {
+        openLicenseUpload();
+      } else {
+        showOverlay('page-notifications');
+      }
+    } else if (bookingId && !isNaN(bookingId)) {
+      if (typeof openBookingDetail === 'function') {
+        openBookingDetail(bookingId);
+      } else {
+        showOverlay('page-notifications');
+      }
+    } else if (data.page) {
       showPage(data.page);
     } else {
-      // Default: show notifications page
       showOverlay('page-notifications');
     }
   }
