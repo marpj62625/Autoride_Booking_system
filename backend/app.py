@@ -250,6 +250,7 @@ def start_deadline_monitor():
                                         f"⚠️ No Show Alert: Booking #{bk['id']}",
                                         f"Customer '{bk['customer_name']}' has not shown up. Scheduled pickup was {pickup_date} at {pickup_time_str}. Please mark as No Show.",
                                         "admin_no_show",
+                                        type="admin_no_show",
                                         booking_id=bk['id']
                                     )
                                 except Exception as n_err:
@@ -5089,7 +5090,9 @@ def mark_no_show(booking_id):
             notification_service.notify_admins_inapp(
                 f"🚫 No Show: Booking #{booking_id}",
                 f"Booking #{booking_id} for '{bk['customer_name']}' has been marked as No Show by admin.",
-                'no_show_alert'
+                'no_show_alert',
+                type='no_show_alert',
+                booking_id=booking_id
             )
         except Exception as n_err:
             print(f"[mark_no_show] admin notify error: {n_err}")
