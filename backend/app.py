@@ -3410,6 +3410,8 @@ def book():
 
         return_time = data.get('return_time', '06:00')
 
+        service_type = data.get('service_type', 'pickup')
+
 
 
         # New fields
@@ -3437,14 +3439,14 @@ def book():
                 base_price, addon_price, tax_amount, total_price, status,
                 pickup_province, pickup_municipality, pickup_barangay,
                 return_province, return_municipality, return_barangay,
-                start_time, end_time
+                start_time, end_time, service_type
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
               base_price, addon_price, tax_amount, total_price,
               pickup_province, pickup_municipality, pickup_barangay,
               return_province, return_municipality, return_barangay,
-              pickup_time, return_time))
+              pickup_time, return_time, service_type))
 
 
         booking_id = cur.fetchone()['id']
@@ -5118,7 +5120,7 @@ def submit_inspection():
         cur = get_cursor()
 
         # Fetch booking details first to validate status & dates
-        cur.execute("SELECT start_date, start_time, vehicle_id, status FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute("SELECT start_date, start_time, end_date, end_time, service_type, vehicle_id, status FROM bookings WHERE id = %s", (booking_id,))
         bk = cur.fetchone()
         if not bk:
             return jsonify({"error": "Booking not found."}), 404
@@ -5210,6 +5212,68 @@ def submit_inspection():
             cur.execute("UPDATE bookings SET status = 'Picked Up' WHERE id = %s", (booking_id,))
             if vehicle_id:
                 cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (vehicle_id,))
+            
+            # Late Pickup Time Deduction Logic
+            s_type = (bk.get('service_type') or 'pickup').strip().lower()
+            if s_type == 'pickup':
+                pickup_date = bk['start_date']
+                if isinstance(pickup_date, str):
+                    try:
+                        pickup_date = datetime.strptime(pickup_date[:10], '%Y-%m-%d').date()
+                    except Exception:
+                        pickup_date = None
+                elif hasattr(pickup_date, 'date'):
+                    pickup_date = pickup_date.date()
+
+                if pickup_date:
+                    pickup_time_str = bk.get('start_time') or '06:00'
+                    if hasattr(pickup_time_str, 'strftime'):
+                        pickup_time_str = pickup_time_str.strftime('%H:%M')
+                    try:
+                        ph_hour, ph_min = map(int, str(pickup_time_str)[:5].split(':'))
+                    except Exception:
+                        ph_hour, ph_min = 6, 0
+
+                    scheduled_pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
+                    
+                    if now_ph > scheduled_pickup_dt:
+                        late_duration = now_ph - scheduled_pickup_dt
+                        
+                        # Fetch original end datetime
+                        end_date = bk['end_date']
+                        if isinstance(end_date, str):
+                            try:
+                                end_date = datetime.strptime(end_date[:10], '%Y-%m-%d').date()
+                            except Exception:
+                                end_date = None
+                        elif hasattr(end_date, 'date'):
+                            end_date = end_date.date()
+
+                        if end_date:
+                            end_time_str = bk.get('end_time') or '06:00'
+                            if hasattr(end_time_str, 'strftime'):
+                                end_time_str = end_time_str.strftime('%H:%M')
+                            try:
+                                end_hour, end_min = map(int, str(end_time_str)[:5].split(':'))
+                            except Exception:
+                                end_hour, end_min = 6, 0
+
+                            scheduled_end_dt = datetime(end_date.year, end_date.month, end_date.day, end_hour, end_min, tzinfo=PH)
+                            new_end_dt = scheduled_end_dt - late_duration
+                            
+                            # Limit new end datetime to be at least now_ph
+                            if new_end_dt < now_ph:
+                                new_end_dt = now_ph
+
+                            new_end_date_str = new_end_dt.strftime('%Y-%m-%d')
+                            new_end_time_str = new_end_dt.strftime('%H:%M')
+
+                            cur.execute("""
+                                UPDATE bookings 
+                                SET end_date = %s, end_time = %s 
+                                WHERE id = %s
+                            """, (new_end_date_str, new_end_time_str, booking_id))
+                            print(f"[submit_inspection] Late pickup detected. Deducted {late_duration.total_seconds() / 3600:.2f} hours. New end datetime: {new_end_date_str} {new_end_time_str}")
         elif inspection_type == 'return':
             cur.execute("UPDATE bookings SET status = 'Completed' WHERE id = %s", (booking_id,))
             if vehicle_id:

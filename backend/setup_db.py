@@ -107,7 +107,8 @@ def create_tables_and_data():
                 discount_amount DECIMAL(10,2) DEFAULT 0,
                 points_earned INT DEFAULT 0,
                 points_redeemed INT DEFAULT 0,
-                status VARCHAR(20)
+                status VARCHAR(20),
+                service_type VARCHAR(50) DEFAULT 'pickup'
             )
         """)
         print("Table 'bookings' created or verified successfully.")
