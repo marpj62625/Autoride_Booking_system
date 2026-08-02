@@ -7425,7 +7425,6 @@
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Role</label>
                     <select id="staffRole" required style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                         <option value="admin">Staff Admin</option>
-                        <option value="super_admin">Super Admin</option>
                     </select>
                 </div>
                 <div style="display: flex; gap: 12px;">
@@ -17069,10 +17068,14 @@ async edit(id) { this.openModal(id); }
                             ${s.is_verified === 1 ? 'Enabled' : 'Disabled'}
                         </span>
                         <div style="display: flex; gap: 8px;">
+                            ${s.role !== 'super_admin' ? `
                             <button onclick="Staff.openModal(${s.id})" style="padding: 6px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                 <i class="fas fa-pen-to-square" style="font-size: 0.75rem; color: var(--primary);"></i> Edit
                             </button>
-                            ${s.id !== currentUser.id ? `
+                            ` : `
+                            <span style="font-size: 0.7rem; color: var(--text-muted); font-style: italic; padding: 6px 12px;"><i class="fas fa-shield-halved" style="color: var(--primary); margin-right: 4px;"></i>Protected</span>
+                            `}
+                            ${s.id !== currentUser.id && s.role !== 'super_admin' ? `
                                 <button onclick="Staff.toggleStatus(${s.id}, ${s.is_verified})" style="padding: 6px 12px; background: ${s.is_verified === 1 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 177, 79, 0.1)'}; border: 1px solid ${s.is_verified === 1 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 177, 79, 0.2)'}; border-radius: 8px; color: ${s.is_verified === 1 ? 'var(--danger)' : 'var(--success)'}; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
                                     <i class="fas ${s.is_verified === 1 ? 'fa-ban' : 'fa-check'}" style="font-size: 0.75rem;"></i> ${s.is_verified === 1 ? 'Disable' : 'Enable'}
                                 </button>
@@ -17125,6 +17128,11 @@ async edit(id) { this.openModal(id); }
 
                 const s = this.data.find(x => x.id == id);
 
+                // Block editing super_admin accounts
+                if (s && s.role === 'super_admin') {
+                    alert('Super Admin accounts cannot be edited.');
+                    return;
+                }
 
 
                 document.getElementById('staffFormTitle').textContent = 'Edit Staff Account';

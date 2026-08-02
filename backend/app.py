@@ -7661,6 +7661,13 @@ def update_admin(user_id):
 
 
 
+        # Prevent editing super_admin accounts
+        cur.execute("SELECT role FROM users WHERE id=%s", (user_id,))
+        target = cur.fetchone()
+        if target and target['role'] == 'super_admin':
+            return jsonify({"error": "Super Admin accounts cannot be modified."}), 403
+
+
         if password:
             hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             cur.execute("UPDATE users SET full_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (name, email, hashed_pw, role, assigned_location, user_id))
@@ -7727,6 +7734,13 @@ def delete_admin(user_id):
 
 
 
+        # Prevent deleting super_admin accounts
+        cur.execute("SELECT role FROM users WHERE id=%s", (user_id,))
+        target = cur.fetchone()
+        if target and target['role'] == 'super_admin':
+            return jsonify({"error": "Super Admin accounts cannot be deleted."}), 403
+
+
         cur.execute("DELETE FROM users WHERE id=%s AND id != %s", (user_id, requester_id))
 
         commit_db()
@@ -7787,6 +7801,13 @@ def toggle_admin_status(user_id):
 
             return jsonify({"error": "Unauthorized"}), 403
 
+
+
+        # Prevent toggling super_admin status
+        cur.execute("SELECT role FROM users WHERE id=%s", (user_id,))
+        target = cur.fetchone()
+        if target and target['role'] == 'super_admin':
+            return jsonify({"error": "Super Admin status cannot be changed."}), 403
 
 
         cur.execute("UPDATE users SET is_verified=%s WHERE id=%s AND id != %s", (new_status, user_id, requester_id))
