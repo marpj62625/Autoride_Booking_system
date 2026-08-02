@@ -1043,7 +1043,7 @@ function updateChatUnreadBadge() {
 }
 
 function loadAddonSettings() {
-  apiCall('/api/addons')
+  apiCall('/addons')
     .then(function(addons) {
       if (Array.isArray(addons) && addons.length > 0) {
         ADDON_OPTIONS = addons.map(function(a) {
