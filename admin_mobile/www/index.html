@@ -3530,7 +3530,7 @@
             listDiv.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 10px;">Loading addons...</p>';
         }
 
-        addonsApiCall('/api/addons', 'GET')
+        addonsApiCall('/addons', 'GET')
             .then(function(addons) {
                 addonsList = addons || [];
                 renderAddons();
@@ -3617,7 +3617,7 @@
             admin_id: adminId
         };
 
-        const url = id ? `/api/addons/${id}` : '/api/addons';
+        const url = id ? `/addons/${id}` : '/addons';
         const method = id ? 'PUT' : 'POST';
 
         addonsApiCall(url, method, payload)
@@ -3643,7 +3643,7 @@
             return;
         }
 
-        addonsApiCall(`/api/addons/${addonId}?admin_id=${adminId}`, 'DELETE')
+        addonsApiCall(`/addons/${addonId}?admin_id=${adminId}`, 'DELETE')
             .then(function() {
                 showNotification('Addon deleted successfully', 'success');
                 fetchAddons();

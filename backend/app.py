@@ -10829,7 +10829,7 @@ def chat_list_admins():
 
 
 # ── ADD-ONS CRUD ENDPOINTS ──
-@app.route('/api/addons', methods=['GET'])
+@app.route('/addons', methods=['GET'])
 def get_addons():
     """Fetch all available rental addons from database."""
     try:
@@ -10847,7 +10847,7 @@ def get_addons():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/addons', methods=['POST'])
+@app.route('/addons', methods=['POST'])
 def create_addon():
     """Create a new rental addon. Admin only validation."""
     data = request.get_json(silent=True) or {}
@@ -10877,7 +10877,7 @@ def create_addon():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/addons/<int:addon_id>', methods=['PUT'])
+@app.route('/addons/<int:addon_id>', methods=['PUT'])
 def update_addon(addon_id):
     """Update an existing addon. Admin only validation."""
     data = request.get_json(silent=True) or {}
@@ -10919,7 +10919,7 @@ def update_addon(addon_id):
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/api/addons/<int:addon_id>', methods=['DELETE'])
+@app.route('/addons/<int:addon_id>', methods=['DELETE'])
 def delete_addon(addon_id):
     """Delete an addon. Admin only validation."""
     # Handle optional JSON or Query string arguments
