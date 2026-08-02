@@ -6614,7 +6614,7 @@
             <div style="border-top: 1px solid var(--border); margin-bottom: 20px;"></div>
 
             <!-- Add / Edit Form -->
-            <div>
+            <div id="addonCreateForm">
                 <h4 id="addonFormTitle" style="margin: 0 0 16px; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Create New Add-on</h4>
                 <input type="hidden" id="addonIdInput">
 
@@ -10402,7 +10402,10 @@
 
             fetchAddons();
 
-
+            // Show/hide create form based on role
+            const _user = adminAuth.getUser();
+            const addonForm = document.getElementById('addonCreateForm');
+            if (addonForm) addonForm.style.display = (_user && _user.role === 'super_admin') ? 'block' : 'none';
 
         }
 
@@ -10571,9 +10574,7 @@
                         <button onclick="editAddon(${i})" style="background:none;border:none;color:var(--primary);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Edit">
                             <i class="fas fa-pen-to-square"></i>
                         </button>
-                        <button onclick="deleteAddon(${addon.id})" style="background:none;border:none;color:var(--danger);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Delete">
-                            <i class="fas fa-trash-can"></i>
-                        </button>
+                        ${(function(){ const _u = adminAuth.getUser(); return _u && _u.role === 'super_admin' ? `<button onclick="deleteAddon(${addon.id})" style="background:none;border:none;color:var(--danger);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Delete"><i class="fas fa-trash-can"></i></button>` : ''; })()}
                     </div>
                 </div>
             `;
@@ -10706,6 +10707,12 @@
 
         }
 
+        // Only super_admin can save addons
+        if (!user || user.role !== 'super_admin') {
+            showNotification('Only Super Admin can manage add-ons.', 'error');
+            return;
+        }
+
 
 
         const payload = {
@@ -10812,6 +10819,12 @@
 
 
 
+        }
+
+        // Only super_admin can delete addons
+        if (!user || user.role !== 'super_admin') {
+            showNotification('Only Super Admin can delete add-ons.', 'error');
+            return;
         }
 
 
@@ -11496,7 +11509,7 @@
                         <div style="flex-shrink:0;display:flex;flex-direction:column;gap:12px;align-items:center;">
                             <button onclick="Vehicles.view(${v.id})" style="background:none;border:none;color:var(--primary);font-size:1.05rem;padding:4px;cursor:pointer;" title="View Details"><i class="fas fa-eye"></i></button>
                             <button onclick="Vehicles.edit(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-pen-to-square"></i></button>
-                            <button onclick="Vehicles.delete(${v.id})" style="background:none;border:none;color:var(--text-muted);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-trash-can"></i></button>
+                            ${(()=>{ const _cu = adminAuth.getUser(); return _cu && _cu.role === 'super_admin' ? `<button onclick="Vehicles.delete(${v.id})" style="background:none;border:none;color:var(--danger);font-size:1.05rem;padding:4px;cursor:pointer;"><i class="fas fa-trash-can"></i></button>` : ''; })()}
                         </div>
                     </li>`;
                 }).join('') + `</ul>`;
@@ -12164,6 +12177,12 @@
 
 
 
+            const currentUser = adminAuth.getUser();
+            if (!currentUser || currentUser.role !== 'super_admin') {
+                showNotification('Only Super Admin can delete vehicles.', 'error');
+                return;
+            }
+
             if (!confirm('Delete this vehicle?')) return;
 
 
@@ -12172,7 +12191,7 @@
 
 
 
-                const res = await fetch(`${API_URL}/vehicles/${id}/`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/vehicles/${id}/?admin_id=${currentUser.id}`, { method: 'DELETE' });
 
 
 

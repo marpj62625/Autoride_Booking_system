@@ -8143,9 +8143,18 @@ def update_vehicle_status(vehicle_id):
 
 def delete_vehicle(vehicle_id):
 
+    # Require super_admin to delete vehicles
+    admin_id = request.args.get('admin_id') or (request.get_json(silent=True) or {}).get('admin_id')
+
     try:
 
         cur = get_cursor()
+
+        if admin_id:
+            cur.execute("SELECT role FROM users WHERE id = %s", (admin_id,))
+            requester = cur.fetchone()
+            if not requester or requester['role'] != 'super_admin':
+                return jsonify({'error': 'Unauthorized. Only Super Admin can delete vehicles.'}), 403
 
         cur.execute("DELETE FROM vehicle_images WHERE vehicle_id = %s", (vehicle_id,))
 
@@ -10882,9 +10891,9 @@ def create_addon():
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
+        cur.execute("SELECT id FROM users WHERE id = %s AND role = 'super_admin'", (admin_id,))
         if not cur.fetchone():
-            return jsonify({'error': 'Unauthorized admin.'}), 403
+            return jsonify({'error': 'Unauthorized. Only Super Admin can manage add-ons.'}), 403
 
         cur.execute("""
             INSERT INTO addons (name, price_per_day, description)
@@ -10912,9 +10921,9 @@ def update_addon(addon_id):
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
+        cur.execute("SELECT id FROM users WHERE id = %s AND role = 'super_admin'", (admin_id,))
         if not cur.fetchone():
-            return jsonify({'error': 'Unauthorized admin.'}), 403
+            return jsonify({'error': 'Unauthorized. Only Super Admin can manage add-ons.'}), 403
 
         updates = []
         params = []
@@ -10952,9 +10961,9 @@ def delete_addon(addon_id):
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
+        cur.execute("SELECT id FROM users WHERE id = %s AND role = 'super_admin'", (admin_id,))
         if not cur.fetchone():
-            return jsonify({'error': 'Unauthorized admin.'}), 403
+            return jsonify({'error': 'Unauthorized. Only Super Admin can manage add-ons.'}), 403
 
         cur.execute("DELETE FROM addons WHERE id = %s", (addon_id,))
         commit_db()
