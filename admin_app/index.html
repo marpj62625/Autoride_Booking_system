@@ -198,9 +198,7 @@
 
 
             --radius: 14px;
-
-
-
+            --surface-solid: #ffffff;
         }
 
 
@@ -314,9 +312,7 @@
 
 
             --shadow-premium: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
-
-
-
+            --surface-solid: #181818;
         }
 
 
@@ -2850,25 +2846,8 @@
 
 
         #adminNotifPanel *,
-
-
-
-        #adminNotifToast *,
-
-
-
-        .premium-modal .modal-content,
-
-
-
-        .premium-modal .modal-content * {
-
-
-
+        #adminNotifToast * {
             color: white;
-
-
-
         }
 
 
@@ -6604,54 +6583,65 @@
 
     <!-- ADD-ONS CONFIGURATION MODAL -->
     <div id="addonsConfigModal" class="premium-modal" style="display: none;" onclick="closeAddonsModalBackdrop(event)">
-        <div class="modal-content" style="max-width: 500px; max-height: 85vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-plus-circle" style="color: var(--primary);"></i>
-                    Add-ons Management
-                </h3>
-                <button onclick="closeAddonsModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;">
+        <div class="modal-content" style="max-width: 520px; max-height: 90vh; overflow-y: auto; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal);">
+
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; background: var(--primary-glow); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-puzzle-piece" style="color: var(--primary); font-size: 1rem;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 700;">Add-ons Management</h3>
+                        <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-secondary);">Manage optional vehicle extras</p>
+                    </div>
+                </div>
+                <button onclick="closeAddonsModal()" class="menu-btn" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1rem; border-radius: 10px;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
-            <!-- List of existing addons -->
-            <div style="margin-bottom: 20px;">
-                <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 10px;">Current Add-ons</h4>
-                <div id="addonsAdminList" style="display: grid; gap: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px;">
-                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 10px;">Loading addons...</p>
+
+            <!-- Current Add-ons List -->
+            <div style="margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h4 style="margin: 0; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Current Add-ons</h4>
+                </div>
+                <div id="addonsAdminList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading add-ons...</p>
                 </div>
             </div>
-            
-            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-            
+
+            <div style="border-top: 1px solid var(--border); margin-bottom: 20px;"></div>
+
             <!-- Add / Edit Form -->
             <div>
-                <h4 id="addonFormTitle" style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px;">Create New Add-on</h4>
+                <h4 id="addonFormTitle" style="margin: 0 0 16px; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Create New Add-on</h4>
                 <input type="hidden" id="addonIdInput">
-                
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Add-on Name</label>
-                    <input type="text" id="addonNameInput" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box;">
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Add-on Name</label>
+                    <input type="text" id="addonNameInput" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Price per Day (PHP)</label>
-                    <input type="number" id="addonPriceInput" placeholder="e.g. 150" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box;">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Price per Day (&#8369;)</label>
+                    <input type="number" id="addonPriceInput" placeholder="e.g. 150" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Description (Optional)</label>
-                    <textarea id="addonDescInput" placeholder="Add-on description details..." rows="3" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit;"></textarea>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Description <span style="color: var(--text-muted);">(Optional)</span></label>
+                    <textarea id="addonDescInput" placeholder="Briefly describe this add-on..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
                 </div>
-                
+
                 <div style="display: flex; gap: 10px;">
-                    <button id="addonCancelEditBtn" onclick="resetAddonForm()" class="btn-outline" style="display: none; flex: 1; padding: 12px; border: 1px solid var(--border); background: transparent; color: var(--text-main); border-radius: 10px;">
-                        Cancel Edit
+                    <button id="addonCancelEditBtn" onclick="resetAddonForm()" class="btn-outline" style="display: none; flex: 1; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+                        Cancel
                     </button>
-                    <button id="addonSaveBtn" onclick="saveAddon()" class="btn-premium" style="flex: 2; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">
-                        Save Add-on
+                    <button id="addonSaveBtn" onclick="saveAddon()" class="btn-premium" style="flex: 2; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: var(--on-primary); font-weight: 700; cursor: pointer; font-size: 0.9rem; letter-spacing: 0.02em;">
+                        <i class="fas fa-save" style="margin-right: 6px;"></i> Save Add-on
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
         </div>
     </div>
 
