@@ -2305,73 +2305,7 @@ def google_auth():
 
 
 
-@app.route('/coupons/verify', methods=['POST'])
 
-def verify_coupon():
-
-    data = request.json
-
-    code = data.get('code')
-
-    if not code:
-
-        return jsonify({"error": "Coupon code is required"}), 400
-
-    
-
-    try:
-
-        cur = get_cursor()
-
-        cur.execute("""
-
-            SELECT id, code, discount_percent, expiry_date, usage_limit, times_used, is_active 
-
-            FROM coupons WHERE code = %s AND is_active = TRUE
-
-        """, (code,))
-
-        coupon = cur.fetchone()
-
-        
-
-        if not coupon:
-
-            return jsonify({"error": "Invalid or inactive coupon code"}), 404
-
-        
-
-        # Check Expiry
-
-        from datetime import date
-
-        if coupon['expiry_date'] < date.today():
-
-            return jsonify({"error": "Coupon has expired"}), 400
-
-            
-
-        # Check Usage Limit
-
-        if coupon['usage_limit'] and coupon['times_used'] >= coupon['usage_limit']:
-
-            return jsonify({"error": "Coupon usage limit reached"}), 400
-
-            
-
-        return jsonify({
-
-            "message": "Coupon applied!",
-
-            "coupon_id": coupon['id'],
-
-            "discount_percent": coupon['discount_percent']
-
-        }), 200
-
-        
-
-    except Exception as e:
 
         return jsonify({"error": str(e)}), 500
 
@@ -7057,65 +6991,7 @@ def subscribe_newsletter():
 
 
 
-@app.route('/validate-coupon', methods=['POST'])
 
-def validate_coupon():
-
-    data = request.json or {}
-
-    code = data.get('code', '').strip().upper()
-
-    
-
-    if not code:
-
-        return jsonify({"valid": False, "message": "No code provided"}), 400
-
-        
-
-    try:
-
-        cur = get_cursor()
-
-        query = """
-
-            SELECT discount_percent FROM coupons 
-
-            WHERE code = %s AND is_active = TRUE AND expiry_date >= CURRENT_DATE
-
-        """
-
-        cur.execute(query, (code,))
-
-        coupon = cur.fetchone()
-
-        
-
-        if coupon:
-
-            return jsonify({
-
-                "valid": True, 
-
-                "discount_percent": coupon['discount_percent']
-
-            }), 200
-
-        else:
-
-            return jsonify({"valid": False, "message": "Invalid or expired code"}), 200
-
-            
-
-    except Exception as e:
-
-        return jsonify({"valid": False, "error": str(e)}), 500
-
-    finally:
-
-        if 'cur' in locals():
-
-            cur.close()
 
 
 
@@ -7668,13 +7544,18 @@ def update_admin(user_id):
             return jsonify({"error": "Super Admin accounts cannot be modified."}), 403
 
 
+        # Split name into first/last for generated full_name column
+        _admin_name_parts = (name or '').strip().split(' ', 1)
+        _admin_first = _admin_name_parts[0] if _admin_name_parts else name
+        _admin_last = _admin_name_parts[1] if len(_admin_name_parts) > 1 else ''
+
         if password:
             hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cur.execute("UPDATE users SET full_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (name, email, hashed_pw, role, assigned_location, user_id))
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, password=%s, role=%s, assigned_location=%s WHERE id=%s", (_admin_first, _admin_last, email, hashed_pw, role, assigned_location, user_id))
 
         else:
 
-            cur.execute("UPDATE users SET full_name=%s, email=%s, role=%s, assigned_location=%s WHERE id=%s", (name, email, role, assigned_location, user_id))
+            cur.execute("UPDATE users SET first_name=%s, last_name=%s, email=%s, role=%s, assigned_location=%s WHERE id=%s", (_admin_first, _admin_last, email, role, assigned_location, user_id))
 
         
 
