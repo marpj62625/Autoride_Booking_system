@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, make_response
+﻿from flask import Flask, request, jsonify, make_response
 import bcrypt
 
 from flask_cors import CORS
@@ -2297,23 +2297,6 @@ def google_auth():
 
         return jsonify({"error": str(e)}), 500
 
-    finally:
-
-        if 'cur' in locals():
-
-            cur.close()
-
-
-
-
-
-        return jsonify({"error": str(e)}), 500
-
-    finally:
-
-        if 'cur' in locals():
-
-            cur.close()
 
 
 
