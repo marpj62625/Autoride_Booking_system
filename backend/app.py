@@ -10826,3 +10826,119 @@ def chat_list_admins():
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
+
+# ── ADD-ONS CRUD ENDPOINTS ──
+@app.route('/api/addons', methods=['GET'])
+def get_addons():
+    """Fetch all available rental addons from database."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, name, price_per_day, description FROM addons ORDER BY name ASC")
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['price_per_day'] = float(d['price_per_day'])
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/api/addons', methods=['POST'])
+def create_addon():
+    """Create a new rental addon. Admin only validation."""
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    price = data.get('price_per_day')
+    desc = data.get('description', '').strip()
+    admin_id = data.get('admin_id')
+
+    if not name or price is None or not admin_id:
+        return jsonify({'error': 'Name, price per day, and admin_id are required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id FROM admins WHERE id = %s", (admin_id,))
+        if not cur.fetchone():
+            return jsonify({'error': 'Unauthorized admin.'}), 403
+
+        cur.execute("""
+            INSERT INTO addons (name, price_per_day, description)
+            VALUES (%s, %s, %s) RETURNING id
+        """, (name, float(price), desc))
+        addon_id = cur.fetchone()['id']
+        commit_db()
+        return jsonify({'message': 'Addon created successfully', 'id': addon_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/api/addons/<int:addon_id>', methods=['PUT'])
+def update_addon(addon_id):
+    """Update an existing addon. Admin only validation."""
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    price = data.get('price_per_day')
+    desc = data.get('description', '').strip()
+    admin_id = data.get('admin_id')
+
+    if not admin_id:
+        return jsonify({'error': 'admin_id is required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id FROM admins WHERE id = %s", (admin_id,))
+        if not cur.fetchone():
+            return jsonify({'error': 'Unauthorized admin.'}), 403
+
+        updates = []
+        params = []
+        if name:
+            updates.append("name = %s")
+            params.append(name)
+        if price is not None:
+            updates.append("price_per_day = %s")
+            params.append(float(price))
+        if desc is not None:
+            updates.append("description = %s")
+            params.append(desc)
+
+        if not updates:
+            return jsonify({'error': 'No fields to update.'}), 400
+
+        params.append(addon_id)
+        cur.execute(f"UPDATE addons SET {', '.join(updates)} WHERE id = %s", tuple(params))
+        commit_db()
+        return jsonify({'message': 'Addon updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/api/addons/<int:addon_id>', methods=['DELETE'])
+def delete_addon(addon_id):
+    """Delete an addon. Admin only validation."""
+    # Handle optional JSON or Query string arguments
+    data = request.get_json(silent=True) or {}
+    admin_id = data.get('admin_id') or request.args.get('admin_id')
+
+    if not admin_id:
+        return jsonify({'error': 'admin_id is required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id FROM admins WHERE id = %s", (admin_id,))
+        if not cur.fetchone():
+            return jsonify({'error': 'Unauthorized admin.'}), 403
+
+        cur.execute("DELETE FROM addons WHERE id = %s", (addon_id,))
+        commit_db()
+        return jsonify({'message': 'Addon deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()

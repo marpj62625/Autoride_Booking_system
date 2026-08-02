@@ -1042,11 +1042,27 @@ function updateChatUnreadBadge() {
         .catch(function() {});
 }
 
+function loadAddonSettings() {
+  apiCall('/api/addons')
+    .then(function(addons) {
+      if (Array.isArray(addons) && addons.length > 0) {
+        ADDON_OPTIONS = addons.map(function(a) {
+          return { name: a.name, pricePerDay: parseFloat(a.price_per_day) };
+        });
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load addons dynamically:', err);
+    });
+}
+
 // STARTUP - run immediately when script loads, also on events as fallback
 var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
+  
+  loadAddonSettings();
 
   // Initialize Google Auth as early as possible on cold start
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
