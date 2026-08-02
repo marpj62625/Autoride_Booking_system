@@ -10861,7 +10861,7 @@ def create_addon():
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM admins WHERE id = %s", (admin_id,))
+        cur.execute("SELECT id FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
         if not cur.fetchone():
             return jsonify({'error': 'Unauthorized admin.'}), 403
 
@@ -10891,7 +10891,7 @@ def update_addon(addon_id):
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM admins WHERE id = %s", (admin_id,))
+        cur.execute("SELECT id FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
         if not cur.fetchone():
             return jsonify({'error': 'Unauthorized admin.'}), 403
 
@@ -10931,7 +10931,7 @@ def delete_addon(addon_id):
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM admins WHERE id = %s", (admin_id,))
+        cur.execute("SELECT id FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
         if not cur.fetchone():
             return jsonify({'error': 'Unauthorized admin.'}), 403
 
