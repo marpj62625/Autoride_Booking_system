@@ -3560,12 +3560,12 @@
                         <p style="margin: 3px 0 0; font-size: 0.75rem; color: var(--primary); font-weight: 700;">₱${addon.price_per_day}/day</p>
                         ${addon.description ? `<p style="margin: 3px 0 0; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${addon.description}</p>` : ''}
                     </div>
-                    <div style="display: flex; gap: 8px;">
-                        <button onclick="editAddon(${i})" class="menu-btn" style="width: 32px; height: 32px; background: rgba(0,177,79,0.1); border: 1px solid rgba(0,177,79,0.2); color: var(--primary); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-edit"></i>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-shrink: 0;">
+                        <button onclick="editAddon(${i})" style="background:none;border:none;color:var(--primary);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Edit">
+                            <i class="fas fa-pen-to-square"></i>
                         </button>
-                        <button onclick="deleteAddon(${addon.id})" class="menu-btn" style="width: 32px; height: 32px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--danger); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-trash-alt"></i>
+                        <button onclick="deleteAddon(${addon.id})" style="background:none;border:none;color:var(--danger);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Delete">
+                            <i class="fas fa-trash-can"></i>
                         </button>
                     </div>
                 </div>
