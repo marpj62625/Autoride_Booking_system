@@ -1675,11 +1675,11 @@
     <div id="systemConfigModal" class="premium-modal" style="display: none;" onclick="closeSystemConfigModalBackdrop(event)">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 style="margin: 0; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-cogs" style="color: var(--primary);"></i>
                     System Configuration
                 </h3>
-                <button onclick="closeSystemConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;">
+                <button onclick="closeSystemConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -1695,7 +1695,7 @@
             </div>
             
             <div style="display: flex; gap: 10px; margin-top: 24px;">
-                <button onclick="closeSystemConfigModal()" class="btn-outline" style="flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: white; border-radius: 10px;">
+                <button onclick="closeSystemConfigModal()" class="btn-outline" style="flex: 1; padding: 12px; border: 1px solid var(--border); background: transparent; color: var(--text-main); border-radius: 10px;">
                     Cancel
                 </button>
                 <button onclick="Settings.save(); closeSystemConfigModal();" class="btn-premium" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">
@@ -1709,45 +1709,45 @@
     <div id="addonsConfigModal" class="premium-modal" style="display: none;" onclick="closeAddonsModalBackdrop(event)">
         <div class="modal-content" style="max-width: 500px; max-height: 85vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3 style="margin: 0; font-size: 1.2rem; color: white; display: flex; align-items: center; gap: 10px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
                     <i class="fas fa-plus-circle" style="color: var(--primary);"></i>
                     Add-ons Management
                 </h3>
-                <button onclick="closeAddonsModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 10px;">
+                <button onclick="closeAddonsModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             
             <!-- List of existing addons -->
             <div style="margin-bottom: 20px;">
-                <h4 style="font-size: 0.9rem; color: white; margin-bottom: 10px;">Current Add-ons</h4>
+                <h4 style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 10px;">Current Add-ons</h4>
                 <div id="addonsAdminList" style="display: grid; gap: 10px; max-height: 200px; overflow-y: auto; padding-right: 5px;">
                     <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 10px;">Loading addons...</p>
                 </div>
             </div>
             
-            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
             
             <!-- Add / Edit Form -->
             <div>
-                <h4 id="addonFormTitle" style="font-size: 0.9rem; color: white; margin-bottom: 15px;">Create New Add-on</h4>
+                <h4 id="addonFormTitle" style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 15px;">Create New Add-on</h4>
                 <input type="hidden" id="addonIdInput">
                 
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Add-on Name</label>
-                    <input type="text" id="addonNameInput" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; box-sizing: border-box;">
+                    <input type="text" id="addonNameInput" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box;">
                 </div>
                 <div class="form-group" style="margin-bottom: 12px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Price per Day (PHP)</label>
-                    <input type="number" id="addonPriceInput" placeholder="e.g. 150" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; box-sizing: border-box;">
+                    <input type="number" id="addonPriceInput" placeholder="e.g. 150" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box;">
                 </div>
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">Description (Optional)</label>
-                    <textarea id="addonDescInput" placeholder="Add-on description details..." rows="3" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; box-sizing: border-box; resize: vertical; font-family: inherit;"></textarea>
+                    <textarea id="addonDescInput" placeholder="Add-on description details..." rows="3" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit;"></textarea>
                 </div>
                 
                 <div style="display: flex; gap: 10px;">
-                    <button id="addonCancelEditBtn" onclick="resetAddonForm()" class="btn-outline" style="display: none; flex: 1; padding: 12px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: white; border-radius: 10px;">
+                    <button id="addonCancelEditBtn" onclick="resetAddonForm()" class="btn-outline" style="display: none; flex: 1; padding: 12px; border: 1px solid var(--border); background: transparent; color: var(--text-main); border-radius: 10px;">
                         Cancel Edit
                     </button>
                     <button id="addonSaveBtn" onclick="saveAddon()" class="btn-premium" style="flex: 2; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">
@@ -2261,14 +2261,14 @@
     <!-- CHANGE PASSWORD MODAL -->
     <div id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
         <div style="background: var(--surface-container); border-radius: 20px; padding: 25px; border: 1px solid var(--border); width: 100%; max-width: 400px;">
-            <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: white;">Change Password</h2>
+            <h2 style="margin-bottom: 25px; font-size: 1.3rem; font-weight: 700; color: var(--text-main);">Change Password</h2>
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">New Password</label>
-                <input id="newMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="newMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
             </div>
             <div style="margin-bottom: 25px;">
                 <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px;">Confirm New Password</label>
-                <input id="confirmMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input id="confirmMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
             </div>
             <div style="display: flex; gap: 10px;">
                 <button onclick="document.getElementById('changePasswordModal').style.display='none'" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); border-radius: 10px; color: var(--text-secondary); font-weight: 600;">Cancel</button>
@@ -3554,9 +3554,9 @@
 
         listDiv.innerHTML = addonsList.map(function(addon, i) {
             return `
-                <div class="stat-card" style="padding: 10px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); margin-bottom: 8px;">
+                <div class="stat-card" style="padding: 10px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-container); border: 1px solid var(--border); margin-bottom: 8px;">
                     <div style="flex: 1; min-width: 0; padding-right: 10px;">
-                        <h5 style="margin: 0; font-size: 0.9rem; color: white;">${addon.name}</h5>
+                        <h5 style="margin: 0; font-size: 0.9rem; color: var(--text-main);">${addon.name}</h5>
                         <p style="margin: 3px 0 0; font-size: 0.75rem; color: var(--primary); font-weight: 700;">₱${addon.price_per_day}/day</p>
                         ${addon.description ? `<p style="margin: 3px 0 0; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${addon.description}</p>` : ''}
                     </div>
