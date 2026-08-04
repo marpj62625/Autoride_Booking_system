@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, make_response
 import bcrypt
 
 from flask_cors import CORS
@@ -345,41 +345,60 @@ def migrate_settings_v2():
 
         
 
+        # Create locations table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS locations (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) UNIQUE NOT NULL,
+                province VARCHAR(100),
+                municipality VARCHAR(100),
+                barangay VARCHAR(100),
+                delivery_fee NUMERIC(10,2) DEFAULT 0.00,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+
+        # Populate default locations
+        default_locs = [
+            ('San Pablo City, Laguna', 'Laguna', 'San Pablo City', '', 0.00),
+            ('Tanauan/Sto. Tomas, Batangas', 'Batangas', 'Tanauan', 'Sto. Tomas', 0.00),
+            ('Others (Subject to Admin Coordination)', 'Other', 'Other', 'Other', 0.00)
+        ]
+        for name, prov, muni, brgy, fee in default_locs:
+            cur.execute("""
+                INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (name) DO NOTHING
+            """, (name, prov, muni, brgy, fee))
+
+        # Add new columns to bookings table
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) DEFAULT 0.00")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_redeemed INT DEFAULT 0")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_earned INT DEFAULT 0")
+
         # 2. Ensure new keys exist with default values
-
         new_configs = [
-
             ('mileage_limit', '250', 'Daily mileage limit in kilometers'),
-
             ('long_term_discount_days', '7', 'Minimum days for long-term discount'),
-
             ('long_term_discount_percent', '10', 'Long-term discount percentage'),
-
+            ('loyalty_points_spend_ratio', '100', 'Spend amount in PHP required to earn 1 loyalty point'),
+            ('loyalty_points_value', '0.1', 'Discount value in PHP of 1 loyalty point'),
+            ('loyalty_max_discount_percent', '50', 'Maximum percentage of booking cost that can be covered by loyalty points discount')
         ]
 
-        
-
         for key, val, desc in new_configs:
-
             cur.execute("""
-
                 INSERT INTO settings (key, value, description) 
-
                 VALUES (%s, %s, %s) 
-
                 ON CONFLICT (key) DO NOTHING
-
             """, (key, val, desc))
 
-            
-
-        # 3. Force update the rental terms text
-
-        terms_text = "Mileage Rule: 250 km per day. Rentals of 7 days or more get a 10% discount!"
-
-        cur.execute("UPDATE settings SET value = %s WHERE key = 'rental_terms'", (terms_text,))
-
-        
+        # 3. Force update the rental terms text if it is empty
+        cur.execute("SELECT value FROM settings WHERE key = 'rental_terms'")
+        existing_terms = cur.fetchone()
+        if not existing_terms or not existing_terms['value']:
+            terms_text = "Fuel Policy: Return the vehicle with the same fuel level as at pickup.\nMileage Rule: 250 km per day limit. Excess charged at ₱10/km.\nDriver Responsibility: You must be the primary driver with a valid verified license.\nLate Return: Penalty of ₱500 per hour for late returns.\nDamages: Any damages not covered by your selected insurance are your responsibility.\nCancellation: 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup."
+            cur.execute("UPDATE settings SET value = %s WHERE key = 'rental_terms'", (terms_text,))
 
         commit_db()
 
@@ -3346,23 +3365,22 @@ def book():
 
 
         # New fields
-
         addons = ",".join(data.get('addons', []))
-
         base_price = data.get('base_price')
-
         addon_price = data.get('addon_price')
-
         tax_amount = data.get('tax_amount')
-
         total_price = data.get('total_price')
 
-        # Ensure time columns exist
+        points_redeemed = int(data.get('points_redeemed', 0) or 0)
+        points_earned = int(data.get('points_earned', 0) or 0)
+        delivery_fee = float(data.get('delivery_fee', 0.00) or 0.00)
 
-        try:
-            pass # No need to alter table since we're using start_time and end_time
-        except Exception:
-            pass
+        # Validate points
+        if points_redeemed > 0:
+            cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_id,))
+            user_pts = cur.fetchone()
+            if not user_pts or int(user_pts['loyalty_points'] or 0) < points_redeemed:
+                return jsonify({"error": "Insufficient loyalty points"}), 400
 
         cur.execute("""
             INSERT INTO bookings (
@@ -3370,17 +3388,20 @@ def book():
                 base_price, addon_price, tax_amount, total_price, status,
                 pickup_province, pickup_municipality, pickup_barangay,
                 return_province, return_municipality, return_barangay,
-                start_time, end_time, service_type
+                start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
               base_price, addon_price, tax_amount, total_price,
               pickup_province, pickup_municipality, pickup_barangay,
               return_province, return_municipality, return_barangay,
-              pickup_time, return_time, service_type))
-
+              pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned))
 
         booking_id = cur.fetchone()['id']
+
+        # Deduct loyalty points immediately
+        if points_redeemed > 0:
+            cur.execute("UPDATE users SET loyalty_points = loyalty_points - %s WHERE id = %s", (points_redeemed, user_id))
 
         
 
@@ -5348,7 +5369,7 @@ def user_cancel_booking():
         cur = get_cursor()
         cur.execute("""
             SELECT user_id, status, vehicle_id, start_date,
-                   amount_paid, total_price, payment_status
+                   amount_paid, total_price, payment_status, points_redeemed
             FROM bookings WHERE id = %s
         """, (booking_id,))
         booking = cur.fetchone()
@@ -5415,6 +5436,11 @@ def user_cancel_booking():
 
         if booking['vehicle_id']:
             cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (booking['vehicle_id'],))
+
+        # Refund redeemed loyalty points
+        redeemed = int(booking.get('points_redeemed', 0) or 0)
+        if redeemed > 0:
+            cur.execute("UPDATE users SET loyalty_points = loyalty_points + %s WHERE id = %s", (redeemed, booking['user_id']))
 
         commit_db()
 
@@ -5486,23 +5512,21 @@ def reject_booking(booking_id):
 
         cur = get_cursor()
 
-        cur.execute("SELECT status, vehicle_id, user_id FROM bookings WHERE id=%s", (booking_id,))
-
+        cur.execute("SELECT status, vehicle_id, user_id, points_redeemed FROM bookings WHERE id=%s", (booking_id,))
         row = cur.fetchone()
-
         
-
         if not row:
-
             return jsonify({"error": "Booking not found"}), 404
-
+            
         if row['status'] != 'Pending':
-
             return jsonify({"error": f"Cannot reject a booking with status '{row['status']}'"}), 400
 
-            
-
         cur.execute("UPDATE bookings SET status='Rejected' WHERE id=%s", (booking_id,))
+
+        # Refund redeemed loyalty points
+        redeemed = int(row.get('points_redeemed', 0) or 0)
+        if redeemed > 0:
+            cur.execute("UPDATE users SET loyalty_points = loyalty_points + %s WHERE id = %s", (redeemed, row['user_id']))
 
         commit_db()
 
@@ -5712,52 +5736,34 @@ def admin_cancel_booking(booking_id):
 
         cur = get_cursor()
 
-        cur.execute("SELECT status, payment_status, vehicle_id, user_id FROM bookings WHERE id=%s", (booking_id,))
-
+        cur.execute("SELECT status, payment_status, vehicle_id, user_id, points_redeemed FROM bookings WHERE id=%s", (booking_id,))
         booking = cur.fetchone()
 
-        
-
         if not booking:
-
             return jsonify({"error": "Booking not found"}), 404
 
-            
-
         # Determine if refund is needed
-
         new_payment_status = booking['payment_status']
-
         if booking['status'] in ['Approved', 'Confirmed'] or booking['payment_status'] == 'Paid':
-
             new_payment_status = 'Refund Pending'
-
         else:
-
             new_payment_status = 'Cancelled'
 
-            
-
         cur.execute("""
-
             UPDATE bookings 
-
             SET status='Cancelled', payment_status=%s,
                 cancelled_at = NOW() 
-
             WHERE id=%s
-
         """, (new_payment_status, booking_id))
 
-        
-
         # Reset vehicle status to 'Available'
-
         if booking['vehicle_id']:
-
             cur.execute("UPDATE vehicles SET status='Available' WHERE id=%s", (booking['vehicle_id'],))
 
-        
+        # Refund redeemed loyalty points
+        redeemed = int(booking.get('points_redeemed', 0) or 0)
+        if redeemed > 0:
+            cur.execute("UPDATE users SET loyalty_points = loyalty_points + %s WHERE id = %s", (redeemed, booking['user_id']))
 
         commit_db()
 
@@ -5895,17 +5901,25 @@ def complete_booking(booking_id):
 
         cur = get_cursor()
 
-        cur.execute("UPDATE bookings SET status='Completed' WHERE id=%s", (booking_id,))
-
+        cur.execute("SELECT user_id, points_earned, status FROM bookings WHERE id=%s", (booking_id,))
+        b_info = cur.fetchone()
         
-
-        # Reset vehicle status to 'Available'
-
-        cur.execute("UPDATE vehicles SET status='Available' WHERE id=(SELECT vehicle_id FROM bookings WHERE id=%s)", (booking_id,))
-
-        
-
-        commit_db()
+        if not b_info:
+            return jsonify({"error": "Booking not found"}), 404
+            
+        # Only award points if it was not already Completed
+        if b_info['status'] != 'Completed':
+            cur.execute("UPDATE bookings SET status='Completed' WHERE id=%s", (booking_id,))
+            
+            # Reset vehicle status to 'Available'
+            cur.execute("UPDATE vehicles SET status='Available' WHERE id=(SELECT vehicle_id FROM bookings WHERE id=%s)", (booking_id,))
+            
+            # Award points
+            earned = int(b_info.get('points_earned', 0) or 0)
+            if earned > 0:
+                cur.execute("UPDATE users SET loyalty_points = loyalty_points + %s WHERE id = %s", (earned, b_info['user_id']))
+                
+            commit_db()
 
         
 
@@ -8705,6 +8719,124 @@ def handle_admin_settings():
 
 
 
+@app.route('/locations', methods=['GET'])
+def get_locations():
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, name, province, municipality, barangay, delivery_fee FROM locations ORDER BY name ASC")
+        rows = cur.fetchall()
+        return jsonify([dict(r) for r in rows]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/locations', methods=['POST'])
+def add_location():
+    try:
+        data = request.json or {}
+        requester_id = data.get('requester_id')
+        name = data.get('name')
+        province = data.get('province', '')
+        municipality = data.get('municipality', '')
+        barangay = data.get('barangay', '')
+        delivery_fee = float(data.get('delivery_fee', 0.00))
+
+        if not requester_id or not name:
+            return jsonify({"error": "Missing requester_id or name"}), 400
+
+        cur = get_cursor()
+        cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
+        user = cur.fetchone()
+        if not user or user['role'] != 'super_admin':
+            return jsonify({"error": "Unauthorized. Super Admin only."}), 403
+
+        cur.execute("""
+            INSERT INTO locations (name, province, municipality, barangay, delivery_fee)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id
+        """, (name, province, municipality, barangay, delivery_fee))
+        new_id = cur.fetchone()['id']
+        commit_db()
+
+        log_activity(
+            admin_id=requester_id,
+            admin_name=user['full_name'],
+            action='ADD_LOCATION',
+            target_type='LOCATION',
+            target_id=str(new_id),
+            details=f"Added location: {name} with fee ₱{delivery_fee}"
+        )
+        return jsonify({"message": "Location added successfully", "id": new_id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/locations/<int:loc_id>', methods=['PUT', 'DELETE'])
+def handle_location_detail(loc_id):
+    try:
+        data = request.json or {}
+        requester_id = data.get('requester_id') or request.args.get('requester_id')
+
+        if not requester_id:
+            return jsonify({"error": "Missing requester_id"}), 400
+
+        cur = get_cursor()
+        cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
+        user = cur.fetchone()
+        if not user or user['role'] != 'super_admin':
+            return jsonify({"error": "Unauthorized. Super Admin only."}), 403
+
+        if request.method == 'PUT':
+            name = data.get('name')
+            province = data.get('province', '')
+            municipality = data.get('municipality', '')
+            barangay = data.get('barangay', '')
+            delivery_fee = float(data.get('delivery_fee', 0.00))
+
+            if not name:
+                return jsonify({"error": "Missing location name"}), 400
+
+            cur.execute("""
+                UPDATE locations
+                SET name=%s, province=%s, municipality=%s, barangay=%s, delivery_fee=%s
+                WHERE id=%s
+            """, (name, province, municipality, barangay, delivery_fee, loc_id))
+            commit_db()
+
+            log_activity(
+                admin_id=requester_id,
+                admin_name=user['full_name'],
+                action='UPDATE_LOCATION',
+                target_type='LOCATION',
+                target_id=str(loc_id),
+                details=f"Updated location: {name} (Fee: ₱{delivery_fee})"
+            )
+            return jsonify({"message": "Location updated successfully"}), 200
+
+        elif request.method == 'DELETE':
+            cur.execute("SELECT name FROM locations WHERE id=%s", (loc_id,))
+            loc_row = cur.fetchone()
+            if not loc_row:
+                return jsonify({"error": "Location not found"}), 404
+
+            cur.execute("DELETE FROM locations WHERE id=%s", (loc_id,))
+            commit_db()
+
+            log_activity(
+                admin_id=requester_id,
+                admin_name=user['full_name'],
+                action='DELETE_LOCATION',
+                target_type='LOCATION',
+                target_id=str(loc_id),
+                details=f"Deleted location: {loc_row['name']}"
+            )
+            return jsonify({"message": "Location deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/admin/activity-logs', methods=['GET'])
 
 def get_activity_logs():
@@ -8740,17 +8872,14 @@ def get_public_settings():
         cur = get_cursor()
 
         public_keys = [
-
             'mileage_limit', 
-
             'long_term_discount_days', 
-
             'long_term_discount_percent',
-
             'currency',
-
-            'rental_terms'
-
+            'rental_terms',
+            'loyalty_points_spend_ratio',
+            'loyalty_points_value',
+            'loyalty_max_discount_percent'
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))

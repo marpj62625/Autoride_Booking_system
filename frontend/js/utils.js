@@ -268,7 +268,8 @@ function calculateBookingPrice(
   longTermDiscountDays,
   longTermDiscountPercent,
   couponPercent,
-  pointsRedeemed
+  pointsRedeemed,
+  deliveryFee
 ) {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -292,15 +293,21 @@ function calculateBookingPrice(
   const cpPercent = Number(couponPercent) || 0;
   const couponDiscount = subtotal * (cpPercent / 100);
 
+  // Fetch dynamic loyalty configurations
+  const spendRatio = (typeof appSettings !== 'undefined' && Number(appSettings.loyalty_points_spend_ratio)) || 100;
+  const pointsValRate = (typeof appSettings !== 'undefined' && Number(appSettings.loyalty_points_value)) || 0.1;
+  const maxDiscountPct = (typeof appSettings !== 'undefined' && Number(appSettings.loyalty_max_discount_percent)) || 50;
+
   const pts = Number(pointsRedeemed) || 0;
-  const pointsValue = pts / 10; // 10 points = PHP 1
+  const pointsValue = pts * pointsValRate;
   
-  // LIMIT: Points can only cover max 50% of subtotal (after coupon)
-  const maxPointsDiscount = (subtotal - couponDiscount) * 0.50;
+  // LIMIT: Points can only cover configurable max percentage of subtotal (after coupon)
+  const maxPointsDiscount = (subtotal - couponDiscount) * (maxDiscountPct / 100);
   const pointsDiscount = Math.min(pointsValue, maxPointsDiscount);
 
-  const total = Math.max(0, subtotal - couponDiscount - pointsDiscount);
-  const pointsEarned = Math.floor(total / 100);
+  const delFee = Number(deliveryFee) || 0;
+  const total = Math.max(0, subtotal - couponDiscount - pointsDiscount) + delFee;
+  const pointsEarned = Math.floor(total / spendRatio);
 
   const downpaymentAmount = total * 0.20;
   const balanceAmount = total * 0.80;
@@ -313,6 +320,7 @@ function calculateBookingPrice(
     longTermDiscount,
     couponDiscount,
     pointsDiscount,
+    deliveryFee: delFee,
     total,
     pointsEarned,
     downpaymentAmount,

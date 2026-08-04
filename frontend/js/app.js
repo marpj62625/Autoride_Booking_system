@@ -67,8 +67,16 @@ var appSettings = {
   mileage_limit: '250',
   long_term_discount_days: '7',
   long_term_discount_percent: '10',
-  rental_terms: ''
+  rental_terms: '',
+  loyalty_points_spend_ratio: '100',
+  loyalty_points_value: '0.1',
+  loyalty_max_discount_percent: '50'
 };
+var servicedLocations = [
+  { id: 1, name: 'San Pablo City, Laguna', province: 'Laguna', municipality: 'San Pablo City', barangay: '', delivery_fee: 0 },
+  { id: 2, name: 'Tanauan/Sto. Tomas, Batangas', province: 'Batangas', municipality: 'Tanauan', barangay: 'Sto. Tomas', delivery_fee: 0 },
+  { id: 3, name: 'Others (Subject to Admin Coordination)', province: 'Other', municipality: 'Other', barangay: 'Other', delivery_fee: 0 }
+];
 var couponData = null;
 var selectedAddons = [];
 var selectedInsurance = { type: 'Basic', price: 0 };
@@ -500,6 +508,17 @@ var NotifStore = {
     });
   }
 };
+
+function loadPublicSettingsAndLocations() {
+  apiCall('/public/settings').then(function(s) {
+    Object.assign(appSettings, s);
+  }).catch(function() {});
+  apiCall('/locations').then(function(locs) {
+    if (Array.isArray(locs) && locs.length > 0) {
+      servicedLocations = locs;
+    }
+  }).catch(function() {});
+}
 
 // FCM TOKEN REGISTRATION
 function saveFcmToken(token) {
@@ -1140,9 +1159,7 @@ function initApp() {
         }).catch(function() {
           startBgSessionPolling();
         });
-      apiCall('/public/settings').then(function(s) {
-        Object.assign(appSettings, s);
-      }).catch(function() {});
+      loadPublicSettingsAndLocations();
       // Initialise Supabase client and load notifications
       if (typeof supabase !== 'undefined') {
           supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1373,7 +1390,7 @@ function doLogin() {
         }).catch(function() {
           startBgSessionPolling();
         });
-      apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
+      loadPublicSettingsAndLocations();
       // Initialise Supabase client and load notifications
       if (typeof supabase !== 'undefined') {
           supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1606,7 +1623,7 @@ function _finishGoogleLogin(idToken, email, name) {
         currentUser = data.user;
         Session.save(currentUser);
         showToast('Welcome, ' + currentUser.fullName + '!', 'success');
-        apiCall('/public/settings').then(function(s) { Object.assign(appSettings, s); }).catch(function() {});
+        loadPublicSettingsAndLocations();
         if (typeof supabase !== 'undefined') {
           supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
@@ -2914,8 +2931,13 @@ function openBookingForm(vehicleId) {
   var el = document.getElementById('bookingFormContent');
   if (!el) return;
 
-  var locationOptions = PICKUP_LOCATIONS.map(function(loc, i) {
-    return '<option value="' + loc.value + '">' + loc.label + '</option>';
+  var locationOptions = servicedLocations.map(function(loc) {
+    return '<option value="' + loc.name + '">' + loc.name + '</option>';
+  }).join('');
+
+  var deliveryZoneOptions = servicedLocations.map(function(loc) {
+    var feeText = Number(loc.delivery_fee) === 0 ? 'Free' : '₱' + Number(loc.delivery_fee);
+    return '<option value="' + loc.name + '">' + loc.name + ' (Delivery: ' + feeText + ')</option>';
   }).join('');
 
   var insuranceHtml = INSURANCE_OPTIONS.map(function(ins, i) {
@@ -2973,8 +2995,10 @@ function openBookingForm(vehicleId) {
 
     // Delivery address with map link
     '<div id="deliverySection" style="display:none;margin-top:14px;">' +
-    '<div class="form-group"><label>Delivery Address</label>' +
-    '<input type="text" id="bfDeliveryAddress" placeholder="Enter full delivery address"></div>' +
+    '<div class="form-group"><label>Delivery Zone / Serviced Area</label>' +
+    '<select id="bfDeliveryZone" onchange="onDeliveryZoneChange()">' + deliveryZoneOptions + '</select></div>' +
+    '<div class="form-group"><label>Detailed Delivery Address (Street, House No., landmark)</label>' +
+    '<input type="text" id="bfDeliveryAddress" placeholder="Enter specific delivery address"></div>' +
     '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" placeholder="Barangay"></div>' +
     '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" placeholder="Municipality or City"></div>' +
     '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" placeholder="Province"></div>' +
@@ -3039,6 +3063,29 @@ function setServiceType(type) {
   document.getElementById('btnDelivery').classList.toggle('active', type === 'delivery');
   document.getElementById('pickupSection').style.display = type === 'pickup' ? 'block' : 'none';
   document.getElementById('deliverySection').style.display = type === 'delivery' ? 'block' : 'none';
+  updateBookingPrice();
+}
+
+function onDeliveryZoneChange() {
+  var zoneEl = document.getElementById('bfDeliveryZone');
+  if (!zoneEl) return;
+  var zoneName = zoneEl.value;
+  var zone = servicedLocations.find(function(l) { return l.name === zoneName; }) || {};
+  
+  var brgyEl = document.getElementById('bfDeliveryBarangay');
+  var muniEl = document.getElementById('bfDeliveryMunicipality');
+  var provEl = document.getElementById('bfDeliveryProvince');
+  
+  if (zoneName.indexOf('Others') !== -1) {
+    if (brgyEl) brgyEl.value = '';
+    if (muniEl) muniEl.value = '';
+    if (provEl) provEl.value = '';
+  } else {
+    if (brgyEl && zone.barangay) brgyEl.value = zone.barangay;
+    if (muniEl && zone.municipality) muniEl.value = zone.municipality;
+    if (provEl && zone.province) provEl.value = zone.province;
+  }
+  updateBookingPrice();
 }
 
 function onPickupLocationChange() {
@@ -3202,11 +3249,24 @@ function updateBookingPrice() {
   
   var ptsEl = document.getElementById('bfPoints');
   var pts = ptsEl ? (parseInt(ptsEl.value) || 0) : 0;
+
+  var serviceTypeEl = document.getElementById('bfServiceType');
+  var serviceType = serviceTypeEl ? serviceTypeEl.value : 'pickup';
+  var delFee = 0;
+  if (serviceType === 'delivery') {
+    var zoneEl = document.getElementById('bfDeliveryZone');
+    var zoneName = zoneEl ? zoneEl.value : '';
+    var zone = servicedLocations.find(function(l) { return l.name === zoneName; });
+    if (zone) {
+      delFee = Number(zone.delivery_fee) || 0;
+    }
+  }
+
   var result = calculateBookingPrice(
     v.daily_rate, start, end, selectedAddons, insPrice,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
-    0, pts
+    0, pts, delFee
   );
   var payTypeEl = document.getElementById('bfPaymentType');
   var payType = payTypeEl ? payTypeEl.value : 'Full';
@@ -3224,6 +3284,7 @@ function updateBookingPrice() {
     (result.longTermDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-tag"></i> Long-term Discount (' + (appSettings.long_term_discount_percent || 10) + '%)</span><span>-' + formatPHP(result.longTermDiscount) + '</span></div>' : '') +
     (result.couponDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-ticket-alt"></i> Coupon Discount</span><span>-' + formatPHP(result.couponDiscount) + '</span></div>' : '') +
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
+    (serviceType === 'delivery' ? '<div class="price-row"><span>Delivery Fee</span><span>' + (result.deliveryFee > 0 ? formatPHP(result.deliveryFee) : 'Free') + '</span></div>' : '') +
     '<div class="price-row total" style="margin-top:4px;"><span>Total</span><span>' + formatPHP(result.total) + '</span></div>' +
     (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
     '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' : '') +
@@ -3260,14 +3321,24 @@ function submitBooking() {
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
+  var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
+  var delFee = 0;
+  if (serviceType === 'delivery') {
+    var zoneEl = document.getElementById('bfDeliveryZone');
+    var zoneName = zoneEl ? zoneEl.value : '';
+    var zone = servicedLocations.find(function(l) { return l.name === zoneName; });
+    if (zone) {
+      delFee = Number(zone.delivery_fee) || 0;
+    }
+  }
+
   var result = calculateBookingPrice(
     bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
     parseInt(appSettings.long_term_discount_days) || 7,
     parseInt(appSettings.long_term_discount_percent) || 10,
-    0, pts
+    0, pts, delFee
   );
   var payType = document.getElementById('bfPaymentType').value;
-  var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
   var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
   var returnLocation, returnProvince, returnMunicipality, returnBarangay;
 
@@ -3276,8 +3347,8 @@ function submitBooking() {
     var returnSel = document.getElementById('bfReturnLocation');
     pickupLocation = pickupSel ? pickupSel.value : '';
     returnLocation = returnSel ? returnSel.value : '';
-    var pickupData = PICKUP_LOCATIONS.find(function(l) { return l.value === pickupLocation; }) || {};
-    var returnData = PICKUP_LOCATIONS.find(function(l) { return l.value === returnLocation; }) || {};
+    var pickupData = servicedLocations.find(function(l) { return l.name === pickupLocation; }) || {};
+    var returnData = servicedLocations.find(function(l) { return l.name === returnLocation; }) || {};
     pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
     returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
   } else {
@@ -3312,6 +3383,7 @@ function submitBooking() {
     points_redeemed: pts,
     points_earned: result.pointsEarned,
     service_type: serviceType,
+    delivery_fee: delFee,
     split_with_email: splitEmail || null
   };
 
@@ -3377,14 +3449,20 @@ function showRentalAgreement(payload, result, payType) {
     '<i class="fas fa-file-contract" style="font-size:2rem;color:var(--primary);"></i>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-top:8px;">Rental Agreement</h3>' +
     '</div>' +
-    '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:0.8rem;line-height:1.7;">' +
-    '<p style="margin-bottom:8px;">By proceeding, you agree to the Autoride Rental Terms and Conditions:</p>' +
-    '<p><strong>Fuel Policy:</strong> Return the vehicle with the same fuel level as at pickup.</p>' +
-    '<p><strong>Mileage Rule:</strong> ' + (appSettings.mileage_limit || 250) + ' km/day limit. Excess charged at ₱10/km.</p>' +
-    '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
-    '<p><strong>Late Return:</strong> Penalty of ₱500 per hour for late returns.</p>' +
-    '<p><strong>Damages:</strong> Any damages not covered by your selected insurance are your responsibility.</p>' +
-    '<p><strong>Cancellation:</strong> 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup.</p>' +
+    '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;font-size:0.8rem;line-height:1.7;max-height:220px;overflow-y:auto;border:1px solid var(--border);">' +
+    '<p style="margin-bottom:8px;font-weight:700;">By proceeding, you agree to the Autoride Rental Terms and Conditions:</p>' +
+    (function() {
+      if (appSettings.rental_terms && appSettings.rental_terms.trim()) {
+        return '<div style="white-space:pre-wrap;line-height:1.6;">' + appSettings.rental_terms + '</div>';
+      } else {
+        return '<p><strong>Fuel Policy:</strong> Return the vehicle with the same fuel level as at pickup.</p>' +
+          '<p><strong>Mileage Rule:</strong> ' + (appSettings.mileage_limit || 250) + ' km/day limit. Excess charged at ₱10/km.</p>' +
+          '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
+          '<p><strong>Late Return:</strong> Late fee of ₱500 per hour applies.</p>' +
+          '<p><strong>Damages:</strong> Any damages not covered by your selected insurance are your responsibility.</p>' +
+          '<p><strong>Cancellation:</strong> 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup.</p>';
+      }
+    })() +
     '</div>' +
     '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:0.8rem;">' +
     '<strong>Mandatory Requirements:</strong>' +

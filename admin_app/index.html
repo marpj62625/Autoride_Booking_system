@@ -5138,6 +5138,18 @@
                     <div style="flex: 1;">
                         <h4 style="font-size: 0.95rem;">Add-ons Management</h4>
                         <p style="font-size: 0.7rem; color: var(--text-muted);">Manage rental add-ons and pricing</p>
+                    </div>                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                </div>
+            </div>
+
+            <div id="mobileLocationsConfig" class="revenue-restricted">
+                <div class="stat-card" onclick="toggleLocationsModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 0.95rem;">Locations Management</h4>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Manage delivery zones and pick-up areas</p>
                     </div>
                     <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
@@ -6642,6 +6654,75 @@
             </div>
         </div>
     </div>
+
+    <!-- LOCATIONS CONFIGURATION MODAL -->
+    <div id="locationsConfigModal" class="premium-modal" style="display: none;" onclick="closeLocationsModalBackdrop(event)">
+        <div class="modal-content" style="max-width: 520px; max-height: 90vh; overflow-y: auto; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal);">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; background: var(--primary-glow); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--primary); font-size: 1rem;"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 700;">Locations Management</h3>
+                        <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-secondary);">Manage delivery zones & pick-up areas</p>
+                    </div>
+                </div>
+                <button onclick="closeLocationsModal()" class="menu-btn" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1rem; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-main);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Current Locations List -->
+            <div style="margin-bottom: 24px;">
+                <h4 style="margin: 0 0 12px; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Serviced Locations</h4>
+                <div id="locationsAdminList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading locations...</p>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border); margin-bottom: 20px;"></div>
+
+            <!-- Add / Edit Form -->
+            <div id="locationCreateForm">
+                <h4 id="locationFormTitle" style="margin: 0 0 16px; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Create New Location</h4>
+                <input type="hidden" id="locationIdInput">
+
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Zone Name / Description</label>
+                    <input type="text" id="locationNameInput" placeholder="e.g. San Pablo City, Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Province</label>
+                        <input type="text" id="locationProvinceInput" placeholder="Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Municipality</label>
+                        <input type="text" id="locationMuniInput" placeholder="San Pablo City" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Barangay (Optional)</label>
+                        <input type="text" id="locationBrgyInput" placeholder="Leave empty for all" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Delivery Fee (&#8369;)</label>
+                        <input type="number" id="locationFeeInput" placeholder="0" value="0" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button id="locationCancelEditBtn" onclick="resetLocationForm()" class="btn-outline" style="display: none; flex: 1; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border); background: transparent; color: var(--text-main);">
+                        Cancel
+                    </button>
+                    <button id="locationSaveBtn" onclick="saveLocation()" class="btn-premium" style="flex: 2; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; font-size: 0.9rem; letter-spacing: 0.02em;">
+                        <i class="fas fa-save" style="margin-right: 6px;"></i> Save Location
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -10865,6 +10946,195 @@
 
 
 
+    }
+
+
+
+    // --- LOCATIONS CONFIG MODAL ---
+    let locationsList = [];
+
+    function locationsApiCall(path, method = 'GET', body = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+        return fetch(API_URL + path, options)
+            .then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => Promise.reject(err));
+                }
+                return res.json();
+            });
+    }
+
+    function toggleLocationsModal() {
+        const modal = document.getElementById('locationsConfigModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            fetchLocations();
+            const _user = adminAuth.getUser();
+            const locForm = document.getElementById('locationCreateForm');
+            if (locForm) locForm.style.display = (_user && (_user.role === 'super_admin')) ? 'block' : 'none';
+        }
+    }
+
+    function closeLocationsModal() {
+        const modal = document.getElementById('locationsConfigModal');
+        if (modal) {
+            modal.style.display = 'none';
+            resetLocationForm();
+        }
+    }
+
+    function closeLocationsModalBackdrop(event) {
+        if (event.target === event.currentTarget) {
+            closeLocationsModal();
+        }
+    }
+
+    function fetchLocations() {
+        const listDiv = document.getElementById('locationsAdminList');
+        if (listDiv) {
+            listDiv.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 10px;">Loading locations...</p>';
+        }
+        locationsApiCall('/locations', 'GET')
+            .then(function(locs) {
+                locationsList = locs || [];
+                renderLocations();
+            })
+            .catch(function(err) {
+                console.error('Error fetching locations:', err);
+                if (listDiv) {
+                    listDiv.innerHTML = '<p style="font-size: 0.8rem; color: var(--danger); text-align: center; padding: 10px;">Error loading locations.</p>';
+                }
+            });
+    }
+
+    function renderLocations() {
+        const listDiv = document.getElementById('locationsAdminList');
+        if (!listDiv) return;
+        if (locationsList.length === 0) {
+            listDiv.innerHTML = '<p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 10px;">No locations found.</p>';
+            return;
+        }
+        listDiv.innerHTML = locationsList.map(function(loc, i) {
+            return `
+                <div class="stat-card" style="padding: 10px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-container); border: 1px solid var(--border); margin-bottom: 8px;">
+                    <div style="flex: 1; min-width: 0; padding-right: 10px;">
+                        <h5 style="margin: 0; font-size: 0.9rem; color: var(--text-main);">${loc.name}</h5>
+                        <p style="margin: 3px 0 0; font-size: 0.75rem; color: var(--primary); font-weight: 700;">Delivery Fee: &#8369;${loc.delivery_fee}</p>
+                        <p style="margin: 3px 0 0; font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${loc.barangay ? loc.barangay + ', ' : ''}${loc.municipality}, ${loc.province}
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-shrink: 0;">
+                        <button onclick="editLocation(${i})" style="background:none;border:none;color:var(--primary);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Edit">
+                            <i class="fas fa-pen-to-square"></i>
+                        </button>
+                        ${(function(){ const _u = adminAuth.getUser(); return _u && _u.role === 'super_admin' ? `<button onclick="deleteLocation(${loc.id})" style="background:none;border:none;color:var(--danger);font-size:1.1rem;padding:6px;cursor:pointer;display:flex;align-items:center;" title="Delete"><i class="fas fa-trash-can"></i></button>` : ''; })()}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function editLocation(index) {
+        const loc = locationsList[index];
+        if (!loc) return;
+        document.getElementById('locationIdInput').value = loc.id;
+        document.getElementById('locationNameInput').value = loc.name;
+        document.getElementById('locationProvinceInput').value = loc.province || '';
+        document.getElementById('locationMuniInput').value = loc.municipality || '';
+        document.getElementById('locationBrgyInput').value = loc.barangay || '';
+        document.getElementById('locationFeeInput').value = loc.delivery_fee;
+        document.getElementById('locationFormTitle').textContent = 'Edit Location';
+        document.getElementById('locationCancelEditBtn').style.display = 'block';
+    }
+
+    function resetLocationForm() {
+        document.getElementById('locationIdInput').value = '';
+        document.getElementById('locationNameInput').value = '';
+        document.getElementById('locationProvinceInput').value = '';
+        document.getElementById('locationMuniInput').value = '';
+        document.getElementById('locationBrgyInput').value = '';
+        document.getElementById('locationFeeInput').value = '0';
+        document.getElementById('locationFormTitle').textContent = 'Create New Location';
+        document.getElementById('locationCancelEditBtn').style.display = 'none';
+    }
+
+    function saveLocation() {
+        const id = document.getElementById('locationIdInput').value;
+        const name = document.getElementById('locationNameInput').value.trim();
+        const province = document.getElementById('locationProvinceInput').value.trim();
+        const muni = document.getElementById('locationMuniInput').value.trim();
+        const brgy = document.getElementById('locationBrgyInput').value.trim();
+        const fee = document.getElementById('locationFeeInput').value;
+        const user = adminAuth.getUser();
+        const adminId = user ? user.id : null;
+
+        if (!name || !province || !muni || !adminId) {
+            showNotification('Zone Name, Province, Municipality and admin authorization are required.', 'error');
+            return;
+        }
+
+        if (!user || user.role !== 'super_admin') {
+            showNotification('Only Super Admin can manage locations.', 'error');
+            return;
+        }
+
+        const payload = {
+            name: name,
+            province: province,
+            municipality: muni,
+            barangay: brgy,
+            delivery_fee: parseFloat(fee) || 0,
+            admin_id: adminId
+        };
+
+        const url = id ? `/admin/locations/${id}` : '/admin/locations';
+        const method = id ? 'PUT' : 'POST';
+
+        locationsApiCall(url, method, payload)
+            .then(function() {
+                showNotification(id ? 'Location updated successfully' : 'Location created successfully', 'success');
+                resetLocationForm();
+                fetchLocations();
+            })
+            .catch(function(err) {
+                console.error('Error saving location:', err);
+                showNotification('Error saving location: ' + (err.error || 'Unknown error'), 'error');
+            });
+    }
+
+    function deleteLocation(locId) {
+        if (!confirm('Are you sure you want to delete this location?')) return;
+        const user = adminAuth.getUser();
+        const adminId = user ? user.id : null;
+
+        if (!adminId) {
+            showNotification('Unauthorized', 'error');
+            return;
+        }
+
+        if (!user || user.role !== 'super_admin') {
+            showNotification('Only Super Admin can delete locations.', 'error');
+            return;
+        }
+
+        locationsApiCall(`/admin/locations/${locId}?admin_id=${adminId}`, 'DELETE')
+            .then(function() {
+                showNotification('Location deleted successfully', 'success');
+                fetchLocations();
+            })
+            .catch(function(err) {
+                console.error('Error deleting location:', err);
+                showNotification('Error deleting location.', 'error');
+            });
     }
 
 
@@ -22183,23 +22453,47 @@ async edit(id) { this.openModal(id); }
 
 
 
-                list.innerHTML = data.map(s => `
+                list.innerHTML = data.map(s => {
 
 
 
-                    <div style="margin-bottom: 15px;">
+                    const isTextarea = s.key === 'rental_terms';
 
 
 
-                        <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px;">${s.description}</label>
+                    const inputField = isTextarea 
 
 
 
-                        <div style="position: relative;">
+                        ? `<textarea data-key="${s.key}" style="width: 100%; height: 180px; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; border: 1px solid var(--border);">${s.value}</textarea>`
 
 
 
-                            <input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">
+                        : `<input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">`;
+
+
+
+                    return `
+
+
+
+                        <div style="margin-bottom: 15px;">
+
+
+
+                            <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px;">${s.description}</label>
+
+
+
+                            <div style="position: relative;">
+
+
+
+                                ${inputField}
+
+
+
+                            </div>
 
 
 
@@ -22207,11 +22501,11 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    </div>
+                    `;
 
 
 
-                `).join('');
+                }).join('');
 
 
 
@@ -22235,7 +22529,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-            const inputs = document.querySelectorAll('#mobileSettingsList input');
+            const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea');
 
 
 
@@ -25661,6 +25955,13 @@ async edit(id) { this.openModal(id); }
     window.deleteAddon = deleteAddon;
     window.saveAddon = saveAddon;
     window.resetAddonForm = resetAddonForm;
+    window.toggleLocationsModal = toggleLocationsModal;
+    window.closeLocationsModal = closeLocationsModal;
+    window.closeLocationsModalBackdrop = closeLocationsModalBackdrop;
+    window.editLocation = editLocation;
+    window.deleteLocation = deleteLocation;
+    window.saveLocation = saveLocation;
+    window.resetLocationForm = resetLocationForm;
     window.Vehicles = Vehicles;
 
 
