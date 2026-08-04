@@ -27,6 +27,22 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/public/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/locations",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/locations/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/admin/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/admin_mobile/(.*)",
       "dest": "/admin_mobile/www/$1"
     },
