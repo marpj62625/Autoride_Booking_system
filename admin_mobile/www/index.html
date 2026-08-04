@@ -3589,7 +3589,7 @@
         if (body) {
             options.body = JSON.stringify(body);
         }
-        return fetch(API_URL + path, options)
+        return fetch(API_BASE + path, options)
             .then(res => {
                 if (!res.ok) {
                     return res.json().then(err => Promise.reject(err));

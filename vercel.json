@@ -43,6 +43,14 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/addons",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/addons/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/admin_mobile/(.*)",
       "dest": "/admin_mobile/www/$1"
     },

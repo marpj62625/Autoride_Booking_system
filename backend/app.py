@@ -413,11 +413,12 @@ def migrate_settings_v2():
 
 
 
-# Run migration on startup (Disabled for Vercel stability)
-
-# with app.app_context():
-
-#     migrate_settings_v2()
+# Run migration on startup
+try:
+    with app.app_context():
+        migrate_settings_v2()
+except Exception as _e:
+    pass
 
 
 
