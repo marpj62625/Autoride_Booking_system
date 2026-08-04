@@ -6647,7 +6647,7 @@
                     <button id="addonCancelEditBtn" onclick="resetAddonForm()" class="btn-outline" style="display: none; flex: 1; padding: 12px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
                         Cancel
                     </button>
-                    <button id="addonSaveBtn" onclick="saveAddon()" class="btn-premium" style="flex: 2; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: var(--on-primary); font-weight: 700; cursor: pointer; font-size: 0.9rem; letter-spacing: 0.02em;">
+                    <button id="addonSaveBtn" onclick="saveAddon()" class="btn-premium" style="flex: 2; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; font-size: 0.9rem; letter-spacing: 0.02em;">
                         <i class="fas fa-save" style="margin-right: 6px;"></i> Save Add-on
                     </button>
                 </div>
@@ -8416,7 +8416,7 @@
 
 
 
-                <!-- Receipt section � populated by openModal -->
+                <!-- Receipt section  populated by openModal -->
 
 
 
@@ -9085,20 +9085,20 @@
         <!-- Email -->
         <div style="width:100%;margin-bottom:14px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.08);border-radius:14px;display:flex;align-items:center;box-sizing:border-box;transition:border-color 0.2s, background-color 0.2s;"
             onfocusin="this.style.borderColor='#00b14f';this.style.backgroundColor='rgba(255,255,255,0.08)';"
-            onfocusout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.backgroundColor='rgba(255,255,255,0.06)';">
+            onfocusout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.backgroundColor='rgba(255,255,255,0.06)';"
+            onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus();">
             <i class="fas fa-envelope" style="padding:0 10px 0 18px;color:rgba(255,255,255,0.35);font-size:0.95rem;flex-shrink:0;"></i>
             <input type="email" id="loginEmail" placeholder="Email Address" autocomplete="email"
-                onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus();"
                 style="flex:1;width:0;padding:16px 14px 16px 0;background:transparent;border:none;color:#ffffff;font-size:1rem;outline:none;font-weight:500;">
         </div>
 
         <!-- Password -->
         <div style="width:100%;margin-bottom:12px;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.08);border-radius:14px;display:flex;align-items:center;box-sizing:border-box;transition:border-color 0.2s, background-color 0.2s;"
             onfocusin="this.style.borderColor='#00b14f';this.style.backgroundColor='rgba(255,255,255,0.08)';"
-            onfocusout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.backgroundColor='rgba(255,255,255,0.06)';">
+            onfocusout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.backgroundColor='rgba(255,255,255,0.06)';"
+            onkeydown="if(event.key==='Enter'&&window.adminAuth)adminAuth.login();">
             <i class="fas fa-lock" style="padding:0 10px 0 18px;color:rgba(255,255,255,0.35);font-size:0.95rem;flex-shrink:0;"></i>
             <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"
-                onkeydown="if(event.key==='Enter'&&window.adminAuth)adminAuth.login();"
                 style="flex:1;width:0;padding:16px 0;background:transparent;border:none;color:#ffffff;font-size:1rem;outline:none;font-weight:500;">
             <button type="button"
                 onclick="var i=document.getElementById('loginPass'),ic=document.getElementById('webEyeIcon');if(i.type==='password'){i.type='text';ic.className='fas fa-eye-slash';}else{i.type='password';ic.className='fas fa-eye';}"
@@ -9154,7 +9154,7 @@
         if (existing) existing.remove();
     }
 
-    // API URL: auto-detect � works on Vercel (web) and Android APK (hardcoded)
+    // API URL: auto-detect  works on Vercel (web) and Android APK (hardcoded)
 
 
 
@@ -10433,7 +10433,7 @@
 
 
 
-        return fetch(API_URL + path, options)
+        return fetch(API_BASE + path, options)
 
 
 
@@ -10483,10 +10483,14 @@
 
             fetchAddons();
 
+
+
             // Show/hide create form based on role
             const _user = adminAuth.getUser();
             const addonForm = document.getElementById('addonCreateForm');
             if (addonForm) addonForm.style.display = (_user && _user.role === 'super_admin') ? 'block' : 'none';
+
+
 
         }
 
@@ -10963,7 +10967,7 @@
         if (body) {
             options.body = JSON.stringify(body);
         }
-        return fetch(API_URL + path, options)
+        return fetch(API_BASE + path, options)
             .then(res => {
                 if (!res.ok) {
                     return res.json().then(err => Promise.reject(err));
@@ -11093,7 +11097,7 @@
             municipality: muni,
             barangay: brgy,
             delivery_fee: parseFloat(fee) || 0,
-            admin_id: adminId
+            requester_id: adminId
         };
 
         const url = id ? `/admin/locations/${id}` : '/admin/locations';
@@ -11126,7 +11130,7 @@
             return;
         }
 
-        locationsApiCall(`/admin/locations/${locId}?admin_id=${adminId}`, 'DELETE')
+        locationsApiCall(`/admin/locations/${locId}?requester_id=${adminId}`, 'DELETE')
             .then(function() {
                 showNotification('Location deleted successfully', 'success');
                 fetchLocations();
@@ -14620,9 +14624,15 @@ async edit(id) { this.openModal(id); }
         async markNoShow(bookingId) {
             if (!confirm('Mark this booking as No Show?\n\n⚠️ If the booking is PAID, the payment will be forfeited (0% refund).\nIf UNPAID, the booking will simply be cancelled.\n\nThis action cannot be undone.')) return;
             try {
-                const res = await fetch(`${API_URL}/bookings/${bookingId}/mark-no-show`, {
+                const user = adminAuth.getUser();
+                if (!user || user.role !== 'super_admin') {
+                    showNotification('Unauthorized', 'error');
+                    return;
+                }
+                const res = await fetch(`${API_BASE}/admin/bookings/${bookingId}/mark-no-show`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ admin_id: user.id })
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -22445,7 +22455,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                const res = await fetch(`${API_BASE}/api/admin/settings`);
+                const res = await fetch(`${API_BASE}/admin/settings`);
 
 
 
@@ -22549,7 +22559,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-                const res = await fetch(`${API_BASE}/api/admin/settings`, {
+                const res = await fetch(`${API_BASE}/admin/settings`, {
 
 
 
