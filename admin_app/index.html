@@ -22187,11 +22187,11 @@ async edit(id) { this.openModal(id); }
                     <td style="padding:10px 8px;font-weight:700;color:var(--danger);">₱${e.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td style="padding:10px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e.description}">${e.description}</td>
                     <td style="padding:10px 8px;text-align:center;">
-                        ${e.proof_image_url ? \`<a href="\${e.proof_image_url}" target="_blank" class="btn-primary" style="padding:4px 8px;font-size:0.7rem;border-radius:6px;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-image"></i> View Receipt</a>\` : \`<span style="color:var(--text-muted);font-size:0.7rem;">No Image</span>\`}
+                        ${e.proof_image_url ? `<a href="${e.proof_image_url}" target="_blank" class="btn-primary" style="padding:4px 8px;font-size:0.7rem;border-radius:6px;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-image"></i> View Receipt</a>` : `<span style="color:var(--text-muted);font-size:0.7rem;">No Image</span>`}
                     </td>
                     <td style="padding:10px 8px;font-size:0.75rem;">${e.recorder_name}</td>
                     <td style="padding:10px 8px;text-align:center;">
-                        \${isSuperAdmin ? \`<button onclick="Reports.deleteExpense(\${e.id})" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:0.95rem;padding:4px;" title="Delete expense record"><i class="fas fa-trash-alt"></i></button>\` : \`<span style="color:var(--text-muted);font-size:0.7rem;">-</span>\`}
+                        ${isSuperAdmin ? `<button onclick="Reports.deleteExpense(${e.id})" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:0.95rem;padding:4px;" title="Delete expense record"><i class="fas fa-trash-alt"></i></button>` : `<span style="color:var(--text-muted);font-size:0.7rem;">-</span>`}
                     </td>
                 </tr>
             `).join('');
@@ -22206,7 +22206,7 @@ async edit(id) { this.openModal(id); }
 
             try {
                 showLoadingOverlay(true);
-                const res = await fetch(`${API_BASE}/admin/expenses/\${expenseId}?admin_id=\${user.id}`, {
+                const res = await fetch(`${API_BASE}/admin/expenses/${expenseId}?admin_id=${user.id}`, {
                     method: 'DELETE'
                 });
                 const data = await res.json();
