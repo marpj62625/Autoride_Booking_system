@@ -400,6 +400,21 @@ def migrate_settings_v2():
             terms_text = "Fuel Policy: Return the vehicle with the same fuel level as at pickup.\nMileage Rule: 250 km per day limit. Excess charged at ₱10/km.\nDriver Responsibility: You must be the primary driver with a valid verified license.\nLate Return: Penalty of ₱500 per hour for late returns.\nDamages: Any damages not covered by your selected insurance are your responsibility.\nCancellation: 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup."
             cur.execute("UPDATE settings SET value = %s WHERE key = 'rental_terms'", (terms_text,))
 
+        # 4. Create vehicle_expenses table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS vehicle_expenses (
+                id SERIAL PRIMARY KEY,
+                vehicle_id INTEGER REFERENCES vehicles(id) ON DELETE CASCADE,
+                expense_type VARCHAR(50) NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                expense_date DATE NOT NULL,
+                description TEXT,
+                proof_image_url TEXT,
+                recorded_by INTEGER REFERENCES users(id),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         commit_db()
 
 
@@ -6549,7 +6564,14 @@ def get_detailed_stats():
             return query, params
 
         # 1. Revenue & Bookings
-        rev_query = "SELECT SUM(b.total_price) as total_revenue, COUNT(b.id) as total_bookings FROM bookings b JOIN vehicles v ON b.vehicle_id = v.id WHERE b.status != 'Cancelled'"
+        rev_query = """
+            SELECT 
+                SUM(CASE WHEN b.status = 'Cancelled' THEN (COALESCE(b.amount_paid, 0) - COALESCE(b.refund_amount, 0)) ELSE b.total_price END) as total_revenue,
+                COUNT(b.id) as total_bookings
+            FROM bookings b 
+            JOIN vehicles v ON b.vehicle_id = v.id 
+            WHERE (b.status != 'Cancelled' OR (b.status = 'Cancelled' AND COALESCE(b.amount_paid, 0) > COALESCE(b.refund_amount, 0)))
+        """
         rev_params = []
         rev_query, rev_params = apply_filters(rev_query, rev_params, 'b', 'v', skip_status=False)
         cur.execute(rev_query, tuple(rev_params))
@@ -6557,10 +6579,14 @@ def get_detailed_stats():
         
         # 2. Daily Revenue (Last 30 days)
         trend_query = """
-            SELECT TO_CHAR(b.start_date, 'YYYY-MM-DD') as day, SUM(b.total_price) as amount, COUNT(b.id) as booking_count
+            SELECT 
+                TO_CHAR(b.start_date, 'YYYY-MM-DD') as day,
+                SUM(CASE WHEN b.status = 'Cancelled' THEN (COALESCE(b.amount_paid, 0) - COALESCE(b.refund_amount, 0)) ELSE b.total_price END) as amount,
+                COUNT(b.id) as booking_count
             FROM bookings b
             JOIN vehicles v ON b.vehicle_id = v.id
-            WHERE b.start_date >= CURRENT_DATE - INTERVAL '30 days' AND b.status != 'Cancelled'
+            WHERE b.start_date >= CURRENT_DATE - INTERVAL '30 days' 
+              AND (b.status != 'Cancelled' OR (b.status = 'Cancelled' AND COALESCE(b.amount_paid, 0) > COALESCE(b.refund_amount, 0)))
         """
         trend_params = []
         trend_query, trend_params = apply_filters(trend_query, trend_params, 'b', 'v', skip_status=False)
@@ -6584,10 +6610,11 @@ def get_detailed_stats():
         
         # 4. Top Performing Vehicles
         top_query = """
-            SELECT v.brand, v.model, v.plate_number, COUNT(b.id) as booking_count, COALESCE(SUM(b.total_price), 0) as revenue
+            SELECT v.brand, v.model, v.plate_number, COUNT(b.id) as booking_count, 
+                   COALESCE(SUM(CASE WHEN b.status = 'Cancelled' THEN (COALESCE(b.amount_paid, 0) - COALESCE(b.refund_amount, 0)) ELSE b.total_price END), 0) as revenue
             FROM vehicles v
             JOIN bookings b ON v.id = b.vehicle_id
-            WHERE b.status != 'Cancelled' AND b.payment_status = 'Paid'
+            WHERE (b.status != 'Cancelled' OR (b.status = 'Cancelled' AND COALESCE(b.amount_paid, 0) > COALESCE(b.refund_amount, 0)))
         """
         top_params = []
         top_query, top_params = apply_filters(top_query, top_params, 'b', 'v', skip_status=False)
@@ -6595,12 +6622,35 @@ def get_detailed_stats():
         cur.execute(top_query, tuple(top_params))
         top_vehicles = [{"brand": r.get('brand'), "model": r.get('model'), "plate_number": r.get('plate_number'), "booking_count": int(r.get('booking_count') or 0), "revenue": float(r.get('revenue') or 0)} for r in cur.fetchall()]
 
+        # 5. Expenses calculation
+        exp_query = "SELECT COALESCE(SUM(e.amount), 0) as total_expenses FROM vehicle_expenses e JOIN vehicles v ON e.vehicle_id = v.id WHERE 1=1"
+        exp_params = []
+        if location_filter:
+            exp_query += " AND v.location = %s"
+            exp_params.append(location_filter)
+        if date_from:
+            exp_query += " AND e.expense_date >= %s"
+            exp_params.append(date_from)
+        if date_to:
+            exp_query += " AND e.expense_date <= %s"
+            exp_params.append(date_to)
+        if vehicle_type and vehicle_type != 'all':
+            exp_query += " AND v.type = %s"
+            exp_params.append(vehicle_type)
+        cur.execute(exp_query, tuple(exp_params))
+        total_expenses = float(cur.fetchone()['total_expenses'] or 0)
+
+        total_revenue = float(basic_stats['total_revenue'] or 0)
+        net_profit = total_revenue - total_expenses
+
         return jsonify({
-            "totalRevenue": float(basic_stats['total_revenue'] or 0),
+            "totalRevenue": total_revenue,
             "totalBookings": basic_stats['total_bookings'] or 0,
             "revenueTrend": revenue_trend,
             "fleetDistribution": fleet_dist,
-            "topVehicles": top_vehicles
+            "topVehicles": top_vehicles,
+            "totalExpenses": total_expenses,
+            "netProfit": net_profit
         })
 
     except Exception as e:
@@ -10966,3 +11016,147 @@ def delete_addon(addon_id):
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
+@app.route('/admin/expenses', methods=['POST'])
+def record_expense():
+    """Record a new vehicle expense. Accessible by admins and staff."""
+    vehicle_id = request.form.get('vehicle_id')
+    expense_type = request.form.get('expense_type')
+    amount = request.form.get('amount')
+    expense_date = request.form.get('expense_date')
+    description = request.form.get('description', '')
+    recorded_by = request.form.get('recorded_by')
+
+    if not vehicle_id or not expense_type or not amount or not expense_date or not recorded_by:
+        return jsonify({'error': 'Vehicle, type, amount, date, and recorded_by are required.'}), 400
+
+    proof_image_url = None
+    if 'proof_image' in request.files:
+        file = request.files['proof_image']
+        if file.filename != '':
+            ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+            filename = f"expense_{recorded_by}_{int(datetime.now().timestamp())}.{ext}"
+            file_data = file.read()
+            try:
+                supabase.storage.from_('uploads').upload(
+                    path=filename,
+                    file=file_data,
+                    file_options={"content-type": f"image/{ext}", "upsert": "true"}
+                )
+                proof_image_url = supabase.storage.from_('uploads').get_public_url(filename)
+            except Exception as e:
+                print(f"[record_expense] Supabase storage upload failed: {e}")
+                return jsonify({'error': 'Failed to upload receipt image. Please try again.'}), 500
+
+    try:
+        cur = get_cursor()
+        
+        # Verify requester exists and is an admin/staff
+        cur.execute("SELECT role FROM users WHERE id = %s", (recorded_by,))
+        user_row = cur.fetchone()
+        if not user_row or user_row['role'] not in ['admin', 'super_admin', 'superadmin', 'staff']:
+            return jsonify({'error': 'Unauthorized. Only admin staff can record expenses.'}), 403
+
+        cur.execute("""
+            INSERT INTO vehicle_expenses (vehicle_id, expense_type, amount, expense_date, description, proof_image_url, recorded_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (int(vehicle_id), expense_type, float(amount), expense_date, description, proof_image_url, int(recorded_by)))
+        
+        expense_id = cur.fetchone()['id']
+        commit_db()
+        return jsonify({'message': 'Expense recorded successfully', 'id': expense_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/expenses', methods=['GET'])
+def get_expenses():
+    """Retrieve filtered list of expenses."""
+    admin_id = request.args.get('admin_id')
+    date_from = request.args.get('date_from')
+    date_to = request.args.get('date_to')
+    vehicle_id = request.args.get('vehicle_id')
+
+    try:
+        cur = get_cursor()
+        
+        # Determine location lock if any
+        location_filter = None
+        if admin_id:
+            cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (admin_id,))
+            adm = cur.fetchone()
+            if adm and adm['role'] == 'admin' and adm['assigned_location']:
+                location_filter = adm['assigned_location']
+
+        query = """
+            SELECT e.*, v.brand, v.model, v.plate_number, u.full_name as recorder_name
+            FROM vehicle_expenses e
+            JOIN vehicles v ON e.vehicle_id = v.id
+            LEFT JOIN users u ON e.recorded_by = u.id
+            WHERE 1=1
+        """
+        params = []
+        if location_filter:
+            query += " AND v.location = %s"
+            params.append(location_filter)
+        if date_from:
+            query += " AND e.expense_date >= %s"
+            params.append(date_from)
+        if date_to:
+            query += " AND e.expense_date <= %s"
+            params.append(date_to)
+        if vehicle_id and vehicle_id != 'all':
+            query += " AND e.vehicle_id = %s"
+            params.append(int(vehicle_id))
+
+        query += " ORDER BY e.expense_date DESC"
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+
+        expenses_list = []
+        for r in rows:
+            expenses_list.append({
+                "id": r['id'],
+                "vehicle_id": r['vehicle_id'],
+                "brand": r['brand'],
+                "model": r['model'],
+                "plate_number": r['plate_number'],
+                "expense_type": r['expense_type'],
+                "amount": float(r['amount']),
+                "expense_date": r['expense_date'].strftime('%Y-%m-%d'),
+                "description": r['description'],
+                "proof_image_url": r['proof_image_url'],
+                "recorder_name": r['recorder_name'] or 'Unknown Admin',
+                "recorded_by": r['recorded_by']
+            })
+
+        return jsonify(expenses_list), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/expenses/<int:expense_id>', methods=['DELETE'])
+def delete_expense(expense_id):
+    """Delete an expense record. Super Admin only validation."""
+    admin_id = request.args.get('admin_id')
+    if not admin_id:
+        return jsonify({'error': 'admin_id is required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT role FROM users WHERE id = %s", (admin_id,))
+        user_row = cur.fetchone()
+        if not user_row or user_row['role'] not in ['super_admin', 'superadmin']:
+            return jsonify({'error': 'Unauthorized. Only Super Admin can delete expense records.'}), 403
+
+        cur.execute("DELETE FROM vehicle_expenses WHERE id = %s", (expense_id,))
+        commit_db()
+        return jsonify({'message': 'Expense record deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+

@@ -1887,6 +1887,9 @@
                 <input type="date" id="rptDateFrom" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
                 <input type="date" id="rptDateTo" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
             </div>
+            <button onclick="Reports.openRecordExpenseModal()" class="btn-primary" style="width:100%;margin-top:10px;padding:10px;border-radius:10px;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <i class="fas fa-plus-circle"></i> Record Vehicle Expense
+            </button>
         </div>
 
         <!-- Summary stats -->
@@ -1902,6 +1905,14 @@
             <div class="stat-card" style="padding:15px;margin-bottom:0;">
                 <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL REVENUE</h5>
                 <div class="value" id="repTotalRev" style="font-size:1.2rem;font-weight:700;color:var(--success);">₱0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL EXPENSES</h5>
+                <div class="value" id="repTotalExpenses" style="font-size:1.2rem;font-weight:700;color:var(--danger);">₱0</div>
+            </div>
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">NET PROFIT</h5>
+                <div class="value" id="repNetProfit" style="font-size:1.2rem;font-weight:700;color:var(--success);">₱0</div>
             </div>
             <div class="stat-card" style="padding:15px;margin-bottom:0;">
                 <h5 style="font-size:0.6rem;color:var(--text-muted);">ACTIVE FLEET</h5>
@@ -1936,10 +1947,35 @@
         </div>
 
         <!-- Top Vehicles List -->
-        <div class="chart-card" style="height:auto;">
+        <div class="chart-card" style="height:auto;margin-bottom:16px;">
             <h3 style="margin-bottom:15px;">Top Performing Vehicles</h3>
             <div id="reportsTopVehicles" style="padding-bottom:10px;">
                 <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading analytics...</div>
+            </div>
+        </div>
+
+        <!-- Expense Tracker Section -->
+        <div class="chart-card" style="height:auto;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <h3 style="margin:0;">Expense &amp; Maintenance Log</h3>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="premium-table" style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border);text-align:left;">
+                            <th style="padding:8px 4px;color:var(--text-muted);font-weight:700;">Date</th>
+                            <th style="padding:8px 4px;color:var(--text-muted);font-weight:700;">Vehicle/Type</th>
+                            <th style="padding:8px 4px;color:var(--text-muted);font-weight:700;">Amount</th>
+                            <th style="padding:8px 4px;color:var(--text-muted);font-weight:700;text-align:center;">Proof</th>
+                            <th style="padding:8px 4px;color:var(--text-muted);font-weight:700;text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsExpensesList">
+                        <tr>
+                            <td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading expenses...</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -2431,6 +2467,60 @@
 
                 <button type="submit" id="inspectSubmitBtn" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,177,79,0.4); margin-bottom: 20px;">
                     Submit Inspection Report
+                </button>
+            </form>
+    </div>
+
+    <!-- RECORD EXPENSE MODAL -->
+    <div id="recordExpenseModal" class="modal" style="display: none;" onclick="Reports.closeRecordExpenseModalBackdrop(event)">
+        <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; left: 0; right: 0; margin-bottom: 0; max-height: 92vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; background: #ffffff; border-top: 1px solid var(--border);">
+            <div style="padding: 20px 24px 16px; background: linear-gradient(135deg, #00B14F, #007a35); border-bottom: 1px solid rgba(0,177,79,0.15); position: relative; flex-shrink: 0;">
+                <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 10px; margin: -6px auto 12px;"></div>
+                <h3 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #ffffff;">Record Expense</h3>
+                <p style="margin: 5px 0 0; font-size: 0.75rem; color: rgba(255,255,255,0.8);">Record a vehicle expense with proof</p>
+                <button onclick="Reports.closeRecordExpenseModal()" style="position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="recordExpenseForm" onsubmit="Reports.saveExpense(event)" style="padding: 24px; overflow-y: auto; flex: 1; padding-bottom: 32px;">
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 6px;">Vehicle</label>
+                    <select id="expVehicleId" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--surface-container); color: var(--text-main);"></select>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 6px;">Expense Type</label>
+                    <select id="expType" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--surface-container); color: var(--text-main);">
+                        <option value="Change Oil">Change Oil</option>
+                        <option value="Car Wash">Car Wash</option>
+                        <option value="Repair &amp; Maintenance">Repair &amp; Maintenance</option>
+                        <option value="Registration &amp; Insurance">Registration &amp; Insurance</option>
+                        <option value="Fuel">Fuel</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 6px;">Amount (PHP)</label>
+                    <input type="number" step="0.01" id="expAmount" required placeholder="0.00" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--surface-container); color: var(--text-main);">
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 6px;">Expense Date</label>
+                    <input type="date" id="expDate" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--surface-container); color: var(--text-main);">
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 6px;">Description</label>
+                    <textarea id="expDesc" required placeholder="Provide detail..." style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--surface-container); color: var(--text-main); height: 70px; resize: none;"></textarea>
+                </div>
+                
+                <div style="margin-bottom: 24px;">
+                    <label style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 6px;">Proof of Expense (Image Receipt)</label>
+                    <input type="file" id="expProofFile" accept="image/*" required style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; background: var(--surface-container); color: var(--text-main);">
+                </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 25px rgba(0,177,79,0.4);">
+                    Save Expense Record
                 </button>
             </form>
         </div>
@@ -7243,9 +7333,14 @@ async edit(id) { this.openModal(id); }
 
                 const totalRev = data.totalRevenue || 0;
                 const totalBook = data.totalBookings || 0;
+                const totalExp = data.totalExpenses || 0;
+                const netProf = data.netProfit || 0;
+
                 document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
                 document.getElementById('repActive').textContent = totalBook;
                 document.getElementById('repTotalRev').textContent = '\u20B1' + totalRev.toLocaleString();
+                document.getElementById('repTotalExpenses').textContent = '\u20B1' + totalExp.toLocaleString();
+                document.getElementById('repNetProfit').textContent = '\u20B1' + netProf.toLocaleString();
                 const activeFleetCount = (data.fleetDistribution || []).reduce((sum, item) => sum + (item.count || 0), 0);
                 document.getElementById('repFleet').textContent = activeFleetCount;
 
@@ -7253,6 +7348,9 @@ async edit(id) { this.openModal(id); }
                 this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
                 this.renderPieChart(data.topVehicles || []);
                 this.renderTop(data.topVehicles || []);
+                
+                // Fetch and render expenses table on mobile
+                this.fetchExpenses();
             } catch (err) { console.error(err); }
         },
 
@@ -7374,6 +7472,155 @@ async edit(id) { this.openModal(id); }
             `).join('');
         },
 
+        openRecordExpenseModal() {
+            document.getElementById('recordExpenseModal').style.display = 'flex';
+            document.getElementById('recordExpenseForm').reset();
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+            this.loadVehiclesDropdown();
+        },
+
+        closeRecordExpenseModal() {
+            document.getElementById('recordExpenseModal').style.display = 'none';
+        },
+
+        closeRecordExpenseModalBackdrop(event) {
+            if (event.target.id === 'recordExpenseModal') {
+                this.closeRecordExpenseModal();
+            }
+        },
+
+        async loadVehiclesDropdown() {
+            try {
+                const res = await fetch(`${API_URL}/vehicles`);
+                const vehicles = await res.json();
+                const select = document.getElementById('expVehicleId');
+                select.innerHTML = '<option value="">-- Select a Vehicle --</option>' + 
+                    vehicles.map(v => `<option value="${v.id}">${v.brand} ${v.model} (${v.plate_number || 'No Plate'})</option>`).join('');
+            } catch (err) {
+                console.error('Failed to load vehicles dropdown', err);
+                document.getElementById('expVehicleId').innerHTML = '<option value="">Error loading vehicles</option>';
+            }
+        },
+
+        async saveExpense(event) {
+            event.preventDefault();
+            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+            if (!user) return;
+
+            const vehicleId = document.getElementById('expVehicleId').value;
+            const type = document.getElementById('expType').value;
+            const amount = document.getElementById('expAmount').value;
+            const date = document.getElementById('expDate').value;
+            const desc = document.getElementById('expDesc').value;
+            const fileInput = document.getElementById('expProofFile');
+
+            if (!fileInput.files[0]) {
+                showNotification('Proof of expense image is required', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('vehicle_id', vehicleId);
+            formData.append('expense_type', type);
+            formData.append('amount', amount);
+            formData.append('expense_date', date);
+            formData.append('description', desc);
+            formData.append('recorded_by', user.id);
+            formData.append('proof_image', fileInput.files[0]);
+
+            try {
+                showLoadingOverlay(true);
+                const res = await fetch(`${API_BASE}/api/admin/expenses`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                showLoadingOverlay(false);
+
+                if (res.ok) {
+                    showNotification('Expense recorded successfully', 'success');
+                    this.closeRecordExpenseModal();
+                    this.refresh();
+                } else {
+                    showNotification(data.error || 'Failed to record expense', 'error');
+                }
+            } catch (err) {
+                showLoadingOverlay(false);
+                console.error(err);
+                showNotification('Error saving expense record', 'error');
+            }
+        },
+
+        async fetchExpenses() {
+            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+            if (!user) return;
+            const from = document.getElementById('rptDateFrom').value;
+            const to = document.getElementById('rptDateTo').value;
+            const params = `?admin_id=${user.id}` + (from && to ? `&date_from=${from}&date_to=${to}` : '');
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/expenses${params}`);
+                const data = await res.json();
+                this._expensesData = data;
+                this.renderExpensesTable(data);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('reportsExpensesList').innerHTML = '<tr><td colspan="5" style="text-align:center;color:red;">Error loading expenses log.</td></tr>';
+            }
+        },
+
+        renderExpensesTable(expenses) {
+            const container = document.getElementById('reportsExpensesList');
+            if (!container) return;
+            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+            const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
+
+            if (!expenses.length) {
+                container.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">No expenses logged for this range.</td></tr>';
+                return;
+            }
+
+            container.innerHTML = expenses.map(e => `
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 4px;">${e.expense_date}</td>
+                    <td style="padding:10px 4px;font-weight:700;">${e.brand} ${e.model} <span style="font-size:0.65rem;color:var(--text-muted);display:block;">${e.expense_type}</span></td>
+                    <td style="padding:10px 4px;font-weight:700;color:var(--danger);">₱${e.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="padding:10px 4px;text-align:center;">
+                        ${e.proof_image_url ? `<a href="${e.proof_image_url}" target="_blank" class="btn-primary" style="padding:4px 8px;font-size:0.65rem;border-radius:6px;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-image"></i> Proof</a>` : `<span style="color:var(--text-muted);font-size:0.65rem;">No Image</span>`}
+                    </td>
+                    <td style="padding:10px 4px;text-align:center;">
+                        ${isSuperAdmin ? `<button onclick="Reports.deleteExpense(${e.id})" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:0.95rem;padding:4px;" title="Delete expense record"><i class="fas fa-trash-alt"></i></button>` : `<span style="color:var(--text-muted);font-size:0.7rem;">-</span>`}
+                    </td>
+                </tr>
+            `).join('');
+        },
+
+        async deleteExpense(expenseId) {
+            if (!confirm('Are you sure you want to delete this expense record?')) return;
+            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+            if (!user) return;
+
+            try {
+                showLoadingOverlay(true);
+                const res = await fetch(`${API_BASE}/api/admin/expenses/${expenseId}?admin_id=${user.id}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                showLoadingOverlay(false);
+
+                if (res.ok) {
+                    showNotification('Expense record deleted successfully', 'success');
+                    this.refresh();
+                } else {
+                    showNotification(data.error || 'Failed to delete record', 'error');
+                }
+            } catch (err) {
+                showLoadingOverlay(false);
+                console.error(err);
+                showNotification('Error deleting expense record', 'error');
+            }
+        },
+
         async exportExcel() {
             const data = this._rawData;
             if (!data) { showNotification('No data to export', 'error'); return; }
@@ -7387,6 +7634,8 @@ async edit(id) { this.openModal(id); }
             rows.push([]);
             rows.push(['Summary']);
             rows.push(['Total Revenue (PHP)', totalRev]);
+            rows.push(['Total Expenses (PHP)', data.totalExpenses || 0]);
+            rows.push(['Net Profit (PHP)', data.netProfit || 0]);
             rows.push(['Total Bookings', totalBook]);
             rows.push(['Average Revenue per Booking (PHP)', totalBook > 0 ? Math.floor(totalRev / totalBook) : 0]);
             rows.push([]);
@@ -7400,6 +7649,12 @@ async edit(id) { this.openModal(id); }
             rows.push(['Date', 'Revenue (PHP)']);
             (data.revenueTrend || []).forEach(t => {
                 rows.push([t.day || t.label || '', t.amount || 0]);
+            });
+            rows.push([]);
+            rows.push(['Expenses & Maintenance Log']);
+            rows.push(['Date', 'Vehicle', 'Type', 'Amount (PHP)', 'Description', 'Recorded By']);
+            (this._expensesData || []).forEach(e => {
+                rows.push([e.expense_date, `${e.brand} ${e.model} (${e.plate_number || 'N/A'})`, e.expense_type, e.amount || 0, e.description || '', e.recorder_name || '']);
             });
 
             // Generate real Excel file using SheetJS

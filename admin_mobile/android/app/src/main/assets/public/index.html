@@ -3589,7 +3589,7 @@
         if (body) {
             options.body = JSON.stringify(body);
         }
-        return fetch(API_URL + path, options)
+        return fetch(API_BASE + path, options)
             .then(res => {
                 if (!res.ok) {
                     return res.json().then(err => Promise.reject(err));
@@ -3771,7 +3771,7 @@
         if (body) {
             options.body = JSON.stringify(body);
         }
-        return fetch(API_URL + path, options)
+        return fetch(API_BASE + path, options)
             .then(res => {
                 if (!res.ok) {
                     return res.json().then(err => Promise.reject(err));
@@ -3901,7 +3901,7 @@
             municipality: muni,
             barangay: brgy,
             delivery_fee: parseFloat(fee) || 0,
-            admin_id: adminId
+            requester_id: adminId
         };
 
         const url = id ? `/admin/locations/${id}` : '/admin/locations';
@@ -3934,7 +3934,7 @@
             return;
         }
 
-        locationsApiCall(`/admin/locations/${locId}?admin_id=${adminId}`, 'DELETE')
+        locationsApiCall(`/admin/locations/${locId}?requester_id=${adminId}`, 'DELETE')
             .then(function() {
                 showNotification('Location deleted successfully', 'success');
                 fetchLocations();
@@ -7490,7 +7490,7 @@ async edit(id) { this.openModal(id); }
             if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) return;
             
             try {
-                const res = await fetch(`${API_BASE}/api/admin/settings`);
+                const res = await fetch(`${API_BASE}/admin/settings`);
                 const data = await res.json();
                 list.innerHTML = data.map(s => {
                     const isTextarea = s.key === 'rental_terms';
@@ -7517,7 +7517,7 @@ async edit(id) { this.openModal(id); }
 
             try {
                 if (typeof showAdminBlockingUI !== 'undefined') showAdminBlockingUI(true);
-                const res = await fetch(`${API_BASE}/api/admin/settings`, {
+                const res = await fetch(`${API_BASE}/admin/settings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ requester_id: user.id, settings: updates })

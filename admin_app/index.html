@@ -6593,6 +6593,72 @@
         </div>
     </div>
 
+    <!-- RECORD EXPENSE MODAL -->
+    <div id="recordExpenseModal" class="premium-modal" style="display: none;" onclick="Reports.closeRecordExpenseModalBackdrop(event)">
+        <div class="modal-content" style="max-width: 500px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-receipt" style="color: var(--primary);"></i>
+                    Record Expense &amp; Maintenance
+                </h3>
+                <button type="button" onclick="Reports.closeRecordExpenseModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="recordExpenseForm" onsubmit="Reports.saveExpense(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Select Vehicle *</label>
+                    <select id="expVehicleId" required style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                        <option value="">Loading vehicles...</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Expense Type *</label>
+                    <select id="expType" required style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                        <option value="Change Oil">Change Oil</option>
+                        <option value="Car Wash">Car Wash</option>
+                        <option value="Repair">Repair</option>
+                        <option value="Tire Maintenance">Tire Maintenance</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Amount (PHP) *</label>
+                        <input type="number" step="0.01" id="expAmount" required min="0" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Expense Date *</label>
+                        <input type="date" id="expDate" required style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Description *</label>
+                    <textarea id="expDesc" required style="width: 100%; height: 80px; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Proof of Expense / Receipt *</label>
+                    <input type="file" id="expProofFile" accept="image/*" required style="width: 100%; font-size: 0.85rem; color: var(--text-muted);">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="Reports.closeRecordExpenseModal()" class="btn-outline" style="flex: 1; padding: 12px; border: 1px solid var(--border); background: transparent; color: var(--text-main); border-radius: 10px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-premium" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer;">
+                        Save Expense
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ADD-ONS CONFIGURATION MODAL -->
     <div id="addonsConfigModal" class="premium-modal" style="display: none;" onclick="closeAddonsModalBackdrop(event)">
         <div class="modal-content" style="max-width: 520px; max-height: 90vh; overflow-y: auto; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal);">
@@ -6880,7 +6946,7 @@
 
 
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:12px;margin-bottom:16px;">
 
 
 
@@ -6936,6 +7002,38 @@
 
 
 
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">TOTAL EXPENSES</h5>
+
+
+
+                <div class="value" id="repTotalExpenses" style="font-size:1.2rem;font-weight:700;color:var(--danger);">₱0</div>
+
+
+
+            </div>
+
+
+
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+
+
+
+                <h5 style="font-size:0.6rem;color:var(--text-muted);">NET PROFIT</h5>
+
+
+
+                <div class="value" id="repNetProfit" style="font-size:1.2rem;font-weight:700;color:var(--success);">₱0</div>
+
+
+
+            </div>
+
+
+
+            <div class="stat-card" style="padding:15px;margin-bottom:0;">
+
+
+
                 <h5 style="font-size:0.6rem;color:var(--text-muted);">ACTIVE FLEET</h5>
 
 
@@ -6948,6 +7046,12 @@
 
 
 
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <button onclick="Reports.openRecordExpenseModal()" class="btn-premium" style="padding:10px 20px;border-radius:10px;font-size:0.8rem;display:flex;align-items:center;gap:8px;font-weight:700;border:none;background:var(--primary);color:white;cursor:pointer;">
+                <i class="fas fa-plus"></i> Record Expense
+            </button>
         </div>
 
 
@@ -7084,6 +7188,35 @@
 
 
 
+        </div>
+
+        <!-- Expense Tracker Section -->
+        <div class="chart-card" style="height:auto;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                <h3 style="margin:0;">Expense &amp; Maintenance Log</h3>
+                <div style="font-size:0.75rem;color:var(--text-muted);">Filter: <span id="expenseFilterLabel">Current Range</span></div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="premium-table" style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border);text-align:left;">
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;">Date</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;">Vehicle</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;">Type</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;">Amount</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;">Description</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;text-align:center;">Proof</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;">Recorded By</th>
+                            <th style="padding:10px 8px;color:var(--text-muted);font-weight:700;text-align:center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsExpensesList">
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:20px;color:var(--text-muted);">Loading expenses...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
 
@@ -21420,97 +21553,36 @@ async edit(id) { this.openModal(id); }
 
 
         async refresh() {
-
-
-
             this._loaded = true;
-
-
-
             try {
-
-
-
                 const from = document.getElementById('rptDateFrom').value;
-
-
-
                 const to = document.getElementById('rptDateTo').value;
-
-
-
                 const params = from && to ? `&date_from=${from}&date_to=${to}` : '';
-
-
-
                 const res = await fetch(`${API_BASE}/api/admin/detailed-stats?filter=${this._filter}${params}`);
-
-
-
                 const data = await res.json();
-
-
-
                 this._rawData = data;
 
-
-
-
-
-
-
                 const totalRev = data.totalRevenue || 0;
-
-
-
                 const totalBook = data.totalBookings || 0;
-
-
+                const totalExp = data.totalExpenses || 0;
+                const netProf = data.netProfit || 0;
 
                 document.getElementById('repAvgRev').textContent = '\u20B1' + Math.floor(totalRev / (totalBook || 1)).toLocaleString();
-
-
-
                 document.getElementById('repActive').textContent = totalBook;
-
-
-
                 document.getElementById('repTotalRev').textContent = '\u20B1' + totalRev.toLocaleString();
-
-
-
+                document.getElementById('repTotalExpenses').textContent = '\u20B1' + totalExp.toLocaleString();
+                document.getElementById('repNetProfit').textContent = '\u20B1' + netProf.toLocaleString();
                 const activeFleetCount = (data.fleetDistribution || []).reduce((sum, item) => sum + (item.count || 0), 0);
-
-
-
                 document.getElementById('repFleet').textContent = activeFleetCount;
 
-
-
-
-
-
-
                 this.renderRevenueChart(data.revenueTrend || []);
-
-
-
                 this.renderBookingsChart(data.bookingsTrend || data.revenueTrend || []);
-
-
-
                 this.renderPieChart(data.topVehicles || []);
-
-
-
                 this.renderTop(data.topVehicles || []);
-
-
-
+                
+                // Load expenses
+                this.fetchExpenses();
             } catch (err) { console.error(err); }
-
-
-
         },
 
 
@@ -21987,6 +22059,174 @@ async edit(id) { this.openModal(id); }
 
 
 
+        openRecordExpenseModal() {
+            document.getElementById('recordExpenseModal').style.display = 'flex';
+            document.getElementById('recordExpenseForm').reset();
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+            this.loadVehiclesDropdown();
+        },
+
+
+
+        closeRecordExpenseModal() {
+            document.getElementById('recordExpenseModal').style.display = 'none';
+        },
+
+
+
+        closeRecordExpenseModalBackdrop(event) {
+            if (event.target.id === 'recordExpenseModal') {
+                this.closeRecordExpenseModal();
+            }
+        },
+
+
+
+        async loadVehiclesDropdown() {
+            try {
+                const res = await fetch(`${API_URL}/vehicles`);
+                const vehicles = await res.json();
+                const select = document.getElementById('expVehicleId');
+                select.innerHTML = '<option value="">-- Select a Vehicle --</option>' + 
+                    vehicles.map(v => `<option value="${v.id}">${v.brand} ${v.model} (${v.plate_number || 'No Plate'})</option>`).join('');
+            } catch (err) {
+                console.error('Failed to load vehicles dropdown', err);
+                document.getElementById('expVehicleId').innerHTML = '<option value="">Error loading vehicles</option>';
+            }
+        },
+
+
+
+        async saveExpense(event) {
+            event.preventDefault();
+            const user = adminAuth.getUser();
+            if (!user) return;
+
+            const vehicleId = document.getElementById('expVehicleId').value;
+            const type = document.getElementById('expType').value;
+            const amount = document.getElementById('expAmount').value;
+            const date = document.getElementById('expDate').value;
+            const desc = document.getElementById('expDesc').value;
+            const fileInput = document.getElementById('expProofFile');
+
+            if (!fileInput.files[0]) {
+                showNotification('Proof of expense image is required', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('vehicle_id', vehicleId);
+            formData.append('expense_type', type);
+            formData.append('amount', amount);
+            formData.append('expense_date', date);
+            formData.append('description', desc);
+            formData.append('recorded_by', user.id);
+            formData.append('proof_image', fileInput.files[0]);
+
+            try {
+                showLoadingOverlay(true);
+                const res = await fetch(`${API_BASE}/admin/expenses`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                showLoadingOverlay(false);
+
+                if (res.ok) {
+                    showNotification('Expense recorded successfully', 'success');
+                    this.closeRecordExpenseModal();
+                    this.refresh();
+                } else {
+                    showNotification(data.error || 'Failed to record expense', 'error');
+                }
+            } catch (err) {
+                showLoadingOverlay(false);
+                console.error(err);
+                showNotification('Error saving expense record', 'error');
+            }
+        },
+
+
+
+        async fetchExpenses() {
+            const user = adminAuth.getUser();
+            if (!user) return;
+            const from = document.getElementById('rptDateFrom').value;
+            const to = document.getElementById('rptDateTo').value;
+            const params = `?admin_id=${user.id}` + (from && to ? `&date_from=${from}&date_to=${to}` : '');
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/expenses${params}`);
+                const data = await res.json();
+                this._expensesData = data;
+                this.renderExpensesTable(data);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('reportsExpensesList').innerHTML = '<tr><td colspan="8" style="text-align:center;color:red;">Error loading expenses log.</td></tr>';
+            }
+        },
+
+
+
+        renderExpensesTable(expenses) {
+            const container = document.getElementById('reportsExpensesList');
+            if (!container) return;
+            const user = adminAuth.getUser();
+            const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
+
+            if (!expenses.length) {
+                container.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-muted);">No expenses logged for this range.</td></tr>';
+                return;
+            }
+
+            container.innerHTML = expenses.map(e => `
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:10px 8px;">${e.expense_date}</td>
+                    <td style="padding:10px 8px;font-weight:700;">${e.brand} ${e.model} <span style="font-size:0.7rem;color:var(--text-muted);display:block;">${e.plate_number}</span></td>
+                    <td style="padding:10px 8px;"><span class="badge" style="background:var(--surface-container);color:var(--text-main);padding:4px 8px;border-radius:6px;font-size:0.7rem;">${e.expense_type}</span></td>
+                    <td style="padding:10px 8px;font-weight:700;color:var(--danger);">₱${e.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                    <td style="padding:10px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e.description}">${e.description}</td>
+                    <td style="padding:10px 8px;text-align:center;">
+                        ${e.proof_image_url ? \`<a href="\${e.proof_image_url}" target="_blank" class="btn-primary" style="padding:4px 8px;font-size:0.7rem;border-radius:6px;display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-image"></i> View Receipt</a>\` : \`<span style="color:var(--text-muted);font-size:0.7rem;">No Image</span>\`}
+                    </td>
+                    <td style="padding:10px 8px;font-size:0.75rem;">${e.recorder_name}</td>
+                    <td style="padding:10px 8px;text-align:center;">
+                        \${isSuperAdmin ? \`<button onclick="Reports.deleteExpense(\${e.id})" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:0.95rem;padding:4px;" title="Delete expense record"><i class="fas fa-trash-alt"></i></button>\` : \`<span style="color:var(--text-muted);font-size:0.7rem;">-</span>\`}
+                    </td>
+                </tr>
+            `).join('');
+        },
+
+
+
+        async deleteExpense(expenseId) {
+            if (!confirm('Are you sure you want to delete this expense record?')) return;
+            const user = adminAuth.getUser();
+            if (!user) return;
+
+            try {
+                showLoadingOverlay(true);
+                const res = await fetch(`${API_BASE}/admin/expenses/\${expenseId}?admin_id=\${user.id}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                showLoadingOverlay(false);
+
+                if (res.ok) {
+                    showNotification('Expense record deleted successfully', 'success');
+                    this.refresh();
+                } else {
+                    showNotification(data.error || 'Failed to delete record', 'error');
+                }
+            } catch (err) {
+                showLoadingOverlay(false);
+                console.error(err);
+                showNotification('Error deleting expense record', 'error');
+            }
+        },
+
+
+
 
 
 
@@ -22043,6 +22283,14 @@ async edit(id) { this.openModal(id); }
 
 
 
+            rows.push(['Total Expenses (PHP)', data.totalExpenses || 0]);
+
+
+
+            rows.push(['Net Profit (PHP)', data.netProfit || 0]);
+
+
+
             rows.push(['Total Bookings', totalBook]);
 
 
@@ -22092,6 +22340,30 @@ async edit(id) { this.openModal(id); }
 
 
                 rows.push([t.day || t.label || '', t.amount || 0]);
+
+
+
+            });
+
+
+
+            rows.push([]);
+
+
+
+            rows.push(['Expenses & Maintenance Log']);
+
+
+
+            rows.push(['Date', 'Vehicle', 'Type', 'Amount (PHP)', 'Description', 'Recorded By']);
+
+
+
+            (this._expensesData || []).forEach(e => {
+
+
+
+                rows.push([e.expense_date, `${e.brand} ${e.model} (${e.plate_number || 'N/A'})`, e.expense_type, e.amount || 0, e.description || '', e.recorder_name || '']);
 
 
 
