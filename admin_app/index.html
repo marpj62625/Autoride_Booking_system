@@ -5337,14 +5337,15 @@
 
 
 
-        <div id="activityList" style="margin-bottom: 30px;">
-
-
-
+        <div id="activityList" style="margin-bottom: 20px;">
             <div style="text-align: center; padding: 50px; color: var(--text-muted);">Loading system logs...</div>
+        </div>
 
-
-
+        <!-- Pagination UI -->
+        <div id="activityPagination" style="display: none; justify-content: center; align-items: center; gap: 12px; margin-bottom: 40px;">
+            <button class="btn-primary" id="btnPrevActivity" onclick="Activity.prevPage()" style="padding: 8px 16px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"><i class="fas fa-chevron-left"></i> Previous</button>
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);" id="activityPageNum">Page 1 of 1</span>
+            <button class="btn-primary" id="btnNextActivity" onclick="Activity.nextPage()" style="padding: 8px 16px; border-radius: 12px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">Next <i class="fas fa-chevron-right"></i></button>
         </div>
 
 
@@ -11293,6 +11294,10 @@
 
 
         _filter: 'all',
+        page: 1,
+        limit: 50,
+        totalPages: 1,
+        totalLogs: 0,
 
 
 
@@ -18289,147 +18294,94 @@ async edit(id) { this.openModal(id); }
 
 
 
-        async refresh() {
+        async prevPage() {
+            if (this.page > 1) {
+                this.page--;
+                await this.refresh(true);
+            }
+        },
 
+        async nextPage() {
+            if (this.page < this.totalPages) {
+                this.page++;
+                await this.refresh(true);
+            }
+        },
 
-
+        async refresh(keepPage = false) {
             const list = document.getElementById('activityList');
             showSkeleton('activityList', 'list');
 
-
-
             if (!list) return;
 
-
-
-
-
-
-
-            // Show export button only for super_admin
-
-
-
-            const exportBtn = document.getElementById('activityExportBtn');
-
-
-
-            if (exportBtn) {
-
-
-
-                const user = adminAuth.getUser();
-
-
-
-                const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
-
-
-
-                exportBtn.style.display = isSuperAdmin ? 'flex' : 'none';
-
-
-
+            if (!keepPage) {
+                this.page = 1;
             }
 
-
-
-
-
-
+            // Show export button only for super_admin
+            const exportBtn = document.getElementById('activityExportBtn');
+            if (exportBtn) {
+                const user = adminAuth.getUser();
+                const isSuperAdmin = user && (user.role === 'super_admin' || user.role === 'superadmin');
+                exportBtn.style.display = isSuperAdmin ? 'flex' : 'none';
+            }
 
             list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
 
-
-
             try {
-
-
-
-                const res = await apiFetch(`admin/activity-logs`);
-
-
-
-                const logs = await res.json();
-
-
-
-                this.data = logs || [];
-
-
-
-                // Reset search + chips
-
-
-
-                const s = document.getElementById('activitySearch');
-
-
-
-                if (s) s.value = '';
-
-
-
-                this._filter = 'all';
-
-
-
-                document.querySelectorAll('.act-chip').forEach(b => {
-
-
-
-                    const active = b.dataset.filter === 'all';
-
-
-
-                    b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
-
-
-
-                    b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
-
-
-
-                    b.style.color       = active ? '#fff' : 'var(--text-secondary)';
-
-
-
-                });
-
-
-
-                if (!this.data.length) {
-
-
-
-                    list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No activity logs found.</div>';
-
-
-
-                    return;
-
-
-
+                const res = await apiFetch(`admin/activity-logs?page=${this.page}&limit=${this.limit}`);
+                const responseData = await res.json();
+                
+                // Check if response is paginated dictionary or legacy array
+                if (responseData && responseData.logs) {
+                    this.data = responseData.logs || [];
+                    this.totalPages = responseData.pages || 1;
+                    this.totalLogs = responseData.total || 0;
+                } else {
+                    this.data = responseData || [];
+                    this.totalPages = 1;
+                    this.totalLogs = this.data.length;
                 }
 
+                // If this is a fresh reload and not page navigation, reset UI values
+                if (!keepPage) {
+                    const s = document.getElementById('activitySearch');
+                    if (s) s.value = '';
+                    this._filter = 'all';
+                    document.querySelectorAll('.act-chip').forEach(b => {
+                        const active = b.dataset.filter === 'all';
+                        b.style.background  = active ? 'var(--primary)' : 'var(--surface-container)';
+                        b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+                        b.style.color       = active ? '#fff' : 'var(--text-secondary)';
+                    });
+                }
 
+                // Update pagination controls UI
+                const prevBtn = document.getElementById('btnPrevActivity');
+                const nextBtn = document.getElementById('btnNextActivity');
+                const pageNum = document.getElementById('activityPageNum');
+                const paginationDiv = document.getElementById('activityPagination');
+
+                if (paginationDiv) {
+                    paginationDiv.style.display = this.totalPages > 1 ? 'flex' : 'none';
+                }
+                if (pageNum) {
+                    pageNum.innerText = `Page ${this.page} of ${this.totalPages} (${this.totalLogs} logs)`;
+                }
+                if (prevBtn) prevBtn.disabled = this.page <= 1;
+                if (nextBtn) nextBtn.disabled = this.page >= this.totalPages;
+
+                if (!this.data.length) {
+                    list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">No activity logs found.</div>';
+                    return;
+                }
 
                 this._render(this.data);
 
-
-
             } catch (err) {
-
-
-
+                console.error('Activity logs fetch error:', err);
                 list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--danger);">Failed to load logs.</div>';
-
-
-
             }
-
-
-
         },
 
 

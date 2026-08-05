@@ -8889,25 +8889,39 @@ def handle_location_detail(loc_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/activity-logs', methods=['GET'])
-
 def get_activity_logs():
-
     try:
-
         cur = get_cursor()
+        page = request.args.get('page')
+        limit = request.args.get('limit')
 
-        cur.execute("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100")
+        if page:
+            page = int(page)
+            limit = int(limit) if limit else 50
+            offset = (page - 1) * limit
 
-        logs = cur.fetchall()
+            # Get total count
+            cur.execute("SELECT COUNT(*) as total FROM activity_logs")
+            total = cur.fetchone()['total']
 
-        return jsonify(logs), 200
+            # Get paginated logs
+            cur.execute("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
+            logs = cur.fetchall()
 
+            return jsonify({
+                "logs": logs,
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "pages": (total + limit - 1) // limit
+            }), 200
+        else:
+            cur.execute("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100")
+            logs = cur.fetchall()
+            return jsonify(logs), 200
     except Exception as e:
-
         return jsonify({"error": str(e)}), 400
-
     finally:
-
         if 'cur' in locals(): cur.close()
 
 
