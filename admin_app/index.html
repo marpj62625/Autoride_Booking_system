@@ -22124,13 +22124,13 @@ async edit(id) { this.openModal(id); }
             formData.append('proof_image', fileInput.files[0]);
 
             try {
-                showLoadingOverlay(true);
+                showAdminLoading(true);
                 const res = await fetch(`${API_BASE}/admin/expenses`, {
                     method: 'POST',
                     body: formData
                 });
                 const data = await res.json();
-                showLoadingOverlay(false);
+                showAdminLoading(false);
 
                 if (res.ok) {
                     showNotification('Expense recorded successfully', 'success');
@@ -22140,7 +22140,7 @@ async edit(id) { this.openModal(id); }
                     showNotification(data.error || 'Failed to record expense', 'error');
                 }
             } catch (err) {
-                showLoadingOverlay(false);
+                showAdminLoading(false);
                 console.error(err);
                 showNotification('Error saving expense record', 'error');
             }
@@ -22205,12 +22205,12 @@ async edit(id) { this.openModal(id); }
             if (!user) return;
 
             try {
-                showLoadingOverlay(true);
+                showAdminLoading(true);
                 const res = await fetch(`${API_BASE}/admin/expenses/${expenseId}?admin_id=${user.id}`, {
                     method: 'DELETE'
                 });
                 const data = await res.json();
-                showLoadingOverlay(false);
+                showAdminLoading(false);
 
                 if (res.ok) {
                     showNotification('Expense record deleted successfully', 'success');
@@ -22219,7 +22219,7 @@ async edit(id) { this.openModal(id); }
                     showNotification(data.error || 'Failed to delete record', 'error');
                 }
             } catch (err) {
-                showLoadingOverlay(false);
+                showAdminLoading(false);
                 console.error(err);
                 showNotification('Error deleting expense record', 'error');
             }
