@@ -1660,20 +1660,20 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
                         <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Start Date</label>
-                        <input type="date" id="blackoutStartDate" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box;">
+                        <input type="date" id="blackoutStartDate" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                     </div>
                     <div>
                         <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">End Date</label>
-                        <input type="date" id="blackoutEndDate" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box;">
+                        <input type="date" id="blackoutEndDate" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                     </div>
                 </div>
                 <div>
                     <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Reason / Label</label>
-                    <input type="text" id="blackoutReason" required placeholder="e.g. Christmas Holiday, Car Maintenance" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box;">
+                    <input type="text" id="blackoutReason" required placeholder="e.g. Christmas Holiday, Car Maintenance" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                 </div>
                 <div>
                     <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Scope / Affected Vehicles</label>
-                    <select id="blackoutVehicles" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box;">
+                    <select id="blackoutVehicles" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                         <option value="all">All Vehicles (System-wide Block)</option>
                     </select>
                 </div>
@@ -5504,6 +5504,29 @@ async edit(id) { this.openModal(id); }
                         <div style="font-size:0.78rem;color:#64748b;">${b.emergency_contact_phone || ''} ${b.emergency_contact_relationship ? ' |  ' + b.emergency_contact_relationship : ''}</div>
                     </div>` : ''}
                 </div>` : ''}
+
+                <!-- Penalties & Damage Charges -->
+                <div style="background:#fff5f5;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #feb2b2;">
+                    <div style="font-size:0.65rem;color:#c53030;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-gavel" style="color:#ef4444;"></i>Penalties & Damage Charges</div>
+                    <div id="bookingPenaltiesContainer_${b.id}">Loading penalties...</div>
+                    <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #feb2b2;">
+                        <button onclick="Bookings.toggleAddPenaltyForm(${b.id}, true)" style="background:#ef4444;color:white;border:none;width:100%;padding:8px;font-size:0.75rem;border-radius:8px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;"><i class="fas fa-plus"></i>Add Penalty Charge</button>
+                        <div id="addPenaltyForm_${b.id}" style="display:none;flex-direction:column;gap:8px;margin-top:10px;">
+                            <select id="penaltyType_${b.id}" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;color:#0f172a !important;background:#ffffff !important;">
+                                <option value="late_return">Late Return</option>
+                                <option value="damage">Vehicle Damage</option>
+                                <option value="excess_mileage">Excess Mileage</option>
+                                <option value="other">Other Charge</option>
+                            </select>
+                            <input type="number" id="penaltyAmount_${b.id}" placeholder="Amount (PHP)" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;box-sizing:border-box;color:#0f172a !important;background:#ffffff !important;">
+                            <textarea id="penaltyNotes_${b.id}" placeholder="Reason/Details" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;box-sizing:border-box;font-family:inherit;color:#0f172a !important;background:#ffffff !important;"></textarea>
+                            <div style="display:flex;gap:6px;">
+                                <button onclick="Bookings.submitPenalty(${b.id})" style="flex:1;padding:6px;background:#10b981;color:white;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Save</button>
+                                <button onclick="Bookings.toggleAddPenaltyForm(${b.id}, false)" style="flex:1;padding:6px;background:#94a3b8;color:white;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Action Buttons -->
                 ${actionBtns ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">${actionBtns}</div>` : ''}
