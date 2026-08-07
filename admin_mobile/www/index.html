@@ -1672,10 +1672,10 @@
                     <input type="text" id="blackoutReason" required placeholder="e.g. Christmas Holiday, Car Maintenance" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                 </div>
                 <div>
-                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 2px;">Scope / Affected Vehicles <span style="text-transform: none; font-weight: normal; color: #94a3b8; font-size: 0.6rem;">(Hold Ctrl/Cmd to select multiple)</span></label>
-                    <select id="blackoutVehicles" multiple style="width: 100%; height: 110px; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
-                        <option value="all">All Vehicles (System-wide Block)</option>
-                    </select>
+                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 4px;">Scope / Affected Vehicles</label>
+                    <div id="blackoutVehiclesContainer" style="width: 100%; max-height: 160px; overflow-y: auto; border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 10px; box-sizing: border-box; background: #ffffff; display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Checkboxes dynamically rendered -->
+                    </div>
                 </div>
                 <button type="submit" class="btn-primary" style="width: 100%; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; margin-top: 5px;">
                     <i class="fas fa-ban" style="margin-right: 6px;"></i>Create Blackout Period
@@ -4924,14 +4924,32 @@ async edit(id) { this.openModal(id); }
             try {
                 const res = await fetch(`${API_BASE}/api/vehicles`);
                 const vehicles = await res.json();
-                let optionsHtml = '<option value="all">All Vehicles (System-wide Block)</option>';
+                let html = `
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.8rem; color: #0f172a; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="blackoutVehiclesAll" onchange="Blackouts.toggleAllVehicles(this.checked)" style="width: 16px; height: 16px; accent-color: #00B14F; cursor: pointer;">
+                        All Vehicles (System-wide Block)
+                    </label>
+                `;
                 vehicles.forEach(v => {
-                    optionsHtml += `<option value="${v.id}">${v.brand} ${v.model} (${v.plate_number || 'No Plate'})</option>`;
+                    html += `
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: #374151; cursor: pointer; padding: 2px 0; user-select: none;">
+                            <input type="checkbox" class="blackout-vehicle-item" value="${v.id}" style="width: 15px; height: 15px; accent-color: #00B14F; cursor: pointer;">
+                            ${v.brand} ${v.model} (${v.plate_number || 'No Plate'})
+                        </label>
+                    `;
                 });
-                document.getElementById('blackoutVehicles').innerHTML = optionsHtml;
+                document.getElementById('blackoutVehiclesContainer').innerHTML = html;
             } catch(e) {
                 console.error(e);
             }
+        },
+
+        toggleAllVehicles(checked) {
+            const items = document.querySelectorAll('.blackout-vehicle-item');
+            items.forEach(el => {
+                el.checked = checked;
+                el.disabled = checked;
+            });
         },
         
         renderList() {
@@ -4964,9 +4982,17 @@ async edit(id) { this.openModal(id); }
             const end_date = document.getElementById('blackoutEndDate').value;
             const reason = document.getElementById('blackoutReason').value;
             
-            const selectEl = document.getElementById('blackoutVehicles');
-            const selectedOptions = Array.from(selectEl.selectedOptions).map(opt => opt.value);
-            const affected_vehicles = selectedOptions.includes('all') ? 'all' : selectedOptions.join(',');
+            const allChecked = document.getElementById('blackoutVehiclesAll') ? document.getElementById('blackoutVehiclesAll').checked : false;
+            let affected_vehicles = 'all';
+            
+            if (!allChecked) {
+                const checkedItems = Array.from(document.querySelectorAll('.blackout-vehicle-item:checked')).map(el => el.value);
+                if (checkedItems.length === 0) {
+                    showNotification("Please select at least one vehicle", "error");
+                    return;
+                }
+                affected_vehicles = checkedItems.join(',');
+            }
             
             const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
             const admin_id = user ? user.id : 1;
