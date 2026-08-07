@@ -11371,7 +11371,7 @@ def get_fleet_bookings():
 def get_booking_penalties(booking_id):
     try:
         cur = get_cursor()
-        cur.execute("SELECT * FROM penalties WHERE booking_id = %s ORDER BY created_at DESC", (booking_id,))
+        cur.execute("SELECT * FROM booking_penalties WHERE booking_id = %s ORDER BY created_at DESC", (booking_id,))
         rows = cur.fetchall()
         result = []
         for r in rows:
@@ -11388,24 +11388,25 @@ def get_booking_penalties(booking_id):
 @app.route('/admin/bookings/<int:booking_id>/penalties', methods=['POST'])
 def add_booking_penalty(booking_id):
     data = request.json or {}
-    reason = data.get('reason')
+    charge_type = data.get('charge_type')
     amount = data.get('amount')
+    notes = data.get('notes')
     admin_id = data.get('admin_id')
     
-    if not reason or amount is None:
-        return jsonify({'error': 'Reason and amount required'}), 400
+    if not charge_type or amount is None:
+        return jsonify({'error': 'Charge type and amount required'}), 400
         
     try:
         cur = get_cursor()
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS penalty_amount DECIMAL(10,2) DEFAULT 0")
         cur.execute(
-            "INSERT INTO penalties (booking_id, reason, amount, created_by) VALUES (%s, %s, %s, %s) RETURNING id",
-            (booking_id, reason, float(amount), admin_id)
+            "INSERT INTO booking_penalties (booking_id, charge_type, amount, notes, created_by) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (booking_id, charge_type, float(amount), notes, admin_id)
         )
         new_id = cur.fetchone()['id']
         
         # Update booking penalty amount
-        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM penalties WHERE booking_id = %s", (booking_id,))
+        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM booking_penalties WHERE booking_id = %s", (booking_id,))
         total_penalty = cur.fetchone()['total']
         
         # Recalculate balance
@@ -11436,16 +11437,16 @@ def delete_penalty(p_id):
     try:
         cur = get_cursor()
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS penalty_amount DECIMAL(10,2) DEFAULT 0")
-        cur.execute("SELECT booking_id FROM penalties WHERE id = %s", (p_id,))
+        cur.execute("SELECT booking_id FROM booking_penalties WHERE id = %s", (p_id,))
         row = cur.fetchone()
         if not row:
             return jsonify({'error': 'Penalty not found'}), 404
         booking_id = row['booking_id']
         
-        cur.execute("DELETE FROM penalties WHERE id = %s", (p_id,))
+        cur.execute("DELETE FROM booking_penalties WHERE id = %s", (p_id,))
         
         # Update booking penalty amount
-        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM penalties WHERE booking_id = %s", (booking_id,))
+        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM booking_penalties WHERE booking_id = %s", (booking_id,))
         total_penalty = cur.fetchone()['total']
         
         # Recalculate balance
