@@ -2931,6 +2931,19 @@ function openBookingForm(vehicleId) {
   var el = document.getElementById('bookingFormContent');
   if (!el) return;
 
+  // Load blocked dates for this vehicle (blackouts + active bookings)
+  _webCalState.vehicleId = vehicleId;
+  _webCalState.year = new Date().getFullYear();
+  _webCalState.month = new Date().getMonth();
+  _webCalState.blocked = [];
+  fetch(API_BASE + '/api/vehicles/' + vehicleId + '/blocked-dates')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _webCalState.blocked = Array.isArray(data) ? data : [];
+      _renderWebCal();
+    })
+    .catch(function() { _renderWebCal(); });
+
   var locationOptions = servicedLocations.map(function(loc) {
     return '<option value="' + loc.name + '">' + loc.name + '</option>';
   }).join('');
@@ -2961,6 +2974,24 @@ function openBookingForm(vehicleId) {
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Availability Calendar
+    '<div class="card" id="webAvailCalCard">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+        '<h4 style="font-weight:700;margin:0;"><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:8px;"></i>Availability Calendar</h4>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<button onclick="_webCalPrev()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--text-primary);"><i class="fas fa-chevron-left"></i></button>' +
+          '<span id="webCalLabel" style="font-weight:700;font-size:0.9rem;min-width:110px;text-align:center;"></span>' +
+          '<button onclick="_webCalNext()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--text-primary);"><i class="fas fa-chevron-right"></i></button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="webCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:0.82rem;"></div>' +
+      '<div style="display:flex;gap:16px;margin-top:10px;font-size:0.72rem;color:var(--text-muted);">' +
+        '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#fee2e2;display:inline-block;border:1px solid #fca5a5;"></span>Unavailable</span>' +
+        '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--primary);display:inline-block;opacity:0.15;"></span>Today</span>' +
+        '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#dcfce7;display:inline-block;border:1px solid #86efac;"></span>Available</span>' +
+      '</div>' +
+    '</div>' +
 
     // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
@@ -4359,6 +4390,15 @@ function renderBookingDetail(b) {
       // Conflict affected card placeholder
       (b.is_conflict_affected ? '<div id="conflict-resolution-card-' + b.id + '" style="margin-bottom:20px;"></div>' : '') +
 
+      // Penalty charges placeholder (loaded async)
+      '<div id="webPenaltyCard-' + b.id + '" style="display:none;background:rgba(239,68,68,0.04);border:1.5px solid rgba(239,68,68,0.18);border-radius:14px;padding:18px;margin-bottom:18px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+          '<i class="fas fa-gavel" style="color:#ef4444;font-size:1rem;"></i>' +
+          '<h4 style="font-weight:700;font-size:0.95rem;color:#dc2626;margin:0;">Additional Charges & Penalties</h4>' +
+        '</div>' +
+        '<div id="webPenaltyList-' + b.id + '"></div>' +
+      '</div>' +
+
       // Driver's License Details
       licenseHtml +
 
@@ -4463,6 +4503,9 @@ function renderBookingDetail(b) {
       secondaryActions +
 
     '</div>';
+
+  // Load penalties asynchronously
+  setTimeout(function() { _loadWebPenalties(b.id); }, 60);
 
   if (b.is_conflict_affected && b.conflict_id) {
     setTimeout(function() {
@@ -7429,3 +7472,165 @@ function setVdImage(idx) {
   window._vdActiveImgIdx = idx;
   updateVdSlideshow();
 }
+
+// ============================================================
+// WEB CUSTOMER — AVAILABILITY CALENDAR (Booking Form)
+// ============================================================
+
+var _webCalState = {
+  vehicleId: null,
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  blocked: []
+};
+
+function _webCalPrev() {
+  if (_webCalState.month === 0) { _webCalState.month = 11; _webCalState.year--; }
+  else { _webCalState.month--; }
+  _renderWebCal();
+}
+
+function _webCalNext() {
+  if (_webCalState.month === 11) { _webCalState.month = 0; _webCalState.year++; }
+  else { _webCalState.month++; }
+  _renderWebCal();
+}
+
+function _renderWebCal() {
+  var label = document.getElementById('webCalLabel');
+  var grid = document.getElementById('webCalGrid');
+  if (!grid) return;
+
+  var monthNames = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+  if (label) label.textContent = monthNames[_webCalState.month] + ' ' + _webCalState.year;
+
+  var year  = _webCalState.year;
+  var month = _webCalState.month;
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var firstDay    = new Date(year, month, 1).getDay(); // 0=Sun
+  var todayStr    = new Date().toISOString().split('T')[0];
+
+  var html = '';
+  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayNames.forEach(function(d) {
+    html += '<div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);padding:4px 0;border-bottom:1px solid var(--border);">' + d + '</div>';
+  });
+
+  // Blank cells before first day
+  for (var b = 0; b < firstDay; b++) {
+    html += '<div></div>';
+  }
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var cellDate = new Date(year, month, d);
+    var isPast   = dateStr < todayStr;
+    var isToday  = dateStr === todayStr;
+
+    var isBlocked = _webCalState.blocked.some(function(r) {
+      var s = new Date(r.start_date); s.setHours(0,0,0,0);
+      var e = new Date(r.end_date);   e.setHours(0,0,0,0);
+      return cellDate >= s && cellDate <= e;
+    });
+
+    var bg, color, cursor, title;
+    if (isPast) {
+      bg = 'transparent'; color = 'var(--text-muted)'; cursor = 'default'; title = '';
+    } else if (isBlocked) {
+      bg = '#fee2e2'; color = '#ef4444'; cursor = 'not-allowed'; title = 'Unavailable';
+    } else if (isToday) {
+      bg = 'rgba(0,177,79,0.12)'; color = 'var(--primary)'; cursor = 'pointer'; title = 'Today';
+    } else {
+      bg = 'var(--bg-input)'; color = 'var(--text-primary)'; cursor = 'pointer'; title = 'Available';
+    }
+
+    var clickable = !isPast && !isBlocked;
+    var onclick   = clickable ? 'onclick="_webCalPickDate(\'' + dateStr + '\')"' : '';
+
+    html += '<div ' + onclick + ' title="' + title + '" style="' +
+      'padding:6px 2px;border-radius:6px;background:' + bg + ';color:' + color + ';' +
+      'cursor:' + cursor + ';font-size:0.8rem;font-weight:' + (isToday ? '800' : '600') + ';' +
+      'border:1px solid ' + (isBlocked ? '#fca5a5' : isToday ? 'var(--primary)' : 'transparent') + ';' +
+      'transition:background 0.15s;' +
+      '">' + d + '</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+function _webCalPickDate(dateStr) {
+  var startEl = document.getElementById('bfStartDate');
+  var endEl   = document.getElementById('bfEndDate');
+  if (!startEl) return;
+
+  if (!startEl.value || (startEl.value && endEl && endEl.value)) {
+    // Start fresh — set start date
+    startEl.value = dateStr;
+    if (endEl) endEl.value = '';
+  } else {
+    // Start date already set, pick end date
+    if (endEl && dateStr > startEl.value) {
+      endEl.value = dateStr;
+    } else {
+      // Picked earlier — restart
+      startEl.value = dateStr;
+      if (endEl) endEl.value = '';
+    }
+  }
+
+  if (typeof updateBookingPrice === 'function') updateBookingPrice();
+  if (typeof autoSetReturnTime === 'function')  autoSetReturnTime();
+}
+
+// ============================================================
+// WEB CUSTOMER — PENALTY CHARGES (Booking Detail)
+// ============================================================
+
+function _loadWebPenalties(bookingId) {
+  var card = document.getElementById('webPenaltyCard-' + bookingId);
+  var list = document.getElementById('webPenaltyList-' + bookingId);
+  if (!card || !list) return;
+
+  fetch(API_BASE + '/api/admin/bookings/' + bookingId + '/penalties')
+    .then(function(r) { return r.json(); })
+    .then(function(penalties) {
+      if (!Array.isArray(penalties) || penalties.length === 0) return;
+
+      var typeLabels = {
+        'late_return':    'Late Return Fee',
+        'damage':         'Vehicle Damage',
+        'excess_mileage': 'Excess Mileage',
+        'other':          'Other Charge'
+      };
+
+      var total = 0;
+      var rows = penalties.map(function(p) {
+        var amt = parseFloat(p.amount) || 0;
+        total += amt;
+        var label = typeLabels[p.charge_type] || p.charge_type;
+        return '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+          'padding:10px 0;border-bottom:1px dashed rgba(239,68,68,0.2);">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;color:var(--text-primary);">' + label + '</div>' +
+            (p.notes ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' + p.notes + '</div>' : '') +
+          '</div>' +
+          '<div style="font-weight:700;color:#dc2626;font-size:0.9rem;white-space:nowrap;margin-left:16px;">₱' +
+            amt.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) +
+          '</div>' +
+          '</div>';
+      }).join('');
+
+      rows += '<div style="display:flex;justify-content:space-between;align-items:center;' +
+        'padding-top:10px;margin-top:2px;">' +
+        '<div style="font-weight:700;font-size:0.875rem;color:var(--text-primary);">Total Penalties</div>' +
+        '<div style="font-weight:800;color:#dc2626;font-size:1rem;">₱' +
+          total.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) +
+        '</div>' +
+        '</div>';
+
+      list.innerHTML = rows;
+      card.style.display = 'block';
+    })
+    .catch(function(err) { console.warn('[penalties] fetch failed:', err); });
+}
