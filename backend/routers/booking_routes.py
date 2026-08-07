@@ -56,6 +56,26 @@ def book_vehicle():
                 "message": "Your driver's license must be approved by an administrator before you can book a vehicle."
             }), 403
 
+        # Check for blackout dates
+        cur.execute("""
+            SELECT id, reason, affected_vehicles 
+            FROM blackout_dates 
+            WHERE start_date <= %s AND end_date >= %s
+        """, (end_date, start_date))
+        blackouts = cur.fetchall()
+        for b in blackouts:
+            if not b.get('affected_vehicles') or b['affected_vehicles'] == 'all':
+                return jsonify({
+                    "error": "Blackout Date Conflict",
+                    "message": f"Ang petsa na ito ay hindi available: {b['reason']}"
+                }), 409
+            affected = [v.strip() for v in b['affected_vehicles'].split(',')]
+            if str(vehicle_id) in affected:
+                return jsonify({
+                    "error": "Blackout Date Conflict",
+                    "message": f"Ang sasakyang ito ay hindi available: {b['reason']}"
+                }), 409
+
         # Check for overlapping active bookings for this vehicle
         cur.execute("""
             SELECT COUNT(*) as conflict_count 

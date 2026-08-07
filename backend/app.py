@@ -4272,6 +4272,25 @@ def modify_booking():
 
             return jsonify({"error": "Booking cannot be modified"}), 400
 
+        # Check for blackout dates
+        cur.execute("""
+            SELECT id, reason, affected_vehicles 
+            FROM blackout_dates 
+            WHERE start_date <= %s AND end_date >= %s
+        """, (new_end, new_start))
+        blackouts = cur.fetchall()
+        for b in blackouts:
+            if not b.get('affected_vehicles') or b['affected_vehicles'] == 'all':
+                return jsonify({
+                    "error": f"Cannot change dates - Blackout Date Conflict: {b['reason']}"
+                }), 409
+            affected = [v.strip() for v in b['affected_vehicles'].split(',')]
+            bk_vehicle_id = str(bk.get('vehicle_id') or data.get('vehicle_id') or '')
+            if bk_vehicle_id in affected:
+                return jsonify({
+                    "error": f"Cannot change dates - Blackout Date Conflict: {b['reason']}"
+                }), 409
+
         # ── Overlap guard for modification: check no other booking occupies the new dates ──
         cur.execute("""
             SELECT b.id, b.start_date, b.end_date, b.status,
@@ -8123,6 +8142,38 @@ def check_vehicle_availability():
 
         cur = get_cursor()
 
+        # Check for blackout dates
+        cur.execute("""
+            SELECT id, reason, affected_vehicles 
+            FROM blackout_dates 
+            WHERE start_date <= %s AND end_date >= %s
+        """, (end_date, start_date))
+        blackouts = cur.fetchall()
+        for b in blackouts:
+            if not b.get('affected_vehicles') or b['affected_vehicles'] == 'all':
+                return jsonify({
+                    'available': False,
+                    'conflict': {
+                        'booking_id': 'Blackout',
+                        'start_date': str(b['start_date']),
+                        'end_date': str(b['end_date']),
+                        'status': b['reason']
+                    },
+                    'next_available_from': str(b['end_date']) # Simplified
+                }), 200
+            affected = [v.strip() for v in b['affected_vehicles'].split(',')]
+            if str(vehicle_id) in affected:
+                return jsonify({
+                    'available': False,
+                    'conflict': {
+                        'booking_id': 'Blackout',
+                        'start_date': str(b['start_date']),
+                        'end_date': str(b['end_date']),
+                        'status': b['reason']
+                    },
+                    'next_available_from': str(b['end_date'])
+                }), 200
+
         # Find any overlapping active bookings
         cur.execute("""
             SELECT id, start_date, end_date, status,
@@ -11174,3 +11225,269 @@ def delete_expense(expense_id):
     finally:
         if 'cur' in locals(): cur.close()
 
+# ==================== BLACKOUT DATES ====================
+@app.route('/public/blackout-dates', methods=['GET'])
+def get_public_blackout_dates():
+    start_date = request.args.get('start')
+    end_date = request.args.get('end')
+    try:
+        cur = get_cursor()
+        query = "SELECT start_date, end_date, reason, affected_vehicles FROM blackout_dates"
+        params = []
+        if start_date and end_date:
+            query += " WHERE start_date <= %s AND end_date >= %s"
+            params = [end_date, start_date]
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['start_date'] = str(d['start_date'])
+            d['end_date'] = str(d['end_date'])
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/blackout-dates', methods=['GET'])
+def get_admin_blackout_dates():
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM blackout_dates ORDER BY start_date DESC")
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['start_date'] = str(d['start_date'])
+            d['end_date'] = str(d['end_date'])
+            d['created_at'] = str(d['created_at'])
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/blackout-dates', methods=['POST'])
+def add_admin_blackout_date():
+    data = request.json or {}
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+    reason = data.get('reason')
+    affected_vehicles = data.get('affected_vehicles', 'all')
+    created_by = data.get('admin_id')
+    
+    if not all([start_date, end_date, reason, created_by]):
+        return jsonify({'error': 'Missing required fields'}), 400
+        
+    try:
+        cur = get_cursor()
+        cur.execute(
+            "INSERT INTO blackout_dates (start_date, end_date, reason, affected_vehicles, created_by) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (start_date, end_date, reason, affected_vehicles, created_by)
+        )
+        new_id = cur.fetchone()['id']
+        commit_db()
+        return jsonify({'message': 'Blackout date added', 'id': new_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/blackout-dates/<int:b_id>', methods=['DELETE'])
+def delete_admin_blackout_date(b_id):
+    try:
+        cur = get_cursor()
+        cur.execute("DELETE FROM blackout_dates WHERE id = %s", (b_id,))
+        commit_db()
+        return jsonify({'message': 'Blackout date deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+# ==================== BLOCKED DATES HELPER ====================
+@app.route('/vehicles/<int:vehicle_id>/blocked-dates', methods=['GET'])
+def get_blocked_dates(vehicle_id):
+    try:
+        cur = get_cursor()
+        # Active bookings
+        cur.execute("""
+            SELECT start_date, end_date FROM bookings
+            WHERE vehicle_id = %s AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+        """, (vehicle_id,))
+        bookings = cur.fetchall()
+        
+        # Blackout dates
+        cur.execute("""
+            SELECT start_date, end_date FROM blackout_dates
+            WHERE affected_vehicles = 'all' OR affected_vehicles LIKE %s
+        """, (f'%{vehicle_id}%',))
+        blackouts = cur.fetchall()
+        
+        result = []
+        for b in bookings:
+            result.append({'start_date': str(b['start_date']), 'end_date': str(b['end_date']), 'type': 'booking'})
+        for b in blackouts:
+            result.append({'start_date': str(b['start_date']), 'end_date': str(b['end_date']), 'type': 'blackout'})
+            
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/fleet-bookings', methods=['GET'])
+def get_fleet_bookings():
+    start = request.args.get('start')
+    end = request.args.get('end')
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT b.id, b.vehicle_id, b.start_date, b.end_date, b.status, v.brand, v.model, v.plate_number
+            FROM bookings b
+            JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE b.start_date <= %s AND b.end_date >= %s
+              AND b.status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+        """, (end, start))
+        rows = cur.fetchall()
+        
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['start_date'] = str(d['start_date'])
+            d['end_date'] = str(d['end_date'])
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+# ==================== PENALTIES ====================
+@app.route('/admin/bookings/<int:booking_id>/penalties', methods=['GET'])
+def get_booking_penalties(booking_id):
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT * FROM penalties WHERE booking_id = %s ORDER BY created_at DESC", (booking_id,))
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['amount'] = float(d['amount'])
+            d['created_at'] = str(d['created_at'])
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/bookings/<int:booking_id>/penalties', methods=['POST'])
+def add_booking_penalty(booking_id):
+    data = request.json or {}
+    reason = data.get('reason')
+    amount = data.get('amount')
+    admin_id = data.get('admin_id')
+    
+    if not reason or amount is None:
+        return jsonify({'error': 'Reason and amount required'}), 400
+        
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS penalty_amount DECIMAL(10,2) DEFAULT 0")
+        cur.execute(
+            "INSERT INTO penalties (booking_id, reason, amount, created_by) VALUES (%s, %s, %s, %s) RETURNING id",
+            (booking_id, reason, float(amount), admin_id)
+        )
+        new_id = cur.fetchone()['id']
+        
+        # Update booking penalty amount
+        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM penalties WHERE booking_id = %s", (booking_id,))
+        total_penalty = cur.fetchone()['total']
+        
+        # Recalculate balance
+        cur.execute("SELECT total_price, amount_paid FROM bookings WHERE id = %s", (booking_id,))
+        bk = cur.fetchone()
+        new_balance = float(bk['total_price']) + float(total_penalty) - float(bk['amount_paid'])
+        
+        payment_status = 'Unpaid'
+        if new_balance <= 0:
+            payment_status = 'Paid'
+            new_balance = 0.0
+        elif float(bk['amount_paid']) > 0:
+            payment_status = 'Partially Paid'
+            
+        cur.execute(
+            "UPDATE bookings SET penalty_amount = %s, balance_amount = %s, payment_status = %s WHERE id = %s",
+            (float(total_penalty), new_balance, payment_status, booking_id)
+        )
+        commit_db()
+        return jsonify({'message': 'Penalty added', 'id': new_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/penalties/<int:p_id>', methods=['DELETE'])
+def delete_penalty(p_id):
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS penalty_amount DECIMAL(10,2) DEFAULT 0")
+        cur.execute("SELECT booking_id FROM penalties WHERE id = %s", (p_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'Penalty not found'}), 404
+        booking_id = row['booking_id']
+        
+        cur.execute("DELETE FROM penalties WHERE id = %s", (p_id,))
+        
+        # Update booking penalty amount
+        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM penalties WHERE booking_id = %s", (booking_id,))
+        total_penalty = cur.fetchone()['total']
+        
+        # Recalculate balance
+        cur.execute("SELECT total_price, amount_paid FROM bookings WHERE id = %s", (booking_id,))
+        bk = cur.fetchone()
+        new_balance = float(bk['total_price']) + float(total_penalty) - float(bk['amount_paid'])
+        
+        payment_status = 'Unpaid'
+        if new_balance <= 0:
+            payment_status = 'Paid'
+            new_balance = 0.0
+        elif float(bk['amount_paid']) > 0:
+            payment_status = 'Partially Paid'
+            
+        cur.execute(
+            "UPDATE bookings SET penalty_amount = %s, balance_amount = %s, payment_status = %s WHERE id = %s",
+            (float(total_penalty), new_balance, payment_status, booking_id)
+        )
+        commit_db()
+        return jsonify({'message': 'Penalty deleted'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+def get_blackout_conflicts(start_date, end_date, vehicle_id=None):
+    """Helper to check if dates conflict with blackout dates"""
+    try:
+        cur = get_cursor()
+        query = "SELECT id, reason, start_date, end_date, affected_vehicles FROM blackout_dates WHERE start_date <= %s AND end_date >= %s"
+        cur.execute(query, (end_date, start_date))
+        blackouts = cur.fetchall()
+        for b in blackouts:
+            if not b.get('affected_vehicles') or b['affected_vehicles'] == 'all':
+                return b
+            if vehicle_id:
+                affected = [v.strip() for v in b['affected_vehicles'].split(',')]
+                if str(vehicle_id) in affected:
+                    return b
+        return None
+    except Exception as e:
+        print(f'Blackout check error: {e}')
+        return None
+    finally:
+        if 'cur' in locals(): cur.close()
