@@ -6298,8 +6298,8 @@
                     <input type="text" id="blackoutReason" required placeholder="e.g. Christmas Holiday, Car Maintenance" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                 </div>
                 <div>
-                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Scope / Affected Vehicles</label>
-                    <select id="blackoutVehicles" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
+                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 2px;">Scope / Affected Vehicles <span style="text-transform: none; font-weight: normal; color: #94a3b8; font-size: 0.6rem;">(Hold Ctrl/Cmd to select multiple)</span></label>
+                    <select id="blackoutVehicles" multiple style="width: 100%; height: 110px; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                         <option value="all">All Vehicles (System-wide Block)</option>
                     </select>
                 </div>
@@ -13578,13 +13578,19 @@ async edit(id) { this.openModal(id); }
             const start_date = document.getElementById('blackoutStartDate').value;
             const end_date = document.getElementById('blackoutEndDate').value;
             const reason = document.getElementById('blackoutReason').value;
-            const affected_vehicles = document.getElementById('blackoutVehicles').value;
+            
+            const selectEl = document.getElementById('blackoutVehicles');
+            const selectedOptions = Array.from(selectEl.selectedOptions).map(opt => opt.value);
+            const affected_vehicles = selectedOptions.includes('all') ? 'all' : selectedOptions.join(',');
+            
+            const user = typeof adminAuth !== 'undefined' ? adminAuth.getUser() : null;
+            const admin_id = user ? user.id : 1;
             
             try {
                 const res = await fetch(`${API_BASE}/api/admin/blackout-dates`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ start_date, end_date, reason, affected_vehicles })
+                    body: JSON.stringify({ start_date, end_date, reason, affected_vehicles, admin_id })
                 });
                 const data = await res.json();
                 if (res.ok) {
