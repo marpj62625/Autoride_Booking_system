@@ -2842,7 +2842,11 @@ function openBookingForm(vehicleId) {
   blockedDatesList = [];
   apiCall('/vehicles/' + vehicleId + '/blocked-dates')
     .then(function(dates) {
-       blockedDatesList = dates;
+       blockedDatesList = Array.isArray(dates) ? dates : [];
+       renderBookingCalendar();
+    })
+    .catch(function() {
+       blockedDatesList = [];
        renderBookingCalendar();
     });
   selectedAddons = [];
@@ -7379,11 +7383,9 @@ function renderBookingCalendar() {
      
      // Check if date is blocked (either blackout or booked)
      var isBlocked = blockedDatesList.some(function(bRange) {
-        var start = new Date(bRange.start_date);
-        var end = new Date(bRange.end_date);
-        start.setHours(0,0,0,0);
-        end.setHours(0,0,0,0);
-        return cellDate >= start && cellDate <= end;
+        var s = String(bRange.start_date).substring(0, 10);
+        var e = String(bRange.end_date).substring(0, 10);
+        return dateStr >= s && dateStr <= e;
      });
      
      var bg = "none";

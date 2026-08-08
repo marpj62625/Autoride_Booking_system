@@ -11313,18 +11313,29 @@ def delete_admin_blackout_date(b_id):
 def get_blocked_dates(vehicle_id):
     try:
         cur = get_cursor()
-        # Active bookings
+        # Active bookings for this vehicle
         cur.execute("""
             SELECT start_date, end_date FROM bookings
             WHERE vehicle_id = %s AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
         """, (vehicle_id,))
         bookings = cur.fetchall()
         
-        # Blackout dates
+        # Blackout dates — match 'all', NULL (legacy), or vehicle_id in comma-separated list
+        vid_str = str(vehicle_id)
         cur.execute("""
             SELECT start_date, end_date FROM blackout_dates
-            WHERE affected_vehicles = 'all' OR affected_vehicles LIKE %s
-        """, (f'%{vehicle_id}%',))
+            WHERE affected_vehicles IS NULL
+               OR affected_vehicles = 'all'
+               OR affected_vehicles = %s
+               OR affected_vehicles LIKE %s
+               OR affected_vehicles LIKE %s
+               OR affected_vehicles LIKE %s
+        """, (
+            vid_str,                         # exact match (only vehicle)
+            vid_str + ',%',                  # first in list: "1,2,3"
+            '%,' + vid_str,                  # last in list: "2,3,1"
+            '%,' + vid_str + ',%'            # middle in list: "2,1,3"
+        ))
         blackouts = cur.fetchall()
         
         result = []

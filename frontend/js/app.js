@@ -7523,14 +7523,13 @@ function _renderWebCal() {
 
   for (var d = 1; d <= daysInMonth; d++) {
     var dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    var cellDate = new Date(year, month, d);
     var isPast   = dateStr < todayStr;
     var isToday  = dateStr === todayStr;
 
     var isBlocked = _webCalState.blocked.some(function(r) {
-      var s = new Date(r.start_date); s.setHours(0,0,0,0);
-      var e = new Date(r.end_date);   e.setHours(0,0,0,0);
-      return cellDate >= s && cellDate <= e;
+      var s = String(r.start_date).substring(0, 10);
+      var e = String(r.end_date).substring(0, 10);
+      return dateStr >= s && dateStr <= e;
     });
 
     var bg, color, cursor, title;
