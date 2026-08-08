@@ -4885,9 +4885,9 @@ async edit(id) { this.openModal(id); }
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
             // Header Row - Sticky Vehicle Header
-            let headerHtml = `<th style="padding: 10px; border: 1px solid var(--border); text-align: left; background: var(--surface-card); font-weight: 800; min-width: 110px; width: 110px; max-width: 110px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
+            let headerHtml = `<th style="padding: 10px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 110px; width: 110px; max-width: 110px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
             for (let d = 1; d <= daysInMonth; d++) {
-                headerHtml += `<th style="padding: 8px 3px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 36px; width: 36px; max-width: 36px; background: var(--surface-card); color: var(--text-main);">${d}</th>`;
+                headerHtml += `<th style="padding: 8px 3px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 36px; width: 36px; max-width: 36px; background: var(--surface-solid); color: var(--text-main);">${d}</th>`;
             }
             document.getElementById('fleetCalendarHeaderRow').innerHTML = headerHtml;
             

@@ -9153,9 +9153,9 @@
         </div>
         
         <div id="fleetCalendarScrollContainer" style="overflow-x: auto; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border);">
-            <table style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 0.8rem; color: var(--text-main);" id="fleetCalendarTable">
+            <table style="width: max-content; table-layout: fixed; border-collapse: collapse; min-width: 800px; font-size: 0.8rem; color: var(--text-main);" id="fleetCalendarTable">
                 <thead>
-                    <tr id="fleetCalendarHeaderRow" style="background: var(--surface-card); border-bottom: 1.5px solid var(--border);">
+                    <tr id="fleetCalendarHeaderRow" style="background: var(--surface-solid); border-bottom: 1.5px solid var(--border);">
                         <!-- Injected via JS -->
                     </tr>
                 </thead>
@@ -13472,9 +13472,9 @@ async edit(id) { this.openModal(id); }
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
             // Header Row - Sticky Vehicle Header
-            let headerHtml = `<th style="padding: 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-card); font-weight: 800; min-width: 150px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
+            let headerHtml = `<th style="padding: 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 150px; width: 150px; max-width: 150px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
             for (let d = 1; d <= daysInMonth; d++) {
-                headerHtml += `<th style="padding: 10px 5px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 32px; background: var(--surface-card); color: var(--text-main);">${d}</th>`;
+                headerHtml += `<th style="padding: 10px 5px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 36px; width: 36px; max-width: 36px; background: var(--surface-solid); color: var(--text-main);">${d}</th>`;
             }
             document.getElementById('fleetCalendarHeaderRow').innerHTML = headerHtml;
             
@@ -13483,8 +13483,8 @@ async edit(id) { this.openModal(id); }
             this.vehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">`;
                 // Sticky Vehicle Cell
-                rowHtml += `<td style="padding: 12px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.3;">
-                    <div style="font-size: 0.85rem;">${v.brand} ${v.model}</div>
+                rowHtml += `<td style="padding: 12px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.3; min-width: 150px; width: 150px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <div style="font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.brand} ${v.model}">${v.brand} ${v.model}</div>
                     <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">${v.plate_number || 'No Plate'}</span>
                 </td>`;
                 
@@ -13512,7 +13512,7 @@ async edit(id) { this.openModal(id); }
                     });
                     
                     if (isBlackout) {
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 4px, rgba(239, 68, 68, 0.25) 4px, rgba(239, 68, 68, 0.25) 8px); border-right: 1px solid var(--border);" title="Blackout Blocked"></td>`;
+                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 4px, rgba(239, 68, 68, 0.25) 4px, rgba(239, 68, 68, 0.25) 8px); border-right: 1px solid var(--border); min-width: 36px; width: 36px; max-width: 36px;" title="Blackout Blocked"></td>`;
                     } else if (activeBooking) {
                         // Premium status highlights using translucent background colors and matching border colors
                         const statusStyles = {
@@ -13525,16 +13525,17 @@ async edit(id) { this.openModal(id); }
                         };
                         const style = statusStyles[activeBooking.status?.toLowerCase()] || { bg: 'rgba(148, 163, 184, 0.15)', text: 'var(--text-main)', border: 'var(--border)', label: 'B' };
                         
-                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border);" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
+                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border); min-width: 36px; width: 36px; max-width: 36px;" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
                             <div style="font-size: 0.65rem; padding: 4px; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;">${style.label}</div>
                         </td>`;
                     } else {
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center;"></td>`;
+                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; min-width: 36px; width: 36px; max-width: 36px;"></td>`;
                     }
                 }
                 rowHtml += `</tr>`;
                 bodyHtml += rowHtml;
             });
+
             
             if (this.vehicles.length === 0) {
                 bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 30px; color: var(--text-muted);">No vehicles found</td></tr>`;
