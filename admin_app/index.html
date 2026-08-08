@@ -13470,7 +13470,7 @@ async edit(id) { this.openModal(id); }
                         const end = new Date(b.end_date);
                         start.setHours(0,0,0,0);
                         end.setHours(0,0,0,0);
-                        const isAffected = b.affected_vehicles === 'all' || (b.affected_vehicles && b.affected_vehicles.split(',').includes(String(v.id)));
+                        const isAffected = !b.affected_vehicles || b.affected_vehicles === 'all' || (b.affected_vehicles && b.affected_vehicles.split(',').map(s => s.trim()).includes(String(v.id)));
                         return isAffected && targetDate >= start && targetDate <= end;
                     });
                     
