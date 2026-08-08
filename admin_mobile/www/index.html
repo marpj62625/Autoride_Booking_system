@@ -2053,7 +2053,7 @@
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <div>
                     <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; display: block; margin-bottom: 8px;">Default Wage (% or Flat Rate)</label>
-                    <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 0.9rem;">
+                    <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem;">
                 </div>
                 <button onclick="Drivers.saveWage()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(0,177,79,0.2);">
                     Apply Wage Settings
@@ -2136,7 +2136,7 @@
         <div class="stat-card" style="padding: 20px; margin-bottom: 25px; border-left: 4px solid var(--primary);">
             <h3 style="font-size: 0.95rem; color: #00B14F; margin-bottom: 15px;">Add New Instruction</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 10px; color: white;">
+                <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
                 <button onclick="Instructions.add()" style="width: 100%; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">Add Globally</button>
             </div>
         </div>
