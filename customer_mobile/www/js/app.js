@@ -2840,8 +2840,7 @@ function openBookingForm(vehicleId) {
   bookingFormVehicle = currentVehicleDetail;
   currentCalDate = new Date();
   blockedDatesList = [];
-  fetch(API_BASE + '/api/vehicles/' + vehicleId + '/blocked-dates')
-    .then(function(r) { return r.json(); })
+  apiCall('/vehicles/' + vehicleId + '/blocked-dates')
     .then(function(dates) {
        blockedDatesList = dates;
        renderBookingCalendar();

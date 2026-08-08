@@ -2936,8 +2936,7 @@ function openBookingForm(vehicleId) {
   _webCalState.year = new Date().getFullYear();
   _webCalState.month = new Date().getMonth();
   _webCalState.blocked = [];
-  fetch(API_BASE + '/api/vehicles/' + vehicleId + '/blocked-dates')
-    .then(function(r) { return r.json(); })
+  apiCall('/vehicles/' + vehicleId + '/blocked-dates')
     .then(function(data) {
       _webCalState.blocked = Array.isArray(data) ? data : [];
       _renderWebCal();
