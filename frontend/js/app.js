@@ -2764,9 +2764,19 @@ function onVdColorChange() {
 
 // STEP 3: Book button tapped on a specific unit
 function selectVehicleUnit(vehicleId) {
+  // 1 booking per account  - hard block if active booking exists
+  var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
+  var hasActiveBooking = _allBookingsData.some(function(b) {
+    return ACTIVE_STATUSES.indexOf(b.status) !== -1;
+  });
+  if (hasActiveBooking) {
+    showToast('You already have an active booking. Please complete or cancel it first.', 'error');
+    return;
+  }
+
   showOverlay('page-vehicle-detail');
   var svdEl = document.getElementById('vehicleDetailContent');
-  if (svdEl) svdEl.innerHTML = '<div style=\"height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div>';
+  if (svdEl) svdEl.innerHTML = '<div style="height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div>';
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
     .then(function(v) {
       currentVehicleDetail = v;
@@ -2921,6 +2931,7 @@ function openBookingForm(vehicleId) {
   });
   if (hasActiveBooking) {
     showToast('You already have an active booking. Please complete or cancel it first.', 'error');
+    closeOverlay('page-vehicle-detail');
     return;
   }
 
