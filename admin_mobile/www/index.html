@@ -4878,21 +4878,24 @@ async edit(id) { this.openModal(id); }
             
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
-            // Header Row
-            let headerHtml = `<th style="padding: 10px; border: 1px solid #e2e8f0; text-align: left; background: #f8fafc; font-weight: 800; min-width: 100px; position: sticky; left: 0; z-index: 10;">Vehicle</th>`;
+            // Header Row - Sticky Vehicle Header
+            let headerHtml = `<th style="padding: 10px; border: 1px solid var(--border); text-align: left; background: var(--surface-card); font-weight: 800; min-width: 100px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
             for (let d = 1; d <= daysInMonth; d++) {
-                headerHtml += `<th style="padding: 8px 3px; border: 1px solid #e2e8f0; text-align: center; font-weight: 800; min-width: 26px;">${d}</th>`;
+                headerHtml += `<th style="padding: 8px 3px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 26px; background: var(--surface-card); color: var(--text-main);">${d}</th>`;
             }
             document.getElementById('fleetCalendarHeaderRow').innerHTML = headerHtml;
             
             // Body rows
             let bodyHtml = "";
             this.vehicles.forEach(v => {
-                let rowHtml = `<tr style="border-bottom: 1px solid #e2e8f0;">`;
-                rowHtml += `<td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: 700; background: white; position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.02);">${v.brand} ${v.model}<br><span style="font-size: 0.6rem; color: #64748b; font-weight: 800;">${v.plate_number || 'No Plate'}</span></td>`;
+                let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">`;
+                // Sticky Vehicle Cell
+                rowHtml += `<td style="padding: 10px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.3;">
+                    <div style="font-size: 0.75rem;">${v.brand} ${v.model}</div>
+                    <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">${v.plate_number || 'No Plate'}</span>
+                </td>`;
                 
                 for (let d = 1; d <= daysInMonth; d++) {
-                    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                     const targetDate = new Date(year, month, d);
                     
                     // Check blackout
@@ -4916,22 +4919,23 @@ async edit(id) { this.openModal(id); }
                     });
                     
                     if (isBlackout) {
-                        rowHtml += `<td style="padding: 0; border: 1px solid #e2e8f0; text-align: center; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 5px, #e2e8f0 5px, #e2e8f0 10px);" title="Blackout Blocked"></td>`;
+                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 4px, rgba(239, 68, 68, 0.25) 4px, rgba(239, 68, 68, 0.25) 8px); border-right: 1px solid var(--border);" title="Blackout Blocked"></td>`;
                     } else if (activeBooking) {
-                        const statusColors = {
-                            'pending': '#fef3c7',
-                            'confirmed': '#dbeafe',
-                            'approved': '#dbeafe',
-                            'picked up': '#dcfce7',
-                            'ongoing': '#dcfce7',
-                            'completed': '#d1fae5'
+                        const statusStyles = {
+                            'pending':   { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', label: 'P' },
+                            'confirmed': { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', label: 'C' },
+                            'approved':  { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6', label: 'A' },
+                            'picked up': { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', label: 'O' },
+                            'ongoing':   { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981', label: 'O' },
+                            'completed': { bg: 'rgba(16, 185, 129, 0.3)',  text: '#10b981', label: '✓' }
                         };
-                        const bg = statusColors[activeBooking.status?.toLowerCase()] || '#f1f5f9';
-                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid #e2e8f0; text-align: center; background: ${bg}; cursor: pointer; font-weight: 700; color: #1e3a8a;" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
-                            <div style="font-size: 0.55rem; padding: 2px;">B</div>
+                        const style = statusStyles[activeBooking.status?.toLowerCase()] || { bg: 'rgba(148, 163, 184, 0.15)', text: 'var(--text-main)', label: 'B' };
+                        
+                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border);" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
+                            <div style="font-size: 0.6rem; padding: 4px; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;">${style.label}</div>
                         </td>`;
                     } else {
-                        rowHtml += `<td style="padding: 0; border: 1px solid #e2e8f0; text-align: center;"></td>`;
+                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center;"></td>`;
                     }
                 }
                 rowHtml += `</tr>`;
@@ -4939,10 +4943,10 @@ async edit(id) { this.openModal(id); }
             });
             
             if (this.vehicles.length === 0) {
-                bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 20px; color: #64748b;">No vehicles found</td></tr>`;
+                bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 20px; color: var(--text-muted);">No vehicles found</td></tr>`;
             }
             document.getElementById('fleetCalendarBody').innerHTML = bodyHtml;
-
+ 
             // Scroll back to day 1 (left edge)
             const scrollEl = document.getElementById('fleetCalendarScrollContainer');
             if (scrollEl) scrollEl.scrollLeft = 0;
