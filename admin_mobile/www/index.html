@@ -8242,6 +8242,24 @@ async edit(id) { this.openModal(id); }
                         'cancellation_deadline_hours','cancellation_penalty_percent'];
                     const isNumeric = numericKeys.includes(s.key);
 
+                    if (s.key === 'low_fuel_alert_threshold') {
+                        const val = s.value || '1/4';
+                        const options = ['Off', 'Empty', 'Reserve', '1/4', '1/2', '3/4', 'Full'];
+                        const optHtml = options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('');
+                        const inputField = `<select data-key="${s.key}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">${optHtml}</select>`;
+                        const isCancellation = s.key.includes('cancellation');
+                        const containerStyle = isCancellation 
+                            ? 'margin-bottom:15px;background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;border-left:3px solid var(--primary);'
+                            : 'margin-bottom: 15px;';
+                        
+                        return `
+                            <div style="${containerStyle}">
+                                <label style="display: block; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${s.description}</label>
+                                ${inputField}
+                            </div>
+                        `;
+                    }
+
                     const numConfig = {
                         'long_term_discount_percent':   { min: 0,  max: 100, step: 1,   suffix: '%' },
                         'loyalty_max_discount_percent': { min: 0,  max: 100, step: 1,   suffix: '%' },

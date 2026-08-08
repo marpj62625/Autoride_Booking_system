@@ -23210,7 +23210,7 @@ async edit(id) { this.openModal(id); }
                         title: 'General Configurations',
                         icon: 'fa-sliders-h',
                         color: '#10b981',
-                        keys: ['mileage_limit', 'currency', 'rental_terms', 'timezone'],
+                        keys: ['mileage_limit', 'currency', 'rental_terms', 'time_zone', 'low_fuel_alert_threshold'],
                         settings: []
                     }
                 };
@@ -23253,6 +23253,20 @@ async edit(id) { this.openModal(id); }
                             'loyalty_points_spend_ratio','loyalty_points_value','loyalty_max_discount_percent',
                             'cancellation_deadline_hours','cancellation_penalty_percent'];
                         const isNumeric = numericKeys.includes(s.key);
+
+                        if (s.key === 'low_fuel_alert_threshold') {
+                            const val = s.value || '1/4';
+                            const options = ['Off', 'Empty', 'Reserve', '1/4', '1/2', '3/4', 'Full'];
+                            const optHtml = options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('');
+                            const inputField = `<select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">${optHtml}</select>`;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
 
                         const numConfig = {
                             'long_term_discount_percent':    { min: 0,  max: 100, step: 1,   suffix: '%' },
