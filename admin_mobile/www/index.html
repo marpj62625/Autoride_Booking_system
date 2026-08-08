@@ -5627,7 +5627,7 @@ async edit(id) { this.openModal(id); }
         async triggerRefund(id) {
             const b = this.data.find(x => x.id === id);
             const ps = b ? b.payment_status : 'Paid';
-            if (!confirm(`Trigger refund for Booking #${id}?\n\nThis will calculate the refund amount based on the cancellation time vs pickup date and apply the 48-hour policy.\n\nCurrent status: ${ps}`)) return;
+            if (!confirm(`Trigger refund for Booking #${id}?\n\nThis will calculate the refund amount based on the cancellation time vs pickup date and apply the cancellation policy.\n\nCurrent status: ${ps}`)) return;
             try {
                 const res = await fetch(`${API_BASE}/api/bookings/${id}/trigger-refund`, { method: 'POST', headers: {'Content-Type':'application/json'} });
                 const data = await res.json();

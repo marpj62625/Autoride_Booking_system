@@ -405,7 +405,8 @@ def migrate_settings_v2():
             INSERT INTO settings (key, value, description)
             VALUES 
                 ('cancellation_deadline_hours', '48', 'Hours before pickup required for full refund eligibility'),
-                ('cancellation_penalty_percent', '20', 'Non-refundable fee percentage if cancelled within deadline')
+                ('cancellation_penalty_percent', '20', 'Non-refundable fee percentage if cancelled within deadline'),
+                ('low_fuel_alert_threshold', '1/4', 'Fuel level threshold that triggers low fuel warnings (Full, 3/4, 1/2, 1/4, Reserve, Off)')
             ON CONFLICT (key) DO NOTHING
         """)
 
@@ -5303,10 +5304,34 @@ def submit_inspection():
 
                 # Low Fuel / Maintenance Warnings push notifications to Admins
                 try:
+                    # Get fuel alert threshold from settings
+                    cur.execute("SELECT value FROM settings WHERE key = 'low_fuel_alert_threshold'")
+                    thresh_row = cur.fetchone()
+                    threshold_str = thresh_row['value'] if thresh_row else '1/4'
+
+                    def parse_fuel_to_val(fl):
+                        if not fl:
+                            return 99
+                        fl_lower = str(fl).strip().lower()
+                        if 'empty' in fl_lower:
+                            return 0
+                        if 'reserve' in fl_lower or 'low' in fl_lower:
+                            return 1
+                        if '1/4' in fl_lower or 'quarter' in fl_lower:
+                            return 2
+                        if '1/2' in fl_lower or 'half' in fl_lower:
+                            return 3
+                        if '3/4' in fl_lower:
+                            return 4
+                        if 'full' in fl_lower:
+                            return 5
+                        return 99
+
                     is_low_fuel = False
                     if fuel_level:
-                        fl_lower = str(fuel_level).strip().lower()
-                        if fl_lower in ('empty', '1/4', 'low', 'quarter') or 'empty' in fl_lower or '1/4' in fl_lower:
+                        threshold_val = parse_fuel_to_val(threshold_str)
+                        reported_val = parse_fuel_to_val(fuel_level)
+                        if reported_val <= threshold_val:
                             is_low_fuel = True
                     
                     is_due_maintenance = False
@@ -9032,7 +9057,8 @@ def get_public_settings():
             'loyalty_points_value',
             'loyalty_max_discount_percent',
             'cancellation_deadline_hours',
-            'cancellation_penalty_percent'
+            'cancellation_penalty_percent',
+            'low_fuel_alert_threshold'
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))
