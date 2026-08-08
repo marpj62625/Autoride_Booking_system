@@ -2180,15 +2180,21 @@
         </div>
 
         <!-- Legend -->
-        <div style="display: flex; gap: 12px; margin-bottom: 12px; font-size: 0.7rem; color: var(--text-secondary); flex-wrap: wrap;">
-            <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:repeating-linear-gradient(45deg,#f1f5f9,#f1f5f9 4px,#e2e8f0 4px,#e2e8f0 8px);display:inline-block;border:1px solid #e2e8f0;"></span>Blackout</span>
-            <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#dbeafe;display:inline-block;border:1px solid #93c5fd;"></span>Booked</span>
-            <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#dcfce7;display:inline-block;border:1px solid #86efac;"></span>Active</span>
+        <div style="display: flex; gap: 12px; margin-bottom: 12px; font-size: 0.7rem; color: var(--text-secondary); flex-wrap: wrap; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 4px, rgba(239, 68, 68, 0.25) 4px, rgba(239, 68, 68, 0.25) 8px);display:inline-block;border:1px solid rgba(239, 68, 68, 0.3);"></span>Blackout</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:rgba(245, 158, 11, 0.15);display:inline-block;border:1px solid #f59e0b;"></span>Pending</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:rgba(59, 130, 246, 0.15);display:inline-block;border:1px solid #3b82f6;"></span>Booked</span>
+                <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:rgba(16, 185, 129, 0.15);display:inline-block;border:1px solid #10b981;"></span>Active</span>
+            </div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--bg-card); border-radius: 20px;">
+                <i class="fas fa-exchange-alt"></i> Swipe horizontally ↔
+            </div>
         </div>
 
         <div class="stat-card" style="padding: 0; border-radius: 16px; border: 1px solid var(--border); overflow: hidden;">
             <div id="fleetCalendarScrollContainer" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                <table style="border-collapse: collapse; font-size: 0.72rem; min-width: 600px;" id="fleetCalendarTable">
+                <table style="border-collapse: collapse; font-size: 0.72rem; width: max-content; table-layout: fixed;" id="fleetCalendarTable">
                     <thead>
                         <tr id="fleetCalendarHeaderRow" style="background: var(--bg-card); border-bottom: 1.5px solid var(--border);">
                             <!-- Injected via JS -->
@@ -4879,9 +4885,9 @@ async edit(id) { this.openModal(id); }
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
             // Header Row - Sticky Vehicle Header
-            let headerHtml = `<th style="padding: 10px; border: 1px solid var(--border); text-align: left; background: var(--surface-card); font-weight: 800; min-width: 100px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
+            let headerHtml = `<th style="padding: 10px; border: 1px solid var(--border); text-align: left; background: var(--surface-card); font-weight: 800; min-width: 110px; width: 110px; max-width: 110px; position: sticky; left: 0; z-index: 10; border-right: 2px solid var(--border); color: var(--text-main);">Vehicle</th>`;
             for (let d = 1; d <= daysInMonth; d++) {
-                headerHtml += `<th style="padding: 8px 3px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 26px; background: var(--surface-card); color: var(--text-main);">${d}</th>`;
+                headerHtml += `<th style="padding: 8px 3px; border: 1px solid var(--border); text-align: center; font-weight: 800; min-width: 36px; width: 36px; max-width: 36px; background: var(--surface-card); color: var(--text-main);">${d}</th>`;
             }
             document.getElementById('fleetCalendarHeaderRow').innerHTML = headerHtml;
             
@@ -4890,9 +4896,10 @@ async edit(id) { this.openModal(id); }
             this.vehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">`;
                 // Sticky Vehicle Cell
-                rowHtml += `<td style="padding: 10px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.3;">
-                    <div style="font-size: 0.75rem;">${v.brand} ${v.model}</div>
-                    <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">${v.plate_number || 'No Plate'}</span>
+                rowHtml += `<td style="padding: 10px 8px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.25; min-width: 110px; width: 110px; max-width: 110px; word-break: break-all;">
+                    <div style="font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.brand} ${v.model}">${v.brand}</div>
+                    <div style="font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); margin-bottom: 2px;" title="${v.brand} ${v.model}">${v.model}</div>
+                    <span style="font-size: 0.58rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; background: var(--bg-card); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border);">${v.plate_number || 'No Plate'}</span>
                 </td>`;
                 
                 for (let d = 1; d <= daysInMonth; d++) {
@@ -4919,7 +4926,7 @@ async edit(id) { this.openModal(id); }
                     });
                     
                     if (isBlackout) {
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 4px, rgba(239, 68, 68, 0.25) 4px, rgba(239, 68, 68, 0.25) 8px); border-right: 1px solid var(--border);" title="Blackout Blocked"></td>`;
+                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.1) 4px, rgba(239, 68, 68, 0.25) 4px, rgba(239, 68, 68, 0.25) 8px); border-right: 1px solid var(--border); min-width: 36px; width: 36px; max-width: 36px;" title="Blackout Blocked"></td>`;
                     } else if (activeBooking) {
                         const statusStyles = {
                             'pending':   { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', label: 'P' },
@@ -4931,11 +4938,11 @@ async edit(id) { this.openModal(id); }
                         };
                         const style = statusStyles[activeBooking.status?.toLowerCase()] || { bg: 'rgba(148, 163, 184, 0.15)', text: 'var(--text-main)', label: 'B' };
                         
-                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border);" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
-                            <div style="font-size: 0.6rem; padding: 4px; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;">${style.label}</div>
+                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border); min-width: 36px; width: 36px; max-width: 36px;" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
+                            <div style="font-size: 0.65rem; padding: 4px; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;">${style.label}</div>
                         </td>`;
                     } else {
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center;"></td>`;
+                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; min-width: 36px; width: 36px; max-width: 36px;"></td>`;
                     }
                 }
                 rowHtml += `</tr>`;
@@ -4943,7 +4950,7 @@ async edit(id) { this.openModal(id); }
             });
             
             if (this.vehicles.length === 0) {
-                bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 20px; color: var(--text-muted);">No vehicles found</td></tr>`;
+                bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 20px; color: var(--text-muted); min-width: 1000px;">No vehicles found</td></tr>`;
             }
             document.getElementById('fleetCalendarBody').innerHTML = bodyHtml;
  
