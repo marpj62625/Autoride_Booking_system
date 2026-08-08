@@ -400,7 +400,16 @@ def migrate_settings_v2():
             terms_text = "Fuel Policy: Return the vehicle with the same fuel level as at pickup.\nMileage Rule: 250 km per day limit. Excess charged at ₱10/km.\nDriver Responsibility: You must be the primary driver with a valid verified license.\nLate Return: Penalty of ₱500 per hour for late returns.\nDamages: Any damages not covered by your selected insurance are your responsibility.\nCancellation: 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup."
             cur.execute("UPDATE settings SET value = %s WHERE key = 'rental_terms'", (terms_text,))
 
-        # 4. Create vehicle_expenses table
+        # 4. Insert configurable cancellation policy settings
+        cur.execute("""
+            INSERT INTO settings (key, value, description)
+            VALUES 
+                ('cancellation_deadline_hours', '48', 'Hours before pickup required for full refund eligibility'),
+                ('cancellation_penalty_percent', '20', 'Non-refundable fee percentage if cancelled within deadline')
+            ON CONFLICT (key) DO NOTHING
+        """)
+
+        # 5. Create vehicle_expenses table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS vehicle_expenses (
                 id SERIAL PRIMARY KEY,
@@ -5436,14 +5445,27 @@ def user_cancel_booking():
 
             hours_until_pickup = (pickup_dt - _dtm.datetime.now()).total_seconds() / 3600
 
-            if hours_until_pickup >= 48:
+            # Read configurable cancellation policy from DB settings
+            try:
+                _sc = get_cursor()
+                _sc.execute("SELECT key, value FROM settings WHERE key IN ('cancellation_deadline_hours', 'cancellation_penalty_percent')")
+                _sv = {r['key']: r['value'] for r in _sc.fetchall()}
+                deadline_hours = float(_sv.get('cancellation_deadline_hours', 48))
+                penalty_pct    = float(_sv.get('cancellation_penalty_percent', 20)) / 100.0
+            except Exception:
+                deadline_hours = 48.0
+                penalty_pct    = 0.20
+
+            penalty_pct_display = int(round(penalty_pct * 100))
+
+            if hours_until_pickup >= deadline_hours:
                 # Full refund
                 refund_amount = amount_paid
                 non_refundable_fee = 0.0
                 new_payment_status = 'Refund Pending'
             else:
-                # 20% non-refundable reservation fee
-                non_refundable_fee = round(amount_paid * 0.20, 2)
+                # Non-refundable reservation fee per cancellation policy
+                non_refundable_fee = round(amount_paid * penalty_pct, 2)
                 refund_amount = round(amount_paid - non_refundable_fee, 2)
                 new_payment_status = 'Refund Pending' if refund_amount > 0 else 'Cancelled'
         # ?????????????????????????????????????????????????????????????????
@@ -5466,7 +5488,7 @@ def user_cancel_booking():
             WHERE id = %s
         """, (new_payment_status, reason,
               refund_amount if refund_amount > 0 else None,
-              f"Non-refundable fee: PHP {non_refundable_fee:.2f} (cancelled < 48h before pickup)" if non_refundable_fee > 0 else None,
+              f"Non-refundable fee: PHP {non_refundable_fee:.2f} (cancelled < {int(deadline_hours)}h before pickup, {penalty_pct_display}% policy)" if non_refundable_fee > 0 else None,
               booking_id))
 
         if booking['vehicle_id']:
@@ -5484,7 +5506,7 @@ def user_cancel_booking():
             if refund_amount > 0:
                 notif_msg = (f"Booking #{booking_id} cancelled. "
                              f"Refund of PHP {refund_amount:,.2f} will be processed."
-                             + (f" Note: 20% reservation fee (PHP {non_refundable_fee:,.2f}) is non-refundable as cancelled < 48h before pickup." if non_refundable_fee > 0 else ""))
+                             + (f" Note: {penalty_pct_display}% reservation fee (PHP {non_refundable_fee:,.2f}) is non-refundable as cancelled < {int(deadline_hours)}h before pickup." if non_refundable_fee > 0 else ""))
             else:
                 notif_msg = f"Booking #{booking_id} cancelled. No refund applicable."
             notification_service.notify_user(booking['user_id'], "Booking Cancelled", notif_msg, 'booking_cancelled')
@@ -5638,15 +5660,28 @@ def trigger_refund(booking_id):
 
         hours_before = (pickup_dt - cancel_dt).total_seconds() / 3600
 
-        if hours_before >= 48:
+        # Read configurable cancellation policy from DB settings
+        try:
+            _sc2 = get_cursor()
+            _sc2.execute("SELECT key, value FROM settings WHERE key IN ('cancellation_deadline_hours', 'cancellation_penalty_percent')")
+            _sv2 = {r['key']: r['value'] for r in _sc2.fetchall()}
+            deadline_hours = float(_sv2.get('cancellation_deadline_hours', 48))
+            penalty_pct    = float(_sv2.get('cancellation_penalty_percent', 20)) / 100.0
+        except Exception:
+            deadline_hours = 48.0
+            penalty_pct    = 0.20
+
+        penalty_pct_display = int(round(penalty_pct * 100))
+
+        if hours_before >= deadline_hours:
             refund_amount = round(amount_paid, 2)
             non_refundable_fee = 0.0
-            refund_note = f"Full refund - cancelled {hours_before:.1f}h before pickup (>= 48h)"
+            refund_note = f"Full refund - cancelled {hours_before:.1f}h before pickup (>= {int(deadline_hours)}h)"
         else:
-            non_refundable_fee = round(amount_paid * 0.20, 2)
+            non_refundable_fee = round(amount_paid * penalty_pct, 2)
             refund_amount = round(amount_paid - non_refundable_fee, 2)
-            refund_note = (f"20% non-refundable: PHP {non_refundable_fee:.2f} - "
-                           f"cancelled {hours_before:.1f}h before pickup (< 48h). "
+            refund_note = (f"{penalty_pct_display}% non-refundable: PHP {non_refundable_fee:.2f} - "
+                           f"cancelled {hours_before:.1f}h before pickup (< {int(deadline_hours)}h). "
                            f"Cancel: {cancel_dt.strftime('%Y-%m-%d %H:%M')} | "
                            f"Pickup: {pickup_dt.strftime('%Y-%m-%d %H:%M')}.")
 
@@ -8995,7 +9030,9 @@ def get_public_settings():
             'rental_terms',
             'loyalty_points_spend_ratio',
             'loyalty_points_value',
-            'loyalty_max_discount_percent'
+            'loyalty_max_discount_percent',
+            'cancellation_deadline_hours',
+            'cancellation_penalty_percent'
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))
