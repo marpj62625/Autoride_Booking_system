@@ -5821,11 +5821,13 @@ var Profile = {
       'editLicenseCountry': 'Country / State',
       'editLicenseClass': 'License Class',
       'editLicenseName': 'Full Name',
-      'editLicenseDob': 'Date of Birth',
-      'editLicenseEmName': 'Emergency Contact Name',
-      'editLicenseEmPhone': 'Emergency Phone',
-      'editLicenseEmRel': 'Relationship'
+      'editLicenseDob': 'Date of Birth'
     };
+    if (typeof appSettings !== 'undefined' && appSettings.require_emergency_contact !== 'false' && appSettings.require_emergency_contact !== false) {
+      fields['editLicenseEmName'] = 'Emergency Contact Name';
+      fields['editLicenseEmPhone'] = 'Emergency Phone';
+      fields['editLicenseEmRel'] = 'Relationship';
+    }
     for (var fid in fields) {
       var el = document.getElementById(fid);
       var val = (el.value || '').trim();

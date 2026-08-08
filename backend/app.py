@@ -3250,25 +3250,32 @@ def book():
 
 
 
-        # Security Check: Driver's License Verification (Must be 2 = Verified)
+        # Security Check: Driver's License Verification (Must be 2 = Verified if requirement is strict)
 
         cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
 
         user_status = cur.fetchone()
 
-        if not user_status or user_status['is_verified'] != 2:
+        # Check if strict license verification is required
+        cur.execute("SELECT value FROM settings WHERE key = 'require_license_verification'")
+        req_row = cur.fetchone()
+        require_license_verification = (req_row['value'] == 'true') if req_row else True
 
-            msg = "Your driver's license must be APPROVED by an admin before you can book." if user_status and user_status['is_verified'] == 1 else "Please upload your driver's license to proceed."
+        if require_license_verification:
 
-            return jsonify({
+            if not user_status or user_status['is_verified'] != 2:
 
-                "error": "Account not verified.", 
+                msg = "Your driver's license must be APPROVED by an admin before you can book." if user_status and user_status['is_verified'] == 1 else "Please upload your driver's license to proceed."
 
-                "message": msg,
+                return jsonify({
 
-                "is_verified": user_status['is_verified'] if user_status else 0
+                    "error": "Account not verified.", 
 
-            }), 403
+                    "message": msg,
+
+                    "is_verified": user_status['is_verified'] if user_status else 0
+
+                }), 403
 
         # 1 booking per account - reject if user already has an active booking
 
@@ -9058,7 +9065,9 @@ def get_public_settings():
             'loyalty_max_discount_percent',
             'cancellation_deadline_hours',
             'cancellation_penalty_percent',
-            'low_fuel_alert_threshold'
+            'low_fuel_alert_threshold',
+            'require_license_verification',
+            'require_emergency_contact',
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))
@@ -9703,6 +9712,18 @@ def save_license_details():
         emergency_contact_name = (request.form.get('emergency_contact_name', '') or '')[:255]
         emergency_contact_phone = (request.form.get('emergency_contact_phone', '') or '')[:50]
         emergency_contact_relationship = (request.form.get('emergency_contact_relationship', '') or '')[:100]
+
+        # Check if emergency contact is strictly required
+        cur.execute("SELECT value FROM settings WHERE key = 'require_emergency_contact'")
+        em_row = cur.fetchone()
+        require_em = (em_row['value'] == 'true') if em_row else True
+
+        if require_em:
+            if not emergency_contact_name.strip() or not emergency_contact_phone.strip():
+                return jsonify({
+                    "error": "Validation failed",
+                    "message": "Emergency contact name and phone number are required."
+                }), 400
         
         # Convert empty date strings to valid dates or None
         if date_of_birth == '' or date_of_birth == 'null':

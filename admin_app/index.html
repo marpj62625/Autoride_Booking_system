@@ -23185,6 +23185,13 @@ async edit(id) { this.openModal(id); }
                 
                 // Define categories
                 const groups = {
+                    safety: {
+                        title: 'Customer Verification & Safety Locks',
+                        icon: 'fa-shield-alt',
+                        color: '#8b5cf6',
+                        keys: ['require_license_verification', 'require_emergency_contact'],
+                        settings: []
+                    },
                     cancellation: {
                         title: 'Cancellation & Refund Policy',
                         icon: 'fa-calendar-times',
@@ -23253,6 +23260,22 @@ async edit(id) { this.openModal(id); }
                             'loyalty_points_spend_ratio','loyalty_points_value','loyalty_max_discount_percent',
                             'cancellation_deadline_hours','cancellation_penalty_percent'];
                         const isNumeric = numericKeys.includes(s.key);
+
+                        if (s.key === 'require_license_verification' || s.key === 'require_emergency_contact') {
+                            const val = s.value || 'true';
+                            const inputField = `
+                                <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">
+                                    <option value="true" ${val === 'true' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Required' : 'Strict (Require Approved License)'}</option>
+                                    <option value="false" ${val === 'false' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Optional' : 'Relaxed (Allow Booking Pending Verification)'}</option>
+                                </select>`;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
 
                         if (s.key === 'low_fuel_alert_threshold') {
                             const val = s.value || '1/4';
@@ -23334,7 +23357,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-            const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea');
+            const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
 
 
 

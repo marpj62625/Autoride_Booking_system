@@ -8242,6 +8242,22 @@ async edit(id) { this.openModal(id); }
                         'cancellation_deadline_hours','cancellation_penalty_percent'];
                     const isNumeric = numericKeys.includes(s.key);
 
+                    if (s.key === 'require_license_verification' || s.key === 'require_emergency_contact') {
+                        const val = s.value || 'true';
+                        const inputField = `
+                            <select data-key="${s.key}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">
+                                <option value="true" ${val === 'true' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Required' : 'Strict (Require Approved License)'}</option>
+                                <option value="false" ${val === 'false' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Optional' : 'Relaxed (Allow Booking Pending Verification)'}</option>
+                            </select>`;
+                        const containerStyle = 'margin-bottom: 15px;';
+                        return `
+                            <div style="${containerStyle}">
+                                <label style="display: block; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${s.description}</label>
+                                ${inputField}
+                            </div>
+                        `;
+                    }
+
                     if (s.key === 'low_fuel_alert_threshold') {
                         const val = s.value || '1/4';
                         const options = ['Off', 'Empty', 'Reserve', '1/4', '1/2', '3/4', 'Full'];
@@ -8299,7 +8315,7 @@ async edit(id) { this.openModal(id); }
             }
         },
         async save() {
-            const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea');
+            const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
             const updates = Array.from(inputs).map(i => ({ key: i.dataset.key, value: i.value }));
             const user = adminAuth.getUser();
 
