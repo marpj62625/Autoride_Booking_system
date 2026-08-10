@@ -8245,7 +8245,7 @@ async edit(id) { this.openModal(id); }
                     if (s.key === 'require_license_verification' || s.key === 'require_emergency_contact') {
                         const val = s.value || 'true';
                         const inputField = `
-                            <select data-key="${s.key}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">
+                            <select data-key="${s.key}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer; white-space: normal; word-wrap: break-word;">
                                 <option value="true" ${val === 'true' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Required' : 'Strict (Require Approved License)'}</option>
                                 <option value="false" ${val === 'false' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Optional' : 'Relaxed (Allow Booking Pending Verification)'}</option>
                             </select>`;
@@ -8265,12 +8265,12 @@ async edit(id) { this.openModal(id); }
                         const inputField = `<select data-key="${s.key}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">${optHtml}</select>`;
                         const isCancellation = s.key.includes('cancellation');
                         const containerStyle = isCancellation 
-                            ? 'margin-bottom:15px;background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;border-left:3px solid var(--primary);'
-                            : 'margin-bottom: 15px;';
+                            ? 'margin-bottom:18px;background:rgba(255,255,255,0.03);padding:14px;border-radius:12px;border-left:4px solid var(--primary);'
+                            : 'margin-bottom: 18px;';
                         
                         return `
                             <div style="${containerStyle}">
-                                <label style="display: block; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">${s.description}</label>
+                                <label style="display: block; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">${s.description}</label>
                                 ${inputField}
                             </div>
                         `;
@@ -8289,27 +8289,28 @@ async edit(id) { this.openModal(id); }
                     const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
 
                     const inputField = isTextarea 
-                        ? `<textarea data-key="${s.key}" style="width: 100%; height: 180px; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; border: 1px solid var(--border);">${s.value}</textarea>`
+                        ? `<textarea data-key="${s.key}" style="width: 100%; height: 180px; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.95rem; font-weight: 500; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${s.value}</textarea>`
                         : isNumeric
-                        ? `<div style="display:flex;align-items:center;gap:10px;">
-                              <input type="number" data-key="${s.key}" value="${s.value}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="flex:1;padding:12px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.9rem;font-weight:700;">
-                              <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;white-space:nowrap;padding-right:4px;">${nc.suffix}</span>
+                        ? `<div style="display:flex;align-items:center;gap:12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; padding: 4px 14px;">
+                              <input type="number" data-key="${s.key}" value="${s.value}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="flex:1;padding:10px 0;background:transparent;border:none;color:var(--text-main);font-size:1.05rem;font-weight:700; outline:none; width: 100%;">
+                              <span style="font-size:0.85rem;color:var(--text-muted);font-weight:700;white-space:nowrap;">${nc.suffix}</span>
                            </div>`
-                        : `<input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem; font-weight: 600;">`;
+                        : `<input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 14px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.95rem; font-weight: 600; outline: none;">`;
 
                     const isCancellation = s.key.includes('cancellation');
                     const containerStyle = isCancellation 
-                        ? 'margin-bottom:15px;background:rgba(255,255,255,0.03);padding:10px;border-radius:12px;border-left:3px solid var(--primary);'
-                        : 'margin-bottom: 15px;';
+                        ? 'margin-bottom:20px;background:rgba(255,255,255,0.03);padding:16px;border-radius:12px;border-left:4px solid var(--primary);'
+                        : 'margin-bottom: 20px;';
 
                     return `
                         <div style="${containerStyle}">
-                            <label style="display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 1px;">${s.description}</label>
-                            <div style="position: relative;">
+                            <label style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                            <div style="position: relative;" class="setting-input-wrapper">
                                 ${inputField}
                             </div>
                         </div>
                     `;
+                    return html;
                 }).join('');
             } catch (err) {
                 list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
