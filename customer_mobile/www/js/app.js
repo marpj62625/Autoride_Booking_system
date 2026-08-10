@@ -1048,7 +1048,16 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
-  
+
+  // SAFETY NET: Force-dismiss splash after 10s if initialization hangs
+  _initTimeout = setTimeout(function() {
+    var splash = document.getElementById('page-splash');
+    if (splash) splash.style.display = 'none';
+    var loginPage = document.getElementById('page-login');
+    if (loginPage) { loginPage.style.display = 'flex'; loginPage.classList.add('active'); }
+    console.warn('[initApp] Safety timeout fired - forced splash dismiss');
+  }, 10000);
+
   loadAddonSettings();
 
   // Initialize Google Auth as early as possible on cold start
@@ -1104,13 +1113,15 @@ function initApp() {
       startBgChatPolling();
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
+      clearTimeout(_initTimeout); // Cancel safety timeout - init succeeded
       showPage('page-home');
     } else {
+      clearTimeout(_initTimeout); // Cancel safety timeout - no session, go to login
       showPage('page-login');
     }
     updateNotifBadge();
   }).catch(function() {
-    clearTimeout(_initTimeout);
+    clearTimeout(_initTimeout); // Cancel safety timeout - error handled
     showPage('page-login');
   });
 }
