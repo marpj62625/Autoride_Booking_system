@@ -7428,7 +7428,7 @@ function renderBookingCalendar() {
         onClick = "";
      }
      
-     html += '<div onclick='' + onClick + '' style="padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (onClick ? 'border:1px solid #e2e8f0;' : '') + '">' + d + '</div>';
+     html += '<div onclick="' + onClick + '" style="padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (onClick ? 'border:1px solid #e2e8f0;' : '') + '">' + d + '</div>';
   }
   grid.innerHTML = html;
 }
