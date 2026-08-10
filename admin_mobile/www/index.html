@@ -8237,7 +8237,7 @@ async edit(id) { this.openModal(id); }
                 list.innerHTML = data.map(s => {
                     const isTextarea = s.key === 'rental_terms';
 
-                    const numericKeys = ['mileage_limit','long_term_discount_days','long_term_discount_percent',
+                    const numericKeys = ['mileage_limit','long_term_discount_days','long_term_discount_percent','extension_conflict_deadline_hours',
                         'loyalty_points_spend_ratio','loyalty_max_discount_percent',
                         'cancellation_deadline_hours','cancellation_penalty_percent'];
                     const isNumeric = numericKeys.includes(s.key);
@@ -8284,6 +8284,7 @@ async edit(id) { this.openModal(id); }
                         'loyalty_points_spend_ratio':   { min: 1,  max: 9999,step: 1,   suffix: 'PHP' },
                         'mileage_limit':                { min: 50, max: 9999,step: 10,  suffix: 'km/day' },
                         'long_term_discount_days':      { min: 1,  max: 365, step: 1,   suffix: 'days' },
+                        'extension_conflict_deadline_hours': { min: 1,  max: 720, step: 1,   suffix: 'hrs' },
                     };
                     const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
 

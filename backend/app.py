@@ -9068,6 +9068,7 @@ def get_public_settings():
             'low_fuel_alert_threshold',
             'require_license_verification',
             'require_emergency_contact',
+            'extension_conflict_deadline_hours',
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))

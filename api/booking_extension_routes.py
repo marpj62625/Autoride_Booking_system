@@ -263,9 +263,14 @@ def approve_extension(ext_id):
             WHERE id = %s
         """, (ext['new_end_date'], ext['extension_price'], ext['booking_id']))
         
+        # Get dynamic deadline hours setting
+        cur.execute("SELECT value FROM settings WHERE key = 'extension_conflict_deadline_hours'")
+        setting_row = cur.fetchone()
+        deadline_hours = int(setting_row['value']) if setting_row else 72
+
         # Process each conflict
         for conf_booking in conflicts:
-            deadline = _dt.now() + datetime.timedelta(hours=72)
+            deadline = _dt.now() + datetime.timedelta(hours=deadline_hours)
             print(f"DEBUG approve_extension: Creating conflict record for booking {conf_booking['id']}, user {conf_booking['user_id']}")
             cur.execute("""
                 INSERT INTO booking_conflicts 
@@ -287,7 +292,7 @@ def approve_extension(ext_id):
                 notification_service.notify_user(
                     conf_booking['user_id'],
                     "Booking Conflict Alert",
-                    f"Your booking #{conf_booking['id']} has a conflict because the current renter extended their trip. Please choose an alternative vehicle or request a full refund within 72 hours.",
+                    f"Your booking #{conf_booking['id']} has a conflict because the current renter extended their trip. Please choose an alternative vehicle or request a full refund within {deadline_hours} hours.",
                     'booking_conflict'
                 )
                 print(f"DEBUG approve_extension: Notified user {conf_booking['user_id']} of conflict")
