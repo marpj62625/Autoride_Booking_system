@@ -2910,10 +2910,10 @@ function openBookingForm(vehicleId) {
 
     // Rental Period Calendar
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Vehicle Availability Calendar</h4>' +
-    '<div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">' +
-    '  <button onclick="prevBookingCalendarMonth()" class="btn-primary" style="padding:4px 8px;border-radius:4px;font-size:0.75rem;"><i class="fas fa-chevron-left"></i></button>' +
-    '  <span id="bookingCalLabel" style="font-weight:700;font-size:0.85rem;"></span>' +
-    '  <button onclick="nextBookingCalendarMonth()" class="btn-primary" style="padding:4px 8px;border-radius:4px;font-size:0.75rem;"><i class="fas fa-chevron-right"></i></button>' +
+    '<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">' +
+    '  <button onclick="prevBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-left"></i></button>' +
+    '  <span id="bookingCalLabel" style="font-weight:700;font-size:1rem;color:var(--text-primary);"></span>' +
+    '  <button onclick="nextBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-right"></i></button>' +
     '</div>' +
     '<div id="bookingCalendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:0.75rem;margin-bottom:10px;"></div>' +
     '<div style="display:flex;gap:12px;font-size:0.7rem;color:var(--text-secondary);"><span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;display:inline-block;"></span>Booked/Blocked</span></div>' +
