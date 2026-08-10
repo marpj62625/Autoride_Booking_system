@@ -2677,9 +2677,19 @@ function onVdColorChange() {
 
 // STEP 3: Book button tapped on a specific unit
 function selectVehicleUnit(vehicleId) {
+  // 1 booking per account  - hard block if active booking exists
+  var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
+  var hasActiveBooking = _allBookingsData.some(function(b) {
+    return ACTIVE_STATUSES.indexOf(b.status) !== -1;
+  });
+  if (hasActiveBooking) {
+    showToast('You already have an active booking. Please complete or cancel it first.', 'error');
+    return;
+  }
+
   showOverlay('page-vehicle-detail');
   var svdEl = document.getElementById('vehicleDetailContent');
-  if (svdEl) svdEl.innerHTML = '<div style=\"height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;\"></div>';
+  if (svdEl) svdEl.innerHTML = '<div style="height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div>';
   apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
     .then(function(v) {
       currentVehicleDetail = v;
@@ -2834,10 +2844,22 @@ function openBookingForm(vehicleId) {
   });
   if (hasActiveBooking) {
     showToast('You already have an active booking. Please complete or cancel it first.', 'error');
+    closeOverlay('page-vehicle-detail');
     return;
   }
 
   bookingFormVehicle = currentVehicleDetail;
+  currentCalDate = new Date();
+  blockedDatesList = [];
+  apiCall('/vehicles/' + vehicleId + '/blocked-dates')
+    .then(function(dates) {
+       blockedDatesList = Array.isArray(dates) ? dates : [];
+       renderBookingCalendar();
+    })
+    .catch(function() {
+       blockedDatesList = [];
+       renderBookingCalendar();
+    });
   selectedAddons = [];
   selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
   var today = new Date().toISOString().split('T')[0];
@@ -2875,6 +2897,16 @@ function openBookingForm(vehicleId) {
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
 
+    // Rental Period Calendar
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Vehicle Availability Calendar</h4>' +
+    '<div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">' +
+    '  <button onclick="prevBookingCalendarMonth()" class="btn-primary" style="padding:4px 8px;border-radius:4px;font-size:0.75rem;"><i class="fas fa-chevron-left"></i></button>' +
+    '  <span id="bookingCalLabel" style="font-weight:700;font-size:0.85rem;"></span>' +
+    '  <button onclick="nextBookingCalendarMonth()" class="btn-primary" style="padding:4px 8px;border-radius:4px;font-size:0.75rem;"><i class="fas fa-chevron-right"></i></button>' +
+    '</div>' +
+    '<div id="bookingCalendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:0.75rem;margin-bottom:10px;"></div>' +
+    '<div style="display:flex;gap:12px;font-size:0.7rem;color:var(--text-secondary);"><span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;display:inline-block;"></span>Booked/Blocked</span></div>' +
+    '</div>' +
     // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
     '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
@@ -4328,6 +4360,11 @@ function renderBookingDetail(b) {
       // Conflict affected card placeholder
       (b.is_conflict_affected ? '<div id="conflict-resolution-card-' + b.id + '" style="margin-bottom:20px;"></div>' : '') +
 
+      // Penalties Display Section
+      '<div id="customerPenaltiesContainer_' + b.id + '" style="display:none;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:14px;padding:16px;margin-bottom:16px;">' +
+        '<h4 style="font-weight:700;font-size:1rem;color:#ef4444;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i class="fas fa-exclamation-triangle"></i> Penalty / Extra Charges</h4>' +
+        '<div id="customerPenaltiesList_' + b.id + '"></div>' +
+      '</div>' +
       // Driver's License Details
       licenseHtml +
 
@@ -4433,6 +4470,9 @@ function renderBookingDetail(b) {
 
     '</div>';
 
+  setTimeout(function() {
+    loadCustomerPenalties(b.id);
+  }, 50);
   if (b.is_conflict_affected && b.conflict_id) {
     setTimeout(function() {
       loadConflictResolution(b.id, b.conflict_id, parseFloat(b.amount_paid || b.total_price || 0), ((b.brand || '') + ' ' + (b.model || '')).trim(), b.start_date, b.end_date);
@@ -5781,11 +5821,13 @@ var Profile = {
       'editLicenseCountry': 'Country / State',
       'editLicenseClass': 'License Class',
       'editLicenseName': 'Full Name',
-      'editLicenseDob': 'Date of Birth',
-      'editLicenseEmName': 'Emergency Contact Name',
-      'editLicenseEmPhone': 'Emergency Phone',
-      'editLicenseEmRel': 'Relationship'
+      'editLicenseDob': 'Date of Birth'
     };
+    if (typeof appSettings !== 'undefined' && appSettings.require_emergency_contact !== 'false' && appSettings.require_emergency_contact !== false) {
+      fields['editLicenseEmName'] = 'Emergency Contact Name';
+      fields['editLicenseEmPhone'] = 'Emergency Phone';
+      fields['editLicenseEmRel'] = 'Relationship';
+    }
     for (var fid in fields) {
       var el = document.getElementById(fid);
       var val = (el.value || '').trim();
@@ -7306,3 +7348,129 @@ function setVdImage(idx) {
   window._vdActiveImgIdx = idx;
   updateVdSlideshow();
 }
+// ==================== CUSTOMER BOOKING CALENDAR ====================
+var currentCalDate = new Date();
+var blockedDatesList = [];
+
+function prevBookingCalendarMonth() {
+  currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+  renderBookingCalendar();
+}
+window.prevBookingCalendarMonth = prevBookingCalendarMonth;
+
+function nextBookingCalendarMonth() {
+  currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+  renderBookingCalendar();
+}
+window.nextBookingCalendarMonth = nextBookingCalendarMonth;
+
+function renderBookingCalendar() {
+  var year = currentCalDate.getFullYear();
+  var month = currentCalDate.getMonth();
+  var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  var lbl = document.getElementById('bookingCalLabel');
+  if (lbl) lbl.textContent = monthNames[month] + ' ' + year;
+  
+  var grid = document.getElementById('bookingCalendarGrid');
+  if (!grid) return;
+  
+  var daysInMonth = new Date(year, month + 1, 0).getDate();
+  var firstDayIndex = new Date(year, month, 1).getDay();
+  
+  var html = "";
+  var weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  weekDays.forEach(function(wd) {
+     html += '<div style="font-weight:700;color:var(--text-secondary);padding:4px 0;">' + wd + '</div>';
+  });
+  
+  for (var i = 0; i < firstDayIndex; i++) {
+     html += '<div></div>';
+  }
+  
+  var todayTime = new Date().setHours(0,0,0,0);
+  
+  for (var d = 1; d <= daysInMonth; d++) {
+     var cellDate = new Date(year, month, d);
+     var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+     var isPast = cellDate.getTime() < todayTime;
+     
+     // Check if date is blocked (either blackout or booked)
+     var isBlocked = blockedDatesList.some(function(bRange) {
+        var s = String(bRange.start_date).substring(0, 10);
+        var e = String(bRange.end_date).substring(0, 10);
+        return dateStr >= s && dateStr <= e;
+     });
+     
+     var bg = "none";
+     var color = "var(--text-primary)";
+     var cursor = "pointer";
+     var onClick = 'selectCalendarDate("' + dateStr + '")';
+     
+     if (isPast) {
+        color = "var(--text-muted)";
+        cursor = "not-allowed";
+        onClick = "";
+     } else if (isBlocked) {
+        bg = "#fee2e2";
+        color = "#ef4444";
+        cursor = "not-allowed";
+        onClick = "";
+     }
+     
+     html += '<div onclick='' + onClick + '' style="padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (onClick ? 'border:1px solid #e2e8f0;' : '') + '">' + d + '</div>';
+  }
+  grid.innerHTML = html;
+}
+window.renderBookingCalendar = renderBookingCalendar;
+
+function selectCalendarDate(dateStr) {
+   var startInput = document.getElementById('bfStartDate');
+   var endInput = document.getElementById('bfEndDate');
+   if (startInput) {
+      if (!startInput.value || (startInput.value && endInput && endInput.value)) {
+         startInput.value = dateStr;
+         if (endInput) endInput.value = "";
+      } else {
+         if (dateStr >= startInput.value) {
+            endInput.value = dateStr;
+         } else {
+            startInput.value = dateStr;
+         }
+      }
+      updateBookingPrice();
+   }
+}
+window.selectCalendarDate = selectCalendarDate;
+
+function loadCustomerPenalties(bookingId) {
+   var container = document.getElementById('customerPenaltiesContainer_' + bookingId);
+   var list = document.getElementById('customerPenaltiesList_' + bookingId);
+   if (!container || !list) return;
+   
+   fetch(API_BASE + '/api/admin/bookings/' + bookingId + '/penalties')
+     .then(function(r) { return r.json(); })
+     .then(function(penalties) {
+        if (penalties && penalties.length > 0) {
+           container.style.display = 'block';
+           var html = "";
+           penalties.forEach(function(p) {
+              var label = {
+                 'late_return': 'Late Return',
+                 'damage': 'Damage',
+                 'excess_mileage': 'Excess Mileage',
+                 'other': 'Other'
+              }[p.charge_type] || p.charge_type;
+              html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(239,68,68,0.2);font-size:0.85rem;">' +
+                '<div><strong>' + label + '</strong>' + (p.notes ? '<br><small style="color:var(--text-secondary);">' + p.notes + '</small>' : '') + '</div>' +
+                '<div style="font-weight:700;color:#ef4444;">₱' + parseFloat(p.amount).toFixed(2) + '</div>' +
+                '</div>';
+           });
+           list.innerHTML = html;
+        } else {
+           container.style.display = 'none';
+        }
+     }).catch(function(e) {
+        console.error(e);
+     });
+}
+window.loadCustomerPenalties = loadCustomerPenalties;
