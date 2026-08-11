@@ -280,10 +280,9 @@ var Session = {
   clear: function() {
     var prefs = getPreferences();
     if (prefs) {
-      prefs.remove({ key: 'user' });
-    } else {
-      try { localStorage.removeItem('user'); } catch(e) {}
+      try { prefs.remove({ key: 'user' }); } catch(e) {}
     }
+    try { localStorage.removeItem('user'); } catch(e) {}
   }
 };
 
@@ -1518,6 +1517,8 @@ function forceLogoutSilent(message) {
 }
 
 function doGoogleLogin() {
+  if (window._googleLoginInProgress) return;
+  window._googleLoginInProgress = true;
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;
@@ -1560,7 +1561,11 @@ function doGoogleLogin() {
         if (!email) throw new Error('No email received from Google');
         return _finishGoogleLogin(idToken || accessToken || ('ga_' + Date.now()), email, name);
       })
+      .then(function() {
+        window._googleLoginInProgress = false;
+      })
       .catch(function(err) {
+        window._googleLoginInProgress = false;
         showLoading(false);
         var rawMsg = '';
         try { rawMsg = JSON.stringify(err); } catch(e) { rawMsg = String(err); }
@@ -1592,6 +1597,7 @@ function _doGoogleOAuth2Popup(clientId) {
   var tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: clientId,
     scope: 'email profile openid',
+    prompt: 'select_account',
     callback: function(tokenResponse) {
       if (tokenResponse.error) {
         showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
