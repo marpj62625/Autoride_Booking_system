@@ -1414,6 +1414,7 @@ function doForgotPassword() {
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
+  unsubscribeFromNotifications();
   stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
@@ -1425,7 +1426,8 @@ function doLogout() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
   if (GoogleAuthPlugin) {
-    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+    try { GoogleAuthPlugin.signOut().catch(function() {}); } catch(e) {}
+    try { GoogleAuthPlugin.disconnect().catch(function() {}); } catch(e) {}
   }
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
@@ -1435,6 +1437,7 @@ function doLogout() {
 }
 
 function forceLogoutSilent(message) {
+  unsubscribeFromNotifications();
   stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
@@ -1446,7 +1449,8 @@ function forceLogoutSilent(message) {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
   if (GoogleAuthPlugin) {
-    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+    try { GoogleAuthPlugin.signOut().catch(function() {}); } catch(e) {}
+    try { GoogleAuthPlugin.disconnect().catch(function() {}); } catch(e) {}
   }
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
@@ -1585,14 +1589,7 @@ function _finishGoogleLogin(idToken, email, name) {
     .finally(function() { showLoading(false); });
 }
 
-function doLogout() {
-  unsubscribeFromNotifications();
-  stopBgSessionPolling();
-  notifList = [];
-  Session.clear();
-  currentUser = { id: null, fullName: '', isVerified: 0 };
-  showPage('page-login');
-}
+
 
 // AUTH: REGISTER
 function doRegister() {

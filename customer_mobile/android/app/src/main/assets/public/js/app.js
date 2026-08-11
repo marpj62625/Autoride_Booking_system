@@ -1048,7 +1048,16 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
-  
+
+  // SAFETY NET: Force-dismiss splash after 10s if initialization hangs
+  _initTimeout = setTimeout(function() {
+    var splash = document.getElementById('page-splash');
+    if (splash) splash.style.display = 'none';
+    var loginPage = document.getElementById('page-login');
+    if (loginPage) { loginPage.style.display = 'flex'; loginPage.classList.add('active'); }
+    console.warn('[initApp] Safety timeout fired - forced splash dismiss');
+  }, 10000);
+
   loadAddonSettings();
 
   // Initialize Google Auth as early as possible on cold start
@@ -1104,13 +1113,15 @@ function initApp() {
       startBgChatPolling();
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
+      clearTimeout(_initTimeout); // Cancel safety timeout - init succeeded
       showPage('page-home');
     } else {
+      clearTimeout(_initTimeout); // Cancel safety timeout - no session, go to login
       showPage('page-login');
     }
     updateNotifBadge();
   }).catch(function() {
-    clearTimeout(_initTimeout);
+    clearTimeout(_initTimeout); // Cancel safety timeout - error handled
     showPage('page-login');
   });
 }
@@ -1403,6 +1414,7 @@ function doForgotPassword() {
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
+  unsubscribeFromNotifications();
   stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
@@ -1414,7 +1426,8 @@ function doLogout() {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
   if (GoogleAuthPlugin) {
-    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+    try { GoogleAuthPlugin.signOut().catch(function() {}); } catch(e) {}
+    try { GoogleAuthPlugin.disconnect().catch(function() {}); } catch(e) {}
   }
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
@@ -1424,6 +1437,7 @@ function doLogout() {
 }
 
 function forceLogoutSilent(message) {
+  unsubscribeFromNotifications();
   stopBgSessionPolling();
   Session.clear();
   if (notifChannel && supabaseClient) {
@@ -1435,7 +1449,8 @@ function forceLogoutSilent(message) {
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
   if (GoogleAuthPlugin) {
-    try { GoogleAuthPlugin.signOut(); } catch(e) {}
+    try { GoogleAuthPlugin.signOut().catch(function() {}); } catch(e) {}
+    try { GoogleAuthPlugin.disconnect().catch(function() {}); } catch(e) {}
   }
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
@@ -1466,6 +1481,9 @@ function doGoogleLogin() {
     }
 
     initPromise.then(function() {
+      // Force signOut first to ensure Google Account Chooser always displays and never caches the previous user
+      return GoogleAuthPlugin.signOut().catch(function() {});
+    }).then(function() {
       return GoogleAuthPlugin.signIn();
     })
       .then(function(result) {
@@ -1571,14 +1589,7 @@ function _finishGoogleLogin(idToken, email, name) {
     .finally(function() { showLoading(false); });
 }
 
-function doLogout() {
-  unsubscribeFromNotifications();
-  stopBgSessionPolling();
-  notifList = [];
-  Session.clear();
-  currentUser = { id: null, fullName: '', isVerified: 0 };
-  showPage('page-login');
-}
+
 
 // AUTH: REGISTER
 function doRegister() {
@@ -2899,10 +2910,10 @@ function openBookingForm(vehicleId) {
 
     // Rental Period Calendar
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Vehicle Availability Calendar</h4>' +
-    '<div style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">' +
-    '  <button onclick="prevBookingCalendarMonth()" class="btn-primary" style="padding:4px 8px;border-radius:4px;font-size:0.75rem;"><i class="fas fa-chevron-left"></i></button>' +
-    '  <span id="bookingCalLabel" style="font-weight:700;font-size:0.85rem;"></span>' +
-    '  <button onclick="nextBookingCalendarMonth()" class="btn-primary" style="padding:4px 8px;border-radius:4px;font-size:0.75rem;"><i class="fas fa-chevron-right"></i></button>' +
+    '<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">' +
+    '  <button onclick="prevBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-left"></i></button>' +
+    '  <span id="bookingCalLabel" style="font-weight:700;font-size:1rem;color:var(--text-primary);"></span>' +
+    '  <button onclick="nextBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-right"></i></button>' +
     '</div>' +
     '<div id="bookingCalendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:0.75rem;margin-bottom:10px;"></div>' +
     '<div style="display:flex;gap:12px;font-size:0.7rem;color:var(--text-secondary);"><span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;display:inline-block;"></span>Booked/Blocked</span></div>' +
@@ -7417,7 +7428,7 @@ function renderBookingCalendar() {
         onClick = "";
      }
      
-     html += '<div onclick='' + onClick + '' style="padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (onClick ? 'border:1px solid #e2e8f0;' : '') + '">' + d + '</div>';
+     html += '<div onclick="' + onClick + '" style="padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (onClick ? 'border:1px solid #e2e8f0;' : '') + '">' + d + '</div>';
   }
   grid.innerHTML = html;
 }
