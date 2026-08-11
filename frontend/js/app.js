@@ -1538,6 +1538,9 @@ function doGoogleLogin() {
     }
 
     initPromise.then(function() {
+      // Force signOut first to ensure Google Account Chooser always displays and never caches the previous user
+      return GoogleAuthPlugin.signOut().catch(function() {});
+    }).then(function() {
       return GoogleAuthPlugin.signIn();
     })
       .then(function(result) {
