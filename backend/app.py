@@ -1,3 +1,14 @@
+# Monkey patch psycopg.connect to disable prepared statements globally (required for PgBouncer transaction mode / port 6543)
+try:
+    import psycopg
+    _orig_connect = psycopg.connect
+    def _patched_connect(*args, **kwargs):
+        kwargs['prepare_threshold'] = None
+        return _orig_connect(*args, **kwargs)
+    psycopg.connect = _patched_connect
+except Exception as _mpe:
+    print(f"Failed to patch psycopg: {_mpe}")
+
 from flask import Flask, request, jsonify, make_response
 import bcrypt
 

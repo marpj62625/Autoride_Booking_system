@@ -5,7 +5,7 @@ from psycopg.rows import dict_row
 
 def get_connection():
     """Direct connection for serverless (debugging pool issues)"""
-    return psycopg.connect(conninfo=SUPABASE_DB_URL)
+    return psycopg.connect(conninfo=SUPABASE_DB_URL, prepare_threshold=None)
 
 def release_connection(conn):
     if conn:

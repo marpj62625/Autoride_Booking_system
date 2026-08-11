@@ -1,12 +1,10 @@
 import os
 
-# Supabase PostgreSQL Configuration
+# Supabase PostgreSQL Configuration - Using port 6543 (Transaction Mode Pooler)
 SUPABASE_DB_URL = os.getenv(
     'SUPABASE_DB_URL',
-    'postgresql://postgres.fydfsgjrlowrrtlmefwq:Autoride777%25*@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres'
+    'postgresql://postgres.fydfsgjrlowrrtlmefwq:Autoride777%25*@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres'
 )
-if ':6543/' in SUPABASE_DB_URL:
-    SUPABASE_DB_URL = SUPABASE_DB_URL.replace(':6543/', ':5432/')
 
 # Flask Configuration
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
