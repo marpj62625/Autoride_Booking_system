@@ -1481,6 +1481,27 @@ function doLogout() {
   }
   currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
   notifList = [];
+  
+  // Revoke Google OAuth2 Access Token
+  try {
+    var token = localStorage.getItem('google_access_token');
+    if (token) {
+      localStorage.removeItem('google_access_token');
+      console.log('[GoogleAuth] Revoking Web Access Token prefix:', token.substring(0, 10));
+      fetch('https://oauth2.googleapis.com/revoke?token=' + token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      }).catch(function(e) { console.error('[GoogleAuth] Revoke fetch failed:', e); });
+    }
+  } catch(e) {}
+  
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try { 
+      console.log('[GoogleAuth] Disabling auto-select client-side');
+      google.accounts.id.disableAutoSelect(); 
+    } catch(e) {}
+  }
+
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
   if (GoogleAuthPlugin) {
@@ -1505,6 +1526,27 @@ function forceLogoutSilent(message) {
   }
   currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
   notifList = [];
+  
+  // Revoke Google OAuth2 Access Token
+  try {
+    var token = localStorage.getItem('google_access_token');
+    if (token) {
+      localStorage.removeItem('google_access_token');
+      console.log('[GoogleAuth] Revoking Web Access Token prefix:', token.substring(0, 10));
+      fetch('https://oauth2.googleapis.com/revoke?token=' + token, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      }).catch(function(e) { console.error('[GoogleAuth] Revoke fetch failed:', e); });
+    }
+  } catch(e) {}
+
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+    try { 
+      console.log('[GoogleAuth] Disabling auto-select client-side');
+      google.accounts.id.disableAutoSelect(); 
+    } catch(e) {}
+  }
+
   var plugins = window.Capacitor && window.Capacitor.Plugins;
   var GoogleAuthPlugin = plugins && plugins.GoogleAuth;
   if (GoogleAuthPlugin) {
@@ -1598,6 +1640,7 @@ function doGoogleLogin() {
 
 function _doGoogleOAuth2Popup(clientId) {
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    console.error('[GoogleAuth] Google API client library not found on page.');
     showToast('Google Sign-In not available. Please try again.', 'error');
     window._googleLoginInProgress = false;
     return;
@@ -1606,17 +1649,39 @@ function _doGoogleOAuth2Popup(clientId) {
   window._googleOAuthCallback = function(tokenResponse) {
     window._googleLoginInProgress = false;
     if (tokenResponse.error) {
+      console.error('[GoogleAuth] tokenResponse contains error:', tokenResponse.error);
       showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
       return;
     }
+    console.log('[GoogleAuth] OAuth2 popup tokenResponse received. Access Token prefix:', tokenResponse.access_token ? tokenResponse.access_token.substring(0, 10) : 'None');
+    
+    // Save access token for later revocation on logout
+    if (tokenResponse.access_token) {
+      try { localStorage.setItem('google_access_token', tokenResponse.access_token); } catch(e) {}
+    }
+
     showLoading(true);
-    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token },
+    var userInfoUrl = 'https://www.googleapis.com/oauth2/v3/userinfo?t=' + Date.now();
+    console.log('[GoogleAuth] Fetching userinfo from:', userInfoUrl);
+
+    fetch(userInfoUrl, {
+      headers: { 
+        'Authorization': 'Bearer ' + tokenResponse.access_token,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      },
       cache: 'no-store'
     })
-      .then(function(r) { return r.json(); })
+      .then(function(r) { 
+        console.log('[GoogleAuth] userinfo fetch status:', r.status);
+        return r.json(); 
+      })
       .then(function(userInfo) {
         showLoading(false);
+        console.log('[GoogleAuth] Decoded userinfo:', JSON.stringify(userInfo));
+        console.log('[GoogleAuth] User Info Email:', userInfo.email, 'Name:', userInfo.name);
+        
         return _finishGoogleLogin(
           tokenResponse.access_token,
           userInfo.email,
@@ -1624,12 +1689,14 @@ function _doGoogleOAuth2Popup(clientId) {
         );
       })
       .catch(function(err) {
+        console.error('[GoogleAuth] Fetch userinfo or finish login failed:', err);
         showLoading(false);
         showToast('Google Sign-In failed. Please try again.', 'error');
       });
   };
 
   if (!window._googleTokenClient) {
+    console.log('[GoogleAuth] Initializing initTokenClient...');
     window._googleTokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: 'email profile openid',
@@ -1642,6 +1709,7 @@ function _doGoogleOAuth2Popup(clientId) {
     });
   }
 
+  console.log('[GoogleAuth] Requesting access token with prompt: select_account...');
   window._googleTokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
