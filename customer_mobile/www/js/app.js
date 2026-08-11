@@ -1598,7 +1598,7 @@ function _doGoogleOAuth2Popup(clientId) {
     }
 
     showLoading(true);
-    var userInfoUrl = 'https://www.googleapis.com/oauth2/v3/userinfo?t=' + Date.now();
+    var userInfoUrl = 'https://www.googleapis.com/oauth2/v3/userinfo';
     console.log('[GoogleAuth] Fetching userinfo from:', userInfoUrl);
 
     fetch(userInfoUrl, {

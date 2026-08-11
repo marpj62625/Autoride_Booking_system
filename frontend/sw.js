@@ -62,6 +62,9 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests (API calls, form submissions, etc.)
     if (request.method !== 'GET') return;
 
+    // Skip third-party requests (Google APIs, Supabase, etc.)
+    if (!request.url.includes(self.location.origin)) return;
+
     // For API calls, always go network-first
     if (request.url.includes('/api/') || request.url.includes('9999')) {
         event.respondWith(
