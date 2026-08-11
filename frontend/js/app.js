@@ -1471,6 +1471,7 @@ function doForgotPassword() {
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
+  window._googleLoginInProgress = false;
   unsubscribeFromNotifications();
   stopBgSessionPolling();
   Session.clear();
@@ -1494,6 +1495,7 @@ function doLogout() {
 }
 
 function forceLogoutSilent(message) {
+  window._googleLoginInProgress = false;
   unsubscribeFromNotifications();
   stopBgSessionPolling();
   Session.clear();
@@ -1519,6 +1521,11 @@ function forceLogoutSilent(message) {
 function doGoogleLogin() {
   if (window._googleLoginInProgress) return;
   window._googleLoginInProgress = true;
+
+  // Safety timeout to prevent permanent button locking if user closes Google popup or cancels
+  setTimeout(function() {
+    window._googleLoginInProgress = false;
+  }, 40000);
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;
@@ -1592,37 +1599,50 @@ function doGoogleLogin() {
 function _doGoogleOAuth2Popup(clientId) {
   if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
     showToast('Google Sign-In not available. Please try again.', 'error');
+    window._googleLoginInProgress = false;
     return;
   }
-  var tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: 'email profile openid',
-    prompt: 'select_account',
-    callback: function(tokenResponse) {
-      if (tokenResponse.error) {
-        showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
-        return;
-      }
-      showLoading(true);
-      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
-      })
-        .then(function(r) { return r.json(); })
-        .then(function(userInfo) {
-          showLoading(false); // hand off to _finishGoogleLogin which manages its own loading
-          return _finishGoogleLogin(
-            tokenResponse.access_token,
-            userInfo.email,
-            userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
-          );
-        })
-        .catch(function(err) {
-          showLoading(false);
-          showToast('Google Sign-In failed. Please try again.', 'error');
-        });
+
+  window._googleOAuthCallback = function(tokenResponse) {
+    window._googleLoginInProgress = false;
+    if (tokenResponse.error) {
+      showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+      return;
     }
-  });
-  tokenClient.requestAccessToken({ prompt: 'select_account' });
+    showLoading(true);
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token },
+      cache: 'no-store'
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(userInfo) {
+        showLoading(false);
+        return _finishGoogleLogin(
+          tokenResponse.access_token,
+          userInfo.email,
+          userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
+        );
+      })
+      .catch(function(err) {
+        showLoading(false);
+        showToast('Google Sign-In failed. Please try again.', 'error');
+      });
+  };
+
+  if (!window._googleTokenClient) {
+    window._googleTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'email profile openid',
+      prompt: 'select_account',
+      callback: function(tokenResponse) {
+        if (typeof window._googleOAuthCallback === 'function') {
+          window._googleOAuthCallback(tokenResponse);
+        }
+      }
+    });
+  }
+
+  window._googleTokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function _finishGoogleLogin(idToken, email, name) {
