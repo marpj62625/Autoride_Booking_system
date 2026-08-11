@@ -1666,10 +1666,7 @@ function _doGoogleOAuth2Popup(clientId) {
 
     fetch(userInfoUrl, {
       headers: { 
-        'Authorization': 'Bearer ' + tokenResponse.access_token,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        'Authorization': 'Bearer ' + tokenResponse.access_token
       },
       cache: 'no-store'
     })
