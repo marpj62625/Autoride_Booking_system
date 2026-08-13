@@ -3,6 +3,18 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
+// Silence debug logs in production to keep console clean, unless ?debug=true is specified
+(function() {
+  var isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  var hasDebugParam = typeof window !== 'undefined' && window.location.search.indexOf('debug=true') !== -1;
+  if (!isLocal && !hasDebugParam) {
+    var noop = function() {};
+    console.log = noop;
+    console.debug = noop;
+    console.info = noop;
+  }
+})();
+
 // CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
   console.log('API_BASE detection:');
