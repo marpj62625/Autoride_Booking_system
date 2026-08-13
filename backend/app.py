@@ -828,10 +828,24 @@ def migrate_no_show_column():
     finally:
         if 'cur' in locals(): cur.close()
 
+
+def migrate_booking_reviews():
+    """Ensures booking_id column exists in the reviews table to track reviews per booking."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER")
+        commit_db()
+        print("[MIGRATION] migrate_booking_reviews completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_booking_reviews error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 try:
     with app.app_context():
         migrate_google_auth_columns()
         migrate_no_show_column()
+        migrate_booking_reviews()
 except Exception as _e:
     pass
 
@@ -3732,6 +3746,7 @@ def user_bookings():
                    b.refund_proof_url,
                    b.is_conflict_affected,
                    b.conflict_id,
+                   EXISTS (SELECT 1 FROM reviews r WHERE r.booking_id = b.id) AS is_reviewed,
                    v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
                    COALESCE(ld.license_number, u.license_number) AS license_number,
@@ -4089,6 +4104,8 @@ def add_review():
 
     comment = data.get('comment')
 
+    booking_id = data.get('booking_id')
+
     
 
     if not all([user_id, vehicle_id, rating]):
@@ -4103,11 +4120,11 @@ def add_review():
 
         cur.execute("""
 
-            INSERT INTO reviews (user_id, vehicle_id, rating, comment)
+            INSERT INTO reviews (user_id, vehicle_id, rating, comment, booking_id)
 
-            VALUES (%s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s)
 
-        """, (user_id, vehicle_id, rating, comment))
+        """, (user_id, vehicle_id, rating, comment, booking_id))
 
         commit_db()
 

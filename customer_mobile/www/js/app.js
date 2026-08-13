@@ -4347,7 +4347,7 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
-  var canReview = b.status === 'Completed';
+  var canReview = b.status === 'Completed' && !b.is_reviewed;
   var canPayBalance = b.payment_status === 'Partially Paid';
   var canPayNow = b.payment_status === 'Unpaid' && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
@@ -4407,7 +4407,7 @@ function renderBookingDetail(b) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
   }
   if (!canPayNow && !canPayBalance && canReview) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ', ' + b.id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
   }
   if (canExtend) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
@@ -5844,7 +5844,7 @@ function stopGpsPolling() {
 }
 
 // REVIEW
-function openReviewForm(vehicleId) {
+function openReviewForm(vehicleId, bookingId) {
   selectedRating = 0;
   var el = document.getElementById('reviewContent');
   if (!el) return;
@@ -5859,7 +5859,7 @@ function openReviewForm(vehicleId) {
     '<span class="field-error" id="ratingErr" style="margin-top:8px;display:block;"></span>' +
     '<div class="form-group" style="margin-top:16px;"><label>Comment (optional)</label><textarea id="reviewComment" placeholder="Share your experience..."></textarea></div>' +
     '<span class="field-error" id="reviewErr" style="display:block;margin-bottom:12px;"></span>' +
-    '<button class="btn-primary" onclick="submitReview(' + vehicleId + ')"><i class="fas fa-paper-plane"></i> Submit Review</button>' +
+    '<button class="btn-primary" onclick="submitReview(' + vehicleId + ', ' + bookingId + ')"><i class="fas fa-paper-plane"></i> Submit Review</button>' +
     '</div></div>';
   showOverlay('page-review');
 }
@@ -5872,7 +5872,7 @@ function setRating(val) {
   }
 }
 
-function submitReview(vehicleId) {
+function submitReview(vehicleId, bookingId) {
   var ratingErrEl = document.getElementById('ratingErr');
   var reviewErrEl = document.getElementById('reviewErr');
   if (ratingErrEl) ratingErrEl.textContent = '';
@@ -5881,10 +5881,17 @@ function submitReview(vehicleId) {
   var commentEl = document.getElementById('reviewComment');
   var comment = commentEl ? sanitizeInput(commentEl.value.trim()) : '';
   showLoading(true);
-  apiCall('/review', { method: 'POST', body: JSON.stringify({ user_id: currentUser.id, vehicle_id: vehicleId, rating: selectedRating, comment: comment }) })
+  apiCall('/review', { method: 'POST', body: JSON.stringify({ user_id: currentUser.id, vehicle_id: vehicleId, booking_id: bookingId, rating: selectedRating, comment: comment }) })
     .then(function() {
       showToast('Review submitted! Thank you.', 'success');
       closeOverlay('page-review');
+      if (activeBookingData && activeBookingData.id === bookingId) {
+        activeBookingData.is_reviewed = true;
+        renderBookingDetail(activeBookingData);
+      }
+      if (typeof Bookings !== 'undefined' && Bookings.load) {
+        Bookings.load();
+      }
     })
     .catch(function(err) { if (reviewErrEl) reviewErrEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
