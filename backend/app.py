@@ -44,7 +44,7 @@ def reject_non_image(file_storage, field_name='file'):
     return None
 
 
-from config import DEBUG, GOOGLE_CLIENT_ID, SUPABASE_URL, SUPABASE_KEY
+from config import DEBUG, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, APP_BASE_URL, SUPABASE_URL, SUPABASE_KEY
 
 from google.oauth2 import id_token
 
