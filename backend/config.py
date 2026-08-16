@@ -12,6 +12,7 @@ DEBUG = os.getenv('DEBUG', True)
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', "857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com")
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', "")
 
 
 # Supabase API Configuration (for Storage)

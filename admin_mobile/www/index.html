@@ -1342,6 +1342,19 @@
                     <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
             </div>
+
+            <div id="mobileSmtpConfig" class="revenue-restricted" style="margin-top: 15px;">
+                <div class="stat-card" onclick="toggleSmtpConfigModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-envelope" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 0.95rem;">System Email Settings</h4>
+                        <p id="smtpStatusLabel" style="font-size: 0.7rem; color: var(--text-muted);">Loading email status...</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                </div>
+            </div>
         </div>
 
         <button onclick="if(window.adminAuth)adminAuth.logout()" style="width: 100%; margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius); color: var(--danger); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;">
@@ -1737,6 +1750,34 @@
                 </div>
             </div>
             <button onclick="document.getElementById('receiptPreviewModal').style.display='none'" style="width:100%; margin-top:16px; padding:14px; background:#00B14F; border:none; border-radius:12px; color:white; font-weight:800; font-size:0.9rem; cursor:pointer;">Close</button>
+        </div>
+    </div>
+
+    <!-- SMTP OAUTH EMAIL CONFIGURATION MODAL -->
+    <div id="smtpConfigModal" class="premium-modal" style="display: none;" onclick="closeSmtpConfigModalBackdrop(event)">
+        <div class="modal-content" style="max-width: 500px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-envelope" style="color: var(--primary);"></i>
+                    System Email Settings
+                </h3>
+                <button onclick="closeSmtpConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+                Link a Gmail account to send system notification emails (such as registration OTPs and booking receipts) dynamically. This avoids configuring manual SMTP passwords.
+            </p>
+            
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 1px;">Current Status</div>
+                <div id="smtpStatusDetail" style="font-size: 1.1rem; font-weight: 800; margin-top: 8px; color: var(--text-main);">Loading...</div>
+            </div>
+            
+            <div id="smtpOAuthActions" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Dynamically populated buttons -->
+            </div>
         </div>
     </div>
 
@@ -3739,6 +3780,119 @@
             if (label) label.textContent = 'Light Mode';
         }
     }
+
+    // --- SMTP OAUTH EMAIL CONFIGURATION ---
+    function toggleSmtpConfigModal() {
+        const modal = document.getElementById('smtpConfigModal');
+        if (modal) {
+            modal.style.display = 'flex';
+            loadSmtpStatus();
+        }
+    }
+
+    function closeSmtpConfigModal() {
+        const modal = document.getElementById('smtpConfigModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function closeSmtpConfigModalBackdrop(event) {
+        if (event.target === event.currentTarget) {
+            closeSmtpConfigModal();
+        }
+    }
+
+    async function loadSmtpStatus() {
+        const statusDetail = document.getElementById('smtpStatusDetail');
+        const actionsDiv = document.getElementById('smtpOAuthActions');
+        const label = document.getElementById('smtpStatusLabel');
+        
+        if (statusDetail) statusDetail.textContent = "Loading status...";
+        
+        try {
+            const res = await fetch(API_BASE + '/api/admin/smtp/status');
+            const data = await res.json();
+            
+            if (data.is_linked) {
+                if (statusDetail) statusDetail.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check-circle"></i> Connected</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span>`;
+                if (label) label.textContent = `Connected as ${data.email}`;
+                if (actionsDiv) {
+                    actionsDiv.innerHTML = `
+                        <button onclick="disconnectSmtpGmail()" class="btn-premium" style="background:#dc2626;border-color:#dc2626;width:100%;padding:12px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;">
+                            <i class="fas fa-unlink"></i> Disconnect Gmail Account
+                        </button>
+                        <button onclick="loadSmtpStatus()" class="btn-outline" style="width:100%;padding:12px;font-size:0.85rem;font-weight:700;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text-main);">
+                            <i class="fas fa-sync-alt"></i> Refresh Status
+                        </button>
+                    `;
+                }
+            } else {
+                if (statusDetail) statusDetail.innerHTML = `<span style="color:var(--text-muted);"><i class="fas fa-times-circle"></i> Not Connected</span>`;
+                if (label) label.textContent = "Click to configure notification email";
+                if (actionsDiv) {
+                    actionsDiv.innerHTML = `
+                        <button onclick="connectSmtpGmail()" class="btn-premium" style="width:100%;padding:12px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;background:var(--primary);border-color:var(--primary);">
+                            <i class="fab fa-google"></i> Connect Gmail Account
+                        </button>
+                        <button onclick="loadSmtpStatus()" class="btn-outline" style="width:100%;padding:12px;font-size:0.85rem;font-weight:700;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text-main);">
+                            <i class="fas fa-sync-alt"></i> Refresh Status
+                        </button>
+                    `;
+                }
+            }
+        } catch (e) {
+            if (statusDetail) statusDetail.textContent = "Error loading status";
+        }
+    }
+
+    async function connectSmtpGmail() {
+        try {
+            const res = await fetch(API_BASE + '/api/admin/smtp/auth-url');
+            const data = await res.json();
+            if (data.auth_url) {
+                // For mobile app WebView environment: open auth URL in default system browser
+                window.open(data.auth_url, '_system');
+            }
+        } catch (e) {
+            alert("Failed to initiate authentication link.");
+        }
+    }
+
+    async function disconnectSmtpGmail() {
+        if (!confirm("Are you sure you want to disconnect this email address? Notifications will fallback to default SMTP settings.")) return;
+        try {
+            const res = await fetch(API_BASE + '/api/admin/smtp/disconnect', { method: 'POST' });
+            if (res.ok) {
+                loadSmtpStatus();
+            } else {
+                alert("Failed to disconnect Gmail account.");
+            }
+        } catch (e) {
+            alert("Error disconnecting account.");
+        }
+    }
+
+    window.addEventListener("message", function(event) {
+        if (event.data === "smtp_oauth_success") {
+            loadSmtpStatus();
+        }
+    }, false);
+
+    // Bind exports to window
+    window.toggleSmtpConfigModal = toggleSmtpConfigModal;
+    window.closeSmtpConfigModal = closeSmtpConfigModal;
+    window.closeSmtpConfigModalBackdrop = closeSmtpConfigModalBackdrop;
+    window.connectSmtpGmail = connectSmtpGmail;
+    window.disconnectSmtpGmail = disconnectSmtpGmail;
+    window.loadSmtpStatus = loadSmtpStatus;
+
+    // Load status after init
+    setTimeout(function() {
+        if (window.adminAuth && window.adminAuth.isLoggedIn && window.adminAuth.isLoggedIn()) {
+            loadSmtpStatus();
+        }
+    }, 2000);
 
     // --- SYSTEM CONFIG MODAL ---
     function toggleSystemConfigModal() {

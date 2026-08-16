@@ -841,11 +841,36 @@ def migrate_booking_reviews():
     finally:
         if 'cur' in locals(): cur.close()
 
+
+def migrate_smtp_oauth_keys():
+    """Ensures Google SMTP OAuth settings keys exist in the settings table."""
+    try:
+        cur = get_cursor()
+        new_configs = [
+            ('smtp_oauth_email', '', 'Gmail account connected via OAuth for notifications'),
+            ('smtp_oauth_refresh_token', '', 'Google OAuth Refresh Token for SMTP access'),
+            ('smtp_oauth_access_token', '', 'Google OAuth Access Token for SMTP access'),
+            ('smtp_oauth_token_expiry', '', 'Expiry timestamp of SMTP access token'),
+        ]
+        for key, val, desc in new_configs:
+            cur.execute("""
+                INSERT INTO settings (key, value, description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (key) DO NOTHING
+            """, (key, val, desc))
+        commit_db()
+        print("[MIGRATION] migrate_smtp_oauth_keys completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_smtp_oauth_keys error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 try:
     with app.app_context():
         migrate_google_auth_columns()
         migrate_no_show_column()
         migrate_booking_reviews()
+        migrate_smtp_oauth_keys()
 except Exception as _e:
     pass
 
@@ -963,59 +988,123 @@ def is_gmail(email: str) -> bool:
 
     return email.lower().endswith('@gmail.com')
 
+def send_email_notifications(to_email, subject, body, is_html=False):
+    """
+    Sends email notifications. Uses the linked Google OAuth Gmail API if configured,
+    otherwise falls back to standard SMTP configuration from environment variables.
+    """
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
+        rt_row = cur.fetchone()
+        refresh_token = rt_row['value'] if rt_row else None
+        
+        cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_email'")
+        email_row = cur.fetchone()
+        sender_email = email_row['value'] if email_row else None
+        
+        if refresh_token and sender_email:
+            # Send via Google Gmail API
+            import requests
+            import time
+            import base64
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            
+            # Refresh access token
+            token_url = "https://oauth2.googleapis.com/token"
+            refresh_data = {
+                'client_id': GOOGLE_CLIENT_ID,
+                'client_secret': GOOGLE_CLIENT_SECRET,
+                'refresh_token': refresh_token,
+                'grant_type': 'refresh_token'
+            }
+            res = requests.post(token_url, data=refresh_data)
+            tokens = res.json()
+            access_token = tokens.get('access_token')
+            
+            if access_token:
+                # Update temporary token and expiry in settings for faster subsequent lookups
+                expires_in = tokens.get('expires_in', 3600)
+                expiry_ts = int(time.time()) + int(expires_in)
+                cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_access_token'", (access_token,))
+                cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_token_expiry'", (str(expiry_ts),))
+                commit_db()
 
-
-from notifications import notification_service
-
+                # Construct raw RFC 2822 email payload
+                if is_html:
+                    msg = MIMEMultipart('alternative')
+                    msg['Subject'] = subject
+                    msg['From'] = sender_email
+                    msg['To'] = to_email
+                    msg.attach(MIMEText(body, 'html', 'utf-8'))
+                else:
+                    msg = MIMEText(body)
+                    msg['Subject'] = subject
+                    msg['From'] = sender_email
+                    msg['To'] = to_email
+                    
+                raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+                
+                # Post to Google Gmail API send endpoint
+                api_url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+                headers = {
+                    'Authorization': f"Bearer {access_token}",
+                    'Content-Type': 'application/json'
+                }
+                send_res = requests.post(api_url, headers=headers, json={"raw": raw_msg})
+                if send_res.status_code == 200:
+                    print(f"[OAUTH_EMAIL] Sent successfully from {sender_email} to {to_email}")
+                    return True
+                else:
+                    print(f"[OAUTH_EMAIL] Failed via API ({send_res.status_code}): {send_res.text}")
+                    
+        # Fallback to standard SMTP if OAuth email is not set or failed
+        print(f"[SMTP_EMAIL] Falling back to standard SMTP from {EMAIL_USER}")
+        if is_html:
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText as MIMETextPart
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = EMAIL_USER
+            msg['To'] = to_email
+            msg.attach(MIMETextPart(body, 'html', 'utf-8'))
+        else:
+            msg = MIMEText(body)
+            msg['Subject'] = subject
+            msg['From'] = EMAIL_USER
+            msg['To'] = to_email
+            
+        smtp_port = int(SMTP_PORT) if SMTP_PORT else 587
+        with smtplib.SMTP(SMTP_SERVER, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(EMAIL_USER, EMAIL_PASS)
+            server.send_message(msg)
+            print(f"[SMTP_EMAIL] Sent successfully via SMTP from {EMAIL_USER} to {to_email}")
+            return True
+            
+    except Exception as e:
+        print(f"[EMAIL_ERROR] Failed sending email: {e}")
+        return False
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 def send_verification_email(email: str, otp: str):
-
     """Sends a verification OTP via SMTP with terminal fallback."""
-
     subject = "Autoride Email Verification"
-
     body = f"Your Autoride verification code is: {otp}\n\nThis code is for your @gmail.com account verification."
-
     
-
     # TERMINAL FALLBACK (Log the code so the user can see it without real SMTP)
-
     print("\n" + "="*50)
-
     print(f"EMAIL VERIFICATION LOG")
-
     print(f"TO: {email}")
-
     print(f"CODE: {otp}")
-
     print("="*50 + "\n")
 
-
-
-    try:
-
-        msg = MIMEText(body)
-
-        msg['Subject'] = subject
-
-        msg['From'] = EMAIL_USER
-
-        msg['To'] = email
-
-
-
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-
-            server.starttls()
-
-            server.login(EMAIL_USER, EMAIL_PASS)
-
-            server.send_message(msg)
-
-
-    except Exception as e:
-        pass
+    send_email_notifications(email, subject, body, is_html=False)
 
 
 
@@ -1174,21 +1263,8 @@ def send_receipt_email(email: str, details: dict):
     )
 
     print('RECEIPT EMAIL - TO: ' + email + ' BOOKING: #' + booking_id)
-    try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = EMAIL_USER
-        msg['To'] = email
-        msg.attach(MIMETextPart(html, 'html', 'utf-8'))
-        smtp_port = int(SMTP_PORT) if SMTP_PORT else 587
-        with smtplib.SMTP(SMTP_SERVER, smtp_port) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.send_message(msg)
-    except Exception as e:
-        pass
+    send_email_notifications(email, subject, html, is_html=True)
+
 
 @app.route("/")
 
@@ -11616,3 +11692,149 @@ def get_blackout_conflicts(start_date, end_date, vehicle_id=None):
         return None
     finally:
         if 'cur' in locals(): cur.close()
+
+
+# ── GOOGLE OAUTH SMTP ROUTER FOR SYSTEM NOTIFICATIONS ──
+
+@app.route('/api/admin/smtp/auth-url', methods=['GET'])
+def get_smtp_auth_url():
+    """Generates the Google OAuth authorization URL to link the system email."""
+    import urllib.parse
+    client_id = GOOGLE_CLIENT_ID
+    redirect_uri = f"{APP_BASE_URL.rstrip('/')}/api/admin/smtp/callback"
+    scopes = "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email"
+    
+    params = {
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'response_type': 'code',
+        'scope': scopes,
+        'access_type': 'offline',
+        'prompt': 'consent'
+    }
+    url = f"https://accounts.google.com/o/oauth2/v2/auth?{urllib.parse.urlencode(params)}"
+    return jsonify({"auth_url": url}), 200
+
+
+@app.route('/api/admin/smtp/callback', methods=['GET'])
+def smtp_oauth_callback():
+    """Handles the OAuth callback from Google, exchanges the code for tokens, and saves them."""
+    code = request.args.get('code')
+    error = request.args.get('error')
+    
+    if error:
+        return f"OAuth Error: {error}. Please close this window and try again.", 400
+        
+    if not code:
+        return "Authorization code missing.", 400
+        
+    try:
+        import requests
+        import time
+        
+        # 1. Exchange auth code for tokens
+        redirect_uri = f"{APP_BASE_URL.rstrip('/')}/api/admin/smtp/callback"
+        token_data = {
+            'code': code,
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': GOOGLE_CLIENT_SECRET,
+            'redirect_uri': redirect_uri,
+            'grant_type': 'authorization_code'
+        }
+        res = requests.post('https://oauth2.googleapis.com/token', data=token_data)
+        tokens = res.json()
+        
+        if 'error' in tokens:
+            return f"Error exchanging code: {tokens.get('error_description', tokens['error'])}", 400
+            
+        access_token = tokens.get('access_token')
+        refresh_token = tokens.get('refresh_token')
+        expires_in = tokens.get('expires_in', 3600)
+        expiry_ts = int(time.time()) + int(expires_in)
+        
+        if not access_token:
+            return "Failed to retrieve access token.", 400
+            
+        # 2. Call Google userInfo API to get the email address of this Gmail account
+        headers = {'Authorization': f"Bearer {access_token}"}
+        user_info_res = requests.get('https://www.googleapis.com/oauth2/v2/userinfo', headers=headers)
+        user_info = user_info_res.json()
+        email = user_info.get('email')
+        
+        if not email:
+            return "Failed to retrieve email address from authorized Google account.", 400
+            
+        # 3. Save to database settings table
+        cur = get_cursor()
+        cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_email'", (email,))
+        cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_access_token'", (access_token,))
+        cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_token_expiry'", (str(expiry_ts),))
+        
+        if refresh_token:
+            cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_refresh_token'", (refresh_token,))
+            
+        commit_db()
+        
+        return f"""
+        <html>
+        <head>
+            <title>Authentication Successful</title>
+            <script>
+                window.onload = function() {{
+                    if (window.opener) {{
+                        window.opener.postMessage("smtp_oauth_success", "*");
+                        window.close();
+                    }} else {{
+                        window.location.href = "{APP_BASE_URL.rstrip('/')}/admin_app/index.html#settings";
+                    }}
+                }};
+            </script>
+        </head>
+        <body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+            <h2 style="color: #00B14F;">Gmail Linked Successfully!</h2>
+            <p>You can close this window now. Redirecting back to settings...</p>
+        </body>
+        </html>
+        """
+    except Exception as e:
+        return f"Callback Processing Error: {str(e)}", 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/api/admin/smtp/status', methods=['GET'])
+def get_smtp_oauth_status():
+    """Returns the email address of the currently linked Gmail account, if any."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_email'")
+        row = cur.fetchone()
+        email = row['value'] if row else ''
+        
+        cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
+        rt_row = cur.fetchone()
+        is_linked = bool(email and rt_row and rt_row['value'])
+        
+        return jsonify({
+            "is_linked": is_linked,
+            "email": email if is_linked else ""
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/api/admin/smtp/disconnect', methods=['POST'])
+def disconnect_smtp_oauth():
+    """Clears SMTP OAuth tokens and email from settings."""
+    try:
+        cur = get_cursor()
+        cur.execute("UPDATE settings SET value = '' WHERE key IN ('smtp_oauth_email', 'smtp_oauth_refresh_token', 'smtp_oauth_access_token', 'smtp_oauth_token_expiry')")
+        commit_db()
+        return jsonify({"message": "Gmail account disconnected successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
