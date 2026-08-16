@@ -11815,9 +11815,13 @@ def get_smtp_oauth_status():
         rt_row = cur.fetchone()
         is_linked = bool(email and rt_row and rt_row['value'])
         
+        secret = os.environ.get('GOOGLE_CLIENT_SECRET', GOOGLE_CLIENT_SECRET or '')
+        secret_mask = f"len={len(secret)}, start={secret[:3]}...{secret[-3:]}" if secret else "NOT_SET"
+        
         return jsonify({
             "is_linked": is_linked,
-            "email": email if is_linked else ""
+            "email": email if is_linked else "",
+            "client_secret_diag": secret_mask
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
