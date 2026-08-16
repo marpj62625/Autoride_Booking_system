@@ -22,19 +22,11 @@ def send_notification(user_id, subject, message):
         # 1. SEND EMAIL
         if email:
             try:
-                body = f"Hello {name},\n\n{message}\n\nBest regards,\nAutoride System Team"
-                msg = MIMEText(body)
-                msg['Subject'] = subject
-                msg['From'] = EMAIL_USER
-                msg['To'] = email
-
-                with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                    server.starttls()
-                    server.login(EMAIL_USER, EMAIL_PASS)
-                    server.send_message(msg)
-                print(f"DEBUG: Email sent to {email}")
+                from app import send_email_notifications
+                send_email_notifications(email, subject, message)
+                print(f"DEBUG: Unified Email sent to {email}")
             except Exception as e:
-                print(f"FAILED TO SEND EMAIL: {e}")
+                print(f"FAILED TO SEND EMAIL VIA UNIFIED SENDER: {e}")
 
         return True
     except Exception as e:
