@@ -11696,7 +11696,7 @@ def get_blackout_conflicts(start_date, end_date, vehicle_id=None):
 
 # ── GOOGLE OAUTH SMTP ROUTER FOR SYSTEM NOTIFICATIONS ──
 
-@app.route('/api/admin/smtp/auth-url', methods=['GET'])
+@app.route('/admin/smtp/auth-url', methods=['GET'])
 def get_smtp_auth_url():
     """Generates the Google OAuth authorization URL to link the system email."""
     import urllib.parse
@@ -11716,7 +11716,7 @@ def get_smtp_auth_url():
     return jsonify({"auth_url": url}), 200
 
 
-@app.route('/api/admin/smtp/callback', methods=['GET'])
+@app.route('/admin/smtp/callback', methods=['GET'])
 def smtp_oauth_callback():
     """Handles the OAuth callback from Google, exchanges the code for tokens, and saves them."""
     code = request.args.get('code')
@@ -11802,7 +11802,7 @@ def smtp_oauth_callback():
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/api/admin/smtp/status', methods=['GET'])
+@app.route('/admin/smtp/status', methods=['GET'])
 def get_smtp_oauth_status():
     """Returns the email address of the currently linked Gmail account, if any."""
     try:
@@ -11825,7 +11825,7 @@ def get_smtp_oauth_status():
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/api/admin/smtp/disconnect', methods=['POST'])
+@app.route('/admin/smtp/disconnect', methods=['POST'])
 def disconnect_smtp_oauth():
     """Clears SMTP OAuth tokens and email from settings."""
     try:
