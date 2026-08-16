@@ -1,3 +1,4 @@
+# Trigger Vercel Rebuild
 import os
 
 # Supabase PostgreSQL Configuration - Using port 6543 (Transaction Mode Pooler)
