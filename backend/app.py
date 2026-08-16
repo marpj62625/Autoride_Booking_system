@@ -11804,7 +11804,10 @@ def smtp_oauth_callback():
 
 @app.route('/admin/smtp/status', methods=['GET'])
 def get_smtp_oauth_status():
-    """Returns the email address of the currently linked Gmail account, if any."""
+    """Returns the email address of the currently linked Gmail account, if any. Supports test email sending."""
+    test_email = request.args.get('test_email')
+    test_logs = []
+    
     try:
         cur = get_cursor()
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_email'")
@@ -11813,18 +11816,57 @@ def get_smtp_oauth_status():
         
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
         rt_row = cur.fetchone()
-        is_linked = bool(email and rt_row and rt_row['value'])
+        refresh_token = rt_row['value'] if rt_row else ''
+        is_linked = bool(email and refresh_token)
         
         secret = os.environ.get('GOOGLE_CLIENT_SECRET', GOOGLE_CLIENT_SECRET or '')
         secret_mask = f"len={len(secret)}, start={secret[:3]}...{secret[-3:]}" if secret else "NOT_SET"
         
+        if test_email and is_linked:
+            test_logs.append("OAuth credentials found. Initiating token refresh...")
+            import requests
+            import time
+            token_url = "https://oauth2.googleapis.com/token"
+            refresh_data = {
+                'client_id': GOOGLE_CLIENT_ID,
+                'client_secret': secret,
+                'refresh_token': refresh_token,
+                'grant_type': 'refresh_token'
+            }
+            res = requests.post(token_url, data=refresh_data)
+            tokens = res.json()
+            test_logs.append(f"Refresh response status: {res.status_code}")
+            
+            access_token = tokens.get('access_token')
+            if not access_token:
+                test_logs.append(f"Refresh failed: {tokens}")
+            else:
+                test_logs.append("Access token retrieved. Constructing MIME message...")
+                import base64
+                from email.mime.text import MIMEText
+                msg = MIMEText("This is a diagnostic test email from Autoride System OAuth Gmail API.")
+                msg['Subject'] = "Autoride OAuth Diagnostic Email"
+                msg['From'] = email
+                msg['To'] = test_email
+                
+                raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+                api_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+                headers = {
+                    'Authorization': f"Bearer {access_token}",
+                    'Content-Type': 'application/json'
+                }
+                send_res = requests.post(api_url, headers=headers, json={"raw": raw_msg})
+                test_logs.append(f"Gmail send response status: {send_res.status_code}")
+                test_logs.append(f"Gmail send response: {send_res.text}")
+                
         return jsonify({
             "is_linked": is_linked,
             "email": email if is_linked else "",
-            "client_secret_diag": secret_mask
+            "client_secret_diag": secret_mask,
+            "test_logs": test_logs
         }), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e), "test_logs": test_logs}), 500
     finally:
         if 'cur' in locals(): cur.close()
 
