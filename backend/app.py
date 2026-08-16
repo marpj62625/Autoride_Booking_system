@@ -1035,13 +1035,13 @@ def send_email_notifications(to_email, subject, body, is_html=False):
                 if is_html:
                     msg = MIMEMultipart('alternative')
                     msg['Subject'] = subject
-                    msg['From'] = sender_email
+                    msg['From'] = f"Autoride System <{sender_email}>"
                     msg['To'] = to_email
                     msg.attach(MIMEText(body, 'html', 'utf-8'))
                 else:
                     msg = MIMEText(body)
                     msg['Subject'] = subject
-                    msg['From'] = sender_email
+                    msg['From'] = f"Autoride System <{sender_email}>"
                     msg['To'] = to_email
                     
                 raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
