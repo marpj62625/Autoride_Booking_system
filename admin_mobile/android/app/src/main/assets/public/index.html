@@ -9995,12 +9995,20 @@ async edit(id) { this.openModal(id); }
     window.UserMgmt = UserMgmt;
 
     // Auto-load when users tab is opened
-    const _origSwitchTab = window.switchTab;
+    // Override BOTH window.switchTab AND local navTo to ensure refresh is called
+    // (The local switchTab closure cannot see UserMgmt because it's defined after)
+    const _origSwitchTabForUM = window.switchTab;
     window.switchTab = function(tabId) {
-        _origSwitchTab(tabId);
+        _origSwitchTabForUM(tabId);
         if (tabId === 'users' && UserMgmt._all.length === 0) {
             UserMgmt.refresh();
         }
+    };
+    // Also patch the navTo function on window so drawer items trigger it correctly
+    const _origNavTo = window.navTo;
+    window.navTo = function(tabId) {
+        window.switchTab(tabId);
+        if (typeof window.toggleDrawer === 'function') window.toggleDrawer(false);
     };
     // ??? END USER MANAGEMENT MODULE ???????????????????????????????????????
 
