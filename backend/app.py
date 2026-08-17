@@ -1464,7 +1464,7 @@ def user_forgot_password():
             print(f"Failed to send forgot password email: {email_err}")
             return jsonify({'error': 'Failed to send temporary password email. Please try again later.'}), 500
             
-        return jsonify({'message': 'Temporary password sent successfully! Please check your email inbox.'}), 200
+        return jsonify({'message': "Temporary password sent successfully! Please check your email inbox. (If you don't see it, check your Spam folder and click 'Report not spam')"}), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -1467,7 +1467,7 @@ function doForgotPassword() {
   })
   .then(function(data) {
     if (successEl) {
-      successEl.textContent = '✅ ' + (data.message || 'Temporary password sent! Check your email inbox.');
+      successEl.textContent = '✅ ' + (data.message || "Temporary password sent! Check your email inbox. (If you don't see it, check your Spam folder and click 'Report not spam')");
       successEl.style.display = 'block';
     }
     if (btnText) btnText.textContent = 'Email Sent!';
