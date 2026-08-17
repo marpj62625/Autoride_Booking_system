@@ -2151,6 +2151,23 @@ def get_user_points():
 
 temp_email_otps = {}
 
+@app.route('/auth/resend-otp', methods=['POST'])
+def resend_otp():
+    """Resend a new 6-digit OTP to the user's email."""
+    try:
+        data = request.json
+        email = data.get('email')
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+        
+        import random
+        otp = str(random.randint(100000, 999999))
+        temp_email_otps[email] = otp
+        
+        send_verification_email(email, otp)
+        return jsonify({"message": "Verification code sent!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/auth/verify-email', methods=['POST'])
