@@ -3453,7 +3453,7 @@
     // NOTE: On native APK, window.Capacitor may not yet be defined at script parse time.
     // Use hostname check: Capacitor APK runs on https://localhost, NOT http://localhost:5000.
     // So: https://localhost ? APK ? use Vercel. http://localhost:5000 ? local dev only.
-    const _isLocalDev = window.location.hostname === 'localhost' && window.location.protocol === 'http:';
+    const _isLocalDev = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port === '5000';
     const API_BASE = _isLocalDev
         ? 'http://localhost:5000'
         : 'https://autoride-booking-system.vercel.app';
