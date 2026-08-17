@@ -9633,7 +9633,18 @@ async edit(id) { this.openModal(id); }
                     ? `<span class="um-badge-frozen">🚫 FROZEN</span>`
                     : '';
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+                let joined = 'N/A';
+                if (u.created_at) {
+                    try {
+                        const dStr = u.created_at.replace(' ', 'T');
+                        const parsedDate = new Date(dStr);
+                        if (!isNaN(parsedDate.getTime())) {
+                            joined = parsedDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+                        } else {
+                            joined = String(u.created_at).split(' ')[0] || 'N/A';
+                        }
+                    } catch(e) { joined = 'N/A'; }
+                }
                 return `
                 <div class="um-user-card" onclick="UserMgmt.openModal(${u.id})">
                     <div class="um-avatar">
@@ -9750,7 +9761,18 @@ async edit(id) { this.openModal(id); }
             const verifiedColor = u.is_verified === 2 ? 'var(--success)' : u.is_verified === 1 ? 'var(--amber)' : 'var(--text-muted)';
             const frozenLabel = u.is_frozen ? 'Frozen' : 'Active';
             const frozenColor = u.is_frozen ? 'var(--danger)' : 'var(--success)';
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'N/A';
+            let joined = 'N/A';
+            if (u.created_at) {
+                try {
+                    const dStr = u.created_at.replace(' ', 'T');
+                    const parsedDate = new Date(dStr);
+                    if (!isNaN(parsedDate.getTime())) {
+                        joined = parsedDate.toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'});
+                    } else {
+                        joined = String(u.created_at).split(' ')[0] || 'N/A';
+                    }
+                } catch(e) { joined = 'N/A'; }
+            }
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
             document.getElementById('umModalContent').innerHTML = `

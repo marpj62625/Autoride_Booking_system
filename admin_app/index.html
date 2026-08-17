@@ -27187,7 +27187,51 @@ async edit(id) { this.openModal(id); }
 
 
 
-                const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+                let joined = 'N/A';
+
+
+
+                if (u.created_at) {
+
+
+
+                    try {
+
+
+
+                        const dStr = u.created_at.replace(' ', 'T');
+
+
+
+                        const parsedDate = new Date(dStr);
+
+
+
+                        if (!isNaN(parsedDate.getTime())) {
+
+
+
+                            joined = parsedDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+
+
+
+                        } else {
+
+
+
+                            joined = String(u.created_at).split(' ')[0] || 'N/A';
+
+
+
+                        }
+
+
+
+                    } catch(e) { joined = 'N/A'; }
+
+
+
+                }
 
 
 
@@ -27619,13 +27663,19 @@ async edit(id) { this.openModal(id); }
 
 
 
-            const joined = u.created_at ? new Date(u.created_at).toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'}) : 'N/A';
-
-
-
+            let joined = 'N/A';
+            if (u.created_at) {
+                try {
+                    const dStr = u.created_at.replace(' ', 'T');
+                    const parsedDate = new Date(dStr);
+                    if (!isNaN(parsedDate.getTime())) {
+                        joined = parsedDate.toLocaleDateString('en-PH', {month:'long', day:'numeric', year:'numeric'});
+                    } else {
+                        joined = String(u.created_at).split(' ')[0] || 'N/A';
+                    }
+                } catch(e) { joined = 'N/A'; }
+            }
             const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
-
-
 
 
 
