@@ -2178,30 +2178,22 @@ def verify_email():
         try:
 
             cur = get_cursor()
-            cur.execute("UPDATE users SET is_email_verified = True, force_logout_at = NULL WHERE email = %s RETURNING id, full_name, is_driver", (email,))
+            cur.execute("UPDATE users SET is_email_verified = True, force_logout_at = NULL WHERE email = %s RETURNING id, full_name, is_driver, is_verified", (email,))
             user = cur.fetchone()
             commit_db()
 
             del temp_email_otps[email]
 
-            
-
             if user:
-
                 return jsonify({
-
                     "message": "Email verified successfully!",
-
-                    "user_id": user['id'],
-
-                    "full_name": user['full_name'],
-
-                    "is_driver": user['is_driver']
-
+                    "user": {
+                        "id": user['id'],
+                        "fullName": user['full_name'],
+                        "isVerified": user['is_verified'] if user['is_verified'] is not None else 0
+                    }
                 }), 200
-
             else:
-
                 return jsonify({"message": "Email verified successfully!"}), 200
 
         except Exception as e:
