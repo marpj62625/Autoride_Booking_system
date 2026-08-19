@@ -7719,37 +7719,29 @@ function _renderWebCal() {
 function _webCalPickDate(dateStr) {
   var startEl = document.getElementById('bfStartDate');
   var endEl   = document.getElementById('bfEndDate');
-  if (!startEl) return;
+  if (startEl) {
+     if (!startEl.value || (startEl.value && endEl && endEl.value)) {
+        startEl.value = dateStr;
+        if (endEl) endEl.value = "";
+     } else {
+        if (dateStr >= startEl.value) {
+           endEl.value = dateStr;
+        } else {
+           startEl.value = dateStr;
+        }
+     }
+     
+     // Set return time select safely (mimicking autoSetReturnTime without date overwrite)
+     var pickupTimeEl = document.getElementById('bfPickupTime');
+     var returnTimeEl = document.getElementById('bfReturnTime');
+     if (pickupTimeEl && returnTimeEl) {
+        var pickupTime = pickupTimeEl.value || "12:00";
+        returnTimeEl.value = pickupTime;
+     }
 
-  // Run timezone and time auto-advance configurations first
-  if (typeof autoSetReturnTime === 'function') autoSetReturnTime();
-
-  if (!startEl.value || (startEl.value && endEl && endEl.value)) {
-    // Start fresh — set start date
-    startEl.value = dateStr;
-    if (endEl) endEl.value = '';
-  } else {
-    // Start date already set, pick end date
-    if (endEl && dateStr >= startEl.value) {
-      endEl.value = dateStr;
-    } else {
-      // Picked earlier — restart
-      startEl.value = dateStr;
-      if (endEl) endEl.value = '';
-    }
+     if (typeof updateBookingPrice === 'function') updateBookingPrice();
+     _renderWebCal();
   }
-
-  // Set minimum end date constraint helper
-  if (startEl.value && endEl && !endEl.value) {
-    var start = new Date(startEl.value + 'T00:00:00');
-    var minEnd = new Date(start);
-    minEnd.setDate(minEnd.getDate() + 1);
-    endEl.value = minEnd.toISOString().split('T')[0];
-  }
-
-  if (typeof updateBookingPrice === 'function') updateBookingPrice();
-  // Update selection highlights on click
-  _renderWebCal();
 }
 
 // ============================================================
