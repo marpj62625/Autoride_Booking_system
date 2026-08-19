@@ -2606,6 +2606,7 @@
                     Submit Inspection Report
                 </button>
             </form>
+        </div>
     </div>
 
     <!-- RECORD EXPENSE MODAL -->
@@ -2675,8 +2676,8 @@
         position: relative;
         background: linear-gradient(135deg, #00B14F 0%, #005339 100%);
         border-radius: 0 0 28px 28px;
-        padding: 96px 20px 32px;
-        margin: -80px -16px 24px;
+        padding: 30px 20px 32px;
+        margin: 0 -16px 24px;
         overflow: hidden;
     }
     .um-hero-bar::before {
@@ -9562,16 +9563,39 @@ async edit(id) { this.openModal(id); }
         _filter: 'all',
 
         async refresh() {
-            showSkeleton('umList', 'list');
+            const listEl = document.getElementById('umList');
+            if (listEl) showSkeleton('umList', 'list');
             try {
                 const res = await apiFetch('admin/users/list');
+                if (!res.ok) {
+                    const text = await res.text();
+                    let errMsg = 'Failed to load users';
+                    try {
+                        const parsed = JSON.parse(text);
+                        errMsg = parsed.error || errMsg;
+                    } catch(_) {
+                        errMsg = `Server error (${res.status}): ${text.substring(0, 100)}`;
+                    }
+                    throw new Error(errMsg);
+                }
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to load users');
-                this._all = data;
+                this._all = Array.isArray(data) ? data : [];
                 this._updateStats();
                 this.applyFilters();
             } catch (e) {
-                document.getElementById('umList').innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${e.message}</div>`;
+                console.error("UserMgmt refresh error:", e);
+                const el = document.getElementById('umList');
+                if (el) {
+                    el.innerHTML = `
+                        <div style="text-align:center;padding:40px;color:var(--danger);">
+                            <i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:12px;color:var(--danger);"></i>
+                            <div style="font-weight:bold;margin-bottom:6px;">Error Loading Users</div>
+                            <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:15px;word-break:break-all;">${e.message}</div>
+                            <button onclick="UserMgmt.refresh()" style="background:var(--primary);color:white;border:none;padding:8px 16px;border-radius:6px;font-size:0.8rem;cursor:pointer;">
+                                <i class="fas fa-sync-alt"></i> Retry
+                            </button>
+                        </div>`;
+                }
             }
         },
 
@@ -9579,9 +9603,14 @@ async edit(id) { this.openModal(id); }
             const total = this._all.length;
             const verified = this._all.filter(u => u.is_verified === 2).length;
             const frozen = this._all.filter(u => u.is_frozen).length;
-            document.getElementById('umTotalCount').textContent = total;
-            document.getElementById('umVerifiedCount').textContent = verified;
-            document.getElementById('umFrozenCount').textContent = frozen;
+            
+            const tEl = document.getElementById('umTotalCount');
+            const vEl = document.getElementById('umVerifiedCount');
+            const fEl = document.getElementById('umFrozenCount');
+            
+            if (tEl) tEl.textContent = total;
+            if (vEl) vEl.textContent = verified;
+            if (fEl) fEl.textContent = frozen;
         },
 
         setFilter(f, btn) {
@@ -9591,14 +9620,17 @@ async edit(id) { this.openModal(id); }
                 b.style.color = 'var(--text-muted)';
                 b.style.borderColor = 'var(--border)';
             });
-            btn.style.background = 'var(--primary)';
-            btn.style.color = 'white';
-            btn.style.borderColor = 'var(--primary)';
+            if (btn) {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+                btn.style.borderColor = 'var(--primary)';
+            }
             this.applyFilters();
         },
 
         applyFilters() {
-            const q = (document.getElementById('umSearch').value || '').toLowerCase();
+            const searchEl = document.getElementById('umSearch');
+            const q = (searchEl ? searchEl.value : '').toLowerCase().trim();
             let list = this._all;
             if (this._filter === 'verified') list = list.filter(u => u.is_verified === 2);
             else if (this._filter === 'unverified') list = list.filter(u => u.is_verified !== 2);
@@ -9613,7 +9645,8 @@ async edit(id) { this.openModal(id); }
 
         _render(list) {
             const el = document.getElementById('umList');
-            if (!list.length) {
+            if (!el) return;
+            if (!list || !list.length) {
                 el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
                     <div style="width:64px;height:64px;border-radius:50%;background:rgba(0,177,79,0.08);border:2px dashed rgba(0,177,79,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.5rem;color:rgba(0,177,79,0.5);">
                         <i class="fas fa-users"></i>
@@ -9632,11 +9665,12 @@ async edit(id) { this.openModal(id); }
                 const frozenBadge = u.is_frozen
                     ? `<span class="um-badge-frozen">🚫 FROZEN</span>`
                     : '';
-                const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
+                const fullName = u.full_name || 'No Name';
+                const avatar = fullName.charAt(0).toUpperCase();
                 let joined = 'N/A';
                 if (u.created_at) {
                     try {
-                        const dStr = u.created_at.replace(' ', 'T');
+                        const dStr = String(u.created_at).replace(' ', 'T');
                         const parsedDate = new Date(dStr);
                         if (!isNaN(parsedDate.getTime())) {
                             joined = parsedDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
@@ -9645,6 +9679,10 @@ async edit(id) { this.openModal(id); }
                         }
                     } catch(e) { joined = 'N/A'; }
                 }
+                
+                // Safe quote escaping for inline event handler argument
+                const escapedNameForOnClick = fullName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                
                 return `
                 <div class="um-user-card" onclick="UserMgmt.openModal(${u.id})">
                     <div class="um-avatar">
@@ -9652,8 +9690,8 @@ async edit(id) { this.openModal(id); }
                         ${avatar}
                     </div>
                     <div class="um-user-info">
-                        <div class="um-user-name">${u.full_name || 'No Name'}</div>
-                        <div class="um-user-email">${u.email}</div>
+                        <div class="um-user-name">${fullName}</div>
+                        <div class="um-user-email">${u.email || ''}</div>
                         <div class="um-badges">${verifiedBadge}${frozenBadge}</div>
                     </div>
                     <div class="um-user-right">
@@ -9661,7 +9699,7 @@ async edit(id) { this.openModal(id); }
                             <div class="um-user-date">${joined}</div>
                             <div class="um-user-pts"><i class="fas fa-star" style="font-size:0.6rem;"></i> ${u.loyalty_points || 0} pts</div>
                         </div>
-                        <button class="um-bell-btn" onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" title="Send Notification">
+                        <button class="um-bell-btn" onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${escapedNameForOnClick}')" title="Send Notification">
                             <i class="fas fa-bell"></i>
                         </button>
                     </div>
