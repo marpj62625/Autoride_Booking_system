@@ -3036,7 +3036,12 @@ function openBookingForm(vehicleId) {
     '  <button onclick="nextBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-right"></i></button>' +
     '</div>' +
     '<div id="bookingCalendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:0.75rem;margin-bottom:10px;"></div>' +
-    '<div style="display:flex;gap:12px;font-size:0.7rem;color:var(--text-secondary);"><span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;display:inline-block;"></span>Booked/Blocked</span></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.68rem;color:var(--text-secondary);">' +
+    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#ffffff;border:1px solid #e2e8f0;border-radius:2px;display:inline-block;"></span>Available</span>' +
+    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;display:inline-block;"></span>Booked/Blocked</span>' +
+    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--primary);border-radius:2px;display:inline-block;"></span>Selected Date</span>' +
+    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(0,177,79,0.15);border:1px dashed rgba(0,177,79,0.3);border-radius:2px;display:inline-block;"></span>Selected Range</span>' +
+    '</div>' +
     '</div>' +
     // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
@@ -3129,6 +3134,8 @@ function openBookingForm(vehicleId) {
     '</div>';
 
   showOverlay('page-booking-form');
+  // Re-render calendar now that the grid element exists in the DOM
+  renderBookingCalendar();
   // Auto-set return location to match pickup
   onPickupLocationChange();
 }
@@ -6857,8 +6864,11 @@ function loadChatbot() {
     overlay.style.display = 'flex';
     overlay.style.flexDirection = 'column';
     overlay.style.overflow = 'hidden';
+    overlay.style.height = '100%';
+    overlay.style.maxHeight = '100%';
+    overlay.style.zIndex = '1500';
   }
-  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;';
+  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;max-height:100%;overflow:hidden;';
 
   el.innerHTML =
     '<div class="page-header" style="flex-shrink:0;">' +
@@ -6884,8 +6894,14 @@ function closeChatbot() {
   var overlay = document.getElementById('page-chatbot');
   var el = document.getElementById('chatbotContent');
   // Reset so next open re-initializes fresh
-  if (el) { el.dataset.initialized = ''; el.innerHTML = ''; }
-  if (overlay) { overlay.style.cssText = ''; }
+  if (el) { 
+    el.dataset.initialized = ''; 
+    el.innerHTML = ''; 
+    el.style.cssText = '';
+  }
+  if (overlay) { 
+    overlay.style.cssText = ''; 
+  }
   closeOverlay('page-chatbot');
 }
 
@@ -6923,11 +6939,11 @@ function sendChat() {
   if (qr) qr.style.display = 'none';
   var msgs = document.getElementById('chatMessages');
   if (!msgs) return;
-  msgs.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
+  msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg user">' + msg + '</div>');
   msgs.scrollTop = msgs.scrollHeight;
   // Show typing indicator
   var typingId = 'typing_' + Date.now();
-  msgs.innerHTML += '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>';
+  msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>');
   msgs.scrollTop = msgs.scrollHeight;
   apiCall('/chat', { method: 'POST', body: JSON.stringify({ message: msg, user_id: currentUser.id }) })
     .then(function(data) {
@@ -6937,14 +6953,14 @@ function sendChat() {
       // Format markdown-style bold **text** and bullet points
       resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       resp = resp.replace(/\n/g, '<br>');
-      msgs.innerHTML += '<div class="chat-msg bot">' + resp + '</div>';
+      msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + resp + '</div>');
     })
     .catch(function() {
       var typing = document.getElementById(typingId);
       if (typing) typing.remove();
       var fallback = chatLocalFallback(msg);
       fallback = fallback.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-      msgs.innerHTML += '<div class="chat-msg bot">' + fallback + '</div>';
+      msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + fallback + '</div>');
     })
     .finally(function() { msgs.scrollTop = msgs.scrollHeight; });
 }
@@ -7527,10 +7543,18 @@ function renderBookingCalendar() {
   
   var todayTime = new Date().setHours(0,0,0,0);
   
+  // Get currently selected inputs to draw highlight
+  var startVal = document.getElementById('bfStartDate') ? document.getElementById('bfStartDate').value : '';
+  var endVal = document.getElementById('bfEndDate') ? document.getElementById('bfEndDate').value : '';
+  
+  var startTime = startVal ? new Date(startVal).setHours(0,0,0,0) : null;
+  var endTime = endVal ? new Date(endVal).setHours(0,0,0,0) : null;
+  
   for (var d = 1; d <= daysInMonth; d++) {
      var cellDate = new Date(year, month, d);
+     var cellTime = cellDate.getTime();
      var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-     var isPast = cellDate.getTime() < todayTime;
+     var isPast = cellTime < todayTime;
      
      // Check if date is blocked (either blackout or booked)
      var isBlocked = blockedDatesList.some(function(bRange) {
@@ -7543,19 +7567,38 @@ function renderBookingCalendar() {
      var color = "var(--text-primary)";
      var cursor = "pointer";
      var onClick = 'selectCalendarDate("' + dateStr + '")';
+     var border = '1px solid #e2e8f0';
      
+     // Determine highlights
      if (isPast) {
         color = "var(--text-muted)";
         cursor = "not-allowed";
         onClick = "";
+        border = 'none';
      } else if (isBlocked) {
         bg = "#fee2e2";
         color = "#ef4444";
         cursor = "not-allowed";
         onClick = "";
+        border = 'none';
+     } else {
+        // Highlight active selections
+        if (startTime && cellTime === startTime) {
+           bg = "var(--primary)";
+           color = "#ffffff";
+           border = 'none';
+        } else if (endTime && cellTime === endTime) {
+           bg = "var(--primary)";
+           color = "#ffffff";
+           border = 'none';
+        } else if (startTime && endTime && cellTime > startTime && cellTime < endTime) {
+           bg = "rgba(0, 177, 79, 0.15)";
+           color = "var(--primary)";
+           border = '1px dashed rgba(0, 177, 79, 0.3)';
+        }
      }
      
-     html += '<div onclick="' + onClick + '" style="padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (onClick ? 'border:1px solid #e2e8f0;' : '') + '">' + d + '</div>';
+     html += '<div onclick="' + onClick + '" class="cal-day" style="-webkit-user-select:auto;user-select:auto;pointer-events:auto;padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (border !== 'none' ? 'border:' + border + ';' : '') + '">' + d + '</div>';
   }
   grid.innerHTML = html;
 }
@@ -7576,6 +7619,8 @@ function selectCalendarDate(dateStr) {
          }
       }
       updateBookingPrice();
+      // Re-render immediately to update visual selection highlights
+      renderBookingCalendar();
    }
 }
 window.selectCalendarDate = selectCalendarDate;
