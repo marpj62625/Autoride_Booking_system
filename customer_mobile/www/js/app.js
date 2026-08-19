@@ -3083,7 +3083,7 @@ function openBookingForm(vehicleId) {
     '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" placeholder="Barangay"></div>' +
     '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" placeholder="Municipality or City"></div>' +
     '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" placeholder="Province"></div>' +
-    '<a href="#" onclick="window.open(\'https://maps.google.com\', \'_system\'); return false;" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map"></i> Open Google Maps to find your location</a>' +
+    '<a href="#" onclick="openDeliveryMapPicker(); return false;" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map-marker-alt"></i> Pin delivery location on map</a>' +
     '</div></div>' +
 
     // Rental Type
@@ -7637,6 +7637,132 @@ function selectCalendarDate(dateStr) {
    }
 }
 window.selectCalendarDate = selectCalendarDate;
+
+// ============================================================
+// DELIVERY LOCATION MAP PICKER CONTROLLER
+// ============================================================
+var deliveryPickerMap = null;
+var deliveryPickerMarker = null;
+
+function openDeliveryMapPicker() {
+  showOverlay('page-delivery-picker');
+  
+  // Set default coordinates (e.g. San Pablo City, Laguna)
+  var defaultLat = 14.0700;
+  var defaultLng = 121.3250;
+  
+  // If a delivery zone is selected, attempt to bias starting coordinates
+  var zoneEl = document.getElementById('bfDeliveryZone');
+  if (zoneEl && zoneEl.value.indexOf('Tanauan') !== -1) {
+    defaultLat = 14.0833; // Tanauan, Batangas
+    defaultLng = 121.1500;
+  }
+
+  setTimeout(function() {
+    if (typeof L !== 'undefined') {
+      if (deliveryPickerMap) {
+        deliveryPickerMap.remove();
+        deliveryPickerMap = null;
+        deliveryPickerMarker = null;
+      }
+      
+      deliveryPickerMap = L.map('deliveryPickerMap').setView([defaultLat, defaultLng], 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(deliveryPickerMap);
+      
+      // Draggable pin marker
+      deliveryPickerMarker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(deliveryPickerMap);
+      
+      // Update coordinates on dragend
+      deliveryPickerMarker.on('dragend', function(event) {
+        var marker = event.target;
+        var position = marker.getLatLng();
+        console.log('Marker dragged to:', position.lat, position.lng);
+      });
+      
+      // Click map to reposition marker
+      deliveryPickerMap.on('click', function(e) {
+        if (deliveryPickerMarker) {
+          deliveryPickerMarker.setLatLng(e.latlng);
+        }
+      });
+      
+      // Refresh layout context inside modal overlay
+      deliveryPickerMap.invalidateSize();
+    } else {
+      showToast('Leaflet Map libraries are still loading. Please try again in a few seconds.', 'info');
+    }
+  }, 350);
+}
+window.openDeliveryMapPicker = openDeliveryMapPicker;
+
+function confirmDeliveryPinLocation() {
+  if (!deliveryPickerMarker) {
+    closeOverlay('page-delivery-picker');
+    return;
+  }
+  
+  var latlng = deliveryPickerMarker.getLatLng();
+  var confirmBtn = document.querySelector('#page-delivery-picker button.btn-primary');
+  var restoreBtn = setButtonLoading(confirmBtn, 'Fetching Address...');
+  
+  // Reverse Geocoding via OSM Nominatim API (Free, no keys required)
+  var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + latlng.lat + '&lon=' + latlng.lng + '&addressdetails=1';
+  
+  fetch(url, { headers: { 'Accept-Language': 'en' } })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.address) {
+        var addr = data.address;
+        
+        // Detailed Address builder (road + neighbourhood / suburb / landmark)
+        var street = addr.road || addr.street || addr.highway || '';
+        var suburb = addr.suburb || addr.neighbourhood || addr.village || addr.island || '';
+        var landmark = addr.amenity || addr.shop || addr.tourism || '';
+        
+        var detailedParts = [];
+        if (landmark) detailedParts.push(landmark);
+        if (street) detailedParts.push(street);
+        if (suburb) detailedParts.push(suburb);
+        
+        var detailedAddr = detailedParts.join(', ');
+        var barangay = addr.quarter || addr.suburb || addr.village || addr.neighbourhood || '';
+        var city = addr.city || addr.town || addr.municipality || '';
+        var province = addr.state || addr.region || addr.county || '';
+        
+        // Strip out 'province' text if redundant
+        province = province.replace(/\s*province\s*/gi, '').trim();
+
+        // Populate fields
+        var el;
+        el = document.getElementById('bfDeliveryAddress');
+        if (el) el.value = detailedAddr;
+        
+        el = document.getElementById('bfDeliveryBarangay');
+        if (el) el.value = barangay;
+        
+        el = document.getElementById('bfDeliveryMunicipality');
+        if (el) el.value = city;
+        
+        el = document.getElementById('bfDeliveryProvince');
+        if (el) el.value = province;
+        
+        showToast('Delivery location set successfully!', 'success');
+      } else {
+        showToast('Could not find detailed address. Please fill inputs manually.', 'warning');
+      }
+    })
+    .catch(function(err) {
+      console.error('Reverse geocode failed:', err);
+      showToast('Unable to reach geocoding helper. Coordinates set.', 'warning');
+    })
+    .finally(function() {
+      restoreBtn();
+      closeOverlay('page-delivery-picker');
+    });
+}
+window.confirmDeliveryPinLocation = confirmDeliveryPinLocation;
 
 function loadCustomerPenalties(bookingId) {
    var container = document.getElementById('customerPenaltiesContainer_' + bookingId);
