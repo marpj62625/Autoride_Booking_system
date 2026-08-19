@@ -1523,6 +1523,13 @@ function doLogout() {
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
   document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  
+  // Clear login inputs for privacy
+  var emailInput = document.getElementById('loginEmail');
+  var passInput = document.getElementById('loginPassword');
+  if (emailInput) emailInput.value = '';
+  if (passInput) passInput.value = '';
+  
   showPage('page-login');
   showToast('Logged out successfully', 'success');
 }
@@ -1568,6 +1575,13 @@ function forceLogoutSilent(message) {
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
   document.querySelectorAll('.overlay-page.active').forEach(function(p) { p.classList.remove('active'); });
+  
+  // Clear login inputs for privacy
+  var emailInput = document.getElementById('loginEmail');
+  var passInput = document.getElementById('loginPassword');
+  if (emailInput) emailInput.value = '';
+  if (passInput) passInput.value = '';
+  
   showPage('page-login');
   showToast(message || 'You have been logged out.', 'info');
 }
