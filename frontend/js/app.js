@@ -7721,13 +7721,16 @@ function _webCalPickDate(dateStr) {
   var endEl   = document.getElementById('bfEndDate');
   if (!startEl) return;
 
+  // Run timezone and time auto-advance configurations first
+  if (typeof autoSetReturnTime === 'function') autoSetReturnTime();
+
   if (!startEl.value || (startEl.value && endEl && endEl.value)) {
     // Start fresh — set start date
     startEl.value = dateStr;
     if (endEl) endEl.value = '';
   } else {
     // Start date already set, pick end date
-    if (endEl && dateStr > startEl.value) {
+    if (endEl && dateStr >= startEl.value) {
       endEl.value = dateStr;
     } else {
       // Picked earlier — restart
@@ -7736,8 +7739,15 @@ function _webCalPickDate(dateStr) {
     }
   }
 
+  // Set minimum end date constraint helper
+  if (startEl.value && endEl && !endEl.value) {
+    var start = new Date(startEl.value + 'T00:00:00');
+    var minEnd = new Date(start);
+    minEnd.setDate(minEnd.getDate() + 1);
+    endEl.value = minEnd.toISOString().split('T')[0];
+  }
+
   if (typeof updateBookingPrice === 'function') updateBookingPrice();
-  if (typeof autoSetReturnTime === 'function')  autoSetReturnTime();
   // Update selection highlights on click
   _renderWebCal();
 }
