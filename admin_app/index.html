@@ -4610,7 +4610,7 @@
 
         <!-- Dashboard Date Filter Chips -->
         <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;">
-            <button onclick="changeDashboardFilter('30days', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--primary); background: var(--primary); color: white; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">30 Days</button>
+            <button onclick="changeDashboardFilter('today', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--primary); background: var(--primary); color: white; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">Today</button>
             <button onclick="changeDashboardFilter('thismonth', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">This Month</button>
             <button onclick="changeDashboardFilter('thisyear', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">This Year</button>
         </div>
@@ -23480,7 +23480,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-    var currentDashPeriod = '30days';
+    var currentDashPeriod = 'today';
 
     function changeDashboardFilter(period, btn) {
         currentDashPeriod = period;

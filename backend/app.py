@@ -8643,37 +8643,41 @@ def get_admin_stats_v2():
 
         
 
+        period = request.args.get('period', 'today')
+
         stats = {"total_revenue": 0, "total_bookings": 0, "active_vehicles": 0}
 
-        rev_q = "SELECT SUM(total_price) as rev FROM bookings WHERE payment_status = 'Paid'"
+        # Date filter SQL based on period
+        date_filter = ""
+        if period == 'today':
+            date_filter = " AND b.start_date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date"
+        elif period == 'thismonth':
+            date_filter = " AND DATE_TRUNC('month', b.start_date::date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
+        elif period == 'thisyear':
+            date_filter = " AND DATE_TRUNC('year', b.start_date::date) = DATE_TRUNC('year', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
 
-        book_q = "SELECT COUNT(*) as count FROM bookings"
-
+        rev_q = "SELECT SUM(total_price) as rev FROM bookings b WHERE b.payment_status = 'Paid'" + date_filter
+        book_q = "SELECT COUNT(*) as count FROM bookings b WHERE 1=1" + date_filter
         v_q = "SELECT COUNT(*) as count FROM vehicles WHERE status = 'Available'"
 
-        
-
         if location_filter:
-
-            cur.execute(rev_q + " AND pickup_location = %s", (location_filter,))
-
+            cur.execute(rev_q + " AND b.pickup_location = %s", (location_filter,))
             stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
 
-            cur.execute(book_q + " AND pickup_location = %s", (location_filter,))
-
+            cur.execute(book_q + " AND b.pickup_location = %s", (location_filter,))
             stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
 
             cur.execute(v_q + " AND location = %s", (location_filter,))
-
             stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
-
         else:
+            cur.execute(rev_q)
+            stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
 
-            cur.execute(rev_q); stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
+            cur.execute(book_q)
+            stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
 
-            cur.execute(book_q); stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
-
-            cur.execute(v_q); stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
+            cur.execute(v_q)
+            stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
 
 
 
@@ -8712,12 +8716,21 @@ def get_admin_stats_v2():
         # Top grossing vehicles
 
         try:
-            cur.execute("""
+            # We construct date filter string matching exact behavior above
+            left_join_filter = ""
+            if period == 'today':
+                left_join_filter = " AND b.start_date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date"
+            elif period == 'thismonth':
+                left_join_filter = " AND DATE_TRUNC('month', b.start_date::date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
+            elif period == 'thisyear':
+                left_join_filter = " AND DATE_TRUNC('year', b.start_date::date) = DATE_TRUNC('year', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
+
+            cur.execute(f"""
                 SELECT v.brand, v.model, v.plate_number,
                        COUNT(b.id) as booking_count,
                        COALESCE(SUM(b.total_price), 0) as revenue
                 FROM vehicles v
-                LEFT JOIN bookings b ON b.vehicle_id = v.id AND b.payment_status = 'Paid'
+                LEFT JOIN bookings b ON b.vehicle_id = v.id AND b.payment_status = 'Paid'{left_join_filter}
                 GROUP BY v.id, v.brand, v.model, v.plate_number
                 ORDER BY revenue DESC
                 LIMIT 5
