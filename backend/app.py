@@ -8644,36 +8644,46 @@ def get_admin_stats_v2():
         
 
         period = request.args.get('period', 'today')
+        date_from = request.args.get('date_from', '')
+        date_to = request.args.get('date_to', '')
 
         stats = {"total_revenue": 0, "total_bookings": 0, "active_vehicles": 0}
 
         # Date filter SQL based on period
         date_filter = ""
+        params = []
         if period == 'today':
             date_filter = " AND b.start_date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date"
         elif period == 'thismonth':
             date_filter = " AND DATE_TRUNC('month', b.start_date::date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
         elif period == 'thisyear':
             date_filter = " AND DATE_TRUNC('year', b.start_date::date) = DATE_TRUNC('year', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
+        elif period == 'custom':
+            if date_from:
+                date_filter += " AND b.start_date::date >= %s::date"
+                params.append(date_from)
+            if date_to:
+                date_filter += " AND b.start_date::date <= %s::date"
+                params.append(date_to)
 
         rev_q = "SELECT SUM(total_price) as rev FROM bookings b WHERE b.payment_status = 'Paid'" + date_filter
         book_q = "SELECT COUNT(*) as count FROM bookings b WHERE 1=1" + date_filter
         v_q = "SELECT COUNT(*) as count FROM vehicles WHERE status = 'Available'"
 
         if location_filter:
-            cur.execute(rev_q + " AND b.pickup_location = %s", (location_filter,))
+            cur.execute(rev_q + " AND b.pickup_location = %s", tuple(params + [location_filter]))
             stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
 
-            cur.execute(book_q + " AND b.pickup_location = %s", (location_filter,))
+            cur.execute(book_q + " AND b.pickup_location = %s", tuple(params + [location_filter]))
             stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
 
             cur.execute(v_q + " AND location = %s", (location_filter,))
             stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
         else:
-            cur.execute(rev_q)
+            cur.execute(rev_q, tuple(params))
             stats['total_revenue'] = float(cur.fetchone()['rev'] or 0)
 
-            cur.execute(book_q)
+            cur.execute(book_q, tuple(params))
             stats['total_bookings'] = int(cur.fetchone()['count'] or 0)
 
             cur.execute(v_q)
@@ -8718,12 +8728,20 @@ def get_admin_stats_v2():
         try:
             # We construct date filter string matching exact behavior above
             left_join_filter = ""
+            top_params = []
             if period == 'today':
                 left_join_filter = " AND b.start_date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date"
             elif period == 'thismonth':
                 left_join_filter = " AND DATE_TRUNC('month', b.start_date::date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
             elif period == 'thisyear':
                 left_join_filter = " AND DATE_TRUNC('year', b.start_date::date) = DATE_TRUNC('year', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
+            elif period == 'custom':
+                if date_from:
+                    left_join_filter += " AND b.start_date::date >= %s::date"
+                    top_params.append(date_from)
+                if date_to:
+                    left_join_filter += " AND b.start_date::date <= %s::date"
+                    top_params.append(date_to)
 
             cur.execute(f"""
                 SELECT v.brand, v.model, v.plate_number,
@@ -8734,7 +8752,7 @@ def get_admin_stats_v2():
                 GROUP BY v.id, v.brand, v.model, v.plate_number
                 ORDER BY revenue DESC
                 LIMIT 5
-            """)
+            """, tuple(top_params))
             top_vehicles = [{"brand": r.get('brand'), "model": r.get('model'), "plate_number": r.get('plate_number'), "booking_count": int(r.get('booking_count') or 0), "revenue": float(r.get('revenue') or 0)} for r in cur.fetchall()]
         except Exception as e:
             print("ERROR in topVehicles query:", e)

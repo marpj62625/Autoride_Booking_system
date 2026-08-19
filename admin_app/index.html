@@ -4615,6 +4615,18 @@
             <button onclick="changeDashboardFilter('thisyear', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">This Year</button>
         </div>
 
+        <!-- Custom Date Range Filters (Synced with detail modals) -->
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; background: var(--surface-container); padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
+            <div style="flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700;">START DATE</label>
+                <input type="date" id="dashDateFrom" onchange="syncAndRefreshDashboardDates()" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.8rem;">
+            </div>
+            <div style="flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px;">
+                <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700;">END DATE</label>
+                <input type="date" id="dashDateTo" onchange="syncAndRefreshDashboardDates()" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.8rem;">
+            </div>
+        </div>
+
 
 
 
@@ -23490,53 +23502,55 @@ async edit(id) { this.openModal(id); }
             b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
             b.style.color = active ? 'white' : 'var(--text-secondary)';
         });
+        // Clear custom range picker since preset chip was clicked
+        const dateFromEl = document.getElementById('dashDateFrom');
+        const dateToEl = document.getElementById('dashDateTo');
+        if (dateFromEl) dateFromEl.value = '';
+        if (dateToEl) dateToEl.value = '';
+
         refreshDashboard();
     }
     window.changeDashboardFilter = changeDashboardFilter;
 
-
+    function syncAndRefreshDashboardDates() {
+        const dateFromVal = document.getElementById('dashDateFrom')?.value || '';
+        const dateToVal = document.getElementById('dashDateTo')?.value || '';
+        
+        if (dateFromVal || dateToVal) {
+            currentDashPeriod = 'custom';
+            // De-select all filter chips
+            document.querySelectorAll('.dash-filter-btn').forEach(b => {
+                b.style.background = 'var(--surface-container)';
+                b.style.borderColor = 'var(--border)';
+                b.style.color = 'var(--text-secondary)';
+            });
+        }
+        refreshDashboard();
+    }
+    window.syncAndRefreshDashboardDates = syncAndRefreshDashboardDates;
 
     async function refreshDashboard(_retryCount) {
 
-
-
         _retryCount = _retryCount || 0;
-
-
 
         const user = adminAuth.getUser();
 
-
-
         if (!user) {
-
-
 
             if (_retryCount < 3) {
 
-
-
                 setTimeout(function() { refreshDashboard(_retryCount + 1); }, 500);
-
-
 
             }
 
-
-
             return;
-
-
 
         }
 
-
-
         try {
-
-
-
-            const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}&period=${currentDashPeriod}`);
+            const dateFrom = document.getElementById('dashDateFrom')?.value || '';
+            const dateTo = document.getElementById('dashDateTo')?.value || '';
+            const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}&period=${currentDashPeriod}&date_from=${dateFrom}&date_to=${dateTo}`);
 
 
 
@@ -24510,15 +24524,11 @@ async edit(id) { this.openModal(id); }
 
 
 
-        // Reset filter inputs
+        // Reset filter inputs inheriting from dashboard range inputs if populated
 
+        document.getElementById('popupDateFrom').value = document.getElementById('dashDateFrom')?.value || '';
 
-
-        document.getElementById('popupDateFrom').value = '';
-
-
-
-        document.getElementById('popupDateTo').value = '';
+        document.getElementById('popupDateTo').value = document.getElementById('dashDateTo')?.value || '';
 
 
 
@@ -24958,23 +24968,28 @@ async edit(id) { this.openModal(id); }
 
 
 
-    async function applyPopupFilters() {
-
-
-
         const dateFrom = document.getElementById('popupDateFrom').value;
-
-
 
         const dateTo = document.getElementById('popupDateTo').value;
 
-
-
         const status = document.getElementById('popupStatusFilter').value;
 
-
-
         const vehicleType = document.getElementById('popupVehicleFilter').value;
+
+        // Synchronize back to main dashboard inputs
+        const dashDateFromEl = document.getElementById('dashDateFrom');
+        const dashDateToEl = document.getElementById('dashDateTo');
+        if (dashDateFromEl) dashDateFromEl.value = dateFrom;
+        if (dashDateToEl) dashDateToEl.value = dateTo;
+
+        if (dateFrom || dateTo) {
+            currentDashPeriod = 'custom';
+            document.querySelectorAll('.dash-filter-btn').forEach(b => {
+                b.style.background = 'var(--surface-container)';
+                b.style.borderColor = 'var(--border)';
+                b.style.color = 'var(--text-secondary)';
+            });
+        }
 
 
 
@@ -25160,9 +25175,13 @@ async edit(id) { this.openModal(id); }
 
         document.getElementById('popupDateFrom').value = '';
 
-
-
         document.getElementById('popupDateTo').value = '';
+
+        // Reset main dashboard inputs as well
+        const dashDateFromEl = document.getElementById('dashDateFrom');
+        const dashDateToEl = document.getElementById('dashDateTo');
+        if (dashDateFromEl) dashDateFromEl.value = '';
+        if (dashDateToEl) dashDateToEl.value = '';
 
 
 
