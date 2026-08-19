@@ -7541,20 +7541,16 @@ function renderBookingCalendar() {
      html += '<div></div>';
   }
   
-  var todayTime = new Date().setHours(0,0,0,0);
+  var todayObj = new Date();
+  var todayStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth()+1).padStart(2,'0') + '-' + String(todayObj.getDate()).padStart(2,'0');
   
   // Get currently selected inputs to draw highlight
   var startVal = document.getElementById('bfStartDate') ? document.getElementById('bfStartDate').value : '';
   var endVal = document.getElementById('bfEndDate') ? document.getElementById('bfEndDate').value : '';
   
-  var startTime = startVal ? new Date(startVal).setHours(0,0,0,0) : null;
-  var endTime = endVal ? new Date(endVal).setHours(0,0,0,0) : null;
-  
   for (var d = 1; d <= daysInMonth; d++) {
-     var cellDate = new Date(year, month, d);
-     var cellTime = cellDate.getTime();
      var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-     var isPast = cellTime < todayTime;
+     var isPast = dateStr < todayStr;
      
      // Check if date is blocked (either blackout or booked)
      var isBlocked = blockedDatesList.some(function(bRange) {
@@ -7582,16 +7578,16 @@ function renderBookingCalendar() {
         onClick = "";
         border = 'none';
      } else {
-        // Highlight active selections
-        if (startTime && cellTime === startTime) {
+        // Highlight active selections using string comparison
+        if (startVal && dateStr === startVal) {
            bg = "var(--primary)";
            color = "#ffffff";
            border = 'none';
-        } else if (endTime && cellTime === endTime) {
+        } else if (endVal && dateStr === endVal) {
            bg = "var(--primary)";
            color = "#ffffff";
            border = 'none';
-        } else if (startTime && endTime && cellTime > startTime && cellTime < endTime) {
+        } else if (startVal && endVal && dateStr > startVal && dateStr < endVal) {
            bg = "rgba(0, 177, 79, 0.15)";
            color = "var(--primary)";
            border = '1px dashed rgba(0, 177, 79, 0.3)';
