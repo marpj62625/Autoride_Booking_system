@@ -3038,6 +3038,8 @@ function autoSetReturnTime() {
       updateBookingPrice();
     }
   }
+  // Refresh calendar highlights when manual inputs change
+  if (typeof _renderWebCal === 'function') _renderWebCal();
 }
 
 function openBookingForm(vehicleId) {
@@ -3127,7 +3129,7 @@ function openBookingForm(vehicleId) {
     '<select id="bfPickupTime" onchange="autoSetReturnTime()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     generateTimeOptions() +
     '</select></div>' +
-    '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfEndErr"></span></div>' +
+    '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice(); if(typeof _renderWebCal===\'function\')_renderWebCal();"><span class="field-error" id="bfEndErr"></span></div>' +
     '<div class="form-group"><label>Return Time</label>' +
     '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     generateTimeOptions() +
