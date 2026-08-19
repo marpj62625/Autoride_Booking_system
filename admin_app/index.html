@@ -4608,6 +4608,13 @@
 
         </div>
 
+        <!-- Dashboard Date Filter Chips -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none;">
+            <button onclick="changeDashboardFilter('30days', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--primary); background: var(--primary); color: white; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">30 Days</button>
+            <button onclick="changeDashboardFilter('thismonth', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">This Month</button>
+            <button onclick="changeDashboardFilter('thisyear', this)" class="dash-filter-btn" style="padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">This Year</button>
+        </div>
+
 
 
 
@@ -23473,7 +23480,19 @@ async edit(id) { this.openModal(id); }
 
 
 
+    var currentDashPeriod = '30days';
 
+    function changeDashboardFilter(period, btn) {
+        currentDashPeriod = period;
+        document.querySelectorAll('.dash-filter-btn').forEach(b => {
+            const active = b === btn;
+            b.style.background = active ? 'var(--primary)' : 'var(--surface-container)';
+            b.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
+            b.style.color = active ? 'white' : 'var(--text-secondary)';
+        });
+        refreshDashboard();
+    }
+    window.changeDashboardFilter = changeDashboardFilter;
 
 
 
@@ -23517,7 +23536,7 @@ async edit(id) { this.openModal(id); }
 
 
 
-            const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}`);
+            const res = await fetch(`${API_URL}/admin/stats?admin_id=${user.id}&period=${currentDashPeriod}`);
 
 
 
