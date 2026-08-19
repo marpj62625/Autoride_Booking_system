@@ -6930,11 +6930,11 @@ function sendChat() {
   if (qr) qr.style.display = 'none';
   var msgs = document.getElementById('chatMessages');
   if (!msgs) return;
-  msgs.innerHTML += '<div class="chat-msg user">' + msg + '</div>';
+  msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg user">' + msg + '</div>');
   msgs.scrollTop = msgs.scrollHeight;
   // Show typing indicator
   var typingId = 'typing_' + Date.now();
-  msgs.innerHTML += '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>';
+  msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>');
   msgs.scrollTop = msgs.scrollHeight;
   apiCall('/chat', { method: 'POST', body: JSON.stringify({ message: msg, user_id: currentUser.id }) })
     .then(function(data) {
@@ -6944,14 +6944,14 @@ function sendChat() {
       // Format markdown-style bold **text** and bullet points
       resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       resp = resp.replace(/\n/g, '<br>');
-      msgs.innerHTML += '<div class="chat-msg bot">' + resp + '</div>';
+      msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + resp + '</div>');
     })
     .catch(function() {
       var typing = document.getElementById(typingId);
       if (typing) typing.remove();
       var fallback = chatLocalFallback(msg);
       fallback = fallback.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-      msgs.innerHTML += '<div class="chat-msg bot">' + fallback + '</div>';
+      msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + fallback + '</div>');
     })
     .finally(function() { msgs.scrollTop = msgs.scrollHeight; });
 }
@@ -7663,14 +7663,41 @@ function _renderWebCal() {
     });
 
     var bg, color, cursor, title;
+    var startVal = document.getElementById('bfStartDate') ? document.getElementById('bfStartDate').value : '';
+    var endVal = document.getElementById('bfEndDate') ? document.getElementById('bfEndDate').value : '';
+    var border = '1px solid ' + (isBlocked ? '#fca5a5' : isToday ? 'var(--primary)' : 'transparent');
+
     if (isPast) {
       bg = 'transparent'; color = 'var(--text-muted)'; cursor = 'default'; title = '';
+      border = 'none';
     } else if (isBlocked) {
       bg = '#fee2e2'; color = '#ef4444'; cursor = 'not-allowed'; title = 'Unavailable';
-    } else if (isToday) {
-      bg = 'rgba(0,177,79,0.12)'; color = 'var(--primary)'; cursor = 'pointer'; title = 'Today';
+      border = 'none';
     } else {
-      bg = 'var(--bg-input)'; color = 'var(--text-primary)'; cursor = 'pointer'; title = 'Available';
+      bg = 'var(--bg-input)';
+      color = 'var(--text-primary)';
+      cursor = 'pointer';
+      title = 'Available';
+
+      // Selection highlights
+      if (startVal && dateStr === startVal) {
+        bg = 'var(--primary)';
+        color = '#ffffff';
+        border = 'none';
+      } else if (endVal && dateStr === endVal) {
+        bg = 'var(--primary)';
+        color = '#ffffff';
+        border = 'none';
+      } else if (startVal && endVal && dateStr > startVal && dateStr < endVal) {
+        bg = 'rgba(0,177,79,0.15)';
+        color = 'var(--primary)';
+        border = '1px dashed rgba(0, 177, 79, 0.3)';
+      } else if (isToday) {
+        bg = 'rgba(0,177,79,0.12)';
+        color = 'var(--primary)';
+        title = 'Today';
+        border = '1px solid var(--primary)';
+      }
     }
 
     var clickable = !isPast && !isBlocked;
@@ -7678,8 +7705,8 @@ function _renderWebCal() {
 
     html += '<div ' + onclick + ' title="' + title + '" style="' +
       'padding:6px 2px;border-radius:6px;background:' + bg + ';color:' + color + ';' +
-      'cursor:' + cursor + ';font-size:0.8rem;font-weight:' + (isToday ? '800' : '600') + ';' +
-      'border:1px solid ' + (isBlocked ? '#fca5a5' : isToday ? 'var(--primary)' : 'transparent') + ';' +
+      'cursor:' + cursor + ';font-size:0.8rem;font-weight:' + (isToday || (startVal && dateStr === startVal) || (endVal && dateStr === endVal) ? '800' : '600') + ';' +
+      (border !== 'none' ? 'border:' + border + ';' : '') +
       'transition:background 0.15s;' +
       '">' + d + '</div>';
   }
@@ -7709,6 +7736,8 @@ function _webCalPickDate(dateStr) {
 
   if (typeof updateBookingPrice === 'function') updateBookingPrice();
   if (typeof autoSetReturnTime === 'function')  autoSetReturnTime();
+  // Update selection highlights on click
+  _renderWebCal();
 }
 
 // ============================================================
