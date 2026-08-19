@@ -7562,20 +7562,20 @@ function renderBookingCalendar() {
      var bg = "none";
      var color = "var(--text-primary)";
      var cursor = "pointer";
-     var onClick = 'selectCalendarDate("' + dateStr + '")';
+     var disabled = "";
      var border = '1px solid #e2e8f0';
      
      // Determine highlights
      if (isPast) {
         color = "var(--text-muted)";
         cursor = "not-allowed";
-        onClick = "";
+        disabled = "true";
         border = 'none';
      } else if (isBlocked) {
         bg = "#fee2e2";
         color = "#ef4444";
         cursor = "not-allowed";
-        onClick = "";
+        disabled = "true";
         border = 'none';
      } else {
         // Highlight active selections using string comparison
@@ -7594,9 +7594,26 @@ function renderBookingCalendar() {
         }
      }
      
-     html += '<div onclick="' + onClick + '" class="cal-day" style="-webkit-user-select:auto;user-select:auto;pointer-events:auto;padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (border !== 'none' ? 'border:' + border + ';' : '') + '">' + d + '</div>';
+     html += '<div class="cal-day" data-date="' + dateStr + '" data-disabled="' + disabled + '" style="-webkit-user-select:auto;user-select:auto;pointer-events:auto;padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (border !== 'none' ? 'border:' + border + ';' : '') + '">' + d + '</div>';
   }
   grid.innerHTML = html;
+
+  // Delegated events implementation for Cordova/Capacitor tap reliability
+  if (!grid.dataset.listenerSet) {
+     grid.dataset.listenerSet = "1";
+     
+     var handleCalTap = function(e) {
+        var dayEl = e.target.closest('.cal-day');
+        if (dayEl && dayEl.dataset.date && dayEl.dataset.disabled !== "true") {
+           e.preventDefault();
+           e.stopPropagation();
+           selectCalendarDate(dayEl.dataset.date);
+        }
+     };
+     
+     grid.addEventListener('click', handleCalTap, true);
+     grid.addEventListener('touchstart', handleCalTap, { passive: false });
+  }
 }
 window.renderBookingCalendar = renderBookingCalendar;
 
