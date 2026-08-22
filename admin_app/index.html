@@ -10404,11 +10404,23 @@
 
 
 
-                if (isSuper) { switchTab('dashboard'); refreshDashboard(); }
-
-
-
-                else switchTab('vehicles');
+                let targetTab = 'dashboard';
+                if (typeof window !== 'undefined' && window.location.hash) {
+                    const hashVal = window.location.hash.replace('#', '');
+                    const tabElem = document.getElementById(hashVal);
+                    if (tabElem && tabElem.classList.contains('tab-content')) {
+                        targetTab = hashVal;
+                    }
+                }
+                
+                if (isSuper) {
+                    switchTab(targetTab);
+                    if (targetTab === 'dashboard') {
+                        refreshDashboard();
+                    }
+                } else {
+                    switchTab(targetTab !== 'dashboard' ? targetTab : 'vehicles');
+                }
 
 
 
@@ -13799,6 +13811,11 @@ async edit(id) { this.openModal(id); }
 
 
             document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
+
+            // Update URL hash for refresh persistence
+            if (typeof window !== 'undefined') {
+                window.location.hash = tabId;
+            }
 
 
 

@@ -947,6 +947,14 @@ function showPage(id) {
   }
   target.classList.add('active');
 
+  // Update URL hash for refresh persistence (skip for login/splash/register/otp)
+  try {
+    var EXCLUDE_HASH = ['page-login', 'page-register', 'page-otp-verify', 'page-splash'];
+    if (EXCLUDE_HASH.indexOf(id) === -1 && typeof window !== 'undefined') {
+      window.location.hash = id;
+    }
+  } catch(e) {}
+
   // Bottom nav
   var nav = document.getElementById('bottomNav');
   if (nav) {
@@ -1180,7 +1188,16 @@ function initApp() {
       startBgChatPolling();
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
-      showPage('page-home');
+      // Determine start page based on URL hash
+      var startPage = 'page-home';
+      if (typeof window !== 'undefined' && window.location.hash) {
+        var hashPage = window.location.hash.replace('#', '');
+        var pageElement = document.getElementById(hashPage);
+        if (pageElement && (pageElement.classList.contains('page') || pageElement.classList.contains('overlay-page'))) {
+          startPage = hashPage;
+        }
+      }
+      showPage(startPage);
     } else {
       showPage('page-login');
     }
