@@ -257,6 +257,8 @@ async function viewDetails(id) {
     detailsModal.dataset.bookingId = id; // Store for form
     inspectionForm.classList.add('hidden');
     btnAddInspection.classList.remove('hidden');
+    const startTimeStr = b.start_time ? ` (${b.start_time})` : '';
+    const endTimeStr = b.end_time ? ` (${b.end_time})` : '';
     detailsContent.innerHTML = `
         <div class="info-grid enhanced-text" role="list">
             <div class="info-item" role="listitem">
@@ -267,7 +269,7 @@ async function viewDetails(id) {
                 </button>
             </div>
             <div class="info-item" role="listitem"><strong class="info-label">Vehicle:</strong> <span class="info-value">${escapeHtml(b.car)}</span></div>
-            <div class="info-item" role="listitem"><strong class="info-label">Period:</strong> <span class="info-value">${formatRentalDates(b.start_date, b.end_date)}</span></div>
+            <div class="info-item" role="listitem"><strong class="info-label">Period:</strong> <span class="info-value">${formatRentalDates(b.start_date, b.end_date)}${startTimeStr} to ${endTimeStr}</span></div>
             <div class="info-item" role="listitem"><strong class="info-label">Total:</strong> <span class="info-value">₱${formatPriceNum(b.total_price)}</span></div>
             <div class="info-item" role="listitem"><strong class="info-label">Status:</strong> ${statusBadge(b.status)}</div>
             <div class="info-item" role="listitem"><strong class="info-label">Payment:</strong> <span class="payment-status ${b.payment_status?.toLowerCase()}">${b.payment_status || 'Unpaid'}</span></div>

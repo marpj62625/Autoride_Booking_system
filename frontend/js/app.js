@@ -4488,7 +4488,7 @@ function renderBookingDetail(b) {
         '</div>' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' to ' + formatBookingDate(b.end_date) + '</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' ' + (b.start_time || '06:00') + ' to ' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '06:00') + '</div>' +
         '</div>' +
       '</div>' +
 

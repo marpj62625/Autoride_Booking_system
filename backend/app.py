@@ -3819,6 +3819,7 @@ def user_bookings():
         # Fetch bookings with vehicle info and license/emergency contact details
         query = """
             SELECT b.id, b.user_id, b.vehicle_id, b.start_date, b.end_date,
+                   b.start_time, b.end_time,
                    b.pickup_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
                    b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
                    b.payment_type, b.amount_paid, b.balance_amount,
@@ -4823,6 +4824,7 @@ def get_all_bookings():
                    b.amount_paid, b.balance_amount,
 
                    b.pickup_location, b.rental_type, b.addons,
+                   b.start_time, b.end_time,
 
                    b.driver_id, d.full_name AS driver_name,
 
