@@ -257,8 +257,8 @@ async function viewDetails(id) {
     detailsModal.dataset.bookingId = id; // Store for form
     inspectionForm.classList.add('hidden');
     btnAddInspection.classList.remove('hidden');
-    const startTimeStr = b.start_time ? ` (${b.start_time})` : '';
-    const endTimeStr = b.end_time ? ` (${b.end_time})` : '';
+    const startTimeStr = ` (${b.start_time || '06:00'})`;
+    const endTimeStr = ` (${b.end_time || '06:00'})`;
     detailsContent.innerHTML = `
         <div class="info-grid enhanced-text" role="list">
             <div class="info-item" role="listitem">
