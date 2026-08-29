@@ -4774,8 +4774,11 @@ def pay_split_bill():
 
 
 @app.route('/bookings', methods=['GET'])
-
+@app.route('/admin/bookings', methods=['GET'])
+@app.route('/api/bookings', methods=['GET'])
+@app.route('/api/admin/bookings', methods=['GET'])
 def get_all_bookings():
+
 
     """Get all bookings with customer, vehicle, and driver info for admin panel."""
 
@@ -4895,7 +4898,35 @@ def get_all_bookings():
             cur.close()
 
 
+@app.route('/bookings/<int:booking_id>', methods=['GET'])
+@app.route('/api/bookings/<int:booking_id>', methods=['GET'])
+@app.route('/admin/bookings/<int:booking_id>', methods=['GET'])
+def get_single_booking(booking_id):
+    """Get single booking details."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT b.*, u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
+                   v.brand, v.model, v.plate_number, v.vehicle_image,
+                   d.full_name AS driver_name, d.contact_info AS driver_phone
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            LEFT JOIN drivers d ON b.driver_id = d.id
+            WHERE b.id = %s
+        """, (booking_id,))
+        bk = cur.fetchone()
+        if not bk:
+            return jsonify({"error": "Booking not found."}), 404
+        return jsonify(dict(bk)), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/bookings/cancelled', methods=['GET'])
+
 def get_cancelled_bookings():
     """Get all cancelled bookings with pagination and sorting for admin panel."""
     try:
@@ -5521,7 +5552,11 @@ def submit_inspection():
 
 
 
+@app.route('/inspections/<int:booking_id>', methods=['GET'])
+@app.route('/api/inspections/<int:booking_id>', methods=['GET'])
+@app.route('/admin/inspections/<int:booking_id>', methods=['GET'])
 def get_inspections(booking_id):
+
 
     """Get all inspections for a booking."""
 
@@ -6188,9 +6223,10 @@ def complete_booking(booking_id):
 
 
 
-@app.route('/settings/driver_wage', methods=['GET', 'PUT'])
-
+@app.route('/settings/driver_wage', methods=['GET', 'POST', 'PUT'])
+@app.route('/api/settings/driver_wage', methods=['GET', 'POST', 'PUT'])
 def handle_driver_wage():
+
 
     try:
 
@@ -6208,7 +6244,7 @@ def handle_driver_wage():
 
             
 
-        elif request.method == 'PUT':
+        elif request.method in ('PUT', 'POST'):
 
             data = request.json
 
@@ -8271,8 +8307,11 @@ def update_vehicle_status(vehicle_id):
 
 
 @app.route('/vehicles/<int:vehicle_id>', methods=['DELETE'])
-
+@app.route('/vehicles/<int:vehicle_id>/', methods=['DELETE'])
+@app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
+@app.route('/api/vehicles/<int:vehicle_id>/', methods=['DELETE'])
 def delete_vehicle(vehicle_id):
+
 
     # Require super_admin to delete vehicles
     admin_id = request.args.get('admin_id') or (request.get_json(silent=True) or {}).get('admin_id')
@@ -8511,8 +8550,11 @@ def get_vehicle_categories():
 
 
 @app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
-
+@app.route('/vehicles/<int:vehicle_id>/', methods=['GET'])
+@app.route('/api/vehicles/<int:vehicle_id>', methods=['GET'])
+@app.route('/api/vehicles/<int:vehicle_id>/', methods=['GET'])
 def get_vehicle_details_v2(vehicle_id):
+
 
     user_id = request.args.get('user_id')
 
@@ -9088,22 +9130,31 @@ def add_location():
     finally:
         if 'cur' in locals(): cur.close()
 
-@app.route('/admin/locations/<int:loc_id>', methods=['PUT', 'DELETE'])
+@app.route('/admin/locations/<int:loc_id>', methods=['GET', 'PUT', 'DELETE'])
 def handle_location_detail(loc_id):
     try:
+        cur = get_cursor()
+
+        if request.method == 'GET':
+            cur.execute("SELECT id, name, province, municipality, barangay, delivery_fee FROM locations WHERE id=%s", (loc_id,))
+            loc = cur.fetchone()
+            if not loc:
+                return jsonify({"error": "Location not found"}), 404
+            return jsonify(dict(loc)), 200
+
         data = request.json or {}
         requester_id = data.get('requester_id') or request.args.get('requester_id')
 
         if not requester_id:
             return jsonify({"error": "Missing requester_id"}), 400
 
-        cur = get_cursor()
         cur.execute("SELECT full_name, role FROM users WHERE id=%s", (requester_id,))
         user = cur.fetchone()
         if not user or user['role'] != 'super_admin':
             return jsonify({"error": "Unauthorized. Super Admin only."}), 403
 
         if request.method == 'PUT':
+
             name = data.get('name')
             province = data.get('province', '')
             municipality = data.get('municipality', '')
@@ -11248,6 +11299,21 @@ def create_addon():
     finally:
         if 'cur' in locals(): cur.close()
 
+@app.route('/addons/<int:addon_id>', methods=['GET'])
+def get_single_addon(addon_id):
+    """Fetch single addon details."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, name, price_per_day, description, is_active FROM addons WHERE id = %s", (addon_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'Addon not found'}), 404
+        return jsonify({'id': row['id'], 'name': row['name'], 'price_per_day': float(row['price_per_day']), 'description': row['description'], 'is_active': bool(row['is_active'])}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 @app.route('/addons/<int:addon_id>', methods=['PUT'])
 def update_addon(addon_id):
     """Update an existing addon. Admin only validation."""
@@ -11263,6 +11329,7 @@ def update_addon(addon_id):
     try:
         cur = get_cursor()
         cur.execute("SELECT id FROM users WHERE id = %s AND role = 'super_admin'", (admin_id,))
+
         if not cur.fetchone():
             return jsonify({'error': 'Unauthorized. Only Super Admin can manage add-ons.'}), 403
 
@@ -11503,7 +11570,9 @@ def get_admin_blackout_dates():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/blackout-dates', methods=['POST'])
+@app.route('/api/admin/blackout-dates', methods=['POST'])
 def add_admin_blackout_date():
+
     data = request.json or {}
     start_date = data.get('start_date')
     end_date = data.get('end_date')
@@ -11611,10 +11680,16 @@ def get_fleet_bookings():
 
 # ==================== PENALTIES ====================
 @app.route('/admin/bookings/<int:booking_id>/penalties', methods=['GET'])
+@app.route('/api/admin/bookings/<int:booking_id>/penalties', methods=['GET'])
 def get_booking_penalties(booking_id):
     try:
         cur = get_cursor()
-        cur.execute("SELECT * FROM booking_penalties WHERE booking_id = %s ORDER BY created_at DESC", (booking_id,))
+        cur.execute("""
+            SELECT id, booking_id, penalty_type, amount, description, created_at
+            FROM booking_penalties
+            WHERE booking_id = %s
+            ORDER BY created_at ASC
+        """, (booking_id,))
         rows = cur.fetchall()
         result = []
         for r in rows:
@@ -11629,6 +11704,7 @@ def get_booking_penalties(booking_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/bookings/<int:booking_id>/penalties', methods=['POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/penalties', methods=['POST'])
 def add_booking_penalty(booking_id):
     data = request.json or {}
     charge_type = data.get('charge_type')
