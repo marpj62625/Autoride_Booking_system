@@ -5135,7 +5135,9 @@ def approve_booking(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
+@app.route('/admin/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
 def mark_no_show(booking_id):
+
     """Mark a booking as No Show. Full forfeit if Paid; cancel if Unpaid."""
     try:
         from datetime import datetime, timezone, timedelta
