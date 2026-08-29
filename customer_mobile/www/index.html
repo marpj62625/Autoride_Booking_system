@@ -14,6 +14,21 @@
 
 
     <title>Autoride</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Autoride">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('[PWA] Service Worker registered successfully:', reg.scope))
+                    .catch(err => console.error('[PWA] Service Worker registration failed:', err));
+            });
+        }
+    </script>
+
 
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -206,7 +221,6 @@
 
 
         input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
-        .cal-day { user-select: auto !important; -webkit-user-select: auto !important; pointer-events: auto !important; cursor: pointer; }
 
 
         body { background:var(--bg-page); color:var(--text-primary); min-height:100vh; overflow-x:hidden; line-height:1.5; }
@@ -243,6 +257,9 @@
 
 
         @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+
+
+        /* Toast */
 
 
         /* Toast Notifications */
@@ -1004,34 +1021,619 @@
 
 
         @media (min-width: 1280px) {
-
-
           .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
-
-
         }
 
+        /* ============================================================
+           DESKTOP LAYOUT — kicks in at 768px+
+           Left sidebar + constrained content area
+        ============================================================ */
+        @media (min-width: 768px) {
 
+          /* Sidebar: replaces fixed bottom nav */
+          .bottom-nav {
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: auto;
+            width: 220px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            padding: 0 0 24px 0;
+            border-top: none;
+            border-right: 1px solid var(--border);
+            box-shadow: 2px 0 16px rgba(0,0,0,0.06);
+            overflow-y: auto;
+            overflow-x: hidden;
+            z-index: 1000;
+          }
+
+          /* Brand logo in sidebar */
+          .bottom-nav::before {
+            content: 'Autoride';
+            display: block;
+            padding: 28px 20px 20px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
+            flex-shrink: 0;
+          }
+
+          /* Sidebar nav items */
+          .bottom-nav button {
+            flex-direction: row;
+            justify-content: flex-start;
+            gap: 14px;
+            padding: 14px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 0;
+            width: 100%;
+            text-align: left;
+            min-height: 52px;
+          }
+
+          .bottom-nav button i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+          }
+
+          .bottom-nav button span { font-size: 0.9rem; }
+
+          .bottom-nav button.active {
+            background: rgba(0,177,79,0.09);
+            border-left: 3px solid var(--primary);
+            padding-left: 17px;
+          }
+
+          /* Logout button: visible in sidebar */
+          #nav-logout {
+            display: flex !important;
+            margin-top: auto;
+          }
+
+          /* All pages: push right of sidebar */
+          .page.active {
+            margin-left: 220px;
+            width: calc(100% - 220px);
+            min-height: 100vh;
+            padding-bottom: 40px;
+            overflow-y: auto;
+          }
+
+          /* Auth pages: full-screen, ignore sidebar */
+          .auth-page.active {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            min-height: 100vh;
+            z-index: 900;
+            margin-left: 0;
+            padding-bottom: 0;
+          }
+
+          /* Overlay pages respect sidebar */
+          .overlay-page {
+            left: 220px;
+            width: calc(100% - 220px);
+          }
+
+          #loadingOverlay {
+            left: 220px;
+            width: calc(100% - 220px);
+          }
+
+          .toast {
+            left: calc(220px + (100% - 220px) / 2);
+          }
+
+          .page-header { padding: 20px 28px; }
+
+          .scroll-content {
+            padding: 20px 28px;
+            max-width: 820px;
+          }
+
+          .vehicle-grid {
+            grid-template-columns: repeat(2, 1fr);
+            padding: 20px 28px;
+            gap: 20px;
+          }
+
+          .filter-chips { padding: 14px 28px; }
+          #vehicleCount { padding: 0 28px 8px; }
+          #browseActiveBanner { margin: 0 28px 12px; }
+
+          #page-home > div:nth-child(2) { margin-left: 28px; margin-right: 28px; border-radius: 20px; }
+          #page-home > div:nth-child(3) { padding-left: 28px; padding-right: 28px; }
+
+          #page-bookings > div:nth-child(2) { padding: 0 28px 16px; }
+          #page-bookings > div:nth-child(3) { padding: 0 28px 12px; }
+          #bookingsList { padding: 0 28px 24px; max-width: 820px; }
+
+          /* Profile: two-column */
+          #page-profile .scroll-content {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            align-items: start;
+          }
+          #page-profile .scroll-content > .card:first-child {
+            position: sticky;
+            top: 20px;
+            overflow: hidden;
+          }
+          #page-profile #profileEditCard,
+          #page-profile .scroll-content > .card:not(:first-child) { grid-column: 2; }
+
+          /* More page: desktop grid */
+          #page-more .scroll-content {
+            max-width: none;
+            padding: 32px 36px;
+          }
+          .more-greeting-banner {
+            display: flex;
+            align-items: center;
+            padding: 28px 32px;
+            background: linear-gradient(135deg, rgba(0,177,79,0.06), rgba(0,177,79,0.02));
+            border: 1px solid rgba(0,177,79,0.12);
+            border-radius: 20px;
+            margin-bottom: 28px;
+          }
+          .more-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+          }
+          .more-card {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 28px 24px 24px;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            gap: 16px;
+            margin-bottom: 0;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+          }
+          .more-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+          }
+          .more-card-icon { width: 56px; height: 56px; border-radius: 16px; }
+          .more-card-body h4 { font-size: 1.05rem; font-weight: 800; }
+          .more-card-body p { font-size: 0.85rem; line-height: 1.4; }
+          .more-card-arrow { display: none; }
+          .more-signout-mobile { display: none !important; }
+
+          /* Auth pages: full-viewport split-screen */
+          #page-login.auth-page.active,
+          #page-register.auth-page.active,
+          #page-otp-verify.auth-page.active,
+          #page-forgot-password.auth-page.active {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 900;
+            margin-left: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            padding: 0;
+          }
+
+          /* Left hero panel */
+          .auth-hero-panel {
+            display: flex;
+            flex: 0 0 58%;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #00c853 0%, #00b14f 45%, #007a36 100%);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 60px 48px;
+            position: relative;
+            overflow: hidden;
+          }
+          .auth-hero-panel::before {
+            content: '';
+            position: absolute;
+            top: -100px; right: -100px;
+            width: 380px; height: 380px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            pointer-events: none;
+          }
+          .auth-hero-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -140px; left: -80px;
+            width: 460px; height: 460px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            pointer-events: none;
+          }
+          .auth-hero-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            max-width: 340px;
+            position: relative;
+            z-index: 1;
+            text-align: left;
+          }
+
+          /* Right form panel */
+          .auth-container {
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 52px 48px;
+            background: #ffffff;
+            overflow-y: auto;
+            box-shadow: -8px 0 40px rgba(0,0,0,0.10);
+          }
+
+          /* Hide logo inside form on desktop (hero shows it) */
+          .auth-hero-panel ~ .auth-container .auth-logo { display: none; }
+          .auth-hero-panel ~ .auth-container .auth-card {
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            border-radius: 0;
+            max-width: 100%;
+            background: transparent;
+          }
+          .auth-hero-panel ~ .auth-container .auth-card h2 { font-size: 2rem; color: #1a1a2e; }
+          .auth-hero-panel ~ .auth-container .auth-card p.subtitle { color: #6b7280; margin-bottom: 32px; }
+          .auth-hero-panel ~ .auth-container .form-group input,
+          .auth-hero-panel ~ .auth-container .form-group select {
+            border: 1.5px solid #e5e7eb;
+            background: #f9fafb;
+            color: #111827;
+          }
+          .auth-hero-panel ~ .auth-container .form-group input:focus,
+          .auth-hero-panel ~ .auth-container .form-group select:focus {
+            border-color: var(--primary);
+            background: #ffffff;
+          }
+          .auth-hero-panel ~ .auth-container .btn-google {
+            border: 1.5px solid #e5e7eb;
+            background: #ffffff;
+            color: #374151;
+          }
+          .auth-hero-panel ~ .auth-container .auth-link { color: #6b7280; }
+
+          /* Action grid: 3 cols */
+          .action-btn-grid { grid-template-columns: repeat(3, 1fr); }
+          .card { margin-bottom: 16px; }
+
+          /* Bookings desktop */
+          #page-bookings .back-btn,
+          #page-bookings .fas.fa-chevron-left { display: none !important; }
+
+          #bkStatTotal, #bkStatDone, #bkStatSpent {
+            border-radius: 16px !important;
+            width: 100% !important;
+            height: auto !important;
+            padding: 20px 24px !important;
+            flex-direction: row !important;
+            justify-content: flex-start !important;
+            gap: 16px !important;
+            margin: 0 !important;
+          }
+          #bkStatTotal > div:first-child,
+          #bkStatDone > div:first-child,
+          #bkStatSpent > div:first-child { font-size: 2rem !important; }
+
+          #page-bookings > div:nth-child(2) {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 16px !important;
+            padding: 24px 28px 20px !important;
+          }
+          #bookingFilterTabs {
+            display: inline-flex !important;
+            width: auto !important;
+            border-radius: 12px !important;
+            background: var(--bg-card) !important;
+          }
+          #page-bookings > div:nth-child(3) { padding: 0 28px 16px !important; }
+          #bookingsList {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 16px !important;
+            padding: 0 28px 32px !important;
+            max-width: none !important;
+          }
+          #bookingsList .bk-card-item { margin: 0 !important; }
+        }
+
+        /* 1024px: slightly wider sidebar */
+        @media (min-width: 1024px) {
+          .bottom-nav { width: 240px; }
+          .page.active, .auth-page.active { margin-left: 240px; width: calc(100% - 240px); }
+          .overlay-page { left: 240px; width: calc(100% - 240px); }
+          #loadingOverlay { left: 240px; width: calc(100% - 240px); }
+          .toast { left: calc(240px + (100% - 240px) / 2); }
+          .vehicle-grid { grid-template-columns: repeat(3, 1fr); padding: 24px 32px; gap: 24px; }
+          .filter-chips { padding: 14px 32px; }
+          #vehicleCount { padding: 0 32px 8px; }
+          #browseActiveBanner { margin: 0 32px 12px; }
+          .scroll-content { padding: 24px 32px; max-width: 900px; }
+          .page-header { padding: 20px 32px; }
+          #page-home > div:nth-child(2) { margin-left: 32px; margin-right: 32px; }
+          #page-home > div:nth-child(3) { padding-left: 32px; padding-right: 32px; }
+          #bookingsList { padding: 0 32px 24px; max-width: none; }
+          #page-profile .scroll-content { grid-template-columns: 340px 1fr; gap: 28px; padding: 32px !important; }
+          #bookingsList {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 20px !important;
+          }
+          #page-bookings > div:nth-child(2) { padding: 24px 32px 20px !important; }
+          #page-bookings > div:nth-child(3) { padding: 0 32px 16px !important; }
+        }
+
+        /* 1280px: 4-col vehicle grid */
+        @media (min-width: 1280px) {
+          .vehicle-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        /* More-card base (mobile: looks like more-item) */
+        .more-card {
+          background: var(--bg-card);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-card);
+          padding: 16px;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          cursor: pointer;
+          transition: transform 0.15s;
+          text-decoration: none;
+          color: inherit;
+        }
+        .more-card:active { transform: scale(0.98); }
+        .more-card-icon {
+          width: 48px; height: 48px;
+          border-radius: var(--radius-sm);
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .more-card-body { flex: 1; }
+        .more-card-body h4 { font-size: 0.95rem; font-weight: 700; }
+        .more-card-body p { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+        .more-card-arrow { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
+        /* Greeting banner: hidden on mobile */
+        .more-greeting-banner { display: none; }
+        /* Sign out: visible on mobile only */
+        .more-signout-mobile { display: flex; }
+
+        /* Skeleton loading animation */
+        @keyframes skeleton-shimmer {
+          0%   { background-position: -400px 0; }
+          100% { background-position: 400px 0; }
+        }
+        .skel-box {
+          background: linear-gradient(90deg, var(--border) 25%, var(--border-light) 50%, var(--border) 75%);
+          background-size: 800px 100%;
+          animation: skeleton-shimmer 1.4s ease-in-out infinite;
+          display: block;
+        }
+
+        /* Active Rental card (mobile: stacked) */
+        .active-rental-card { display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; }
+        .active-rental-img { width: 100%; height: 200px; overflow: hidden; }
+        .active-rental-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .active-rental-info { padding: 14px; background: var(--bg-card); }
+
+        /* Booking hover + active rental side-by-side on desktop */
+        @media (min-width: 768px) {
+          .bk-card-item:hover {
+            border-color: var(--primary) !important;
+            box-shadow: 0 4px 20px rgba(0,177,79,0.12) !important;
+            transform: translateY(-2px);
+            transition: all 0.2s ease;
+          }
+          .active-rental-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 280px;
+            border-radius: 20px;
+            overflow: hidden;
+          }
+          .active-rental-img { position: relative; overflow: hidden; min-height: 280px; }
+          .active-rental-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+          .active-rental-img:hover img { transform: scale(1.03); }
+          .active-rental-info { padding: 28px 28px 24px; display: flex; flex-direction: column; background: var(--bg-card); }
+          #activeBookingCountdown { font-size: 2.8rem !important; }
+          #activeBookingMonitor { margin: 0 28px 24px !important; }
+          #activeBookingMonitor > div:first-child { padding: 0 4px 12px !important; }
+        }
+
+        /* Vehicle detail: desktop 2-col (768px+) */
+        @media (min-width: 768px) {
+          #vehicleDetailContent .veh-detail-info-col .scroll-content {
+            max-width: none !important;
+            padding: 0 !important;
+            display: block !important;
+            grid-template-columns: none !important;
+          }
+          .veh-detail-desktop {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            align-items: start;
+            width: 100%;
+          }
+          .veh-detail-gallery-col {
+            padding: 24px 16px 24px 24px;
+            position: sticky;
+            top: 0;
+          }
+          .veh-detail-gallery-col .gallery-scroll {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow: visible;
+            padding: 0;
+            height: auto;
+          }
+          .veh-detail-gallery-col .gallery-scroll .gallery-img:first-child {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            border-radius: 16px;
+            object-fit: cover;
+            flex-shrink: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+          }
+          .veh-detail-gallery-col .gallery-scroll .gallery-img:not(:first-child) {
+            width: 32%;
+            height: 72px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+            display: inline-block;
+          }
+          .veh-detail-info-col { padding: 24px 24px 40px 16px; }
+          .veh-detail-info-col .card { border: 1px solid var(--border); box-shadow: none; border-radius: 16px; }
+          .veh-detail-info-col .vehicle-rate { font-size: 1.5rem; font-weight: 900; }
+          .veh-detail-info-col .btn-primary { width: auto; display: inline-flex; padding: 13px 28px; border-radius: 50px; font-size: 0.95rem; }
+        }
+        @media (min-width: 1024px) {
+          .veh-detail-gallery-col { padding: 32px 20px 32px 32px; }
+          .veh-detail-info-col { padding: 32px 32px 40px 20px; }
+          .veh-detail-info-col .vehicle-rate { font-size: 1.8rem; }
+        }
+
+        /* Vehicle units desktop grid */
+        @media (min-width: 768px) {
+          #vehicleUnitsContent .scroll-content { max-width: 1200px; margin: 0 auto; }
+          #vehicleUnitsContent .scroll-content > .card,
+          #vehicleUnitsContent .scroll-content > div > .card {
+            display: inline-block;
+            width: calc(50% - 8px);
+            vertical-align: top;
+            margin: 0 8px 16px 0;
+          }
+        }
+        @media (min-width: 1024px) {
+          #vehicleUnitsContent .scroll-content > .card,
+          #vehicleUnitsContent .scroll-content > div > .card { width: calc(33.33% - 12px); }
+        }
+
+        /* Auth hero panel: hidden on mobile */
+        @media (max-width: 767px) {
+          .auth-hero-panel { display: none; }
+        }
+
+        /* Smart App Banner CSS */
+        .smart-app-banner {
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            z-index: 10001;
+            padding: 12px 16px;
+            font-family: inherit;
+        }
+        .sab-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .sab-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .sab-icon {
+            width: 42px;
+            height: 42px;
+            background: rgba(0, 177, 79, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .sab-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .sab-title {
+            font-size: 0.9rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .sab-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .sab-btn {
+            background: var(--primary);
+            color: #ffffff !important;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-decoration: none !important;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .sab-btn:hover {
+            background: var(--primary-dark);
+        }
     </style>
 
-
-
     <!-- Tesseract.js for OCR License Scanner -->
-
-
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
-
-
-    <link rel="stylesheet" href="css/cropper.min.css">
-
-
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
-
-
 
 
 <body>
 
+<!-- SMART APP BANNER -->
+<div id="smartAppBanner" class="smart-app-banner" style="display: none;">
+  <div class="sab-content">
+    <button class="sab-close" onclick="dismissSmartAppBanner()">&times;</button>
+    <div class="sab-icon"><i class="fas fa-car" style="color: #00B14F;"></i></div>
+    <div class="sab-info">
+      <div class="sab-title">Autoride Car Rental</div>
+      <div class="sab-subtitle">Download our app for the best mobile experience!</div>
+    </div>
+    <a href="https://play.google.com/store/apps/details?id=com.autoride.customer" target="_blank" class="sab-btn">Download</a>
+  </div>
+</div>
 
 <noscript><div style="color:white;padding:20px;font-size:1.2rem;">JavaScript is disabled or failed to load.</div></noscript>
 
@@ -1072,7 +1674,7 @@
  -->
 
 
-<div id="page-splash" style="display:flex;background:linear-gradient(160deg,var(--primary-light) 0%,var(--primary) 50%,var(--primary-dark) 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:20px;position:fixed;top:0;left:0;width:100%;z-index:9000;" class="active">
+<div id="page-splash" style="display:flex;background:linear-gradient(160deg,var(--primary-light) 0%,var(--primary) 50%,var(--primary-dark) 100%);min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:20px;position:fixed;top:0;left:0;width:100%;z-index:9000;">
 
 
   <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:220px;height:220px;object-fit:contain;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.2));">
@@ -1100,8 +1702,34 @@
 
 
 <div id="page-login" class="auth-page">
-
-
+  <!-- Desktop hero panel (hidden on mobile) -->
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner" style="padding-bottom:80px;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:auto;object-fit:contain;margin-bottom:28px;position:relative;z-index:1;flex-shrink:0;">
+      <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Autoride</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Your ride, your way.<br>Fast. Safe. Affordable.</div>
+      <!-- Feature highlights -->
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Safe &amp; Insured</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Verified vehicles with full coverage</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Loyalty Rewards</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Earn points and unlock exclusive deals</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Trust text -->
+    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:340px;z-index:1;text-align:center;">
+      <div style="width:100%;height:1px;background:rgba(255,255,255,0.15);margin-bottom:20px;"></div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);letter-spacing:0.3px;">Trusted by hundreds of customers across the region</div>
+    </div>
+  </div>
   <div class="auth-container">
 
 
@@ -1232,8 +1860,19 @@
 
 
 <div id="page-forgot-password" class="auth-page">
-
-
+<!-- Desktop hero panel (hidden on mobile) -->
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:220px;height:auto;object-fit:contain;margin-bottom:24px;position:relative;z-index:1;flex-shrink:0;">
+      <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Reset Password</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;position:relative;z-index:1;letter-spacing:0.3px;">Recover access to your account.<br>We'll send you a temporary password.</div>
+    </div>
+    <!-- Trust text -->
+    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:340px;z-index:1;text-align:center;">
+      <div style="width:100%;height:1px;background:rgba(255,255,255,0.15);margin-bottom:20px;"></div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);letter-spacing:0.3px;">Trusted by hundreds of customers across the region</div>
+    </div>
+  </div>
   <div class="auth-container">
 
 
@@ -1310,8 +1949,33 @@
 
 
 <div id="page-register" class="auth-page">
-
-
+  <!-- Desktop hero panel (hidden on mobile) -->
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner" style="padding-bottom:80px;">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:auto;object-fit:contain;margin-bottom:28px;position:relative;z-index:1;flex-shrink:0;">
+      <div style="font-size:2.8rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Create Account</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;margin-bottom:36px;position:relative;z-index:1;letter-spacing:0.3px;">Join thousands of customers<br>who trust Autoride for their rides.</div>
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Safe &amp; Insured</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Verified vehicles with full coverage</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Loyalty Rewards</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Earn points and unlock exclusive deals</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Trust text -->
+    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:340px;z-index:1;text-align:center;">
+      <div style="width:100%;height:1px;background:rgba(255,255,255,0.15);margin-bottom:20px;"></div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);letter-spacing:0.3px;">Trusted by hundreds of customers across the region</div>
+    </div>
+  </div>
   <div class="auth-container">
 
 
@@ -1333,51 +1997,24 @@
       <p class="subtitle">Join Autoride today</p>
 
 
-      <div class="form-group" style="display:flex;gap:10px;">
+      <div style="display:flex; gap:10px;">
 
-
-        <div style="flex:1;">
-
-
+        <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>First Name</label>
-
-
           <input type="text" id="regFirstName" placeholder="Juan" maxlength="40">
-
-
-          <span class="field-error" id="regFirstNameErr"></span>
-
-
         </div>
 
-
-        <div style="flex:1;">
-
-
+        <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>Middle Name</label>
-
-
-          <input type="text" id="regMiddleName" placeholder="(Opt)" maxlength="40">
-
-
+          <input type="text" id="regMiddleName" placeholder="M. (Optional)" maxlength="40">
         </div>
-
 
       </div>
 
-
-      <div class="form-group">
-
-
+      <div class="form-group" style="margin-top:15px;">
         <label>Last Name</label>
-
-
         <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40">
-
-
-        <span class="field-error" id="regLastNameErr"></span>
-
-
+        <span class="field-error" id="regNameErr"></span>
       </div>
 
 
@@ -1622,8 +2259,7 @@
 
 
   <button onclick="showPage('page-more')" id="nav-more"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
-
-
+  <button id="nav-logout" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="display:none;color:var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button>
 </nav>
 
 
@@ -1879,7 +2515,7 @@
       </div>
 
 
-      <div id="activeBookingCard" style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;" onclick="openBookingDetail(window._activeBookingId)">
+      <div id="activeBookingCard" class="active-rental-card" style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;" onclick="openBookingDetail(window._activeBookingId)">
 
 
         <!-- filled by JS -->
@@ -1936,13 +2572,6 @@
       </div>
 
 
-      <button onclick="showOverlay('page-favorites')" style="width:40px;height:40px;border-radius:14px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:var(--on-primary);font-size:1rem;cursor:pointer;position:relative;">
-
-
-        <i class="fas fa-heart"></i>
-
-
-      </button>
 
 
     </div>
@@ -2242,45 +2871,19 @@
       </div>
 
 
-      <div class="form-group" style="display:flex;gap:10px;">
-
-
-        <div style="flex:1;">
-
-
+      <div style="display:flex; gap:10px;">
+        <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>First Name</label>
-
-
           <input type="text" id="editFirstName" placeholder="Juan" maxlength="40">
-
-
         </div>
-
-
-        <div style="flex:1;">
-
-
+        <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>Middle Name</label>
-
-
-          <input type="text" id="editMiddleName" placeholder="(Opt)" maxlength="40">
-
-
+          <input type="text" id="editMiddleName" placeholder="M. (Optional)" maxlength="40">
         </div>
-
-
       </div>
-
-
-      <div class="form-group">
-
-
+      <div class="form-group" style="margin-top:15px;">
         <label>Last Name</label>
-
-
         <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="40">
-
-
       </div>
 
 
@@ -2554,7 +3157,7 @@
           <label>License Number</label>
 
 
-          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789">
+          <input type="text" id="editLicenseNumber" placeholder="e.g. N01-23-456789" maxlength="13" oninput="this.value = formatLicenseNumberInput(this.value)">
 
 
         </div>
@@ -2808,22 +3411,16 @@
 
           <input type="file" accept="image/*" id="licenseFileInputFront" style="display:none;" onchange="handleLicenseFileSelect(event, 'front')">
 
-
-
           <div id="ocrStatusText" style="font-size:0.85rem; color:var(--primary); margin-top: 8px; font-weight: 500; display:none;">
-
-
             <i class="fas fa-spinner fa-spin"></i> Scanning license details using AI...
-
-
           </div>
 
-
-          
-          <div id="ocrExtractedDetails" style="margin-top: 15px; display: none; background: var(--surface-container); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-            <p style="font-size: 0.85rem; color: var(--success); margin-top: 0; margin-bottom: 0; font-weight: 500;">
-              <i class="fas fa-check-circle"></i> License details extracted successfully! Please verify the License Number and Expiry Date above.
+          <div id="ocrExtractedDetails" style="margin-top: 15px; display: none; background: var(--surface-container, #f1f5f9); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <p style="font-size: 0.85rem; color: var(--success, #22c55e); margin-top: 0; margin-bottom: 5px; font-weight: 500;">
+              <i class="fas fa-check-circle"></i> License details extracted! Please verify the details below.
             </p>
+            <div id="ocrRawTextContainer" style="display:none; margin-top: 8px; font-family: monospace; font-size: 0.75rem; color: var(--text-main); border-top: 1px solid var(--border); padding-top: 8px; max-height: 120px; overflow-y: auto; white-space: pre-wrap; text-align: left; background: rgba(0,0,0,0.05); padding: 6px; border-radius: 4px;"></div>
+            <button type="button" id="btnToggleOcrDebug" style="background: none; border: none; color: var(--primary, #3b82f6); font-size: 0.75rem; cursor: pointer; padding: 0; text-decoration: underline; display: block; margin-top: 5px;" onclick="var box=document.getElementById('ocrRawTextContainer'); box.style.display = box.style.display === 'none' ? 'block' : 'none';">Show raw text read by AI</button>
           </div>
 
 
@@ -2870,15 +3467,8 @@
 
 
     <div class="card">
-
-
       <h4 style="font-weight:700;margin-bottom:14px;">Account</h4>
-
-
-      <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-saved-payments')"><i class="fas fa-credit-card"></i> Saved Payment Methods</button>
-
-
-      <button class="btn-secondary" style="margin-bottom:10px;" onclick="showOverlay('page-favorites')"><i class="fas fa-heart"></i> My Favorites</button>
+      <button class="btn-secondary" style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);" onclick="openChangePasswordOverlay()"><i class="fas fa-key"></i> Update Password</button>
 
 
       <button class="btn-danger" onclick="doLogout()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;"><i class="fas fa-sign-out-alt"></i> Log Out</button>
@@ -2914,85 +3504,131 @@
   <div class="page-header"><h2>More</h2></div>
 
 
-  <div class="scroll-content">
+  <div class="scroll-content" id="moreScrollContent">
 
 
-    <div class="more-item" onclick="showOverlay('page-livechat')">
+
+    <!-- Desktop: greeting banner -->
 
 
-      <div class="more-item-icon"><i class="fas fa-comments"></i></div>
+    <div class="more-greeting-banner">
 
 
-      <div class="more-item-text"><h4>Live Chat</h4><p>Chat with our support team</p></div>
+      <div>
 
 
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+        <h2 id="moreGreetName" style="font-size:1.5rem;font-weight:900;color:var(--text-primary);margin-bottom:4px;">Hello there 👋</h2>
 
 
-    </div>
+        <p style="color:var(--text-muted);font-size:0.9rem;">What can we help you with today?</p>
 
 
-    <div class="more-item" onclick="showOverlay('page-chatbot')">
-
-
-      <div class="more-item-icon"><i class="fas fa-robot"></i></div>
-
-
-      <div class="more-item-text"><h4>AI Assistant</h4><p>Get quick automated answers</p></div>
-
-
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-
-
-    </div>
-
-
-    <div class="more-item" onclick="showOverlay('page-notifications')">
-
-
-      <div class="more-item-icon"><i class="fas fa-bell"></i></div>
-
-
-      <div class="more-item-text"><h4>Notifications</h4><p>View all alerts</p></div>
-
-
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
-
-
-    </div>
-
-
-    <div class="more-item" onclick="showOverlay('page-newsletter')">
-
-
-      <div class="more-item-icon"><i class="fas fa-envelope"></i></div>
-
-
-      <div class="more-item-text"><h4>Newsletter</h4><p>Subscribe for promos</p></div>
-
-
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+      </div>
 
 
     </div>
 
 
 
+    <!-- Grid of action cards (desktop) / list items (mobile) -->
+
+
+    <div class="more-grid">
+
+
+      <div class="more-card" onclick="showOverlay('page-livechat')">
+
+
+        <div class="more-card-icon" style="background:rgba(0,177,79,0.1);"><i class="fas fa-comments" style="color:var(--primary);font-size:1.6rem;"></i></div>
+
+
+        <div class="more-card-body"><h4>Live Chat</h4><p>Chat with our support team in real time</p></div>
+
+
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+
+
+      </div>
+
+
+
+      <div class="more-card" onclick="showOverlay('page-chatbot')">
+
+
+        <div class="more-card-icon" style="background:rgba(96,165,250,0.1);"><i class="fas fa-robot" style="color:#60a5fa;font-size:1.6rem;"></i></div>
+
+
+        <div class="more-card-body"><h4>AI Assistant</h4><p>Get instant automated answers 24/7</p></div>
+
+
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+
+
+      </div>
+
+
+
+      <div class="more-card" onclick="showOverlay('page-notifications')">
+
+
+        <div class="more-card-icon" style="background:rgba(251,191,36,0.1);"><i class="fas fa-bell" style="color:#fbbf24;font-size:1.6rem;"></i></div>
+
+
+        <div class="more-card-body"><h4>Notifications</h4><p>View all your booking and account alerts</p></div>
+
+
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+
+
+      </div>
+
+
+
+      <div class="more-card" onclick="showOverlay('page-newsletter')">
+
+
+        <div class="more-card-icon" style="background:rgba(167,139,250,0.1);"><i class="fas fa-envelope" style="color:#a78bfa;font-size:1.6rem;"></i></div>
+
+
+        <div class="more-card-body"><h4>Newsletter</h4><p>Subscribe for exclusive promos and updates</p></div>
+
+
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+
+
+      </div>
+
+      <!-- Download App Card (Web only) -->
+      <div class="more-card" id="moreDownloadAppCard" style="display: none;" onclick="window.open('https://play.google.com/store/apps/details?id=com.autoride.customer', '_blank')">
+        <div class="more-card-icon" style="background: rgba(219,68,85,0.1);"><i class="fab fa-google-play" style="color: #db4437; font-size: 1.6rem;"></i></div>
+        <div class="more-card-body">
+          <h4>Download Mobile App</h4>
+          <p>Get the best experience on your phone</p>
+        </div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+
+
+    </div>
+
+
+
+    <!-- Facebook link -->
 
 
     <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" style="text-decoration:none;">
 
 
-    <div class="more-item">
+    <div class="more-card" style="margin-bottom:8px;margin-top:8px;">
 
 
-      <div class="more-item-icon" style="background:rgba(24,119,242,0.12);color:#1877f2;"><i class="fab fa-facebook"></i></div>
+      <div class="more-card-icon" style="background:rgba(24,119,242,0.1);"><i class="fab fa-facebook" style="color:#1877f2;font-size:1.6rem;"></i></div>
 
 
-      <div class="more-item-text"><h4>Follow us on Facebook</h4><p>Stay updated with news and offers</p></div>
+      <div class="more-card-body"><h4>Follow us on Facebook</h4><p>Stay updated with latest news and offers</p></div>
 
 
-      <i class="fas fa-chevron-right" style="color:var(--text-muted);margin-left:auto;"></i>
+      <i class="fas fa-arrow-right more-card-arrow"></i>
 
 
     </div>
@@ -3004,15 +3640,10 @@
 
 
 
-    <div class="more-item" onclick="doLogout()" style="margin-top:8px;border:1.5px solid var(--danger);">
-
-
+    <!-- Sign out: only visible on mobile (sidebar handles it on desktop) -->
+    <div class="more-item more-signout-mobile" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="margin-top:8px;border:1.5px solid var(--danger);">
       <div class="more-item-icon" style="background:rgba(248,113,113,0.12);color:var(--danger);"><i class="fas fa-sign-out-alt"></i></div>
-
-
-      <div class="more-item-text"><h4 style="color:var(--danger);">Log Out</h4><p>Sign out of your account</p></div>
-
-
+      <div class="more-item-text"><h4 style="color:var(--danger);">Sign Out</h4><p>Log out of your account</p></div>
     </div>
 
 
@@ -3085,9 +3716,64 @@
   <div class="scroll-content" style="padding: 16px; height: calc(100% - 60px); display: flex; flex-direction: column;">
     <div id="deliveryPickerMap" style="flex: 1; min-height: 380px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; z-index: 1;"></div>
     <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px; text-align: center;">
-      <i class="fas fa-info-circle"></i> Drag the marker or tap on the map to pin your delivery location.
+      <i class="fas fa-info-circle"></i> Drag the marker or click on the map to pin your delivery location.
     </p>
     <button class="btn-primary" style="margin-bottom: 24px; width: 100%;" onclick="confirmDeliveryPinLocation()"><i class="fas fa-check"></i> Confirm Pin Location</button>
+  </div>
+</div>
+
+
+<div id="page-change-password" class="overlay-page">
+  <div class="overlay-header">
+    <button onclick="closeOverlay('page-change-password')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+    <h2>Update Password</h2>
+  </div>
+  <div class="scroll-content" style="padding:20px;">
+    <div class="card" style="box-shadow:none;border:none;padding:0;background:transparent;">
+      <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px;">Update your password to keep your account secure.</p>
+      
+      <div class="form-group" id="changePasswordCurrentGroup">
+        <label>Current Password</label>
+        <div class="password-input-wrapper">
+          <input type="password" id="changePasswordCurrent" placeholder="Enter current password">
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordCurrent', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <span class="field-error" id="changePasswordCurrentErr"></span>
+      </div>
+
+      <div class="form-group">
+        <label>New Password</label>
+        <div class="password-input-wrapper">
+          <input type="password" id="changePasswordNew" placeholder="At least 8 characters" oninput="validatePassword(this.value, 'changePasswordNewErr', 'req-update-')">
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordNew', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="password-requirements" style="margin-top:10px;">
+          <div class="requirement" id="req-update-uppercase"><i class="fas fa-times"></i> At least one uppercase letter</div>
+          <div class="requirement" id="req-update-lowercase"><i class="fas fa-times"></i> At least one lowercase letter</div>
+          <div class="requirement" id="req-update-number"><i class="fas fa-times"></i> At least one number</div>
+          <div class="requirement" id="req-update-length"><i class="fas fa-times"></i> At least 8 characters</div>
+        </div>
+        <span class="field-error" id="changePasswordNewErr"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <div class="password-input-wrapper">
+          <input type="password" id="changePasswordConfirm" placeholder="Re-enter new password">
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordConfirm', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <span class="field-error" id="changePasswordConfirmErr"></span>
+      </div>
+
+      <span class="field-error" id="changePasswordErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
+      <button class="btn-primary" onclick="doUpdatePassword()"><i class="fas fa-key"></i> Update Password</button>
+    </div>
   </div>
 </div>
 
@@ -3104,7 +3790,7 @@
 <script src="js/utils.js"></script>
 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" async></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 
 <script src="js/app.js?v=4"></script>
@@ -3187,281 +3873,93 @@
 
 })();
 
-
-</script>
-
-
-
-
-
-<script>
-
-
 // Password visibility toggle function
-
-
 function togglePasswordVisibility(inputId, button) {
-
-
     const input = document.getElementById(inputId);
-
-
     const icon = button.querySelector('i');
-
-
     
-
-
     if (input.type === 'password') {
-
-
         input.type = 'text';
-
-
         icon.className = 'fas fa-eye-slash';
-
-
     } else {
-
-
         input.type = 'password';
-
-
         icon.className = 'fas fa-eye';
-
-
     }
-
-
 }
-
-
-
-
 
 // Password validation function
-
-
-function validatePassword(password, errorElementId) {
-
+function validatePassword(password, errorElementId, prefix) {
+    if (!prefix) prefix = 'req-';
 
     const requirements = {
-
-
         uppercase: /[A-Z]/.test(password),
-
-
         lowercase: /[a-z]/.test(password),
-
-
         number: /\d/.test(password),
-
-
         length: password.length >= 8
-
-
     };
-
-
-
-
 
     // Update requirement indicators
-
-
     const updateRequirement = (id, isValid) => {
-
-
         const element = document.getElementById(id);
-
-
         if (element) {
-
-
             const icon = element.querySelector('i');
-
-
             if (isValid) {
-
-
                 element.classList.add('valid');
-
-
                 element.classList.remove('invalid');
-
-
                 icon.className = 'fas fa-check';
-
-
             } else {
-
-
                 element.classList.add('invalid');
-
-
                 element.classList.remove('valid');
-
-
                 icon.className = 'fas fa-times';
-
-
             }
-
-
         }
-
-
     };
 
-
-
-
-
-    updateRequirement('req-uppercase', requirements.uppercase);
-
-
-    updateRequirement('req-lowercase', requirements.lowercase);
-
-
-    updateRequirement('req-number', requirements.number);
-
-
-    updateRequirement('req-length', requirements.length);
-
-
-
-
+    updateRequirement(prefix + 'uppercase', requirements.uppercase);
+    updateRequirement(prefix + 'lowercase', requirements.lowercase);
+    updateRequirement(prefix + 'number', requirements.number);
+    updateRequirement(prefix + 'length', requirements.length);
 
     // Check if all requirements are met
-
-
     const isValid = Object.values(requirements).every(req => req);
-
-
     
-
-
     // Update error message
-
-
     const errorElement = document.getElementById(errorElementId);
-
-
     if (errorElement) {
-
-
         if (password.length > 0 && !isValid) {
-
-
             errorElement.textContent = 'Password does not meet all requirements';
-
-
             errorElement.style.display = 'block';
-
-
         } else {
-
-
             errorElement.textContent = '';
-
-
             errorElement.style.display = 'none';
-
-
         }
-
-
     }
-
-
-
-
 
     return isValid;
-
-
 }
 
-
-
-
-
 // Prevent form submission with weak passwords for register form
-
-
 document.addEventListener('DOMContentLoaded', function() {
-
-
-    // Add validation to register form if it exists
-
-
     const registerButton = document.querySelector('button[onclick="doRegister()"]');
-
-
     if (registerButton) {
-
-
         registerButton.addEventListener('click', function(e) {
-
-
             const passwordInput = document.getElementById('regPassword');
-
-
             if (passwordInput) {
-
-
                 const password = passwordInput.value;
-
-
                 if (!validatePassword(password, 'regPasswordErr')) {
-
-
                     e.preventDefault();
-
-
                     e.stopPropagation();
-
-
                     showToast('Please ensure your password meets all requirements before submitting.', 'error');
-
-
                     return false;
-
-
                 }
-
-
             }
-
-
         });
-
-
     }
-
-
 });
-
-
 </script>
 
-
-
-
-
-  <!-- CROPPER MODAL -->
-  <div id="cropperModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:999999;flex-direction:column;">
-    <div style="flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;">
-      <img id="cropperImage" src="" style="max-width:100%;max-height:100%;">
-    </div>
-    <div style="padding:20px;background:#1e293b;display:flex;gap:15px;justify-content:center;">
-      <button onclick="closeCropper()" style="flex:1;padding:14px;background:#475569;border:none;border-radius:12px;color:white;font-weight:700;font-size:1rem;cursor:pointer;">Cancel</button>
-      <button id="cropperConfirmBtn" style="flex:1;padding:14px;background:var(--primary);border:none;border-radius:12px;color:white;font-weight:700;font-size:1rem;cursor:pointer;">Crop &amp; Use</button>
-    </div>
-  </div>
-
-  <script src="js/cropper.min.js"></script><script src="js/cropper_logic.js"></script>
+<!-- Main Application Scripts -->
+<script src="js/utils.js"></script>
+<script src="js/app.js?v=7"></script>
 </body>
-
-
 </html>

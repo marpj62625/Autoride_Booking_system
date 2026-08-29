@@ -4502,7 +4502,7 @@
 
 
 
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
+<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:16px;left:auto;width:calc(100vw - 32px);max-width:380px;max-height:75vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
 
 
 
@@ -5229,7 +5229,7 @@
 
 
 
-        <div style="text-align: center; margin-top: 40px; opacity: 0.3;">
+        <div style="text-align: center; margin-top: 40px; opacity: 0.3; padding-bottom: 100px;">
 
 
 
@@ -9937,6 +9937,77 @@
 
 
     };
+
+
+
+    // Close ANY open modal, panel, or overlay when clicking on its backdrop
+    document.addEventListener('click', function(e) {
+        // 1. Notification Panel
+        const notifPanel = document.getElementById('adminNotifPanel');
+        const notifBtn = document.getElementById('adminNotifBtn');
+        if (notifPanel && notifPanel.style.display !== 'none') {
+            if (!notifPanel.contains(e.target) && !notifBtn?.contains(e.target)) {
+                notifPanel.style.display = 'none';
+            }
+        }
+
+        // 2. All Full-Screen Modals with backdrop (Clicking outside modal content)
+        const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
+        modalBackdrops.forEach(modal => {
+            if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    // Close on Escape key press (Desktop) - Closes top-most open modal/panel
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const notifPanel = document.getElementById('adminNotifPanel');
+            if (notifPanel && notifPanel.style.display !== 'none') {
+                notifPanel.style.display = 'none';
+                return;
+            }
+
+            const openModals = Array.from(document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]'))
+                .filter(m => m.style.display !== 'none' && m.style.display !== '' && m.id !== 'adminLoginOverlay');
+            if (openModals.length > 0) {
+                openModals[openModals.length - 1].style.display = 'none';
+            }
+        }
+    });
+
+    // Helper to close any currently active modal/popup on mobile back action
+    function closeTopAdminModal() {
+        const notifPanel = document.getElementById('adminNotifPanel');
+        if (notifPanel && notifPanel.style.display !== 'none') {
+            notifPanel.style.display = 'none';
+            return true;
+        }
+
+        const openModals = Array.from(document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]'))
+            .filter(m => m.style.display !== 'none' && m.style.display !== '' && m.id !== 'adminLoginOverlay');
+        if (openModals.length > 0) {
+            openModals[openModals.length - 1].style.display = 'none';
+            return true;
+        }
+        return false;
+    }
+
+    // Handle Mobile Hardware Back Button & Browser Popstate
+    window.addEventListener('popstate', function() {
+        closeTopAdminModal();
+    });
+
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.addListener('backButton', function() {
+            const closed = closeTopAdminModal();
+            if (!closed) {
+                window.history.back();
+            }
+        });
+    }
+
 
 
 
@@ -30398,199 +30469,31 @@ async edit(id) { this.openModal(id); }
 
 
     window.showAdminChatPopup = function(senderName, message, userId) {
-
-
-
         var existing = document.getElementById('adminChatPopup');
-
-
-
         if (existing) existing.remove();
 
-
-
         var banner = document.createElement('div');
-
-
-
         banner.id = 'adminChatPopup';
-
-
-
         banner.style.cssText = 'position:fixed;top:72px;left:12px;right:12px;z-index:6000;background:var(--primary);color:#ffffff;border-radius:14px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;cursor:pointer;';
-
-
-
         banner.innerHTML =
-
-
-
-            '<!-- Admin Login Overlay -->' +
-            '<div id="adminLoginOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;display:flex;overflow-y:auto;">' +
-
-                '<!-- LEFT — Green Branding Panel -->' +
-                '<div style="flex:0 0 55%;background:linear-gradient(145deg,#00c853 0%,#00b14f 40%,#007a36 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 48px;position:relative;overflow:hidden;">' +
-
-                    '<!-- Decorative circles -->' +
-                    '<div style="position:absolute;top:-80px;right:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>' +
-                    '<div style="position:absolute;bottom:-120px;left:-60px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none;"></div>' +
-
-                    '<!-- Logo -->' +
-                    '<img src="Autoride-logo-nobg.png" alt="Autoride" style="width:200px;object-fit:contain;margin-bottom:28px;filter:drop-shadow(0 4px 20px rgba(0,0,0,0.2));position:relative;z-index:1;">' +
-
-                    '<!-- Brand name + tagline -->' +
-                    '<div style="font-size:3rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:10px;position:relative;z-index:1;">Autoride</div>' +
-                    '<div style="font-size:1rem;color:rgba(255,255,255,0.85);font-weight:400;text-align:center;line-height:1.6;margin-bottom:40px;position:relative;z-index:1;">Your ride, your way.<br>Fast. Safe. Affordable.</div>' +
-
-                    '<!-- Feature highlights -->' +
-                    '<div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:18px;position:relative;z-index:1;">' +
-                        '<div style="display:flex;align-items:center;gap:16px;">' +
-                            '<div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                '<i class="fas fa-car" style="color:white;font-size:1rem;"></i>' +
-                            '</div>' +
-                            '<div>' +
-                                '<div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div>' +
-                                '<div style="font-size:0.78rem;color:rgba(255,255,255,0.7);">Sedans, SUVs, vans and more</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div style="display:flex;align-items:center;gap:16px;">' +
-                            '<div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                '<i class="fas fa-shield-alt" style="color:white;font-size:1rem;"></i>' +
-                            '</div>' +
-                            '<div>' +
-                                '<div style="font-weight:700;color:white;font-size:0.95rem;">Safe &amp; Insured</div>' +
-                                '<div style="font-size:0.78rem;color:rgba(255,255,255,0.7);">Verified vehicles with full coverage</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div style="display:flex;align-items:center;gap:16px;">' +
-                            '<div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-                                '<i class="fas fa-star" style="color:white;font-size:1rem;"></i>' +
-                            '</div>' +
-                            '<div>' +
-                                '<div style="font-weight:700;color:white;font-size:0.95rem;">Loyalty Rewards</div>' +
-                                '<div style="font-size:0.78rem;color:rgba(255,255,255,0.7);">Earn points and unlock exclusive deals</div>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-
-                    '<!-- Footer trust line -->' +
-                    '<div style="position:absolute;bottom:28px;font-size:0.72rem;color:rgba(255,255,255,0.45);z-index:1;">Trusted by hundreds of customers across the region</div>' +
-                '</div>' +
-
-                '<!-- RIGHT — Login Form Panel -->' +
-                '<div style="flex:1;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:48px 40px;overflow-y:auto;">' +
-                    '<div style="width:100%;max-width:380px;">' +
-
-                        '<!-- Heading -->' +
-                        '<h1 style="font-size:2rem;font-weight:800;color:#111827;letter-spacing:-0.03em;margin-bottom:6px;">Welcome back</h1>' +
-                        '<p style="font-size:0.9rem;color:#6b7280;margin-bottom:32px;">Sign in to your account</p>' +
-
-                        '<!-- Email Field -->' +
-                        '<label style="display:block;font-size:0.82rem;font-weight:600;color:#374151;margin-bottom:6px;">Email Address</label>' +
-                        '<input type="email" id="loginEmail" placeholder="yourname@gmail.com" autocomplete="email"' +
-                            'onkeydown="if(event.key===\'Enter\')document.getElementById(\'loginPass\').focus();"' +
-                            'style="width:100%;padding:13px 16px;border:1.5px solid #d1d5db;border-radius:10px;font-size:0.95rem;color:#111827;outline:none;box-sizing:border-box;margin-bottom:18px;background:#fff;transition:border-color 0.2s;"' +
-                            'onfocus="this.style.borderColor=\'#00b14f\';this.style.boxShadow=\'0 0 0 3px rgba(0,177,79,0.12)\';"' +
-                            'onblur="this.style.borderColor=\'#d1d5db\';this.style.boxShadow=\'none\';">' +
-
-                        '<!-- Password Field -->' +
-                        '<label style="display:block;font-size:0.82rem;font-weight:600;color:#374151;margin-bottom:6px;">Password</label>' +
-                        '<div style="position:relative;margin-bottom:8px;">' +
-                            '<input type="password" id="loginPass" placeholder="Enter your password" autocomplete="current-password"' +
-                                'onkeydown="if(event.key===\'Enter\'&&window.adminAuth)adminAuth.login();"' +
-                                'style="width:100%;padding:13px 46px 13px 16px;border:1.5px solid #d1d5db;border-radius:10px;font-size:0.95rem;color:#111827;outline:none;box-sizing:border-box;background:#fff;transition:border-color 0.2s;"' +
-                                'onfocus="this.style.borderColor=\'#00b14f\';this.style.boxShadow=\'0 0 0 3px rgba(0,177,79,0.12)\';"' +
-                                'onblur="this.style.borderColor=\'#d1d5db\';this.style.boxShadow=\'none\';">' +
-                            '<button type="button"' +
-                                'onclick="var i=document.getElementById(\'loginPass\'),ic=document.getElementById(\'webEyeIcon\');if(i.type===\'password\'){i.type=\'text\';ic.className=\'fas fa-eye-slash\';}else{i.type=\'password\';ic.className=\'fas fa-eye\';}"' +
-                                'style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9ca3af;cursor:pointer;font-size:1rem;padding:4px;">' +
-                                '<i id="webEyeIcon" class="fas fa-eye"></i>' +
-                            '</button>' +
-                        '</div>' +
-
-                        '<!-- Error message -->' +
-                        '<p id="loginError" style="font-size:0.82rem;font-weight:600;color:#dc2626;padding:10px 14px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;display:none;margin-bottom:12px;box-sizing:border-box;"></p>' +
-
-                        '<!-- Sign In Button -->' +
-                        '<button id="loginBtn"' +
-                            'onclick="if(window.adminAuth){adminAuth.login();}else{alert(\'App not ready, please wait and try again.\');}"' +
-                            'style="width:100%;margin-top:16px;padding:15px;background:#00b14f;border:none;border-radius:10px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,177,79,0.35);transition:background 0.2s,transform 0.15s,box-shadow 0.15s;box-sizing:border-box;"' +
-                            'onmouseover="this.style.background=\'#009944\';this.style.boxShadow=\'0 8px 24px rgba(0,177,79,0.45)\';"' +
-                            'onmouseout="this.style.background=\'#00b14f\';this.style.boxShadow=\'0 4px 16px rgba(0,177,79,0.35)\';"' +
-                            'onmousedown="this.style.transform=\'scale(0.98)\';" onmouseup="this.style.transform=\'\';">' +
-                            '<i class="fas fa-sign-in-alt"></i> Sign In' +
-                        '</button>' +
-
-                        '<!-- Version label -->' +
-                        '<div style="margin-top:28px;text-align:center;font-size:0.68rem;font-weight:600;color:#d1d5db;letter-spacing:1px;text-transform:uppercase;">Autoride Admin Portal v2.1</div>' +
-                    '</div>' +
-                '</div>' +
-
-            '</div>' +
             '<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:0.9rem;">' + (senderName||'U').charAt(0).toUpperCase() + '</div>' +
-
-
-
             '<div style="flex:1;min-width:0;">' +
-
-
-
                 '<div style="font-size:0.72rem;font-weight:700;opacity:0.85;">' + (senderName||'Customer') + ' sent a message</div>' +
-
-
-
                 '<div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (message||'') + '</div>' +
-
-
-
             '</div>' +
-
-
-
             '<button onclick="document.getElementById(\'adminChatPopup\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:0.75rem;flex-shrink:0;">x</button>';
 
-
-
         banner.onclick = function(e) {
-
-
-
             if (e.target.tagName === 'BUTTON') return;
-
-
-
             banner.remove();
-
-
-
             switchTab('chat');
-
-
-
             if (userId && typeof AdminChat !== 'undefined') {
-
-
-
                 setTimeout(function() { AdminChat.openConversation(userId, senderName); }, 300);
-
-
-
             }
-
-
-
         };
 
-
-
         document.body.appendChild(banner);
-
-
-
         setTimeout(function() { if (banner.parentNode) banner.remove(); }, 6000);
-
-
-
     };
 
 

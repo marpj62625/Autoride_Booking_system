@@ -3873,64 +3873,21 @@
 
 })();
 
-
-</script>
-
-
-</body>
-
-
-</html>
-
-
-<script>
-
-
 // Password visibility toggle function
-
-
 function togglePasswordVisibility(inputId, button) {
-
-
     const input = document.getElementById(inputId);
-
-
     const icon = button.querySelector('i');
-
-
     
-
-
     if (input.type === 'password') {
-
-
         input.type = 'text';
-
-
         icon.className = 'fas fa-eye-slash';
-
-
     } else {
-
-
         input.type = 'password';
-
-
         icon.className = 'fas fa-eye';
-
-
     }
-
-
 }
 
-
-
-
-
 // Password validation function
-
-
 function validatePassword(password, errorElementId, prefix) {
     if (!prefix) prefix = 'req-';
 
@@ -3940,7 +3897,6 @@ function validatePassword(password, errorElementId, prefix) {
         number: /\d/.test(password),
         length: password.length >= 8
     };
-
 
     // Update requirement indicators
     const updateRequirement = (id, isValid) => {
@@ -3964,143 +3920,46 @@ function validatePassword(password, errorElementId, prefix) {
     updateRequirement(prefix + 'number', requirements.number);
     updateRequirement(prefix + 'length', requirements.length);
 
-
-
-
-
     // Check if all requirements are met
-
-
     const isValid = Object.values(requirements).every(req => req);
-
-
     
-
-
     // Update error message
-
-
     const errorElement = document.getElementById(errorElementId);
-
-
     if (errorElement) {
-
-
         if (password.length > 0 && !isValid) {
-
-
             errorElement.textContent = 'Password does not meet all requirements';
-
-
             errorElement.style.display = 'block';
-
-
         } else {
-
-
             errorElement.textContent = '';
-
-
             errorElement.style.display = 'none';
-
-
         }
-
-
     }
-
-
-
-
 
     return isValid;
-
-
 }
 
-
-
-
-
 // Prevent form submission with weak passwords for register form
-
-
 document.addEventListener('DOMContentLoaded', function() {
-
-
-    // Add validation to register form if it exists
-
-
     const registerButton = document.querySelector('button[onclick="doRegister()"]');
-
-
     if (registerButton) {
-
-
         registerButton.addEventListener('click', function(e) {
-
-
             const passwordInput = document.getElementById('regPassword');
-
-
             if (passwordInput) {
-
-
                 const password = passwordInput.value;
-
-
                 if (!validatePassword(password, 'regPasswordErr')) {
-
-
                     e.preventDefault();
-
-
                     e.stopPropagation();
-
-
                     showToast('Please ensure your password meets all requirements before submitting.', 'error');
-
-
                     return false;
-
-
                 }
-
-
             }
-
-
         });
-
-
     }
-
-
 });
-
-
 </script>
 
-
-
-
-
 <!-- Main Application Scripts -->
-
-
 <script src="js/utils.js"></script>
-
-
 <script src="js/app.js?v=7"></script>
-
-
-
-
-
 </body>
-
-
-</html>
-
-
 </html>

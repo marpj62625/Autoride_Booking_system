@@ -99,7 +99,7 @@ function isValidLastFour(s) {
 function formatPHP(value) {
   // Ensure value is a valid number, default to 0 if not
   const num = (value !== null && value !== undefined && !isNaN(Number(value))) ? Number(value) : 0;
-  return '₱' + num.toLocaleString('en-PH', {
+  return 'PHP ' + num.toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
@@ -128,6 +128,31 @@ function formatDateDisplay(dateStr) {
   var y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
   return months[m] + ' ' + d + ', ' + y;
 }
+
+/**
+ * Formats a driver's license number as LNN-YY-NNNNNN (13 chars total).
+ * @param {string} value
+ * @returns {string}
+ */
+function formatLicenseNumberInput(value) {
+  if (!value) return '';
+  let cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  if (cleaned.length > 11) {
+    cleaned = cleaned.substring(0, 11);
+  }
+  let formatted = '';
+  if (cleaned.length > 0) {
+    formatted += cleaned.substring(0, 3);
+  }
+  if (cleaned.length > 3) {
+    formatted += '-' + cleaned.substring(3, 5);
+  }
+  if (cleaned.length > 5) {
+    formatted += '-' + cleaned.substring(5, 11);
+  }
+  return formatted;
+}
+
 
 /**
  * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
@@ -370,23 +395,18 @@ function compressImage(file, maxW, maxH, quality) {
         var ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0, width, height);
         
-        var dataUrl = canvas.toDataURL('image/jpeg', quality);
-        var arr = dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
-        var bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-        while(n--){
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-        var blob = new Blob([u8arr], {type:mime});
-        if (blob) {
-          var compressedFile = new File([blob], file.name || 'image.jpg', {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-          compressedFile.previewUrl = dataUrl;
-          resolve(compressedFile);
-        } else {
-          resolve(file);
-        }
+        canvas.toBlob(function(blob) {
+          if (blob) {
+            var compressedFile = new File([blob], file.name || 'image.jpg', {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            console.log('Compressed image from ' + (file.size / 1024 / 1024).toFixed(2) + 'MB to ' + (compressedFile.size / 1024).toFixed(2) + 'KB');
+            resolve(compressedFile);
+          } else {
+            resolve(file);
+          }
+        }, 'image/jpeg', quality);
       };
       image.onerror = function() {
         resolve(file);

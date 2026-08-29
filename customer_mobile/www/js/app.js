@@ -3,13 +3,11 @@
  * utils.js is loaded as a separate script tag before this file
  */
 
-// Silence debug logs in production/native APK to keep console clean, unless ?debug=true is specified
+// Silence debug logs in production to keep console clean, unless ?debug=true is specified
 (function() {
-  var isLocalWeb = typeof window !== 'undefined' && 
-                   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && 
-                   !(window.Capacitor && window.Capacitor.isNative);
+  var isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   var hasDebugParam = typeof window !== 'undefined' && window.location.search.indexOf('debug=true') !== -1;
-  if (!isLocalWeb && !hasDebugParam) {
+  if (!isLocal && !hasDebugParam) {
     var noop = function() {};
     console.log = noop;
     console.debug = noop;
@@ -19,47 +17,52 @@
 
 // CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
-
+  console.log('API_BASE detection:');
+  console.log('- window._API_BASE:', typeof window !== 'undefined' ? window._API_BASE : 'undefined');
+  console.log('- window.Capacitor:', typeof window !== 'undefined' ? !!window.Capacitor : 'undefined');
+  console.log('- window.Capacitor.isNative:', typeof window !== 'undefined' && window.Capacitor ? window.Capacitor.isNative : 'undefined');
+  console.log('- window.location.hostname:', typeof window !== 'undefined' ? window.location.hostname : 'undefined');
+  console.log('- window.location.protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
+  
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
-
+  
   // Always use production URL on native Capacitor APK
   if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
+    console.log('Using production API for Capacitor native app');
     return 'https://autoride-booking-system.vercel.app/api';
   }
-
-  // Force production for mobile apps (protocol-based detection)
+  
+  // Force production for mobile apps (fallback detection)
   if (typeof window !== 'undefined' && (
-    window.location.protocol === 'capacitor:' ||
-    (window.location.protocol === 'https:' && window.location.hostname === 'localhost')
+    window.location.protocol === 'capacitor:' || 
+    window.location.protocol === 'https:' && window.location.hostname === 'localhost'
   )) {
+    console.log('Using production API for mobile protocol detection');
     return 'https://autoride-booking-system.vercel.app/api';
   }
-
+  
+  // FORCE PRODUCTION - temporary fix
+  // Remove this after debugging
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    console.log('FORCED: Using production API instead of localhost');
+    return 'https://autoride-booking-system.vercel.app/api';
+  }
+  
   if (typeof window !== 'undefined') {
     var h = window.location.hostname;
     if (h === 'localhost' || h === '127.0.0.1') {
-      return 'https://autoride-booking-system.vercel.app/api';
+      console.log('Using localhost API for web development');
+      return 'http://localhost:5000/api';
     }
     if (window.location.protocol === 'https:') {
+      console.log('Using origin API for HTTPS');
       return window.location.origin + '/api';
     }
   }
-
+  
+  console.log('Using fallback production API');
   return 'https://autoride-booking-system.vercel.app/api';
 }());
-
-function setButtonLoading(button, text) {
-  if (!button) return function() {};
-  var originalHtml = button.innerHTML;
-  var originalDisabled = button.disabled;
-  button.disabled = true;
-  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (text || 'Processing...');
-  return function restore() {
-    button.disabled = originalDisabled;
-    button.innerHTML = originalHtml;
-  };
-}
-
 
 // STATE
 var currentUser = { id: null, fullName: '', isVerified: 0, loyaltyPoints: 0 };
@@ -125,25 +128,34 @@ var PushNotifications = {
     
     var pushPlugin = getPushNotifications();
     if (!pushPlugin) {
+      console.log('Push notifications not available (web browser)');
       return Promise.resolve();
     }
 
+    console.log('Initializing push notifications...');
     
     // Request permission first
     return pushPlugin.requestPermissions().then(function(result) {
+      console.log('Permission result:', result);
       if (result.receive === 'granted') {
+        console.log('Push notification permission granted');
         
         // Register for push notifications
         return pushPlugin.register().then(function() {
+          console.log('Push registration initiated successfully');
         });
       } else {
+        console.log('Push notification permission denied:', result.receive);
+        showToast('Push notifications disabled - permission denied', 'info');
         return Promise.reject('Permission denied: ' + result.receive);
       }
     }).then(function() {
       // Add event listeners
       pushPlugin.addListener('registration', function(token) {
+        console.log('Push registration success, token: ' + token.value);
         PushNotifications.currentToken = token.value;
         PushNotifications.sendTokenToServer(token.value);
+        showToast('Push notifications enabled successfully!', 'success');
       });
 
       pushPlugin.addListener('registrationError', function(error) {
@@ -152,27 +164,34 @@ var PushNotifications = {
         var errorMsg = 'Push notification setup failed';
         if (error.error && error.error.includes('FIS_AUTH_ERROR')) {
           errorMsg = 'Firebase configuration needed for push notifications';
+          console.log('FIS_AUTH_ERROR detected - Firebase project not properly configured');
         } else if (error.error) {
           errorMsg = error.error;
         }
+        showToast(errorMsg, 'warning');
       });
 
       pushPlugin.addListener('pushNotificationReceived', function(notification) {
+        console.log('Push notification received: ' + JSON.stringify(notification));
         PushNotifications.handleNotification(notification);
       });
 
       pushPlugin.addListener('pushNotificationActionPerformed', function(notification) {
+        console.log('Push notification action performed: ' + JSON.stringify(notification));
         PushNotifications.handleNotificationAction(notification);
       });
 
       PushNotifications.isInitialized = true;
+      console.log('Push notifications listeners initialized successfully');
       
     }).catch(function(error) {
       console.error('Error initializing push notifications: ' + JSON.stringify(error));
       
       // Handle specific Firebase errors gracefully
       if (error.includes && error.includes('FIS_AUTH_ERROR')) {
+        showToast('In-app notifications active (Firebase setup needed for push)', 'info');
       } else if (!error.includes('Permission denied')) {
+        showToast('Push setup incomplete - in-app notifications will work', 'warning');
       }
     });
   },
@@ -180,10 +199,12 @@ var PushNotifications = {
   sendTokenToServer: function(token) {
     if (!token || !currentUser.id) return;
     
+    console.log('Sending FCM token to server for user: ' + currentUser.id);
     saveFcmToken(token);
   },
 
   handleNotification: function(notification) {
+    console.log('Handling received notification:', notification);
     
     // Show toast notification in app
     var title = notification.title || 'Autoride';
@@ -204,25 +225,16 @@ var PushNotifications = {
   },
 
   handleNotificationAction: function(notification) {
-    var data = (notification.notification && notification.notification.data) ? notification.notification.data : {};
-    var type = data.type || '';
-    var bookingId = data.booking_id ? parseInt(data.booking_id, 10) : null;
+    console.log('Handling notification action:', notification);
     
-    if (type === 'license' || type === 'license_approved' || type === 'license_rejected' || type === 'admin_license_upload') {
-      if (typeof openLicenseUpload === 'function') {
-        openLicenseUpload();
-      } else {
-        showOverlay('page-notifications');
-      }
-    } else if (bookingId && !isNaN(bookingId)) {
-      if (typeof openBookingDetail === 'function') {
-        openBookingDetail(bookingId);
-      } else {
-        showOverlay('page-notifications');
-      }
-    } else if (data.page) {
+    // Handle notification tap - could navigate to specific page
+    var data = notification.notification && notification.notification.data;
+    
+    if (data && data.page) {
+      // Navigate to specific page mentioned in notification
       showPage(data.page);
     } else {
+      // Default: show notifications page
       showOverlay('page-notifications');
     }
   }
@@ -845,12 +857,30 @@ function showToast(message, type) {
   }, 3500);
 }
 
+// --- BUTTON LOADING STATE HELPER ---
+// Usage: var restore = setButtonLoading(btn, 'Saving...');  then call restore() when done.
+function setButtonLoading(btn, loadingText) {
+  if (!btn) return function() {};
+  var original = btn.innerHTML;
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  btn.style.cursor = 'not-allowed';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i>' + (loadingText || 'Loading...');
+  return function() {
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+    btn.innerHTML = original;
+  };
+}
+
 // --- INLINE FIELD ERROR HELPERS ---
 // Attaches a small red error message directly below a form field.
 function showInlineError(el, message) {
   if (!el) return;
   el.style.borderColor = 'var(--danger, #f87171)';
   el.style.outline = '0';
+  // Remove any existing inline error for this element first
   var existing = el.parentNode && el.parentNode.querySelector('[data-inline-err="' + el.id + '"]');
   if (existing) existing.remove();
   var errSpan = document.createElement('span');
@@ -916,6 +946,14 @@ function showPage(id) {
     target.style.display = 'block';
   }
   target.classList.add('active');
+
+  // Update URL hash for refresh persistence (skip for login/splash/register/otp)
+  try {
+    var EXCLUDE_HASH = ['page-login', 'page-register', 'page-otp-verify', 'page-splash'];
+    if (EXCLUDE_HASH.indexOf(id) === -1 && typeof window !== 'undefined') {
+      window.location.hash = id;
+    }
+  } catch(e) {}
 
   // Bottom nav
   var nav = document.getElementById('bottomNav');
@@ -1061,25 +1099,18 @@ var _appInitialized = false;
 function initApp() {
   if (_appInitialized) return;
   _appInitialized = true;
-
-  // SAFETY NET: Force-dismiss splash after 10s if initialization hangs
-  _initTimeout = setTimeout(function() {
-    var splash = document.getElementById('page-splash');
-    if (splash) splash.style.display = 'none';
-    var loginPage = document.getElementById('page-login');
-    if (loginPage) { loginPage.style.display = 'flex'; loginPage.classList.add('active'); }
-    console.warn('[initApp] Safety timeout fired - forced splash dismiss');
-  }, 10000);
-
+  
   loadAddonSettings();
 
   // Initialize Google Auth as early as possible on cold start
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
+    console.log('[GoogleAuth] Initializing immediately in initApp');
     window.Capacitor.Plugins.GoogleAuth.initialize({
       clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true
     }).then(function() {
+      console.log('[GoogleAuth] Initialized successfully in initApp');
     }).catch(function(err) {
       console.error('[GoogleAuth] Initialization error in initApp:', err);
     });
@@ -1099,6 +1130,37 @@ function initApp() {
   }
   // Clear stale booking session at every app start
   try { BookingSession.clear(); } catch(e) {}
+  // Smart App Banner & Download Promotion Detection
+  try {
+    var isNativeApp = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative;
+    var isMobileDevice = typeof navigator !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768);
+    
+    if (!isNativeApp) {
+      // 1. More page card is visible on web
+      var moreCard = document.getElementById('moreDownloadAppCard');
+      if (moreCard) moreCard.style.display = 'flex';
+      
+      // 2. Smart top banner: only if they are on mobile device AND have not dismissed it
+      if (isMobileDevice) {
+        var sabDismissed = localStorage.getItem('sab_dismissed');
+        if (sabDismissed !== 'true') {
+          var banner = document.getElementById('smartAppBanner');
+          if (banner) banner.style.display = 'block';
+        }
+      }
+    }
+  } catch(e) {
+    console.error('Error initializing Smart App Banner:', e);
+  }
+
+  // Global dismiss function
+  window.dismissSmartAppBanner = function() {
+    var banner = document.getElementById('smartAppBanner');
+    if (banner) banner.style.display = 'none';
+    try {
+      localStorage.setItem('sab_dismissed', 'true');
+    } catch(e) {}
+  };
 
   Session.load().then(function(user) {
     if (user && user.id) {
@@ -1126,15 +1188,22 @@ function initApp() {
       startBgChatPolling();
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
-      clearTimeout(_initTimeout); // Cancel safety timeout - init succeeded
-      showPage('page-home');
+      // Determine start page based on URL hash
+      var startPage = 'page-home';
+      if (typeof window !== 'undefined' && window.location.hash) {
+        var hashPage = window.location.hash.replace('#', '');
+        var pageElement = document.getElementById(hashPage);
+        if (pageElement && (pageElement.classList.contains('page') || pageElement.classList.contains('overlay-page'))) {
+          startPage = hashPage;
+        }
+      }
+      showPage(startPage);
     } else {
-      clearTimeout(_initTimeout); // Cancel safety timeout - no session, go to login
       showPage('page-login');
     }
     updateNotifBadge();
   }).catch(function() {
-    clearTimeout(_initTimeout); // Cancel safety timeout - error handled
+    clearTimeout(_initTimeout);
     showPage('page-login');
   });
 }
@@ -1158,11 +1227,13 @@ document.addEventListener('deviceready', function() {
   
   // Initialize Google Auth with explicit configuration
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
+            console.log('Google Auth plugin available - initializing with config');
             window.Capacitor.Plugins.GoogleAuth.initialize({
       clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true
     }).then(function() {
+      console.log('[GoogleAuth] Initialized successfully');
     }).catch(function(err) {
       console.error('[GoogleAuth] Initialization error:', err);
             });
@@ -1295,6 +1366,7 @@ function handleBackButton() {
       // Foreground resumption - check status when app returns from background (user finished checkout and switched back)
       window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
         if (state.isActive) {
+          console.log('App resumed, checking active payment status...');
           var paymentOverlay = document.getElementById('page-payment');
           if (paymentOverlay && (paymentOverlay.style.display === 'block' || paymentOverlay.classList.contains('active'))) {
             // Find wait overlay button data
@@ -1307,15 +1379,55 @@ function handleBackButton() {
                 var bookingId = parseInt(match[1]);
                 var amount = parseFloat(match[2]);
                 var method = match[3];
+                console.log('Detected active payment waiting for booking #' + bookingId + ', auto verifying...');
                 autoCheckPaymentStatus(bookingId, amount, method);
               }
             }
-          }
-        }
-      });
-    }
   }, false);
+
+  // Global backdrop click listener for Customer App modals, bottom sheets & overlays
+  document.addEventListener('click', function(e) {
+    // 1. Rental Agreement Modal
+    var rentalModal = document.getElementById('rentalAgreementModal');
+    if (rentalModal && e.target === rentalModal) {
+      rentalModal.remove();
+      return;
+    }
+
+    // 2. Extend Modal
+    var extendModal = document.getElementById('extendModal');
+    if (extendModal && e.target === extendModal) {
+      if (typeof closeExtendModal === 'function') closeExtendModal();
+      else extendModal.remove();
+      return;
+    }
+
+    // 3. Generic Modals / Dialogs
+    var openGenericModals = document.querySelectorAll('.modal, .premium-modal, [id$="Modal"], [id$="Dialog"]');
+    openGenericModals.forEach(function(modal) {
+      if ((modal.style.display !== 'none' && modal.style.display !== '') && e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+
+    // 4. Desktop Overlay Backdrops (clicking empty space around the centered phone wrapper / overlay container)
+    var activeOverlays = document.querySelectorAll('.overlay-page.active');
+    activeOverlays.forEach(function(overlay) {
+      if (e.target === overlay) {
+        closeOverlay(overlay.id);
+      }
+    });
+  });
+
+
+  // Global Escape key listener for desktop
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      handleBackButton();
+    }
+  });
 })();
+
 
 // AUTH: LOGIN
 function doLogin() {
@@ -1450,7 +1562,7 @@ function doLogout() {
       }).catch(function(e) { console.error('[GoogleAuth] Revoke fetch failed:', e); });
     }
   } catch(e) {}
-
+  
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
     try { 
       console.log('[GoogleAuth] Disabling auto-select client-side');
@@ -1533,9 +1645,11 @@ function forceLogoutSilent(message) {
 function doGoogleLogin() {
   if (window._googleLoginInProgress) return;
   window._googleLoginInProgress = true;
+
+  // Safety timeout to prevent permanent button locking if user closes Google popup or cancels
   setTimeout(function() {
     window._googleLoginInProgress = false;
-  }, 60000);
+  }, 40000);
 
   var isCapacitorNative = window.Capacitor && window.Capacitor.isNative;
   var plugins = window.Capacitor && window.Capacitor.Plugins;
@@ -1546,13 +1660,16 @@ function doGoogleLogin() {
     showLoading(true);
     var initPromise = Promise.resolve();
     if (!window._googleAuthInitialized) {
+      console.log('[GoogleAuth] Not initialized yet, initializing on demand...');
       initPromise = GoogleAuthPlugin.initialize({
         clientId: '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
         grantOfflineAccess: true
       }).then(function() {
         window._googleAuthInitialized = true;
+        console.log('[GoogleAuth] Initialized successfully on demand');
       }).catch(function(e) {
+        console.log('[GoogleAuth] Initialized error on demand: ' + e);
       });
     }
 
@@ -1703,10 +1820,7 @@ function _finishGoogleLogin(idToken, email, name) {
     .catch(function(err) {
       showToast('Google Sign-In failed: ' + (err.message || 'Please try again.'), 'error');
     })
-    .finally(function() {
-      showLoading(false);
-      window._googleLoginInProgress = false;
-    });
+    .finally(function() { showLoading(false); });
 }
 
 
@@ -1755,8 +1869,7 @@ function doRegister() {
       if (err.status === 409) {
         showInlineError(document.getElementById('regEmail'), 'Email already registered.');
       } else {
-        var errEl = document.getElementById('regErr');
-        if (errEl) errEl.textContent = err.message || 'Registration failed.';
+        document.getElementById('regErr').textContent = err.message || 'Registration failed.';
       }
     })
     .finally(function() { showLoading(false); restoreBtn(); });
@@ -2076,11 +2189,11 @@ function loadHome() {
         var startNorm = _normDateStr(active.start_date);
         var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
         var imgHtml = imgSrc
-          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:200px;object-fit:cover;display:block;">'
-          : '<div style="width:100%;height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:100%;object-fit:cover;display:block;">'
+          : '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
         card.innerHTML =
-          imgHtml +
-          '<div style="padding:14px;">' +
+          '<div class="active-rental-img">' + imgHtml + '</div>' +
+          '<div class="active-rental-info">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
               '<div>' +
                 '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
@@ -2103,7 +2216,7 @@ function loadHome() {
                 '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
               '</div>' +
             '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;">' +
               '<button onclick="openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
               '<button onclick="showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
             '</div>' +
@@ -2217,18 +2330,17 @@ function renderVehicles(list) {
 
   grid.innerHTML = available.map(function(v) {
     var avail = parseInt(v.available_units) || 0;
-    var bEnc = encodeURIComponent(v.brand || '');
-    var mEnc = encodeURIComponent(v.model || '');
-    var displayName = ((v.brand || '') + ' ' + (v.model || '')).trim() || 'Unknown Vehicle';
+    var bEnc = encodeURIComponent(v.brand);
+    var mEnc = encodeURIComponent(v.model);
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + displayName + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
       '<div>' +
-      '<h3>' + displayName + '</h3>' +
+      '<h3>' + v.brand + ' ' + v.model + '</h3>' +
       '<div style="display:flex;gap:6px;margin-top:4px;">' +
       '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
       '</div></div>' +
@@ -2438,26 +2550,56 @@ function renderVehicleUnits(brand, model, color, units) {
     var isAvailable = ['Available'].indexOf(v.status) >= 0;
     var statusColor = isAvailable ? 'var(--success)' : (v.status === 'Booked' ? 'var(--info)' : 'var(--warning)');
     var imgSrc = (v.gallery && v.gallery.length) ? buildImgUrl(v.gallery[0]) : buildImgUrl(v.vehicle_image);
+
+    // Luggage based on seats
+    var seats = parseInt(v.seats) || 5;
+    var luggage = seats <= 2 ? '1 Bag' : seats <= 5 ? '2 Bags' : seats <= 7 ? '3 Bags' : '4 Bags';
+
+    // Mileage display
+    var mileageText = v.mileage_type === 'unlimited'
+      ? '🛣️ Unlimited Mileage'
+      : '🛣️ ' + (v.mileage_km_per_day || 250) + ' km/day';
+    var mileageExtra = v.mileage_type !== 'unlimited'
+      ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Extra: ₱10/km over limit</div>'
+      : '';
+
+    // Year model
+    var yearText = v.year_model ? '📅 ' + v.year_model + ' Model' : '📅 Model N/A';
+
     return '<div class="card" style="margin-bottom:14px;">' +
       '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
       '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
       '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
       (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
       '</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Plate</span><br><strong>' + (v.plate_number || 'N/A') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Seats</span><br><strong>' + (v.seats || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Fuel</span><br><strong>' + (v.fuel_type || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Transmission</span><br><strong>' + (v.transmission || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Location</span><br><strong>' + (v.location || '-') + '</strong></div>' +
-      '<div style="font-size:0.78rem;"><span style="color:var(--text-muted);">Rate</span><br><strong style="color:var(--primary);">' + formatPHP(v.daily_rate) + '/day</strong></div>' +
+      // 3-column grid specs
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;font-size:0.8rem;">' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div>⚙️ ' + (v.transmission || '-') + '</div>' +
+          '<div>👥 ' + (v.seats || '-') + ' seats</div>' +
+          '<div>🎨 ' + (v.color_display || v.color || 'N/A') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div>⛽ ' + (v.fuel_type || '-') + '</div>' +
+          '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ' + (v.location || '-') + '</div>' +
+          '<div>' + mileageText + '</div>' +
+          mileageExtra +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;">' +
+          '<div>🧳 ' + luggage + '</div>' +
+          '<div>' + yearText + '</div>' +
+          '<div>🎫 ' + (v.plate_number || 'N/A') + '</div>' +
+        '</div>' +
       '</div>' +
+      // Price
+      '<div style="font-size:1.2rem;font-weight:800;color:var(--primary);margin-bottom:12px;">' + formatPHP(v.daily_rate) + ' <span style="font-size:0.85rem;font-weight:500;color:var(--text-muted);">/day</span></div>' +
       (isAvailable
-        ? '<button class="btn-primary" onclick="openVehicleDetail(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book This Vehicle</button>'
+        ? '<button class="btn-primary" onclick="selectVehicleUnit(' + v.id + ')"><i class="fas fa-calendar-plus"></i> Book This Vehicle</button>'
         : '<button class="btn-secondary" disabled style="opacity:0.5;cursor:not-allowed;"><i class="fas fa-ban"></i> Not Available (' + v.status + ')</button>'
       ) +
       '</div>';
   }).join('');
+
 
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-vehicle-units\')"><i class="fas fa-arrow-left"></i></button>' +
@@ -2597,104 +2739,91 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
         // Transmission display: clean span if 1 option, styled select if multiple
         var transHtml = transmissions.length > 1
-          ? '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + transOptions + '</select>'
+          ? '<select id="vd-trans" onchange="onVdTransChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.85rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + transOptions + '</select>'
           : '<span id="vd-trans" style="font-weight:600;">' + (defaultUnit.transmission || '-') + '</span>';
 
         // Color display: always show select dropdown so user can pick any available color
         var colorHtml = colors.length > 1
-          ? '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.82rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + colorOptions + '</select>'
+          ? '<select id="vd-color" onchange="onVdColorChange()" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-main);font-size:0.85rem;font-weight:600;padding:2px 4px;cursor:pointer;outline:none;width:100%;">' + colorOptions + '</select>'
           : '<span id="vd-color" style="font-weight:600;">' + (defaultUnit.color_display || defaultUnit.color || '-') + '</span>';
 
-        var cardHtml =
-        '<div class="card" style="margin-bottom:16px;">' +
-        // Gallery image slideshow wrapper
-        '<div id="vd-img-wrap" style="margin:-16px -16px 14px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;overflow:hidden;height:200px;position:relative;">' +
-        renderVdGallery(defaultUnit) +
-        '</div>' +
-        // Title + status
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-        '<h4 style="font-weight:800;font-size:1rem;margin:0;">' + brand + ' ' + model + '</h4>' +
-        '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
-        '</div>' +
-        // Specs grid
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">' +
+      var galleryHtml = renderVdGallery(defaultUnit);
+ 
+       var cardHtml =
+         '<div class="veh-detail-desktop">' +
+           '<div class="veh-detail-gallery-col" id="vd-gallery-col-wrapper">' +
+             galleryHtml +
+           '</div>' +
+          '<div class="veh-detail-info-col">' +
+            '<div class="card" style="margin-bottom:16px; padding: 24px;">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+                '<h4 style="font-weight:800;font-size:1.2rem;margin:0;">' + brand + ' ' + model + '</h4>' +
+                '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+              '</div>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-cog" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  transHtml +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-id-card" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-plate" style="font-weight:600;">' + (defaultUnit.plate_number || 'N/A') + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-users" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-seats">' + (defaultUnit.seats || '-') + ' seats</span>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-gas-pump" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-fuel">' + (defaultUnit.fuel_type || '-') + '</span>' +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  colorHtml +
+                '</div>' +
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
+                '</div>' +
+                // KM Limit
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-road" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span>' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited km' : ((defaultUnit.mileage_km_per_day || 250) + ' km/day')) + '</span>' +
+                '</div>' +
+                // Baggage Capacity
+                (function() {
+                  var s = parseInt(defaultUnit.seats) || 5;
+                  var bags = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
+                  return '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                    '<i class="fas fa-suitcase-rolling" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                    '<span>' + bags + '</span>' +
+                  '</div>';
+                })() +
+                // Year Model
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
+                '</div>' +
+                // Fuel Level
+                '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
+                  '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
+                  '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || '-') + '</span>' +
+                '</div>' +
+              '</div>' +
 
-        // Transmission
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-cog" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        transHtml +
-        '</div>' +
-
-        // Plate
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-id-card" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-plate" style="font-weight:600;">' + (defaultUnit.plate_number || 'N/A') + '</span>' +
-        '</div>' +
-
-        // Seats
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-users" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-seats">' + (defaultUnit.seats || '-') + ' seats</span>' +
-        '</div>' +
-
-        // Fuel
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-gas-pump" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-fuel">' + (defaultUnit.fuel_type || '-') + '</span>' +
-        '</div>' +
-
-        // Color
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-paint-brush" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        colorHtml +
-        '</div>' +
-
-        // Location
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-map-marker-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-location">' + (defaultUnit.location || '-') + '</span>' +
-        '</div>' +
-
-        // KM Limit
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-road" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-mileage">' + (defaultUnit.mileage_type === 'unlimited' ? 'Unlimited km' : ((defaultUnit.mileage_km_per_day || 250) + ' km/day')) + '</span>' +
-        '</div>' +
-
-        // Baggage Capacity
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        (function() {
-          var s = parseInt(defaultUnit.seats) || 5;
-          var bags = s <= 2 ? '1 Bag' : s <= 5 ? '2 Bags' : s <= 7 ? '3 Bags' : '4 Bags';
-          return '<i class="fas fa-suitcase-rolling" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-            '<span>' + bags + '</span>';
-        })() +
-        '</div>' +
-
-        // Year Model
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
-        '</div>' +
-
-        // Fuel Level
-        '<div style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-        '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || '-') + '</span>' +
-        '</div>' +
-
-        '</div>' +
-        // Price + Book
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);">' +
-        '<div>' +
-        '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
-        '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
-        '</div>' +
-        '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;"' +
-        (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
-        '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
-        '</button>' +
-        '</div></div>';
+              '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--border);">' +
+                '<div>' +
+                  '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
+                  '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
+                '</div>' +
+                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.95rem;font-weight:800;"' +
+                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
+                  '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
 
       el.innerHTML = '<div class="page-header"><button class="back-btn" onclick="closeOverlay(\'page-vehicle-detail\')"><i class="fas fa-arrow-left"></i></button><h2>' + brand + ' ' + model + '</h2></div>' +
         '<div class="scroll-content" style="padding-bottom:80px;">' + cardHtml + '</div>';
@@ -2764,9 +2893,9 @@ function onVdColorChange() {
   if (!unit) return;
 
   // Update image gallery slideshow
-  var imgWrapEl = document.getElementById('vd-img-wrap');
-  if (imgWrapEl) {
-    imgWrapEl.innerHTML = renderVdGallery(unit);
+  var galleryColEl = document.getElementById('vd-gallery-col-wrapper');
+  if (galleryColEl) {
+    galleryColEl.innerHTML = renderVdGallery(unit);
   }
   // Update specs
   var plateEl = document.getElementById('vd-plate');
@@ -2965,6 +3094,8 @@ function autoSetReturnTime() {
       updateBookingPrice();
     }
   }
+  // Refresh calendar highlights when manual inputs change
+  if (typeof _renderWebCal === 'function') _renderWebCal();
 }
 
 function openBookingForm(vehicleId) {
@@ -2980,22 +3111,23 @@ function openBookingForm(vehicleId) {
   }
 
   bookingFormVehicle = currentVehicleDetail;
-  currentCalDate = new Date();
-  blockedDatesList = [];
-  apiCall('/vehicles/' + vehicleId + '/blocked-dates')
-    .then(function(dates) {
-       blockedDatesList = Array.isArray(dates) ? dates : [];
-       renderBookingCalendar();
-    })
-    .catch(function() {
-       blockedDatesList = [];
-       renderBookingCalendar();
-    });
   selectedAddons = [];
   selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
   var today = new Date().toISOString().split('T')[0];
   var el = document.getElementById('bookingFormContent');
   if (!el) return;
+
+  // Load blocked dates for this vehicle (blackouts + active bookings)
+  _webCalState.vehicleId = vehicleId;
+  _webCalState.year = new Date().getFullYear();
+  _webCalState.month = new Date().getMonth();
+  _webCalState.blocked = [];
+  apiCall('/vehicles/' + vehicleId + '/blocked-dates')
+    .then(function(data) {
+      _webCalState.blocked = Array.isArray(data) ? data : [];
+      _renderWebCal();
+    })
+    .catch(function() { _renderWebCal(); });
 
   var locationOptions = servicedLocations.map(function(loc) {
     return '<option value="' + loc.name + '">' + loc.name + '</option>';
@@ -3023,26 +3155,29 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   el.innerHTML = '<div class="page-header">' +
-    '<button class="back-btn" onclick=" closeOverlay(\'page-booking-form\');  if(currentVehicleDetail){ openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); } else {}"><i class="fas fa-arrow-left"></i></button>' +
+    '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
 
-    // Rental Period Calendar
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Vehicle Availability Calendar</h4>' +
-    '<div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">' +
-    '  <button onclick="prevBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-left"></i></button>' +
-    '  <span id="bookingCalLabel" style="font-weight:700;font-size:1rem;color:var(--text-primary);"></span>' +
-    '  <button onclick="nextBookingCalendarMonth()" style="background:var(--primary); color:white; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; font-size:1rem;"><i class="fas fa-chevron-right"></i></button>' +
+    // Availability Calendar
+    '<div class="card" id="webAvailCalCard">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+        '<h4 style="font-weight:700;margin:0;"><i class="fas fa-calendar-alt" style="color:var(--primary);margin-right:8px;"></i>Availability Calendar</h4>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<button onclick="_webCalPrev()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--text-primary);"><i class="fas fa-chevron-left"></i></button>' +
+          '<span id="webCalLabel" style="font-weight:700;font-size:0.9rem;min-width:110px;text-align:center;"></span>' +
+          '<button onclick="_webCalNext()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;color:var(--text-primary);"><i class="fas fa-chevron-right"></i></button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="webCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:0.82rem;"></div>' +
+      '<div style="display:flex;gap:16px;margin-top:10px;font-size:0.72rem;color:var(--text-muted);">' +
+        '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#fee2e2;display:inline-block;border:1px solid #fca5a5;"></span>Unavailable</span>' +
+        '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--primary);display:inline-block;opacity:0.15;"></span>Today</span>' +
+        '<span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#dcfce7;display:inline-block;border:1px solid #86efac;"></span>Available</span>' +
+      '</div>' +
     '</div>' +
-    '<div id="bookingCalendarGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:0.75rem;margin-bottom:10px;"></div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:0.68rem;color:var(--text-secondary);">' +
-    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#ffffff;border:1px solid #e2e8f0;border-radius:2px;display:inline-block;"></span>Available</span>' +
-    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#fee2e2;border-radius:2px;display:inline-block;"></span>Booked/Blocked</span>' +
-    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:var(--primary);border-radius:2px;display:inline-block;"></span>Selected Date</span>' +
-    '  <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(0,177,79,0.15);border:1px dashed rgba(0,177,79,0.3);border-radius:2px;display:inline-block;"></span>Selected Range</span>' +
-    '</div>' +
-    '</div>' +
+
     // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
     '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
@@ -3050,7 +3185,7 @@ function openBookingForm(vehicleId) {
     '<select id="bfPickupTime" onchange="autoSetReturnTime()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     generateTimeOptions() +
     '</select></div>' +
-    '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice()"><span class="field-error" id="bfEndErr"></span></div>' +
+    '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice(); if(typeof _renderWebCal===\'function\')_renderWebCal();"><span class="field-error" id="bfEndErr"></span></div>' +
     '<div class="form-group"><label>Return Time</label>' +
     '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     generateTimeOptions() +
@@ -3134,8 +3269,6 @@ function openBookingForm(vehicleId) {
     '</div>';
 
   showOverlay('page-booking-form');
-  // Re-render calendar now that the grid element exists in the DOM
-  renderBookingCalendar();
   // Auto-set return location to match pickup
   onPickupLocationChange();
 }
@@ -3375,148 +3508,138 @@ function updateBookingPrice() {
 }
 
 function submitBooking() {
-  try {
-    var start = document.getElementById('bfStartDate').value;
-    var end = document.getElementById('bfEndDate').value;
-    var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
-    document.getElementById('bfStartErr').textContent = '';
-    document.getElementById('bfEndErr').textContent = '';
-    document.getElementById('bfErr').textContent = '';
-    var startEl = document.getElementById('bfStartDate');
-    var endEl = document.getElementById('bfEndDate');
-    var pickupEl = document.getElementById('bfPickupTime');
+  var start = document.getElementById('bfStartDate').value;
+  var end = document.getElementById('bfEndDate').value;
+  var pickupTime = document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : '';
+  document.getElementById('bfStartErr').textContent = '';
+  document.getElementById('bfEndErr').textContent = '';
+  document.getElementById('bfErr').textContent = '';
+  var startEl = document.getElementById('bfStartDate');
+  var endEl = document.getElementById('bfEndDate');
+  var pickupEl = document.getElementById('bfPickupTime');
+  
+  clearInlineError(startEl);
+  clearInlineError(endEl);
+  clearInlineError(pickupEl);
 
-    clearInlineError(startEl);
-    clearInlineError(endEl);
-    clearInlineError(pickupEl);
+  var dateCheck = validateDateRange(start, end, pickupTime);
+  if (!dateCheck.valid) {
+    if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
+      showInlineError(pickupEl, dateCheck.error);
+    } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
+      showInlineError(startEl, dateCheck.error);
+    } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
+      if (!start && startEl) { showInlineError(startEl, 'Start date is required'); }
+      else if (!end && endEl) { showInlineError(endEl, 'End date is required'); }
+    } else {
+      showInlineError(endEl, dateCheck.error);
+    }
+    return;
+  }
+  var pts = parseInt(document.getElementById('bfPoints').value) || 0;
+  var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
+  var delFee = 0;
+  if (serviceType === 'delivery') {
+    var zoneEl = document.getElementById('bfDeliveryZone');
+    var zoneName = zoneEl ? zoneEl.value : '';
+    var zone = servicedLocations.find(function(l) { return l.name === zoneName; });
+    if (zone) {
+      delFee = Number(zone.delivery_fee) || 0;
+    }
+  }
 
-    var dateCheck = validateDateRange(start, end, pickupTime);
-    if (!dateCheck.valid) {
-      if (dateCheck.error && (dateCheck.error.indexOf('Pickup time') >= 0)) {
-        showInlineError(pickupEl, dateCheck.error);
-      } else if (dateCheck.error && (dateCheck.error.indexOf('Start') >= 0)) {
-        showInlineError(startEl, dateCheck.error);
-      } else if (dateCheck.error && (dateCheck.error.indexOf('Both') >= 0)) {
-        if (!start && startEl) { showInlineError(startEl, 'Start date is required'); }
-        else if (!end && endEl) { showInlineError(endEl, 'End date is required'); }
-      } else {
-        showInlineError(endEl, dateCheck.error);
-      }
+  var result = calculateBookingPrice(
+    bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
+    parseInt(appSettings.long_term_discount_days) || 7,
+    parseInt(appSettings.long_term_discount_percent) || 10,
+    0, pts, delFee
+  );
+  var payType = document.getElementById('bfPaymentType').value;
+  var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
+  var returnLocation, returnProvince, returnMunicipality, returnBarangay;
+
+  if (serviceType === 'pickup') {
+    var pickupSel = document.getElementById('bfPickupLocation');
+    var returnSel = document.getElementById('bfReturnLocation');
+    pickupLocation = pickupSel ? pickupSel.value : '';
+    returnLocation = returnSel ? returnSel.value : '';
+    var pickupData = servicedLocations.find(function(l) { return l.name === pickupLocation; }) || {};
+    var returnData = servicedLocations.find(function(l) { return l.name === returnLocation; }) || {};
+    pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
+    returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
+  } else {
+    pickupLocation = [document.getElementById('bfDeliveryBarangay').value, document.getElementById('bfDeliveryMunicipality').value, document.getElementById('bfDeliveryProvince').value].filter(Boolean).join(', ');
+    pickupProvince = sanitizeInput(document.getElementById('bfDeliveryProvince').value);
+    pickupMunicipality = sanitizeInput(document.getElementById('bfDeliveryMunicipality').value);
+    pickupBarangay = sanitizeInput(document.getElementById('bfDeliveryBarangay').value);
+    returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
+  }
+
+  var splitEmail = document.getElementById('bfSplitEmail') ? document.getElementById('bfSplitEmail').value.trim() : '';
+
+  var payload = {
+    user_id: currentUser.id,
+    vehicle_id: bookingFormVehicle.id,
+    start_date: start, end_date: end,
+    pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
+    return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
+    pickup_location: pickupLocation,
+    pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
+    return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
+    rental_type: document.getElementById('bfRentalType').value,
+    addons: selectedAddons.map(function(a) { return a.name; }),
+    insurance_type: selectedInsurance.type,
+    insurance_price: selectedInsurance.price,
+    base_price: result.basePrice,
+    addon_price: result.addonPrice,
+    total_price: result.total,
+    payment_type: payType,
+    applied_coupon_id: null,
+    discount_amount: result.longTermDiscount,
+    points_redeemed: pts,
+    points_earned: result.pointsEarned,
+    service_type: serviceType,
+    delivery_fee: delFee,
+    split_with_email: splitEmail || null
+  };
+
+  var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
+  var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
+  showLoading(true);
+  apiCall('/vehicles/check-availability', {
+    method: 'POST',
+    body: JSON.stringify({
+      vehicle_id: bookingFormVehicle.id,
+      start_date: start,
+      end_date: end
+    })
+  }).then(function(avail) {
+    showLoading(false);
+    restoreBtn();
+    if (!avail.available) {
+      var conflict = avail.conflict || {};
+      var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
+      var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
+        formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
+        '. Next available: ' + nextDate + '.';
+      document.getElementById('bfErr').textContent = msg;
       return;
     }
-    
-    var gpsConsent = document.getElementById('bfGpsConsent');
-    var isGpsConsentChecked = gpsConsent ? gpsConsent.checked : true;
-
-    var pts = parseInt(document.getElementById('bfPoints').value) || 0;
-    var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
-    var delFee = 0;
-    if (serviceType === 'delivery') {
-      var zoneEl = document.getElementById('bfDeliveryZone');
-      var zoneName = zoneEl ? zoneEl.value : '';
-      var zone = servicedLocations.find(function(l) { return l.name === zoneName; });
-      if (zone) {
-        delFee = Number(zone.delivery_fee) || 0;
-      }
+    // Warn if the chosen end_date is close to an upcoming booking
+    if (avail.next_booking) {
+      var nb = avail.next_booking;
+      var nbStart = formatDateDisplay(nb.start_date);
+      showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
     }
-
-    var result = calculateBookingPrice(
-      bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
-      parseInt(appSettings.long_term_discount_days) || 7,
-      parseInt(appSettings.long_term_discount_percent) || 10,
-      0, pts, delFee
-    );
-    var payType = document.getElementById('bfPaymentType').value;
-    var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
-    var returnLocation, returnProvince, returnMunicipality, returnBarangay;
-
-    if (serviceType === 'pickup') {
-      var pickupSel = document.getElementById('bfPickupLocation');
-      var returnSel = document.getElementById('bfReturnLocation');
-      pickupLocation = pickupSel ? pickupSel.value : '';
-      returnLocation = returnSel ? returnSel.value : '';
-      var pickupData = servicedLocations.find(function(l) { return l.name === pickupLocation; }) || {};
-      var returnData = servicedLocations.find(function(l) { return l.name === returnLocation; }) || {};
-      pickupProvince = pickupData.province || ''; pickupMunicipality = pickupData.municipality || ''; pickupBarangay = pickupData.barangay || '';
-      returnProvince = returnData.province || ''; returnMunicipality = returnData.municipality || ''; returnBarangay = returnData.barangay || '';
-    } else {
-      pickupLocation = [document.getElementById('bfDeliveryBarangay').value, document.getElementById('bfDeliveryMunicipality').value, document.getElementById('bfDeliveryProvince').value].filter(Boolean).join(', ');
-      pickupProvince = sanitizeInput(document.getElementById('bfDeliveryProvince').value);
-      pickupMunicipality = sanitizeInput(document.getElementById('bfDeliveryMunicipality').value);
-      pickupBarangay = sanitizeInput(document.getElementById('bfDeliveryBarangay').value);
-      returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
-    }
-
-    var splitEmail = document.getElementById('bfSplitEmail') ? document.getElementById('bfSplitEmail').value.trim() : '';
-
-    var payload = {
-      user_id: currentUser.id,
-      vehicle_id: bookingFormVehicle.id,
-      start_date: start, end_date: end,
-      pickup_time: document.getElementById('bfPickupTime') ? document.getElementById('bfPickupTime').value : getCurrentTimeRounded(),
-      return_time: document.getElementById('bfReturnTime') ? document.getElementById('bfReturnTime').value : getCurrentTimeRounded(),
-      pickup_location: pickupLocation,
-      pickup_province: pickupProvince, pickup_municipality: pickupMunicipality, pickup_barangay: pickupBarangay,
-      return_province: returnProvince, return_municipality: returnMunicipality, return_barangay: returnBarangay,
-      rental_type: document.getElementById('bfRentalType').value,
-      addons: selectedAddons.map(function(a) { return a.name; }),
-      insurance_type: selectedInsurance.type,
-      insurance_price: selectedInsurance.price,
-      base_price: result.basePrice,
-      addon_price: result.addonPrice,
-      total_price: result.total,
-      payment_type: payType,
-      applied_coupon_id: null,
-      discount_amount: result.longTermDiscount,
-      points_redeemed: pts,
-      points_earned: result.pointsEarned,
-      service_type: serviceType,
-      delivery_fee: delFee,
-      split_with_email: splitEmail || null
-    };
-
-    // Check availability on the server before proceeding
-    var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
-    var restoreBtn = setButtonLoading(submitBtn, 'Checking...');
-    showLoading(true);
-    apiCall('/vehicles/check-availability', {
-      method: 'POST',
-      body: JSON.stringify({
-        vehicle_id: bookingFormVehicle.id,
-        start_date: start,
-        end_date: end
-      })
-    }).then(function(avail) {
-      showLoading(false);
-      restoreBtn();
-      if (!avail.available) {
-        var conflict = avail.conflict || {};
-        var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
-        var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
-          formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
-          '. Next available: ' + nextDate + '.';
-        document.getElementById('bfErr').textContent = msg;
-        return;
-      }
-      // Warn if the chosen end_date is close to an upcoming booking
-      if (avail.next_booking) {
-        var nb = avail.next_booking;
-        var nbStart = formatDateDisplay(nb.start_date);
-        showToast('\u26a0\ufe0f Note: This car has another booking starting ' + nbStart + '. You cannot extend past that date.', 'warning', 5000);
-      }
-      // Show rental agreement before submitting
-      showRentalAgreement(payload, result, payType);
-    }).catch(function(err) {
-      showLoading(false);
-      restoreBtn();
-      // If availability check fails, allow the booking to proceed (server will catch it)
-      console.warn('Availability check failed:', err);
-      showRentalAgreement(payload, result, payType);
-    });
-  } catch (error) {
+    // Show rental agreement before submitting
+    showRentalAgreement(payload, result, payType);
+  }).catch(function(err) {
     showLoading(false);
-    alert('Booking runtime error: ' + error.message + '\nStack: ' + error.stack);
-  }
+    restoreBtn();
+    // If availability check fails, allow the booking to proceed (server will catch it)
+    console.warn('Availability check failed:', err);
+    showRentalAgreement(payload, result, payType);
+  });
 }
 
 // RENTAL AGREEMENT MODAL
@@ -3584,7 +3707,6 @@ function confirmAndBook() {
   }
   var modal = document.getElementById('rentalAgreementModal');
   if (modal) modal.remove();
-
   var confirmBtn = document.getElementById('confirmPayBtn');
   var restoreBtn = setButtonLoading(confirmBtn, 'Booking...');
   showLoading(true);
@@ -3599,11 +3721,7 @@ function confirmAndBook() {
     })
     .catch(function(err) {
       var errEl = document.getElementById('bfErr');
-      if (errEl) {
-        errEl.textContent = err.message || 'Booking failed. Please try again.';
-      } else {
-        showToast(err.message || 'Booking failed', 'error');
-      }
+      if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
     })
     .finally(function() { showLoading(false); restoreBtn(); });
 }
@@ -3780,48 +3898,6 @@ function selectPayMethod(method, el) {
   }
 }
 
-function _processProfilePicture(file) {
-    var err = validateUploadFile(file);
-    if (err) { showToast(err, 'error'); return; }
-    profilePicBlob = file;
-    var src = file.previewUrl || (typeof URL !== 'undefined' && URL.createObjectURL ? URL.createObjectURL(file) : '');
-    var preview = document.getElementById('profilePicPreview');
-    if (preview) { preview.src = src; preview.style.display = 'block'; }
-    var avatars = document.querySelectorAll('.profile-avatar, .user-avatar, #profileAvatar, #sidebarAvatar');
-    avatars.forEach(function(img) { if (img && img.tagName === 'IMG') img.src = src; });
-  }
-
-  async function pickProfilePicture() {
-    var camera = getCamera();
-    if (camera) {
-      try {
-        var image = await camera.getPhoto({
-          quality: 80,
-          allowEditing: false,
-          resultType: 'uri',
-          source: 'PROMPT'
-        });
-        var res = await fetch(image.webPath);
-        var file = await res.blob();
-        file.name = 'profile.jpg';
-        openCropperAndCallback(file, 1.0, _processProfilePicture);
-      } catch(e) {
-        console.log('Camera error or cancelled', e);
-      }
-      return;
-    }
-    
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/jpeg,image/png';
-    input.onchange = function(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      openCropperAndCallback(file, 1.0, _processProfilePicture);
-    };
-    input.click();
-  }
-
 function pickPaymentProof() {
   var input = document.createElement('input');
   input.type = 'file';
@@ -3833,7 +3909,7 @@ function pickPaymentProof() {
     if (err) { document.getElementById('payProofErr').textContent = err; return; }
     paymentProofBlob = file;
     var preview = document.getElementById('payProofPreview');
-    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
@@ -3959,6 +4035,7 @@ function showPaymentWaiting(bookingId, amount, method) {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     // Auto-check when user closes the browser (back button or done)
     window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
+      console.log('Browser closed, auto-checking payment status for booking #' + bookingId);
       autoCheckPaymentStatus(bookingId, amount, method);
     }).then(function(listener) {
       window._browserFinishedListener = listener;
@@ -4368,7 +4445,7 @@ function openBookingDetail(bookingId) {
 
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
-  var canReview = b.status === 'Completed' && !b.is_reviewed;
+  var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
   var canPayNow = b.payment_status === 'Unpaid' && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
@@ -4428,7 +4505,7 @@ function renderBookingDetail(b) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
   }
   if (!canPayNow && !canPayBalance && canReview) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ', ' + b.id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
   }
   if (canExtend) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
@@ -4498,11 +4575,15 @@ function renderBookingDetail(b) {
       // Conflict affected card placeholder
       (b.is_conflict_affected ? '<div id="conflict-resolution-card-' + b.id + '" style="margin-bottom:20px;"></div>' : '') +
 
-      // Penalties Display Section
-      '<div id="customerPenaltiesContainer_' + b.id + '" style="display:none;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);border-radius:14px;padding:16px;margin-bottom:16px;">' +
-        '<h4 style="font-weight:700;font-size:1rem;color:#ef4444;margin-bottom:10px;display:flex;align-items:center;gap:6px;"><i class="fas fa-exclamation-triangle"></i> Penalty / Extra Charges</h4>' +
-        '<div id="customerPenaltiesList_' + b.id + '"></div>' +
+      // Penalty charges placeholder (loaded async)
+      '<div id="webPenaltyCard-' + b.id + '" style="display:none;background:rgba(239,68,68,0.04);border:1.5px solid rgba(239,68,68,0.18);border-radius:14px;padding:18px;margin-bottom:18px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+          '<i class="fas fa-gavel" style="color:#ef4444;font-size:1rem;"></i>' +
+          '<h4 style="font-weight:700;font-size:0.95rem;color:#dc2626;margin:0;">Additional Charges & Penalties</h4>' +
+        '</div>' +
+        '<div id="webPenaltyList-' + b.id + '"></div>' +
       '</div>' +
+
       // Driver's License Details
       licenseHtml +
 
@@ -4608,9 +4689,9 @@ function renderBookingDetail(b) {
 
     '</div>';
 
-  setTimeout(function() {
-    loadCustomerPenalties(b.id);
-  }, 50);
+  // Load penalties asynchronously
+  setTimeout(function() { _loadWebPenalties(b.id); }, 60);
+
   if (b.is_conflict_affected && b.conflict_id) {
     setTimeout(function() {
       loadConflictResolution(b.id, b.conflict_id, parseFloat(b.amount_paid || b.total_price || 0), ((b.brand || '') + ' ' + (b.model || '')).trim(), b.start_date, b.end_date);
@@ -4627,20 +4708,20 @@ function loadConflictResolution(bookingId, conflictId, totalPaid, vehicleName, s
     .then(function(res) {
       if (res.alternatives_available) {
         card.innerHTML = 
-          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px;">' +
+          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px; box-sizing:border-box;">' +
             '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">' +
-              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444;"></i>' +
+              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444; flex-shrink:0;"></i>' +
               '<span style="font-size:1rem; font-weight:800; color:#ef4444;">Booking Update Required</span>' +
             '</div>' +
-            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.4; margin-bottom:12px;">' +
+            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.5; margin-bottom:14px;">' +
               'Your upcoming booking is no longer available because the current renter extended their trip.' +
             '</p>' +
             '<div style="display:flex; flex-direction:column; gap:10px;">' +
-              '<button class="btn-primary" style="background:linear-gradient(135deg,#3b82f6,#2563eb); border:none; padding:12px; font-weight:700; border-radius:12px; color:#fff;" onclick="openConflictAlternativesOverlay(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\')">' +
-                '<i class="fas fa-exchange-alt" style="margin-right:6px;"></i> Choose Alternative Vehicle (' + res.alternatives.length + ' available)' +
+              '<button class="btn-primary" style="background:linear-gradient(135deg,#3b82f6,#2563eb); border:none; padding:13px 12px; font-weight:700; border-radius:12px; color:#fff; font-size:0.875rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; box-sizing:border-box;" onclick="openConflictAlternativesOverlay(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\')">' +
+                '<i class="fas fa-exchange-alt"></i> Choose Alternative Vehicle (' + res.alternatives.length + ' available)' +
               '</button>' +
-              '<button class="btn-outline" style="color:#ef4444; border-color:#ef4444; padding:11px; font-weight:700; border-radius:12px;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
-                '<i class="fas fa-undo" style="margin-right:6px;"></i> Get Full Refund (' + formatPHP(totalPaid) + ')' +
+              '<button class="btn-outline" style="color:#ef4444; border:1.5px solid #ef4444; background:transparent; padding:12px; font-weight:700; border-radius:12px; font-size:0.875rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; box-sizing:border-box;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+                '<i class="fas fa-undo"></i> Get Full Refund (' + formatPHP(totalPaid) + ')' +
               '</button>' +
             '</div>' +
             '<div style="font-size:0.75rem; color:var(--text-secondary); margin-top:12px; display:flex; align-items:center; gap:4px; justify-content:center;">' +
@@ -4649,16 +4730,16 @@ function loadConflictResolution(bookingId, conflictId, totalPaid, vehicleName, s
           '</div>';
       } else {
         card.innerHTML = 
-          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px;">' +
+          '<div style="background:rgba(239, 68, 68, 0.08); border:1.5px solid rgba(239, 68, 68, 0.3); border-radius:14px; padding:16px; margin-bottom:16px; box-sizing:border-box;">' +
             '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">' +
-              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444;"></i>' +
+              '<i class="fas fa-exclamation-triangle" style="font-size:1.25rem; color:#ef4444; flex-shrink:0;"></i>' +
               '<span style="font-size:1rem; font-weight:800; color:#ef4444;">No Alternative Vehicles Available</span>' +
             '</div>' +
-            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.4; margin-bottom:12px;">' +
+            '<p style="font-size:0.875rem; color:var(--text-primary); line-height:1.5; margin-bottom:14px;">' +
               'We sincerely apologize, but there are no alternative vehicles available for your booking dates.' +
             '</p>' +
-            '<button class="btn-primary" style="background:#ef4444; border:none; width:100%; padding:12px; font-weight:700; border-radius:12px; color:#fff;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
-              '<i class="fas fa-check-circle" style="margin-right:6px;"></i> Confirm Full Refund (' + formatPHP(totalPaid) + ')' +
+            '<button class="btn-primary" style="background:#ef4444; border:none; width:100%; padding:13px; font-weight:700; border-radius:12px; color:#fff; font-size:0.875rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-sizing:border-box;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+              '<i class="fas fa-check-circle"></i> Confirm Full Refund (' + formatPHP(totalPaid) + ')' +
             '</button>' +
           '</div>';
       }
@@ -4667,6 +4748,7 @@ function loadConflictResolution(bookingId, conflictId, totalPaid, vehicleName, s
       card.innerHTML = '<div style="padding:15px;text-align:center;color:#ef4444;"><i class="fas fa-exclamation-circle" style="margin-right:6px;"></i>Failed to load options. <a href="#" onclick="loadConflictResolution(' + bookingId + ',' + conflictId + ',' + totalPaid + ',\'' + vehicleName.replace(/'/g, "\\'") + '\',\'' + startDate + '\',\'' + endDate + '\');return false;">Retry</a></div>';
     });
 }
+
 
 function openConflictAlternativesOverlay(bookingId, conflictId, totalPaid, vehicleName, startDate, endDate) {
   var el = document.getElementById('bookingDetailContent');
@@ -4677,15 +4759,15 @@ function openConflictAlternativesOverlay(bookingId, conflictId, totalPaid, vehic
       '<button class="back-btn" onclick="reRenderBookingDetail(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>' +
       '<h2 style="text-align:center;flex:1;">Alternative Vehicles</h2>' +
     '</div>' +
-    '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
-      '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px;">' +
+    '<div class="scroll-content" style="padding:20px;padding-bottom:80px;max-width:640px;margin:0 auto;box-sizing:border-box;">' +
+      '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:20px;line-height:1.5;">' +
         'Choose a replacement vehicle for your booking dates (' + formatBookingDate(startDate) + ' to ' + formatBookingDate(endDate) + ') at no extra cost to you.' +
       '</p>' +
       '<div id="alternatives-list-container">Loading alternatives...</div>' +
       '<div style="border-top:1px solid var(--border);margin:20px 0;"></div>' +
       '<p style="font-size:0.875rem;text-align:center;color:var(--text-secondary);margin-bottom:12px;">Or request full refund below</p>' +
-      '<button class="btn-outline" style="color:#ef4444;border-color:#ef4444;width:100%;padding:12px;border-radius:12px;font-weight:700;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
-        '<i class="fas fa-undo" style="margin-right:6px;"></i> Request ' + formatPHP(totalPaid) + ' Refund' +
+      '<button class="btn-outline" style="color:#ef4444;border:1.5px solid #ef4444;background:transparent;width:100%;padding:13px;border-radius:12px;font-weight:700;font-size:0.875rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;" onclick="submitConflictRefund(' + conflictId + ',' + bookingId + ')">' +
+        '<i class="fas fa-undo"></i> Request ' + formatPHP(totalPaid) + ' Refund' +
       '</button>' +
     '</div>';
     
@@ -4720,22 +4802,23 @@ function openConflictAlternativesOverlay(bookingId, conflictId, totalPaid, vehic
         }
         
         html += 
-          '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 6px rgba(0,0,0,0.02);">' +
+          '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 4px 6px rgba(0,0,0,0.02);box-sizing:border-box;">' +
             '<div style="font-size:0.75rem;font-weight:800;color:' + tierColor + ';margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
               '<i class="fas ' + tierIcon + '"></i>' + tierClass +
             '</div>' +
-            '<div style="display:flex;gap:12px;margin-bottom:12px;">' +
-              '<img src="' + imgUrl + '" style="width:100px;height:70px;object-fit:cover;border-radius:8px;background:var(--bg-body);" onerror="this.src=\'img/default-car.png\'">' +
-              '<div style="flex:1;">' +
-                '<h4 style="font-size:1rem;font-weight:700;margin-bottom:4px;color:var(--text-primary);">' + alt.brand + ' ' + alt.model + '</h4>' +
-                '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">' + alt.transmission + ' | ' + alt.fuel_type + ' | ' + alt.seats + ' Seats</p>' +
-                '<p style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(alt.daily_rate) + '/day</p>' +
+            '<div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;">' +
+              '<img src="' + imgUrl + '" style="width:90px;height:65px;object-fit:cover;border-radius:8px;background:var(--bg-body);flex-shrink:0;" onerror="this.src=\'img/default-car.png\'">' +
+              '<div style="flex:1;min-width:0;">' +
+                '<h4 style="font-size:0.95rem;font-weight:700;margin-bottom:4px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + alt.brand + ' ' + alt.model + '</h4>' +
+                '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">' + alt.transmission + ' · ' + alt.fuel_type + ' · ' + alt.seats + ' Seats</p>' +
+                '<p style="font-size:0.88rem;font-weight:700;color:var(--text-primary);">' + formatPHP(alt.daily_rate) + '/day</p>' +
               '</div>' +
             '</div>' +
-            '<button class="btn-primary" style="background:' + tierColor + ';border:none;width:100%;padding:10px;border-radius:10px;font-weight:700;color:#fff;" onclick="submitConflictAlternativeSelection(' + conflictId + ',' + bookingId + ',' + alt.vehicle_id + ')">' +
-              'Select This Vehicle' +
+            '<button class="btn-primary" style="background:' + tierColor + ';border:none;width:100%;padding:11px;border-radius:10px;font-weight:700;color:#fff;font-size:0.875rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-sizing:border-box;" onclick="submitConflictAlternativeSelection(' + conflictId + ',' + bookingId + ',' + alt.vehicle_id + ')">' +
+              '<i class="fas fa-check"></i> Select This Vehicle' +
             '</button>' +
           '</div>';
+
       });
       listContainer.innerHTML = html;
     })
@@ -5016,7 +5099,7 @@ function pickExtProof() {
     if (!file) return;
     _extProofBlob = file;
     var preview = document.getElementById('extProofPreview');
-    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
@@ -5298,14 +5381,17 @@ function _viewRefundProof(url) {
   var img = document.getElementById('_refundProofImg');
   var statusEl = document.getElementById('_refundProofStatus');
   
+  console.log('Loading refund proof image from:', url);
   
   // Simple direct image loading - no fetch, no CORS issues
   img.onload = function() {
+    console.log('Image loaded successfully');
     img.style.display = 'block';
     statusEl.style.display = 'none';
   };
   
   img.onerror = function() {
+    console.log('Image load failed');
     statusEl.innerHTML = '<span style="color:#ef4444;">Could not load image.</span><br><a href="' + url + '" target="_blank" style="color:#00B14F;font-size:0.8rem;text-decoration:underline;">Open in browser</a>';
   };
   
@@ -5865,7 +5951,7 @@ function stopGpsPolling() {
 }
 
 // REVIEW
-function openReviewForm(vehicleId, bookingId) {
+function openReviewForm(vehicleId) {
   selectedRating = 0;
   var el = document.getElementById('reviewContent');
   if (!el) return;
@@ -5880,7 +5966,7 @@ function openReviewForm(vehicleId, bookingId) {
     '<span class="field-error" id="ratingErr" style="margin-top:8px;display:block;"></span>' +
     '<div class="form-group" style="margin-top:16px;"><label>Comment (optional)</label><textarea id="reviewComment" placeholder="Share your experience..."></textarea></div>' +
     '<span class="field-error" id="reviewErr" style="display:block;margin-bottom:12px;"></span>' +
-    '<button class="btn-primary" onclick="submitReview(' + vehicleId + ', ' + bookingId + ')"><i class="fas fa-paper-plane"></i> Submit Review</button>' +
+    '<button class="btn-primary" onclick="submitReview(' + vehicleId + ')"><i class="fas fa-paper-plane"></i> Submit Review</button>' +
     '</div></div>';
   showOverlay('page-review');
 }
@@ -5893,7 +5979,7 @@ function setRating(val) {
   }
 }
 
-function submitReview(vehicleId, bookingId) {
+function submitReview(vehicleId) {
   var ratingErrEl = document.getElementById('ratingErr');
   var reviewErrEl = document.getElementById('reviewErr');
   if (ratingErrEl) ratingErrEl.textContent = '';
@@ -5902,17 +5988,10 @@ function submitReview(vehicleId, bookingId) {
   var commentEl = document.getElementById('reviewComment');
   var comment = commentEl ? sanitizeInput(commentEl.value.trim()) : '';
   showLoading(true);
-  apiCall('/review', { method: 'POST', body: JSON.stringify({ user_id: currentUser.id, vehicle_id: vehicleId, booking_id: bookingId, rating: selectedRating, comment: comment }) })
+  apiCall('/review', { method: 'POST', body: JSON.stringify({ user_id: currentUser.id, vehicle_id: vehicleId, rating: selectedRating, comment: comment }) })
     .then(function() {
       showToast('Review submitted! Thank you.', 'success');
       closeOverlay('page-review');
-      if (activeBookingData && activeBookingData.id === bookingId) {
-        activeBookingData.is_reviewed = true;
-        renderBookingDetail(activeBookingData);
-      }
-      if (typeof Bookings !== 'undefined' && Bookings.load) {
-        Bookings.load();
-      }
     })
     .catch(function(err) { if (reviewErrEl) reviewErrEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
@@ -6042,7 +6121,6 @@ var Profile = {
         clearInlineError(expiryEl);
       }
     }
-
     var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
     var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
     showLoading(true);
@@ -6095,67 +6173,32 @@ var Profile = {
   }
 };
 
-async function pickLicenseForProfile(side) {
-  var camera = getCamera();
-  if (camera) {
-    try {
-      var image = await camera.getPhoto({
-        quality: 80,
-        allowEditing: false,
-        resultType: 'uri',
-        source: 'PROMPT'
-      });
-      var res = await fetch(image.webPath);
-      var blob = await res.blob();
-      blob.name = 'license_' + side + '.jpg';
-      handleLicenseFileSelect({ target: { files: [blob] } }, side);
-    } catch(e) {
-      console.log('Camera error or cancelled', e);
-    }
-    return;
-  }
+function pickLicenseForProfile(side) {
   var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
   var el = document.getElementById(inputId);
   if (el) el.click();
 }
 
-  function handleLicenseFileSelect(e, side) {
-    var file = e.target.files[0];
-    if (!file) return;
-
-    if (e.isCropped) {
-      _processLicenseFileSelect(e, side);
-      return;
-    }
-
-    openCropperAndCallback(file, 1.58, function(croppedBlob) {
-      croppedBlob.name = 'license_' + side + '.jpg';
-      var customEvent = { target: { files: [croppedBlob] }, isCropped: true };
-      handleLicenseFileSelect(customEvent, side);
-    });
-  }
-
-  function _processLicenseFileSelect(e, side) {
+function handleLicenseFileSelect(e, side) {
   var file = e.target.files[0];
   if (!file) return;
   var err = validateUploadFile(file);
   if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
-  
+
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
-    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
-    
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+
     // Tesseract OCR Logic
     var statusText = document.getElementById('ocrStatusText');
     var detailsBox = document.getElementById('ocrExtractedDetails');
     if (statusText) statusText.style.display = 'block';
     if (detailsBox) detailsBox.style.display = 'none';
-    
+
     if (typeof Tesseract !== 'undefined') {
-      var imageInput = file.previewUrl || file;
       Tesseract.recognize(
-        imageInput,
+        file,
         'eng',
         { logger: function(m) { /* console.log(m); */ } }
       ).then(function(result) {
@@ -6163,29 +6206,36 @@ async function pickLicenseForProfile(side) {
         if (statusText) statusText.style.display = 'none';
         if (detailsBox) detailsBox.style.display = 'block';
 
+        var rawContainer = document.getElementById('ocrRawTextContainer');
+        if (rawContainer) {
+          rawContainer.textContent = text || "(No text recognized by OCR)";
+        }
+
         console.log('OCR Raw Text:', text);
-        
-        // --- 1. Find License Number: e.g., N01-12-123456 ---
+
+        // --- 1. Find License Number: e.g., N01-12-123456 (Philippine LTO format) ---
         var licRegex = /[A-Z]\d{2}-\d{2}-\d{6}/g;
         var matchLic = text.match(licRegex);
         if (matchLic && document.getElementById('editLicenseNumber')) {
           document.getElementById('editLicenseNumber').value = matchLic[0];
-          document.getElementById('editLicenseNumber').style.borderColor = "var(--success)";
+          document.getElementById('editLicenseNumber').style.borderColor = 'var(--success, #22c55e)';
         }
-        
+
         // --- 2. Find ALL dates (YYYY/MM/DD, YYYY-MM-DD, MM/DD/YYYY, MM-DD-YYYY) ---
         var allDates = [];
 
+        // Format: YYYY/MM/DD or YYYY-MM-DD
         var dateRegex1 = /((?:19|20)\d{2})[\/\-](0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])/g;
         var m1;
         while ((m1 = dateRegex1.exec(text)) !== null) {
-          allDates.push({ year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]) });
+          allDates.push({ year: parseInt(m1[1]), month: parseInt(m1[2]), day: parseInt(m1[3]), raw: m1[0] });
         }
 
+        // Format: MM/DD/YYYY or MM-DD-YYYY
         var dateRegex2 = /(0[1-9]|1[0-2])[\/\-](0[1-9]|[12]\d|3[01])[\/\-]((?:19|20)\d{2})/g;
         var m2;
         while ((m2 = dateRegex2.exec(text)) !== null) {
-          allDates.push({ year: parseInt(m2[3]), month: parseInt(m2[1]), day: parseInt(m2[2]) });
+          allDates.push({ year: parseInt(m2[3]), month: parseInt(m2[1]), day: parseInt(m2[2]), raw: m2[0] });
         }
 
         var currentYear = new Date().getFullYear();
@@ -6198,25 +6248,29 @@ async function pickLicenseForProfile(side) {
           var expDate = futureDates[0];
           var expStr = expDate.year + '-' + String(expDate.month).padStart(2,'0') + '-' + String(expDate.day).padStart(2,'0');
           document.getElementById('editLicenseExpiry').value = expStr;
-          document.getElementById('editLicenseExpiry').style.borderColor = "var(--success)";
+          document.getElementById('editLicenseExpiry').style.borderColor = 'var(--success, #22c55e)';
         }
 
-        // Date of Birth = latest past date (year >= 1940)
+        // Date of Birth = latest past date (but year >= 1940, reasonable for a driver)
         var dobCandidates = pastDates.filter(function(d) { return d.year >= 1940; });
         if (dobCandidates.length > 0 && document.getElementById('editLicenseDob')) {
           dobCandidates.sort(function(a, b) { return b.year - a.year || b.month - a.month || b.day - a.day; });
           var dobDate = dobCandidates[0];
           var dobStr = dobDate.year + '-' + String(dobDate.month).padStart(2,'0') + '-' + String(dobDate.day).padStart(2,'0');
           document.getElementById('editLicenseDob').value = dobStr;
-          document.getElementById('editLicenseDob').style.borderColor = "var(--success)";
+          document.getElementById('editLicenseDob').style.borderColor = 'var(--success, #22c55e)';
         }
 
         // --- 3. Find Name on License ---
+        // Based on actual OCR output, the name appears as: "d DE RAMOS, XEDRIC YASONA"
+        // The line may have a 1-2 char prefix (OCR artifact), so DON'T anchor to start of line.
         var lines = text.split('\n');
         var nameLine = '';
 
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i].trim();
+          // Search for CAPS, CAPS pattern ANYWHERE in the line (not just start)
+          // Must have no digits (addresses have numbers like 128, 4014)
           if (!/\d/.test(line)) {
             var nameMatch = line.match(/([A-Z][A-Z\s]{2,}),\s*([A-Z][A-Z\s]{2,})/);
             if (nameMatch && nameMatch[0].length > 8 && nameMatch[0].length < 60) {
@@ -6229,105 +6283,89 @@ async function pickLicenseForProfile(side) {
         if (nameLine && document.getElementById('editLicenseName')) {
           var cleanedName = nameLine.replace(/[.;]/g, ',').replace(/\s+/g, ' ').trim();
           document.getElementById('editLicenseName').value = cleanedName;
-          document.getElementById('editLicenseName').style.borderColor = "var(--success)";
+          document.getElementById('editLicenseName').style.borderColor = 'var(--success, #22c55e)';
         }
 
-        // --- 4. Find License Class / DL Codes / Restrictions ---
+        // --- 4. Find License Class (DL Codes) ---
+        // OCR raw example: "@ DLcodes Conditions" where "@" = "A" (OCR misread)
+        // Strategy: find the line with DLcodes, grab it + prev line, replace @ with A, extract codes
         var classVal = '';
-        var dlFound = [];
-        var validDlCodes = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'];
-        var validOldRestrictions = ['1', '2', '3', '4', '5', '6', '7', '8'];
-
-        var normalizedText = text.replace(/[@©＠]/g, 'A');
-        var textLines2 = normalizedText.split(/[\n\r]+/);
-
-        // Strategy A: Find line containing any DL keyword (DL, CODES, REST, CLASS, CATEGORY, CONDITIONS)
+        var textLines2 = text.split(/[\n\r]+/);
+        var dlLineIndex = -1;
         for (var i = 0; i < textLines2.length; i++) {
-          var l = textLines2[i].trim();
-          if (/\b(?:DL|CODES?|[DdO][LlI1]\s*[Cc]odes?|RESTRICTIONS?|REST\b|CLASS|CATEGORY|CONDITIONS?)\b/i.test(l)) {
-            var block = [textLines2[i], textLines2[i+1] || '', textLines2[i+2] || ''].join(' ');
-            var cleanedBlock = block.replace(/\b(?:DL|CODES?|[DdO][LlI1]\s*[Cc]odes?|RESTRICTIONS?|REST\b|CLASS|CATEGORY|CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR|SIGNATURE|LICENSEE)\b/gi, ' ');
-            
-            var tokens = cleanedBlock.match(/\b([A-E][12]?|BE|CE)\b/gi);
-            if (tokens) {
-              tokens.forEach(function(tok) {
-                var code = tok.toUpperCase();
-                if (validDlCodes.indexOf(code) !== -1 && dlFound.indexOf(code) === -1) {
-                  dlFound.push(code);
-                }
-              });
-            }
+          if (/[DdO][LlI1]\s*[Cc]odes?/i.test(textLines2[i])) {
+            dlLineIndex = i;
+            break;
           }
         }
-
-        // Strategy B: Search whole OCR text for valid letter DL codes (excluding dates & address lines)
-        if (dlFound.length === 0) {
-          var safeLines = textLines2.filter(function(l) {
-            return !/\b(?:\d{4}[\/\-]\d{2}[\/\-]\d{2}|D\d{2}-\d{2}-\d{6}|BONIFACIO|ADDRESS|BIRTH|HEIGHT|WEIGHT)\b/i.test(l);
-          });
-          var safeText = safeLines.join(' ');
-          var globalTokens = safeText.match(/\b([A-E][12]?|BE|CE)\b/gi);
-          if (globalTokens) {
-            globalTokens.forEach(function(tok) {
-              var code = tok.toUpperCase();
-              if (validDlCodes.indexOf(code) !== -1 && ['M', 'F'].indexOf(code) === -1 && dlFound.indexOf(code) === -1) {
-                dlFound.push(code);
-              }
-            });
+        console.log('DL line index:', dlLineIndex, dlLineIndex >= 0 ? 'Line: [' + textLines2[dlLineIndex] + ']' : 'NOT FOUND');
+        if (dlLineIndex >= 0) {
+          // Build search string: line before + the DL codes line (code is often on prev line or same line)
+          var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
+          var dlLineText = textLines2[dlLineIndex];
+          var combined = (prevLine + ' ' + dlLineText).replace(/[@©]/g, 'A');
+          console.log('DL combined search area:', combined);
+          // Remove the label word itself to avoid false matches from DL letters
+          var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?/gi, ' ');
+          // Remove known non-code words
+          stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
+          console.log('DL stripped search:', stripped);
+          var dlCodeRegex = /(?:^|\s)([A-E][12]?|[1-8]|[@©＠0O])(?=\s|$)/gi;
+          var dlFound = [];
+          var dlMx;
+          while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
+            var c = dlMx[1].toUpperCase();
+            if (['@', '©', '＠', '0', 'O'].indexOf(c) !== -1) c = 'A';
+            if (dlFound.indexOf(c) === -1) dlFound.push(c);
           }
+          console.log('DL codes found:', dlFound);
+          if (dlFound.length > 0) classVal = dlFound.join(', ');
+        }
+        if (classVal && document.getElementById('editLicenseClass')) {
+          document.getElementById('editLicenseClass').value = classVal;
+          document.getElementById('editLicenseClass').style.borderColor = 'var(--success, #22c55e)';
         }
 
-        if (dlFound.length > 0) {
-          classVal = dlFound.join(', ');
-        }
-
-        var classEl = document.getElementById('editLicenseClass');
-        if (classEl) {
-          if (classVal) {
-            classEl.value = classVal;
-            classEl.style.borderColor = "var(--success)";
-            if (typeof clearInlineError === 'function') clearInlineError(classEl);
-          } else {
-            // If OCR couldn't detect DL Code, clear old single-digit "1" from database so user is prompted to set A/B
-            if (classEl.value === '1') {
-              classEl.value = '';
-            }
-          }
-        }
-
-      }).catch(function(err) {
-        console.error('OCR Error:', err);
+      }).catch(function(ocrErr) {
+        console.error('OCR Error:', ocrErr);
         if (statusText) statusText.style.display = 'none';
       });
     }
   } else {
     _licenseBackBlob = file;
     var preview = document.getElementById('licenseEditPreviewBack');
-    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
   }
 }
 
 function loadLicenseDetailsForEdit() {
+  console.log('loadLicenseDetailsForEdit() called');
   if (!currentUser.id) return;
   apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(response) {
+      console.log('License details for edit response:', response);
       
       // Handle the API response structure - license data is in the 'data' property
       var data = response && response.data ? response.data : response;
+      console.log('Extracted license data for edit:', data);
       
       if (!data || !data.license_number) {
+        console.log('No license data found for editing');
         return;
       }
       
+      console.log('Populating edit form with license data...');
       var el;
       el = document.getElementById('editLicenseNumber'); 
       if (el) { 
         el.value = data.license_number || '';
+        console.log('Set license number:', el.value);
       }
       
       el = document.getElementById('editLicenseExpiry'); 
       if (el) { 
         el.value = data.expiry_date || '';
+        console.log('Set expiry date:', el.value);
       }
       
       // For select dropdowns, try exact match first, then partial match
@@ -6335,6 +6373,7 @@ function loadLicenseDetailsForEdit() {
       if (el) {
         var countryVal = data.issuing_country_state || '';
         el.value = countryVal;
+        console.log('Set country:', countryVal);
         if (!el.value && countryVal) {
           // Try partial match (e.g. "Ph" -> "Philippines")
           for (var i = 0; i < el.options.length; i++) {
@@ -6353,27 +6392,32 @@ function loadLicenseDetailsForEdit() {
       el = document.getElementById('editLicenseName'); 
       if (el) { 
         el.value = data.full_name || '';
+        console.log('Set name:', el.value);
       }
       
       el = document.getElementById('editLicenseDob'); 
       if (el) { 
         el.value = data.date_of_birth || '';
+        console.log('Set date of birth:', el.value);
       }
       
       el = document.getElementById('editLicenseEmName'); 
       if (el) { 
         el.value = data.emergency_contact_name || '';
+        console.log('Set emergency contact name:', el.value);
       }
       
       el = document.getElementById('editLicenseEmPhone'); 
       if (el) { 
         el.value = data.emergency_contact_phone || '';
+        console.log('Set emergency contact phone:', el.value);
       }
       
       el = document.getElementById('editLicenseEmRel');
       if (el) {
         var relVal = data.emergency_contact_relationship || '';
         el.value = relVal;
+        console.log('Set emergency contact relationship:', relVal);
         if (!el.value && relVal) {
           for (var k = 0; k < el.options.length; k++) {
             if (el.options[k].value.toLowerCase() === relVal.toLowerCase()) {
@@ -6387,12 +6431,17 @@ function loadLicenseDetailsForEdit() {
       var frontUrl = data.license_front_url || data.license_image_url || '';
       var backUrl = data.license_back_url || '';
       
+      console.log('Edit form using fallback pattern:');
+      console.log('- Front URL (with fallback):', frontUrl);
+      console.log('- Back URL:', backUrl);
+      console.log('- Fallback license_image_url:', data.license_image_url);
       
       if (frontUrl && frontUrl !== 'null' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
         var prevF = document.getElementById('licenseEditPreviewFront');
         if (prevF) { 
           prevF.src = buildImgUrl(frontUrl); 
           prevF.style.display = 'block';
+          console.log('Set front image preview using fallback:', buildImgUrl(frontUrl));
         }
       }
       if (backUrl && backUrl !== 'null' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
@@ -6400,9 +6449,11 @@ function loadLicenseDetailsForEdit() {
         if (prevB) { 
           prevB.src = buildImgUrl(backUrl); 
           prevB.style.display = 'block';
+          console.log('Set back image preview:', buildImgUrl(backUrl));
         }
       }
       
+      console.log('License edit form populated successfully');
     })
     .catch(function(err) { 
       console.error('Failed to load license details for edit:', err);
@@ -6426,6 +6477,9 @@ function closeLicensePreview() {
 }
 
 function loadProfile() {
+  console.log('loadProfile() called');
+  console.log('currentUser:', currentUser);
+  console.log('currentUser.id:', currentUser.id);
   
   if (!currentUser || !currentUser.id) {
     console.warn('No currentUser.id available for loadProfile');
@@ -6437,8 +6491,10 @@ function loadProfile() {
   // Load license details from new table with enhanced error handling
   var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
     .then(function(data) {
+      console.log('License details API response:', data);
       // Handle the API response structure - license data is in the 'data' property
       var licenseData = data && data.data ? data.data : {};
+      console.log('Extracted license data:', licenseData);
       return licenseData;
     })
     .catch(function(err) { 
@@ -6461,22 +6517,17 @@ function loadProfile() {
 
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
-      var editFnEl = document.getElementById('editFirstName');
-      var editMnEl = document.getElementById('editMiddleName');
-      var editLnEl = document.getElementById('editLastName');
       var editPhoneEl = document.getElementById('editPhone');
       var pointsEl = document.getElementById('profilePoints');
       if (nameEl) nameEl.textContent = profile.full_name || '';
       if (emailEl) emailEl.textContent = profile.email || '';
-      
+      var editFirstEl = document.getElementById('editFirstName');
+      var editMiddleEl = document.getElementById('editMiddleName');
+      var editLastEl = document.getElementById('editLastName');
       var nameParts = (profile.full_name || '').split(/\s+/).filter(Boolean);
-      var fn = profile.first_name || nameParts[0] || '';
-      var ln = profile.last_name || (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '');
-      var mn = profile.middle_name || (nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '');
-      
-      if (editFnEl) editFnEl.value = fn;
-      if (editMnEl) editMnEl.value = mn;
-      if (editLnEl) editLnEl.value = ln;
+      if (editFirstEl) editFirstEl.value = nameParts[0] || '';
+      if (editLastEl) editLastEl.value = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      if (editMiddleEl) editMiddleEl.value = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
       var editEmailEl = document.getElementById('editEmail');
       if (editEmailEl) editEmailEl.value = profile.email || '';
@@ -6514,6 +6565,7 @@ function loadProfile() {
       // License images thumbnail (with admin mobile fallback pattern)
       var licenseThumb = document.getElementById('profileLicenseThumb');
       if (licenseThumb) {
+        console.log('Setting up license thumbnails with data:', licenseData);
         var html = '';
         
         // Use admin mobile fallback pattern: license_front_url || license_image_url || ''
@@ -6523,6 +6575,9 @@ function loadProfile() {
         frontUrl = frontUrl ? buildImgUrl(frontUrl) : null;
         backUrl = backUrl ? buildImgUrl(backUrl) : null;
         
+        console.log('License front URL (with fallback):', frontUrl);
+        console.log('License back URL:', backUrl);
+        console.log('Fallback license_image_url:', licenseData.license_image_url);
         
         if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
           html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
@@ -6558,67 +6613,89 @@ function loadProfile() {
         }
         
         licenseThumb.innerHTML = html;
+        console.log('License thumbnails HTML set with error handling');
       }
 
       // License detail fields - view mode (from new license_details table)
+      console.log('Populating license view fields with data:', licenseData);
+      console.log('Available license data keys:', Object.keys(licenseData));
       
       var el;
       el = document.getElementById('viewLicenseNumber');
       if (el) {
         el.textContent = licenseData.license_number || '-';
+        console.log('License number set to:', el.textContent);
       } else {
+        console.log('viewLicenseNumber element not found');
       }
       
       el = document.getElementById('viewLicenseExpiry');
       if (el) {
         el.textContent = licenseData.expiry_date || '-';
+        console.log('License expiry set to:', el.textContent);
       } else {
+        console.log('viewLicenseExpiry element not found');
       }
       
       el = document.getElementById('viewLicenseClass');
       if (el) {
         el.textContent = licenseData.license_class || '-';
+        console.log('License class set to:', el.textContent);
       } else {
+        console.log('viewLicenseClass element not found');
       }
       
       el = document.getElementById('viewLicenseCountry');
       if (el) {
         el.textContent = licenseData.issuing_country_state || '-';
+        console.log('License country set to:', el.textContent);
       } else {
+        console.log('viewLicenseCountry element not found');
       }
       
       el = document.getElementById('viewLicenseName');
       if (el) {
         el.textContent = licenseData.full_name || '-';
+        console.log('License name set to:', el.textContent);
       } else {
+        console.log('viewLicenseName element not found');
       }
       
       el = document.getElementById('viewLicenseDob');
       if (el) {
         el.textContent = licenseData.date_of_birth || '-';
+        console.log('License DOB set to:', el.textContent);
       } else {
+        console.log('viewLicenseDob element not found');
       }
       
       el = document.getElementById('viewLicenseEmName');
       if (el) {
         el.textContent = licenseData.emergency_contact_name || '-';
+        console.log('Emergency contact name set to:', el.textContent);
       } else {
+        console.log('viewLicenseEmName element not found');
       }
       
       el = document.getElementById('viewLicenseEmPhone');
       if (el) {
         el.textContent = licenseData.emergency_contact_phone || '-';
+        console.log('Emergency contact phone set to:', el.textContent);
       } else {
+        console.log('viewLicenseEmPhone element not found');
       }
       
       el = document.getElementById('viewLicenseEmRel');
       if (el) {
         el.textContent = licenseData.emergency_contact_relationship || '-';
+        console.log('Emergency contact relationship set to:', el.textContent);
       } else {
+        console.log('viewLicenseEmRel element not found');
       }
       
       // Show message if no license details exist
       if (!licenseData.license_number && !licenseData.full_name) {
+        console.log('No license data found, showing empty state');
         var licenseCard = document.getElementById('viewLicenseNumber');
         if (licenseCard && licenseCard.closest('.card')) {
           var infoMsg = licenseCard.closest('.card').querySelector('.no-license-info');
@@ -6647,22 +6724,23 @@ function pickProfilePicture() {
     if (err) { showToast(err, 'error'); return; }
     profilePicBlob = file;
     var preview = document.getElementById('profilePicPreview');
-    if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
 
 function doUpdateProfile() {
-  var fnEl = document.getElementById('editFirstName');
-  var mnEl = document.getElementById('editMiddleName');
-  var lnEl = document.getElementById('editLastName');
+  var firstEl = document.getElementById('editFirstName');
+  var middleEl = document.getElementById('editMiddleName');
+  var lastEl = document.getElementById('editLastName');
   var phoneEl = document.getElementById('editPhone');
   var emailEl = document.getElementById('editEmail');
   var phoneErrEl = document.getElementById('editPhoneErr');
   var emailErrEl = document.getElementById('editEmailErr');
-  var firstName = fnEl ? sanitizeInput(fnEl.value.trim()) : '';
-  var middleName = mnEl ? sanitizeInput(mnEl.value.trim()) : '';
-  var lastName = lnEl ? sanitizeInput(lnEl.value.trim()) : '';
+  var firstName = firstEl ? sanitizeInput(firstEl.value.trim()) : '';
+  var middleName = middleEl ? sanitizeInput(middleEl.value.trim()) : '';
+  var lastName = lastEl ? sanitizeInput(lastEl.value.trim()) : '';
+  var name = [firstName, middleName, lastName].filter(Boolean).join(' ');
   var phone = phoneEl ? phoneEl.value.trim() : '';
   var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
   clearInlineError(phoneEl);
@@ -6723,21 +6801,11 @@ function pickLicense() {
   input.onchange = function(e) {
     var file = e.target.files[0];
     if (!file) return;
-    if (typeof openCropperAndCallback === 'function') {
-      openCropperAndCallback(file, 1.58, function(croppedBlob) {
-        var err = validateUploadFile(croppedBlob);
-        if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
-        licenseBlob = croppedBlob;
-        var preview = document.getElementById('licensePreview');
-        if (preview) { preview.src = croppedBlob.previewUrl || URL.createObjectURL(croppedBlob); preview.style.display = 'block'; }
-      });
-    } else {
-      var err = validateUploadFile(file);
-      if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
-      licenseBlob = file;
-      var preview = document.getElementById('licensePreview');
-      if (preview) { preview.src = file.previewUrl || URL.createObjectURL(file); preview.style.display = 'block'; }
-    }
+    var err = validateUploadFile(file);
+    if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+    licenseBlob = file;
+    var preview = document.getElementById('licensePreview');
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
   };
   input.click();
 }
@@ -6748,15 +6816,13 @@ function submitLicense() {
   if (!licenseBlob) { if (errEl) errEl.textContent = 'Please select a license image first.'; return; }
   
   showLoading(true);
-  compressImage(licenseBlob, 600, 600, 0.5)
+  compressImage(licenseBlob, 800, 800, 0.6)
     .then(function(compressedBlob) {
       var fd = new FormData();
       fd.append('user_id', currentUser.id);
       fd.append('license', compressedBlob, 'license.jpg');
       
-      // Compress more aggressively to stay well under Vercel's 4.5 MB body limit
-      // and reduce upload time on slow mobile connections
-      return uploadFile('/user/upload-license', fd, 45000);
+      return uploadFile('/user/upload-license', fd);
     })
     .then(function() {
       currentUser.isVerified = 1;
@@ -6770,14 +6836,8 @@ function submitLicense() {
       }, 2500);
     })
     .catch(function(err) {
+      if (errEl) errEl.textContent = err.message;
       showLoading(false);
-      var msg = err.message || 'Upload failed. Please try again.';
-      // Give a more helpful message for timeout/network errors
-      if (!err.status || err.status === 0) {
-        msg = 'Upload failed. Please check your internet connection and try again. If the problem continues, try using a smaller or clearer photo.';
-      }
-      if (errEl) errEl.textContent = msg;
-      showToast(msg, 'error');
     });
 }
 
@@ -6864,11 +6924,8 @@ function loadChatbot() {
     overlay.style.display = 'flex';
     overlay.style.flexDirection = 'column';
     overlay.style.overflow = 'hidden';
-    overlay.style.height = '100%';
-    overlay.style.maxHeight = '100%';
-    overlay.style.zIndex = '1500';
   }
-  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;max-height:100%;overflow:hidden;';
+  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;';
 
   el.innerHTML =
     '<div class="page-header" style="flex-shrink:0;">' +
@@ -6894,14 +6951,8 @@ function closeChatbot() {
   var overlay = document.getElementById('page-chatbot');
   var el = document.getElementById('chatbotContent');
   // Reset so next open re-initializes fresh
-  if (el) { 
-    el.dataset.initialized = ''; 
-    el.innerHTML = ''; 
-    el.style.cssText = '';
-  }
-  if (overlay) { 
-    overlay.style.cssText = ''; 
-  }
+  if (el) { el.dataset.initialized = ''; el.innerHTML = ''; }
+  if (overlay) { overlay.style.cssText = ''; }
   closeOverlay('page-chatbot');
 }
 
@@ -7110,6 +7161,7 @@ var LiveChat = (function () {
 
         if (!admins || !admins.length) {
           // Default to admin_id=20 if no admins returned
+          console.log('[LiveChat] No admins returned, using default admin_id=20');
           admins = [{ id: 20, username: 'Support Team' }];
         }
 
@@ -7169,9 +7221,13 @@ var LiveChat = (function () {
 
   function fetchMessages(initial) {
     if (!_currentAdminId || !currentUser.id) return;
+    console.log('[LiveChat] Fetching messages: user_id=' + currentUser.id + ', admin_id=' + _currentAdminId);
     apiCall('/chat/messages?user_id=' + currentUser.id + '&admin_id=' + _currentAdminId + '&limit=100')
       .then(function (msgs) {
+        console.log('[LiveChat] Received ' + (msgs ? msgs.length : 0) + ' messages');
         if (msgs && msgs.length > 0) {
+          console.log('[LiveChat] First message:', JSON.stringify(msgs[0]));
+          console.log('[LiveChat] Last message:', JSON.stringify(msgs[msgs.length - 1]));
         }
         
         var container = document.getElementById('lcMessages');
@@ -7182,7 +7238,9 @@ var LiveChat = (function () {
           return;
         }
         var latestId = msgs[msgs.length - 1].id;
+        console.log('[LiveChat] Latest ID: ' + latestId + ', Last ID: ' + _lastMsgId);
         if (String(latestId) === String(_lastMsgId) && !initial) {
+          console.log('[LiveChat] Skipping update - same message ID');
           return;
         }
 
@@ -7197,6 +7255,7 @@ var LiveChat = (function () {
         }
 
         var atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+        console.log('[LiveChat] Rendering ' + msgs.length + ' messages');
         container.innerHTML = msgs.map(function (m) {
           var isMe = m.sender_type === 'user';
           var ts = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -7395,6 +7454,7 @@ function escapeHtml(str) {
 
 // Also initialize when Capacitor is ready (for native apps) - but only if user is logged in
 document.addEventListener('deviceready', function() {
+  console.log('Capacitor device ready, checking push notifications...');
   setTimeout(function() {
     try {
       // Only init push if user is already logged in (returning user)
@@ -7402,11 +7462,14 @@ document.addEventListener('deviceready', function() {
         var pushPlugin = getPushNotifications();
         if (pushPlugin) {
           PushNotifications.init().catch(function(error) {
+            console.log('Push notifications init failed: ' + error);
           });
         }
       } else {
+        console.log('No logged in user - skipping push notification init on deviceready');
       }
     } catch (error) {
+      console.log('Push notification deviceready check failed safely: ' + error);
     }
   }, 500);
 });
@@ -7415,13 +7478,109 @@ document.addEventListener('deviceready', function() {
 function initializePushForUser() {
   try {
     if (currentUser.id && PushNotifications.currentToken) {
+      console.log('Re-registering FCM token for logged in user: ' + currentUser.id);
       PushNotifications.sendTokenToServer(PushNotifications.currentToken);
     } else if (currentUser.id) {
+      console.log('User logged in, initializing push notifications...');
       PushNotifications.init().catch(function(error) {
+        console.log('Push init after login failed (normal without Firebase): ' + error);
       });
     }
   } catch (error) {
+    console.log('Push initialization for user failed safely: ' + error);
   }
+}
+
+// UPDATE/CHANGE PASSWORD
+function openChangePasswordOverlay() {
+  document.getElementById('changePasswordCurrent').value = '';
+  document.getElementById('changePasswordNew').value = '';
+  document.getElementById('changePasswordConfirm').value = '';
+  
+  document.getElementById('changePasswordCurrentErr').textContent = '';
+  document.getElementById('changePasswordNewErr').textContent = '';
+  document.getElementById('changePasswordConfirmErr').textContent = '';
+  document.getElementById('changePasswordErr').textContent = '';
+  
+  validatePassword('', 'changePasswordNewErr', 'req-update-');
+
+  showLoading(true);
+  apiCall('/user/profile-full?user_id=' + currentUser.id, { method: 'GET' })
+    .then(function(profile) {
+      if (profile && profile.has_password === false) {
+        document.getElementById('changePasswordCurrentGroup').style.display = 'none';
+      } else {
+        document.getElementById('changePasswordCurrentGroup').style.display = 'block';
+      }
+      showOverlay('page-change-password');
+    })
+    .catch(function() {
+      document.getElementById('changePasswordCurrentGroup').style.display = 'block';
+      showOverlay('page-change-password');
+    })
+    .finally(function() {
+      showLoading(false);
+    });
+}
+
+function doUpdatePassword() {
+  var currentPasswordEl = document.getElementById('changePasswordCurrent');
+  var newPasswordEl = document.getElementById('changePasswordNew');
+  var confirmPasswordEl = document.getElementById('changePasswordConfirm');
+  var currentErrEl = document.getElementById('changePasswordCurrentErr');
+  var newErrEl = document.getElementById('changePasswordNewErr');
+  var confirmErrEl = document.getElementById('changePasswordConfirmErr');
+  var mainErrEl = document.getElementById('changePasswordErr');
+
+  if (currentErrEl) currentErrEl.textContent = '';
+  if (newErrEl) newErrEl.textContent = '';
+  if (confirmErrEl) confirmErrEl.textContent = '';
+  if (mainErrEl) mainErrEl.textContent = '';
+
+  var currentPassword = currentPasswordEl ? currentPasswordEl.value : '';
+  var newPassword = newPasswordEl ? newPasswordEl.value : '';
+  var confirmPassword = confirmPasswordEl ? confirmPasswordEl.value : '';
+
+  var isCurrentRequired = document.getElementById('changePasswordCurrentGroup').style.display !== 'none';
+  if (isCurrentRequired && !currentPassword) {
+    if (currentErrEl) currentErrEl.textContent = 'Current password is required.';
+    return;
+  }
+
+  if (!newPassword) {
+    if (newErrEl) newErrEl.textContent = 'New password is required.';
+    return;
+  }
+
+  if (!validatePassword(newPassword, 'changePasswordNewErr', 'req-update-')) {
+    if (newErrEl) newErrEl.textContent = 'Password does not meet the security requirements.';
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    if (confirmErrEl) confirmErrEl.textContent = 'Passwords do not match.';
+    return;
+  }
+
+  showLoading(true);
+  apiCall('/user/change-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_id: currentUser.id,
+      current_password: isCurrentRequired ? currentPassword : null,
+      new_password: newPassword
+    })
+  })
+    .then(function() {
+      showToast('Password updated successfully!', 'success');
+      closeOverlay('page-change-password');
+    })
+    .catch(function(err) {
+      if (mainErrEl) mainErrEl.textContent = err.message || 'Failed to update password.';
+    })
+    .finally(function() {
+      showLoading(false);
+    });
 }
 
 // Global variables for vehicle details slideshow
@@ -7440,11 +7599,11 @@ function renderVdGallery(unit) {
   window._vdGalleryImages = galleryImages;
 
   if (!galleryImages.length) {
-    return '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+    return '<div style="width:100%;height:220px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;border-radius:16px;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
   }
 
   // Slide wrapper
-  var html = '<div class="vd-slideshow-container" style="position:relative;width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;">';
+  var html = '<div class="vd-slideshow-container" style="position:relative;width:100%;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">';
   
   // Image tag
   html += '<img id="vd-img" src="' + galleryImages[0] + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">';
@@ -7502,141 +7661,146 @@ function setVdImage(idx) {
   window._vdActiveImgIdx = idx;
   updateVdSlideshow();
 }
-// ==================== CUSTOMER BOOKING CALENDAR ====================
-var currentCalDate = new Date();
-var blockedDatesList = [];
 
-function prevBookingCalendarMonth() {
-  currentCalDate.setMonth(currentCalDate.getMonth() - 1);
-  renderBookingCalendar();
+// ============================================================
+// WEB CUSTOMER — AVAILABILITY CALENDAR (Booking Form)
+// ============================================================
+
+var _webCalState = {
+  vehicleId: null,
+  year: new Date().getFullYear(),
+  month: new Date().getMonth(),
+  blocked: []
+};
+
+function _webCalPrev() {
+  if (_webCalState.month === 0) { _webCalState.month = 11; _webCalState.year--; }
+  else { _webCalState.month--; }
+  _renderWebCal();
 }
-window.prevBookingCalendarMonth = prevBookingCalendarMonth;
 
-function nextBookingCalendarMonth() {
-  currentCalDate.setMonth(currentCalDate.getMonth() + 1);
-  renderBookingCalendar();
+function _webCalNext() {
+  if (_webCalState.month === 11) { _webCalState.month = 0; _webCalState.year++; }
+  else { _webCalState.month++; }
+  _renderWebCal();
 }
-window.nextBookingCalendarMonth = nextBookingCalendarMonth;
 
-function renderBookingCalendar() {
-  var year = currentCalDate.getFullYear();
-  var month = currentCalDate.getMonth();
-  var monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  var lbl = document.getElementById('bookingCalLabel');
-  if (lbl) lbl.textContent = monthNames[month] + ' ' + year;
-  
-  var grid = document.getElementById('bookingCalendarGrid');
+function _renderWebCal() {
+  var label = document.getElementById('webCalLabel');
+  var grid = document.getElementById('webCalGrid');
   if (!grid) return;
-  
+
+  var monthNames = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+  if (label) label.textContent = monthNames[_webCalState.month] + ' ' + _webCalState.year;
+
+  var year  = _webCalState.year;
+  var month = _webCalState.month;
   var daysInMonth = new Date(year, month + 1, 0).getDate();
-  var firstDayIndex = new Date(year, month, 1).getDay();
-  
-  var html = "";
-  var weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-  weekDays.forEach(function(wd) {
-     html += '<div style="font-weight:700;color:var(--text-secondary);padding:4px 0;">' + wd + '</div>';
+  var firstDay    = new Date(year, month, 1).getDay(); // 0=Sun
+  var todayStr    = new Date().toISOString().split('T')[0];
+
+  var html = '';
+  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  dayNames.forEach(function(d) {
+    html += '<div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);padding:4px 0;border-bottom:1px solid var(--border);">' + d + '</div>';
   });
-  
-  for (var i = 0; i < firstDayIndex; i++) {
-     html += '<div></div>';
+
+  // Blank cells before first day
+  for (var b = 0; b < firstDay; b++) {
+    html += '<div></div>';
   }
-  
-  var todayObj = new Date();
-  var todayStr = todayObj.getFullYear() + '-' + String(todayObj.getMonth()+1).padStart(2,'0') + '-' + String(todayObj.getDate()).padStart(2,'0');
-  
-  // Get currently selected inputs to draw highlight
-  var startVal = document.getElementById('bfStartDate') ? document.getElementById('bfStartDate').value : '';
-  var endVal = document.getElementById('bfEndDate') ? document.getElementById('bfEndDate').value : '';
-  
+
   for (var d = 1; d <= daysInMonth; d++) {
-     var dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-     var isPast = dateStr < todayStr;
-     
-     // Check if date is blocked (either blackout or booked)
-     var isBlocked = blockedDatesList.some(function(bRange) {
-        var s = String(bRange.start_date).substring(0, 10);
-        var e = String(bRange.end_date).substring(0, 10);
-        return dateStr >= s && dateStr <= e;
-     });
-     
-     var bg = "none";
-     var color = "var(--text-primary)";
-     var cursor = "pointer";
-     var disabled = "";
-     var border = '1px solid #e2e8f0';
-     
-     // Determine highlights
-     if (isPast) {
-        color = "var(--text-muted)";
-        cursor = "not-allowed";
-        disabled = "true";
+    var dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var isPast   = dateStr < todayStr;
+    var isToday  = dateStr === todayStr;
+
+    var isBlocked = _webCalState.blocked.some(function(r) {
+      var s = String(r.start_date).substring(0, 10);
+      var e = String(r.end_date).substring(0, 10);
+      return dateStr >= s && dateStr <= e;
+    });
+
+    var bg, color, cursor, title;
+    var startVal = document.getElementById('bfStartDate') ? document.getElementById('bfStartDate').value : '';
+    var endVal = document.getElementById('bfEndDate') ? document.getElementById('bfEndDate').value : '';
+    var border = '1px solid ' + (isBlocked ? '#fca5a5' : isToday ? 'var(--primary)' : 'transparent');
+
+    if (isPast) {
+      bg = 'transparent'; color = 'var(--text-muted)'; cursor = 'default'; title = '';
+      border = 'none';
+    } else if (isBlocked) {
+      bg = '#fee2e2'; color = '#ef4444'; cursor = 'not-allowed'; title = 'Unavailable';
+      border = 'none';
+    } else {
+      bg = 'var(--bg-input)';
+      color = 'var(--text-primary)';
+      cursor = 'pointer';
+      title = 'Available';
+
+      // Selection highlights
+      if (startVal && dateStr === startVal) {
+        bg = 'var(--primary)';
+        color = '#ffffff';
         border = 'none';
-     } else if (isBlocked) {
-        bg = "#fee2e2";
-        color = "#ef4444";
-        cursor = "not-allowed";
-        disabled = "true";
+      } else if (endVal && dateStr === endVal) {
+        bg = 'var(--primary)';
+        color = '#ffffff';
         border = 'none';
+      } else if (startVal && endVal && dateStr > startVal && dateStr < endVal) {
+        bg = 'rgba(0,177,79,0.15)';
+        color = 'var(--primary)';
+        border = '1px dashed rgba(0, 177, 79, 0.3)';
+      } else if (isToday) {
+        bg = 'rgba(0,177,79,0.12)';
+        color = 'var(--primary)';
+        title = 'Today';
+        border = '1px solid var(--primary)';
+      }
+    }
+
+    var clickable = !isPast && !isBlocked;
+    var onclick   = clickable ? 'onclick="_webCalPickDate(\'' + dateStr + '\')"' : '';
+
+    html += '<div ' + onclick + ' title="' + title + '" style="' +
+      'padding:6px 2px;border-radius:6px;background:' + bg + ';color:' + color + ';' +
+      'cursor:' + cursor + ';font-size:0.8rem;font-weight:' + (isToday || (startVal && dateStr === startVal) || (endVal && dateStr === endVal) ? '800' : '600') + ';' +
+      (border !== 'none' ? 'border:' + border + ';' : '') +
+      'transition:background 0.15s;' +
+      '">' + d + '</div>';
+  }
+
+  grid.innerHTML = html;
+}
+
+function _webCalPickDate(dateStr) {
+  var startEl = document.getElementById('bfStartDate');
+  var endEl   = document.getElementById('bfEndDate');
+  if (startEl) {
+     if (!startEl.value || (startEl.value && endEl && endEl.value)) {
+        startEl.value = dateStr;
+        if (endEl) endEl.value = "";
      } else {
-        // Highlight active selections using string comparison
-        if (startVal && dateStr === startVal) {
-           bg = "var(--primary)";
-           color = "#ffffff";
-           border = 'none';
-        } else if (endVal && dateStr === endVal) {
-           bg = "var(--primary)";
-           color = "#ffffff";
-           border = 'none';
-        } else if (startVal && endVal && dateStr > startVal && dateStr < endVal) {
-           bg = "rgba(0, 177, 79, 0.15)";
-           color = "var(--primary)";
-           border = '1px dashed rgba(0, 177, 79, 0.3)';
+        if (dateStr >= startEl.value) {
+           endEl.value = dateStr;
+        } else {
+           startEl.value = dateStr;
         }
      }
      
-     html += '<div class="cal-day" data-date="' + dateStr + '" data-disabled="' + disabled + '" style="-webkit-user-select:auto;user-select:auto;pointer-events:auto;padding:8px 0;background:' + bg + ';color:' + color + ';cursor:' + cursor + ';border-radius:6px;font-weight:600;' + (border !== 'none' ? 'border:' + border + ';' : '') + '">' + d + '</div>';
-  }
-  grid.innerHTML = html;
+     // Set return time select safely (mimicking autoSetReturnTime without date overwrite)
+     var pickupTimeEl = document.getElementById('bfPickupTime');
+     var returnTimeEl = document.getElementById('bfReturnTime');
+     if (pickupTimeEl && returnTimeEl) {
+        var pickupTime = pickupTimeEl.value || "12:00";
+        returnTimeEl.value = pickupTime;
+     }
 
-  // Delegated events implementation for Cordova/Capacitor tap reliability
-  if (!grid.dataset.listenerSet) {
-     grid.dataset.listenerSet = "1";
-     
-     var handleCalTap = function(e) {
-        var dayEl = e.target.closest('.cal-day');
-        if (dayEl && dayEl.dataset.date && dayEl.dataset.disabled !== "true") {
-           e.preventDefault();
-           e.stopPropagation();
-           selectCalendarDate(dayEl.dataset.date);
-        }
-     };
-     
-     grid.addEventListener('click', handleCalTap, true);
-     grid.addEventListener('touchstart', handleCalTap, { passive: false });
+     if (typeof updateBookingPrice === 'function') updateBookingPrice();
+     _renderWebCal();
   }
 }
-window.renderBookingCalendar = renderBookingCalendar;
-
-function selectCalendarDate(dateStr) {
-   var startInput = document.getElementById('bfStartDate');
-   var endInput = document.getElementById('bfEndDate');
-   if (startInput) {
-      if (!startInput.value || (startInput.value && endInput && endInput.value)) {
-         startInput.value = dateStr;
-         if (endInput) endInput.value = "";
-      } else {
-         if (dateStr >= startInput.value) {
-            endInput.value = dateStr;
-         } else {
-            startInput.value = dateStr;
-         }
-      }
-      updateBookingPrice();
-      // Re-render immediately to update visual selection highlights
-      renderBookingCalendar();
-   }
-}
-window.selectCalendarDate = selectCalendarDate;
 
 // ============================================================
 // DELIVERY LOCATION MAP PICKER CONTROLLER
@@ -7764,35 +7928,54 @@ function confirmDeliveryPinLocation() {
 }
 window.confirmDeliveryPinLocation = confirmDeliveryPinLocation;
 
-function loadCustomerPenalties(bookingId) {
-   var container = document.getElementById('customerPenaltiesContainer_' + bookingId);
-   var list = document.getElementById('customerPenaltiesList_' + bookingId);
-   if (!container || !list) return;
-   
-   fetch(API_BASE + '/api/admin/bookings/' + bookingId + '/penalties')
-     .then(function(r) { return r.json(); })
-     .then(function(penalties) {
-        if (penalties && penalties.length > 0) {
-           container.style.display = 'block';
-           var html = "";
-           penalties.forEach(function(p) {
-              var label = {
-                 'late_return': 'Late Return',
-                 'damage': 'Damage',
-                 'excess_mileage': 'Excess Mileage',
-                 'other': 'Other'
-              }[p.charge_type] || p.charge_type;
-              html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(239,68,68,0.2);font-size:0.85rem;">' +
-                '<div><strong>' + label + '</strong>' + (p.notes ? '<br><small style="color:var(--text-secondary);">' + p.notes + '</small>' : '') + '</div>' +
-                '<div style="font-weight:700;color:#ef4444;">₱' + parseFloat(p.amount).toFixed(2) + '</div>' +
-                '</div>';
-           });
-           list.innerHTML = html;
-        } else {
-           container.style.display = 'none';
-        }
-     }).catch(function(e) {
-        console.error(e);
-     });
+// ============================================================
+// WEB CUSTOMER — PENALTY CHARGES (Booking Detail)
+// ============================================================
+
+function _loadWebPenalties(bookingId) {
+  var card = document.getElementById('webPenaltyCard-' + bookingId);
+  var list = document.getElementById('webPenaltyList-' + bookingId);
+  if (!card || !list) return;
+
+  fetch(API_BASE + '/api/admin/bookings/' + bookingId + '/penalties')
+    .then(function(r) { return r.json(); })
+    .then(function(penalties) {
+      if (!Array.isArray(penalties) || penalties.length === 0) return;
+
+      var typeLabels = {
+        'late_return':    'Late Return Fee',
+        'damage':         'Vehicle Damage',
+        'excess_mileage': 'Excess Mileage',
+        'other':          'Other Charge'
+      };
+
+      var total = 0;
+      var rows = penalties.map(function(p) {
+        var amt = parseFloat(p.amount) || 0;
+        total += amt;
+        var label = typeLabels[p.charge_type] || p.charge_type;
+        return '<div style="display:flex;justify-content:space-between;align-items:flex-start;' +
+          'padding:10px 0;border-bottom:1px dashed rgba(239,68,68,0.2);">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:0.875rem;color:var(--text-primary);">' + label + '</div>' +
+            (p.notes ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' + p.notes + '</div>' : '') +
+          '</div>' +
+          '<div style="font-weight:700;color:#dc2626;font-size:0.9rem;white-space:nowrap;margin-left:16px;">₱' +
+            amt.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) +
+          '</div>' +
+          '</div>';
+      }).join('');
+
+      rows += '<div style="display:flex;justify-content:space-between;align-items:center;' +
+        'padding-top:10px;margin-top:2px;">' +
+        '<div style="font-weight:700;font-size:0.875rem;color:var(--text-primary);">Total Penalties</div>' +
+        '<div style="font-weight:800;color:#dc2626;font-size:1rem;">₱' +
+          total.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) +
+        '</div>' +
+        '</div>';
+
+      list.innerHTML = rows;
+      card.style.display = 'block';
+    })
+    .catch(function(err) { console.warn('[penalties] fetch failed:', err); });
 }
-window.loadCustomerPenalties = loadCustomerPenalties;

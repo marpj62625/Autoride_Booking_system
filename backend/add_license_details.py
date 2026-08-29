@@ -9,8 +9,7 @@ def create_table():
         print("Creating license_details table...")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS license_details (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id) UNIQUE,
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                 full_name VARCHAR(255) NOT NULL,
                 date_of_birth DATE NOT NULL,
                 license_number VARCHAR(100) NOT NULL,

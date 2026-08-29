@@ -716,13 +716,12 @@ except Exception as _e:
 
 
 def migrate_license_details_table():
-    """Creates the license_details table if it doesn't exist."""
+    """Creates the normalized license_details table (user_id as PK) if it doesn't exist."""
     try:
         cur = get_cursor()
         cur.execute("""
             CREATE TABLE IF NOT EXISTS license_details (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id) UNIQUE,
+                user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                 full_name VARCHAR(255),
                 date_of_birth DATE,
                 license_number VARCHAR(100),
