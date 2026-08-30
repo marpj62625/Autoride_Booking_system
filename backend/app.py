@@ -4847,9 +4847,10 @@ def get_all_bookings():
 
             FROM bookings b
 
-            JOIN users u ON b.user_id = u.id
+            LEFT JOIN users u ON b.user_id = u.user_id
 
-            JOIN vehicles v ON b.vehicle_id = v.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+
 
             LEFT JOIN drivers d ON b.driver_id = d.id
 
@@ -4910,10 +4911,11 @@ def get_single_booking(booking_id):
                    v.brand, v.model, v.plate_number, v.vehicle_image,
                    d.full_name AS driver_name, d.contact_info AS driver_phone
             FROM bookings b
-            LEFT JOIN users u ON b.user_id = u.id
-            LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            LEFT JOIN drivers d ON b.driver_id = d.id
-            WHERE b.id = %s
+            LEFT JOIN users u ON b.user_id = u.user_id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+            LEFT JOIN drivers d ON b.driver_id = d.driver_id
+            WHERE b.booking_id = %s
+
         """, (booking_id,))
         bk = cur.fetchone()
         if not bk:
@@ -9078,16 +9080,18 @@ def handle_admin_settings():
 
 
 @app.route('/locations', methods=['GET'])
+@app.route('/public/locations', methods=['GET'])
 def get_locations():
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, name, province, municipality, barangay, delivery_fee FROM locations ORDER BY name ASC")
+        cur.execute("SELECT location_id, location_id AS id, name, province, municipality, barangay, delivery_fee FROM locations ORDER BY name ASC")
         rows = cur.fetchall()
         return jsonify([dict(r) for r in rows]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     finally:
         if 'cur' in locals(): cur.close()
+
 
 @app.route('/admin/locations', methods=['POST'])
 def add_location():
@@ -10610,29 +10614,29 @@ def debug_test_notification():
 
 
 @app.route('/notifications', methods=['GET'])
-def get_notifications():
-    """Return all notifications for a customer ordered by created_at DESC.
-    Query param: user_id (int, required)
-    """
-    user_id = request.args.get('user_id')
-    if not user_id:
+@app.route('/notifications/<int:user_id>', methods=['GET'])
+def get_user_notifications_all(user_id=None):
+    """Return all notifications for a customer ordered by created_at DESC."""
+    target_id = user_id or request.args.get('user_id')
+    if not target_id:
         return jsonify({'error': 'user_id is required'}), 400
     try:
-        user_id = int(user_id)
+        target_id = int(target_id)
     except (ValueError, TypeError):
         return jsonify({'error': 'user_id must be an integer'}), 400
     try:
         cur = get_cursor()
         cur.execute(
             """
-            SELECT id, title, message, type, is_read, created_at
+            SELECT notification_id, notification_id AS id, title, message, type, is_read, created_at
             FROM notifications
             WHERE user_id = %s
             ORDER BY created_at DESC
             """,
-            (user_id,)
+            (target_id,)
         )
         rows = cur.fetchall()
+
         result = []
         for row in rows:
             entry = dict(row)
