@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Shared Enhancements - Autoride Admin</title>
+    <link rel="stylesheet" href="booking-management.css">
+    <link rel="stylesheet" href="shared-enhancements.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+        }
+        .test-section h2 {
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .test-item {
+            padding: 1rem;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+        }
+        .test-item h4 {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        .test-item .result {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .test-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all var(--transition);
+        }
+        .test-btn:hover {
+            background: #5558dd;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .test-btn.success {
+            background: var(--green);
+        }
+        .test-btn.error {
+            background: var(--red);
+        }
+        .test-btn.warning {
+            background: var(--amber);
+        }
+        .test-btn.info {
+            background: var(--blue);
+        }
+    </style>
+</head>
+<body>
+    <h1 style="margin-bottom: 2rem; font-size: 2rem; background: linear-gradient(135deg, var(--accent), #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+        ?? Shared Enhancements Test Suite
+    </h1>
+
+    <!-- Typography Test -->
+    <section class="test-section">
+        <h2>?? Enhanced Typography</h2>
+        <div class="enhanced-text">
+            <h3>This is an H3 heading (1.44rem)</h3>
+            <h4>This is an H4 heading (1.08rem)</h4>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Customer Name:</span>
+                    <span class="info-value">Juan Dela Cruz</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Booking ID:</span>
+                    <span class="info-value">#12345</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Total Price:</span>
+                    <span class="info-value">?5,500.00</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Utility Functions Test -->
+    <section class="test-section">
+        <h2>?? Utility Functions</h2>
+        <div class="test-grid" id="utilityTests">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </section>
+
+    <!-- Toast Notifications Test -->
+    <section class="test-section">
+        <h2>?? Toast Notifications</h2>
+        <div class="button-group">
+            <button class="test-btn success" onclick="showToast('success', 'Operation completed successfully!')">
+                Success Toast
+            </button>
+            <button class="test-btn error" onclick="showToast('error', 'An error occurred!')">
+                Error Toast
+            </button>
+            <button class="test-btn warning" onclick="showToast('warning', 'Warning: Please check your input')">
+                Warning Toast
+            </button>
+            <button class="test-btn info" onclick="showToast('info', 'Information: New update available')">
+                Info Toast
+            </button>
+        </div>
+    </section>
+
+    <!-- Modal Test -->
+    <section class="test-section">
+        <h2>?? Modal Overlay</h2>
+        <button class="test-btn" onclick="openTestModal()">
+            Open Test Modal
+        </button>
+    </section>
+
+    <!-- Status Badges Test -->
+    <section class="test-section">
+        <h2>??? Status Badges</h2>
+        <div class="button-group">
+            <span class="status-badge status-pending">Pending</span>
+            <span class="status-badge status-approved">Approved</span>
+            <span class="status-badge status-rejected">Rejected</span>
+            <span class="status-badge status-completed">Completed</span>
+            <span class="status-badge status-cancelled">Cancelled</span>
+        </div>
+    </section>
+
+    <!-- Loading Spinner Test -->
+    <section class="test-section">
+        <h2>? Loading States</h2>
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Loading data...</p>
+        </div>
+    </section>
+
+    <!-- Empty State Test -->
+    <section class="test-section">
+        <h2>?? Empty State</h2>
+        <div class="empty-state">
+            <div class="empty-state-icon">??</div>
+            <h3>No Results Found</h3>
+            <p>Try adjusting your search or filter criteria</p>
+        </div>
+    </section>
+
+    <!-- Test Modal -->
+    <div class="modal-overlay hidden" id="testModal">
+        <div class="modal-card">
+            <header class="modal-header">
+                <h3>Test Modal</h3>
+                <button class="close-btn" onclick="closeTestModal()">?</button>
+            </header>
+            <div class="modal-body enhanced-text">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Modal Title:</span>
+                        <span class="info-value">This is a test modal</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Purpose:</span>
+                        <span class="info-value">Testing modal overlay and animations</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Features:</span>
+                        <span class="info-value">Backdrop blur, slide-up animation, enhanced typography</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="test-btn" onclick="closeTestModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast hidden" id="toast">
+        <span class="toast-icon" id="toastIcon"></span>
+        <span class="toast-msg" id="toastMsg"></span>
+    </div>
+
+    <!-- Load Shared Utilities -->
+    <script src="shared-utils.js"></script>
+
+    <!-- Test Script -->
+    <script>
+        // Test utility functions
+        document.addEventListener('DOMContentLoaded', () => {
+            const utilityTests = document.getElementById('utilityTests');
+            
+            const tests = [
+                {
+                    name: 'escapeHtml()',
+                    input: '<script>alert("XSS")</script>',
+                    result: escapeHtml('<script>alert("XSS")</script>')
+                },
+                {
+                    name: 'formatDate()',
+                    input: '2024-01-15',
+                    result: formatDate('2024-01-15')
+                },
+                {
+                    name: 'formatDateTime()',
+                    input: '2024-01-15T14:30:00',
+                    result: formatDateTime('2024-01-15T14:30:00')
+                },
+                {
+                    name: 'formatPrice()',
+                    input: '5500',
+                    result: formatPrice(5500)
+                },
+                {
+                    name: 'formatNumber()',
+                    input: '1234567',
+                    result: formatNumber(1234567)
+                },
+                {
+                    name: 'truncateString()',
+                    input: 'This is a very long string that needs truncation',
+                    result: truncateString('This is a very long string that needs truncation', 30)
+                },
+                {
+                    name: 'capitalize()',
+                    input: 'hello world',
+                    result: capitalize('hello world')
+                },
+                {
+                    name: 'toTitleCase()',
+                    input: 'hello world from autoride',
+                    result: toTitleCase('hello world from autoride')
+                },
+                {
+                    name: 'isValidEmail()',
+                    input: 'test@example.com',
+                    result: isValidEmail('test@example.com') ? '? Valid' : '? Invalid'
+                },
+                {
+                    name: 'isValidPhone()',
+                    input: '09123456789',
+                    result: isValidPhone('09123456789') ? '? Valid' : '? Invalid'
+                },
+                {
+                    name: 'daysBetween()',
+                    input: '2024-01-01 to 2024-01-15',
+                    result: daysBetween('2024-01-01', '2024-01-15') + ' days'
+                },
+                {
+                    name: 'statusBadge()',
+                    input: 'Approved',
+                    result: statusBadge('Approved')
+                }
+            ];
+
+            tests.forEach(test => {
+                const div = document.createElement('div');
+                div.className = 'test-item';
+                div.innerHTML = `
+                    <h4>${test.name}</h4>
+                    <div style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.75rem;">
+                        Input: <code>${escapeHtml(String(test.input))}</code>
+                    </div>
+                    <div class="result">${test.result}</div>
+                `;
+                utilityTests.appendChild(div);
+            });
+
+            // Show success toast on load
+            setTimeout(() => {
+                showToast('success', 'Test page loaded successfully! All utilities are working.');
+            }, 500);
+        });
+
+        // Modal functions
+        function openTestModal() {
+            document.getElementById('testModal').classList.remove('hidden');
+        }
+
+        function closeTestModal() {
+            document.getElementById('testModal').classList.add('hidden');
+        }
+
+        // Close modal on overlay click
+        document.getElementById('testModal').addEventListener('click', (e) => {
+            if (e.target.id === 'testModal') {
+                closeTestModal();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeTestModal();
+            }
+        });
+    </script>
+</body>
+</html>

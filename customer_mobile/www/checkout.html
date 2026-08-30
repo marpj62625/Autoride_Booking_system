@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Checkout | Autoride</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background-color: var(--bg-color); color: var(--text-main); }
+        .checkout-grid { display: grid; grid-template-columns: 1fr 380px; gap: 30px; margin-top: 2rem; }
+        .card { 
+            background: var(--surface-color); 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border-color); 
+            padding: 30px; 
+            box-shadow: var(--shadow-premium); 
+        }
+        .card-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        .payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .method { border: 2px solid var(--border-color); padding: 15px; border-radius: var(--radius); cursor: pointer; text-align: center; transition: all 0.2s; background: rgba(255,255,255,0.03); }
+        .method.active { border-color: var(--primary-color); background: rgba(99, 102, 241, 0.1); color: var(--primary-color); }
+        .form-input { 
+            width: 100%; padding: 12px; 
+            background: rgba(0,0,0,0.2); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            color: white;
+            font-family: inherit; 
+        }
+        .summary-item { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-muted); }
+        .summary-item strong { color: var(--text-main); }
+        .summary-item.total { border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px; font-weight: 800; font-size: 1.2rem; color: var(--primary-color); }
+        
+        #successOverlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: var(--bg-color); z-index: 9999; display: none; 
+            flex-direction: column; align-items: center; justify-content: center; text-align: center; 
+        }
+        .checkmark { width: 100px; height: 100px; border-radius: 50%; background: var(--success); color: white; display: flex; align-items: center; justify-content: center; font-size: 3rem; margin-bottom: 20px; animation: scaleUp 0.3s ease-out; }
+        @keyframes scaleUp { from { transform: scale(0.5); } to { transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <a href="vehicles.html">Browse Vehicles</a>
+            <a href="dashboard.html">My Bookings</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(to right, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Secure Checkout</h2>
+            <p style="color: var(--text-muted);">Complete your booking with peace of mind</p>
+        </div>
+
+        <div class="checkout-grid">
+            <div class="card">
+                <div id="paymentOptionSection">
+                    <div class="card-title">💵 Payment Option</div>
+                    <div class="payment-methods" id="paymentOptions" style="margin-bottom: 20px;">
+                        <div class="method active" onclick="selectPaymentOption(this, 'Full')">
+                            <strong>Pay Full Amount</strong>
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">100% of Total</p>
+                        </div>
+                        <div class="method" onclick="selectPaymentOption(this, 'Downpayment')">
+                            <strong>Pay Reservation Fee</strong>
+                            <p style="font-size: 0.75rem; color: var(--text-muted);">20% Downpayment (Non-refundable < 48hrs)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-title">💳 Payment Method</div>
+                <div class="payment-methods" id="paymentMethods">
+                    <div class="method active" onclick="selectMethod(this)">
+                        <strong>Credit Card</strong>
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">Visa/Mastercard</p>
+                    </div>
+                    <div class="method" onclick="selectMethod(this)">
+                        <strong>E-Wallet</strong>
+                        <p style="font-size: 0.75rem; color: var(--text-muted);">GCash / Maya</p>
+                    </div>
+                </div>
+
+                <div id="cardFields">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 0.9rem;">Cardholder Name</label>
+                        <input type="text" class="form-input" placeholder="Juan Dela Cruz">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 0.9rem;">Card Number</label>
+                        <input type="text" class="form-input" placeholder="0000 0000 0000 0000">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 8px; font-size: 0.9rem;">Expiry Date</label>
+                            <input type="text" class="form-input" placeholder="MM/YY">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; margin-bottom: 8px; font-size: 0.9rem;">CVV</label>
+                            <input type="password" class="form-input" placeholder="***">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ewalletFields" style="display: none; text-align: center; padding: 20px 0;">
+                    <div style="margin-bottom: 15px;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <rect x="7" y="7" width="3" height="3"></rect>
+                            <rect x="14" y="7" width="3" height="3"></rect>
+                            <rect x="7" y="14" width="3" height="3"></rect>
+                            <rect x="14" y="14" width="3" height="3"></rect>
+                        </svg>
+                    </div>
+                    <p style="font-size: 0.95rem; margin-bottom: 15px;">Scan the QR code with your GCash or Maya app, or enter your mobile number below.</p>
+                    <div class="form-group" style="text-align: left; margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-size: 0.9rem;">Mobile Number</label>
+                        <input type="text" class="form-input" placeholder="09XX XXX XXXX">
+                    </div>
+                </div>
+            </div>
+
+            </div>
+
+            <div class="card" style="align-self: flex-start;">
+                <div class="card-title">📝 Summary</div>
+                <div id="priceDetails">
+                    <div class="summary-item"><span>Rental Days:</span> <strong id="sumDays">0</strong></div>
+                    <div class="summary-item"><span>Subtotal:</span> <strong id="sumSubtotal">₱0.00</strong></div>
+                    <div class="summary-item" id="discountRow" style="display: none;"><span>Discounts & Points:</span> <strong id="sumDiscount" style="color: var(--success);">-₱0.00</strong></div>
+                    <div class="summary-item total"><span>Final Total:</span> <strong id="sumTotal">₱0.00</strong></div>
+                    <div class="summary-item" style="margin-top: 10px; color: var(--primary-color);"><span>Amount to Pay Now:</span> <strong id="sumToPay" style="font-size: 1.3rem;">₱0.00</strong></div>
+                </div>
+
+                <div id="tcCheckboxSection" style="display: none;">
+                    <input type="checkbox" id="tcCheckbox" checked>
+                </div>
+
+                <button class="btn-premium" id="mainActionBtn" onclick="handleCheckoutGate()" style="margin-top: 20px; width: 100%; border: none; padding: 18px; font-size: 1.1rem;">
+                    Proceed to Payment
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal-content">
+            <div class="receipt-paper">
+                <div class="receipt-header">
+                    <h2>AUTORIDE</h2>
+                    <p style="font-size: 0.8rem; color: #666;">Official Receipt</p>
+                </div>
+                <div id="receiptContent">
+                    <!-- Dynamic Content -->
+                </div>
+                <div class="receipt-total">
+                    <div class="receipt-line">
+                        <span>TOTAL PAID</span>
+                        <span id="receiptTotal">₱0.00</span>
+                    </div>
+                </div>
+                <button class="print-btn" onclick="window.print()">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print Receipt
+                </button>
+                <button class="btn-outline" style="margin-top: 1rem; border: none; font-size: 0.85rem;" onclick="window.location.href='dashboard.html'">
+                    Close & Go to Dashboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    
+    <!-- ID Verification Modal -->
+    <div class="modal-overlay verify-modal" id="verificationModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 70px; height: 70px; background: rgba(99,102,241,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                    <svg width="32" height="32" fill="none" stroke="var(--primary-color)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h2 style="font-size: 1.75rem; font-weight: 800; color: white; letter-spacing: -0.5px;">Identity Verification</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 10px;">To ensure the safety of our fleet, a valid Driver's License is required to complete any booking.</p>
+            </div>
+            
+            <div class="upload-area" onclick="document.getElementById('licenseInput').click()" style="border: 2px dashed var(--border-color); border-radius: 20px; padding: 40px; text-align: center; margin-bottom: 25px; transition: all 0.3s; cursor: pointer; background: rgba(255,255,255,0.02);">
+                <div id="uploadPlaceholder">
+                    <svg width="48" height="48" fill="none" stroke="var(--primary-color)" viewBox="0 0 24 24" style="margin: 0 auto 15px; opacity: 0.8;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <p style="font-weight: 700; color: white;">Snap or Upload License</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">Clear photo of your Driver's License</p>
+                </div>
+                <img id="licensePreview" class="upload-preview" style="display: none; width: 100%; border-radius: 12px; border: 1px solid var(--border-color);">
+                <input type="file" id="licenseInput" style="display: none;" accept="image/*" onchange="previewLicense(this)">
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-outline" style="flex: 1; padding: 15px;" onclick="closeVerificationModal()">Later</button>
+                <button class="btn-premium" id="submitLicenseBtn" style="flex: 2; padding: 15px; border: none;" onclick="submitLicense()">Verify My Identity</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rental Agreement Modal -->
+    <div class="modal-overlay" id="agreementModal" style="display: none;">
+        <div class="modal-content" style="max-width: 550px;">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <div style="width: 48px; height: 48px; background: rgba(99,102,241,0.1); border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="24" height="24" fill="none" stroke="var(--primary-color)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <h2 style="font-size: 1.5rem; font-weight: 800; color: white; margin: 0;">Rental Agreement</h2>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 20px; max-height: 350px; overflow-y: auto; border: 1px solid var(--border-color); font-size: 0.9rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 25px;">
+                <p style="margin-bottom: 15px; color: white; font-weight: 600;">By proceeding with this booking, you agree to the following terms and conditions of Autoride System:</p>
+                <ul style="padding-left: 20px; display: grid; gap: 12px;">
+                    <li><strong>Fuel Policy:</strong> The vehicle must be returned with the same level of fuel as provided at pickup.</li>
+                    <li><strong>Mileage Rule:</strong> 250 km per day limit. Excess mileage will be charged at ₱10 per km.</li>
+                    <li><strong>Driver Responsibility:</strong> You must be the primary driver and hold a valid license.</li>
+                    <li><strong>Late Return:</strong> Late returns will incur a penalty of ₱500 per hour.</li>
+                    <li><strong>Damages:</strong> Any damages not covered by selected insurance are the driver's responsibility.</li>
+                    <li><strong>Cancellation:</strong> 20% Reservation Fee is non-refundable if cancelled less than 48 hours before pickup.</li>
+                </ul>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-outline" style="flex: 1; padding: 15px;" onclick="document.getElementById('agreementModal').style.display='none'">Cancel</button>
+                <button class="btn-premium" id="finalPayBtn" style="flex: 2; padding: 15px; border: none;" onclick="processPayment()">Confirm & Pay Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let bookingData = JSON.parse(sessionStorage.getItem('pending_booking'));
+        if (!bookingData) {
+            alert('No pending reservation found. Redirecting to browse...');
+            window.location.href = 'vehicles.html';
+        }
+
+        // Dynamic API Base Detection
+        const API_BASE = (function() {
+            const host = window.location.hostname;
+            if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:9999';
+            return ''; // Empty for production (Vercel)
+        })();
+
+        let currentPaymentType = 'Full';
+
+        function updateSummary() {
+            if (bookingData.paying_balance) {
+                document.getElementById('paymentOptionSection').style.display = 'none';
+                document.getElementById('tcCheckboxSection').style.display = 'none';
+                document.getElementById('tcCheckbox').checked = true; // Auto-check for balance payment
+                
+                const balance = parseFloat(bookingData.balance_amount) || 0;
+                document.getElementById('sumToPay').textContent = `₱${balance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                bookingData.amount_paid_now = balance;
+                return;
+            }
+
+            const subtotal = Math.max(0, (parseFloat(bookingData.base_price) || 0) + (parseFloat(bookingData.addon_price) || 0));
+            const finalValue = subtotal - (parseFloat(bookingData.discount_amount) || 0);
+
+            document.getElementById('sumDays').textContent = bookingData.days || 1;
+            document.getElementById('sumSubtotal').textContent = `₱${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            
+            document.getElementById('sumTotal').textContent = `₱${finalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            
+            // Calculate Amount to Pay
+            let amountToPay = finalValue;
+            if (currentPaymentType === 'Downpayment') {
+                amountToPay = finalValue * 0.20;
+            }
+            document.getElementById('sumToPay').textContent = `₱${amountToPay.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+
+            // Update bookingData for the final post
+            bookingData.total_price = finalValue;
+            bookingData.payment_type = currentPaymentType;
+            bookingData.amount_paid_now = amountToPay;
+        }
+
+
+        // Initial update
+        updateSummary();
+
+        function selectMethod(el) {
+            document.querySelectorAll('#paymentMethods .method').forEach(m => m.classList.remove('active'));
+            el.classList.add('active');
+            
+            const method = el.querySelector('strong').textContent;
+            if (method === 'E-Wallet') {
+                document.getElementById('cardFields').style.display = 'none';
+                document.getElementById('ewalletFields').style.display = 'block';
+            } else {
+                document.getElementById('cardFields').style.display = 'block';
+                document.getElementById('ewalletFields').style.display = 'none';
+            }
+        }
+
+        function selectPaymentOption(el, type) {
+            document.querySelectorAll('#paymentOptions .method').forEach(m => m.classList.remove('active'));
+            el.classList.add('active');
+            currentPaymentType = type;
+            updateSummary();
+        }
+
+        // --- Verification Logic ---
+        function previewLicense(input) {
+            const preview = document.getElementById('licensePreview');
+            const placeholder = document.getElementById('uploadPlaceholder');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function closeVerificationModal() {
+            document.getElementById('verificationModal').style.display = 'none';
+        }
+
+        async function submitLicense() {
+            const input = document.getElementById('licenseInput');
+            const userId = localStorage.getItem('user_id');
+            if (!input.files[0]) return alert('Please select a photo first');
+
+            const btn = document.getElementById('submitLicenseBtn');
+            btn.textContent = 'Uploading...';
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('license', input.files[0]);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/user/upload-license`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.ok) {
+                    alert('✅ Upload successful!\n\nYour Driver\'s License is now pending review. Please wait for an Admin to verify your account before you can complete the booking.');
+                    closeVerificationModal();
+                    // Do NOT call processPayment() here anymore.
+                    // User must wait for status 2.
+                } else {
+                    const data = await res.json();
+                    alert(data.error || 'Upload failed');
+                }
+            } catch (err) { alert('Connection error'); }
+            btn.textContent = 'Submit & Continue';
+            btn.disabled = false;
+        }
+
+        async function handleCheckoutGate() {
+            const userId = localStorage.getItem('user_id');
+            if (!userId) return alert('Please login first');
+
+            const btn = document.getElementById('mainActionBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking Account...';
+            btn.disabled = true;
+
+            try {
+                const vRes = await fetch(`${API_BASE}/api/user/verify-status?user_id=${userId}`);
+                const vData = await vRes.json();
+                
+                if (!vRes.ok) throw new Error('Could not verify account status');
+
+                const vStatus = vData.is_verified;
+                
+                // Flexible check: 2 means approved, but also 'true' or true means approved.
+                if (vStatus === 2 || vStatus === true || vStatus === 'true') {
+                    // Fully Verified -> Show Agreement
+                    document.getElementById('agreementModal').style.display = 'flex';
+                }
+                else if (vStatus === 1 || vStatus === 'pending') {
+                    // Pending Review
+                    alert('⏳ Verification Pending\n\nYour Driver\'s License is currently being reviewed by our Admin team. We will notify you once it\'s approved so you can complete your payment.');
+                }
+                else {
+                    // Not Uploaded or Rejected (0 or false)
+                    document.getElementById('verificationModal').style.display = 'flex';
+                }
+            } catch (err) {
+                alert('Connection error: ' + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function processPayment() {
+            const userId = localStorage.getItem('user_id');
+            if (!userId) return alert('Please login first');
+
+            const tcCheckbox = document.getElementById('tcCheckbox');
+            if (!tcCheckbox.checked) {
+                alert('Please agree to the Terms and Conditions to proceed.');
+                return;
+            }
+
+            const btn = document.getElementById('finalPayBtn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Processing...';
+            btn.disabled = true;
+
+            try {
+                let response;
+                let result;
+                const isExisting = !!bookingData.existing_booking_id;
+
+                if (bookingData.paying_balance) {
+                    // Pay Balance Flow
+                    response = await fetch(`${API_BASE}/api/bookings/${bookingData.existing_booking_id}/pay-balance`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            amount: bookingData.amount_paid_now,
+                            method: document.querySelector('#paymentMethods .method.active strong').textContent,
+                            reference_number: 'BAL-' + Math.random().toString(36).substr(2, 9).toUpperCase()
+                        })
+                    });
+                    result = await response.json();
+                } else if (isExisting) {
+                    // For EXISTING booking (resuming)
+                    const formData = new FormData();
+                    formData.append('booking_id', bookingData.existing_booking_id);
+                    formData.append('amount', bookingData.amount_paid_now);
+                    formData.append('method', document.querySelector('#paymentMethods .method.active strong').textContent);
+                    formData.append('reference_number', 'RES-' + Math.random().toString(36).substr(2, 9).toUpperCase());
+                    
+                    response = await fetch(`${API_BASE}/api/payment`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    result = await response.json();
+                } else {
+                    // For NEW booking: Create first, then Pay immediately
+                    const bookRes = await fetch(`${API_BASE}/api/book`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(bookingData)
+                    });
+                    const bookData = await bookRes.json();
+                    
+                    if (!bookRes.ok) throw new Error(bookData.error || 'Booking creation failed');
+                    
+                    // Now Pay
+                    const formData = new FormData();
+                    formData.append('booking_id', bookData.booking_id);
+                    formData.append('amount', bookingData.amount_paid_now);
+                    formData.append('method', document.querySelector('#paymentMethods .method.active strong').textContent);
+                    formData.append('reference_number', 'RES-' + Math.random().toString(36).substr(2, 9).toUpperCase());
+                    
+                    response = await fetch(`${API_BASE}/api/payment`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    result = await response.json();
+                }
+                
+                if (response && response.ok) {
+                    const now = new Date();
+                    const receipt = result.receipt || {
+                        reference_number: bookingData.reference_num || 'RES-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                        date: now.toLocaleDateString(),
+                        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        amount: bookingData.amount_paid_now,
+                        brand: bookingData.brand || 'Vehicle',
+                        model: bookingData.model || '',
+                        start_date: bookingData.start_date,
+                        end_date: bookingData.end_date,
+                        method: document.querySelector('#paymentMethods .method.active strong').textContent
+                    };
+
+                    const content = document.getElementById('receiptContent');
+                    content.innerHTML = `
+                        <div class="receipt-line"><span>Ref No:</span> <strong>${receipt.reference_number}</strong></div>
+                        <div class="receipt-line"><span>Date:</span> <strong>${receipt.date}</strong></div>
+                        <div class="receipt-line"><span>Time:</span> <strong>${receipt.time}</strong></div>
+                        <div class="receipt-line"><span>Vehicle:</span> <strong>${receipt.brand} ${receipt.model}</strong></div>
+                        <div class="receipt-line"><span>Period:</span> <strong>${receipt.start_date} to ${receipt.end_date}</strong></div>
+                        <div class="receipt-line"><span>Method:</span> <strong>${receipt.method}</strong></div>
+                    `;
+                    document.getElementById('receiptTotal').textContent = `₱${receipt.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                    
+                    // Force close all overlays
+                    document.getElementById('agreementModal').style.display = 'none';
+                    document.getElementById('receiptModal').style.display = 'flex';
+                    
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#6366f1', '#818cf8', '#10b981', '#ffffff']
+                    });
+                    sessionStorage.removeItem('pending_booking');
+                } else {
+                    const errDetail = result ? (result.error || result.message) : 'Unknown Server Error';
+                    throw new Error(`Server rejected the transaction: ${errDetail}`);
+                }
+            } catch (err) {
+                console.error('Checkout Error:', err);
+                alert('🚨 Checkout Failed\n\nReason: ' + err.message + '\n\nIf this persists, please check your internet connection or the server status.');
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

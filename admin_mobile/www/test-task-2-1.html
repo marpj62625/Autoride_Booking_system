@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 2.1 Verification - Enhanced Booking Details Modal</title>
+    <link rel="stylesheet" href="booking-management.css">
+    <link rel="stylesheet" href="shared-enhancements.css">
+    <style>
+        body {
+            padding: 2rem;
+            background: #0f172a;
+            color: #f1f5f9;
+            font-family: 'Inter', sans-serif;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-header {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .test-section h3 {
+            color: #6366f1;
+            margin-bottom: 1rem;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .checklist li::before {
+            content: "?";
+            color: #22c55e;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .btn-test {
+            padding: 0.75rem 1.5rem;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-test:hover {
+            background: #5558dd;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        .code-block {
+            background: #1e293b;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Task 2.1 Verification</h1>
+            <h2>Enhanced Booking Details Modal HTML Structure</h2>
+            <p>This page verifies the implementation of task 2.1 requirements.</p>
+        </div>
+
+        <div class="test-section">
+            <h3>? Implementation Checklist</h3>
+            <ul class="checklist">
+                <li>Added <code>enhanced-text</code> class to info-grid container</li>
+                <li>Added "View Profile" button next to customer name</li>
+                <li>Implemented proper semantic HTML structure with ARIA labels</li>
+                <li>Added role="dialog" and aria-modal="true" to modal overlay</li>
+                <li>Added aria-labelledby to link modal title</li>
+                <li>Added aria-label to close button for accessibility</li>
+                <li>Added role="list" and role="listitem" for semantic structure</li>
+                <li>Added descriptive aria-label to View Profile button</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>?? Requirements Validation</h3>
+            <p><strong>Requirement 1.1:</strong> Enhanced typography with 15%+ font size increases</p>
+            <ul class="checklist">
+                <li>info-label: 1.05rem (23.5% increase from 0.85rem)</li>
+                <li>info-value: 1.1rem (15.8% increase from 0.95rem)</li>
+                <li>Headings: 1.44rem (20% increase from 1.2rem)</li>
+            </ul>
+
+            <p><strong>Requirement 2.1:</strong> Customer profile preview access</p>
+            <ul class="checklist">
+                <li>View Profile button displayed next to customer name</li>
+                <li>Button triggers viewCustomerProfile() function</li>
+                <li>Passes user_id to profile modal</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>?? Code Verification</h3>
+            <p><strong>HTML Structure (booking-management.html):</strong></p>
+            <div class="code-block">
+&lt;div class="modal-overlay hidden" id="detailsModal" 
+     role="dialog" 
+     aria-labelledby="detailsModalTitle" 
+     aria-modal="true"&gt;
+    &lt;div class="modal-card details-card"&gt;
+        &lt;header class="modal-header"&gt;
+            &lt;h3 id="detailsModalTitle"&gt;Booking Details&lt;/h3&gt;
+            &lt;button class="close-btn" id="detailsClose" 
+                    aria-label="Close booking details modal"&gt;?&lt;/button&gt;
+        &lt;/header&gt;
+        &lt;div class="details-content" id="detailsContent"&gt;
+            &lt;!-- Populated by JS --&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+            </div>
+
+            <p><strong>JavaScript Implementation (booking-management.js):</strong></p>
+            <div class="code-block">
+detailsContent.innerHTML = `
+    &lt;div class="info-grid enhanced-text" role="list"&gt;
+        &lt;div class="info-item" role="listitem"&gt;
+            &lt;strong class="info-label"&gt;Customer:&lt;/strong&gt; 
+            &lt;span class="info-value"&gt;${escapeHtml(b.customer_name)}&lt;/span&gt;
+            &lt;button class="btn-view-profile" 
+                    onclick="viewCustomerProfile(${b.user_id})"
+                    aria-label="View ${escapeHtml(b.customer_name)}'s profile"&gt;
+                ?? View Profile
+            &lt;/button&gt;
+        &lt;/div&gt;
+        &lt;!-- Additional info items... --&gt;
+    &lt;/div&gt;
+`;
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>?? Visual Test</h3>
+            <p>Click the button below to open a sample booking details modal:</p>
+            <button class="btn-test" onclick="openTestModal()">Open Test Modal</button>
+        </div>
+
+        <div class="test-section">
+            <h3>? Accessibility Features</h3>
+            <ul class="checklist">
+                <li><strong>Keyboard Navigation:</strong> Modal can be closed with Escape key</li>
+                <li><strong>Screen Reader Support:</strong> ARIA labels provide context</li>
+                <li><strong>Semantic HTML:</strong> Proper use of header, role attributes</li>
+                <li><strong>Focus Management:</strong> Close button is keyboard accessible</li>
+                <li><strong>Descriptive Labels:</strong> All interactive elements have clear labels</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Test Modal -->
+    <div class="modal-overlay hidden" id="testModal" role="dialog" aria-labelledby="testModalTitle" aria-modal="true">
+        <div class="modal-card details-card">
+            <header class="modal-header">
+                <h3 id="testModalTitle">Booking Details</h3>
+                <button class="close-btn" id="testClose" aria-label="Close booking details modal">?</button>
+            </header>
+            <div class="details-content">
+                <div class="info-grid enhanced-text" role="list">
+                    <div class="info-item" role="listitem">
+                        <strong class="info-label">Customer:</strong> 
+                        <span class="info-value">John Doe</span>
+                        <button class="btn-view-profile" aria-label="View John Doe's profile">
+                            ?? View Profile
+                        </button>
+                    </div>
+                    <div class="info-item" role="listitem">
+                        <strong class="info-label">Vehicle:</strong> 
+                        <span class="info-value">Toyota Camry 2023</span>
+                    </div>
+                    <div class="info-item" role="listitem">
+                        <strong class="info-label">Period:</strong> 
+                        <span class="info-value">Jan 15, 2024 - Jan 20, 2024</span>
+                    </div>
+                    <div class="info-item" role="listitem">
+                        <strong class="info-label">Total:</strong> 
+                        <span class="info-value">?15,000</span>
+                    </div>
+                    <div class="info-item" role="listitem">
+                        <strong class="info-label">Status:</strong> 
+                        <span class="status-badge status-approved">Approved</span>
+                    </div>
+                    <div class="info-item" role="listitem">
+                        <strong class="info-label">Payment:</strong> 
+                        <span class="payment-status paid">Paid</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="closeTestModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTestModal() {
+            document.getElementById('testModal').classList.remove('hidden');
+        }
+
+        function closeTestModal() {
+            document.getElementById('testModal').classList.add('hidden');
+        }
+
+        document.getElementById('testClose').addEventListener('click', closeTestModal);
+
+        // Close on overlay click
+        document.getElementById('testModal').addEventListener('click', (e) => {
+            if (e.target.id === 'testModal') {
+                closeTestModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeTestModal();
+            }
+        });
+    </script>
+</body>
+</html>

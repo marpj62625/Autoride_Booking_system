@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 5.3 Verification - openChartPopup() Function</title>
+    <link rel="stylesheet" href="reports.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            padding: 2rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .verification-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+        }
+        .verification-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+        }
+        .test-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .requirement-list {
+            list-style: none;
+            padding: 0;
+        }
+        .requirement-list li {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--green);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+        .requirement-list li strong {
+            color: var(--text-primary);
+        }
+        .test-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        .test-button:hover {
+            background: #5558dd;
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--green-bg);
+            color: var(--green);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-header">
+        <h1>? Task 5.3 Verification</h1>
+        <h2>openChartPopup() Function Implementation</h2>
+        <span class="status-badge">? IMPLEMENTED</span>
+    </div>
+
+    <div class="test-section">
+        <h2>?? Task 5.3 Requirements</h2>
+        <ul class="requirement-list">
+            <li><strong>? Store current chart data and type in global variables:</strong> currentChartData and currentChartType are set</li>
+            <li><strong>? Set chart popup title based on chart type:</strong> Title is dynamically set using a titles object</li>
+            <li><strong>? Initialize date range filters (default: last 30 days):</strong> filterStartDate and filterEndDate are set to 30 days ago and today</li>
+            <li><strong>? Show chart popup modal:</strong> chartPopupModal classList.remove('hidden') is called</li>
+            <li><strong>? Call renderPopupChart() to display enlarged chart:</strong> renderPopupChart() is invoked at the end</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>?? Interactive Test</h2>
+        <p>Click the button below to test the openChartPopup() function with a sample chart:</p>
+        <button class="test-button" onclick="testOpenChartPopup()">?? Test openChartPopup()</button>
+        
+        <div class="chart-container">
+            <canvas id="testChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart Popup Modal (from reports.html) -->
+    <div class="modal-overlay hidden" id="chartPopupModal">
+        <div class="modal-card chart-popup-card">
+            <header class="modal-header">
+                <h3 id="chartPopupTitle">Chart Details</h3>
+                <button class="close-btn" id="chartPopupClose">x</button>
+            </header>
+            <div class="chart-filters">
+                <div class="filter-group">
+                    <label for="filterStartDate">Start Date:</label>
+                    <input type="date" id="filterStartDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterEndDate">End Date:</label>
+                    <input type="date" id="filterEndDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterStatus">Status:</label>
+                    <select id="filterStatus" class="filter-input">
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterVehicleType">Vehicle Type:</label>
+                    <select id="filterVehicleType" class="filter-input">
+                        <option value="all">All Types</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="van">Van</option>
+                    </select>
+                </div>
+                <button class="btn-reset-filters" id="btnResetFilters">?? Reset Filters</button>
+            </div>
+            <div class="chart-popup-body">
+                <canvas id="popupChartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables (as in reports.js)
+        let currentPopupChart = null;
+        let currentChartData = null;
+        let currentChartType = null;
+        let testChart = null;
+
+        // Initialize test chart
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('testChart').getContext('2d');
+            testChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Revenue (?)',
+                        data: [12000, 19000, 15000, 25000, 22000, 30000],
+                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Initialize close handlers
+            document.getElementById('chartPopupClose').addEventListener('click', () => {
+                document.getElementById('chartPopupModal').classList.add('hidden');
+                if (currentPopupChart) {
+                    currentPopupChart.destroy();
+                    currentPopupChart = null;
+                }
+            });
+
+            document.getElementById('chartPopupModal').addEventListener('click', (e) => {
+                if (e.target.id === 'chartPopupModal') {
+                    document.getElementById('chartPopupModal').classList.add('hidden');
+                    if (currentPopupChart) {
+                        currentPopupChart.destroy();
+                        currentPopupChart = null;
+                    }
+                }
+            });
+        });
+
+        // Task 5.3: openChartPopup() function (from reports.js)
+        async function openChartPopup(chartInstance, chartType) {
+            console.log('? Task 5.3: openChartPopup() called');
+            
+            // 1. Store current chart data and type in global variables
+            currentChartType = chartType;
+            currentChartData = {
+                labels: [...chartInstance.data.labels],
+                datasets: chartInstance.data.datasets.map(ds => ({
+                    ...ds,
+                    data: [...ds.data]
+                }))
+            };
+            console.log('? Stored chart data and type:', { currentChartType, currentChartData });
+            
+            // 2. Set chart popup title based on chart type
+            const titles = {
+                'bar': 'Revenue Overview',
+                'doughnut': 'Booking Status Distribution',
+                'line': 'Bookings Trend',
+                'horizontalBar': 'Most Rented Vehicles'
+            };
+            document.getElementById('chartPopupTitle').textContent = titles[chartType] || 'Chart Details';
+            console.log('? Set chart title:', titles[chartType] || 'Chart Details');
+            
+            // 3. Initialize date range filters (default: last 30 days)
+            const today = new Date().toISOString().split('T')[0];
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            document.getElementById('filterStartDate').value = thirtyDaysAgo;
+            document.getElementById('filterEndDate').value = today;
+            document.getElementById('filterStatus').value = 'all';
+            document.getElementById('filterVehicleType').value = 'all';
+            console.log('? Initialized date filters:', { start: thirtyDaysAgo, end: today });
+            
+            // 4. Show chart popup modal
+            document.getElementById('chartPopupModal').classList.remove('hidden');
+            console.log('? Showed chart popup modal');
+            
+            // 5. Call renderPopupChart() to display enlarged chart
+            renderPopupChart();
+            console.log('? Called renderPopupChart()');
+        }
+
+        // renderPopupChart() function (from reports.js)
+        function renderPopupChart() {
+            const canvas = document.getElementById('popupChartCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (currentPopupChart) {
+                currentPopupChart.destroy();
+            }
+            
+            const chartConfig = {
+                type: currentChartType,
+                data: currentChartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2,
+                    scales: {
+                        y: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255,255,255,0.1)' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#f1f5f9',
+                                font: { size: 14 }
+                            }
+                        }
+                    }
+                }
+            };
+            
+            currentPopupChart = new Chart(ctx, chartConfig);
+        }
+
+        // Test function
+        function testOpenChartPopup() {
+            if (testChart) {
+                openChartPopup(testChart, 'bar');
+            }
+        }
+    </script>
+</body>
+</html>

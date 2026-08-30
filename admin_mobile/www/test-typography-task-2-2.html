@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task 2.2 - Enhanced Typography CSS Verification</title>
+    <link rel="stylesheet" href="booking-management.css">
+    <link rel="stylesheet" href="shared-enhancements.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            padding: 2rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+        .test-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .test-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        .test-result {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        .test-result.pass {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+        .test-result.fail {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+        .measurement {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+        .viewport-test {
+            border: 2px dashed var(--border-glass);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+        }
+        .long-text-test {
+            max-width: 300px;
+            border: 1px solid var(--border-glass);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; margin-bottom: 2rem;">Task 2.2: Enhanced Typography CSS Verification</h1>
+
+    <!-- Test 1: Font Size Increases -->
+    <div class="test-section">
+        <div class="test-title">Test 1: Font Size Increases</div>
+        <p>Verifying that font sizes meet the requirements:</p>
+        <ul>
+            <li>Labels: 1.05rem (increased from 0.85rem)</li>
+            <li>Values: 1.1rem (increased from 0.95rem)</li>
+            <li>Headings (h3): 1.44rem (increased from 1.2rem)</li>
+            <li>Headings (h4): 1.08rem (increased from 0.9rem)</li>
+        </ul>
+
+        <div class="info-grid enhanced-text" style="margin-top: 1rem;">
+            <div class="info-item">
+                <strong class="info-label" id="testLabel">Customer Name:</strong>
+                <span class="info-value" id="testValue">John Doe</span>
+            </div>
+            <h3 id="testH3">Booking Details</h3>
+            <h4 id="testH4">Vehicle Information</h4>
+        </div>
+
+        <div id="fontSizeResults" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- Test 2: Responsive Adjustments -->
+    <div class="test-section">
+        <div class="test-title">Test 2: Responsive Adjustments (768px breakpoint)</div>
+        <p>Current viewport width: <span id="viewportWidth" class="measurement"></span></p>
+        <p>Instructions: Resize your browser window to test responsive behavior at 768px breakpoint.</p>
+        
+        <div class="viewport-test enhanced-text">
+            <div class="info-item">
+                <strong class="info-label">Test Label:</strong>
+                <span class="info-value">Test Value</span>
+            </div>
+            <h3>Test Heading H3</h3>
+            <h4>Test Heading H4</h4>
+        </div>
+
+        <div id="responsiveResults" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- Test 3: Text Overflow Handling -->
+    <div class="test-section">
+        <div class="test-title">Test 3: Text Overflow Handling</div>
+        <p>Testing word-wrap and overflow-wrap with long content:</p>
+
+        <div class="long-text-test enhanced-text">
+            <div class="info-item">
+                <strong class="info-label">Long Customer Name:</strong>
+                <span class="info-value" id="longName">Bartholomew Christopher Montgomery-Wellington III</span>
+            </div>
+            <div class="info-item">
+                <strong class="info-label">Long Description:</strong>
+                <span class="info-value" id="longDesc">ThisIsAVeryLongWordWithoutSpacesThatShouldWrapProperlyWithoutCausingOverflowIssuesInTheContainer</span>
+            </div>
+            <div class="info-item">
+                <strong class="info-label">Long URL:</strong>
+                <span class="info-value" id="longUrl">https://www.example.com/very/long/path/to/resource/that/should/wrap/properly/without/breaking/layout</span>
+            </div>
+        </div>
+
+        <div id="overflowResults" style="margin-top: 1rem;"></div>
+    </div>
+
+    <!-- Test 4: Complete Modal Simulation -->
+    <div class="test-section">
+        <div class="test-title">Test 4: Complete Modal Simulation</div>
+        <button onclick="openTestModal()" class="btn-approve" style="padding: 0.75rem 1.5rem; font-size: 1rem;">
+            Open Enhanced Booking Details Modal
+        </button>
+    </div>
+
+    <!-- Test Modal -->
+    <div class="modal-overlay hidden" id="testModal">
+        <div class="modal-card details-card">
+            <header class="modal-header">
+                <h3>Booking Details</h3>
+                <button class="close-btn" onclick="closeTestModal()">?</button>
+            </header>
+            <div class="details-content">
+                <div class="info-grid enhanced-text">
+                    <div class="info-item">
+                        <strong class="info-label">Booking ID:</strong>
+                        <span class="info-value">BK-2024-001</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Customer:</strong>
+                        <span class="info-value">Maria Clara Santos-Rodriguez</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Vehicle:</strong>
+                        <span class="info-value">Toyota Fortuner 2023</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Pickup Date:</strong>
+                        <span class="info-value">December 15, 2024</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Return Date:</strong>
+                        <span class="info-value">December 20, 2024</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Total Price:</strong>
+                        <span class="info-value">?15,000.00</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Status:</strong>
+                        <span class="info-value">Approved</span>
+                    </div>
+                    <div class="info-item">
+                        <strong class="info-label">Special Instructions:</strong>
+                        <span class="info-value">Please ensure the vehicle is fully fueled and cleaned before pickup. Customer has requested baby seat installation and GPS navigation system.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeTestModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="test-section">
+        <div class="test-title">Test Summary</div>
+        <div id="testSummary"></div>
+    </div>
+
+    <script>
+        // Test utilities
+        function getComputedFontSize(elementId) {
+            const element = document.getElementById(elementId);
+            const fontSize = window.getComputedStyle(element).fontSize;
+            return parseFloat(fontSize);
+        }
+
+        function remToPx(rem) {
+            return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        }
+
+        function pxToRem(px) {
+            return px / parseFloat(getComputedStyle(document.documentElement).fontSize);
+        }
+
+        // Test 1: Font Size Verification
+        function testFontSizes() {
+            const results = [];
+            
+            // Test label
+            const labelSize = getComputedFontSize('testLabel');
+            const labelRem = pxToRem(labelSize);
+            const labelExpected = 1.05;
+            const labelPass = Math.abs(labelRem - labelExpected) < 0.05;
+            results.push({
+                name: 'Label font-size',
+                expected: `${labelExpected}rem`,
+                actual: `${labelRem.toFixed(2)}rem (${labelSize.toFixed(2)}px)`,
+                pass: labelPass
+            });
+
+            // Test value
+            const valueSize = getComputedFontSize('testValue');
+            const valueRem = pxToRem(valueSize);
+            const valueExpected = 1.1;
+            const valuePass = Math.abs(valueRem - valueExpected) < 0.05;
+            results.push({
+                name: 'Value font-size',
+                expected: `${valueExpected}rem`,
+                actual: `${valueRem.toFixed(2)}rem (${valueSize.toFixed(2)}px)`,
+                pass: valuePass
+            });
+
+            // Test h3
+            const h3Size = getComputedFontSize('testH3');
+            const h3Rem = pxToRem(h3Size);
+            const h3Expected = 1.44;
+            const h3Pass = Math.abs(h3Rem - h3Expected) < 0.05;
+            results.push({
+                name: 'H3 font-size',
+                expected: `${h3Expected}rem`,
+                actual: `${h3Rem.toFixed(2)}rem (${h3Size.toFixed(2)}px)`,
+                pass: h3Pass
+            });
+
+            // Test h4
+            const h4Size = getComputedFontSize('testH4');
+            const h4Rem = pxToRem(h4Size);
+            const h4Expected = 1.08;
+            const h4Pass = Math.abs(h4Rem - h4Expected) < 0.05;
+            results.push({
+                name: 'H4 font-size',
+                expected: `${h4Expected}rem`,
+                actual: `${h4Rem.toFixed(2)}rem (${h4Size.toFixed(2)}px)`,
+                pass: h4Pass
+            });
+
+            return results;
+        }
+
+        // Test 2: Responsive Behavior
+        function testResponsive() {
+            const width = window.innerWidth;
+            document.getElementById('viewportWidth').textContent = `${width}px`;
+            
+            let expectedBehavior = '';
+            if (width <= 480) {
+                expectedBehavior = 'Small mobile breakpoint active (?480px)';
+            } else if (width <= 768) {
+                expectedBehavior = 'Mobile breakpoint active (?768px)';
+            } else if (width <= 1024) {
+                expectedBehavior = 'Tablet breakpoint active (?1024px)';
+            } else {
+                expectedBehavior = 'Desktop view (>1024px)';
+            }
+            
+            return {
+                width: width,
+                behavior: expectedBehavior
+            };
+        }
+
+        // Test 3: Overflow Handling
+        function testOverflow() {
+            const elements = ['longName', 'longDesc', 'longUrl'];
+            const results = [];
+            
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                const parent = element.parentElement;
+                const isOverflowing = element.scrollWidth > parent.clientWidth;
+                const wordWrap = window.getComputedStyle(element).wordWrap;
+                const overflowWrap = window.getComputedStyle(element).overflowWrap;
+                
+                results.push({
+                    element: id,
+                    overflowing: isOverflowing,
+                    wordWrap: wordWrap,
+                    overflowWrap: overflowWrap,
+                    pass: !isOverflowing && (wordWrap === 'break-word' || overflowWrap === 'break-word')
+                });
+            });
+            
+            return results;
+        }
+
+        // Display results
+        function displayResults() {
+            // Font size results
+            const fontResults = testFontSizes();
+            let fontHtml = '<h4>Font Size Test Results:</h4><ul>';
+            fontResults.forEach(result => {
+                const status = result.pass ? '? PASS' : '? FAIL';
+                fontHtml += `<li>${status} - ${result.name}: Expected ${result.expected}, Got ${result.actual}</li>`;
+            });
+            fontHtml += '</ul>';
+            document.getElementById('fontSizeResults').innerHTML = fontHtml;
+
+            // Responsive results
+            const respResults = testResponsive();
+            let respHtml = `<h4>Responsive Test Results:</h4>`;
+            respHtml += `<p>Current viewport: ${respResults.width}px</p>`;
+            respHtml += `<p>Status: ${respResults.behavior}</p>`;
+            document.getElementById('responsiveResults').innerHTML = respHtml;
+
+            // Overflow results
+            const overflowResults = testOverflow();
+            let overflowHtml = '<h4>Overflow Test Results:</h4><ul>';
+            overflowResults.forEach(result => {
+                const status = result.pass ? '? PASS' : '? FAIL';
+                overflowHtml += `<li>${status} - ${result.element}: word-wrap=${result.wordWrap}, overflow-wrap=${result.overflowWrap}, overflowing=${result.overflowing}</li>`;
+            });
+            overflowHtml += '</ul>';
+            document.getElementById('overflowResults').innerHTML = overflowHtml;
+
+            // Summary
+            const allTests = [...fontResults, ...overflowResults];
+            const passCount = allTests.filter(t => t.pass).length;
+            const totalCount = allTests.length;
+            const allPass = passCount === totalCount;
+            
+            let summaryHtml = `<h4>Overall Results:</h4>`;
+            summaryHtml += `<p>Tests Passed: ${passCount} / ${totalCount}</p>`;
+            summaryHtml += `<div class="test-result ${allPass ? 'pass' : 'fail'}">`;
+            summaryHtml += allPass ? '? ALL TESTS PASSED' : '? SOME TESTS FAILED';
+            summaryHtml += '</div>';
+            
+            if (allPass) {
+                summaryHtml += '<p style="margin-top: 1rem; color: var(--green);">Task 2.2 requirements are fully met:</p>';
+                summaryHtml += '<ul style="color: var(--text-secondary);">';
+                summaryHtml += '<li>? Font size increases implemented correctly</li>';
+                summaryHtml += '<li>? Responsive adjustments working</li>';
+                summaryHtml += '<li>? Text overflow handling in place</li>';
+                summaryHtml += '<li>? Ready for testing with long content</li>';
+                summaryHtml += '</ul>';
+            }
+            
+            document.getElementById('testSummary').innerHTML = summaryHtml;
+        }
+
+        // Modal functions
+        function openTestModal() {
+            document.getElementById('testModal').classList.remove('hidden');
+        }
+
+        function closeTestModal() {
+            document.getElementById('testModal').classList.add('hidden');
+        }
+
+        // Run tests on load and resize
+        window.addEventListener('load', displayResults);
+        window.addEventListener('resize', () => {
+            testResponsive();
+            document.getElementById('viewportWidth').textContent = `${window.innerWidth}px`;
+        });
+
+        // Close modal on overlay click
+        document.getElementById('testModal').addEventListener('click', (e) => {
+            if (e.target.id === 'testModal') closeTestModal();
+        });
+    </script>
+</body>
+</html>

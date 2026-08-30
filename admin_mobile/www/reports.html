@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Autoride Admin - Reports & Analytics Dashboard">
+    <title>Reports & Analytics — Autoride Admin</title>
+    <link rel="stylesheet" href="reports.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+            ? 'http://localhost:5000/api' 
+            : window.location.origin + '/api';
+    </script>
+</head>
+<body>
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-icon">🚗</span>
+            <h1>Autoride</h1>
+            <span class="brand-tag">Admin</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-link">
+                <span class="nav-icon">📊</span> Dashboard
+            </a>
+            <a href="booking-management.html" class="nav-link">
+                <span class="nav-icon">📋</span> Bookings
+            </a>
+            <a href="vehicle-management.html" class="nav-link">
+                <span class="nav-icon">🚘</span> Vehicles
+            </a>
+            <a href="driver-approval.html" class="nav-link">
+                <span class="nav-icon">👤</span> Drivers
+            </a>
+            <a href="reports.html" class="nav-link active">
+                <span class="nav-icon">📈</span> Reports
+            </a>
+            <a href="#" class="nav-link">
+                <span class="nav-icon">📝</span> GPS Tracking
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="admin-avatar">A</div>
+            <div class="admin-info">
+                <span class="admin-name">Admin User</span>
+                <span class="admin-role">Super Admin</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="main-content">
+
+        <!-- Header -->
+        <header class="page-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+                <div>
+                    <h2 class="page-title">Reports & Analytics</h2>
+                    <p class="page-subtitle">Track revenue, bookings, and vehicle performance</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-time" id="headerTime"></div>
+            </div>
+        </header>
+
+        <!-- Period Selector -->
+        <section class="period-bar">
+            <div class="period-tabs">
+                <button class="period-tab active" data-period="daily" id="tabDaily">Daily</button>
+                <button class="period-tab" data-period="monthly" id="tabMonthly">Monthly</button>
+            </div>
+            <div class="date-picker-group">
+                <label for="reportDate">Date:</label>
+                <input type="date" id="reportDate" class="date-input">
+                <button class="btn-generate" id="btnGenerate">📊 Generate Report</button>
+            </div>
+        </section>
+
+        <!-- KPI Cards -->
+        <section class="stats-grid" id="statsGrid">
+            <div class="stat-card stat-bookings">
+                <div class="stat-icon-wrap bookings-icon">
+                    <span class="stat-icon">📦</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalBookings">0</span>
+                    <span class="stat-label">Total Bookings</span>
+                </div>
+                <div class="stat-trend up" id="trendBookings">
+                    <span class="trend-arrow">↑</span>
+                    <span class="trend-pct" id="trendBookingsPct">0%</span>
+                </div>
+            </div>
+            <div class="stat-card stat-revenue">
+                <div class="stat-icon-wrap revenue-icon">
+                    <span class="stat-icon">💰</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalRevenue">₱0</span>
+                    <span class="stat-label">Total Revenue</span>
+                </div>
+                <div class="stat-trend up" id="trendRevenue">
+                    <span class="trend-arrow">↑</span>
+                    <span class="trend-pct" id="trendRevenuePct">0%</span>
+                </div>
+            </div>
+            <div class="stat-card stat-avg-revenue">
+                <div class="stat-icon-wrap avg-icon">
+                    <span class="stat-icon">📝</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statAvgRevenue">₱0</span>
+                    <span class="stat-label">Avg per Booking</span>
+                </div>
+                <div class="stat-trend neutral" id="trendAvg">
+                    <span class="trend-arrow">→</span>
+                    <span class="trend-pct" id="trendAvgPct">—</span>
+                </div>
+            </div>
+            <div class="stat-card stat-active">
+                <div class="stat-icon-wrap active-icon">
+                    <span class="stat-icon">🚘</span>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statActiveVehicles">0</span>
+                    <span class="stat-label">Active Vehicles</span>
+                </div>
+                <div class="stat-trend neutral" id="trendVehicles">
+                    <span class="trend-arrow">→</span>
+                    <span class="trend-pct" id="trendVehiclesPct">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Row -->
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <h3 class="chart-title">Revenue Overview</h3>
+                    <span class="chart-badge" id="chartPeriodLabel">Daily</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Booking Status</h3>
+                </div>
+                <div class="chart-body doughnut-body">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Second Row: Bookings Trend + Top Vehicles -->
+        <section class="charts-row">
+            <div class="chart-card wide">
+                <div class="chart-header">
+                    <h3 class="chart-title">Bookings Trend</h3>
+                </div>
+                <div class="chart-body">
+                    <canvas id="bookingsTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Most Rented Vehicles</h3>
+                    <span class="chart-badge">Top 5</span>
+                </div>
+                <div class="chart-body">
+                    <canvas id="topVehiclesChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Vehicles Table -->
+        <section class="table-section">
+            <div class="table-header">
+                <h3 class="table-title">🝆 Top Rented Vehicles — Detailed</h3>
+            </div>
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table class="report-table" id="topVehiclesTable">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Vehicle</th>
+                                <th>Total Bookings</th>
+                                <th>Total Revenue</th>
+                                <th>Popularity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topVehiclesBody">
+                            <!-- Dynamically populated -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state hidden" id="emptyState">
+                    <div class="empty-icon">📭</div>
+                    <h3>No report data</h3>
+                    <p>Select a date and click "Generate Report" to view analytics.</p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-state hidden" id="loadingState">
+                    <div class="spinner"></div>
+                    <p>Generating report...</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast -->
+    <div class="toast hidden" id="toast">
+        <span class="toast-icon" id="toastIcon"></span>
+        <span class="toast-msg" id="toastMsg"></span>
+    </div>
+
+    <!-- Chart Popup Modal -->
+    <div class="modal-overlay hidden" id="chartPopupModal">
+        <div class="modal-card chart-popup-card">
+            <header class="modal-header">
+                <h3 id="chartPopupTitle">Chart Details</h3>
+                <button class="close-btn" id="chartPopupClose">?</button>
+            </header>
+            <div class="chart-filters">
+                <div class="filter-group">
+                    <label for="filterStartDate">Start Date:</label>
+                    <input type="date" id="filterStartDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterEndDate">End Date:</label>
+                    <input type="date" id="filterEndDate" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filterStatus">Status:</label>
+                    <select id="filterStatus" class="filter-input">
+                        <option value="all">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterVehicleType">Vehicle Type:</label>
+                    <select id="filterVehicleType" class="filter-input">
+                        <option value="all">All Types</option>
+                        <option value="sedan">Sedan</option>
+                        <option value="suv">SUV</option>
+                        <option value="van">Van</option>
+                    </select>
+                </div>
+                <button class="btn-reset-filters" id="btnResetFilters">🔄 Reset Filters</button>
+            </div>
+            <div class="chart-popup-body">
+                <canvas id="popupChartCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="reports.js"></script>
+</body>
+</html>

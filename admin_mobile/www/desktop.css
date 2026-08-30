@@ -1,0 +1,304 @@
+/* ============================================================
+   Autoride Admin -- Desktop Responsive Layout
+   Single clean file. All overrides scoped to min-width: 769px.
+   Mobile layout unchanged.
+   ============================================================ */
+
+/* =================================================================
+   CORE LAYOUT  (769px+)
+================================================================= */
+@media (min-width: 769px) {
+
+    body { flex-direction: row !important; overflow: hidden !important; height: 100vh !important; }
+
+
+    /* ---- SIDEBAR ---- */
+    .side-drawer {
+        position: fixed !important; left: 0 !important; top: 0 !important;
+        width: 248px !important; height: 100vh !important;
+        transform: translateX(0) !important; box-shadow: none !important;
+        border-right: 1px solid var(--border) !important; z-index: 300 !important;
+        transition: none !important; display: flex !important;
+        flex-direction: column !important; background: var(--surface) !important;
+        overflow: hidden !important;
+    }
+    .drawer-overlay { display: none !important; }
+    .drawer-header { padding: 20px 18px 16px !important; border-bottom: 1px solid var(--border) !important; flex-shrink: 0 !important; }
+    .drawer-header > p { display: none !important; }
+    .drawer-content { flex: 1 !important; padding: 8px 8px !important; overflow-y: auto !important; overflow-x: hidden !important; }
+    .drawer-content::-webkit-scrollbar { width: 4px; }
+    .drawer-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+    .drawer-item {
+        display: flex !important; align-items: center !important; gap: 10px !important;
+        padding: 9px 14px !important; border-radius: 10px !important; font-size: 0.84rem !important;
+        font-weight: 600 !important; color: var(--text-secondary) !important;
+        text-decoration: none !important; margin-bottom: 1px !important;
+        cursor: pointer !important; border: 1px solid transparent !important;
+        transition: background 0.12s, color 0.12s !important;
+    }
+    .drawer-item:hover { background: var(--surface-container) !important; color: var(--text-main) !important; }
+    .drawer-item.active { background: rgba(0,177,79,0.1) !important; color: var(--primary) !important; border-color: rgba(0,177,79,0.2) !important; }
+    .drawer-item i { width: 16px !important; font-size: 0.88rem !important; text-align: center !important; flex-shrink: 0 !important; }
+
+    /* ---- HEADER ---- */
+    .mobile-header {
+        left: 248px !important; width: calc(100% - 248px) !important; height: 60px !important;
+        background: var(--surface) !important; border-bottom: 1px solid var(--border) !important;
+        backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
+        box-shadow: none !important; z-index: 200 !important; padding: 0 28px !important;
+    }
+    .menu-btn { display: none !important; }
+
+    /* ---- BOTTOM NAV HIDDEN ---- */
+    .bottom-nav { display: none !important; }
+
+    /* ---- MAIN CONTENT ---- */
+    .main-content {
+        margin-left: 248px !important; padding: 72px 32px 32px !important;
+        height: 100vh !important; overflow-y: auto !important; overflow-x: hidden !important;
+        flex: 1 !important; -webkit-overflow-scrolling: auto !important;
+    }
+    .main-content::-webkit-scrollbar { width: 6px; }
+    .main-content::-webkit-scrollbar-track { background: transparent; }
+    .main-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.13); border-radius: 3px; }
+    .main-content::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
+
+    /* Tab content: cap width but stay left-aligned (not centered) */
+    .main-content > .tab-content { max-width: 1440px !important; }
+
+    /* ---- NOTIFICATIONS ---- */
+    #adminNotifPanel { left: auto !important; right: 24px !important; top: 68px !important; width: 380px !important; }
+
+    /* ---- PAGE TITLES ---- */
+    .page-title { font-size: 1.6rem !important; font-weight: 800 !important; margin-bottom: 2px !important; }
+    .page-subtitle { margin-bottom: 20px !important; }
+
+    /* ---- HOVER STATES ---- */
+    .stat-card { transition: box-shadow 0.18s, transform 0.18s !important; }
+    .stat-card:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important; transform: translateY(-2px) !important; }
+    .list-item:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.08) !important; }
+    .btn-primary:hover, .btn-premium:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-outline:hover { background: var(--surface-container) !important; }
+
+    /* ---- MODALS ---- */
+    .premium-modal { padding: 32px !important; }
+    .modal-content { max-width: 540px !important; border-radius: 20px !important; }
+    #adminLoginOverlay .login-card { max-width: 460px !important; }
+}
+
+@media (min-width: 1100px) {
+    .side-drawer { width: 260px !important; }
+    .mobile-header { left: 260px !important; width: calc(100% - 260px) !important; padding: 0 32px !important; }
+    .main-content { margin-left: 260px !important; padding: 72px 36px 32px !important; }
+    .page-title { font-size: 1.75rem !important; }
+    #users.tab-content[style*="display: block"], #users.tab-content[style*="display:block"],
+    #chat.tab-content[style*="display: block"], #chat.tab-content[style*="display:block"] {
+    }
+
+}
+
+@media (min-width: 1400px) {
+    .side-drawer { width: 272px !important; }
+    .mobile-header { left: 272px !important; width: calc(100% - 272px) !important; }
+    .main-content { margin-left: 272px !important; padding: 72px 44px 32px !important; }
+    #users.tab-content[style*="display: block"], #users.tab-content[style*="display:block"],
+    #chat.tab-content[style*="display: block"], #chat.tab-content[style*="display:block"] {
+    }
+
+}
+
+/* =================================================================
+   DARK THEME
+================================================================= */
+@media (min-width: 769px) {
+    [data-theme="dark"] .side-drawer { background: #0f0f0f !important; border-right-color: rgba(255,255,255,0.07) !important; }
+    [data-theme="dark"] .mobile-header { background: #0f0f0f !important; border-bottom-color: rgba(255,255,255,0.07) !important; }
+    [data-theme="dark"] .drawer-item:hover { background: rgba(255,255,255,0.05) !important; color: #fff !important; }
+    [data-theme="dark"] .drawer-item.active { background: rgba(0,177,79,0.13) !important; border-color: rgba(0,177,79,0.28) !important; color: #00B14F !important; }
+    [data-theme="dark"] .main-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+}
+
+/* =================================================================
+   DASHBOARD GRID  (769px+)
+================================================================= */
+@media (min-width: 769px) {
+    .dash-kpi-row {
+        display: grid !important; grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important; margin-bottom: 18px !important;
+    }
+    .dash-kpi-row .stat-card { padding: 28px 32px !important; margin-bottom: 0 !important; }
+    .dash-kpi-row .stat-card h5 { font-size: 0.65rem !important; letter-spacing: 1.2px !important; margin-bottom: 10px !important; }
+    .dash-kpi-row .stat-card > div[id] { font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -1.5px !important; line-height: 1 !important; }
+    .dash-chart-row {
+        display: grid !important; grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important; margin-bottom: 18px !important;
+    }
+    .dash-chart-row .stat-card { margin-bottom: 0 !important; padding: 18px 20px !important; }
+    .dash-chart-row div[style*="height:110px"], .dash-chart-row div[style*="height: 110px"] { height: 200px !important; }
+    .dash-pie-row {
+        display: grid !important; grid-template-columns: 1fr 1fr !important;
+        gap: 18px !important; margin-bottom: 18px !important;
+    }
+    .dash-pie-row .stat-card { margin-bottom: 0 !important; padding: 18px 20px !important; }
+    .dash-full-row { margin-bottom: 18px !important; }
+}
+@media (min-width: 1100px) {
+    .dash-kpi-row { grid-template-columns: 1fr 1fr 1fr 1fr !important; }
+    .dash-chart-row div[style*="height:110px"], .dash-chart-row div[style*="height: 110px"] { height: 220px !important; }
+}
+@media (min-width: 1400px) {
+    .dash-pie-row { grid-template-columns: 1fr 1fr 1fr !important; }
+    .dash-chart-row div[style*="height:110px"], .dash-chart-row div[style*="height: 110px"] { height: 240px !important; }
+}
+
+/* =================================================================
+   VEHICLES GRID  (769px+)
+================================================================= */
+@media (min-width: 769px) {
+    ul.veh-desktop-grid {
+        list-style: none !important; margin: 0 !important; padding: 0 !important;
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+        gap: 18px !important;
+    }
+    li.veh-card-desktop {
+        display: flex !important; flex-direction: column !important;
+        background: var(--surface) !important; border: 1px solid var(--border) !important;
+        border-radius: 16px !important; overflow: hidden !important;
+        padding: 0 !important; gap: 0 !important;
+        transition: box-shadow 0.18s, transform 0.18s !important;
+    }
+    li.veh-card-desktop:hover { box-shadow: 0 6px 28px rgba(0,0,0,0.1) !important; transform: translateY(-2px) !important; }
+    li.veh-card-desktop > div:first-child {
+        width: 100% !important; height: 160px !important; border-radius: 0 !important;
+        background: var(--surface-container) !important; display: flex !important;
+        align-items: center !important; justify-content: center !important;
+        overflow: hidden !important; flex-shrink: 0 !important;
+    }
+    li.veh-card-desktop > div:first-child img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 0 !important; }
+    li.veh-card-desktop > div:first-child i { font-size: 3rem !important; color: var(--primary) !important; opacity: 0.35 !important; }
+    li.veh-card-desktop > div:nth-child(2) { flex: 1 !important; padding: 14px 16px !important; min-width: 0 !important; }
+    li.veh-card-desktop > div:nth-child(2) > div:first-child { font-size: 1.1rem !important; margin-bottom: 4px !important; }
+    li.veh-card-desktop > div:nth-child(2) > div:nth-child(2) { font-size: 0.92rem !important; margin-bottom: 3px !important; white-space: normal !important; }
+    li.veh-card-desktop > div:nth-child(2) > div:nth-child(3) { font-size: 0.75rem !important; margin-bottom: 8px !important; }
+    li.veh-card-desktop > div:last-child {
+        flex-direction: row !important; justify-content: flex-end !important;
+        gap: 6px !important; padding: 10px 14px !important;
+        border-top: 1px solid var(--border) !important;
+        background: var(--surface-container) !important;
+    }
+    li.veh-card-desktop > div:last-child button {
+        width: 34px !important; height: 34px !important; border-radius: 8px !important;
+        background: var(--surface) !important; border: 1px solid var(--border) !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        font-size: 0.88rem !important; color: var(--text-secondary) !important;
+        cursor: pointer !important; transition: all 0.15s !important;
+    }
+    li.veh-card-desktop > div:last-child button:first-child:hover { background: var(--primary) !important; border-color: var(--primary) !important; color: white !important; }
+    li.veh-card-desktop > div:last-child button:last-child:hover { background: #dc2626 !important; border-color: #dc2626 !important; color: white !important; }
+}
+@media (min-width: 1100px) { ul.veh-desktop-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (min-width: 1400px) { ul.veh-desktop-grid { grid-template-columns: repeat(4, 1fr) !important; } }
+
+/* =================================================================
+   USER VERIFICATIONS  (769px+)
+================================================================= */
+@media (min-width: 769px) {
+    #verificationsList.veri-desktop-list { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 20px !important; align-items: start !important; }
+    #verificationsList .veri-desktop-card { margin-bottom: 0 !important; padding: 22px !important; }
+    #verificationsList .veri-desktop-card img { border-radius: 10px !important; max-height: 200px !important; object-fit: cover !important; width: 100% !important; }
+    #verificationsList .veri-desktop-card > div:first-child > div:first-child { width: 60px !important; height: 60px !important; font-size: 1.3rem !important; }
+    #verificationsList .veri-desktop-card > div:first-child h4 { font-size: 1.1rem !important; }
+    #verificationsList .veri-desktop-card > div:last-child { margin-top: 14px !important; gap: 10px !important; }
+    #verificationsList .veri-desktop-card > div:last-child .btn-premium { padding: 13px 16px !important; font-size: 0.875rem !important; border-radius: 12px !important; }
+}
+@media (min-width: 769px) and (max-width: 1099px) {
+    #verificationsList.veri-desktop-list { grid-template-columns: 1fr !important; max-width: 900px !important; }
+}
+@media (min-width: 1400px) { #verificationsList.veri-desktop-list { grid-template-columns: repeat(3, 1fr) !important; } }
+
+/* =================================================================
+   USER MANAGEMENT  (769px+)
+   NOTE: #users tab has inline style="padding: 20px; padding-bottom: 100px"
+   We only remove the bottom padding. All other padding stays.
+================================================================= */
+@media (min-width: 769px) {
+
+    /* Remove mobile bottom padding only - title and side padding remain */
+    #users.users-desktop-tab { padding-bottom: 24px !important; }
+
+    /* Stats row: fixed-width columns, left-aligned */
+    #users > div[style*="grid-template-columns:1fr 1fr 1fr"],
+    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
+        display: grid !important;
+        grid-template-columns: repeat(3, 160px) !important;
+        gap: 14px !important; margin-bottom: 20px !important;
+        width: max-content !important;
+    }
+    #users > div[style*="grid-template-columns:1fr 1fr 1fr"] > div,
+    #users > div[style*="grid-template-columns: 1fr 1fr 1fr"] > div {
+        padding: 18px 16px !important; border-radius: 14px !important; text-align: center !important;
+    }
+    #users #umTotalCount, #users #umVerifiedCount, #users #umFrozenCount {
+        font-size: 1.8rem !important; font-weight: 900 !important; letter-spacing: -1px !important;
+    }
+
+    /* Search + export row */
+    #users > div[style*="display:flex"][style*="gap:10px"],
+    #users > div[style*="display: flex"][style*="gap: 10px"] {
+        width: 100% !important; max-width: 100% !important; margin-bottom: 12px !important;
+    }
+    #users #umSearch { font-size: 0.9rem !important; }
+
+    /* Filter chips row */
+    #users > div[style*="overflow-x:auto"],
+    #users > div[style*="overflow-x: auto"] { width: 100% !important; margin-bottom: 18px !important; }
+
+    /* User list grid */
+    #umList.um-desktop-list {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+        gap: 16px !important;
+        width: 100% !important;
+    }
+
+    /* User card */
+    .um-desktop-card {
+        margin-bottom: 0 !important; padding: 16px 18px !important;
+        border-radius: 14px !important; overflow: hidden !important;
+        transition: box-shadow 0.18s, transform 0.15s !important; cursor: pointer !important;
+        min-width: 0 !important;
+    }
+    .um-desktop-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.1) !important; transform: translateY(-2px) !important; }
+    .um-desktop-card > div:first-child { flex-shrink: 0 !important; width: 44px !important; height: 44px !important; min-width: 44px !important; }
+    .um-desktop-card > div:nth-child(2) { min-width: 0 !important; flex: 1 !important; overflow: hidden !important; margin-right: 8px !important; }
+    .um-desktop-card > div:nth-child(2) > div:first-child { font-size: 0.9rem !important; font-weight: 800 !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .um-desktop-card > div:nth-child(2) > div:nth-child(2) { font-size: 0.72rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .um-desktop-card > div:last-child { flex-shrink: 0 !important; text-align: right !important; min-width: 100px !important; }
+
+    /* User detail modal: centered on desktop */
+    #umModal { align-items: center !important; justify-content: center !important; padding: 32px !important; }
+    #umModal > div { min-height: unset !important; align-items: center !important; justify-content: center !important; }
+    #umModal > div > div { border-radius: 20px !important; max-width: 560px !important; width: 100% !important; max-height: 85vh !important; padding: 28px !important; }
+}
+
+
+/* =================================================================
+   GPS / CHAT / REPORTS
+================================================================= */
+@media (min-width: 769px) {
+    #gps { height: calc(100vh - 110px) !important; }
+    .ac-chat-wrap { height: calc(100vh - 110px) !important; }
+    #chat .ac-chat-wrap { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    #reports .chart-container { height: 280px !important; }
+}
+@media (min-width: 1100px) { #reports .chart-container { height: 320px !important; } }
+
+/* =================================================================
+   SCROLLBARS
+================================================================= */
+@media (min-width: 769px) {
+    .drawer-content::-webkit-scrollbar { width: 4px; }
+    .drawer-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+    [data-theme="dark"] .drawer-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+}

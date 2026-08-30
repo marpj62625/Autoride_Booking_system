@@ -1383,12 +1383,51 @@ function handleBackButton() {
                 autoCheckPaymentStatus(bookingId, amount, method);
               }
             }
-          }
-        }
-      });
-    }
   }, false);
+
+  // Global backdrop click listener for Customer App modals, bottom sheets & overlays
+  document.addEventListener('click', function(e) {
+    // 1. Rental Agreement Modal
+    var rentalModal = document.getElementById('rentalAgreementModal');
+    if (rentalModal && e.target === rentalModal) {
+      rentalModal.remove();
+      return;
+    }
+
+    // 2. Extend Modal
+    var extendModal = document.getElementById('extendModal');
+    if (extendModal && e.target === extendModal) {
+      if (typeof closeExtendModal === 'function') closeExtendModal();
+      else extendModal.remove();
+      return;
+    }
+
+    // 3. Generic Modals / Dialogs
+    var openGenericModals = document.querySelectorAll('.modal, .premium-modal, [id$="Modal"], [id$="Dialog"]');
+    openGenericModals.forEach(function(modal) {
+      if ((modal.style.display !== 'none' && modal.style.display !== '') && e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+
+    // 4. Desktop Overlay Backdrops (clicking empty space around the centered phone wrapper / overlay container)
+    var activeOverlays = document.querySelectorAll('.overlay-page.active');
+    activeOverlays.forEach(function(overlay) {
+      if (e.target === overlay) {
+        closeOverlay(overlay.id);
+      }
+    });
+  });
+
+
+  // Global Escape key listener for desktop
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      handleBackButton();
+    }
+  });
 })();
+
 
 // AUTH: LOGIN
 function doLogin() {

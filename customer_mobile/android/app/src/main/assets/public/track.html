@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Tracking | Autoride System</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body, html { height: 100%; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
+        #map { height: 100vh; width: 100%; z-index: 1; }
+        
+        .tracking-overlay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 90%;
+            max-width: 450px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .driver-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .driver-avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #ef4444;
+            text-transform: uppercase;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            transition: 0.3s;
+        }
+
+        .back-btn:hover { background: var(--primary-color); color: white; transform: scale(1.1); }
+
+        .car-marker {
+            transition: all 1s linear;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+
+    <div class="tracking-overlay">
+        <div class="status-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="live-indicator"><i class="fas fa-circle"></i> Live Tracking</div>
+                <div style="font-size: 0.8rem; color: #64748b;">ID: #REQ-<span id="booking-id">...</span></div>
+            </div>
+
+            <div class="driver-info">
+                <div class="driver-avatar"><i class="fas fa-user-tie"></i></div>
+                <div>
+                    <div style="font-weight: 700; font-size: 1.1rem;" id="driver-name">Driver Assigning...</div>
+                    <div style="font-size: 0.85rem; color: #64748b;" id="vehicle-name">Fetching Vehicle Details...</div>
+                </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 0;">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="background: #f8fafc; padding: 10px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 0.7rem; color: #64748b; text-transform: uppercase;">Est. Arrival</div>
+                    <div style="font-weight: 700; color: var(--primary-color);" id="eta-time">-- mins</div>
+                </div>
+                <div style="background: #f8fafc; padding: 10px; border-radius: 12px; text-align: center;">
+                    <div style="font-size: 0.7rem; color: #64748b; text-transform: uppercase;">Distance</div>
+                    <div style="font-weight: 700; color: var(--primary-color);" id="dist-km">-- km</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookingId = urlParams.get('id');
+        document.getElementById('booking-id').innerText = bookingId || '0000';
+
+        // Initialize Map
+        const map = L.map('map', { zoomControl: false }).setView([14.5995, 120.9842], 15); // Manila
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; Autoride System'
+        }).addTo(map);
+
+        // Custom Car Marker
+        const carIcon = L.divIcon({
+            html: '<i class="fas fa-car-side" style="color: #6366f1; font-size: 24px; text-shadow: 0 0 10px rgba(99,102,241,0.5);"></i>',
+            className: 'car-marker',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        const marker = L.marker([14.5995, 120.9842], { icon: carIcon }).addTo(map);
+
+        // Simulation Path (Manila Area)
+        const path = [
+            [14.5995, 120.9842], [14.5985, 120.9850], [14.5975, 120.9860],
+            [14.5960, 120.9875], [14.5950, 120.9880], [14.5940, 120.9900],
+            [14.5930, 120.9915], [14.5925, 120.9930], [14.5910, 120.9950]
+        ];
+
+        let currentStep = 0;
+        
+        function moveCar() {
+            if (currentStep >= path.length) {
+                currentStep = 0; // Loop simulation
+            }
+            
+            const nextPos = path[currentStep];
+            marker.setLatLng(nextPos);
+            map.panTo(nextPos);
+            
+            // Randomize ETA/Dist for realism
+            const mins = Math.max(2, 10 - currentStep);
+            const dist = (mins * 0.4).toFixed(1);
+            document.getElementById('eta-time').innerText = mins + ' mins';
+            document.getElementById('dist-km').innerText = dist + ' km';
+
+            currentStep++;
+            setTimeout(moveCar, 3000);
+        }
+
+        // Mock Data Fetch
+        async function fetchDetails() {
+            try {
+                // In reality, fetch from API. For mockup:
+                document.getElementById('driver-name').innerText = 'Juan Dela Cruz';
+                document.getElementById('vehicle-name').innerText = 'Toyota Vios (NDG-4456)';
+                moveCar();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        fetchDetails();
+    </script>
+</body>
+</html>

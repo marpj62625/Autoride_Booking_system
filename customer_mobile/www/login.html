@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Autoride</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="config.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Autoride">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('[PWA] Service Worker registered successfully:', reg.scope))
+                    .catch(err => console.error('[PWA] Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1>Autoride</h1>
+        <nav>
+            <a href="login.html">Login</a>
+            <a href="register.html">Register</a>
+        </nav>
+    </header>
+
+    <div id="authContainer" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;display:flex;overflow:hidden;background:#ffffff;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+
+        <!-- LEFT — Green Branding Panel -->
+        <div style="flex:0 0 58%;background:linear-gradient(145deg,#00c853 0%,#00b14f 45%,#007a36 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 48px;position:relative;overflow:hidden;box-sizing:border-box;">
+            <!-- Decorative circles -->
+            <div style="position:absolute;top:-100px;right:-100px;width:380px;height:380px;border-radius:50%;background:rgba(255,255,255,0.07);pointer-events:none;"></div>
+            <div style="position:absolute;bottom:-140px;left:-80px;width:460px;height:460px;border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none;"></div>
+            
+            <!-- Logo (Circular border wrapper) -->
+            <div style="width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,0.08);border:2.5px solid rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;margin-bottom:24px;position:relative;z-index:1;box-shadow:0 12px 30px rgba(0,0,0,0.15);">
+                <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:96px;height:96px;object-fit:contain;">
+            </div>
+            
+            <!-- Brand name -->
+            <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Autoride</div>
+            <!-- Tagline -->
+            <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;text-align:center;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">Your ride, your way.<br>Fast. Safe. Affordable.</div>
+            
+            <!-- Feature highlights -->
+            <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-car" style="color:white;font-size:1rem;"></i></div>
+                    <div>
+                        <div style="font-weight:700;color:white;font-size:0.95rem;">Wide Vehicle Selection</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Sedans, SUVs, vans and more</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-shield-alt" style="color:white;font-size:1rem;"></i></div>
+                    <div>
+                        <div style="font-weight:700;color:white;font-size:0.95rem;">Safe &amp; Insured</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Verified vehicles with full coverage</div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-star" style="color:white;font-size:1rem;"></i></div>
+                    <div>
+                        <div style="font-weight:700;color:white;font-size:0.95rem;">Loyalty Rewards</div>
+                        <div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Earn points and unlock exclusive deals</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer trust -->
+            <div style="position:absolute;bottom:28px;font-size:0.72rem;color:rgba(255,255,255,0.5);z-index:1;text-align:center;">Trusted by hundreds of customers across the region</div>
+        </div>
+
+        <!-- RIGHT — White Login Form Panel -->
+        <div style="flex:1;background:#ffffff;display:flex;align-items:center;justify-content:center;padding:48px 40px;overflow-y:auto;box-sizing:border-box;">
+            <div style="width:100%;max-width:360px;">
+                
+                <!-- STEP 1: Login Form -->
+                <div class="auth-form-step">
+                    <!-- Heading -->
+                    <h1 style="font-size:2rem;font-weight:800;color:#111827;letter-spacing:-0.03em;margin:0 0 6px;">Welcome back</h1>
+                    <p style="font-size:0.88rem;color:#6b7280;margin:0 0 30px;">Sign in to your account</p>
+
+                    <form id="loginForm">
+                        <!-- Email -->
+                        <div class="form-group" style="margin-bottom:18px;">
+                            <label for="email" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:6px;text-transform:none;letter-spacing:normal;">Email Address</label>
+                            <input type="email" id="email" class="form-input" required placeholder="yourname@gmail.com"
+                                style="width:100%;padding:13px 15px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.95rem;color:#111827;outline:none;box-sizing:border-box;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                        </div>
+
+                        <!-- Password -->
+                        <div class="form-group" style="margin-bottom:8px;">
+                            <label for="password" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:6px;text-transform:none;letter-spacing:normal;">Password</label>
+                            <div class="password-input-wrapper" style="position:relative;">
+                                <input type="password" id="password" class="form-input" required placeholder="Enter your password"
+                                    style="width:100%;padding:13px 46px 13px 15px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.95rem;color:#111827;outline:none;box-sizing:border-box;background:#fff;transition:border-color 0.2s,box-shadow 0.2s;"
+                                    onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                    onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
+                                <button type="button" class="password-toggle" onclick="togglePasswordVisibility('password', this)"
+                                    style="position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9ca3af;cursor:pointer;font-size:1rem;padding:4px;line-height:1;display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div style="text-align:right; margin-top:8px;">
+                                <a href="#" id="forgotPasswordLink" onclick="openForgotPassword(event)" style="color:#00b14f;font-size:0.82rem;text-decoration:none;font-weight:600;">Forgot Password?</a>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn" style="width:100%;margin-top:16px;padding:14px;background:#00b14f;border:none;border-radius:9px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,177,79,0.3);transition:background 0.2s,transform 0.15s,box-shadow 0.15s;box-sizing:border-box;"
+                            onmouseover="this.style.background='#009944';this.style.boxShadow='0 8px 24px rgba(0,177,79,0.42)';"
+                            onmouseout="this.style.background='#00b14f';this.style.boxShadow='0 4px 16px rgba(0,177,79,0.3)';"
+                            onmousedown="this.style.transform='scale(0.98)';" onmouseup="this.style.transform='';">
+                            <i class="fas fa-sign-in-alt"></i> Sign In
+                        </button>
+                    </form>
+
+                    <div class="divider" style="display:flex; align-items:center; text-align:center; margin:22px 0; color:#9ca3af; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
+                        <div style="flex:1; border-bottom:1px solid #e5e7eb; margin-right:1rem;"></div>
+                        or
+                        <div style="flex:1; border-bottom:1px solid #e5e7eb; margin-left:1rem;"></div>
+                    </div>
+
+                    <button type="button" id="btnGoogleLogin" onclick="doGoogleLogin()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px 20px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.95rem;font-weight:600;cursor:pointer;transition:background 0.2s,border-color 0.2s,box-shadow 0.2s;box-sizing:border-box;"
+                        onmouseover="this.style.background='#f9fafb';this.style.borderColor='#9ca3af';"
+                        onmouseout="this.style.background='#fff';this.style.borderColor='#d1d5db';">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:18px;height:18px;">
+                        Sign in with Google
+                    </button>
+                    
+                    <div class="auth-links" id="authLinks" style="margin-top:28px; text-align:center; font-size:0.88rem;">
+                        <p style="color:#6b7280;margin:0;">Don't have an account? <a href="register.html" style="color:#00b14f; font-weight:700; text-decoration:none;">Register</a></p>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Email Verification (Hidden by default) -->
+                <div class="verification-step" id="stepVerification" style="box-sizing:border-box;">
+                    <h2 style="font-size:1.75rem;font-weight:800;color:#111827;letter-spacing:-0.02em;margin-bottom:10px;text-align:center;">Verify Your Account</h2>
+                    <p style="color:#6b7280;text-align:center;margin-bottom:28px;font-size:0.88rem;line-height:1.5;">
+                        Your email <strong id="displayEmail" style="color:#111827;"></strong> is not yet verified.<br>
+                        Please enter the 6-digit code sent during registration.
+                    </p>
+                    
+                    <div class="otp-input-group" style="display:flex;gap:8px;justify-content:center;margin:24px 0;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                        <input type="text" class="otp-digit" maxlength="1" pattern="\d" inputmode="numeric" style="width:42px;height:50px;text-align:center;font-size:1.3rem;font-weight:700;border-radius:8px;border:1.5px solid #d1d5db;background:#fff;color:#111827;outline:none;">
+                    </div>
+
+                    <button type="button" class="btn" id="verifyBtn" style="width:100%;padding:14px;background:#00b14f;border:none;border-radius:9px;color:white;font-weight:700;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(0,177,79,0.3);box-sizing:border-box;">Verify & Sign In</button>
+                    <p style="margin-top:24px;text-align:center;font-size:0.88rem;margin-bottom:0;">
+                        <a href="#" onclick="location.reload()" style="color:#00b14f;text-decoration:none;font-weight:600;">Back to Login</a>
+                    </p>
+                </div>
+
+                <div id="message" style="text-align:center; margin-top:20px; font-weight:600; font-size:0.88rem;"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotPasswordModal" style="display:none; align-items:center; justify-content:center;" onclick="closeForgotIfOutside(event)">
+        <div class="modal-content" style="max-width:420px; text-align:center;">
+            <button onclick="closeForgotPassword()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;">&times;</button>
+            
+            <div style="width:60px;height:60px;background:rgba(99,102,241,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;border:1px solid rgba(99,102,241,0.3);">
+                <svg width="26" height="26" fill="none" stroke="#818cf8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+            </div>
+            
+            <h3 style="font-size:1.5rem;font-weight:700;margin-bottom:0.5rem;background:linear-gradient(to right,#818cf8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Reset Password</h3>
+            <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.75rem;line-height:1.6;">Enter your registered email address and we'll send you a temporary password to get back into your account.</p>
+            
+            <div class="form-group" style="text-align:left;">
+                <label for="forgotEmail" style="display:block;margin-bottom:0.5rem;font-weight:600;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Email Address</label>
+                <input type="email" id="forgotEmail" class="form-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitForgotPassword()">
+            </div>
+            
+            <div id="forgotMsg" style="min-height:1.5rem;margin-bottom:1rem;font-size:0.9rem;font-weight:500;"></div>
+            
+            <button id="forgotSubmitBtn" onclick="submitForgotPassword()" class="btn" style="margin-bottom:0.75rem;">
+                <span id="forgotBtnText">Send Temporary Password</span>
+            </button>
+            <button onclick="closeForgotPassword()" style="display:block;width:100%;padding:0.75rem;background:transparent;border:1px solid var(--border-color);border-radius:8px;color:var(--text-muted);cursor:pointer;font-size:0.9rem;font-weight:500;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--primary-color)';this.style.color='var(--text-main)'" onmouseout="this.style.borderColor='var(--border-color)';this.style.color='var(--text-muted)'">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Password visibility toggle function
+        function togglePasswordVisibility(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // Password validation function
+        function validatePassword(password, errorElementId) {
+            const requirements = {
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /\d/.test(password),
+                length: password.length >= 8
+            };
+
+            // Update requirement indicators
+            const updateRequirement = (id, isValid) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const icon = element.querySelector('i');
+                    if (isValid) {
+                        element.classList.add('valid');
+                        element.classList.remove('invalid');
+                        icon.className = 'fas fa-check';
+                    } else {
+                        element.classList.add('invalid');
+                        element.classList.remove('valid');
+                        icon.className = 'fas fa-times';
+                    }
+                }
+            };
+
+            updateRequirement('req-uppercase', requirements.uppercase);
+            updateRequirement('req-lowercase', requirements.lowercase);
+            updateRequirement('req-number', requirements.number);
+            updateRequirement('req-length', requirements.length);
+
+            // Check if all requirements are met
+            const isValid = Object.values(requirements).every(req => req);
+            
+            // Update error message
+            const errorElement = document.getElementById(errorElementId);
+            if (errorElement) {
+                if (password.length > 0 && !isValid) {
+                    errorElement.textContent = 'Password does not meet all requirements';
+                    errorElement.style.display = 'block';
+                } else {
+                    errorElement.textContent = '';
+                    errorElement.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+
+        // Prevent form submission with weak passwords
+        function validateFormPassword(formId, passwordId) {
+            const form = document.getElementById(formId);
+            const passwordInput = document.getElementById(passwordId);
+            
+            if (form && passwordInput) {
+                form.addEventListener('submit', function(e) {
+                    const password = passwordInput.value;
+                    if (!validatePassword(password, passwordId + 'Err')) {
+                        e.preventDefault();
+                        alert('Please ensure your password meets all requirements before submitting.');
+                        return false;
+                    }
+                });
+            }
+        }
+
+        // Initialize form validation when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add validation to register form if it exists
+            validateFormPassword('registerForm', 'regPassword');
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        let redirectUrl = urlParams.get('redirect') || 'vehicles.html';
+        
+        // Ensure API_BASE is available globally
+        if (typeof window.API_BASE === 'undefined') {
+            window.API_BASE = window.location.origin;
+        }
+        
+        const authContainer = document.getElementById('authContainer');
+        const displayEmail = document.getElementById('displayEmail');
+        const messageEl = document.getElementById('message');
+        const otpDigits = document.querySelectorAll('.otp-digit');
+        let unverifiedEmail = "";
+
+        // OTP Input Auto-focus
+        otpDigits.forEach((d, idx) => {
+            d.addEventListener('input', (e) => {
+                if (e.target.value && idx < otpDigits.length - 1) {
+                    otpDigits[idx + 1].focus();
+                }
+            });
+            d.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+                    otpDigits[idx - 1].focus();
+                }
+            });
+        });
+
+        
+        if (localStorage.getItem('user_id') && window.location.search.includes('redirect')) {
+            window.location.href = redirectUrl;
+        }
+
+        if (urlParams.get('redirect')) {
+            document.querySelectorAll('a[href="register.html"]').forEach(a => {
+                a.href = 'register.html?redirect=' + encodeURIComponent(urlParams.get('redirect'));
+            });
+        }
+        
+        function showMessage(msg, isError=false) {
+            messageEl.textContent = msg;
+            messageEl.style.color = isError ? '#dc2626' : '#16a34a';
+        }
+
+        async function handleCredentialResponse(response) {
+            // Legacy One Tap callback  kept for safety, but not triggered anymore
+            console.log('Google credential received (legacy). Sending to backend...');
+            showMessage('Verifying Google account...');
+            try {
+                const res = await fetch(`${window.API_BASE}/api/auth/google`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response.credential })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.verification_required) {
+                        unverifiedEmail = data.email;
+                        displayEmail.textContent = data.email;
+                        authContainer.classList.add('verification-active');
+                        showMessage(data.message);
+                    } else {
+                        finalizeLogin(data);
+                    }
+                } else {
+                    showMessage('Google Login Error: ' + (data.error || 'Unknown error'), true);
+                }
+            } catch (err) {
+                showMessage('Server connection error.', true);
+            }
+        }
+
+        var GOOGLE_CLIENT_ID = '857792394948-9m57q54s4638muf0ab5ihgakj4g44lje.apps.googleusercontent.com';
+        var _googleTokenClient = null;
+
+        // Pre-initialize Google token client as soon as the GSI script loads
+        function initGoogleTokenClient() {
+            if (_googleTokenClient) return; // already initialized
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return;
+            _googleTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'email profile openid',
+                callback: function(tokenResponse) {
+                    var btn = document.getElementById('btnGoogleLogin');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google'; }
+                    if (tokenResponse.error) {
+                        showMessage('Google Sign-In cancelled or failed: ' + tokenResponse.error, true);
+                        return;
+                    }
+                    showMessage('Verifying Google account...');
+                    // Fetch user info from Google then authenticate with backend
+                    fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: { 'Authorization': 'Bearer ' + tokenResponse.access_token }
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(userInfo) {
+                        return fetch(window.API_BASE + '/api/auth/google', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id_token: tokenResponse.access_token,
+                                email: userInfo.email,
+                                name: userInfo.name || ((userInfo.given_name || '') + ' ' + (userInfo.family_name || '')).trim()
+                            })
+                        });
+                    })
+                    .then(function(res) { return res.json().then(function(d) { return { ok: res.ok, data: d }; }); })
+                    .then(function(result) {
+                        if (result.ok) {
+                            if (result.data.verification_required) {
+                                unverifiedEmail = result.data.email;
+                                displayEmail.textContent = result.data.email;
+                                authContainer.classList.add('verification-active');
+                                showMessage(result.data.message || 'Please verify your email.');
+                            } else {
+                                finalizeLogin(result.data);
+                            }
+                        } else {
+                            showMessage('Google Login Error: ' + (result.data.error || 'Unknown error'), true);
+                        }
+                    })
+                    .catch(function(err) {
+                        showMessage('Server connection error. Please try again.', true);
+                        console.error('Google login error:', err);
+                    });
+                }
+            });
+        }
+
+        // Try to init immediately, then retry when GSI script loads
+        initGoogleTokenClient();
+        // GSI calls window.onGoogleLibraryLoad when ready
+        window.onGoogleLibraryLoad = function() { initGoogleTokenClient(); };
+
+        function doGoogleLogin() {
+            var btn = document.getElementById('btnGoogleLogin');
+            // If Google API not loaded yet, show error
+            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+                showMessage('Google Sign-In is not available. Please refresh the page and try again.', true);
+                return;
+            }
+            // Re-init client if somehow not done yet
+            if (!_googleTokenClient) initGoogleTokenClient();
+            if (!_googleTokenClient) {
+                showMessage('Google Sign-In failed to initialize. Please refresh and try again.', true);
+                return;
+            }
+            // Disable button to prevent double-clicks
+            if (btn) { btn.disabled = true; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Signing in...'; }
+            // This MUST be called synchronously from user click for popup to not be blocked
+            _googleTokenClient.requestAccessToken({ prompt: 'select_account' });
+        }
+
+        // ---- Forgot Password Functions ----
+        function openForgotPassword(e) {
+            if (e) e.preventDefault();
+            var modal = document.getElementById('forgotPasswordModal');
+            modal.style.display = 'flex';
+            document.getElementById('forgotEmail').value = '';
+            document.getElementById('forgotMsg').textContent = '';
+            document.getElementById('forgotMsg').style.color = '';
+            document.getElementById('forgotBtnText').textContent = 'Send Temporary Password';
+            document.getElementById('forgotSubmitBtn').disabled = false;
+            setTimeout(function() { document.getElementById('forgotEmail').focus(); }, 100);
+        }
+
+        function closeForgotPassword() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+        }
+
+        function closeForgotIfOutside(e) {
+            if (e.target === document.getElementById('forgotPasswordModal')) {
+                closeForgotPassword();
+            }
+        }
+
+        async function submitForgotPassword() {
+            var emailInput = document.getElementById('forgotEmail');
+            var msgEl = document.getElementById('forgotMsg');
+            var btn = document.getElementById('forgotSubmitBtn');
+            var btnText = document.getElementById('forgotBtnText');
+            var email = emailInput.value.trim();
+
+            if (!email) {
+                msgEl.textContent = 'Please enter your email address.';
+                msgEl.style.color = '#ef4444';
+                emailInput.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btnText.textContent = 'Sending...';
+            msgEl.textContent = '';
+
+            try {
+                var res = await fetch(window.API_BASE + '/api/user/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                var data = await res.json();
+                if (res.ok) {
+                    msgEl.textContent = '✅ ' + (data.message || 'Temporary password sent! Check your email inbox.');
+                    msgEl.style.color = '#10b981';
+                    btnText.textContent = 'Email Sent!';
+                    emailInput.value = '';
+                } else {
+                    msgEl.textContent = '❌ ' + (data.error || 'Failed to send email.');
+                    msgEl.style.color = '#ef4444';
+                    btn.disabled = false;
+                    btnText.textContent = 'Send Temporary Password';
+                }
+            } catch (err) {
+                msgEl.textContent = '❌ Server connection error. Please try again.';
+                msgEl.style.color = '#ef4444';
+                btn.disabled = false;
+                btnText.textContent = 'Send Temporary Password';
+            }
+        }
+        
+        function finalizeLogin(data) {
+            showMessage('Login successful!');
+            // Support both response shapes:
+            // - old /login: { user_id, full_name }
+            // - new /auth/google: { user: { id, fullName, ... } }
+            var userId   = data.user_id   || (data.user && data.user.id);
+            var fullName = data.full_name  || (data.user && data.user.fullName);
+            localStorage.setItem('user_id', userId);
+            localStorage.setItem('full_name', fullName);
+            setTimeout(() => window.location.href = redirectUrl, 1000);
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${window.API_BASE}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    finalizeLogin(data);
+                } else if (response.status === 403 && data.verification_required) {
+                    unverifiedEmail = data.email;
+                    displayEmail.textContent = data.email;
+                    authContainer.classList.add('verification-active');
+                    messageEl.textContent = '';
+                } else {
+                    showMessage('Error: ' + (data.error || 'Invalid credentials'), true);
+                }
+            } catch (err) {
+                showMessage('Server connection error.', true);
+            }
+        });
+
+        // Verify Email OTP Handler
+        document.getElementById('verifyBtn').addEventListener('click', async () => {
+            const otp = Array.from(otpDigits).map(d => d.value).join('');
+            if (otp.length < 6) {
+                showMessage('Please enter all 6 digits.', true);
+                return;
+            }
+
+            try {
+                const res = await fetch(`${window.API_BASE}/api/auth/verify-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: unverifiedEmail, otp })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.user_id) {
+                        finalizeLogin(data);
+                    } else {
+                        showMessage('Email verified! You can now sign in.');
+                        authContainer.classList.remove('verification-active');
+                        messageEl.textContent = 'Please sign in now.';
+                    }
+                } else {
+                    showMessage('Error: ' + data.error, true);
+                }
+            } catch (err) {
+                showMessage('Verification error.', true);
+            }
+        });
+
+    </script>
+</body>
+</html>

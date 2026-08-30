@@ -4502,7 +4502,7 @@
 
 
 
-<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:10px;left:10px;max-height:70vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
+<div id="adminNotifPanel" style="display:none;position:fixed;top:65px;right:16px;left:auto;width:calc(100vw - 32px);max-width:380px;max-height:75vh;overflow-y:auto;background:var(--surface-container);border:1px solid rgba(255,255,255,0.1);border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.5);z-index:9000;padding:16px;">
 
 
 
@@ -6433,7 +6433,8 @@
 
 
 
-                <img id="licensePreviewImg" src="" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/400x250?text=Failed+to+load+image'">
+                <img id="licensePreviewImg" src="" style="width: 100%; height: auto; display: block;" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'250\' viewBox=\'0 0 400 250\'><rect fill=\'%231e293b\' width=\'400\' height=\'250\'/><text fill=\'%2394a3b8\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dominant-baseline=\'middle\'>No Image Available</text></svg>'">
+
 
 
 
@@ -9937,6 +9938,77 @@
 
 
     };
+
+
+
+    // Close ANY open modal, panel, or overlay when clicking on its backdrop
+    document.addEventListener('click', function(e) {
+        // 1. Notification Panel
+        const notifPanel = document.getElementById('adminNotifPanel');
+        const notifBtn = document.getElementById('adminNotifBtn');
+        if (notifPanel && notifPanel.style.display !== 'none') {
+            if (!notifPanel.contains(e.target) && !notifBtn?.contains(e.target)) {
+                notifPanel.style.display = 'none';
+            }
+        }
+
+        // 2. All Full-Screen Modals with backdrop (Clicking outside modal content)
+        const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
+        modalBackdrops.forEach(modal => {
+            if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    // Close on Escape key press (Desktop) - Closes top-most open modal/panel
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const notifPanel = document.getElementById('adminNotifPanel');
+            if (notifPanel && notifPanel.style.display !== 'none') {
+                notifPanel.style.display = 'none';
+                return;
+            }
+
+            const openModals = Array.from(document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]'))
+                .filter(m => m.style.display !== 'none' && m.style.display !== '' && m.id !== 'adminLoginOverlay');
+            if (openModals.length > 0) {
+                openModals[openModals.length - 1].style.display = 'none';
+            }
+        }
+    });
+
+    // Helper to close any currently active modal/popup on mobile back action
+    function closeTopAdminModal() {
+        const notifPanel = document.getElementById('adminNotifPanel');
+        if (notifPanel && notifPanel.style.display !== 'none') {
+            notifPanel.style.display = 'none';
+            return true;
+        }
+
+        const openModals = Array.from(document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]'))
+            .filter(m => m.style.display !== 'none' && m.style.display !== '' && m.id !== 'adminLoginOverlay');
+        if (openModals.length > 0) {
+            openModals[openModals.length - 1].style.display = 'none';
+            return true;
+        }
+        return false;
+    }
+
+    // Handle Mobile Hardware Back Button & Browser Popstate
+    window.addEventListener('popstate', function() {
+        closeTopAdminModal();
+    });
+
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.addListener('backButton', function() {
+            const closed = closeTopAdminModal();
+            if (!closed) {
+                window.history.back();
+            }
+        });
+    }
+
 
 
 
