@@ -228,15 +228,16 @@ def start_deadline_monitor():
                         cur.close()
                         cur = conn.cursor(row_factory=dict_row)
                         cur.execute("""
-                            SELECT b.id, b.start_date, b.start_time, COALESCE(u.full_name, 'Unknown') as customer_name
+                            SELECT b.booking_id, b.booking_id AS id, b.start_date, b.start_time, COALESCE(u.full_name, 'Unknown') as customer_name
                             FROM bookings b
-                            LEFT JOIN users u ON b.user_id = u.id
+                            LEFT JOIN users u ON b.user_id = u.user_id
                             WHERE b.status IN ('Confirmed', 'Approved')
                               AND b.no_show_notified_at IS NULL
                         """)
                         active_bookings = cur.fetchall()
 
                         for bk in active_bookings:
+                            b_id = bk.get('booking_id') or bk.get('id')
                             pickup_date = bk['start_date']
                             if hasattr(pickup_date, 'date'):
                                 pickup_date = pickup_date.date()
@@ -254,23 +255,23 @@ def start_deadline_monitor():
 
                             if now_ph >= deadline_dt:
                                 # Trigger alert!
-                                print(f"[MONITOR] Booking #{bk['id']} is 2 hours past pickup time. Alerting admins.")
+                                print(f"[MONITOR] Booking #{b_id} is 2 hours past pickup time. Alerting admins.")
                                 from notifications import notification_service
                                 try:
                                     notification_service.notify_admins_inapp(
-                                        f"⚠️ No Show Alert: Booking #{bk['id']}",
+                                        f"⚠️ No Show Alert: Booking #{b_id}",
                                         f"Customer '{bk['customer_name']}' has not shown up. Scheduled pickup was {pickup_date} at {pickup_time_str}. Please mark as No Show.",
                                         "admin_no_show",
                                         type="admin_no_show",
-                                        booking_id=bk['id']
+                                        booking_id=b_id
                                     )
                                 except Exception as n_err:
                                     print(f"Failed to send admin no-show alert push: {n_err}")
 
                                 # Update notified status
-                                # Use a raw cursor or connection to execute UPDATE
-                                cur.execute("UPDATE bookings SET no_show_notified_at = NOW() WHERE id = %s", (bk['id'],))
+                                cur.execute("UPDATE bookings SET no_show_notified_at = NOW() WHERE booking_id = %s", (b_id,))
                                 conn.commit()
+
                     except Exception as ns_err:
                         print("Deadline monitor thread no-show check failed:", ns_err)
 

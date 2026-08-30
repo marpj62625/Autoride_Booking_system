@@ -10,7 +10,7 @@ def send_notification(user_id, subject, message):
     """Sends notification to user via Email and SMS."""
     try:
         cur = get_cursor()
-        cur.execute("SELECT email, phone, full_name FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT email, phone, full_name FROM users WHERE user_id = %s", (user_id,))
         user = cur.fetchone()
         if not user:
             return False
@@ -103,33 +103,20 @@ class Notification_Service:
                 cur = conn.cursor(row_factory=dict_row)
 
                 # Look up admins from users table (role=admin/super_admin)
-                cur.execute("SELECT id, fcm_token FROM users WHERE role IN ('admin', 'super_admin')")
-                rows_users = cur.fetchall() or []
-
-                # Also look up from admins table (linked to users via user_id or id)
-                admin_user_ids = set()
-                try:
-                    cur.execute("SELECT user_id, fcm_token FROM admins WHERE user_id IS NOT NULL")
-                    rows_admins = cur.fetchall() or []
-                    for a in rows_admins:
-                        uid = a.get('user_id')
-                        if uid and uid not in [r['id'] for r in rows_users]:
-                            rows_users.append({'id': uid, 'fcm_token': a.get('fcm_token')})
-                except Exception:
-                    pass  # admins table may not have user_id column, that's fine
-
-                admins = rows_users if rows_users else []
+                cur.execute("SELECT user_id, user_id AS id, fcm_token FROM users WHERE role IN ('admin', 'super_admin')")
+                admins = cur.fetchall() or []
 
                 if not admins:
-                    print("notify_admins_inapp: no admin users found in users or admins table", file=sys.stderr)
+                    print("notify_admins_inapp: no admin users found in users table", file=sys.stderr)
                     conn.close()
                     return []
+
 
                 print(f"notify_admins_inapp: found {len(admins)} admin(s)", file=sys.stderr)
 
                 results = []
                 for admin in admins:
-                    uid = admin['id']
+                    uid = admin.get('user_id') or admin.get('id')
                     # Save in-app notification
                     try:
                         cur.execute(
@@ -161,6 +148,7 @@ class Notification_Service:
         except Exception as exc:
             print(f"Notification_Service.notify_admins_inapp: DB error: {exc}", file=sys.stderr)
             return []
+
 
 
 notification_service = Notification_Service()
@@ -377,7 +365,8 @@ class FCM_Service:
             from psycopg.rows import dict_row
             conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
             cur = conn.cursor(row_factory=dict_row)
-            cur.execute("SELECT fcm_token FROM users WHERE id = %s", (user_id,))
+            cur.execute("SELECT fcm_token FROM users WHERE user_id = %s", (user_id,))
+
             row = cur.fetchone()
             cur.close()
             conn.close()
