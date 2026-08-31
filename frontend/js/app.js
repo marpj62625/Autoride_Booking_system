@@ -6346,8 +6346,11 @@ function handleLicenseFileSelect(e, side) {
 
 function loadLicenseDetailsForEdit() {
   console.log('loadLicenseDetailsForEdit() called');
-  if (!currentUser.id) return;
-  apiCall('/user/license-details?user_id=' + currentUser.id)
+  currentUser = currentUser || Session.get();
+  var uid = (currentUser && (currentUser.id || currentUser.user_id)) || null;
+  if (!uid || uid === 'undefined' || uid === 'null') return;
+  apiCall('/user/license-details?user_id=' + uid)
+
     .then(function(response) {
       console.log('License details for edit response:', response);
       
@@ -6484,18 +6487,25 @@ function closeLicensePreview() {
 
 function loadProfile() {
   console.log('loadProfile() called');
-  console.log('currentUser:', currentUser);
-  console.log('currentUser.id:', currentUser.id);
-  
-  if (!currentUser || !currentUser.id) {
-    console.warn('No currentUser.id available for loadProfile');
+  currentUser = currentUser || Session.get();
+  var uid = (currentUser && (currentUser.id || currentUser.user_id)) || null;
+  if (!uid || uid === 'undefined' || uid === 'null') {
+    currentUser = Session.get();
+    uid = (currentUser && (currentUser.id || currentUser.user_id)) || null;
+  }
+  if (!uid || uid === 'undefined' || uid === 'null') {
+    console.warn('No valid user ID available for loadProfile');
+    showPage('page-login');
     return;
   }
-  
+  currentUser.id = uid;
+  currentUser.user_id = uid;
+
   // Load main profile
-  var profilePromise = apiCall('/user/profile-full?user_id=' + currentUser.id);
+  var profilePromise = apiCall('/user/profile-full?user_id=' + uid);
   // Load license details from new table with enhanced error handling
-  var licensePromise = apiCall('/user/license-details?user_id=' + currentUser.id)
+  var licensePromise = apiCall('/user/license-details?user_id=' + uid)
+
     .then(function(data) {
       console.log('License details API response:', data);
       // Handle the API response structure - license data is in the 'data' property

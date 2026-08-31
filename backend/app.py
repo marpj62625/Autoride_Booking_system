@@ -9497,13 +9497,17 @@ def get_full_profile():
     if not user_id:
         return jsonify({'error': 'user_id is required'}), 400
     try:
+        user_id_int = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'user_id must be a valid integer'}), 400
+    try:
         cur = get_cursor()
         cur.execute(
-            """SELECT id, full_name, email, phone, profile_picture, license_image_url,
+            """SELECT user_id, user_id AS id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points, password,
                       license_number, license_expiry, license_type
-               FROM users WHERE id = %s""",
-            (user_id,)
+               FROM users WHERE user_id = %s OR id = %s""",
+            (user_id_int, user_id_int)
         )
         user = cur.fetchone()
         if not user:
@@ -9520,6 +9524,7 @@ def get_full_profile():
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
 
 
 @app.route('/users/<int:user_id>', methods=['GET'])
