@@ -9784,7 +9784,7 @@ def get_license_details():
             if has_data:
                 # Get data with strict limits
                 cur.execute("""
-                    SELECT id, user_id, 
+                    SELECT user_id, user_id AS id, 
                            SUBSTRING(full_name, 1, 50) as full_name,
                            date_of_birth::text as date_of_birth, 
                            SUBSTRING(license_number, 1, 20) as license_number,
