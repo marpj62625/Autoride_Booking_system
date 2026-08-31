@@ -29,6 +29,24 @@
     <meta name="apple-mobile-web-app-title" content="Autoride Admin">
     <link rel="apple-touch-icon" href="Autoride-logo.png">
     <script>
+        (function() {
+            try {
+                var raw = localStorage.getItem('admin_user');
+                var loggedIn = false;
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (parsed && (parsed.id || (parsed.user && parsed.savedAt && (Date.now() - parsed.savedAt < 7*24*60*60*1000)))) {
+                        loggedIn = true;
+                    }
+                }
+                if (!loggedIn) {
+                    var style = document.createElement('style');
+                    style.id = 'earlyAuthHideStyle';
+                    style.innerHTML = 'body > *:not(#adminLoginOverlay):not(#adminLoadingOverlay):not(script):not(style) { display: none !important; }';
+                    (document.head || document.documentElement).appendChild(style);
+                }
+            } catch(e) {}
+        })();
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js', { scope: '/admin_app/' })
@@ -37,6 +55,7 @@
             });
         }
     </script>
+
 
 
 
@@ -10348,19 +10367,12 @@
 
 
 
-
-
-
-
+                const earlyStyle = document.getElementById('earlyAuthHideStyle');
+                if (earlyStyle) earlyStyle.remove();
                 const overlay = document.getElementById('adminLoginOverlay');
-
-
-
                 if (overlay) overlay.style.display = 'none';
 
 
-
-                
 
 
 
