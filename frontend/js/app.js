@@ -1383,7 +1383,13 @@ function handleBackButton() {
                 autoCheckPaymentStatus(bookingId, amount, method);
               }
             }
+          }
+        }
+      });
+    }
   }, false);
+
+
 
   // Global backdrop click listener for Customer App modals, bottom sheets & overlays
   document.addEventListener('click', function(e) {
