@@ -2808,8 +2808,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                 // Year Model
                 '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
                   '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
-                  '<span>' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
+                  '<span id="vd-year">' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
                 '</div>' +
+
                 // Fuel Level
                 '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
                   '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
@@ -2916,7 +2917,10 @@ function onVdColorChange() {
   if (odomEl) odomEl.textContent = unit.odometer ? (Number(unit.odometer).toLocaleString() + ' km') : 'N/A';
   var fuelLvlEl = document.getElementById('vd-fuel-level');
   if (fuelLvlEl) fuelLvlEl.textContent = unit.fuel_level || 'Full Tank';
+  var yearEl = document.getElementById('vd-year');
+  if (yearEl) yearEl.textContent = unit.year_model ? (unit.year_model + ' Model') : 'Year N/A';
   var rateEl = document.getElementById('vd-rate');
+
   if (rateEl) rateEl.textContent = formatPHP(unit.daily_rate);
   // Update status badge
   var statusEl = document.getElementById('vd-status');
