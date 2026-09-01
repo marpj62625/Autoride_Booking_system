@@ -1390,7 +1390,6 @@ function handleBackButton() {
   }, false);
 
 
-
   // Global backdrop click listener for Customer App modals, bottom sheets & overlays
   document.addEventListener('click', function(e) {
     // 1. Rental Agreement Modal
