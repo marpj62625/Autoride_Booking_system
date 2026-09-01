@@ -9473,29 +9473,15 @@
         if (existing) existing.remove();
     }
 
-    // API URL: auto-detect  works on Vercel (web) and Android APK (hardcoded)
+    const isNativeAdminApp = (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+                             window.location.protocol === 'file:' ||
+                             (window.location.hostname === 'localhost' && window.Capacitor);
 
-
-
-    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-
-
-
-        ? 'http://localhost:5000'
-
-
-
-        : (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
-
-
-
-            ? window.location.origin
-
-
-
-            : 'https://autoride-booking-system.vercel.app';
-
-
+    const API_BASE = isNativeAdminApp
+        ? 'https://autoride-booking-system.vercel.app'
+        : ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5000'
+            : window.location.origin);
 
     const API_URL = API_BASE + '/api';
 

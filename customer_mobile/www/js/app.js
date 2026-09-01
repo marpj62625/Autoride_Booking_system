@@ -159,17 +159,10 @@ var PushNotifications = {
       });
 
       pushPlugin.addListener('registrationError', function(error) {
-        console.error('Push registration error: ' + JSON.stringify(error));
-        
-        var errorMsg = 'Push notification setup failed';
-        if (error.error && error.error.includes('FIS_AUTH_ERROR')) {
-          errorMsg = 'Firebase configuration needed for push notifications';
-          console.log('FIS_AUTH_ERROR detected - Firebase project not properly configured');
-        } else if (error.error) {
-          errorMsg = error.error;
-        }
-        showToast(errorMsg, 'warning');
+        console.warn('Push registration status:', JSON.stringify(error));
+        // Silent log only - avoid showing raw Java exception toasts to customer
       });
+
 
       pushPlugin.addListener('pushNotificationReceived', function(notification) {
         console.log('Push notification received: ' + JSON.stringify(notification));
@@ -6183,10 +6176,32 @@ var Profile = {
 };
 
 function pickLicenseForProfile(side) {
-  var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
-  var el = document.getElementById(inputId);
-  if (el) el.click();
+  var Camera = getCamera();
+  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: false, // NO CROP option
+      resultType: 'uri',
+      source: 'PROMPT' // Prompts user: Camera or Photos/Gallery
+    }).then(function(image) {
+      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], side + '_license.jpg', { type: 'image/jpeg' });
+        var fakeEvent = { target: { files: [file] } };
+        handleLicenseFileSelect(fakeEvent, side);
+      });
+    }).catch(function(err) {
+      console.log('Camera prompt cancelled or fallback to file input:', err);
+      var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
+      var el = document.getElementById(inputId);
+      if (el) el.click();
+    });
+  } else {
+    var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
+    var el = document.getElementById(inputId);
+    if (el) el.click();
+  }
 }
+
 
 function handleLicenseFileSelect(e, side) {
   var file = e.target.files[0];
@@ -6814,20 +6829,47 @@ function openLicenseUpload() {
 }
 
 function pickLicense() {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/jpeg,image/png';
-  input.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var err = validateUploadFile(file);
-    if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
-    licenseBlob = file;
-    var preview = document.getElementById('licensePreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-  };
-  input.click();
+  var Camera = getCamera();
+  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: false, // NO CROP option
+      resultType: 'uri',
+      source: 'PROMPT'
+    }).then(function(image) {
+      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], 'license.jpg', { type: 'image/jpeg' });
+        var err = validateUploadFile(file);
+        if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+        licenseBlob = file;
+        var preview = document.getElementById('licensePreview');
+        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+      });
+    }).catch(function(err) {
+      console.log('Camera prompt cancelled or fallback to file input:', err);
+      triggerFileInput();
+    });
+  } else {
+    triggerFileInput();
+  }
+
+  function triggerFileInput() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var err = validateUploadFile(file);
+      if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+      licenseBlob = file;
+      var preview = document.getElementById('licensePreview');
+      if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    };
+    input.click();
+  }
 }
+
 
 function submitLicense() {
   var errEl = document.getElementById('licenseErr');
