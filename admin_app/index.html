@@ -27350,7 +27350,7 @@ async edit(id) { this.openModal(id); }
                 return `
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;">
                     ${u.profile_picture ? `
-                        <img src="${u.profile_picture}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00B14F;flex-shrink:0;">` : `
+                        <img src="${u.profile_picture}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00B14F;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();viewLicenseImage('${u.profile_picture}')" title="Click to enlarge">` : `
                         <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;color:#fff;">${avatar}</div>`}
 
 
@@ -27790,13 +27790,9 @@ async edit(id) { this.openModal(id); }
 
 
             <div style="text-align:center;margin-bottom:20px;">
-
-
-
-                <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;">${avatar}</div>
-
-
-
+                ${u.profile_picture ? `
+                    <img src="${u.profile_picture}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #00B14F;margin:0 auto 12px;display:block;cursor:pointer;box-shadow:0 4px 14px rgba(0,177,79,0.35);" onclick="viewLicenseImage('${u.profile_picture}')" title="Click to enlarge profile picture">` : `
+                    <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.8rem;margin:0 auto 12px;color:#fff;">${avatar}</div>`}
                 <div style="font-size:1.1rem;font-weight:900;">${u.full_name || 'No Name'}</div>
 
 
