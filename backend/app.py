@@ -18,6 +18,15 @@ import typing
 
 import os
 
+try:
+    from notifications import notification_service, fcm_service
+except Exception as _nse:
+    print(f"Warning: Failed to import notification_service globally: {_nse}")
+    class DummyNotificationService:
+        def notify_user(self, *args, **kwargs): return True
+        def notify_admins_inapp(self, *args, **kwargs): return []
+    notification_service = DummyNotificationService()
+
 from werkzeug.utils import secure_filename
 
 # ─── Image upload validation ─────────────────────────────────────

@@ -8,6 +8,14 @@ import os
 import uuid
 from datetime import datetime as _dt
 
+try:
+    from notifications import notification_service
+except Exception as _nse:
+    class DummyNotificationService:
+        def notify_user(self, *args, **kwargs): return True
+        def notify_admins_inapp(self, *args, **kwargs): return []
+    notification_service = DummyNotificationService()
+
 ext_bp = Blueprint('extensions', __name__)
 
 

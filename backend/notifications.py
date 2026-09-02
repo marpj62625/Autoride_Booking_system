@@ -380,5 +380,7 @@ class FCM_Service:
             return False
 
 
-# Module-level singleton
+# Module-level singletons
 fcm_service = FCM_Service()
+notification_service = Notification_Service()
+
