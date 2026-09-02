@@ -11698,8 +11698,20 @@ def get_fleet_bookings():
 def get_booking_penalties(booking_id):
     try:
         cur = get_cursor()
+        cur.execute("CREATE TABLE IF NOT EXISTS booking_penalties (id SERIAL PRIMARY KEY, booking_id INT, charge_type VARCHAR(50), penalty_type VARCHAR(50), amount DECIMAL(10,2) DEFAULT 0, notes TEXT, description TEXT, created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);")
+        cur.execute("ALTER TABLE booking_penalties ADD COLUMN IF NOT EXISTS charge_type VARCHAR(50);")
+        cur.execute("ALTER TABLE booking_penalties ADD COLUMN IF NOT EXISTS penalty_type VARCHAR(50);")
+        cur.execute("ALTER TABLE booking_penalties ADD COLUMN IF NOT EXISTS notes TEXT;")
+        cur.execute("ALTER TABLE booking_penalties ADD COLUMN IF NOT EXISTS description TEXT;")
+        
         cur.execute("""
-            SELECT id, booking_id, penalty_type, amount, description, created_at
+            SELECT id, booking_id, 
+                   COALESCE(charge_type, penalty_type, 'other') as charge_type,
+                   COALESCE(penalty_type, charge_type, 'other') as penalty_type,
+                   amount, 
+                   COALESCE(notes, description, '') as notes,
+                   COALESCE(description, notes, '') as description,
+                   created_at
             FROM booking_penalties
             WHERE booking_id = %s
             ORDER BY created_at ASC
@@ -11708,7 +11720,7 @@ def get_booking_penalties(booking_id):
         result = []
         for r in rows:
             d = dict(r)
-            d['amount'] = float(d['amount'])
+            d['amount'] = float(d['amount']) if d['amount'] is not None else 0.0
             d['created_at'] = str(d['created_at'])
             result.append(d)
         return jsonify(result), 200
