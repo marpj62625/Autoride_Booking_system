@@ -3713,6 +3713,18 @@ function confirmAndBook() {
     showToast('Please read and agree to the rental terms first.', 'error');
     return;
   }
+
+  // Mandatory Profile Selfie & License completeness check
+  var hasProfilePic = currentUser && currentUser.profile_picture;
+  var hasLicenseFront = (currentUser && currentUser.license_front_url) || (userLicenseData && userLicenseData.license_front_url);
+
+  if (!hasProfilePic || !hasLicenseFront) {
+    var modalEl = document.getElementById('rentalAgreementModal');
+    if (modalEl) modalEl.remove();
+    showRequirementGuardModal();
+    return;
+  }
+
   var modal = document.getElementById('rentalAgreementModal');
   if (modal) modal.remove();
   var confirmBtn = document.getElementById('confirmPayBtn');
@@ -6869,19 +6881,77 @@ function loadProfile() {
 }
 
 function pickProfilePicture() {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/jpeg,image/png';
-  input.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var err = validateUploadFile(file);
-    if (err) { showToast(err, 'error'); return; }
-    profilePicBlob = file;
-    var preview = document.getElementById('profilePicPreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-  };
-  input.click();
+  var Camera = getCamera();
+  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: true,
+      resultType: 'uri',
+      source: 'CAMERA',
+      direction: 'FRONT'
+    }).then(function(image) {
+      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], 'selfie_avatar.jpg', { type: 'image/jpeg' });
+        profilePicBlob = file;
+        var preview = document.getElementById('profilePicPreview');
+        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+        showToast('Live selfie captured! Click Save to update profile.', 'success');
+      });
+    }).catch(function(err) {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'user';
+      input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var errValidation = validateUploadFile(file);
+        if (errValidation) { showToast(errValidation, 'error'); return; }
+        profilePicBlob = file;
+        var preview = document.getElementById('profilePicPreview');
+        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+        showToast('Selfie selected! Click Save to update profile.', 'success');
+      };
+      input.click();
+    });
+  } else {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'user';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var errValidation = validateUploadFile(file);
+      if (errValidation) { showToast(errValidation, 'error'); return; }
+      profilePicBlob = file;
+      var preview = document.getElementById('profilePicPreview');
+      if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+      showToast('Selfie selected! Click Save to update profile.', 'success');
+    };
+    input.click();
+  }
+}
+
+function showRequirementGuardModal() {
+  var existing = document.getElementById('requirementGuardModal');
+  if (existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'requirementGuardModal';
+  modal.className = 'modal-backdrop active';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = 
+    '<div class="card" style="max-width:420px;width:100%;border-radius:16px;padding:24px;text-align:center;background:var(--bg-card,#fff);">' +
+    '<div style="width:60px;height:60px;background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem;"><i class="fas fa-id-card"></i></div>' +
+    '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;color:var(--text-main);">Verification Required</h3>' +
+    '<p style="font-size:0.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:20px;">' +
+    'To prevent fraudulent bookings, you must complete your <strong>Live Camera Selfie</strong>, <strong>Phone Number</strong>, and <strong>Driver\'s License</strong> before reserving a vehicle.' +
+    '</p>' +
+    '<button class="btn-primary" style="width:100%;padding:12px;font-weight:800;background:#00B14F;" onclick="document.getElementById(\'requirementGuardModal\').remove();closeOverlay(\'page-booking-form\');showOverlay(\'page-profile\');Profile.showTab(\'license\');">' +
+    '<i class="fas fa-camera" style="margin-right:6px;"></i> Complete Profile & Selfie Now</button>' +
+    '<button class="btn-secondary" style="width:100%;margin-top:8px;padding:10px;" onclick="document.getElementById(\'requirementGuardModal\').remove()">Cancel</button>' +
+    '</div>';
+  document.body.appendChild(modal);
 }
 
 function doUpdateProfile() {

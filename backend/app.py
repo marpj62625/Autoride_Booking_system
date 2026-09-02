@@ -1882,6 +1882,7 @@ def admin_list_users():
 
             cur.execute("""
                 SELECT u.id, COALESCE(ld.full_name, u.full_name) AS full_name, u.email, u.phone,
+                       u.profile_picture,
                        COALESCE(ld.license_front_url, u.license_image_url) AS license_image,
                        COALESCE(ld.license_number, u.license_number) AS license_number,
                        COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
@@ -1895,11 +1896,10 @@ def admin_list_users():
                 WHERE u.is_verified = 1
                 ORDER BY u.id DESC
             """)
-
         else:
-
             cur.execute("""
                 SELECT u.id, COALESCE(ld.full_name, u.full_name) AS full_name, u.email, u.phone,
+                       u.profile_picture,
                        COALESCE(ld.license_front_url, u.license_image_url) AS license_image,
                        COALESCE(ld.license_number, u.license_number) AS license_number,
                        COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
