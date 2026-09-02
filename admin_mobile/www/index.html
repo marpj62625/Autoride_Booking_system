@@ -15325,57 +15325,43 @@ async edit(id) { this.openModal(id); }
 
 
         async markPaid(id) {
+            const b = (this.data || []).find(x => x.id == id);
+            if (b && b.start_date) {
+                try {
+                    const dStr = String(b.start_date).split('T')[0];
+                    const [pYr, pMo, pDay] = dStr.split('-').map(Number);
+                    const pickupDate = new Date(pYr, pMo - 1, pDay);
+                    pickupDate.setHours(0,0,0,0);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
 
+                    if (today < pickupDate) {
+                        const dateFormatted = pickupDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+                        showNotification(`🚫 Cannot Mark as Fully Paid before pickup date (${dateFormatted}). Remaining balance must be collected when customer physically arrives at counter.`, 'error');
+                        return;
+                    }
+                } catch(e) {}
+            }
 
+            const total = parseFloat(b ? b.total_price || 0 : 0);
+            const paid = parseFloat(b ? b.amount_paid || 0 : 0);
+            const balance = Math.max(0, total - paid);
+            const balanceFmt = '₱' + balance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const custName = b ? (b.full_name || b.client_name || 'Customer') : 'Customer';
 
-            if (!confirm('Mark this booking as FULLY PAID? \nThis means you have received the remaining balance in CASH over the counter.')) return;
-
-
+            if (!confirm(`📌 CONFIRM PHYSICAL COUNTER CHECK-IN:\n\nIs ${custName} physically present at the counter right now?\n\nHave you collected the remaining balance of ${balanceFmt} in CASH over the counter?`)) return;
 
             try {
-
-
-
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
-
-
-
                 if (res.ok) {
-
-
-
-                    showNotification('Booking marked as Fully Paid!', 'success');
-
-
-
+                    showNotification('Booking marked as Fully Paid! Counter check-in confirmed.', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
-
-
-
                     this.refresh();
-
-
-
                 } else {
-
-
-
-                    const data = await res.json();
-
-
-
+                    const data = await res.json().catch(() => ({}));
                     showNotification(data.error || 'Failed to update payment', 'error');
-
-
-
                 }
-
-
-
             } catch (err) { showNotification('Network error', 'error'); }
-
-
-
         },
 
 
