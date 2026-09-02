@@ -25,6 +25,7 @@ def get_auth_header():
 # ??? CREATE PAYMENT LINK ????????????????????????????????????????????????????
 
 @paymongo_bp.route('/paymongo/create-payment', methods=['POST'])
+@paymongo_bp.route('/api/paymongo/create-payment', methods=['POST'])
 def create_payment():
     """
     Create a PayMongo payment link for GCash, Maya, or Card.
@@ -161,6 +162,7 @@ def create_payment():
 # ??? PAYMENT SUCCESS REDIRECT ????????????????????????????????????????????????
 
 @paymongo_bp.route('/paymongo/success', methods=['GET'])
+@paymongo_bp.route('/api/paymongo/success', methods=['GET'])
 def payment_success():
     """
     PayMongo redirects here after successful payment.
@@ -261,6 +263,7 @@ def payment_success():
 # ??? PAYMENT CANCEL REDIRECT ?????????????????????????????????????????????????
 
 @paymongo_bp.route('/paymongo/cancel', methods=['GET'])
+@paymongo_bp.route('/api/paymongo/cancel', methods=['GET'])
 def payment_cancel():
     """PayMongo redirects here if user cancels payment."""
     booking_id = request.args.get('booking_id')
@@ -294,6 +297,7 @@ def payment_cancel():
 # ??? WEBHOOK ?????????????????????????????????????????????????????????????????
 
 @paymongo_bp.route('/paymongo/webhook', methods=['POST'])
+@paymongo_bp.route('/api/paymongo/webhook', methods=['POST'])
 def paymongo_webhook():
     """
     PayMongo sends payment events here.
@@ -354,6 +358,7 @@ def paymongo_webhook():
 # ??? CHECK PAYMENT STATUS ?????????????????????????????????????????????????????
 
 @paymongo_bp.route('/paymongo/status/<int:booking_id>', methods=['GET'])
+@paymongo_bp.route('/api/paymongo/status/<int:booking_id>', methods=['GET'])
 def check_payment_status(booking_id):
     """
     Poll payment status. Actively checks PayMongo API if not yet confirmed in DB.
@@ -457,6 +462,29 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
     polls the PayMongo API for their status, and updates them if they are paid.
     """
     try:
+        # Auto-cancel pending bookings that have not paid deposit within 30 minutes
+        try:
+            cancel_cur = get_cursor()
+            cancel_cur.execute("""
+                UPDATE bookings
+                SET status = 'Cancelled',
+                    payment_status = 'Expired',
+                    cancellation_reason = 'Reservation deposit expired (not paid within 30 minutes)',
+                    cancelled_at = NOW()
+                WHERE (status IN ('Pending', 'pending', 'Pending Payment') OR payment_status IN ('Unpaid', 'Pending Payment', 'Downpayment unpaid'))
+                  AND payment_status NOT IN ('Paid', 'Partially Paid', 'Refunded', 'Cancelled')
+                  AND created_at < NOW() - INTERVAL '30 minutes'
+                RETURNING id, vehicle_id, user_id
+            """)
+            expired_rows = cancel_cur.fetchall() or []
+            for erow in expired_rows:
+                if erow.get('vehicle_id'):
+                    cancel_cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (erow['vehicle_id'],))
+            commit_db()
+            cancel_cur.close()
+        except Exception as _ce:
+            print(f"[PayMongo] Auto-cancel expired pending bookings error: {_ce}")
+
         cur = get_cursor()
         if user_id:
             cur.execute(

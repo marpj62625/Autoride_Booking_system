@@ -3808,29 +3808,27 @@ function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
     '<i class="fas fa-arrow-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    // Cash - manual flow, shows fields below
+    // Cash Over the Counter - Pay remaining balance at office, 20% deposit online via PayMongo
     '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'cash\',this)">' +
     '<div style="width:40px;height:40px;background:#2dc653;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
-    '<i class="fas fa-money-bill-wave" style="color:#fff;font-size:1rem;"></i></div>' +
-    '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay at our office upon pickup</small></div>' +
+    '<i class="fas fa-store" style="color:#fff;font-size:1rem;"></i></div>' +
+    '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay remaining 80% balance at office</small></div>' +
     '<i class="fas fa-chevron-down" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
     '<input type="hidden" id="payMethod" value="">' +
     '</div>' +
 
-    // Cash reference fields (only shown when Cash is selected)
-    '<div class="card" id="cashPayFields" style="display:none;">' +
-    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-money-bill" style="color:#2dc653;margin-right:8px;"></i>Cash Payment Details</h4>' +
-    '<div class="form-group"><label>Reference / Transaction Number (optional)</label>' +
-    '<input type="text" id="payRef" placeholder="e.g. 1234567890"></div>' +
-    '<div class="form-group"><label>Payment Screenshot / Proof (optional)</label>' +
-    '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>' +
-    '<img id="payProofPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;display:none;">' +
-    '</div>' +
-    '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" style="margin-bottom:8px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
-    '<i class="fas fa-check"></i> Confirm Cash Payment</button>' +
+    // Cash fields explanation: Pay 20% deposit via PayMongo to hold dates, pay rest at office
+    '<div class="card" id="cashPayFields" style="display:none;background:rgba(16,185,129,0.06);border:1.5px solid rgba(16,185,129,0.3);">' +
+    '<h4 style="font-weight:700;margin-bottom:8px;color:#059669;"><i class="fas fa-shield-alt" style="margin-right:8px;"></i>Secure Vehicle Reservation</h4>' +
+    '<p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.4;">' +
+    'To lock your vehicle dates, please pay the <strong>20% Reservation Deposit (' + formatPHP(nowDue) + ')</strong> online now via PayMongo. The remaining 80% balance will be paid in <strong>CASH at our office upon pickup</strong>.' +
+    '</p>' +
+    '<button class="btn-primary" style="margin-bottom:8px;background:#0070e0;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'gcash\',' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-mobile-alt"></i> Pay 20% Deposit via GCash (' + formatPHP(nowDue) + ')</button>' +
+    '<button class="btn-secondary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'maya\',' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-credit-card"></i> Pay 20% Deposit via Maya / Card (' + formatPHP(nowDue) + ')</button>' +
     '</div>' +
 
     // Split payment (new bookings only)
