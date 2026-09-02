@@ -6398,45 +6398,80 @@ function processSelectedLicenseFile(file, side) {
           document.getElementById('editLicenseName').style.borderColor = 'var(--success, #22c55e)';
         }
 
-        // --- 4. Find License Class (DL Codes) ---
-        // OCR raw example: "@ DLcodes Conditions" where "@" = "A" (OCR misread)
-        // Strategy: find the line with DLcodes, grab it + prev line, replace @ with A, extract codes
+        // --- 4. Find License Class (DL Codes / Restrictions / Category) ---
         var classVal = '';
-        var textLines2 = text.split(/[\n\r]+/);
-        var dlLineIndex = -1;
-        for (var i = 0; i < textLines2.length; i++) {
-          if (/[DdO][LlI1]\s*[Cc]odes?/i.test(textLines2[i])) {
-            dlLineIndex = i;
-            break;
+        var textUpper = text.toUpperCase();
+
+        // Tier 1: Direct Regex for DL CODES, RESTRICTIONS, CLASS, CATEGORY
+        var dlSectionMatch = text.match(/(?:DL\s*CODES?|RESTRICTIONS?|REST\.?|CLASS|CATEGORY|CAT\.?)\s*[:\-\s]*([A-Z0-9\s,\/©@]+)(?=\r?\n|$|CONDITIONS|BLOOD|TYPE|EXPIRE|ISSUED)/i);
+
+        if (dlSectionMatch && dlSectionMatch[1]) {
+          var rawCodes = dlSectionMatch[1].replace(/[@©]/g, 'A').trim();
+          var matchedCodes = rawCodes.match(/\b([A-E][12]?|[1-8])\b/gi);
+          if (matchedCodes && matchedCodes.length > 0) {
+            var uniqueSet = [];
+            matchedCodes.forEach(function(m) {
+              var code = m.toUpperCase();
+              if (uniqueSet.indexOf(code) === -1) uniqueSet.push(code);
+            });
+            classVal = uniqueSet.join(', ');
           }
         }
-        console.log('DL line index:', dlLineIndex, dlLineIndex >= 0 ? 'Line: [' + textLines2[dlLineIndex] + ']' : 'NOT FOUND');
-        if (dlLineIndex >= 0) {
-          // Build search string: line before + the DL codes line (code is often on prev line or same line)
-          var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
-          var dlLineText = textLines2[dlLineIndex];
-          var combined = (prevLine + ' ' + dlLineText).replace(/[@©]/g, 'A');
-          console.log('DL combined search area:', combined);
-          // Remove the label word itself to avoid false matches from DL letters
-          var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?/gi, ' ');
-          // Remove known non-code words
-          stripped = stripped.replace(/CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
-          console.log('DL stripped search:', stripped);
-          var dlCodeRegex = /(?:^|\s)([A-E][12]?|[1-8]|[@©＠0O])(?=\s|$)/gi;
-          var dlFound = [];
-          var dlMx;
-          while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
-            var c = dlMx[1].toUpperCase();
-            if (['@', '©', '＠', '0', 'O'].indexOf(c) !== -1) c = 'A';
-            if (dlFound.indexOf(c) === -1) dlFound.push(c);
+
+        // Tier 2: Search line window around DL Code / Restriction keywords
+        if (!classVal) {
+          var textLines2 = text.split(/[\n\r]+/);
+          var dlLineIndex = -1;
+          for (var i = 0; i < textLines2.length; i++) {
+            if (/[DdO][LlI1]\s*[Cc]odes?|RESTRICTION|CLASS|CATEGORY|DL/i.test(textLines2[i])) {
+              dlLineIndex = i;
+              break;
+            }
           }
-          console.log('DL codes found:', dlFound);
-          if (dlFound.length > 0) classVal = dlFound.join(', ');
+          console.log('DL line index:', dlLineIndex, dlLineIndex >= 0 ? 'Line: [' + textLines2[dlLineIndex] + ']' : 'NOT FOUND');
+          if (dlLineIndex >= 0) {
+            var prevLine = dlLineIndex > 0 ? textLines2[dlLineIndex - 1] : '';
+            var currLine = textLines2[dlLineIndex];
+            var nextLine = dlLineIndex < textLines2.length - 1 ? textLines2[dlLineIndex + 1] : '';
+            var combined = (prevLine + ' ' + currLine + ' ' + nextLine).replace(/[@©]/g, 'A');
+            console.log('DL combined search area:', combined);
+            var stripped = combined.replace(/[DdO][LlI1]\s*[Cc]odes?|RESTRICTIONS?|CLASS|CATEGORY|CONDITIONS?|NONE|BLOOD|BLACK|TYPE|EYES|COLOR/gi, ' ');
+            console.log('DL stripped search:', stripped);
+            var dlCodeRegex = /(?:^|\s|\,)([A-E][12]?|[1-8]|[@©0O])(?=\s|\,|$)/gi;
+            var dlFound = [];
+            var dlMx;
+            while ((dlMx = dlCodeRegex.exec(stripped)) !== null) {
+              var c = dlMx[1].toUpperCase();
+              if (['@', '©', '0', 'O'].indexOf(c) !== -1) c = 'A';
+              if (dlFound.indexOf(c) === -1 && ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE', '1', '2', '3', '4', '5', '6', '7', '8'].indexOf(c) !== -1) {
+                dlFound.push(c);
+              }
+            }
+            console.log('DL codes found:', dlFound);
+            if (dlFound.length > 0) classVal = dlFound.join(', ');
+          }
         }
+
+        // Tier 3: Scan text for explicit Philippine DL Codes (A, A1, B, B1, B2, C, D, BE, CE)
+        if (!classVal) {
+          var fullDlMatches = text.match(/\b(A1|B[12]|BE|CE|[A-E])\b/gi);
+          if (fullDlMatches && fullDlMatches.length > 0) {
+            var dlFound3 = [];
+            fullDlMatches.forEach(function(codeStr) {
+              var upper = codeStr.toUpperCase();
+              if (['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE'].indexOf(upper) !== -1) {
+                if (dlFound3.indexOf(upper) === -1) dlFound3.push(upper);
+              }
+            });
+            if (dlFound3.length > 0) classVal = dlFound3.join(', ');
+          }
+        }
+
         if (classVal && document.getElementById('editLicenseClass')) {
           document.getElementById('editLicenseClass').value = classVal;
           document.getElementById('editLicenseClass').style.borderColor = 'var(--success, #22c55e)';
         }
+
 
       }).catch(function(ocrErr) {
         console.error('OCR Error:', ocrErr);
