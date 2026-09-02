@@ -17620,18 +17620,11 @@ async edit(id) { this.openModal(id); }
 
 
                     <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 14px;">
-
-
-
-                        <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
-
-
-
-                            ${initial}
-
-
-
-                        </div>
+                        ${v.profile_picture ? `
+                            <img src="${v.profile_picture}" style="width: 54px; height: 54px; border-radius: 16px; object-fit: cover; border: 2px solid #00B14F; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0; cursor:pointer;" onclick="Verifications.viewLicense('${v.profile_picture}', '${name}')">` : `
+                            <div style="width: 54px; height: 54px; background: linear-gradient(135deg, #00B14F, #005339); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; box-shadow: 0 4px 12px var(--primary-glow); flex-shrink:0;">
+                                ${initial}
+                            </div>`}
 
 
 
@@ -27355,14 +27348,10 @@ async edit(id) { this.openModal(id); }
 
 
                 return `
-
-
-
                 <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;">
-
-
-
-                    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;">${avatar}</div>
+                    ${u.profile_picture ? `
+                        <img src="${u.profile_picture}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00B14F;flex-shrink:0;">` : `
+                        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;color:#fff;">${avatar}</div>`}
 
 
 
