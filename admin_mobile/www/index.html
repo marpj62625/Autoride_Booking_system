@@ -8891,30 +8891,17 @@
 
 
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-
-
-
-        <h1 class="page-title" style="margin:0;">User Management</h1>
-
-
-
+    <!-- Header: title row -->
+    <div style="margin-bottom:14px;">
+        <h1 class="page-title" style="margin:0 0 10px 0; font-size:1.6rem;">User Management</h1>
         <div style="display:flex; gap:8px;">
-
-
-
-            <button onclick="UserMgmt.openBroadcastModal()" style="background:var(--primary); border:none; color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;"><i class="fas fa-bullhorn"></i> Broadcast</button>
-
-
-
-            <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem; cursor:pointer;"><i class="fas fa-sync-alt"></i> Refresh</button>
-
-
-
+            <button onclick="UserMgmt.openBroadcastModal()" style="background:var(--primary); border:none; color:white; padding:9px 16px; border-radius:12px; font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer; flex:1; justify-content:center;">
+                <i class="fas fa-bullhorn"></i> Broadcast
+            </button>
+            <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:9px 16px; border-radius:12px; font-size:0.78rem; cursor:pointer; display:flex; align-items:center; gap:6px; justify-content:center;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
         </div>
-
-
-
     </div>
 
 
@@ -9003,26 +8990,11 @@
 
 
 
-    <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
-
-
-
-        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
-
-
-
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Verified</button>
-
-
-
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Unverified</button>
-
-
-
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Frozen</button>
-
-
-
+    <div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:6px; -webkit-overflow-scrolling:touch; scrollbar-width:none; -ms-overflow-style:none;">
+        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.78rem; font-weight:700;">All</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Verified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Unverified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Frozen</button>
     </div>
 
 
@@ -27383,11 +27355,11 @@ async edit(id) { this.openModal(id); }
 
 
 
-                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
+                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;">
 
 
 
-                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
+                    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;">${avatar}</div>
 
 
 
@@ -27395,15 +27367,15 @@ async edit(id) { this.openModal(id); }
 
 
 
-                        <div style="font-weight:800;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
+                        <div style="font-weight:800;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.full_name || 'No Name'}</div>
 
 
 
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
 
 
 
-                        <div style="margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
+                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
 
 
 
@@ -27411,31 +27383,23 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
 
 
 
-                        <div style="text-align:right;">
+                        <div style="font-size:0.62rem;color:var(--text-muted);text-align:right;">${joined}</div>
 
 
 
-                            <div style="font-size:0.65rem;color:var(--text-muted);">${joined}</div>
+                        <div style="font-size:0.68rem;color:var(--amber);font-weight:700;"><i class="fas fa-star" style="font-size:0.58rem;"></i> ${u.loyalty_points || 0} pts</div>
 
 
 
-                            <div style="font-size:0.7rem;color:var(--amber);margin-top:4px;font-weight:700;"><i class="fas fa-star" style="font-size:0.6rem;"></i> ${u.loyalty_points || 0} pts</div>
+                        <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);color:var(--primary-light);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Send Notification">
 
 
 
-                        </div>
-
-
-
-                        <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1); border:1px solid rgba(0,177,79,0.2); color:var(--primary-light); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Send Notification">
-
-
-
-                            <i class="fas fa-bell" style="font-size:0.9rem;"></i>
+                            <i class="fas fa-bell" style="font-size:0.8rem;"></i>
 
 
 
