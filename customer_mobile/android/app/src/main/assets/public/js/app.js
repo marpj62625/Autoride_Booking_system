@@ -152,11 +152,9 @@ var PushNotifications = {
     }).then(function() {
       // Add event listeners
       pushPlugin.addListener('registration', function(token) {
-        console.log('Push registration success, token: ' + token.value);
-        PushNotifications.currentToken = token.value;
-        PushNotifications.sendTokenToServer(token.value);
-        showToast('Push notifications enabled successfully!', 'success');
+        console.log('Push notifications enabled successfully');
       });
+
 
       pushPlugin.addListener('registrationError', function(error) {
         console.error('Push registration error: ' + JSON.stringify(error));
@@ -6183,11 +6181,43 @@ var Profile = {
   }
 };
 
-function pickLicenseForProfile(side) {
+function captureLicenseWithCamera(side) {
+  var Camera = getCamera();
+  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: 'uri',
+      source: 'CAMERA'
+    }).then(function(image) {
+      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], side + '_license.jpg', { type: 'image/jpeg' });
+        var fakeEvent = { target: { files: [file] } };
+        handleLicenseFileSelect(fakeEvent, side);
+      });
+    }).catch(function(err) {
+      console.log('Camera error or cancelled:', err);
+      var camInputId = side === 'back' ? 'licenseCameraInputBack' : 'licenseCameraInputFront';
+      var el = document.getElementById(camInputId);
+      if (el) el.click();
+    });
+  } else {
+    var camInputId = side === 'back' ? 'licenseCameraInputBack' : 'licenseCameraInputFront';
+    var el = document.getElementById(camInputId);
+    if (el) el.click();
+  }
+}
+
+function pickLicenseFromFile(side) {
   var inputId = side === 'back' ? 'licenseFileInputBack' : 'licenseFileInputFront';
   var el = document.getElementById(inputId);
   if (el) el.click();
 }
+
+function pickLicenseForProfile(side) {
+  captureLicenseWithCamera(side);
+}
+
 
 window._pendingCropSide = null;
 window._pendingCropCallback = null;
@@ -7054,26 +7084,25 @@ function loadChatbot() {
     '<div class="page-header" style="flex-shrink:0;">' +
     '<button class="back-btn" onclick="closeChatbot()"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>AI Assistant</h2></div>' +
-    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:100px;">' +
+    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:20px;">' +
     '<div class="chat-msg bot">Hi! 👋 I\'m the Autoride AI assistant. How can I help you today?</div>' +
     '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;">' +
-    '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
-    '<button onclick="sendChatMsg(\'How to book?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 How to Book</button>' +
-    '<button onclick="sendChatMsg(\'What are the prices?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💰 Pricing</button>' +
-    '<button onclick="sendChatMsg(\'What are the requirements?\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📄 Requirements</button>' +
-    '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(230,57,70,0.08);border:1px solid rgba(230,57,70,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
+    '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
+    '<button onclick="sendChatMsg(\'How to book?\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 How to Book</button>' +
+    '<button onclick="sendChatMsg(\'What are the prices?\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💰 Pricing</button>' +
+    '<button onclick="sendChatMsg(\'What are the requirements?\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📄 Requirements</button>' +
+    '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
     '</div>' +
     '</div>' +
-    '<div class="chat-input-row" style="flex-shrink:0;position:sticky;bottom:0;left:0;right:0;z-index:100;background:var(--bg-card);">' +
-    '<input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')sendChat()">' +
-    '<button onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>' +
+    '<div class="chat-input-row" style="flex-shrink:0;position:relative;z-index:100;background:var(--bg-card);padding:10px 14px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">' +
+    '<input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;" onkeydown="if(event.key===\'Enter\')sendChat()">' +
+    '<button onclick="sendChat()" style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:white;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="fas fa-paper-plane"></i></button>' +
     '</div>';
 }
 
 function closeChatbot() {
   var overlay = document.getElementById('page-chatbot');
   var el = document.getElementById('chatbotContent');
-  // Reset so next open re-initializes fresh
   if (el) { el.dataset.initialized = ''; el.innerHTML = ''; }
   if (overlay) { overlay.style.cssText = ''; }
   closeOverlay('page-chatbot');
@@ -7082,16 +7111,13 @@ function closeChatbot() {
 function sendChatMsg(msg) {
   var inputEl = document.getElementById('chatInput');
   if (inputEl) inputEl.value = msg;
-  // Hide quick replies
-  var qr = document.getElementById('chatQuickReplies');
-  if (qr) qr.style.display = 'none';
   sendChat();
 }
 
 function chatLocalFallback(msg) {
   var lower = msg.toLowerCase();
   if (lower.match(/tutorial|guide|how.*use|how.*work|paano|gamitin|step by step|get started/)) {
-    return '📖 **How to Use Autoride:**\n\n1︝⃣ **Register** — Sign up with your Gmail & password, then verify your email\n2︝⃣ **Complete Profile** — Upload your Driver\'s License (front & back) in Profile\n3︝⃣ **Browse Cars** — Filter by type/date or search by name\n4︝⃣ **Book** — Pick dates, choose location, confirm booking\n5︝⃣ **Pay** — Use GCash, Maya, Credit Card, or Cash\n6︝⃣ **Track** — Monitor your booking status in My Bookings\n\n💬 Need more help? Use Live Chat!';
+    return '📖 **How to Use Autoride:**\n\n1⃣ **Register** — Sign up with your Gmail & password, then verify your email\n2⃣ **Complete Profile** — Upload your Driver\'s License (front & back) in Profile\n3⃣ **Browse Cars** — Filter by type/date or search by name\n4⃣ **Book** — Pick dates, choose location, confirm booking\n5⃣ **Pay** — Use GCash, Maya, Credit Card, or Cash\n6⃣ **Track** — Monitor your booking status in My Bookings\n\n💬 Need more help? Use Live Chat!';
   }
   if (lower.match(/book|rent|reserve/)) return '📋 To book: Browse Cars → Select dates → Choose location → Confirm Booking!';
   if (lower.match(/price|rate|cost|magkano/)) return '💰 Rates start at ₱1,500/day. Check each vehicle page for exact pricing.';
@@ -7108,23 +7134,36 @@ function sendChat() {
   var msg = sanitizeInput(inputEl.value.trim());
   if (isBlank(msg)) return;
   inputEl.value = '';
-  // Hide quick replies after first message
-  var qr = document.getElementById('chatQuickReplies');
-  if (qr) qr.style.display = 'none';
+
   var msgs = document.getElementById('chatMessages');
   if (!msgs) return;
+
+  var oldQr = document.getElementById('chatQuickReplies');
+  if (oldQr) oldQr.remove();
+
   msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg user">' + msg + '</div>');
   msgs.scrollTop = msgs.scrollHeight;
-  // Show typing indicator
+
   var typingId = 'typing_' + Date.now();
   msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot" id="' + typingId + '" style="opacity:0.6;">...</div>');
   msgs.scrollTop = msgs.scrollHeight;
+
+  var appendQuickReplies = function() {
+    var qrHtml = '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px 0;margin-top:6px;">' +
+      '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
+      '<button onclick="sendChatMsg(\'How to book?\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📋 How to Book</button>' +
+      '<button onclick="sendChatMsg(\'What are the prices?\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💰 Pricing</button>' +
+      '<button onclick="sendChatMsg(\'What are the requirements?\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📄 Requirements</button>' +
+      '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
+      '</div>';
+    msgs.insertAdjacentHTML('beforeend', qrHtml);
+  };
+
   apiCall('/chat', { method: 'POST', body: JSON.stringify({ message: msg, user_id: currentUser.id }) })
     .then(function(data) {
       var typing = document.getElementById(typingId);
       if (typing) typing.remove();
       var resp = (data.response || 'I\'m not sure about that. Please contact support.');
-      // Format markdown-style bold **text** and bullet points
       resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       resp = resp.replace(/\n/g, '<br>');
       msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + resp + '</div>');
@@ -7136,7 +7175,10 @@ function sendChat() {
       fallback = fallback.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
       msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + fallback + '</div>');
     })
-    .finally(function() { msgs.scrollTop = msgs.scrollHeight; });
+    .finally(function() {
+      appendQuickReplies();
+      msgs.scrollTop = msgs.scrollHeight;
+    });
 }
 
 // NOTIFICATIONS
@@ -7314,6 +7356,12 @@ var LiveChat = (function () {
       });
   }
 
+  function closeLiveChat() {
+    stopPolling();
+    _currentAdminId = null;
+    closeOverlay('page-livechat');
+  }
+
   // Conversation
   function openConversation(adminId, adminName) {
     _currentAdminId = adminId;
@@ -7324,8 +7372,8 @@ var LiveChat = (function () {
     if (!el) return;
     el.innerHTML =
       '<div class="page-header">' +
-        '<button class="back-btn" onclick="LiveChat.backToInbox()"><i class="fas fa-arrow-left"></i></button>' +
-        '<h2>' + escapeHtml(adminName) + '</h2>' +
+        '<button class="back-btn" onclick="LiveChat.closeLiveChat()"><i class="fas fa-arrow-left"></i></button>' +
+        '<h2>' + escapeHtml(adminName || 'Support Team') + '</h2>' +
       '</div>' +
       '<div id="lcMessages" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;height:calc(100vh - 180px);"></div>' +
       '<div class="chat-input-row">' +
@@ -7341,6 +7389,7 @@ var LiveChat = (function () {
     fetchMessages(true);
     _pollTimer = setInterval(function () { fetchMessages(false); }, 2000);
   }
+
 
   function fetchMessages(initial) {
     if (!_currentAdminId || !currentUser.id) return;
@@ -7451,10 +7500,12 @@ var LiveChat = (function () {
   return {
     loadInbox: loadInbox,
     openConversation: openConversation,
+    closeLiveChat: closeLiveChat,
     send: send,
     backToInbox: backToInbox,
     stopPolling: stopPolling
   };
+
 })();
 
 function loadLiveChat() {
