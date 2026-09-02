@@ -3716,7 +3716,8 @@ function confirmAndBook() {
 
   // Mandatory Profile Selfie & License completeness check
   var hasProfilePic = currentUser && currentUser.profile_picture;
-  var hasLicenseFront = (currentUser && currentUser.license_front_url) || (userLicenseData && userLicenseData.license_front_url);
+  var licDetails = (currentUser && currentUser._licenseDetails) || window._userLicenseData || {};
+  var hasLicenseFront = (currentUser && (currentUser.license_front_url || currentUser.license_image_url)) || licDetails.license_front_url || licDetails.license_image_url;
 
   if (!hasProfilePic || !hasLicenseFront) {
     var modalEl = document.getElementById('rentalAgreementModal');

@@ -18,6 +18,13 @@ def get_db():
 
 def get_cursor():
     conn = get_db()
+    try:
+        if hasattr(conn, 'info') and hasattr(conn.info, 'transaction_status'):
+            # TransactionStatus.INERROR is 3. If in error, rollback to clear aborted state.
+            if conn.info.transaction_status == 3:
+                conn.rollback()
+    except Exception:
+        pass
     return conn.cursor(row_factory=dict_row)
 
 def commit_db():

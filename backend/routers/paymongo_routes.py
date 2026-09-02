@@ -469,8 +469,7 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                 UPDATE bookings
                 SET status = 'Cancelled',
                     payment_status = 'Expired',
-                    cancellation_reason = 'Reservation deposit expired (not paid within 30 minutes)',
-                    cancelled_at = NOW()
+                    cancellation_reason = 'Reservation deposit expired (not paid within 30 minutes)'
                 WHERE (status IN ('Pending', 'pending', 'Pending Payment') OR payment_status IN ('Unpaid', 'Pending Payment', 'Downpayment unpaid'))
                   AND payment_status NOT IN ('Paid', 'Partially Paid', 'Refunded', 'Cancelled')
                   AND created_at < NOW() - INTERVAL '30 minutes'
@@ -484,6 +483,10 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
             cancel_cur.close()
         except Exception as _ce:
             print(f"[PayMongo] Auto-cancel expired pending bookings error: {_ce}")
+            try:
+                get_db().rollback()
+            except Exception:
+                pass
 
         cur = get_cursor()
         if user_id:
