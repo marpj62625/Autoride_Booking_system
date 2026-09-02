@@ -738,11 +738,14 @@ def migrate_license_details_table():
                 updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cur.execute("ALTER TABLE license_details ADD COLUMN IF NOT EXISTS id SERIAL;")
+        cur.execute("ALTER TABLE license_details ADD COLUMN IF NOT EXISTS license_class VARCHAR(50);")
         commit_db()
     except Exception as e:
         pass
     finally:
-        if 'cur' in locals(): cur.close()
+        if 'cur' in locals() and cur: cur.close()
+
 
 try:
     with app.app_context():
