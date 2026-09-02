@@ -6189,12 +6189,83 @@ function pickLicenseForProfile(side) {
   if (el) el.click();
 }
 
+window._pendingCropSide = null;
+window._pendingCropCallback = null;
+window._licenseCropper = null;
+
+function openLicenseCropper(file, side, callback) {
+  window._pendingCropSide = side;
+  window._pendingCropCallback = callback;
+  var modal = document.getElementById('cropLicenseModal');
+  var img = document.getElementById('cropLicenseImage');
+  if (!modal || !img) {
+    if (callback) callback(file);
+    return;
+  }
+  img.src = URL.createObjectURL(file);
+  modal.style.display = 'flex';
+
+  if (window._licenseCropper) {
+    window._licenseCropper.destroy();
+    window._licenseCropper = null;
+  }
+
+  setTimeout(function() {
+    if (typeof Cropper !== 'undefined') {
+      window._licenseCropper = new Cropper(img, {
+        aspectRatio: 1.586,
+        viewMode: 1,
+        autoCropArea: 0.95,
+        background: true,
+        responsive: true,
+        scalable: true,
+        zoomable: true
+      });
+    } else {
+      console.warn('Cropper.js not loaded, proceeding without crop');
+    }
+  }, 100);
+}
+
+function closeCropLicenseModal() {
+  var modal = document.getElementById('cropLicenseModal');
+  if (modal) modal.style.display = 'none';
+  if (window._licenseCropper) {
+    window._licenseCropper.destroy();
+    window._licenseCropper = null;
+  }
+}
+
+function confirmCropLicense() {
+  if (window._licenseCropper) {
+    window._licenseCropper.getCroppedCanvas({
+      width: 1200,
+      height: 757,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: 'high'
+    }).toBlob(function(croppedBlob) {
+      closeCropLicenseModal();
+      if (window._pendingCropCallback && croppedBlob) {
+        window._pendingCropCallback(croppedBlob);
+      }
+    }, 'image/jpeg', 0.92);
+  } else {
+    closeCropLicenseModal();
+  }
+}
+
 function handleLicenseFileSelect(e, side) {
   var file = e.target.files[0];
   if (!file) return;
   var err = validateUploadFile(file);
   if (err) { var errEl = document.getElementById('licenseEditErr'); if (errEl) errEl.textContent = err; return; }
 
+  openLicenseCropper(file, side, function(croppedFile) {
+    processSelectedLicenseFile(croppedFile, side);
+  });
+}
+
+function processSelectedLicenseFile(file, side) {
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
@@ -6212,6 +6283,7 @@ function handleLicenseFileSelect(e, side) {
         'eng',
         { logger: function(m) { /* console.log(m); */ } }
       ).then(function(result) {
+
         var text = result.data.text;
         if (statusText) statusText.style.display = 'none';
         if (detailsBox) detailsBox.style.display = 'block';
@@ -6815,20 +6887,51 @@ function openLicenseUpload() {
 }
 
 function pickLicense() {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/jpeg,image/png';
-  input.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var err = validateUploadFile(file);
-    if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
-    licenseBlob = file;
-    var preview = document.getElementById('licensePreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-  };
-  input.click();
+  var Camera = getCamera();
+  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: 'uri',
+      source: 'PROMPT'
+    }).then(function(image) {
+      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], 'license.jpg', { type: 'image/jpeg' });
+        openLicenseCropper(file, 'front', function(croppedBlob) {
+          var err = validateUploadFile(croppedBlob);
+          if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+          licenseBlob = croppedBlob;
+          var preview = document.getElementById('licensePreview');
+          if (preview) { preview.src = URL.createObjectURL(croppedBlob); preview.style.display = 'block'; }
+        });
+      });
+    }).catch(function(err) {
+      console.log('Camera cancelled or fallback:', err);
+      triggerFileInput();
+    });
+  } else {
+    triggerFileInput();
+  }
+
+  function triggerFileInput() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var err = validateUploadFile(file);
+      if (err) { var errEl = document.getElementById('licenseErr'); if (errEl) errEl.textContent = err; return; }
+      openLicenseCropper(file, 'front', function(croppedBlob) {
+        licenseBlob = croppedBlob;
+        var preview = document.getElementById('licensePreview');
+        if (preview) { preview.src = URL.createObjectURL(croppedBlob); preview.style.display = 'block'; }
+      });
+    };
+    input.click();
+  }
 }
+
 
 function submitLicense() {
   var errEl = document.getElementById('licenseErr');
