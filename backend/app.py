@@ -10037,9 +10037,10 @@ def save_license_details():
             print(f"Upload error: {upload_err}")
             # Continue without failing the entire request
 
-        # Check if record exists
-        cur.execute("SELECT id FROM license_details WHERE user_id = %s", (user_id,))
+        # Check if record exists using user_id (guaranteed to exist on license_details)
+        cur.execute("SELECT user_id FROM license_details WHERE user_id = %s", (user_id,))
         exists = cur.fetchone()
+
 
         if exists:
             cur.execute("""
