@@ -8891,30 +8891,17 @@
 
 
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-
-
-
-        <h1 class="page-title" style="margin:0;">User Management</h1>
-
-
-
+    <!-- Header: title row -->
+    <div style="margin-bottom:14px;">
+        <h1 class="page-title" style="margin:0 0 10px 0; font-size:1.6rem;">User Management</h1>
         <div style="display:flex; gap:8px;">
-
-
-
-            <button onclick="UserMgmt.openBroadcastModal()" style="background:var(--primary); border:none; color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;"><i class="fas fa-bullhorn"></i> Broadcast</button>
-
-
-
-            <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:8px 15px; border-radius:10px; font-size:0.75rem; cursor:pointer;"><i class="fas fa-sync-alt"></i> Refresh</button>
-
-
-
+            <button onclick="UserMgmt.openBroadcastModal()" style="background:var(--primary); border:none; color:white; padding:9px 16px; border-radius:12px; font-size:0.78rem; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer; flex:1; justify-content:center;">
+                <i class="fas fa-bullhorn"></i> Broadcast
+            </button>
+            <button onclick="UserMgmt.refresh()" style="background:var(--surface); border:1px solid var(--border); color:white; padding:9px 16px; border-radius:12px; font-size:0.78rem; cursor:pointer; display:flex; align-items:center; gap:6px; justify-content:center;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
         </div>
-
-
-
     </div>
 
 
@@ -9003,26 +8990,11 @@
 
 
 
-    <div style="display:flex; gap:8px; margin-bottom:20px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none;">
-
-
-
-        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.75rem; font-weight:700;">All</button>
-
-
-
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Verified</button>
-
-
-
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Unverified</button>
-
-
-
-        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; padding:7px 16px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.75rem; font-weight:700;">Frozen</button>
-
-
-
+    <div style="display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:6px; -webkit-overflow-scrolling:touch; scrollbar-width:none; -ms-overflow-style:none;">
+        <button class="um-filter-btn active" onclick="UserMgmt.setFilter('all', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--primary); background:var(--primary); color:white; font-size:0.78rem; font-weight:700;">All</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Verified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Unverified</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Frozen</button>
     </div>
 
 
@@ -9474,31 +9446,34 @@
         if (existing) existing.remove();
     }
 
-    // API URL: auto-detect  works on Vercel (web) and Android APK (hardcoded)
-
-
-
-    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-
-
-
-        ? 'http://localhost:5000'
-
-
-
-        : (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
-
-
-
-            ? window.location.origin
-
-
-
-            : 'https://autoride-booking-system.vercel.app';
-
-
+    // API URL: auto-detect - works on Vercel (web) and Android APK (Capacitor)
+    const API_BASE = (function() {
+        // Always use production URL on native Capacitor APK (window.Capacitor.isNative is true on real device)
+        if (window.Capacitor && window.Capacitor.isNative) {
+            return 'https://autoride-booking-system.vercel.app';
+        }
+        // Capacitor serves from capacitor:// protocol on some versions
+        if (window.location.protocol === 'capacitor:') {
+            return 'https://autoride-booking-system.vercel.app';
+        }
+        // Capacitor on Android serves from localhost - force production
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Check if running as installed APK (not local web dev server)
+            if (window.Capacitor) {
+                return 'https://autoride-booking-system.vercel.app';
+            }
+            return 'http://localhost:5000';
+        }
+        // Web: Vercel or HTTPS - use origin
+        if (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:') {
+            return window.location.origin;
+        }
+        // Fallback
+        return 'https://autoride-booking-system.vercel.app';
+    })();
 
     const API_URL = API_BASE + '/api';
+
 
 
 
@@ -15217,23 +15192,30 @@ async edit(id) { this.openModal(id); }
             try {
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${bookingId}/penalties`);
                 const penalties = await res.json();
+                if (!res.ok || !Array.isArray(penalties)) {
+                    container.innerHTML = '<div style="font-size:0.75rem;color:#64748b;text-align:center;padding:5px 0;">No penalties added.</div>';
+                    return;
+                }
                 let html = "";
                 penalties.forEach(p => {
+                    const typeKey = p.charge_type || p.penalty_type || 'other';
                     const label = {
                         'late_return': 'Late Return',
                         'damage': 'Damage',
                         'excess_mileage': 'Excess Mileage',
                         'other': 'Other'
-                    }[p.charge_type] || p.charge_type;
+                    }[typeKey] || typeKey;
+                    
+                    const notesText = p.notes || p.description || '';
                     
                     html += `
                         <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed #fcd34d;">
                             <div>
                                 <span style="font-weight:700;font-size:0.78rem;color:#374151;">${label}</span>
-                                ${p.notes ? `<br><span style="font-size:0.68rem;color:#64748b;">${p.notes}</span>` : ''}
+                                ${notesText ? `<br><span style="font-size:0.68rem;color:#64748b;">${notesText}</span>` : ''}
                             </div>
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <span style="font-weight:700;font-size:0.78rem;color:#ef4444;">₱${parseFloat(p.amount).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+                                <span style="font-weight:700;font-size:0.78rem;color:#ef4444;">₱${parseFloat(p.amount || 0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
                                 <button onclick="Bookings.deletePenalty(${bookingId}, ${p.id})" style="background:none;border:none;color:#ef4444;cursor:pointer;padding:2px;"><i class="fas fa-trash-alt" style="font-size:0.75rem;"></i></button>
                             </div>
                         </div>`;
@@ -15243,7 +15225,7 @@ async edit(id) { this.openModal(id); }
                 }
                 container.innerHTML = html;
             } catch(e) {
-                container.innerHTML = '<div style="font-size:0.75rem;color:#ef4444;text-align:center;padding:5px 0;">Failed to load penalties.</div>';
+                container.innerHTML = '<div style="font-size:0.75rem;color:#64748b;text-align:center;padding:5px 0;">No penalties added.</div>';
             }
         },
         
@@ -15343,57 +15325,43 @@ async edit(id) { this.openModal(id); }
 
 
         async markPaid(id) {
+            const b = (this.data || []).find(x => x.id == id);
+            if (b && b.start_date) {
+                try {
+                    const dStr = String(b.start_date).split('T')[0];
+                    const [pYr, pMo, pDay] = dStr.split('-').map(Number);
+                    const pickupDate = new Date(pYr, pMo - 1, pDay);
+                    pickupDate.setHours(0,0,0,0);
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
 
+                    if (today < pickupDate) {
+                        const dateFormatted = pickupDate.toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'});
+                        showNotification(`🚫 Cannot Mark as Fully Paid before pickup date (${dateFormatted}). Remaining balance must be collected when customer physically arrives at counter.`, 'error');
+                        return;
+                    }
+                } catch(e) {}
+            }
 
+            const total = parseFloat(b ? b.total_price || 0 : 0);
+            const paid = parseFloat(b ? b.amount_paid || 0 : 0);
+            const balance = Math.max(0, total - paid);
+            const balanceFmt = '₱' + balance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
+            const custName = b ? (b.full_name || b.client_name || 'Customer') : 'Customer';
 
-            if (!confirm('Mark this booking as FULLY PAID? \nThis means you have received the remaining balance in CASH over the counter.')) return;
-
-
+            if (!confirm(`📌 CONFIRM PHYSICAL COUNTER CHECK-IN:\n\nIs ${custName} physically present at the counter right now?\n\nHave you collected the remaining balance of ${balanceFmt} in CASH over the counter?`)) return;
 
             try {
-
-
-
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
-
-
-
                 if (res.ok) {
-
-
-
-                    showNotification('Booking marked as Fully Paid!', 'success');
-
-
-
+                    showNotification('Booking marked as Fully Paid! Counter check-in confirmed.', 'success');
                     document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
-
-
-
                     this.refresh();
-
-
-
                 } else {
-
-
-
-                    const data = await res.json();
-
-
-
+                    const data = await res.json().catch(() => ({}));
                     showNotification(data.error || 'Failed to update payment', 'error');
-
-
-
                 }
-
-
-
             } catch (err) { showNotification('Network error', 'error'); }
-
-
-
         },
 
 
@@ -17385,18 +17353,28 @@ async edit(id) { this.openModal(id); }
 
 
 
-                        <div style="display:flex;gap:10px;margin-bottom:12px;">
+                        <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
+                            ${v.profile_picture ? `
+                                <div style="flex:1;min-width:90px;">
+                                    <div style="font-size:0.6rem;color:#00B14F;font-weight:800;text-transform:uppercase;margin-bottom:4px;"><i class="fas fa-camera"></i> Live Selfie</div>
+                                    <img src="${v.profile_picture}" style="width:100%;height:85px;object-fit:cover;border-radius:8px;border:2px solid #00B14F;cursor:pointer;" onclick="Verifications.viewLicense('${v.profile_picture}', 'Live Selfie Profile Photo')">
+                                </div>` : `
+                                <div style="flex:1;min-width:90px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;height:85px;">
+                                    <i class="fas fa-user-slash" style="color:#94a3b8;font-size:1.2rem;margin-bottom:4px;"></i>
+                                    <span style="font-size:0.6rem;color:#94a3b8;font-weight:700;">No Selfie</span>
+                                </div>`}
 
+                            ${licenseUrl ? `
+                                <div style="flex:1;min-width:90px;">
+                                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">License Front</div>
+                                    <img src="${licenseUrl}" style="width:100%;height:85px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" onclick="Verifications.viewLicense('${licenseUrl}', 'License Front')">
+                                </div>` : ''}
 
-
-                            ${licenseUrl ? `<div style="flex:1;"><div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Front</div><img src="${licenseUrl}" style="width:100%;border-radius:8px;cursor:pointer;" onclick="Verifications.viewLicense('${licenseUrl}')"></div>` : ''}
-
-
-
-                            ${v.license_back_url ? `<div style="flex:1;"><div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">Back</div><img src="${v.license_back_url}" style="width:100%;border-radius:8px;cursor:pointer;" onclick="Verifications.viewLicense('${v.license_back_url}')"></div>` : ''}
-
-
-
+                            ${v.license_back_url ? `
+                                <div style="flex:1;min-width:90px;">
+                                    <div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">License Back</div>
+                                    <img src="${v.license_back_url}" style="width:100%;height:85px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" onclick="Verifications.viewLicense('${v.license_back_url}', 'License Back')">
+                                </div>` : ''}
                         </div>
 
 
@@ -27380,11 +27358,11 @@ async edit(id) { this.openModal(id); }
 
 
 
-                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:14px;">
+                <div onclick="UserMgmt.openModal(${u.id})" style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 12px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;">
 
 
 
-                    <div style="width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.1rem;flex-shrink:0;">${avatar}</div>
+                    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#005339);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;flex-shrink:0;">${avatar}</div>
 
 
 
@@ -27392,15 +27370,15 @@ async edit(id) { this.openModal(id); }
 
 
 
-                        <div style="font-weight:800;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.full_name || 'No Name'}</div>
+                        <div style="font-weight:800;font-size:0.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.full_name || 'No Name'}</div>
 
 
 
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
 
 
 
-                        <div style="margin-top:6px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
+                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
 
 
 
@@ -27408,31 +27386,23 @@ async edit(id) { this.openModal(id); }
 
 
 
-                    <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
 
 
 
-                        <div style="text-align:right;">
+                        <div style="font-size:0.62rem;color:var(--text-muted);text-align:right;">${joined}</div>
 
 
 
-                            <div style="font-size:0.65rem;color:var(--text-muted);">${joined}</div>
+                        <div style="font-size:0.68rem;color:var(--amber);font-weight:700;"><i class="fas fa-star" style="font-size:0.58rem;"></i> ${u.loyalty_points || 0} pts</div>
 
 
 
-                            <div style="font-size:0.7rem;color:var(--amber);margin-top:4px;font-weight:700;"><i class="fas fa-star" style="font-size:0.6rem;"></i> ${u.loyalty_points || 0} pts</div>
+                        <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);color:var(--primary-light);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;" title="Send Notification">
 
 
 
-                        </div>
-
-
-
-                        <button onclick="event.stopPropagation(); UserMgmt.openPushModal(${u.id}, '${(u.full_name || 'No Name').replace(/'/g, "\\'")}')" style="background:rgba(0,177,79,0.1); border:1px solid rgba(0,177,79,0.2); color:var(--primary-light); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;" title="Send Notification">
-
-
-
-                            <i class="fas fa-bell" style="font-size:0.9rem;"></i>
+                            <i class="fas fa-bell" style="font-size:0.8rem;"></i>
 
 
 
