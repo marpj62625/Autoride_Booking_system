@@ -9474,31 +9474,34 @@
         if (existing) existing.remove();
     }
 
-    // API URL: auto-detect  works on Vercel (web) and Android APK (hardcoded)
-
-
-
-    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-
-
-
-        ? 'http://localhost:5000'
-
-
-
-        : (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:')
-
-
-
-            ? window.location.origin
-
-
-
-            : 'https://autoride-booking-system.vercel.app';
-
-
+    // API URL: auto-detect - works on Vercel (web) and Android APK (Capacitor)
+    const API_BASE = (function() {
+        // Always use production URL on native Capacitor APK (window.Capacitor.isNative is true on real device)
+        if (window.Capacitor && window.Capacitor.isNative) {
+            return 'https://autoride-booking-system.vercel.app';
+        }
+        // Capacitor serves from capacitor:// protocol on some versions
+        if (window.location.protocol === 'capacitor:') {
+            return 'https://autoride-booking-system.vercel.app';
+        }
+        // Capacitor on Android serves from localhost - force production
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Check if running as installed APK (not local web dev server)
+            if (window.Capacitor) {
+                return 'https://autoride-booking-system.vercel.app';
+            }
+            return 'http://localhost:5000';
+        }
+        // Web: Vercel or HTTPS - use origin
+        if (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:') {
+            return window.location.origin;
+        }
+        // Fallback
+        return 'https://autoride-booking-system.vercel.app';
+    })();
 
     const API_URL = API_BASE + '/api';
+
 
 
 
