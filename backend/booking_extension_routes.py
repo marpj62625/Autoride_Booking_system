@@ -133,6 +133,7 @@ def extend_booking(booking_id):
 
 
 @ext_bp.route('/bookings/<int:booking_id>/extensions', methods=['GET'])
+@ext_bp.route('/api/bookings/<int:booking_id>/extensions', methods=['GET'])
 def get_booking_extensions(booking_id):
     try:
         cur = get_cursor()
@@ -151,6 +152,7 @@ def get_booking_extensions(booking_id):
 
 
 @ext_bp.route('/admin/extensions', methods=['GET'])
+@ext_bp.route('/api/admin/extensions', methods=['GET'])
 def get_all_extensions():
     try:
         cur = get_cursor()
@@ -181,6 +183,7 @@ def get_all_extensions():
 
 
 @ext_bp.route('/admin/extensions/<int:ext_id>/approve', methods=['PUT'])
+@ext_bp.route('/api/admin/extensions/<int:ext_id>/approve', methods=['PUT'])
 def approve_extension(ext_id):
     try:
         cur = get_cursor()
@@ -317,6 +320,7 @@ def approve_extension(ext_id):
 
 
 @ext_bp.route('/admin/extensions/<int:ext_id>/reject', methods=['PUT'])
+@ext_bp.route('/api/admin/extensions/<int:ext_id>/reject', methods=['PUT'])
 def reject_extension(ext_id):
     try:
         data = request.get_json(silent=True) or {}

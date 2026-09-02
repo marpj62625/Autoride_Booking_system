@@ -144,7 +144,7 @@ init_db_helpers(app)
 
 
 @app.route('/test/')
-
+@app.route('/api/test/')
 def test_connection():
 
     return jsonify({"status": "ok", "message": "Backend is reachable!"})
@@ -926,7 +926,7 @@ from flask import send_from_directory, render_template
 
 
 @app.route('/admin_app/<path:filename>')
-
+@app.route('/api/admin_app/<path:filename>')
 def serve_admin_app(filename):
 
     return send_from_directory('../admin_app', filename)
@@ -934,7 +934,7 @@ def serve_admin_app(filename):
 
 
 @app.route('/admin_mobile/<path:filename>')
-
+@app.route('/api/admin_mobile/<path:filename>')
 def serve_admin_mobile(filename):
 
     return send_from_directory('../admin_mobile/www', filename)
@@ -942,7 +942,7 @@ def serve_admin_mobile(filename):
 
 
 @app.route('/privacy-policy')
-
+@app.route('/api/privacy-policy')
 def privacy_policy():
 
     """Serve the Privacy Policy page for Google Play Console compliance"""
@@ -958,7 +958,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 @app.route('/uploads/<path:filename>')
-
+@app.route('/api/uploads/<path:filename>')
 def serve_uploads(filename):
 
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
@@ -1270,7 +1270,7 @@ def send_receipt_email(email: str, details: dict):
 
 
 @app.route("/")
-
+@app.route('/api/')
 def home():
 
     return "Autoride backend running"
@@ -1278,7 +1278,7 @@ def home():
 
 
 @app.route('/register', methods=['POST'])
-
+@app.route('/api/register', methods=['POST'])
 def register():
 
     # Handle both JSON and Multipart
@@ -1404,6 +1404,8 @@ def register():
 
 @app.route('/health')
 @app.route('/health/')
+@app.route('/api/health')
+@app.route('/api/health/')
 def health_check():
     """Quick DB connectivity test - call /api/health to debug Vercel"""
     try:
@@ -1423,6 +1425,7 @@ def health_check():
 
 
 @app.route('/user/forgot-password', methods=['POST'])
+@app.route('/api/user/forgot-password', methods=['POST'])
 def user_forgot_password():
     """Forgot password endpoint for customers. Generates a temporary password and emails it."""
     data = request.get_json(silent=True) or {}
@@ -1477,7 +1480,7 @@ def user_forgot_password():
 
 
 @app.route('/login', methods=['POST'])
-
+@app.route('/api/login', methods=['POST'])
 def login():
 
     data = request.json
@@ -1591,7 +1594,7 @@ def login():
 
 
 @app.route('/admin/verify-action', methods=['POST'])
-
+@app.route('/api/admin/verify-action', methods=['POST'])
 def admin_verify_user():
 
     data = request.json
@@ -1700,7 +1703,7 @@ def admin_verify_user():
 
 
 @app.route('/user/verify-status', methods=['GET'])
-
+@app.route('/api/user/verify-status', methods=['GET'])
 def check_verify_status():
 
     user_id = request.args.get('user_id')
@@ -1734,7 +1737,7 @@ def check_verify_status():
 
 
 @app.route('/user/upload-license', methods=['POST'])
-
+@app.route('/api/user/upload-license', methods=['POST'])
 def upload_license():
 
     user_id = request.form.get('user_id')
@@ -1847,7 +1850,8 @@ def upload_license():
 @app.route('/admin/users', methods=['GET'])
 
 @app.route('/admin/pending-verifications', methods=['GET'])
-
+@app.route('/api/admin/users', methods=['GET'])
+@app.route('/api/admin/pending-verifications', methods=['GET'])
 def admin_list_users():
 
     status = request.args.get('status')
@@ -1935,6 +1939,7 @@ def admin_list_users():
 # ??? ADMIN USER MANAGEMENT ENDPOINTS ???????????????????????????????????????
 
 @app.route('/admin/users/list', methods=['GET'])
+@app.route('/api/admin/users/list', methods=['GET'])
 def admin_users_list():
     """Full user list with all fields for admin management."""
     try:
@@ -1962,6 +1967,7 @@ def admin_users_list():
 
 
 @app.route('/admin/users/<int:user_id>', methods=['GET'])
+@app.route('/api/admin/users/<int:user_id>', methods=['GET'])
 def admin_user_detail(user_id):
     """Get full user detail including booking count."""
     try:
@@ -1997,6 +2003,7 @@ def admin_user_detail(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/freeze', methods=['POST'])
+@app.route('/api/admin/users/<int:user_id>/freeze', methods=['POST'])
 def admin_freeze_user(user_id):
     """Freeze or unfreeze a user account."""
     data = request.get_json(silent=True) or {}
@@ -2016,6 +2023,7 @@ def admin_freeze_user(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/edit', methods=['PUT'])
+@app.route('/api/admin/users/<int:user_id>/edit', methods=['PUT'])
 def admin_edit_user(user_id):
     """Edit user basic info."""
     data = request.get_json(silent=True) or {}
@@ -2038,6 +2046,7 @@ def admin_edit_user(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/loyalty', methods=['PUT'])
+@app.route('/api/admin/users/<int:user_id>/loyalty', methods=['PUT'])
 def admin_set_loyalty(user_id):
     """Set loyalty points for a user."""
     data = request.get_json(silent=True) or {}
@@ -2054,6 +2063,7 @@ def admin_set_loyalty(user_id):
 
 
 @app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+@app.route('/api/admin/users/<int:user_id>/reset-password', methods=['POST'])
 def admin_reset_password(user_id):
     """Reset user password to a new value."""
     data = request.get_json(silent=True) or {}
@@ -2071,6 +2081,7 @@ def admin_reset_password(user_id):
 
 
 @app.route('/admin/users/<int:user_id>', methods=['DELETE'])
+@app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
 def admin_delete_user(user_id):
     """Permanently delete a user account."""
     try:
@@ -2083,6 +2094,7 @@ def admin_delete_user(user_id):
 
 
 @app.route('/admin/users/export', methods=['GET'])
+@app.route('/api/admin/users/export', methods=['GET'])
 def admin_export_users():
     """Export users as CSV."""
     import csv, io
@@ -2120,7 +2132,7 @@ def admin_export_users():
 
 
 @app.route('/user/points', methods=['GET'])
-
+@app.route('/api/user/points', methods=['GET'])
 def get_user_points():
 
     user_id = request.args.get('user_id')
@@ -2155,6 +2167,7 @@ def get_user_points():
 temp_email_otps = {}
 
 @app.route('/auth/resend-otp', methods=['POST'])
+@app.route('/api/auth/resend-otp', methods=['POST'])
 def resend_otp():
     """Resend a new 6-digit OTP to the user's email."""
     try:
@@ -2174,7 +2187,7 @@ def resend_otp():
 
 
 @app.route('/auth/verify-email', methods=['POST'])
-
+@app.route('/api/auth/verify-email', methods=['POST'])
 def verify_email():
 
     """Verify the 6-digit OTP sent to the user's gmail."""
@@ -2227,7 +2240,7 @@ def verify_email():
 
 
 @app.route('/auth/google', methods=['POST'])
-
+@app.route('/api/auth/google', methods=['POST'])
 def google_auth():
 
     data = request.json
@@ -2459,6 +2472,7 @@ def google_auth():
 
 
 @app.route('/users/<int:user_id>/fcm-token', methods=['POST'])
+@app.route('/api/users/<int:user_id>/fcm-token', methods=['POST'])
 def register_fcm_token(user_id):
     """Register or update FCM token for push notifications"""
     try:
@@ -2491,6 +2505,7 @@ def register_fcm_token(user_id):
 
 
 @app.route('/test-fcm-config', methods=['GET'])
+@app.route('/api/test-fcm-config', methods=['GET'])
 def test_fcm_config():
     """Test FCM configuration and show detailed status"""
     try:
@@ -2534,6 +2549,7 @@ def test_fcm_config():
 
 
 @app.route('/test-push/<int:user_id>', methods=['POST'])
+@app.route('/api/test-push/<int:user_id>', methods=['POST'])
 def test_push_notification(user_id):
     """Test endpoint to send push notification to a user"""
     try:
@@ -2564,6 +2580,7 @@ def test_push_notification(user_id):
 
 
 @app.route('/admin/send-custom-push', methods=['POST'])
+@app.route('/api/admin/send-custom-push', methods=['POST'])
 def admin_send_custom_push():
     """Admin endpoint to send custom push notification or broadcast to all users"""
     try:
@@ -2640,7 +2657,7 @@ def admin_send_custom_push():
 
 
 @app.route('/admin/upload-refund-proof', methods=['POST'])
-
+@app.route('/api/admin/upload-refund-proof', methods=['POST'])
 def upload_refund_proof():
 
     booking_id = request.form.get('booking_id')
@@ -2790,6 +2807,7 @@ def upload_refund_proof():
 
 
 @app.route('/admin/process-refund', methods=['POST'])
+@app.route('/api/admin/process-refund', methods=['POST'])
 def process_refund():
     """
     Record a manual refund (cash / GCash send-money / etc.) and notify the customer.
@@ -2909,7 +2927,7 @@ def process_refund():
 # --- GPS TRACKING ROUTES ---
 
 @app.route('/vehicles/<int:vehicle_id>/location', methods=['POST'])
-
+@app.route('/api/vehicles/<int:vehicle_id>/location', methods=['POST'])
 def update_vehicle_location(vehicle_id):
 
     """Update GPS coordinates for a specific vehicle."""
@@ -2959,7 +2977,7 @@ def update_vehicle_location(vehicle_id):
 
 
 @app.route('/admin/gps-locations', methods=['GET'])
-
+@app.route('/api/admin/gps-locations', methods=['GET'])
 def get_all_gps_locations():
 
     """Fetch real-time location for all active vehicles."""
@@ -3027,7 +3045,7 @@ def get_all_gps_locations():
 
 
 @app.route('/vehicle/<int:vehicle_id>', methods=['GET'])
-
+@app.route('/api/vehicle/<int:vehicle_id>', methods=['GET'])
 def get_vehicle(vehicle_id):
 
     user_id = request.args.get('user_id')
@@ -3149,7 +3167,7 @@ def get_vehicle(vehicle_id):
 
 
 @app.route('/vehicles/images/<int:image_id>', methods=['DELETE'])
-
+@app.route('/api/vehicles/images/<int:image_id>', methods=['DELETE'])
 def delete_vehicle_image(image_id):
 
 
@@ -3252,7 +3270,7 @@ def delete_vehicle_image(image_id):
 
 
 @app.route('/vehicles/<int:vehicle_id>/images/order', methods=['PUT'])
-
+@app.route('/api/vehicles/<int:vehicle_id>/images/order', methods=['PUT'])
 def update_image_order(vehicle_id):
 
     data = request.json
@@ -3312,7 +3330,7 @@ def update_image_order(vehicle_id):
 
 
 @app.route('/maintenance/migrate', methods=['GET'])
-
+@app.route('/api/maintenance/migrate', methods=['GET'])
 def run_migration():
 
     try:
@@ -3338,7 +3356,7 @@ def run_migration():
 
 
 @app.route('/book', methods=['POST'])
-
+@app.route('/api/book', methods=['POST'])
 def book():
 
     data = request.json
@@ -3578,7 +3596,7 @@ def book():
 
 
 @app.route('/legacy-payment', methods=['POST'])
-
+@app.route('/api/legacy-payment', methods=['POST'])
 def legacy_payment():
 
     try:
@@ -3798,7 +3816,7 @@ def legacy_payment():
 
 
 @app.route('/user-bookings', methods=['GET'])
-
+@app.route('/api/user-bookings', methods=['GET'])
 def user_bookings():
 
     user_id = request.args.get('user_id')
@@ -3873,7 +3891,7 @@ def user_bookings():
 
 
 @app.route('/profile', methods=['GET'])
-
+@app.route('/api/profile', methods=['GET'])
 def profile():
 
     user_id = request.args.get('user_id')
@@ -3915,6 +3933,7 @@ def profile():
 
 
 @app.route('/user/change-password', methods=['POST'])
+@app.route('/api/user/change-password', methods=['POST'])
 def user_change_password():
     try:
         data = request.get_json() or {}
@@ -3960,7 +3979,7 @@ def user_change_password():
         return jsonify({'error': 'Internal server error occurred.'}), 500
 
 @app.route('/update-profile', methods=['POST'])
-
+@app.route('/api/update-profile', methods=['POST'])
 def update_profile():
 
     try:
@@ -4070,7 +4089,7 @@ def update_profile():
 
 
 @app.route('/toggle-favorite', methods=['POST'])
-
+@app.route('/api/toggle-favorite', methods=['POST'])
 def toggle_favorite():
 
     data = request.json
@@ -4134,7 +4153,7 @@ def toggle_favorite():
 
 
 @app.route('/favorites', methods=['GET'])
-
+@app.route('/api/favorites', methods=['GET'])
 def get_favorites():
 
     user_id = request.args.get('user_id')
@@ -4180,7 +4199,7 @@ def get_favorites():
 
 
 @app.route('/review', methods=['POST'])
-
+@app.route('/api/review', methods=['POST'])
 def add_review():
 
     data = request.json
@@ -4232,7 +4251,7 @@ def add_review():
 
 
 @app.route('/reviews/<int:vehicle_id>', methods=['GET'])
-
+@app.route('/api/reviews/<int:vehicle_id>', methods=['GET'])
 def get_reviews(vehicle_id):
 
     try:
@@ -4274,7 +4293,7 @@ def get_reviews(vehicle_id):
 
 
 @app.route('/saved-payment', methods=['POST'])
-
+@app.route('/api/saved-payment', methods=['POST'])
 def save_payment():
 
     data = request.json
@@ -4324,7 +4343,7 @@ def save_payment():
 
 
 @app.route('/saved-payments', methods=['GET'])
-
+@app.route('/api/saved-payments', methods=['GET'])
 def get_saved_payments():
 
     user_id = request.args.get('user_id')
@@ -4362,7 +4381,7 @@ def get_saved_payments():
 
 
 @app.route('/modify-booking', methods=['POST'])
-
+@app.route('/api/modify-booking', methods=['POST'])
 def modify_booking():
 
     data = request.json
@@ -4552,7 +4571,7 @@ def modify_booking():
 
 
 @app.route('/split-bill/request', methods=['POST'])
-
+@app.route('/api/split-bill/request', methods=['POST'])
 def request_split_bill():
 
     data = request.json
@@ -4638,7 +4657,7 @@ def request_split_bill():
 
 
 @app.route('/split-bills', methods=['GET'])
-
+@app.route('/api/split-bills', methods=['GET'])
 def get_split_bills():
 
     user_email = request.args.get('email')
@@ -4696,7 +4715,7 @@ def get_split_bills():
 
 
 @app.route('/split-bill/pay', methods=['POST'])
-
+@app.route('/api/split-bill/pay', methods=['POST'])
 def pay_split_bill():
 
     data = request.json
@@ -4906,6 +4925,7 @@ def get_all_bookings():
 @app.route('/bookings/<int:booking_id>', methods=['GET'])
 @app.route('/api/bookings/<int:booking_id>', methods=['GET'])
 @app.route('/admin/bookings/<int:booking_id>', methods=['GET'])
+@app.route('/api/admin/bookings/<int:booking_id>', methods=['GET'])
 def get_single_booking(booking_id):
     """Get single booking details."""
     try:
@@ -4932,7 +4952,7 @@ def get_single_booking(booking_id):
 
 
 @app.route('/bookings/cancelled', methods=['GET'])
-
+@app.route('/api/bookings/cancelled', methods=['GET'])
 def get_cancelled_bookings():
     """Get all cancelled bookings with pagination and sorting for admin panel."""
     try:
@@ -5009,7 +5029,7 @@ def get_cancelled_bookings():
 
 
 @app.route('/admin/bookings/<int:booking_id>/assign_driver', methods=['PUT'])
-
+@app.route('/api/admin/bookings/<int:booking_id>/assign_driver', methods=['PUT'])
 def assign_booking_driver(booking_id):
 
     """Assign an approved driver to a confirmed/pending booking."""
@@ -5063,7 +5083,7 @@ def assign_booking_driver(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/approve', methods=['PUT'])
-
+@app.route('/api/bookings/<int:booking_id>/approve', methods=['PUT'])
 def approve_booking(booking_id):
 
     """Approve a pending booking."""
@@ -5173,6 +5193,8 @@ def approve_booking(booking_id):
 
 @app.route('/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
 @app.route('/admin/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
+@app.route('/api/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/mark-no-show', methods=['POST'])
 def mark_no_show(booking_id):
 
     """Mark a booking as No Show. Full forfeit if Paid; cancel if Unpaid."""
@@ -5263,6 +5285,7 @@ def mark_no_show(booking_id):
 
 
 @app.route('/inspections/submit', methods=['POST'])
+@app.route('/api/inspections/submit', methods=['POST'])
 def submit_inspection():
     """Submit a vehicle inspection (pickup or return)."""
     try:
@@ -5561,6 +5584,7 @@ def submit_inspection():
 @app.route('/inspections/<int:booking_id>', methods=['GET'])
 @app.route('/api/inspections/<int:booking_id>', methods=['GET'])
 @app.route('/admin/inspections/<int:booking_id>', methods=['GET'])
+@app.route('/api/admin/inspections/<int:booking_id>', methods=['GET'])
 def get_inspections(booking_id):
 
 
@@ -5587,7 +5611,7 @@ def get_inspections(booking_id):
 
 
 @app.route('/cancel-booking', methods=['POST'])
-
+@app.route('/api/cancel-booking', methods=['POST'])
 def user_cancel_booking():
 
     """Allow a user to cancel their own booking. Applies 20% non-refundable fee if < 48h before pickup."""
@@ -5749,7 +5773,7 @@ def user_cancel_booking():
 
 
 @app.route('/bookings/<int:booking_id>/reject', methods=['PUT'])
-
+@app.route('/api/bookings/<int:booking_id>/reject', methods=['PUT'])
 def reject_booking(booking_id):
 
     """Reject a pending booking."""
@@ -5801,6 +5825,7 @@ def reject_booking(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/trigger-refund', methods=['POST'])
+@app.route('/api/bookings/<int:booking_id>/trigger-refund', methods=['POST'])
 def trigger_refund(booking_id):
     """Admin triggers a refund for a cancelled booking that was paid.
     Uses cancelled_at (or updated_at fallback) vs start_date to apply the 48h policy accurately."""
@@ -5910,6 +5935,7 @@ def trigger_refund(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/refund-details', methods=['POST'])
+@app.route('/api/bookings/<int:booking_id>/refund-details', methods=['POST'])
 def submit_refund_details(booking_id):
     """Customer submits their preferred refund channel and account details."""
     try:
@@ -5986,7 +6012,7 @@ def submit_refund_details(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/cancel', methods=['PUT'])
-
+@app.route('/api/bookings/<int:booking_id>/cancel', methods=['PUT'])
 def admin_cancel_booking(booking_id):
 
     """Cancel an approved/confirmed booking and trigger refund if needed."""
@@ -6080,7 +6106,7 @@ def admin_cancel_booking(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/pickup', methods=['PUT'])
-
+@app.route('/api/bookings/<int:booking_id>/pickup', methods=['PUT'])
 def pickup_booking(booking_id):
 
     """Mark a booking as Picked Up."""
@@ -6151,7 +6177,7 @@ def pickup_booking(booking_id):
 
 
 @app.route('/bookings/<int:booking_id>/complete', methods=['PUT'])
-
+@app.route('/api/bookings/<int:booking_id>/complete', methods=['PUT'])
 def complete_booking(booking_id):
 
     """Mark a booking as Completed/Returned."""
@@ -6287,7 +6313,7 @@ def handle_driver_wage():
 
 
 @app.route('/drivers', methods=['GET'])
-
+@app.route('/api/drivers', methods=['GET'])
 def get_all_drivers():
 
     """Get all driver applications for admin panel."""
@@ -6325,7 +6351,7 @@ def get_all_drivers():
 
 
 @app.route('/drivers/<int:driver_id>/approve', methods=['PUT', 'POST'])
-
+@app.route('/api/drivers/<int:driver_id>/approve', methods=['PUT', 'POST'])
 def approve_driver(driver_id):
 
     """Approve a pending driver application."""
@@ -6398,7 +6424,7 @@ def approve_driver(driver_id):
 
 
 @app.route('/drivers/<int:driver_id>/reject', methods=['PUT', 'POST'])
-
+@app.route('/api/drivers/<int:driver_id>/reject', methods=['PUT', 'POST'])
 def reject_driver(driver_id):
 
     """Reject a pending driver application."""
@@ -6467,7 +6493,7 @@ def reject_driver(driver_id):
 
 
 @app.route('/driver/apply', methods=['POST'])
-
+@app.route('/api/driver/apply', methods=['POST'])
 def apply_driver():
 
     # Ensure license_document column exists (safe migration)
@@ -6569,7 +6595,7 @@ def apply_driver():
 
 
 @app.route('/driver/status', methods=['GET'])
-
+@app.route('/api/driver/status', methods=['GET'])
 def driver_status():
 
     user_id = request.args.get('user_id')
@@ -6607,7 +6633,7 @@ def driver_status():
 
 
 @app.route('/driver/bookings', methods=['GET'])
-
+@app.route('/api/driver/bookings', methods=['GET'])
 def get_driver_bookings():
 
     user_id = request.args.get('user_id')
@@ -6675,7 +6701,7 @@ def get_driver_bookings():
 
 
 @app.route('/driver/bookings/<int:booking_id>/status', methods=['PUT'])
-
+@app.route('/api/driver/bookings/<int:booking_id>/status', methods=['PUT'])
 def update_driver_booking_status(booking_id):
 
     data = request.json
@@ -6749,6 +6775,7 @@ def update_driver_booking_status(booking_id):
 
 
 @app.route('/admin/download-report', methods=['POST'])
+@app.route('/api/admin/download-report', methods=['POST'])
 def download_report():
     try:
         content = request.form.get('content', '')
@@ -6768,7 +6795,7 @@ def download_report():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/admin/detailed-stats', methods=['GET'])
-
+@app.route('/api/admin/detailed-stats', methods=['GET'])
 def get_detailed_stats():
     """Aggregated stats for the executive dashboard charts."""
     admin_id = request.args.get('admin_id')
@@ -6904,7 +6931,7 @@ def get_detailed_stats():
         if 'cur' in locals(): cur.close()
 
 @app.route('/bookings/<int:booking_id>/receipt', methods=['GET'])
-
+@app.route('/api/bookings/<int:booking_id>/receipt', methods=['GET'])
 def download_receipt(booking_id):
 
     """Generate and download a PDF receipt for a booking."""
@@ -6984,7 +7011,7 @@ def download_receipt(booking_id):
 
 
 @app.route('/reports/top-vehicles', methods=['GET'])
-
+@app.route('/api/reports/top-vehicles', methods=['GET'])
 def report_top_vehicles():
 
     """Top 5 most-rented vehicles with booking count and total revenue."""
@@ -7082,7 +7109,7 @@ def report_top_vehicles():
 
 
 @app.route('/support', methods=['POST'])
-
+@app.route('/api/support', methods=['POST'])
 def submit_support():
 
     data = request.json
@@ -7132,7 +7159,7 @@ def submit_support():
 
 
 @app.route('/admin/support', methods=['GET'])
-
+@app.route('/api/admin/support', methods=['GET'])
 def get_all_support_tickets():
 
     try:
@@ -7160,7 +7187,7 @@ def get_all_support_tickets():
 
 
 @app.route('/admin/support/<int:ticket_id>', methods=['PUT'])
-
+@app.route('/api/admin/support/<int:ticket_id>', methods=['PUT'])
 def resolve_support_ticket(ticket_id):
 
     data = request.json
@@ -7202,7 +7229,7 @@ def resolve_support_ticket(ticket_id):
 
 
 @app.route('/admin/instructions', methods=['GET', 'POST'])
-
+@app.route('/api/admin/instructions', methods=['GET', 'POST'])
 def manage_instructions():
 
     try:
@@ -7248,7 +7275,7 @@ def manage_instructions():
 
 
 @app.route('/newsletter', methods=['POST'])
-
+@app.route('/api/newsletter', methods=['POST'])
 def subscribe_newsletter():
 
     data = request.json
@@ -7292,7 +7319,7 @@ def subscribe_newsletter():
 
 
 @app.route('/admin/pending-verifications', methods=['GET'])
-
+@app.route('/api/admin/pending-verifications', methods=['GET'])
 def get_pending_verifications():
 
     try:
@@ -7340,7 +7367,7 @@ def get_pending_verifications():
 
 
 @app.route('/admin/verify-user', methods=['POST'])
-
+@app.route('/api/admin/verify-user', methods=['POST'])
 def verify_user():
 
     data = request.json or {}
@@ -7608,7 +7635,7 @@ def match_chatbot_intent(message):
 
 
 @app.route('/chat', methods=['POST'])
-
+@app.route('/api/chat', methods=['POST'])
 def chat_endpoint():
 
     """Smart FAQ chatbot endpoint"""
@@ -7674,7 +7701,7 @@ def chat_endpoint():
 
 
 @app.route('/admin/login', methods=['POST'], strict_slashes=False)
-
+@app.route('/api/admin/login', methods=['POST'])
 def admin_login():
     data = request.get_json(force=True, silent=True)
 
@@ -7760,7 +7787,7 @@ def admin_login():
 
 
 @app.route('/admin/list', methods=['GET'])
-
+@app.route('/api/admin/list', methods=['GET'])
 def list_admins():
 
     requester_id = request.args.get('requester_id')
@@ -7796,7 +7823,7 @@ def list_admins():
 
 
 @app.route('/admin/update/<int:user_id>', methods=['PUT'])
-
+@app.route('/api/admin/update/<int:user_id>', methods=['PUT'])
 def update_admin(user_id):
 
     data = request.json
@@ -7888,7 +7915,7 @@ def update_admin(user_id):
 
 
 @app.route('/admin/delete/<int:user_id>', methods=['DELETE'])
-
+@app.route('/api/admin/delete/<int:user_id>', methods=['DELETE'])
 def delete_admin(user_id):
 
     requester_id = request.args.get('requester_id')
@@ -7953,7 +7980,7 @@ def delete_admin(user_id):
 
 
 @app.route('/admin/status/<int:user_id>', methods=['PUT'])
-
+@app.route('/api/admin/status/<int:user_id>', methods=['PUT'])
 def toggle_admin_status(user_id):
 
     data = request.json
@@ -8022,7 +8049,7 @@ def toggle_admin_status(user_id):
 
 
 @app.route('/admin/create', methods=['POST'])
-
+@app.route('/api/admin/create', methods=['POST'])
 def create_admin():
 
     data = request.json
@@ -8115,7 +8142,7 @@ def create_admin():
 
 
 @app.route('/vehicles', methods=['GET'], strict_slashes=False)
-
+@app.route('/api/vehicles', methods=['GET'])
 def get_vehicles():
 
     try:
@@ -8161,6 +8188,7 @@ def get_vehicles():
 
 
 @app.route('/vehicles', methods=['POST'])
+@app.route('/api/vehicles', methods=['POST'])
 def add_vehicle():
     # Support both JSON and FormData
     if request.is_json:
@@ -8231,6 +8259,7 @@ def add_vehicle():
 
 
 @app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
+@app.route('/api/vehicles/<int:vehicle_id>', methods=['PUT'])
 def update_vehicle(vehicle_id):
     # Support both JSON and FormData
     if request.is_json:
@@ -8295,6 +8324,7 @@ def update_vehicle(vehicle_id):
 
 
 @app.route('/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT'])
+@app.route('/api/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT'])
 def update_vehicle_status(vehicle_id):
     data = request.json or request.form
     new_status = data.get('status')
@@ -8351,6 +8381,7 @@ def delete_vehicle(vehicle_id):
 
 
 @app.route('/vehicles/check-availability', methods=['POST'])
+@app.route('/api/vehicles/check-availability', methods=['POST'])
 def check_vehicle_availability():
     """
     Check if a vehicle has any conflicting bookings for the requested dates.
@@ -8465,8 +8496,7 @@ def check_vehicle_availability():
 
 
 @app.route('/vehicles/categories', methods=['GET'], strict_slashes=False)
-
-
+@app.route('/api/vehicles/categories', methods=['GET'])
 def get_vehicle_categories():
 
     try:
@@ -8677,7 +8707,7 @@ def get_vehicle_details_v2(vehicle_id):
 
 
 @app.route('/admin/stats', methods=['GET'], strict_slashes=False)
-
+@app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats_v2():
 
     admin_id = request.args.get('admin_id')
@@ -8845,7 +8875,7 @@ def get_admin_stats_v2():
 
 
 @app.route('/admin/dashboard-stats', methods=['GET'])
-
+@app.route('/api/admin/dashboard-stats', methods=['GET'])
 def get_admin_detailed_stats():
 
     admin_id = request.args.get('admin_id')
@@ -8945,7 +8975,7 @@ def get_admin_detailed_stats():
 
 
 @app.route('/admin/change-password', methods=['POST'])
-
+@app.route('/api/admin/change-password', methods=['POST'])
 def change_admin_password():
 
     data = request.json
@@ -8988,7 +9018,7 @@ def change_admin_password():
         
 
 @app.route('/admin/settings', methods=['GET', 'POST'])
-
+@app.route('/api/admin/settings', methods=['GET', 'POST'])
 def handle_admin_settings():
 
     """Unified endpoint for viewing and updating system settings."""
@@ -9085,6 +9115,8 @@ def handle_admin_settings():
 
 @app.route('/locations', methods=['GET'])
 @app.route('/public/locations', methods=['GET'])
+@app.route('/api/locations', methods=['GET'])
+@app.route('/api/public/locations', methods=['GET'])
 def get_locations():
     try:
         cur = get_cursor()
@@ -9098,6 +9130,7 @@ def get_locations():
 
 
 @app.route('/admin/locations', methods=['POST'])
+@app.route('/api/admin/locations', methods=['POST'])
 def add_location():
     try:
         data = request.json or {}
@@ -9139,6 +9172,7 @@ def add_location():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/locations/<int:loc_id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/api/admin/locations/<int:loc_id>', methods=['GET', 'PUT', 'DELETE'])
 def handle_location_detail(loc_id):
     try:
         cur = get_cursor()
@@ -9213,6 +9247,7 @@ def handle_location_detail(loc_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/activity-logs', methods=['GET'])
+@app.route('/api/admin/activity-logs', methods=['GET'])
 def get_activity_logs():
     try:
         cur = get_cursor()
@@ -9251,7 +9286,7 @@ def get_activity_logs():
 
 
 @app.route('/public/settings', methods=['GET'])
-
+@app.route('/api/public/settings', methods=['GET'])
 def get_public_settings():
 
     """Returns non-sensitive system settings for the customer app."""
@@ -9300,7 +9335,7 @@ def get_public_settings():
 
 
 @app.route('/vehicles/<int:vehicle_id>/location', methods=['GET'])
-
+@app.route('/api/vehicles/<int:vehicle_id>/location', methods=['GET'])
 def get_vehicle_location_for_customer(vehicle_id):
 
     """
@@ -9415,6 +9450,7 @@ if __name__ == '__main__':
 # ==================== COLOR SELECTION AND VEHICLE UNITS ====================
 
 @app.route('/vehicles/colors', methods=['GET'])
+@app.route('/api/vehicles/colors', methods=['GET'])
 def get_vehicle_colors():
     """Get available colors for a brand+model."""
     brand = request.args.get('brand', '')
@@ -9440,6 +9476,7 @@ def get_vehicle_colors():
 
 
 @app.route('/vehicles/units', methods=['GET'])
+@app.route('/api/vehicles/units', methods=['GET'])
 def get_vehicle_units():
     """Get all individual units for a brand+model, optionally filtered by color. Only shows available units."""
     brand = request.args.get('brand', '')
@@ -9494,6 +9531,7 @@ def get_vehicle_units():
 
 
 @app.route('/user/profile-full', methods=['GET'])
+@app.route('/api/user/profile-full', methods=['GET'])
 def get_full_profile():
     """Get complete user profile including phone, email, license image and license details."""
     user_id = request.args.get('user_id')
@@ -9531,6 +9569,7 @@ def get_full_profile():
 
 
 @app.route('/users/<int:user_id>', methods=['GET'])
+@app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
     """Get user profile by ID for admin customer profile preview."""
     try:
@@ -9562,6 +9601,7 @@ def get_user_by_id(user_id):
 
 
 @app.route('/user/update-license-info', methods=['POST'])
+@app.route('/api/user/update-license-info', methods=['POST'])
 def update_license_info():
     """Update license details (number, expiry, type) and optionally upload a new license image."""
     user_id = request.form.get('user_id')
@@ -9608,6 +9648,7 @@ def update_license_info():
 
 
 @app.route('/admin/bookings/<int:booking_id>/license-details', methods=['GET'])
+@app.route('/api/admin/bookings/<int:booking_id>/license-details', methods=['GET'])
 def get_booking_license_details(booking_id):
     try:
         cur = get_cursor()
@@ -9653,6 +9694,7 @@ def get_booking_license_details(booking_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/admin/bookings/<int:booking_id>/payment-proof', methods=['GET'])
+@app.route('/api/admin/bookings/<int:booking_id>/payment-proof', methods=['GET'])
 def get_booking_payment_proof(booking_id):
     """Return all payment records (with proof images) for a booking."""
     try:
@@ -9678,6 +9720,7 @@ def get_booking_payment_proof(booking_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/users/<int:user_id>/license-details', methods=['GET'])
+@app.route('/api/admin/users/<int:user_id>/license-details', methods=['GET'])
 def get_user_license_details(user_id):
     try:
         cur = get_cursor()
@@ -9697,6 +9740,7 @@ def get_user_license_details(user_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/user/license-details-test', methods=['GET'])
+@app.route('/api/user/license-details-test', methods=['GET'])
 def test_license_details():
     """Test endpoint to verify the deployment is working."""
     return jsonify({
@@ -9707,6 +9751,7 @@ def test_license_details():
     }), 200
 
 @app.route('/user/license-details', methods=['GET'])
+@app.route('/api/user/license-details', methods=['GET'])
 def get_license_details():
     """Get the full driver's license details for a user."""
     try:
@@ -9883,6 +9928,7 @@ def get_license_details():
         }), 500
 
 @app.route('/user/license-details', methods=['POST'])
+@app.route('/api/user/license-details', methods=['POST'])
 def save_license_details():
     """Save or update full driver's license details."""
     user_id = request.form.get('user_id')
@@ -10115,6 +10161,7 @@ def save_license_details():
 
 # Restore admin FCM token function with unique function name to prevent Flask conflicts
 @app.route('/admin/fcm-token', methods=['POST'])
+@app.route('/api/admin/fcm-token', methods=['POST'])
 def register_admin_device_fcm_token():
     """Register or update an admin's FCM device token for push notifications.
     Admin accounts are in the users table (role=admin/super_admin).
@@ -10160,6 +10207,7 @@ def register_admin_device_fcm_token():
 
 
 @app.route('/user/fcm-token', methods=['POST'])
+@app.route('/api/user/fcm-token', methods=['POST'])
 def register_user_fcm_token():
     """Register or update a user's FCM device token for push notifications.
     Request body: { "user_id": int, "fcm_token": str }
@@ -10196,6 +10244,7 @@ def register_user_fcm_token():
 # ---------------------------------------------------------------------------
 
 @app.route('/debug/admin-fcm-check', methods=['GET'])
+@app.route('/api/debug/admin-fcm-check', methods=['GET'])
 def debug_admin_fcm_check():
     """Debug: check admin FCM tokens and test push."""
     try:
@@ -10215,6 +10264,7 @@ def debug_admin_fcm_check():
 
 
 @app.route('/debug/test-push', methods=['POST'])
+@app.route('/api/debug/test-push', methods=['POST'])
 def debug_test_push():
     """Debug: send a test push notification to an admin by admin_id (users.id)."""
     data = request.get_json(silent=True) or {}
@@ -10242,6 +10292,7 @@ def debug_test_push():
 
 
 @app.route('/debug/test-user-push', methods=['POST'])
+@app.route('/api/debug/test-user-push', methods=['POST'])
 def debug_test_user_push():
     """
     Debug: send a test push notification to a customer by user_id.
@@ -10290,6 +10341,7 @@ def debug_test_user_push():
 
 
 @app.route('/debug/fcm-config', methods=['GET'])
+@app.route('/api/debug/fcm-config', methods=['GET'])
 def debug_fcm_config():
     """
     Check FCM configuration on the server without sending anything.
@@ -10337,6 +10389,7 @@ def debug_fcm_config():
 
 
 @app.route('/debug/admins-schema-check', methods=['GET'])
+@app.route('/api/debug/admins-schema-check', methods=['GET'])
 def debug_admins_schema_check():
     """
     Diagnose why admins table appears empty.
@@ -10400,6 +10453,7 @@ def debug_admins_schema_check():
 
 
 @app.route('/debug/fix-admin-fcm', methods=['POST'])
+@app.route('/api/debug/fix-admin-fcm', methods=['POST'])
 def debug_fix_admin_fcm():
     """
     Directly write an FCM token to the admins table in public schema.
@@ -10474,6 +10528,7 @@ def debug_fix_admin_fcm():
 
 
 @app.route('/debug/booking-info/<int:booking_id>', methods=['GET'])
+@app.route('/api/debug/booking-info/<int:booking_id>', methods=['GET'])
 def debug_booking_info(booking_id):
     """Debug: show booking user_id and whether that user exists."""
     try:
@@ -10498,6 +10553,7 @@ def debug_booking_info(booking_id):
 
 
 @app.route('/debug/fix-old-admin-notifications', methods=['POST'])
+@app.route('/api/debug/fix-old-admin-notifications', methods=['POST'])
 def fix_old_admin_notifications():
     """One-time fix: assign old notifications (admin_id=null, user_id=null) to all admin users."""
     try:
@@ -10540,6 +10596,7 @@ def fix_old_admin_notifications():
 
 
 @app.route('/debug/admin-users-check', methods=['GET'])
+@app.route('/api/debug/admin-users-check', methods=['GET'])
 def debug_admin_users_check():
     """Debug: check which users have admin/super_admin role."""
     try:
@@ -10563,6 +10620,7 @@ def debug_admin_users_check():
 
 
 @app.route('/debug/notifications-check', methods=['GET'])
+@app.route('/api/debug/notifications-check', methods=['GET'])
 def debug_notifications_check():
     """Debug endpoint to check if notifications table exists and has rows."""
     try:
@@ -10591,6 +10649,7 @@ def debug_notifications_check():
 
 
 @app.route('/debug/test-notification', methods=['GET', 'POST'])
+@app.route('/api/debug/test-notification', methods=['GET', 'POST'])
 def debug_test_notification():
     """Debug endpoint to directly test inserting a notification row."""
     try:
@@ -10625,6 +10684,8 @@ def debug_test_notification():
 
 @app.route('/notifications', methods=['GET'])
 @app.route('/notifications/<int:user_id>', methods=['GET'])
+@app.route('/api/notifications', methods=['GET'])
+@app.route('/api/notifications/<int:user_id>', methods=['GET'])
 def get_user_notifications_all(user_id=None):
     """Return all notifications for a customer ordered by created_at DESC."""
     target_id = user_id or request.args.get('user_id')
@@ -10661,6 +10722,7 @@ def get_user_notifications_all(user_id=None):
 
 
 @app.route('/notifications/read-all', methods=['POST'])
+@app.route('/api/notifications/read-all', methods=['POST'])
 def mark_all_notifications_read():
     """Mark all notifications as read for a customer.
     Request body: { "user_id": int }
@@ -10689,6 +10751,7 @@ def mark_all_notifications_read():
 
 
 @app.route('/notifications/<int:notif_id>/read', methods=['POST'])
+@app.route('/api/notifications/<int:notif_id>/read', methods=['POST'])
 def mark_notification_read(notif_id):
     """Mark a single notification as read.
     Request body: { "user_id": int }
@@ -10729,6 +10792,7 @@ def mark_notification_read(notif_id):
 
 
 @app.route('/admin/notifications', methods=['GET'])
+@app.route('/api/admin/notifications', methods=['GET'])
 def get_admin_notifications():
     """Return all notifications for an admin ordered by created_at DESC.
     Admin accounts are stored in the users table (role=admin/super_admin),
@@ -10776,6 +10840,7 @@ def get_admin_notifications():
 
 
 @app.route('/admin/notifications/read-all', methods=['POST'])
+@app.route('/api/admin/notifications/read-all', methods=['POST'])
 def mark_all_admin_notifications_read():
     """Mark all notifications as read for an admin.
     Request body: { "admin_id": int }
@@ -10810,6 +10875,7 @@ def mark_all_admin_notifications_read():
 
 
 @app.route('/admin/notifications/<int:notif_id>/read', methods=['POST'])
+@app.route('/api/admin/notifications/<int:notif_id>/read', methods=['POST'])
 def mark_admin_notification_read(notif_id):
     """Mark a single admin notification as read.
     Request body: { "admin_id": int }
@@ -10861,6 +10927,7 @@ def mark_admin_notification_read(notif_id):
 # ?????????????????????????????????????????????
 
 @app.route('/users/search', methods=['GET'])
+@app.route('/api/users/search', methods=['GET'])
 def users_search():
     """Search users by name or email. Used by admin chat to start new conversations."""
     q = (request.args.get('q') or '').strip()
@@ -10884,6 +10951,7 @@ def users_search():
 
 
 @app.route('/chat/send', methods=['POST'])
+@app.route('/api/chat/send', methods=['POST'])
 def chat_send():
     """Send a chat message. Works for both user?admin and admin?user."""
     import psycopg as _psycopg
@@ -10961,6 +11029,7 @@ def chat_send():
 
 
 @app.route('/chat/messages', methods=['GET'])
+@app.route('/api/chat/messages', methods=['GET'])
 def chat_messages():
     """Get conversation between a user and an admin (paginated, newest last)."""
     user_id  = request.args.get('user_id')
@@ -11006,6 +11075,7 @@ def chat_messages():
 
 
 @app.route('/debug/chat-messages-raw', methods=['GET'])
+@app.route('/api/debug/chat-messages-raw', methods=['GET'])
 def debug_chat_messages_raw():
     """Debug: Show all chat messages in the database with full details."""
     try:
@@ -11041,6 +11111,7 @@ def debug_chat_messages_raw():
 
 
 @app.route('/debug/chat-query-test', methods=['GET'])
+@app.route('/api/debug/chat-query-test', methods=['GET'])
 def debug_chat_query_test():
     """Debug: Test the exact query used by /chat/messages endpoint."""
     user_id = request.args.get('user_id', '33')  # Default to user 33 from screenshot
@@ -11082,6 +11153,7 @@ def debug_chat_query_test():
 
 
 @app.route('/chat/inbox', methods=['GET'])
+@app.route('/api/chat/inbox', methods=['GET'])
 def chat_inbox():
     """
     Get inbox for an admin: list of users who have chatted, with last message and unread count.
@@ -11182,6 +11254,7 @@ def chat_inbox():
 
 
 @app.route('/chat/mark-read', methods=['POST'])
+@app.route('/api/chat/mark-read', methods=['POST'])
 def chat_mark_read():
     """Mark all messages in a conversation as read for the receiver."""
     data          = request.get_json(silent=True) or {}
@@ -11208,6 +11281,7 @@ def chat_mark_read():
 
 
 @app.route('/chat/admins', methods=['GET'])
+@app.route('/api/chat/admins', methods=['GET'])
 def chat_list_admins():
     """Return list of active admins a customer can chat with.
     Falls back to all admins if is_active column doesn't exist yet.
@@ -11266,6 +11340,7 @@ def chat_list_admins():
 
 # ── ADD-ONS CRUD ENDPOINTS ──
 @app.route('/addons', methods=['GET'])
+@app.route('/api/addons', methods=['GET'])
 def get_addons():
     """Fetch all available rental addons from database."""
     try:
@@ -11284,6 +11359,7 @@ def get_addons():
         if 'cur' in locals(): cur.close()
 
 @app.route('/addons', methods=['POST'])
+@app.route('/api/addons', methods=['POST'])
 def create_addon():
     """Create a new rental addon. Admin only validation."""
     data = request.get_json(silent=True) or {}
@@ -11314,6 +11390,7 @@ def create_addon():
         if 'cur' in locals(): cur.close()
 
 @app.route('/addons/<int:addon_id>', methods=['GET'])
+@app.route('/api/addons/<int:addon_id>', methods=['GET'])
 def get_single_addon(addon_id):
     """Fetch single addon details."""
     try:
@@ -11329,6 +11406,7 @@ def get_single_addon(addon_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/addons/<int:addon_id>', methods=['PUT'])
+@app.route('/api/addons/<int:addon_id>', methods=['PUT'])
 def update_addon(addon_id):
     """Update an existing addon. Admin only validation."""
     data = request.get_json(silent=True) or {}
@@ -11372,6 +11450,7 @@ def update_addon(addon_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/addons/<int:addon_id>', methods=['DELETE'])
+@app.route('/api/addons/<int:addon_id>', methods=['DELETE'])
 def delete_addon(addon_id):
     """Delete an addon. Admin only validation."""
     # Handle optional JSON or Query string arguments
@@ -11396,6 +11475,7 @@ def delete_addon(addon_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/expenses', methods=['POST'])
+@app.route('/api/admin/expenses', methods=['POST'])
 def record_expense():
     """Record a new vehicle expense. Accessible by admins and staff."""
     vehicle_id = request.form.get('vehicle_id')
@@ -11450,6 +11530,7 @@ def record_expense():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/expenses', methods=['GET'])
+@app.route('/api/admin/expenses', methods=['GET'])
 def get_expenses():
     """Retrieve filtered list of expenses."""
     admin_id = request.args.get('admin_id')
@@ -11517,6 +11598,7 @@ def get_expenses():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/expenses/<int:expense_id>', methods=['DELETE'])
+@app.route('/api/admin/expenses/<int:expense_id>', methods=['DELETE'])
 def delete_expense(expense_id):
     """Delete an expense record. Super Admin only validation."""
     admin_id = request.args.get('admin_id')
@@ -11540,6 +11622,7 @@ def delete_expense(expense_id):
 
 # ==================== BLACKOUT DATES ====================
 @app.route('/public/blackout-dates', methods=['GET'])
+@app.route('/api/public/blackout-dates', methods=['GET'])
 def get_public_blackout_dates():
     start_date = request.args.get('start')
     end_date = request.args.get('end')
@@ -11565,6 +11648,7 @@ def get_public_blackout_dates():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/blackout-dates', methods=['GET'])
+@app.route('/api/admin/blackout-dates', methods=['GET'])
 def get_admin_blackout_dates():
     try:
         cur = get_cursor()
@@ -11612,6 +11696,7 @@ def add_admin_blackout_date():
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/blackout-dates/<int:b_id>', methods=['DELETE'])
+@app.route('/api/admin/blackout-dates/<int:b_id>', methods=['DELETE'])
 def delete_admin_blackout_date(b_id):
     try:
         cur = get_cursor()
@@ -11625,6 +11710,7 @@ def delete_admin_blackout_date(b_id):
 
 # ==================== BLOCKED DATES HELPER ====================
 @app.route('/vehicles/<int:vehicle_id>/blocked-dates', methods=['GET'])
+@app.route('/api/vehicles/<int:vehicle_id>/blocked-dates', methods=['GET'])
 def get_blocked_dates(vehicle_id):
     try:
         cur = get_cursor()
@@ -11666,6 +11752,7 @@ def get_blocked_dates(vehicle_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/fleet-bookings', methods=['GET'])
+@app.route('/api/admin/fleet-bookings', methods=['GET'])
 def get_fleet_bookings():
     start = request.args.get('start')
     end = request.args.get('end')
@@ -11778,6 +11865,7 @@ def add_booking_penalty(booking_id):
         if 'cur' in locals(): cur.close()
 
 @app.route('/admin/penalties/<int:p_id>', methods=['DELETE'])
+@app.route('/api/admin/penalties/<int:p_id>', methods=['DELETE'])
 def delete_penalty(p_id):
     try:
         cur = get_cursor()
@@ -11842,6 +11930,7 @@ def get_blackout_conflicts(start_date, end_date, vehicle_id=None):
 # ── GOOGLE OAUTH SMTP ROUTER FOR SYSTEM NOTIFICATIONS ──
 
 @app.route('/admin/smtp/auth-url', methods=['GET'])
+@app.route('/api/admin/smtp/auth-url', methods=['GET'])
 def get_smtp_auth_url():
     """Generates the Google OAuth authorization URL to link the system email."""
     import urllib.parse
@@ -11862,6 +11951,7 @@ def get_smtp_auth_url():
 
 
 @app.route('/admin/smtp/callback', methods=['GET'])
+@app.route('/api/admin/smtp/callback', methods=['GET'])
 def smtp_oauth_callback():
     """Handles the OAuth callback from Google, exchanges the code for tokens, and saves them."""
     code = request.args.get('code')
@@ -11948,6 +12038,7 @@ def smtp_oauth_callback():
 
 
 @app.route('/admin/smtp/status', methods=['GET'])
+@app.route('/api/admin/smtp/status', methods=['GET'])
 def get_smtp_oauth_status():
     """Returns the email address of the currently linked Gmail account, if any."""
     try:
@@ -11975,6 +12066,7 @@ def get_smtp_oauth_status():
 
 
 @app.route('/admin/smtp/disconnect', methods=['POST'])
+@app.route('/api/admin/smtp/disconnect', methods=['POST'])
 def disconnect_smtp_oauth():
     """Clears SMTP OAuth tokens and email from settings."""
     try:
