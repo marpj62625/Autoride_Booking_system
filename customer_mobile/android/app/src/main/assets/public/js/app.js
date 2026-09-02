@@ -3713,6 +3713,19 @@ function confirmAndBook() {
     showToast('Please read and agree to the rental terms first.', 'error');
     return;
   }
+
+  // Mandatory Profile Selfie & License completeness check
+  var hasProfilePic = currentUser && currentUser.profile_picture;
+  var licDetails = (currentUser && currentUser._licenseDetails) || window._userLicenseData || {};
+  var hasLicenseFront = (currentUser && (currentUser.license_front_url || currentUser.license_image_url)) || licDetails.license_front_url || licDetails.license_image_url;
+
+  if (!hasProfilePic || !hasLicenseFront) {
+    var modalEl = document.getElementById('rentalAgreementModal');
+    if (modalEl) modalEl.remove();
+    showRequirementGuardModal();
+    return;
+  }
+
   var modal = document.getElementById('rentalAgreementModal');
   if (modal) modal.remove();
   var confirmBtn = document.getElementById('confirmPayBtn');
@@ -3808,29 +3821,27 @@ function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
     '<i class="fas fa-arrow-right" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
-    // Cash - manual flow, shows fields below
+    // Cash Over the Counter - Pay remaining balance at office, 20% deposit online via PayMongo
     '<div class="option-card" id="pmCash" onclick="selectPayMethod(\'cash\',this)">' +
     '<div style="width:40px;height:40px;background:#2dc653;border-radius:8px;display:flex;align-items:center;justify-content:center;">' +
-    '<i class="fas fa-money-bill-wave" style="color:#fff;font-size:1rem;"></i></div>' +
-    '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay at our office upon pickup</small></div>' +
+    '<i class="fas fa-store" style="color:#fff;font-size:1rem;"></i></div>' +
+    '<div><strong>Cash Over the Counter</strong><br><small style="color:var(--text-secondary);">Pay remaining 80% balance at office</small></div>' +
     '<i class="fas fa-chevron-down" style="color:var(--text-secondary);margin-left:auto;"></i>' +
     '</div>' +
 
     '<input type="hidden" id="payMethod" value="">' +
     '</div>' +
 
-    // Cash reference fields (only shown when Cash is selected)
-    '<div class="card" id="cashPayFields" style="display:none;">' +
-    '<h4 style="font-weight:700;margin-bottom:12px;"><i class="fas fa-money-bill" style="color:#2dc653;margin-right:8px;"></i>Cash Payment Details</h4>' +
-    '<div class="form-group"><label>Reference / Transaction Number (optional)</label>' +
-    '<input type="text" id="payRef" placeholder="e.g. 1234567890"></div>' +
-    '<div class="form-group"><label>Payment Screenshot / Proof (optional)</label>' +
-    '<button class="btn-secondary" onclick="pickPaymentProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>' +
-    '<img id="payProofPreview" style="width:100%;border-radius:var(--radius-sm);margin-top:8px;display:none;">' +
-    '</div>' +
-    '<span class="field-error" id="payErr" style="display:block;margin-bottom:12px;text-align:center;"></span>' +
-    '<button class="btn-primary" style="margin-bottom:8px;" onclick="submitPayment(' + bookingId + ',' + nowDue + ')">' +
-    '<i class="fas fa-check"></i> Confirm Cash Payment</button>' +
+    // Cash fields explanation: Pay 20% deposit via PayMongo to hold dates, pay rest at office
+    '<div class="card" id="cashPayFields" style="display:none;background:rgba(16,185,129,0.06);border:1.5px solid rgba(16,185,129,0.3);">' +
+    '<h4 style="font-weight:700;margin-bottom:8px;color:#059669;"><i class="fas fa-shield-alt" style="margin-right:8px;"></i>Secure Vehicle Reservation</h4>' +
+    '<p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.4;">' +
+    'To lock your vehicle dates, please pay the <strong>20% Reservation Deposit (' + formatPHP(nowDue) + ')</strong> online now via PayMongo. The remaining 80% balance will be paid in <strong>CASH at our office upon pickup</strong>.' +
+    '</p>' +
+    '<button class="btn-primary" style="margin-bottom:8px;background:#0070e0;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'gcash\',' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-mobile-alt"></i> Pay 20% Deposit via GCash (' + formatPHP(nowDue) + ')</button>' +
+    '<button class="btn-secondary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'maya\',' + bookingId + ',' + nowDue + ')">' +
+    '<i class="fas fa-credit-card"></i> Pay 20% Deposit via Maya / Card (' + formatPHP(nowDue) + ')</button>' +
     '</div>' +
 
     // Split payment (new bookings only)
@@ -6871,19 +6882,77 @@ function loadProfile() {
 }
 
 function pickProfilePicture() {
-  var input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/jpeg,image/png';
-  input.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var err = validateUploadFile(file);
-    if (err) { showToast(err, 'error'); return; }
-    profilePicBlob = file;
-    var preview = document.getElementById('profilePicPreview');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-  };
-  input.click();
+  var Camera = getCamera();
+  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    Camera.getPhoto({
+      quality: 90,
+      allowEditing: true,
+      resultType: 'uri',
+      source: 'CAMERA',
+      direction: 'FRONT'
+    }).then(function(image) {
+      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+        var file = new File([blob], 'selfie_avatar.jpg', { type: 'image/jpeg' });
+        profilePicBlob = file;
+        var preview = document.getElementById('profilePicPreview');
+        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+        showToast('Live selfie captured! Click Save to update profile.', 'success');
+      });
+    }).catch(function(err) {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.capture = 'user';
+      input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var errValidation = validateUploadFile(file);
+        if (errValidation) { showToast(errValidation, 'error'); return; }
+        profilePicBlob = file;
+        var preview = document.getElementById('profilePicPreview');
+        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+        showToast('Selfie selected! Click Save to update profile.', 'success');
+      };
+      input.click();
+    });
+  } else {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'user';
+    input.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var errValidation = validateUploadFile(file);
+      if (errValidation) { showToast(errValidation, 'error'); return; }
+      profilePicBlob = file;
+      var preview = document.getElementById('profilePicPreview');
+      if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+      showToast('Selfie selected! Click Save to update profile.', 'success');
+    };
+    input.click();
+  }
+}
+
+function showRequirementGuardModal() {
+  var existing = document.getElementById('requirementGuardModal');
+  if (existing) existing.remove();
+  var modal = document.createElement('div');
+  modal.id = 'requirementGuardModal';
+  modal.className = 'modal-backdrop active';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = 
+    '<div class="card" style="max-width:420px;width:100%;border-radius:16px;padding:24px;text-align:center;background:var(--bg-card,#fff);">' +
+    '<div style="width:60px;height:60px;background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem;"><i class="fas fa-id-card"></i></div>' +
+    '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;color:var(--text-main);">Verification Required</h3>' +
+    '<p style="font-size:0.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:20px;">' +
+    'To prevent fraudulent bookings, you must complete your <strong>Live Camera Selfie</strong>, <strong>Phone Number</strong>, and <strong>Driver\'s License</strong> before reserving a vehicle.' +
+    '</p>' +
+    '<button class="btn-primary" style="width:100%;padding:12px;font-weight:800;background:#00B14F;" onclick="document.getElementById(\'requirementGuardModal\').remove();closeOverlay(\'page-booking-form\');showOverlay(\'page-profile\');Profile.showTab(\'license\');">' +
+    '<i class="fas fa-camera" style="margin-right:6px;"></i> Complete Profile & Selfie Now</button>' +
+    '<button class="btn-secondary" style="width:100%;margin-top:8px;padding:10px;" onclick="document.getElementById(\'requirementGuardModal\').remove()">Cancel</button>' +
+    '</div>';
+  document.body.appendChild(modal);
 }
 
 function doUpdateProfile() {
