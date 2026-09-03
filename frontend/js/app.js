@@ -85,7 +85,8 @@ var appSettings = {
   rental_terms: '',
   loyalty_points_spend_ratio: '100',
   loyalty_points_value: '0.1',
-  loyalty_max_discount_percent: '50'
+  loyalty_max_discount_percent: '50',
+  max_booking_duration_days: '730'
 };
 var servicedLocations = [
   { id: 1, name: 'San Pablo City, Laguna', province: 'Laguna', municipality: 'San Pablo City', barangay: '', delivery_fee: 0 },
@@ -3152,6 +3153,11 @@ function openBookingForm(vehicleId) {
   selectedAddons = [];
   selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
   var today = new Date().toISOString().split('T')[0];
+  var maxBookingDays = parseInt(appSettings.max_booking_duration_days) || 730;
+  var maxBookingDateObj = new Date();
+  maxBookingDateObj.setDate(maxBookingDateObj.getDate() + maxBookingDays);
+  var maxBookingDateStr = maxBookingDateObj.toISOString().split('T')[0];
+
   var el = document.getElementById('bookingFormContent');
   if (!el) return;
 
@@ -3218,12 +3224,12 @@ function openBookingForm(vehicleId) {
 
     // Rental Period
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Period</h4>' +
-    '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
+    '<div class="form-group"><label>Start Date</label><input type="date" id="bfStartDate" min="' + today + '" max="' + maxBookingDateStr + '" onchange="updateBookingPrice();autoSetReturnTime()"><span class="field-error" id="bfStartErr"></span></div>' +
     '<div class="form-group"><label>Pickup Time</label>' +
     '<select id="bfPickupTime" onchange="autoSetReturnTime()" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     generateTimeOptions() +
     '</select></div>' +
-    '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" onchange="updateBookingPrice(); if(typeof _renderWebCal===\'function\')_renderWebCal();"><span class="field-error" id="bfEndErr"></span></div>' +
+    '<div class="form-group"><label>End Date</label><input type="date" id="bfEndDate" min="' + today + '" max="' + maxBookingDateStr + '" onchange="updateBookingPrice(); if(typeof _renderWebCal===\'function\')_renderWebCal();"><span class="field-error" id="bfEndErr"></span></div>' +
     '<div class="form-group"><label>Return Time</label>' +
     '<select id="bfReturnTime" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     generateTimeOptions() +
@@ -3490,6 +3496,14 @@ function updateBookingPrice() {
   var v = bookingFormVehicle;
   if (!v) return;
   var days = getBookingDays();
+  var maxBookingDays = parseInt(appSettings.max_booking_duration_days) || 730;
+  if (days > maxBookingDays) {
+    showToast('Booking duration cannot exceed ' + maxBookingDays + ' days (' + Math.round(maxBookingDays / 365) + ' years).', 'error');
+    endEl.value = '';
+    var priceBreakdownEl = document.getElementById('priceBreakdown');
+    if (priceBreakdownEl) priceBreakdownEl.innerHTML = '';
+    return;
+  }
 
   // Recalculate per-day prices
   var insPrice = (selectedInsurance.pricePerDay || 0) * days;
@@ -3592,6 +3606,14 @@ function submitBooking() {
     parseInt(appSettings.long_term_discount_percent) || 10,
     0, pts, delFee
   );
+
+  var maxBookingDays = parseInt(appSettings.max_booking_duration_days) || 730;
+  if (result.days > maxBookingDays) {
+    showToast('Booking duration cannot exceed ' + maxBookingDays + ' days (' + Math.round(maxBookingDays / 365) + ' years).', 'error');
+    showInlineError(endEl, 'Maximum allowed duration is ' + maxBookingDays + ' days.');
+    return;
+  }
+
   var payType = document.getElementById('bfPaymentType').value;
   var pickupLocation, pickupProvince, pickupMunicipality, pickupBarangay;
   var returnLocation, returnProvince, returnMunicipality, returnBarangay;

@@ -427,7 +427,8 @@ def migrate_settings_v2():
             VALUES 
                 ('cancellation_deadline_hours', '48', 'Hours before pickup required for full refund eligibility'),
                 ('cancellation_penalty_percent', '20', 'Non-refundable fee percentage if cancelled within deadline'),
-                ('low_fuel_alert_threshold', '1/4', 'Fuel level threshold that triggers low fuel warnings (Full, 3/4, 1/2, 1/4, Reserve, Off)')
+                ('low_fuel_alert_threshold', '1/4', 'Fuel level threshold that triggers low fuel warnings (Full, 3/4, 1/2, 1/4, Reserve, Off)'),
+                ('max_booking_duration_days', '730', 'Maximum rental duration in days. Bookings exceeding this limit will be rejected (default: 730 days = 2 years)')
             ON CONFLICT (key) DO NOTHING
         """)
 
@@ -3461,6 +3462,26 @@ def book():
                              status=o['status'], next=str(o['next_available']))
             }), 409
 
+        # ── Booking duration limit check ──
+        try:
+            from datetime import datetime as _dt
+            s_date = _dt.strptime(str(start_date)[:10], '%Y-%m-%d').date()
+            e_date = _dt.strptime(str(end_date)[:10], '%Y-%m-%d').date()
+            booking_days = (e_date - s_date).days
+            if booking_days < 1:
+                return jsonify({"error": "Return date must be after pickup date."}), 400
+
+            cur.execute("SELECT value FROM settings WHERE key = 'max_booking_duration_days'")
+            mb_row = cur.fetchone()
+            max_days = int(mb_row['value']) if mb_row and mb_row['value'] else 730
+
+            if booking_days > max_days:
+                return jsonify({
+                    "error": f"Booking duration ({booking_days} days) exceeds the maximum allowed limit of {max_days} days."
+                }), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid date format for start_date or end_date."}), 400
+
         # Category Auto-Assignment Logic
 
         # Get category info from the representative vehicle_id
@@ -4412,8 +4433,27 @@ def modify_booking():
         
 
     try:
-
         cur = get_cursor()
+
+        # ── Booking duration limit check ──
+        try:
+            from datetime import datetime as _dt
+            s_date = _dt.strptime(str(new_start)[:10], '%Y-%m-%d').date()
+            e_date = _dt.strptime(str(new_end)[:10], '%Y-%m-%d').date()
+            booking_days = (e_date - s_date).days
+            if booking_days < 1:
+                return jsonify({"error": "Return date must be after pickup date."}), 400
+
+            cur.execute("SELECT value FROM settings WHERE key = 'max_booking_duration_days'")
+            mb_row = cur.fetchone()
+            max_days = int(mb_row['value']) if mb_row and mb_row['value'] else 730
+
+            if booking_days > max_days:
+                return jsonify({
+                    "error": f"Booking duration ({booking_days} days) exceeds the maximum allowed limit of {max_days} days."
+                }), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid date format for start_date or end_date."}), 400
 
         # Fetch current daily rate to recalculate total
 
@@ -9319,6 +9359,7 @@ def get_public_settings():
             'require_license_verification',
             'require_emergency_contact',
             'extension_conflict_deadline_hours',
+            'max_booking_duration_days',
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))

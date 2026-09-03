@@ -227,6 +227,16 @@ function validateDateRange(startDate, endDate, pickupTime) {
   if (end <= start) {
     return { valid: false, error: 'End date must be after the start date.' };
   }
+
+  const maxBookingDays = (typeof appSettings !== 'undefined' && Number(appSettings.max_booking_duration_days)) || 730;
+  const bookingDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  if (bookingDays > maxBookingDays) {
+    return {
+      valid: false,
+      error: 'Booking duration exceeds the maximum limit of ' + maxBookingDays + ' days (' + Math.round(maxBookingDays / 365) + ' years).'
+    };
+  }
+
   return { valid: true };
 }
 
