@@ -27,7 +27,10 @@ var API_BASE = (function() {
   if (typeof window !== 'undefined' && window._API_BASE) return window._API_BASE;
   
   // Always use production URL on native Capacitor APK
-  if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNative) {
+  if (typeof window !== 'undefined' && window.Capacitor && (
+    (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+    window.Capacitor.isNative
+  )) {
     console.log('Using production API for Capacitor native app');
     return 'https://autoride-booking-system.vercel.app/api';
   }
@@ -716,9 +719,17 @@ function unsubscribeFromNotifications() {
 function apiCall(endpoint, options) {
   options = options || {};
   var url = API_BASE + endpoint;
+  var timeoutMs = options.timeout || 15000;
+  var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, timeoutMs) : null;
+
   var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
-  return fetch(url, Object.assign({}, options, { headers: headers }))
+  var fetchOpts = Object.assign({}, options, { headers: headers });
+  if (controller) fetchOpts.signal = controller.signal;
+
+  return fetch(url, fetchOpts)
     .then(function(res) {
+      if (timer) clearTimeout(timer);
       return res.json().then(function(data) {
         if (!res.ok) {
           if ((res.status === 401 || res.status === 403) && !data.verification_required && !data.reason) {
@@ -734,8 +745,10 @@ function apiCall(endpoint, options) {
       });
     })
     .catch(function(err) {
+      if (timer) clearTimeout(timer);
       if (err.status) throw err;
-      var netErr = new Error('Network error. Please check your connection.');
+      var msg = err.name === 'AbortError' ? 'Connection timed out. Please retry.' : 'Network error. Please check your connection.';
+      var netErr = new Error(msg);
       netErr.status = 0;
       throw netErr;
     });
@@ -830,6 +843,7 @@ function showLoading(show) {
 }
 
 function showToast(message, type) {
+  if (!message) return;
   type = type || 'info';
   var icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
   var container = document.getElementById('toast-container');
@@ -837,6 +851,13 @@ function showToast(message, type) {
     container = document.createElement('div');
     container.id = 'toast-container';
     document.body.appendChild(container);
+  }
+  // Deduplication: prevent stacking identical messages
+  var activeToasts = container.querySelectorAll('.toast');
+  for (var i = 0; i < activeToasts.length; i++) {
+    if (activeToasts[i].textContent && activeToasts[i].textContent.indexOf(message) !== -1) {
+      return;
+    }
   }
   var t = document.createElement('div');
   t.className = 'toast toast-' + type;
@@ -1594,7 +1615,11 @@ function doLogout() {
   showToast('Logged out successfully', 'success');
 }
 
+var _forceLogoutInProgress = false;
 function forceLogoutSilent(message) {
+  if (_forceLogoutInProgress) return;
+  _forceLogoutInProgress = true;
+  setTimeout(function() { _forceLogoutInProgress = false; }, 6000);
   window._googleLoginInProgress = false;
   unsubscribeFromNotifications();
   stopBgSessionPolling();
@@ -2312,9 +2337,14 @@ function loadVehicles() {
       }
     })
     .catch(function(err) {
+      console.error('Error loading vehicles:', err);
       // Only show error if nothing was cached
       if (!allVehicles.length && grid) {
-        grid.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>' + err.message + '</p></div>';
+        grid.innerHTML = '<div class="empty-state" style="padding:40px 20px;text-align:center;">' +
+          '<i class="fas fa-car-crash" style="font-size:2.2rem;color:var(--text-muted);margin-bottom:12px;opacity:0.6;"></i>' +
+          '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:14px;">' + (err.message || 'Unable to load vehicles.') + '</p>' +
+          '<button class="btn-primary" style="width:auto;padding:8px 22px;font-size:0.82rem;" onclick="loadVehicles()"><i class="fas fa-redo" style="margin-right:6px;"></i> Retry</button>' +
+          '</div>';
       }
       if (countEl && allVehicles.length) countEl.textContent = '';
     });
@@ -6881,56 +6911,55 @@ function loadProfile() {
     .finally(function() { showLoading(false); });
 }
 
+function handleProfilePicSelected(e) {
+  var file = e && e.target && e.target.files ? e.target.files[0] : null;
+  if (!file) return;
+  var errValidation = validateUploadFile(file);
+  if (errValidation) { showToast(errValidation, 'error'); return; }
+  profilePicBlob = file;
+  var preview = document.getElementById('profilePicPreview');
+  if (preview) {
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+  }
+  showToast('Profile photo selected! Click Save Changes to update.', 'success');
+}
+
 function pickProfilePicture() {
   var Camera = getCamera();
-  if (Camera && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+  if (Camera && window.Capacitor && (
+    (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+    window.Capacitor.isNative
+  )) {
     Camera.getPhoto({
-      quality: 90,
-      allowEditing: true,
+      quality: 85,
+      allowEditing: false,
       resultType: 'uri',
       source: 'CAMERA',
       direction: 'FRONT'
     }).then(function(image) {
-      fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
+      return fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
         var file = new File([blob], 'selfie_avatar.jpg', { type: 'image/jpeg' });
         profilePicBlob = file;
         var preview = document.getElementById('profilePicPreview');
-        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-        showToast('Live selfie captured! Click Save to update profile.', 'success');
+        if (preview) {
+          preview.src = URL.createObjectURL(file);
+          preview.style.display = 'block';
+        }
+        showToast('Live selfie captured! Click Save Changes to update.', 'success');
       });
     }).catch(function(err) {
-      var input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.capture = 'user';
-      input.onchange = function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        var errValidation = validateUploadFile(file);
-        if (errValidation) { showToast(errValidation, 'error'); return; }
-        profilePicBlob = file;
-        var preview = document.getElementById('profilePicPreview');
-        if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-        showToast('Selfie selected! Click Save to update profile.', 'success');
-      };
-      input.click();
+      console.log('Native camera error or dismissed:', err);
+      var fi = document.getElementById('profilePicFileInput');
+      if (fi) {
+        fi.click();
+      }
     });
   } else {
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'user';
-    input.onchange = function(e) {
-      var file = e.target.files[0];
-      if (!file) return;
-      var errValidation = validateUploadFile(file);
-      if (errValidation) { showToast(errValidation, 'error'); return; }
-      profilePicBlob = file;
-      var preview = document.getElementById('profilePicPreview');
-      if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
-      showToast('Selfie selected! Click Save to update profile.', 'success');
-    };
-    input.click();
+    var fi = document.getElementById('profilePicFileInput');
+    if (fi) {
+      fi.click();
+    }
   }
 }
 
