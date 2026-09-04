@@ -16,10 +16,79 @@ paymongo_bp = Blueprint('paymongo', __name__)
 
 PAYMONGO_API = 'https://api.paymongo.com/v1'
 
+def get_paymongo_config():
+    """
+    Fetch PayMongo configuration dynamically from the database `settings` table.
+    Falls back to config.py / environment variables if not set in DB.
+    """
+    mode = 'test'
+    test_sk = ''
+    test_pk = ''
+    live_sk = ''
+    live_pk = ''
+    wh_sec = ''
+
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT key, value FROM settings 
+            WHERE key IN (
+                'paymongo_mode', 
+                'paymongo_test_secret_key', 
+                'paymongo_test_public_key', 
+                'paymongo_live_secret_key', 
+                'paymongo_live_public_key', 
+                'paymongo_webhook_secret'
+            )
+        """)
+        rows = cur.fetchall() or []
+        for r in rows:
+            k = r.get('key')
+            v = (r.get('value') or '').strip()
+            if k == 'paymongo_mode':
+                mode = v.lower() if v.lower() in ('test', 'live') else 'test'
+            elif k == 'paymongo_test_secret_key':
+                test_sk = v
+            elif k == 'paymongo_test_public_key':
+                test_pk = v
+            elif k == 'paymongo_live_secret_key':
+                live_sk = v
+            elif k == 'paymongo_live_public_key':
+                live_pk = v
+            elif k == 'paymongo_webhook_secret':
+                wh_sec = v
+        cur.close()
+    except Exception as e:
+        print(f"[PayMongo Config] DB read error, using env fallback: {e}")
+
+    # Resolve active credentials based on selected mode
+    if mode == 'live':
+        active_sk = live_sk or PAYMONGO_SECRET_KEY
+        active_pk = live_pk or PAYMONGO_PUBLIC_KEY
+    else:
+        active_sk = test_sk or PAYMONGO_SECRET_KEY
+        active_pk = test_pk or PAYMONGO_PUBLIC_KEY
+
+    active_wh = wh_sec or PAYMONGO_WEBHOOK_SECRET
+
+    return {
+        'mode': mode,
+        'secret_key': active_sk,
+        'public_key': active_pk,
+        'webhook_secret': active_wh,
+        'test_secret_key': test_sk,
+        'test_public_key': test_pk,
+        'live_secret_key': live_sk,
+        'live_public_key': live_pk
+    }
+
 def get_auth_header():
-    """Base64 encode the secret key for PayMongo Basic Auth."""
-    encoded = base64.b64encode(f'{PAYMONGO_SECRET_KEY}:'.encode()).decode()
+    """Base64 encode the active secret key for PayMongo Basic Auth."""
+    cfg = get_paymongo_config()
+    secret_key = cfg.get('secret_key', '')
+    encoded = base64.b64encode(f'{secret_key}:'.encode()).decode()
     return {'Authorization': f'Basic {encoded}', 'Content-Type': 'application/json'}
+
 
 
 # ??? CREATE PAYMENT LINK ????????????????????????????????????????????????????
@@ -40,9 +109,10 @@ def create_payment():
     customer_email = data.get('customer_email', '')
     customer_phone = data.get('customer_phone', '')
     payment_type = data.get('payment_type', 'Full')
+    client = data.get('client', 'mobile')  # 'web' or 'mobile'
 
     # Log incoming request for debugging
-    print(f"[PayMongo] Create payment request: booking_id={booking_id}, amount={amount}, method={method}")
+    print(f"[PayMongo] Create payment request: booking_id={booking_id}, amount={amount}, method={method}, client={client}")
 
     if not all([booking_id, amount, method]):
         missing_fields = []
@@ -84,9 +154,13 @@ def create_payment():
         print(f"[PayMongo] Error: {error_msg}")
         return jsonify({'error': error_msg}), 400
 
-    # Build success/failure redirect URLs
-    success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
-    cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
+    # Build success/failure redirect URLs based on client platform
+    if client == 'web':
+        success_url = f'{APP_BASE_URL}/?payment=success&booking_id={booking_id}'
+        cancel_url = f'{APP_BASE_URL}/?payment=cancelled&booking_id={booking_id}'
+    else:
+        success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
+        cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
 
     # Create PayMongo Payment Link
     payload = {
@@ -101,7 +175,8 @@ def create_payment():
                 'metadata': {
                     'booking_id': str(booking_id),
                     'method': method,
-                    'payment_type': payment_type
+                    'payment_type': payment_type,
+                    'client': client
                 }
             }
         }
@@ -306,15 +381,18 @@ def paymongo_webhook():
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Paymongo-Signature', '')
 
-    # Verify webhook signature
-    if PAYMONGO_WEBHOOK_SECRET and sig_header:
+    # Verify webhook signature using active dynamic secret
+    cfg = get_paymongo_config()
+    wh_secret = cfg.get('webhook_secret') or PAYMONGO_WEBHOOK_SECRET
+
+    if wh_secret and sig_header:
         try:
             parts = dict(p.split('=', 1) for p in sig_header.split(','))
             timestamp = parts.get('t', '')
             test_sig = parts.get('te', parts.get('li', ''))
             signed_payload = f'{timestamp}.{payload}'
             expected = hmac.new(
-                PAYMONGO_WEBHOOK_SECRET.encode(),
+                wh_secret.encode(),
                 signed_payload.encode(),
                 hashlib.sha256
             ).hexdigest()
@@ -740,3 +818,53 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
 
     except Exception as e:
         print(f'_confirm_payment error: {e}')
+
+
+# ??? ADMIN PAYMONGO CREDENTIAL TEST ??????????????????????????????????????????
+
+@paymongo_bp.route('/api/admin/paymongo/test-connection', methods=['POST'])
+def test_paymongo_connection():
+    """
+    Super Admin endpoint to verify PayMongo credentials.
+    Can test with provided secret_key in body or with stored database credentials.
+    """
+    data = request.get_json(silent=True) or {}
+    mode = (data.get('mode') or '').lower()
+    secret_key = (data.get('secret_key') or '').strip()
+
+    # If secret_key not provided in body, load from active or mode-specific config
+    if not secret_key:
+        cfg = get_paymongo_config()
+        if mode == 'live':
+            secret_key = cfg.get('live_secret_key') or (cfg.get('secret_key') if cfg.get('mode') == 'live' else '')
+        elif mode == 'test':
+            secret_key = cfg.get('test_secret_key') or (cfg.get('secret_key') if cfg.get('mode') == 'test' else '')
+        else:
+            secret_key = cfg.get('secret_key')
+
+    if not secret_key:
+        return jsonify({'success': False, 'message': 'No Secret Key configured to test.'}), 400
+
+    encoded = base64.b64encode(f'{secret_key}:'.encode()).decode()
+    try:
+        res = requests.get(
+            f'{PAYMONGO_API}/payment_methods',
+            headers={'Authorization': f'Basic {encoded}', 'Content-Type': 'application/json'},
+            timeout=10
+        )
+        if res.status_code == 200:
+            key_type = 'Live' if secret_key.startswith('sk_live_') else 'Test'
+            return jsonify({
+                'success': True,
+                'message': f'Connection successful! Valid PayMongo {key_type} Secret Key.',
+                'key_type': key_type
+            }), 200
+        else:
+            err_data = res.json()
+            err_msg = err_data.get('errors', [{}])[0].get('detail', 'PayMongo authentication failed')
+            return jsonify({'success': False, 'message': f'PayMongo rejected key: {err_msg}'}), 400
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'message': 'PayMongo request timed out. Check network connection.'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Connection error: {str(e)}'}), 500
+

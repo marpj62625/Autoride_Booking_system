@@ -1265,6 +1265,28 @@ function initApp() {
       startBgChatPolling();
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
+
+      // Check query parameters for PayMongo return on Web
+      if (typeof window !== 'undefined' && window.location.search) {
+        var urlParams = new URLSearchParams(window.location.search);
+        var paymentStatus = urlParams.get('payment');
+        var bId = urlParams.get('booking_id');
+        if (paymentStatus === 'success' && bId) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          showToast('Payment successful! Your booking is confirmed.', 'success');
+          setTimeout(function() {
+            if (typeof showBookingDetail === 'function') {
+              showBookingDetail(parseInt(bId));
+            } else {
+              showPage('page-bookings');
+            }
+          }, 800);
+        } else if (paymentStatus === 'cancelled' && bId) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+          showToast('Payment was cancelled. You can retry anytime from your bookings.', 'info');
+        }
+      }
+
       // Determine start page based on URL hash
       var startPage = 'page-home';
       if (typeof window !== 'undefined' && window.location.hash) {
@@ -4024,6 +4046,16 @@ function submitPayment(bookingId, amount) {
     return;
   }
 
+  // Helper to open PayMongo checkout in the same tab on Web (no new tab)
+  window.openPaymongoCheckout = function(checkoutUrl, bookingId, amount, method) {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+      window.Capacitor.Plugins.Browser.open({ url: checkoutUrl, presentationStyle: 'popover' });
+    } else {
+      // Same-tab redirect on Web so no extra browser tab is opened!
+      window.location.href = checkoutUrl;
+    }
+  };
+
   // Online payment - redirect to PayMongo
   showLoading(true);
   var paymentTypeForPaymongo = _pendingPayType || 'Full';
@@ -4039,6 +4071,7 @@ function submitPayment(bookingId, amount) {
       amount: amount,
       method: method,
       payment_type: paymentTypeForPaymongo,
+      client: 'web',
       description: 'Autoride Booking #' + bookingId,
       customer_name: currentUser.fullName || '',
       customer_email: currentUser.email || ''
@@ -4047,12 +4080,7 @@ function submitPayment(bookingId, amount) {
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        // Open PayMongo checkout in browser
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
-        } else {
-          window.open(data.checkout_url, '_blank');
-        }
+        openPaymongoCheckout(data.checkout_url, bookingId, amount, method);
         // Show waiting screen and poll for payment confirmation
         showPaymentWaiting(bookingId, amount, method);
       } else {
@@ -4240,6 +4268,7 @@ function retryPayment(bookingId, amount, method) {
       amount: amount,
       method: method,
       payment_type: paymentTypeForPaymongo,
+      client: 'web',
       description: 'Autoride Booking #' + bookingId,
       customer_name: currentUser.fullName || currentUser.full_name || '',
       customer_email: currentUser.email || ''
@@ -4248,11 +4277,7 @@ function retryPayment(bookingId, amount, method) {
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
-        } else {
-          window.open(data.checkout_url, '_blank');
-        }
+        openPaymongoCheckout(data.checkout_url, bookingId, amount, method);
         showPaymentWaiting(bookingId, amount, method);
       } else {
         showPaymentFailed(bookingId, amount, method, data.error || 'Failed to create payment. Please try again.');
@@ -5301,6 +5326,7 @@ function submitExtension(bookingId) {
         booking_id: bookingId,
         amount: price,
         method: method,
+        client: 'web',
         description: 'Booking #' + bookingId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
         customer_name: currentUser.fullName || '',
         customer_email: currentUser.email || '',
@@ -5309,11 +5335,7 @@ function submitExtension(bookingId) {
     }).then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
-        } else {
-          window.open(data.checkout_url, '_blank');
-        }
+        openPaymongoCheckout(data.checkout_url, bookingId, price, method);
         _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days, data.link_id);
       } else {
         if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
@@ -5868,6 +5890,7 @@ function submitBalancePayment(method, bookingId, amount) {
       amount: amount,
       method: method,
       payment_type: 'Balance',
+      client: 'web',
       description: 'Autoride Booking #' + bookingId + ' Balance Payment',
       customer_name: currentUser ? (currentUser.fullName || '') : '',
       customer_email: currentUser ? (currentUser.email || '') : ''
@@ -5876,11 +5899,7 @@ function submitBalancePayment(method, bookingId, amount) {
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-          window.Capacitor.Plugins.Browser.open({ url: data.checkout_url });
-        } else {
-          window.open(data.checkout_url, '_blank');
-        }
+        openPaymongoCheckout(data.checkout_url, bookingId, amount, method);
         showPaymentWaiting(bookingId, amount, method);
       } else {
         if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';

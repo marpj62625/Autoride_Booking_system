@@ -23433,6 +23433,13 @@ async edit(id) { this.openModal(id); }
                         keys: ['loyalty_points_spend_ratio', 'loyalty_points_value', 'loyalty_max_discount_percent'],
                         settings: []
                     },
+                    payment: {
+                        title: 'PayMongo Payment Gateway',
+                        icon: 'fa-credit-card',
+                        color: '#00c389',
+                        keys: ['paymongo_mode', 'paymongo_test_secret_key', 'paymongo_test_public_key', 'paymongo_live_secret_key', 'paymongo_live_public_key', 'paymongo_webhook_secret'],
+                        settings: []
+                    },
                     general: {
                         title: 'General Configurations',
                         icon: 'fa-sliders-h',
@@ -23505,6 +23512,70 @@ async edit(id) { this.openModal(id); }
                             html += `
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        if (s.key === 'paymongo_mode') {
+                            const isLive = s.value === 'live';
+                            const badgeBg = isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+                            const badgeColor = isLive ? '#ef4444' : '#10b981';
+                            const badgeText = isLive ? '🔴 LIVE (Real Money / Production)' : '🧪 TEST (Sandbox / Safe Mode)';
+                            const inputField = `
+                                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                    <select data-key="${s.key}" onchange="updatePaymongoModeBadge(this)" style="flex: 1; min-width: 220px; padding: 12px 14px; background: var(--surface-solid); border: 2px solid ${isLive ? '#ef4444' : '#10b981'}; border-radius: 10px; color: var(--text-main); font-size: 0.95rem; font-weight: 700; outline: none; cursor: pointer;">
+                                        <option value="test" ${!isLive ? 'selected' : ''}>🧪 Test Mode (Sandbox)</option>
+                                        <option value="live" ${isLive ? 'selected' : ''}>🔴 Live Mode (Real Customer Payments)</option>
+                                    </select>
+                                    <span id="pmModeBadge" style="padding: 6px 14px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; border-radius: 20px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">
+                                        ${badgeText}
+                                    </span>
+                                    <button type="button" onclick="testPaymongoCredentials()" style="padding: 10px 16px; font-size: 0.82rem; font-weight: 700; border-radius: 10px; background: #00c389; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-plug"></i> Test Connection
+                                    </button>
+                                </div>
+                            `;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1; margin-bottom: 8px; background: rgba(0,195,137,0.05); padding: 14px; border-radius: 12px; border: 1px dashed rgba(0,195,137,0.3);">
+                                    <label style="font-size: 0.72rem; color: #00c389; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        if (s.key.includes('secret_key') || s.key === 'paymongo_webhook_secret') {
+                            const inputId = 'input_' + s.key;
+                            const isLiveKey = s.key.includes('live');
+                            const placeholder = s.key.includes('live') ? 'sk_live_...' : s.key.includes('webhook') ? 'whsec_...' : 'sk_test_...';
+                            const inputField = `
+                                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                                    <input type="password" id="${inputId}" data-key="${s.key}" value="${s.value || ''}" placeholder="${placeholder}" style="width: 100%; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-family: monospace; font-weight: 600; outline: none;">
+                                    <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            `;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.65rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        if (s.key.includes('public_key')) {
+                            const isLiveKey = s.key.includes('live');
+                            const placeholder = isLiveKey ? 'pk_live_...' : 'pk_test_...';
+                            const inputField = `
+                                <input type="text" data-key="${s.key}" value="${s.value || ''}" placeholder="${placeholder}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-family: monospace; font-weight: 600; outline: none;">
+                            `;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.65rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
                                     ${inputField}
                                 </div>
                             `;
@@ -23651,6 +23722,55 @@ async edit(id) { this.openModal(id); }
 
 
 
+    };
+
+    window.updatePaymongoModeBadge = function(selectEl) {
+        const badge = document.getElementById('pmModeBadge');
+        if (!badge) return;
+        const isLive = selectEl.value === 'live';
+        selectEl.style.borderColor = isLive ? '#ef4444' : '#10b981';
+        badge.style.background = isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = isLive ? '#ef4444' : '#10b981';
+        badge.style.borderColor = isLive ? '#ef4444' : '#10b981';
+        badge.textContent = isLive ? '🔴 LIVE (Real Money / Production)' : '🧪 TEST (Sandbox / Safe Mode)';
+    };
+
+    window.togglePasswordVisibility = function(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+        } else {
+            input.type = 'password';
+            if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+        }
+    };
+
+    window.testPaymongoCredentials = async function() {
+        const modeSelect = document.querySelector('select[data-key="paymongo_mode"]');
+        const mode = modeSelect ? modeSelect.value : 'test';
+        const keyName = mode === 'live' ? 'paymongo_live_secret_key' : 'paymongo_test_secret_key';
+        const secretKeyInput = document.querySelector(`input[data-key="${keyName}"]`);
+        const secretKey = secretKeyInput ? secretKeyInput.value.trim() : '';
+
+        showNotification('Testing PayMongo connection...', 'info');
+        try {
+            const res = await fetch(`${API_BASE}/admin/paymongo/test-connection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode, secret_key: secretKey })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showNotification('✅ ' + data.message, 'success');
+            } else {
+                showNotification('❌ ' + (data.message || 'Connection test failed'), 'error');
+            }
+        } catch (e) {
+            showNotification('❌ Connection error: ' + e.message, 'error');
+        }
     };
 
 

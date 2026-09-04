@@ -432,6 +432,20 @@ def migrate_settings_v2():
             ON CONFLICT (key) DO NOTHING
         """)
 
+        # 4b. Insert PayMongo gateway configuration settings
+        cur.execute("""
+            INSERT INTO settings (key, value, description)
+            VALUES 
+                ('paymongo_mode', 'test', 'PayMongo Environment Mode: test (Sandbox) or live (Production)'),
+                ('paymongo_test_secret_key', '', 'PayMongo Test Secret Key (sk_test_...)'),
+                ('paymongo_test_public_key', '', 'PayMongo Test Public Key (pk_test_...)'),
+                ('paymongo_live_secret_key', '', 'PayMongo Live Secret Key (sk_live_...)'),
+                ('paymongo_live_public_key', '', 'PayMongo Live Public Key (pk_live_...)'),
+                ('paymongo_webhook_secret', '', 'PayMongo Webhook Signing Secret (whsec_...)')
+            ON CONFLICT (key) DO NOTHING
+        """)
+
+
         # 5. Create vehicle_expenses table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS vehicle_expenses (
