@@ -15,6 +15,12 @@
   }
 })();
 
+// Global safety declarations
+var _initTimeout = null;
+if (typeof window !== 'undefined' && !window.refreshActiveBookingMonitor) {
+  window.refreshActiveBookingMonitor = function() {};
+}
+
 // CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
   console.log('API_BASE detection:');
@@ -1280,7 +1286,7 @@ function initApp() {
     }
     updateNotifBadge();
   }).catch(function() {
-    clearTimeout(_initTimeout);
+    if (typeof _initTimeout !== 'undefined' && _initTimeout) clearTimeout(_initTimeout);
     showPage('page-login');
   });
 }
@@ -2256,7 +2262,9 @@ function loadHome() {
         }
       }
     }).catch(function() {});
-  refreshActiveBookingMonitor();
+  if (typeof refreshActiveBookingMonitor === 'function') {
+    refreshActiveBookingMonitor();
+  }
   updateNotifBadge();
 }
 
@@ -3987,6 +3995,36 @@ function pickPaymentProof() {
   input.click();
 }
 
+// Helper to open PayMongo checkout inside native In-App Browser or same-tab on web
+function openPaymongoCheckout(checkoutUrl, bookingId, amount, method, onFinishCallback) {
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    try {
+      window.Capacitor.Plugins.Browser.removeAllListeners().catch(function() {});
+      window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
+        console.log('[PayMongo] In-app browser closed by user');
+        if (typeof onFinishCallback === 'function') {
+          onFinishCallback();
+        } else if (bookingId) {
+          checkPaymentStatus(bookingId, amount, method);
+        }
+      });
+    } catch (e) {
+      console.warn('[PayMongo] Browser listener setup error:', e);
+    }
+    window.Capacitor.Plugins.Browser.open({
+      url: checkoutUrl,
+      presentationStyle: 'popover',
+      toolbarColor: '#0f172a'
+    }).catch(function(err) {
+      console.error('[PayMongo] In-app browser failed to open, using location href:', err);
+      window.location.href = checkoutUrl;
+    });
+  } else {
+    window.location.href = checkoutUrl;
+  }
+}
+window.openPaymongoCheckout = openPaymongoCheckout;
+
 function submitPayment(bookingId, amount) {
   var methodEl = document.getElementById('payMethod');
   var method = methodEl ? methodEl.value : 'gcash';
@@ -4023,35 +4061,6 @@ function submitPayment(bookingId, amount) {
       .finally(function() { showLoading(false); });
     return;
   }
-
-  // Helper to open PayMongo checkout inside native In-App Browser or same-tab on web
-  window.openPaymongoCheckout = function(checkoutUrl, bookingId, amount, method, onFinishCallback) {
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-      try {
-        window.Capacitor.Plugins.Browser.removeAllListeners().catch(function() {});
-        window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
-          console.log('[PayMongo] In-app browser closed by user');
-          if (typeof onFinishCallback === 'function') {
-            onFinishCallback();
-          } else if (bookingId) {
-            checkPaymentStatus(bookingId, amount, method);
-          }
-        });
-      } catch (e) {
-        console.warn('[PayMongo] Browser listener setup error:', e);
-      }
-      window.Capacitor.Plugins.Browser.open({
-        url: checkoutUrl,
-        presentationStyle: 'popover',
-        toolbarColor: '#0f172a'
-      }).catch(function(err) {
-        console.error('[PayMongo] In-app browser failed to open, using location href:', err);
-        window.location.href = checkoutUrl;
-      });
-    } else {
-      window.location.href = checkoutUrl;
-    }
-  };
 
   // Online payment - redirect to PayMongo
   showLoading(true);

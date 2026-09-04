@@ -15,6 +15,12 @@
   }
 })();
 
+// Global safety declarations
+var _initTimeout = null;
+if (typeof window !== 'undefined' && !window.refreshActiveBookingMonitor) {
+  window.refreshActiveBookingMonitor = function() {};
+}
+
 // CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
   console.log('API_BASE detection:');
@@ -1302,7 +1308,7 @@ function initApp() {
     }
     updateNotifBadge();
   }).catch(function() {
-    clearTimeout(_initTimeout);
+    if (typeof _initTimeout !== 'undefined' && _initTimeout) clearTimeout(_initTimeout);
     showPage('page-login');
   });
 }
@@ -2278,7 +2284,9 @@ function loadHome() {
         }
       }
     }).catch(function() {});
-  refreshActiveBookingMonitor();
+  if (typeof refreshActiveBookingMonitor === 'function') {
+    refreshActiveBookingMonitor();
+  }
   updateNotifBadge();
 }
 
@@ -4009,6 +4017,17 @@ function pickPaymentProof() {
   input.click();
 }
 
+// Helper to open PayMongo checkout in the same tab on Web (no new tab)
+function openPaymongoCheckout(checkoutUrl, bookingId, amount, method) {
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    window.Capacitor.Plugins.Browser.open({ url: checkoutUrl, presentationStyle: 'popover' });
+  } else {
+    // Same-tab redirect on Web so no extra browser tab is opened!
+    window.location.href = checkoutUrl;
+  }
+}
+window.openPaymongoCheckout = openPaymongoCheckout;
+
 function submitPayment(bookingId, amount) {
   var methodEl = document.getElementById('payMethod');
   var method = methodEl ? methodEl.value : 'gcash';
@@ -4045,16 +4064,6 @@ function submitPayment(bookingId, amount) {
       .finally(function() { showLoading(false); });
     return;
   }
-
-  // Helper to open PayMongo checkout in the same tab on Web (no new tab)
-  window.openPaymongoCheckout = function(checkoutUrl, bookingId, amount, method) {
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-      window.Capacitor.Plugins.Browser.open({ url: checkoutUrl, presentationStyle: 'popover' });
-    } else {
-      // Same-tab redirect on Web so no extra browser tab is opened!
-      window.location.href = checkoutUrl;
-    }
-  };
 
   // Online payment - redirect to PayMongo
   showLoading(true);

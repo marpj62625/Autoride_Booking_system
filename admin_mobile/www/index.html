@@ -9656,40 +9656,13 @@
                                 UserMgmt.refresh();
                             }
                         }
-
-
-
-                        }
-
-
-
                     } else if (newOnes.length > 1) {
-
-
-
                         window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
 
-
-
                         // Refresh extensions if any are extension requests
-
-
-
                         if (newOnes.some(n => n.type === 'admin_extension_request')) {
-
-
-
                             if (typeof Extensions !== 'undefined') Extensions.load();
-
-
-
                         }
-
-
-
-                        // Auto-refresh bookings for payment/cancel/refund notifications
-
-
 
                         // Auto-refresh bookings for payment/cancel/refund notifications
                         if (newOnes.some(n => n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request' || n.type === 'admin_new_booking' || n.type === 'admin_no_show')) {
@@ -9710,17 +9683,7 @@
                                 UserMgmt.refresh();
                             }
                         }
-
-
-
-                        }
-
-
-
                     }
-
-
-
                 }
 
 
