@@ -59,11 +59,13 @@ def process_payment():
                 cur.execute("UPDATE coupons SET times_used = times_used + 1 WHERE id = %s", (coupon_id,))
 
         # 3. Update booking status to 'Confirmed' and payment_status to 'Paid' or 'Partially Paid'
-        cur.execute("SELECT payment_type FROM bookings WHERE id = %s", (booking_id,))
+        cur.execute("SELECT payment_type, payment_status, total_price, amount_paid, balance_amount FROM bookings WHERE id = %s", (booking_id,))
         booking_info = cur.fetchone()
-        new_payment_status = 'Paid'
-        if booking_info and booking_info['payment_type'] == 'Downpayment':
-            new_payment_status = 'Partially Paid'
+        total_price = float(booking_info['total_price'] or 0) if booking_info else 0.0
+        curr_amount_paid = float(booking_info['amount_paid'] or 0) if booking_info else 0.0
+        curr_balance = float(booking_info['balance_amount'] or 0) if booking_info else 0.0
+        curr_status = booking_info['payment_status'] if booking_info else 'Unpaid'
+        paid_amt = float(amount or 0)
 
         # Check if payment method is cash OTC
         is_cash = 'cash' in (method or '').lower() or 'over the counter' in (method or '').lower()
@@ -76,12 +78,36 @@ def process_payment():
                 WHERE id = %s
             """, (booking_id,))
         else:
-            # Online payment: auto-confirm
+            # Online payment: Check if this payment completes the balance
+            is_completing_balance = (
+                curr_status == 'Partially Paid' or
+                (booking_info and booking_info.get('payment_type') in ('Balance', 'Full')) or
+                (curr_balance > 0 and paid_amt >= curr_balance - 1.0) or
+                (curr_amount_paid + paid_amt >= total_price - 1.0)
+            )
+
+            if is_completing_balance:
+                new_payment_status = 'Paid'
+                new_amount_paid = total_price
+                new_balance_amount = 0.0
+                new_payment_type = 'Full'
+            elif booking_info and booking_info['payment_type'] == 'Downpayment':
+                new_payment_status = 'Partially Paid'
+                new_amount_paid = paid_amt
+                new_balance_amount = max(0.0, total_price - new_amount_paid)
+                new_payment_type = 'Downpayment'
+            else:
+                new_payment_status = 'Paid'
+                new_amount_paid = total_price
+                new_balance_amount = 0.0
+                new_payment_type = 'Full'
+
             cur.execute("""
                 UPDATE bookings 
-                SET status = 'Confirmed', payment_status = %s
+                SET status = 'Confirmed', payment_status = %s,
+                    amount_paid = %s, balance_amount = %s, payment_type = %s
                 WHERE id = %s
-            """, (new_payment_status, booking_id,))
+            """, (new_payment_status, new_amount_paid, new_balance_amount, new_payment_type, booking_id,))
 
         # 4. Update vehicle status to 'Booked'
         cur.execute("""
@@ -204,7 +230,7 @@ def pay_balance(booking_id):
         new_amount_paid = float(booking['amount_paid'] or 0) + float(amount)
         cur.execute("""
             UPDATE bookings 
-            SET amount_paid = %s, balance_amount = 0, payment_status = 'Paid'
+            SET amount_paid = %s, balance_amount = 0, payment_status = 'Paid', payment_type = 'Full'
             WHERE id = %s
         """, (new_amount_paid, booking_id))
         

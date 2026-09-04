@@ -428,13 +428,18 @@ def check_payment_status(booking_id):
                                 debug_info['parse_error'] = str(parse_err)
 
                         link_metadata = link_data['attributes'].get('metadata', {})
-                        pay_type = link_metadata.get('payment_type') or booking['payment_type'] or 'Full'
+                        pay_type = link_metadata.get('payment_type') or booking.get('payment_type') or 'Full'
                         
                         _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
-                        new_status = 'Partially Paid' if pay_type == 'Downpayment' else 'Paid'
+
+                        # Fetch fresh booking status directly from DB
+                        cur.execute("SELECT status, payment_status, amount_paid, balance_amount FROM bookings WHERE id = %s", (booking_id,))
+                        updated_b = cur.fetchone()
+                        new_status = updated_b['payment_status'] if updated_b else ('Paid' if pay_type != 'Downpayment' else 'Partially Paid')
+                        new_bk_status = updated_b['status'] if updated_b else 'Confirmed'
                         return jsonify({
                             'booking_id': booking_id,
-                            'status': 'Confirmed',
+                            'status': new_bk_status,
                             'payment_status': new_status,
                             'paid': True
                         }), 200
@@ -492,13 +497,13 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
         if user_id:
             cur.execute(
                 "SELECT id, paymongo_link_id, payment_status, payment_type, total_price FROM bookings "
-                "WHERE user_id = %s AND payment_status IN ('Unpaid', 'Downpayment unpaid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''",
+                "WHERE user_id = %s AND payment_status IN ('Unpaid', 'Downpayment unpaid', 'Partially Paid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''",
                 (user_id,)
             )
         else:
             cur.execute(
                 "SELECT id, paymongo_link_id, payment_status, payment_type, total_price FROM bookings "
-                "WHERE payment_status IN ('Unpaid', 'Downpayment unpaid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''"
+                "WHERE payment_status IN ('Unpaid', 'Downpayment unpaid', 'Partially Paid') AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''"
             )
         unpaid_bookings = cur.fetchall()
         cur.close()
@@ -563,51 +568,77 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
     try:
         cur = get_cursor()
 
-        # Check if already paid (idempotency)
-        cur.execute("SELECT payment_status FROM bookings WHERE id = %s", (booking_id,))
-        b = cur.fetchone()
-        if b:
-            if b['payment_status'] == 'Paid':
-                return  # Already processed
-            if payment_type == 'Downpayment' and b['payment_status'] == 'Partially Paid':
-                return  # Downpayment already processed
+        # Check if this exact payment transaction was already processed (true idempotency)
+        if ref_num:
+            cur.execute(
+                "SELECT id FROM payments WHERE booking_id = %s AND reference_number = %s",
+                (booking_id, str(ref_num))
+            )
+            if cur.fetchone():
+                return  # Duplicate call for this specific payment transaction
+
+        # Fetch current booking details
+        cur.execute("""
+            SELECT id, total_price, amount_paid, balance_amount, payment_status, payment_type, user_id, vehicle_id
+            FROM bookings WHERE id = %s
+        """, (booking_id,))
+        bk_data = cur.fetchone()
+        if not bk_data:
+            return
+
+        total_price = float(bk_data['total_price'] or 0)
+        curr_amount_paid = float(bk_data['amount_paid'] or 0)
+        curr_balance = float(bk_data['balance_amount'] or 0)
+        curr_status = bk_data['payment_status']
+        paid_amt = float(amount or 0)
+
+        # If already fully paid, don't re-process as full payment
+        if curr_status == 'Paid' and curr_balance <= 0.0:
+            return
 
         # Insert payment record
         cur.execute("""
             INSERT INTO payments (booking_id, amount, method, reference_number, status)
             VALUES (%s, %s, %s, %s, 'Completed')
             RETURNING id
-        """, (booking_id, amount, method, ref_num))
+        """, (booking_id, paid_amt, method, str(ref_num)))
         payment_id = cur.fetchone()['id']
 
-        # Get booking total price
-        cur.execute("SELECT total_price, amount_paid FROM bookings WHERE id = %s", (booking_id,))
-        bk_data = cur.fetchone()
-        total_price = float(bk_data['total_price'] or 0) if bk_data else 0.0
-
         # Determine payment status, amount_paid, and balance_amount
-        if payment_type == 'Downpayment':
-            new_payment_status = 'Partially Paid'
-            new_amount_paid = float(amount)
-            new_balance_amount = total_price - new_amount_paid
-        elif payment_type == 'Balance':
+        # If the booking was already Partially Paid, or payment_type is Balance, or paid_amt covers the remaining balance:
+        is_balance_or_full = (
+            curr_status == 'Partially Paid' or
+            payment_type in ('Balance', 'Full') or
+            (curr_balance > 0 and paid_amt >= curr_balance - 1.0) or
+            (curr_amount_paid + paid_amt >= total_price - 1.0)
+        )
+
+        if is_balance_or_full:
             new_payment_status = 'Paid'
             new_amount_paid = total_price
             new_balance_amount = 0.0
+            new_payment_type = 'Full'
+        elif payment_type == 'Downpayment':
+            new_payment_status = 'Partially Paid'
+            new_amount_paid = paid_amt
+            new_balance_amount = max(0.0, total_price - new_amount_paid)
+            new_payment_type = 'Downpayment'
         else: # Full
             new_payment_status = 'Paid'
-            new_amount_paid = float(amount) if float(amount) > 0 else total_price
+            new_amount_paid = total_price
             new_balance_amount = 0.0
+            new_payment_type = 'Full'
 
         # Update booking
         cur.execute("""
             UPDATE bookings
-            SET status = 'Confirmed', 
+            SET status = CASE WHEN status = 'Pending' THEN 'Confirmed' ELSE status END, 
                 payment_status = %s,
                 amount_paid = %s,
-                balance_amount = %s
+                balance_amount = %s,
+                payment_type = %s
             WHERE id = %s
-        """, (new_payment_status, new_amount_paid, new_balance_amount, booking_id))
+        """, (new_payment_status, new_amount_paid, new_balance_amount, new_payment_type, booking_id))
 
         # Update vehicle status
         cur.execute("""
@@ -648,7 +679,7 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
                 uid = bk2['user_id']
                 amt = float(bk2['amount_paid'] or amount)
                 bal = float(bk2['balance_amount'] or 0)
-                if payment_type == 'Downpayment':
+                if new_payment_status == 'Partially Paid':
                     notification_service.notify_user(
                         uid,
                         'Downpayment Received',
@@ -659,7 +690,7 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
                     notification_service.notify_user(
                         uid,
                         'Payment Confirmed',
-                        f'Payment of PHP {amt:.2f} confirmed for booking #{booking_id} via {method}. Ref: {ref_num}.',
+                        f'Payment of PHP {amt:.2f} confirmed for booking #{booking_id} via {method}. Ref: {ref_num}. Your booking is now fully paid!',
                         'payment_confirmed'
                     )
                 

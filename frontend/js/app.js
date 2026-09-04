@@ -4027,7 +4027,9 @@ function submitPayment(bookingId, amount) {
   // Online payment - redirect to PayMongo
   showLoading(true);
   var paymentTypeForPaymongo = _pendingPayType || 'Full';
-  if (activeBookingData && activeBookingData.payment_type) {
+  if (activeBookingData && activeBookingData.payment_status === 'Partially Paid') {
+    paymentTypeForPaymongo = 'Balance';
+  } else if (activeBookingData && activeBookingData.payment_type && !_pendingPayType) {
     paymentTypeForPaymongo = activeBookingData.payment_type;
   }
   apiCall('/paymongo/create-payment', {
@@ -4226,7 +4228,9 @@ function showPaymentFailed(bookingId, amount, method, message) {
 function retryPayment(bookingId, amount, method) {
   showLoading(true);
   var paymentTypeForPaymongo = _pendingPayType || 'Full';
-  if (activeBookingData && activeBookingData.payment_type) {
+  if (activeBookingData && activeBookingData.payment_status === 'Partially Paid') {
+    paymentTypeForPaymongo = 'Balance';
+  } else if (activeBookingData && activeBookingData.payment_type && !_pendingPayType) {
     paymentTypeForPaymongo = activeBookingData.payment_type;
   }
   apiCall('/paymongo/create-payment', {
@@ -4520,7 +4524,7 @@ function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
-  var canPayNow = b.payment_status === 'Unpaid' && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
+  var canPayNow = (b.payment_status === 'Unpaid' || b.payment_status === 'Pending Payment') && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
 
@@ -5802,6 +5806,10 @@ function openPayNowFromDetail(bookingId) {
     showToast('Booking data not available. Please try again.', 'error');
     return;
   }
+  if (b.payment_status === 'Partially Paid') {
+    openPayBalanceScreen(bookingId, b.balance_amount);
+    return;
+  }
   var total = parseFloat(b.total_price) || 0;
   var days = 1;
   var start = b.start_date ? b.start_date.split('T')[0] : null;
@@ -5851,6 +5859,7 @@ function submitBalancePayment(method, bookingId, amount) {
   var selCard = document.getElementById(idMap[method]);
   if (selCard) selCard.classList.add('selected');
 
+  _pendingPayType = 'Balance';
   showLoading(true);
   apiCall('/paymongo/create-payment', {
     method: 'POST',
@@ -7926,7 +7935,6 @@ if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.Plugin
       }
     });
   } catch(e) {}
-}
 }
 
 function escapeHtml(str) {
