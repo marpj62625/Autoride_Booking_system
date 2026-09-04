@@ -7459,8 +7459,31 @@ def verify_user():
         cur = get_cursor()
 
         cur.execute("UPDATE users SET is_verified = %s WHERE id = %s", (status, user_id))
-
         commit_db()
+
+        # Send notifications & stamp force_logout_at if approved
+        if status in [1, 2]:
+            try:
+                notification_service.notify_user(
+                    user_id,
+                    "License Approved",
+                    "Your driver's license has been verified! You can now book vehicles on Autoride.",
+                    'license_approved'
+                )
+                cur.execute("UPDATE users SET force_logout_at = NOW() WHERE id = %s", (user_id,))
+                commit_db()
+            except Exception as _ne:
+                print(f"WARN verify_user notification failed: {_ne}")
+        elif status == 0:
+            try:
+                notification_service.notify_user(
+                    user_id,
+                    "License Rejected",
+                    "Your driver's license was not approved. Please re-upload a valid document through the app.",
+                    'license_rejected'
+                )
+            except Exception as _ne:
+                print(f"WARN verify_user rejection notification failed: {_ne}")
 
         return jsonify({"message": f"User status updated to {status}"}), 200
 

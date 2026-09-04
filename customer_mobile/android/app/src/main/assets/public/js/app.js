@@ -574,37 +574,49 @@ function subscribeToNotifications(userId) {
                 var title = payload.new.title || 'Autoride';
                 var msg   = payload.new.message || '';
 
-                // Show in-app popup toast for all actionable notification types
+                // Show in-app popup toast for actionable notification types
                 if (type === 'extension_approved') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-calendar-check');
-                    // Refresh bookings so the new end date shows immediately
-                    if (typeof loadBookings === 'function') loadBookings();
                 } else if (type === 'extension_rejected') {
                     _showNotifPopup(title, msg, '#f59e0b', 'fa-calendar-times');
-                    if (typeof loadBookings === 'function') loadBookings();
                 } else if (type === 'refund_processed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-undo-alt');
-                    // Reload bookings and re-render booking detail if open
-                    if (typeof loadBookings === 'function') loadBookings();
-                    // If booking detail page is visible, refresh it after bookings reload
-                    setTimeout(function() {
-                        var detailPage = document.getElementById('page-booking-detail');
-                        if (detailPage && (detailPage.style.display === 'block' || detailPage.classList.contains('active'))) {
-                            // Get the current booking ID from the page
-                            var bIdEl = document.querySelector('[data-booking-id]');
-                            var bId = bIdEl ? parseInt(bIdEl.dataset.bookingId) : null;
-                            if (bId && typeof openBookingDetail === 'function') openBookingDetail(bId);
-                        }
-                    }, 1500);
                 } else if (type === 'booking_approved' || type === 'booking_confirmed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-check-circle');
                 } else if (type === 'booking_cancelled' || type === 'booking_cancelled_by_admin') {
                     _showNotifPopup(title, msg, '#f87171', 'fa-times-circle');
                 } else if (type === 'payment_confirmed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-money-bill-wave');
+                } else if (type === 'penalty_added') {
+                    _showNotifPopup(title, msg, '#ef4444', 'fa-exclamation-circle');
+                } else if (type === 'ready_for_pickup' || type === 'picked_up' || type === 'booking_completed') {
+                    _showNotifPopup(title, msg, '#00b14f', 'fa-car');
                 }
 
-                // License status refresh
+                // Any booking related event triggers live data refresh
+                var isBookingEvent = (
+                    type === 'booking_approved' || type === 'booking_confirmed' ||
+                    type === 'booking_cancelled' || type === 'booking_cancelled_by_admin' ||
+                    type === 'booking_completed' || type === 'payment_confirmed' ||
+                    type === 'ready_for_pickup' || type === 'picked_up' ||
+                    type === 'penalty_added' || type === 'extension_approved' ||
+                    type === 'extension_rejected' || type === 'refund_processed'
+                );
+
+                if (isBookingEvent) {
+                    if (typeof loadBookings === 'function') loadBookings();
+                    if (typeof refreshActiveBookingMonitor === 'function') refreshActiveBookingMonitor();
+                    setTimeout(function() {
+                        var detailPage = document.getElementById('page-booking-detail');
+                        if (detailPage && (detailPage.style.display === 'block' || detailPage.classList.contains('active'))) {
+                            var bIdEl = document.querySelector('[data-booking-id]');
+                            var bId = bIdEl ? parseInt(bIdEl.dataset.bookingId) : null;
+                            if (bId && typeof openBookingDetail === 'function') openBookingDetail(bId);
+                        }
+                    }, 1000);
+                }
+
+                // License status refresh (preserves forceLogoutSilent on approval as intended feature)
                 if (type === 'license_approved' || type === 'license_rejected') {
                     if (type === 'license_approved') {
                         _showNotifPopup(title, msg, '#00b14f', 'fa-id-card');
@@ -631,8 +643,53 @@ function subscribeToNotifications(userId) {
                                     statusEl.textContent = statusMap[v2] || '-';
                                     statusEl.style.color = statusColor[v2] || 'var(--text-main)';
                                 }
+                                if (typeof onVdColorChange === 'function') onVdColorChange();
                             }).catch(function() {});
                     }
+                }
+            }
+        })
+        .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'bookings',
+            filter: 'user_id=eq.' + userId
+        }, function(payload) {
+            if (typeof loadBookings === 'function') loadBookings();
+            if (typeof refreshActiveBookingMonitor === 'function') refreshActiveBookingMonitor();
+            var detailPage = document.getElementById('page-booking-detail');
+            if (detailPage && (detailPage.style.display === 'block' || detailPage.classList.contains('active'))) {
+                var bIdEl = document.querySelector('[data-booking-id]');
+                var bId = bIdEl ? parseInt(bIdEl.dataset.bookingId) : null;
+                if (bId && typeof openBookingDetail === 'function') openBookingDetail(bId);
+            }
+        })
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'users',
+            filter: 'id=eq.' + userId
+        }, function(payload) {
+            if (payload && payload.new) {
+                if (payload.new.force_logout_at) {
+                    forceLogoutSilent('Your session has expired because your driver\'s license was approved. Please log in again.');
+                } else if (payload.new.is_verified !== undefined && payload.new.is_verified !== currentUser.isVerified) {
+                    currentUser.isVerified = payload.new.is_verified;
+                    Session.save(currentUser);
+                    var badge = document.getElementById('profileVerifyBadge');
+                    if (badge) {
+                        var labels = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                        badge.textContent = labels[currentUser.isVerified] || 'Not Verified';
+                        badge.className = 'verify-badge verify-' + currentUser.isVerified;
+                    }
+                    var statusEl = document.getElementById('viewLicenseStatus');
+                    if (statusEl) {
+                        var statusMap = { 0: 'Not Verified', 1: 'Pending Review', 2: 'Verified' };
+                        var statusColor = { 0: 'var(--danger)', 1: '#f59e0b', 2: '#10b981' };
+                        statusEl.textContent = statusMap[currentUser.isVerified] || '-';
+                        statusEl.style.color = statusColor[currentUser.isVerified] || 'var(--text-main)';
+                    }
+                    if (typeof onVdColorChange === 'function') onVdColorChange();
                 }
             }
         })
@@ -2199,72 +2256,7 @@ function loadHome() {
         }
       }
     }).catch(function() {});
-  apiCall('/user-bookings?user_id=' + currentUser.id)
-    .then(function(bookings) {
-      // --- Active booking monitor ---
-      var active = null;
-      for (var i = 0; i < bookings.length; i++) {
-        if (bookings[i].status === 'Picked Up' || bookings[i].status === 'Ongoing') {
-          active = bookings[i]; break;
-        }
-      }
-      // Store for use by other functions (e.g. extend booking)
-      _allBookingsData = bookings;
-      if (active) { activeBookingData = active; }
-      var monitor = document.getElementById('activeBookingMonitor');
-      var card    = document.getElementById('activeBookingCard');
-      if (active && monitor && card) {
-        window._activeBookingId = active.id;
-        var endNorm   = _normDateStr(active.end_date);
-        var startNorm = _normDateStr(active.start_date);
-        var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
-        var imgHtml = imgSrc
-          ? '<img src="' + imgSrc + '" id="activeRentalImg" style="width:100%;height:100%;object-fit:cover;display:block;">'
-          : '<div style="width:100%;height:100%;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
-        card.innerHTML =
-          '<div class="active-rental-img">' + imgHtml + '</div>' +
-          '<div class="active-rental-info">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
-              '<div>' +
-                '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + (active.brand||'') + ' ' + (active.model||'') + '</div>' +
-                '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + (active.plate_number||'') + '</div>' +
-              '</div>' +
-              '<span style="background:rgba(16,185,129,0.1);color:var(--primary);border:1px solid rgba(16,185,129,0.25);padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">Active</span>' +
-            '</div>' +
-            '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
-              '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Time Remaining</div>' +
-              '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
-              '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Return by <strong style="color:var(--text-primary);">' + _fmtDate(endNorm) + '</strong></div>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
-              '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Start Date</div>' +
-                '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + '</div>' +
-              '</div>' +
-              '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Booking #</div>' +
-                '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
-              '</div>' +
-            '</div>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;">' +
-              '<button onclick="openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
-              '<button onclick="showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
-            '</div>' +
-          '</div>';
-        monitor.style.display = '';
-        // Attach onerror after DOM insertion to avoid escaping issues
-        var imgEl = document.getElementById('activeRentalImg');
-        if (imgEl) {
-          imgEl.onerror = function() {
-            this.parentNode.innerHTML = '<div style="width:100%;height:140px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
-          };
-        }
-        _startActiveBookingCountdown(endNorm);
-      } else {
-        if (monitor) monitor.style.display = 'none';
-        if (_activeBookingTimer) { clearInterval(_activeBookingTimer); _activeBookingTimer = null; }
-      }
-      }).catch(function() {});
+  refreshActiveBookingMonitor();
   updateNotifBadge();
 }
 
@@ -7893,14 +7885,48 @@ function startBgSessionPolling() {
             statusEl.textContent = statusMap[currentUser.isVerified] || '-';
             statusEl.style.color = statusColor[currentUser.isVerified] || 'var(--text-main)';
           }
+          if (typeof onVdColorChange === 'function') onVdColorChange();
         }
       })
       .catch(function() {});
-  }, 20000);
+  }, 6000); // Check every 6s for realtime responsiveness
 }
 
 function stopBgSessionPolling() {
   if (_bgSessionPollTimer) { clearInterval(_bgSessionPollTimer); _bgSessionPollTimer = null; }
+}
+
+// Real-time resume & focus sync for active booking & notifications
+window.addEventListener('focus', function() {
+  if (currentUser && currentUser.id) {
+    if (typeof loadNotifications === 'function') loadNotifications(currentUser.id);
+    if (typeof refreshActiveBookingMonitor === 'function') refreshActiveBookingMonitor();
+    var bPage = document.getElementById('page-bookings');
+    if (bPage && (bPage.classList.contains('active') || bPage.style.display === 'block')) {
+      if (typeof loadBookings === 'function') loadBookings();
+    }
+  }
+});
+document.addEventListener('visibilitychange', function() {
+  if (!document.hidden && currentUser && currentUser.id) {
+    if (typeof loadNotifications === 'function') loadNotifications(currentUser.id);
+    if (typeof refreshActiveBookingMonitor === 'function') refreshActiveBookingMonitor();
+    var bPage = document.getElementById('page-bookings');
+    if (bPage && (bPage.classList.contains('active') || bPage.style.display === 'block')) {
+      if (typeof loadBookings === 'function') loadBookings();
+    }
+  }
+});
+if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+  try {
+    window.Capacitor.Plugins.App.addListener('appStateChange', function(state) {
+      if (state && state.isActive && currentUser && currentUser.id) {
+        if (typeof loadNotifications === 'function') loadNotifications(currentUser.id);
+        if (typeof refreshActiveBookingMonitor === 'function') refreshActiveBookingMonitor();
+      }
+    });
+  } catch(e) {}
+}
 }
 
 function escapeHtml(str) {

@@ -9637,23 +9637,25 @@
 
 
 
+                        // Auto-refresh bookings for payment/cancel/refund/new booking notifications
                         if (newOnes[0].type === 'admin_payment_proof' || newOnes[0].type === 'admin_booking_cancelled' || newOnes[0].type === 'admin_refund_request' || newOnes[0].type === 'admin_new_booking' || newOnes[0].type === 'admin_no_show') {
-
-
-
-                            var bookingsTab = document.getElementById('bookings');
-
-
-
-                            if (bookingsTab && (bookingsTab.style.display === 'block' || bookingsTab.classList.contains('active'))) {
-
-
-
-                                if (typeof loadBookings === 'function') loadBookings();
-
-
-
+                            if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
+                                Bookings.refresh();
                             }
+                            if (typeof Dashboard !== 'undefined' && typeof Dashboard.refresh === 'function') {
+                                Dashboard.refresh();
+                            }
+                        }
+
+                        // Auto-refresh verifications and users for license upload notifications
+                        if (newOnes[0].type === 'license' || newOnes[0].type === 'admin_license_upload') {
+                            if (typeof Verifications !== 'undefined' && typeof Verifications.refresh === 'function') {
+                                Verifications.refresh();
+                            }
+                            if (typeof UserMgmt !== 'undefined' && typeof UserMgmt.refresh === 'function') {
+                                UserMgmt.refresh();
+                            }
+                        }
 
 
 
@@ -9689,23 +9691,25 @@
 
 
 
+                        // Auto-refresh bookings for payment/cancel/refund notifications
                         if (newOnes.some(n => n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request' || n.type === 'admin_new_booking' || n.type === 'admin_no_show')) {
-
-
-
-                            var bookingsTab2 = document.getElementById('bookings');
-
-
-
-                            if (bookingsTab2 && (bookingsTab2.style.display === 'block' || bookingsTab2.classList.contains('active'))) {
-
-
-
-                                if (typeof loadBookings === 'function') loadBookings();
-
-
-
+                            if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
+                                Bookings.refresh();
                             }
+                            if (typeof Dashboard !== 'undefined' && typeof Dashboard.refresh === 'function') {
+                                Dashboard.refresh();
+                            }
+                        }
+
+                        // Auto-refresh verifications and users for license upload notifications
+                        if (newOnes.some(n => n.type === 'license' || n.type === 'admin_license_upload')) {
+                            if (typeof Verifications !== 'undefined' && typeof Verifications.refresh === 'function') {
+                                Verifications.refresh();
+                            }
+                            if (typeof UserMgmt !== 'undefined' && typeof UserMgmt.refresh === 'function') {
+                                UserMgmt.refresh();
+                            }
+                        }
 
 
 
@@ -10432,7 +10436,41 @@
 
 
 
-                setInterval(function() { loadAdminNotifications(user.id); }, 30000);
+                setInterval(function() { loadAdminNotifications(user.id); }, 6000);
+
+                // Active view real-time heartbeat (every 8s)
+                setInterval(function() {
+                    if (document.hidden) return;
+                    var activeTabEl = document.querySelector('.tab-content.active, [data-tab-content].active');
+                    var activeId = activeTabEl ? activeTabEl.id : '';
+                    if (activeId === 'bookings' && typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
+                        Bookings.refresh();
+                    } else if (activeId === 'verifications' && typeof Verifications !== 'undefined' && typeof Verifications.refresh === 'function') {
+                        Verifications.refresh();
+                    } else if (activeId === 'users' && typeof UserMgmt !== 'undefined' && typeof UserMgmt.refresh === 'function') {
+                        UserMgmt.refresh();
+                    }
+                }, 8000);
+
+                // Immediate refresh on window focus / tab visibility change
+                window.addEventListener('focus', function() {
+                    if (user && user.id) loadAdminNotifications(user.id);
+                    var activeTabEl = document.querySelector('.tab-content.active, [data-tab-content].active');
+                    var activeId = activeTabEl ? activeTabEl.id : '';
+                    if (activeId === 'bookings' && typeof Bookings !== 'undefined') Bookings.refresh();
+                    if (activeId === 'verifications' && typeof Verifications !== 'undefined') Verifications.refresh();
+                    if (activeId === 'users' && typeof UserMgmt !== 'undefined') UserMgmt.refresh();
+                });
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden) {
+                        if (user && user.id) loadAdminNotifications(user.id);
+                        var activeTabEl = document.querySelector('.tab-content.active, [data-tab-content].active');
+                        var activeId = activeTabEl ? activeTabEl.id : '';
+                        if (activeId === 'bookings' && typeof Bookings !== 'undefined') Bookings.refresh();
+                        if (activeId === 'verifications' && typeof Verifications !== 'undefined') Verifications.refresh();
+                        if (activeId === 'users' && typeof UserMgmt !== 'undefined') UserMgmt.refresh();
+                    }
+                });
 
 
 
@@ -13887,27 +13925,27 @@ async edit(id) { this.openModal(id); }
 
 
 
-            if (tabId === 'vehicles' && typeof Vehicles !== 'undefined' && Vehicles.data.length === 0) Vehicles.refresh();
+            if (tabId === 'vehicles' && typeof Vehicles !== 'undefined') Vehicles.refresh();
 
 
 
-            if (tabId === 'bookings' && typeof Bookings !== 'undefined' && Bookings.data.length === 0) Bookings.refresh();
+            if (tabId === 'bookings' && typeof Bookings !== 'undefined') Bookings.refresh();
 
 
 
-            if (tabId === 'drivers' && typeof Drivers !== 'undefined' && Drivers.data.length === 0) Drivers.refresh();
+            if (tabId === 'drivers' && typeof Drivers !== 'undefined') Drivers.refresh();
 
 
 
-            if (tabId === 'verifications' && typeof Verifications !== 'undefined' && Verifications.data.length === 0) Verifications.refresh();
+            if (tabId === 'verifications' && typeof Verifications !== 'undefined') Verifications.refresh();
 
 
 
-            if (tabId === 'instructions' && typeof Instructions !== 'undefined' && Instructions.data.length === 0) Instructions.refresh();
+            if (tabId === 'instructions' && typeof Instructions !== 'undefined') Instructions.refresh();
 
 
 
-            if (tabId === 'staff' && typeof Staff !== 'undefined' && Staff.data.length === 0) Staff.refresh();
+            if (tabId === 'staff' && typeof Staff !== 'undefined') Staff.refresh();
 
 
 
@@ -13947,11 +13985,11 @@ async edit(id) { this.openModal(id); }
 
 
 
-            if (tabId === 'activity' && typeof Activity !== 'undefined' && Activity.data.length === 0) Activity.refresh();
+            if (tabId === 'activity' && typeof Activity !== 'undefined') Activity.refresh();
 
 
 
-            if (tabId === 'users' && typeof UserMgmt !== 'undefined' && UserMgmt._all.length === 0) UserMgmt.refresh();
+            if (tabId === 'users' && typeof UserMgmt !== 'undefined') UserMgmt.refresh();
 
 
 
