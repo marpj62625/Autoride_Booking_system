@@ -2485,9 +2485,11 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
           bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Book';
           (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
         } else if (parseInt(currentUser.isVerified) !== 2) {
-          bookBtn.setAttribute('disabled', 'true');
-          bookBtn.style.opacity = '0.5';
-          bookBtn.innerHTML = '<i class="fas fa-lock"></i> Verify License';
+          bookBtn.removeAttribute('disabled');
+          bookBtn.style.opacity = '1';
+          bookBtn.style.cursor = 'pointer';
+          bookBtn.innerHTML = parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License';
+          bookBtn.onclick = function() { goToProfileForVerification(); };
         } else {
           bookBtn.setAttribute('disabled', 'true');
           bookBtn.style.opacity = '0.5';
@@ -2852,9 +2854,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                   '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
                   '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
                 '</div>' +
-                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.95rem;font-weight:800;"' +
-                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"') + '>' +
-                  '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable')) +
+                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.95rem;font-weight:800;cursor:pointer;"' +
+                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : (isBookable ? ' onclick="goToProfileForVerification()"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"')) + '>' +
+                  (canBook ? '<i class="fas fa-calendar-plus"></i> Book' : (isBookable ? (parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License') : '<i class="fas fa-ban"></i> Unavailable')) +
                 '</button>' +
               '</div>' +
             '</div>' +
@@ -2963,13 +2965,21 @@ function onVdColorChange() {
   if (bookBtn) {
     var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(unit.status) === -1;
     var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
-    bookBtn.disabled = !canBook;
-    bookBtn.style.cssText = canBook
-      ? 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;'
-      : 'width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;';
-    bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> ' + (canBook ? 'Book' : (isBookable ? 'Verify License' : 'Unavailable'));
     if (canBook) {
+      bookBtn.disabled = false;
+      bookBtn.style.cssText = 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;cursor:pointer;';
+      bookBtn.innerHTML = '<i class="fas fa-calendar-plus"></i> Book';
       (function(vid) { bookBtn.onclick = function() { selectVehicleUnit(vid); }; })(unit.id);
+    } else if (isBookable) {
+      bookBtn.disabled = false;
+      bookBtn.style.cssText = 'width:auto;padding:12px 24px;border-radius:30px;font-size:0.9rem;font-weight:800;cursor:pointer;';
+      bookBtn.innerHTML = parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License';
+      bookBtn.onclick = function() { goToProfileForVerification(); };
+    } else {
+      bookBtn.disabled = true;
+      bookBtn.style.cssText = 'width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;';
+      bookBtn.innerHTML = '<i class="fas fa-ban"></i> Unavailable';
+      bookBtn.onclick = null;
     }
   }
 }
@@ -6072,6 +6082,52 @@ function submitReview(vehicleId) {
 var _licenseFrontBlob = null;
 var _licenseBackBlob = null;
 
+function getMissingProfileFields(profile) {
+  profile = profile || (currentUser && currentUser._profileData) || {};
+  var missing = [];
+  var firstName = (document.getElementById('editFirstName') ? document.getElementById('editFirstName').value : '').trim();
+  var lastName = (document.getElementById('editLastName') ? document.getElementById('editLastName').value : '').trim();
+  var name = (profile.full_name || currentUser.fullName || (firstName + ' ' + lastName)).trim();
+  var phone = (profile.phone || currentUser.phone || (document.getElementById('editPhone') ? document.getElementById('editPhone').value : '')).trim();
+  var pic = (profile.profile_picture || currentUser.profilePicture || '').trim();
+  if (typeof profilePicBlob !== 'undefined' && profilePicBlob) pic = 'selected';
+
+  if (!name || name === '₱' || name.split(/\s+/).filter(Boolean).length < 2) {
+    missing.push('First & Last Name');
+  }
+  if (!phone || phone.replace(/\D/g, '').length < 10) {
+    missing.push('Phone Number');
+  }
+  if (!pic || pic === 'null' || pic === 'undefined') {
+    missing.push('Profile Picture');
+  }
+  return missing;
+}
+
+function goToProfileForVerification() {
+  if (parseInt(currentUser.isVerified) === 1) {
+    showToast('Your driver\'s license is currently under review by our admin team.', 'info');
+    showPage('page-profile');
+    return;
+  }
+  window._pendingVerificationFlow = true;
+  showPage('page-profile');
+  loadProfile(function(profileData) {
+    var missing = getMissingProfileFields(profileData);
+    if (missing.length > 0) {
+      Profile.enterEdit();
+      showToast('Please complete your profile details and profile picture first.', 'info');
+      var editCard = document.getElementById('profileEditCard');
+      if (editCard) editCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      Profile.enterLicenseEdit();
+      showToast('Please upload your Driver\'s License to verify your account.', 'info');
+      var licCard = document.getElementById('licenseEditMode');
+      if (licCard) licCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+}
+
 var Profile = {
   enterEdit: function() {
     var card = document.getElementById('profileEditCard');
@@ -6086,6 +6142,14 @@ var Profile = {
     if (btn) btn.style.display = '';
   },
   enterLicenseEdit: function() {
+    var missing = getMissingProfileFields(currentUser._profileData);
+    if (missing.length > 0) {
+      showToast('Please complete your profile (' + missing.join(', ') + ') first before uploading your driver\'s license.', 'warning');
+      Profile.enterEdit();
+      var card = document.getElementById('profileEditCard');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     document.getElementById('licenseViewMode').style.display = 'none';
     document.getElementById('licenseEditMode').style.display = '';
     document.getElementById('licenseEditBtn').style.display = 'none';
@@ -6108,6 +6172,15 @@ var Profile = {
   saveLicenseInfo: function() {
     var errEl = document.getElementById('licenseEditErr');
     if (errEl) errEl.textContent = '';
+
+    var missing = getMissingProfileFields(currentUser._profileData);
+    if (missing.length > 0) {
+      if (errEl) errEl.textContent = 'Please complete your profile (' + missing.join(', ') + ') first.';
+      showToast('Please complete your profile first (' + missing.join(', ') + ') before uploading your license.', 'warning');
+      Profile.cancelLicenseEdit();
+      Profile.enterEdit();
+      return;
+    }
 
     // Validate required fields
     var fields = {
@@ -6689,7 +6762,7 @@ function closeLicensePreview() {
   if (modal) modal.style.display = 'none';
 }
 
-function loadProfile() {
+function loadProfile(callback) {
   console.log('loadProfile() called');
   currentUser = currentUser || Session.get();
   var uid = (currentUser && (currentUser.id || currentUser.user_id)) || null;
@@ -6733,6 +6806,7 @@ function loadProfile() {
       var licenseData = results[1] || {};
 
       // Store license details on currentUser for reference
+      currentUser._profileData = profile;
       currentUser._licenseDetails = licenseData;
 
       var nameEl = document.getElementById('profileName');
@@ -6928,6 +7002,38 @@ function loadProfile() {
           }
         }
       }
+
+      // Check profile completeness for driver's license lock/warning
+      var missing = getMissingProfileFields(profile);
+      var editBtn = document.getElementById('licenseEditBtn');
+      var existingWarn = document.getElementById('licenseProfileIncompleteWarn');
+      if (existingWarn) existingWarn.remove();
+
+      if (missing.length > 0) {
+        var vMode = document.getElementById('licenseViewMode');
+        if (vMode && vMode.parentNode) {
+          var warn = document.createElement('div');
+          warn.id = 'licenseProfileIncompleteWarn';
+          warn.style.cssText = 'background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;';
+          warn.innerHTML = '<i class="fas fa-lock" style="color:#d97706;font-size:1.1rem;flex-shrink:0;"></i>' +
+            '<div style="font-size:0.82rem;color:#92400e;line-height:1.4;flex:1;">' +
+            '<strong>Profile Incomplete:</strong> Please complete your <strong>' + missing.join(', ') + '</strong> first before uploading your driver\'s license.' +
+            '</div>' +
+            '<button onclick="Profile.enterEdit()" style="white-space:nowrap;background:#d97706;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;">Edit Profile</button>';
+          vMode.parentNode.insertBefore(warn, vMode);
+        }
+        if (editBtn) {
+          editBtn.innerHTML = '<i class="fas fa-lock"></i> Edit (Locked)';
+          editBtn.style.color = '#d97706';
+        }
+      } else {
+        if (editBtn) {
+          editBtn.innerHTML = '<i class="fas fa-pen"></i> Edit';
+          editBtn.style.color = 'var(--primary)';
+        }
+      }
+
+      if (typeof callback === 'function') callback(profile, licenseData);
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); });
@@ -7024,11 +7130,25 @@ function doUpdateProfile() {
   clearInlineError(emailEl);
   if (phoneErrEl) phoneErrEl.textContent = '';
   if (emailErrEl) emailErrEl.textContent = '';
-  if (phone && (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11)) {
+  if (!firstName) {
+    showInlineError(firstEl, 'First name is required.'); return;
+  }
+  if (!lastName) {
+    showInlineError(lastEl, 'Last name is required.'); return;
+  }
+  if (!phone) {
+    showInlineError(phoneEl, 'Phone number is required.'); return;
+  }
+  if (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11) {
     showInlineError(phoneEl, 'Phone must be 10-11 digits.'); return;
   }
   if (email && !isGmailAddress(email)) {
-    showInlineError(emailEl, 'Only @gmail.com emails are allowed.'); return;
+    showInlineError(emailErrEl, 'Only @gmail.com emails are allowed.'); return;
+  }
+  var hasPic = Boolean(profilePicBlob || (currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined'));
+  if (!hasPic) {
+    showToast('Please take a live selfie or upload a profile picture.', 'warning');
+    return;
   }
   var fd = new FormData();
   fd.append('user_id', currentUser.id);
@@ -7048,7 +7168,15 @@ function doUpdateProfile() {
       Session.save(currentUser);
       showToast('Profile updated successfully!', 'success');
       Profile.cancelEdit();
-      loadProfile();
+      loadProfile(function(newProfile) {
+        if (window._pendingVerificationFlow) {
+          delete window._pendingVerificationFlow;
+          Profile.enterLicenseEdit();
+          showToast('Profile completed! You can now enter your driver\'s license details.', 'success');
+          var licCard = document.getElementById('licenseEditMode');
+          if (licCard) licCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
     })
     .catch(function(err) { showToast(err.message, 'error'); })
     .finally(function() { showLoading(false); restoreBtn(); });
@@ -7056,6 +7184,14 @@ function doUpdateProfile() {
 
 // LICENSE UPLOAD
 function openLicenseUpload() {
+  var missing = getMissingProfileFields(currentUser._profileData);
+  if (missing.length > 0) {
+    showToast('Please complete your profile (' + missing.join(', ') + ') first before uploading your license.', 'warning');
+    closeOverlay('page-license-upload');
+    showPage('page-profile');
+    Profile.enterEdit();
+    return;
+  }
   var el = document.getElementById('licenseUploadContent');
   if (!el || el.innerHTML.trim() !== '') return; // already loaded
   el.innerHTML = '<div class="page-header">' +

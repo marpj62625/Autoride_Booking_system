@@ -1754,7 +1754,28 @@ def upload_license():
 
     if not user_id: return jsonify({"error": "User ID required"}), 400
 
-    
+    cur = get_cursor()
+    cur.execute("SELECT first_name, last_name, full_name, phone, profile_picture FROM users WHERE id = %s", (user_id,))
+    u_profile = cur.fetchone()
+    if not u_profile:
+        return jsonify({'error': 'User not found'}), 404
+
+    missing_fields = []
+    p_name = (u_profile.get('first_name') or u_profile.get('full_name') or '').strip()
+    p_phone = (u_profile.get('phone') or '').strip()
+    p_pic = (u_profile.get('profile_picture') or '').strip()
+
+    if not p_name:
+        missing_fields.append('Full Name')
+    if not p_phone or len(p_phone) < 10:
+        missing_fields.append('Phone Number')
+    if not p_pic or p_pic in ('null', 'undefined'):
+        missing_fields.append('Profile Picture')
+
+    if missing_fields:
+        return jsonify({
+            'error': f"Please complete your profile ({', '.join(missing_fields)}) before uploading driver's license."
+        }), 400
 
     if 'license' not in request.files:
 
@@ -9987,6 +10008,29 @@ def save_license_details():
         
     try:
         cur = get_cursor()
+
+        # Check user profile completion: first/full name, phone, and profile picture
+        cur.execute("SELECT first_name, last_name, full_name, phone, profile_picture FROM users WHERE id = %s", (user_id,))
+        u_profile = cur.fetchone()
+        if not u_profile:
+            return jsonify({'error': 'User not found'}), 404
+
+        missing_fields = []
+        p_name = (u_profile.get('first_name') or u_profile.get('full_name') or '').strip()
+        p_phone = (u_profile.get('phone') or '').strip()
+        p_pic = (u_profile.get('profile_picture') or '').strip()
+
+        if not p_name:
+            missing_fields.append('Full Name')
+        if not p_phone or len(p_phone) < 10:
+            missing_fields.append('Phone Number')
+        if not p_pic or p_pic in ('null', 'undefined'):
+            missing_fields.append('Profile Picture')
+
+        if missing_fields:
+            return jsonify({
+                'error': f"Please complete your profile ({', '.join(missing_fields)}) before submitting driver's license."
+            }), 400
         
         # Ensure the license_details table exists
         cur.execute("""
