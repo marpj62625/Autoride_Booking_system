@@ -1703,6 +1703,36 @@
         .sab-btn:hover {
             background: var(--primary-dark);
         }
+        /* FAQ chips for Live Chat */
+        .faq-chip-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            flex-shrink: 0;
+        }
+        .faq-chip-btn:hover, .faq-chip-btn:active {
+            background: rgba(0, 177, 79, 0.12);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .terms-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
     </style>
 
     <!-- Cropper.js for Driver's License Cropping -->
@@ -3756,6 +3786,12 @@
         <i class="fas fa-arrow-right more-card-arrow"></i>
       </div>
 
+      <div class="more-card" onclick="openTermsAndConditions()">
+        <div class="more-card-icon" style="background:rgba(59,130,246,0.1);"><i class="fas fa-file-contract" style="color:#3b82f6;font-size:1.6rem;"></i></div>
+        <div class="more-card-body"><h4>Terms &amp; Conditions</h4><p>Rental policies, 20% DP &amp; handover rules</p></div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+
       <!-- Download App Card (Web only) -->
       <div class="more-card" id="moreDownloadAppCard" style="display: none;" onclick="window.open('https://play.google.com/store/apps/details?id=com.autoride.customer', '_blank')">
         <div class="more-card-icon" style="background: rgba(219,68,85,0.1);"><i class="fab fa-google-play" style="color: #db4437; font-size: 1.6rem;"></i></div>
@@ -3870,6 +3906,153 @@
     <!-- Review items list -->
     <div id="companyReviewsList" style="display:flex;flex-direction:column;gap:14px;padding-bottom:40px;">
       <!-- Rendered dynamically by loadCompanyReviews() -->
+    </div>
+  </div>
+</div>
+
+<div id="page-terms" class="overlay-page">
+  <div class="overlay-header">
+    <button onclick="closeOverlay('page-terms')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+    <h2 style="font-size:1.15rem;font-weight:800;">Terms &amp; Conditions</h2>
+  </div>
+  <div class="scroll-content" style="padding:16px;max-width:700px;margin:0 auto;padding-bottom:50px;">
+    <!-- Highlight Banner: 20% DP & Payment Policy -->
+    <div style="background:linear-gradient(135deg, rgba(0,177,79,0.12), rgba(0,177,79,0.03));border:1.5px solid var(--primary);border-radius:18px;padding:18px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,0,0,0.02);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;border-radius:12px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
+          <i class="fas fa-shield-alt"></i>
+        </div>
+        <div>
+          <h3 style="margin:0;font-size:1.05rem;font-weight:900;color:var(--text-primary);">Key Rental &amp; Payment Policies</h3>
+          <p style="margin:2px 0 0;font-size:0.75rem;color:var(--text-muted);">Please review these important terms before booking</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(0,177,79,0.15);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div>
+            <strong style="font-size:0.9rem;color:var(--text-primary);display:block;margin-bottom:3px;">20% Downpayment (Reservation Fee)</strong>
+            <span style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;">A minimum <strong>20% downpayment</strong> is mandatory to confirm and secure your vehicle reservation. Bookings without confirmed downpayment within the reservation window are subject to automatic release.</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(59,130,246,0.15);color:#3b82f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">
+            <i class="fas fa-hand-holding-usd"></i>
+          </div>
+          <div>
+            <strong style="font-size:0.9rem;color:var(--text-primary);display:block;margin-bottom:3px;">100% Payment Completion Upon Pickup / Delivery</strong>
+            <span style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;">The remaining <strong>80% rental balance</strong> must be paid in full upon physical vehicle pickup or delivery before vehicle keys and vehicle release are authorized.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Structured Terms Cards -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <!-- 1. Eligibility & Requirements -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(59,130,246,0.1);color:#3b82f6;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-id-card"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">1. Eligibility &amp; Valid Documents</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li>Primary renter must be at least <strong>21 years of age</strong>.</li>
+          <li>Must present an original, unexpired government-issued <strong>Driver's License</strong> upon vehicle release.</li>
+          <li>Must provide at least <strong>1 secondary government-issued ID</strong> (Passport, UMID, National ID, PhilSys, SSS, PRC, Voter's ID).</li>
+          <li>Driver profile must be reviewed and approved in the Autoride system prior to trip start.</li>
+          <li>Only the designated and registered driver(s) are authorized to operate the rented vehicle.</li>
+        </ul>
+      </div>
+
+      <!-- 2. Fuel & Mileage Policy -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(245,158,11,0.1);color:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-gas-pump"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">2. Fuel &amp; Mileage Policy</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li><strong>Same-to-Same Fuel:</strong> The vehicle must be returned with the exact same fuel level as recorded during pickup joint inspection. If returned with less fuel, the cost of missing fuel plus a ₱200 refueling service fee will be charged.</li>
+          <li><strong>Daily Mileage Allowance:</strong> Standard allocation is <strong>250 km per day</strong> (unless an unlimited mileage package was purchased). Excess mileage is charged at <strong>₱10.00 per kilometer</strong> upon vehicle return.</li>
+        </ul>
+      </div>
+
+      <!-- 3. Handover & Joint Inspection -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,0.1);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-clipboard-check"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">3. Vehicle Handover &amp; Digital Inspection</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li>A digital pre-rental joint inspection with timestamped photos will be completed to record exterior body condition, tire condition, odometer, and fuel level.</li>
+          <li>Upon return, a post-rental check will be performed. Any new scratches, dents, underbody damage, or missing accessories will be assessed and billed to the customer.</li>
+          <li><strong>Strictly No Smoking / Vaping:</strong> Smoking or vaping inside any Autoride vehicle is strictly prohibited. A deep sanitization fee of ₱1,500 will be charged for violations.</li>
+        </ul>
+      </div>
+
+      <!-- 4. Extension & Late Return -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(239,68,68,0.1);color:#ef4444;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-clock"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">4. Rental Extension &amp; Late Return</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li>Extensions must be requested in the app under <strong>My Bookings</strong> at least <strong>4 hours before</strong> scheduled return time and are subject to fleet availability.</li>
+          <li>Unauthorized late returns incur a late fee of <strong>₱500 per excess hour</strong>. Returns delayed by more than 3 hours without contact may be subject to a full day charge plus administrative penalties.</li>
+        </ul>
+      </div>
+
+      <!-- 5. Payment Methods -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(16,185,129,0.1);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-credit-card"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">5. Payment Methods</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li><strong>Online Payments (PayMongo):</strong> GCash, Maya, GrabPay, Visa, and Mastercard debit/credit cards.</li>
+          <li><strong>Cash / Over-the-Counter:</strong> Accepted for downpayment and remaining balance settlement at the branch or during vehicle handover.</li>
+        </ul>
+      </div>
+
+      <!-- 6. Cancellation & Refund Policy -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(139,92,246,0.1);color:#8b5cf6;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-undo-alt"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">6. Cancellation &amp; Refund Policy</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li><strong>48+ Hours Before Pickup:</strong> Eligible for 100% refund of downpayment or full booking credit.</li>
+          <li><strong>24 to 48 Hours Before Pickup:</strong> 50% reservation cancellation fee applies.</li>
+          <li><strong>Less than 24 Hours / No-Show:</strong> Downpayment is non-refundable.</li>
+        </ul>
+      </div>
+
+      <!-- 7. Tolls, Parking & Traffic Violations -->
+      <div class="terms-card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(236,72,153,0.1);color:#ec4899;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
+            <i class="fas fa-road"></i>
+          </div>
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:var(--text-primary);">7. Expressway Tolls, Parking &amp; Traffic Violations</h4>
+        </div>
+        <ul style="margin:0;padding-left:18px;font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">
+          <li>The renter is solely responsible for all expressway toll charges (RFID or cash), parking tickets, and local traffic violation fines incurred during the rental.</li>
+          <li>In the event of an emergency, mechanical trouble, or accident, promptly contact Autoride Customer Support through <strong>Live Chat</strong> or hotline before relocating the vehicle.</li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>

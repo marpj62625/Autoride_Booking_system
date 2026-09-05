@@ -7678,9 +7678,9 @@ CHATBOT_FAQ = [
 
     {
 
-        "keywords": ["payment", "pay", "gcash", "maya", "credit card", "bayad", "paano magbayad", "payment method"],
+        "keywords": ["payment", "pay", "gcash", "maya", "credit card", "bayad", "paano magbayad", "payment method", "downpayment", "down payment", "deposit", "20%"],
 
-        "response": " **Payment Methods:**\n\nWe accept the following:\n- **Credit/Debit Cards** (Visa, Mastercard)\n- **GCash**\n- **Maya (PayMaya)**\n- **Bank Transfer**\n- **Cash** (at pickup location)\n\nPayment is required to confirm your booking. You'll receive a receipt via email."
+        "response": "💳 **Payment & Downpayment Policy:**\n\n- **20% Downpayment:** A minimum 20% downpayment (reservation deposit) is required to confirm and secure your booking.\n- **Full Balance Payment:** The remaining 80% balance must be paid in full upon physical vehicle pickup or delivery before vehicle keys are handed over.\n- **Accepted Methods:** GCash, Maya, Credit/Debit Cards (via PayMongo), and Cash / OTC upon vehicle release.\n\nYou will receive an official digital receipt immediately upon payment confirmation."
 
     },
 
@@ -11265,6 +11265,53 @@ def users_search():
         if 'cur' in locals(): cur.close()
 
 
+def match_livechat_faq(msg_text):
+    if not msg_text:
+        return None
+    m = msg_text.lower().strip()
+    # 1. Downpayment & Balance payment
+    if any(k in m for k in ['20%', 'downpayment', 'down payment', 'dp', 'balance', 'upon pickup', 'delivery payment', 'full payment', 'how does the 20%']):
+        return (
+            "📌 **Downpayment & Balance Payment Policy:**\n\n"
+            "• **20% Downpayment:** A minimum 20% downpayment (reservation deposit) is required to secure and confirm your booking.\n"
+            "• **Full Balance Payment:** The remaining 80% balance must be settled in full upon physical vehicle pickup or delivery before vehicle keys are handed over.\n"
+            "• **Accepted Payment Methods:** Online via PayMongo (GCash, Maya, Debit/Credit Card) or Cash upon release."
+        )
+    # 2. Requirements & License
+    if any(k in m for k in ['requirement', 'requirements', 'license', 'valid id', 'documents', 'kailangan', 'what are the valid ids']):
+        return (
+            "📌 **Rental Requirements & Eligibility:**\n\n"
+            "• **Age:** Primary renter must be at least 21 years old.\n"
+            "• **Driver's License:** Original, valid government-issued Driver's License.\n"
+            "• **Secondary ID:** At least 1 valid government ID (Passport, UMID, National ID, PhilSys, SSS, etc.).\n"
+            "• **Account Verification:** Profile with driver's license photos must be approved in the app."
+        )
+    # 3. Fuel & Mileage
+    if any(k in m for k in ['fuel', 'gas', 'mileage', 'gasolina', 'petrol', 'diesel', 'km/day', 'fuel and mileage policy']):
+        return (
+            "📌 **Fuel & Mileage Policy:**\n\n"
+            "• **Fuel (Same-to-Same):** Return the vehicle with the exact same fuel level as recorded during pickup inspection. Refueling charges + ₱200 fee apply if returned lower.\n"
+            "• **Mileage Limit:** Standard limit is 250 km/day (unless unlimited mileage package was selected). Excess mileage is charged at ₱10/km."
+        )
+    # 4. Extension
+    if any(k in m for k in ['extend', 'extension', 'pahaba', 'dagdag araw', 'mag extend', 'how can i extend']):
+        return (
+            "📌 **Rental Extension Policy:**\n\n"
+            "• Extensions must be requested through the app under **My Bookings** at least 4 hours before your scheduled drop-off time.\n"
+            "• Extensions are subject to vehicle availability and approval.\n"
+            "• Unauthorized late returns incur a late fee of ₱500 per hour."
+        )
+    # 5. Cancellation & Refund
+    if any(k in m for k in ['cancel', 'cancellation', 'refund', 'i-cancel', 'kansela', 'cancellation and refund policy']):
+        return (
+            "📌 **Cancellation & Refund Policy:**\n\n"
+            "• **48+ hours before pickup:** Full refund or booking credit of your 20% downpayment.\n"
+            "• **24 to 48 hours before pickup:** 50% reservation cancellation fee applies.\n"
+            "• **Less than 24 hours / No-show:** 20% downpayment is non-refundable."
+        )
+    return None
+
+
 @app.route('/chat/send', methods=['POST'])
 @app.route('/api/chat/send', methods=['POST'])
 def chat_send():
@@ -11290,6 +11337,19 @@ def chat_send():
         """, (sender_type, int(sender_id), receiver_type, int(receiver_id), message))
         row = cur.fetchone()
         conn.commit()
+
+        # Auto-reply for Live Chat FAQs when customer asks Support
+        if sender_type == 'user' and receiver_type == 'admin':
+            try:
+                faq_reply = match_livechat_faq(message)
+                if faq_reply:
+                    cur.execute("""
+                        INSERT INTO chat_messages (sender_type, sender_id, receiver_type, receiver_id, message)
+                        VALUES ('admin', %s, 'user', %s, %s)
+                    """, (int(receiver_id), int(sender_id), faq_reply))
+                    conn.commit()
+            except Exception as _faq_err:
+                print(f"[CHAT_FAQ] Auto-reply error: {_faq_err}")
         
         # Send push notification to receiver
         try:

@@ -1103,7 +1103,7 @@ var _overlayZBase = 500;
 var _overlayZCounter = 0;
 
 function showOverlay(id) {
-  if (window._unreviewedBookingActive && _currentUnreviewedBooking && id !== 'page-company-reviews') {
+  if (window._unreviewedBookingActive && _currentUnreviewedBooking && id !== 'page-company-reviews' && id !== 'page-terms') {
     showToast('Please submit your rental feedback before continuing.', 'info');
     return;
   }
@@ -1122,6 +1122,14 @@ function showOverlay(id) {
   if (id === 'page-livechat') loadLiveChat();
   if (id === 'page-newsletter') loadNewsletter();
   if (id === 'page-company-reviews') loadCompanyReviews();
+  if (id === 'page-terms') {
+    var sc = el.querySelector('.scroll-content');
+    if (sc) sc.scrollTop = 0;
+  }
+}
+
+function openTermsAndConditions() {
+  showOverlay('page-terms');
 }
 
 function closeOverlay(id) {
@@ -3892,20 +3900,23 @@ function showRentalAgreement(payload, result, payType) {
       if (appSettings.rental_terms && appSettings.rental_terms.trim()) {
         return '<div style="white-space:pre-wrap;line-height:1.6;">' + appSettings.rental_terms + '</div>';
       } else {
-        return '<p><strong>Fuel Policy:</strong> Return the vehicle with the same fuel level as at pickup.</p>' +
+        return '<p><strong>20% Downpayment Required:</strong> A minimum 20% downpayment is required to confirm and secure your reservation.</p>' +
+          '<p><strong>Full Payment Upon Handover:</strong> The remaining 80% balance must be settled in full upon vehicle pickup or delivery before vehicle keys are released.</p>' +
+          '<p><strong>Fuel Policy:</strong> Return the vehicle with the exact same fuel level as recorded at pickup inspection.</p>' +
           '<p><strong>Mileage Rule:</strong> ' + (appSettings.mileage_limit || 250) + ' km/day limit. Excess charged at ₱10/km.</p>' +
           '<p><strong>Driver Responsibility:</strong> You must be the primary driver with a valid verified license.</p>' +
-          '<p><strong>Late Return:</strong> Late fee of ₱500 per hour applies.</p>' +
+          '<p><strong>Late Return:</strong> Late fee of ₱500 per hour applies for unauthorized extensions.</p>' +
           '<p><strong>Damages:</strong> Any damages not covered by your selected insurance are your responsibility.</p>' +
-          '<p><strong>Cancellation:</strong> 20% reservation fee is non-refundable if cancelled less than 48 hours before pickup.</p>';
+          '<p><strong>Cancellation:</strong> Downpayment is non-refundable if cancelled less than 24 hours before pickup (50% fee for 24-48h notice).</p>';
       }
     })() +
     '</div>' +
     '<div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:0.8rem;">' +
-    '<strong>Mandatory Requirements:</strong>' +
-    '<ul style="margin-top:6px;padding-left:16px;">' +
-    '<li>Must present 2 valid government-issued IDs upon pickup</li>' +
-    '<li>Driver\'s license must be valid and verified in the system</li>' +
+    '<strong>Mandatory Requirements & Handover Rules:</strong>' +
+    '<ul style="margin-top:6px;padding-left:16px;line-height:1.6;">' +
+    '<li>Must present valid original Driver\'s License upon pickup</li>' +
+    '<li>Must present at least 1 secondary valid government-issued ID</li>' +
+    '<li>Full rental balance must be completed prior to vehicle handover</li>' +
     '</ul>' +
     '</div>' +
     '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;font-size:0.875rem;cursor:pointer;">' +
@@ -8263,7 +8274,22 @@ var LiveChat = (function () {
         '<button class="back-btn" onclick="LiveChat.closeLiveChat()"><i class="fas fa-arrow-left"></i></button>' +
         '<h2>' + escapeHtml(adminName || 'Support Team') + '</h2>' +
       '</div>' +
-      '<div id="lcMessages" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;height:calc(100vh - 180px);"></div>' +
+      '<div id="lcMessages" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px;height:calc(100vh - 245px);"></div>' +
+      '<div id="lcFaqSection" style="padding:8px 14px;background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+          '<span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);display:flex;align-items:center;gap:5px;">' +
+            '<i class="fas fa-question-circle" style="color:var(--primary);"></i> FAQs / Quick Questions:' +
+          '</span>' +
+          '<span style="font-size:0.65rem;color:var(--text-muted);">Tap to ask</span>' +
+        '</div>' +
+        '<div class="faq-chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">' +
+          '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'How does the 20% downpayment and balance payment upon pickup work?\')">💳 20% DP &amp; Balance</button>' +
+          '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'What are the valid IDs and license requirements to rent?\')">🪪 IDs &amp; License</button>' +
+          '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'What is the fuel and mileage policy?\')">⛽ Fuel &amp; Mileage</button>' +
+          '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'How can I extend my current active rental?\')">📅 Extend Rental</button>' +
+          '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'What is the cancellation and refund policy?\')">❌ Cancellation</button>' +
+        '</div>' +
+      '</div>' +
       '<div class="chat-input-row">' +
         '<input type="text" id="lcInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')LiveChat.send()">' +
         '<button onclick="LiveChat.send()"><i class="fas fa-paper-plane"></i></button>' +
@@ -8375,6 +8401,13 @@ var LiveChat = (function () {
       .finally(function () { if (inputEl) inputEl.disabled = false; });
   }
 
+  function askFaq(questionText) {
+    var inputEl = document.getElementById('lcInput');
+    if (!inputEl) return;
+    inputEl.value = questionText;
+    send();
+  }
+
   function backToInbox() {
     stopPolling();
     _currentAdminId = null;
@@ -8390,6 +8423,7 @@ var LiveChat = (function () {
     openConversation: openConversation,
     closeLiveChat: closeLiveChat,
     send: send,
+    askFaq: askFaq,
     backToInbox: backToInbox,
     stopPolling: stopPolling
   };
