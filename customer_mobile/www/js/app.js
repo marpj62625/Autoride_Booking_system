@@ -528,12 +528,21 @@ var NotifStore = {
 function loadPublicSettingsAndLocations() {
   apiCall('/public/settings').then(function(s) {
     Object.assign(appSettings, s);
+    applyNewsletterVisibility();
   }).catch(function() {});
   apiCall('/locations').then(function(locs) {
     if (Array.isArray(locs) && locs.length > 0) {
       servicedLocations = locs;
     }
   }).catch(function() {});
+}
+
+function applyNewsletterVisibility() {
+  var isEnabled = (appSettings.enable_newsletter !== 'false' && appSettings.enable_newsletter !== false);
+  var cards = document.querySelectorAll('.more-card-newsletter');
+  cards.forEach(function(el) {
+    el.style.display = isEnabled ? 'flex' : 'none';
+  });
 }
 
 // FCM TOKEN REGISTRATION
@@ -8135,6 +8144,12 @@ function openNotificationsPage() {
 
 // NEWSLETTER & PRIVILEGES HUB
 function loadNewsletter() {
+  var isEnabled = (appSettings.enable_newsletter !== 'false' && appSettings.enable_newsletter !== false);
+  if (!isEnabled) {
+    showToast('Newsletter & Privileges is currently unavailable.', 'info');
+    closeOverlay('page-newsletter');
+    return;
+  }
   var el = document.getElementById('newsletterContent');
   if (!el) return;
 
@@ -8403,6 +8418,7 @@ function fallbackCopyPromoText(text) {
 // MORE PAGE
 // ============================================================
 function loadMorePage() {
+  applyNewsletterVisibility();
   if (!currentUser.id) return;
 }
 

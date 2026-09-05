@@ -7477,6 +7477,47 @@ def manage_instructions():
 # NEWSLETTER & PROMO BROADCAST SYSTEM
 # ============================================================
 
+@app.route('/api/newsletter/toggle', methods=['GET', 'POST'])
+def handle_newsletter_toggle():
+    """Get or update customer visibility toggle for newsletter & privileges."""
+    try:
+        cur = get_cursor()
+        cur.execute("CREATE TABLE IF NOT EXISTS settings (key VARCHAR(100) PRIMARY KEY, value TEXT, description TEXT)")
+
+        if request.method == 'POST':
+            data = request.json or {}
+            enabled = bool(data.get('enabled', True))
+            val_str = 'true' if enabled else 'false'
+            cur.execute("""
+                INSERT INTO settings (key, value, description)
+                VALUES ('enable_newsletter', %s, 'Enable or disable newsletter on customer app')
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+            """, (val_str,))
+            commit_db()
+            return jsonify({"message": f"Newsletter visibility updated to {val_str}", "enabled": enabled}), 200
+
+        # GET method
+        cur.execute("SELECT value FROM settings WHERE key = 'enable_newsletter' LIMIT 1")
+        row = cur.fetchone()
+        if not row:
+            cur.execute("""
+                INSERT INTO settings (key, value, description)
+                VALUES ('enable_newsletter', 'true', 'Enable or disable newsletter on customer app')
+                ON CONFLICT (key) DO NOTHING
+            """)
+            commit_db()
+            enabled = True
+        else:
+            enabled = (str(row['value']).strip().lower() != 'false')
+
+        return jsonify({"enabled": enabled}), 200
+    except Exception as e:
+        return jsonify({"error": str(e), "enabled": True}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 @app.route('/api/newsletters', methods=['GET'])
 def get_newsletters():
     """Public endpoint to fetch all active newsletters and promos for customer feed."""
@@ -9839,6 +9880,7 @@ def get_public_settings():
             'require_emergency_contact',
             'extension_conflict_deadline_hours',
             'max_booking_duration_days',
+            'enable_newsletter',
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))

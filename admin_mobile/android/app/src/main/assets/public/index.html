@@ -5227,7 +5227,7 @@
                     </div>
                     <div style="flex: 1;">
                         <h4 style="font-size: 0.95rem; font-weight: 700;">Newsletters & Promo Broadcasts</h4>
-                        <p style="font-size: 0.7rem; color: var(--text-muted);">Broadcast promos, manage campaigns & subscriber audience</p>
+                        <p id="nlSettingsSubtitle" style="font-size: 0.7rem; color: var(--text-muted);">Broadcast promos, manage campaigns & subscriber audience</p>
                     </div>
                     <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
@@ -6392,6 +6392,26 @@
                     </div>
                 </div>
                 <button onclick="toggleNewsletterModal(false)" style="background: #f1f5f9; border: none; color: #64748b; font-size: 1.1rem; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Customer App Feature Visibility Toggle Banner -->
+            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-eye" id="nlVisibilityIcon" style="color: #00B14F;"></i>
+                        <span>Customer App Visibility:</span>
+                        <span id="nlVisibilityBadge" style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; background: rgba(0,177,79,0.12); color: #00B14F;">VISIBLE</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 3px;">
+                        Toggle this button to hide or show the Newsletter & Privileges option on the customer website and mobile app.
+                    </div>
+                </div>
+                <div>
+                    <button type="button" id="nlToggleVisibilityBtn" onclick="NewsletterAdmin.toggleVisibility()" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; border: 1.5px solid #00B14F; background: rgba(0,177,79,0.12); color: #00B14F; transition: all 0.2s;">
+                        <i class="fas fa-toggle-on" id="nlToggleBtnIcon" style="font-size: 1.1rem;"></i>
+                        <span id="nlToggleBtnText">Enabled (Shown)</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Tab Navigation Bar -->
@@ -14026,6 +14046,94 @@ async edit(id) { this.openModal(id); }
         currentTab: 'broadcast',
         campaigns: [],
         subscribers: [],
+        isEnabled: true,
+
+        async checkVisibility() {
+            try {
+                const res = await fetch(`${API_BASE}/api/newsletter/toggle`);
+                const data = await res.json();
+                this.isEnabled = (data && data.enabled !== false);
+                this.updateVisibilityUI();
+            } catch(e) {
+                console.error("Failed to check newsletter visibility:", e);
+            }
+        },
+
+        async toggleVisibility() {
+            const nextState = !this.isEnabled;
+            const btn = document.getElementById('nlToggleVisibilityBtn');
+            if (btn) btn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/newsletter/toggle`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ enabled: nextState })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    this.isEnabled = nextState;
+                    this.updateVisibilityUI();
+                    const msg = nextState 
+                        ? "Newsletter & Privileges is now VISIBLE on customer app." 
+                        : "Newsletter & Privileges is now HIDDEN from customer app.";
+                    showNotification(msg, nextState ? "success" : "info");
+                } else {
+                    showNotification(data.error || "Failed to update visibility", "error");
+                }
+            } catch(e) {
+                showNotification("Connection error", "error");
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        },
+
+        updateVisibilityUI() {
+            const badge = document.getElementById('nlVisibilityBadge');
+            const icon = document.getElementById('nlVisibilityIcon');
+            const btn = document.getElementById('nlToggleVisibilityBtn');
+            const btnIcon = document.getElementById('nlToggleBtnIcon');
+            const btnText = document.getElementById('nlToggleBtnText');
+            const subtitle = document.getElementById('nlSettingsSubtitle');
+
+            if (this.isEnabled) {
+                if (badge) {
+                    badge.textContent = 'VISIBLE';
+                    badge.style.background = 'rgba(0,177,79,0.12)';
+                    badge.style.color = '#00B14F';
+                }
+                if (icon) {
+                    icon.className = 'fas fa-eye';
+                    icon.style.color = '#00B14F';
+                }
+                if (btn) {
+                    btn.style.borderColor = '#00B14F';
+                    btn.style.background = 'rgba(0,177,79,0.12)';
+                    btn.style.color = '#00B14F';
+                }
+                if (btnIcon) btnIcon.className = 'fas fa-toggle-on';
+                if (btnText) btnText.textContent = 'Enabled (Shown)';
+                if (subtitle) subtitle.textContent = 'Status: Active (Visible to Customers)';
+            } else {
+                if (badge) {
+                    badge.textContent = 'HIDDEN';
+                    badge.style.background = 'rgba(239,68,68,0.12)';
+                    badge.style.color = '#ef4444';
+                }
+                if (icon) {
+                    icon.className = 'fas fa-eye-slash';
+                    icon.style.color = '#ef4444';
+                }
+                if (btn) {
+                    btn.style.borderColor = '#64748b';
+                    btn.style.background = 'rgba(100,116,139,0.12)';
+                    btn.style.color = '#64748b';
+                }
+                if (btnIcon) btnIcon.className = 'fas fa-toggle-off';
+                if (btnText) btnText.textContent = 'Disabled (Hidden)';
+                if (subtitle) subtitle.textContent = 'Status: Disabled (Hidden from Customers)';
+            }
+        },
 
         switchTab(tab) {
             this.currentTab = tab;
@@ -14235,6 +14343,7 @@ async edit(id) { this.openModal(id); }
         if (!modal) return;
         modal.style.display = show ? 'flex' : 'none';
         if (show) {
+            NewsletterAdmin.checkVisibility();
             NewsletterAdmin.switchTab('broadcast');
             NewsletterAdmin.loadCampaigns();
             NewsletterAdmin.loadSubscribers();
