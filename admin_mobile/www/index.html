@@ -5010,47 +5010,23 @@
                     <i class="fas fa-user-shield" style="color: #00B14F;"></i>
                 </div>
                 <div style="flex: 1;">
-                    <h4 style="font-size: 0.95rem; color: #ffffff;">Edit Super Admin Profile</h4>
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Change email address & password</p>
+                    <h4 style="font-size: 0.95rem; color: var(--text-main); font-weight: 700; margin: 0 0 2px;">Edit Profile</h4>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Change email address & password</p>
                 </div>
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
             </div>
 
-
-
-            <div class="stat-card" onclick="openChangePasswordModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
-
-
-
+            <!-- Regular Admin Change Password (Hidden for Super Admin) -->
+            <div id="adminChangePasswordCard" class="stat-card" onclick="openChangePasswordModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                 <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-
-
-
                     <i class="fas fa-lock" style="color: var(--text-muted);"></i>
-
-
-
                 </div>
-
-
-
                 <div style="flex: 1;">
-
-
-
-                    <h4 style="font-size: 0.95rem;">Change Password</h4>
-
-
-
-                    <p style="font-size: 0.7rem; color: var(--text-muted);">Secure your account</p>
-
-
-
+                    <h4 style="font-size: 0.95rem; color: var(--text-main); font-weight: 700; margin: 0 0 2px;">Change Password</h4>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Secure your account</p>
                 </div>
-
-
-
                 <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+            </div>
 
 
 
@@ -8573,19 +8549,19 @@
 
 
     <!-- SUPER ADMIN PROFILE MODAL -->
-    <div id="superAdminProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-sizing: border-box;">
-        <div style="background: var(--surface-container, #131d20); border-radius: 20px; padding: 24px; border: 1.5px solid rgba(0, 177, 79, 0.35); width: 100%; max-width: 440px; box-sizing: border-box; box-shadow: 0 20px 60px rgba(0,0,0,0.6);">
+    <div id="superAdminProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; padding: 20px; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-sizing: border-box;">
+        <div style="background: var(--surface, #ffffff); border-radius: 20px; padding: 24px; border: 1.5px solid var(--border, rgba(0, 177, 79, 0.35)); width: 100%; max-width: 440px; box-sizing: border-box; box-shadow: var(--shadow-modal, 0 20px 60px rgba(0,0,0,0.3));">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(0, 177, 79, 0.15); display: flex; align-items: center; justify-content: center; color: #00B14F; font-size: 1.1rem;">
                         <i class="fas fa-user-shield"></i>
                     </div>
                     <div>
-                        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main, #ffffff);">Edit Profile</h3>
+                        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main, #0f1117);">Edit Profile</h3>
                         <span style="font-size: 0.72rem; color: #00B14F; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Super Admin Only</span>
                     </div>
                 </div>
-                <button type="button" onclick="closeSuperAdminProfileModal()" style="background: rgba(255,255,255,0.06); border: none; color: var(--text-muted, #94a3b8); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                <button type="button" onclick="closeSuperAdminProfileModal()" style="background: var(--surface-container, rgba(0,0,0,0.06)); border: 1px solid var(--border, transparent); color: var(--text-muted, #64748b); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -8593,40 +8569,40 @@
             <div id="superAdminProfileError" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; color: #ef4444; font-size: 0.8rem; margin-bottom: 16px;"></div>
 
             <div style="margin-bottom: 14px;">
-                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Email Address</label>
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">Email Address</label>
                 <div style="position: relative;">
-                    <input id="superAdminEditEmail" type="email" placeholder="superadmin@autoride.com" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
-                    <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                    <input id="superAdminEditEmail" type="email" placeholder="superadmin@autoride.com" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
             </div>
 
             <div style="margin-bottom: 14px;">
-                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Current Password <span style="color: #ef4444;">*</span></label>
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">Current Password <span style="color: #ef4444;">*</span></label>
                 <div style="position: relative;">
-                    <input id="superAdminCurrentPassword" type="password" placeholder="Enter current password to verify" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
-                    <i class="fas fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                    <input id="superAdminCurrentPassword" type="password" placeholder="Enter current password to verify" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
-                <span style="font-size: 0.7rem; color: var(--text-muted, #64748b); margin-top: 3px; display: block;">Required to authorize email or password changes</span>
+                <span style="font-size: 0.7rem; color: var(--text-muted, #6b7080); margin-top: 3px; display: block;">Required to authorize email or password changes</span>
             </div>
 
             <div style="margin-bottom: 14px;">
-                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">New Password <span style="color: var(--text-muted, #64748b); font-weight: 400;">(leave blank to keep current)</span></label>
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">New Password <span style="color: var(--text-muted, #6b7080); font-weight: 400;">(leave blank to keep current)</span></label>
                 <div style="position: relative;">
-                    <input id="superAdminNewPassword" type="password" placeholder="Min. 6 characters" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
-                    <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                    <input id="superAdminNewPassword" type="password" placeholder="Min. 6 characters" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
             </div>
 
             <div style="margin-bottom: 22px;">
-                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Confirm New Password</label>
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">Confirm New Password</label>
                 <div style="position: relative;">
-                    <input id="superAdminConfirmPassword" type="password" placeholder="Re-enter new password" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
-                    <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                    <input id="superAdminConfirmPassword" type="password" placeholder="Re-enter new password" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="closeSuperAdminProfileModal()" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 10px; color: var(--text-secondary, #cbd5e1); font-weight: 600; cursor: pointer; font-size: 0.88rem;">Cancel</button>
+                <button type="button" onclick="closeSuperAdminProfileModal()" style="flex: 1; padding: 12px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-weight: 600; cursor: pointer; font-size: 0.88rem;">Cancel</button>
                 <button id="superAdminSaveProfileBtn" type="button" onclick="submitSuperAdminProfileUpdate()" style="flex: 1.2; padding: 12px; background: #00B14F; border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(0, 177, 79, 0.4);">
                     <i class="fas fa-check"></i> Save Changes
                 </button>
@@ -9435,6 +9411,9 @@
     }
     #adminLoginOverlay input::placeholder {
         color: rgba(255, 255, 255, 0.4);
+    }
+    #superAdminProfileModal input::placeholder {
+        color: var(--text-muted, #6b7080);
     }
     .admin-login-box {
         width: calc(100% - 24px);
@@ -10466,6 +10445,8 @@
                 if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
                 const superAdminCard = document.getElementById('superAdminEditProfileCard');
                 if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
+                const regularPassCard = document.getElementById('adminChangePasswordCard');
+                if (regularPassCard) regularPassCard.style.display = isSuper ? 'none' : 'flex';
 
                 // Register FCM token if available from native layer
 
@@ -14115,6 +14096,8 @@ async edit(id) { this.openModal(id); }
                     if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
                     const superAdminCard = document.getElementById('superAdminEditProfileCard');
                     if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
+                    const regularPassCard = document.getElementById('adminChangePasswordCard');
+                    if (regularPassCard) regularPassCard.style.display = isSuper ? 'none' : 'flex';
 
                     if (typeof Settings !== 'undefined') Settings.fetch();
 
