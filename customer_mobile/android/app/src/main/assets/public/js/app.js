@@ -17,9 +17,6 @@
 
 // Global safety declarations
 var _initTimeout = null;
-if (typeof window !== 'undefined' && !window.refreshActiveBookingMonitor) {
-  window.refreshActiveBookingMonitor = function() {};
-}
 
 // CONFIG  - auto-detect API URL for web vs APK
 var API_BASE = (function() {
@@ -2170,6 +2167,115 @@ function _fmtDate(d) {
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[parseInt(parts[1])-1] + ' ' + parseInt(parts[2]) + ', ' + parts[0];
 }
+
+function refreshActiveBookingMonitor() {
+  if (!currentUser || !currentUser.id) {
+    var monitor = document.getElementById('activeBookingMonitor');
+    if (monitor) monitor.style.display = 'none';
+    return;
+  }
+
+  function applyActiveBooking(bookings) {
+    if (!Array.isArray(bookings)) return;
+    _allBookingsData = bookings;
+
+    // Active booking monitor - find booking that is currently active or upcoming
+    // Priority 1: Picked Up or Ongoing (in customer's active possession)
+    var active = null;
+    for (var i = 0; i < bookings.length; i++) {
+      var st = (bookings[i].status || '').trim();
+      if (st === 'Picked Up' || st === 'Ongoing') {
+        active = bookings[i];
+        break;
+      }
+    }
+    // Priority 2: Confirmed or Approved
+    if (!active) {
+      for (var i = 0; i < bookings.length; i++) {
+        var st = (bookings[i].status || '').trim();
+        if (st === 'Confirmed' || st === 'Approved') {
+          active = bookings[i];
+          break;
+        }
+      }
+    }
+
+    var monitor = document.getElementById('activeBookingMonitor');
+    var card = document.getElementById('activeBookingCard');
+    if (active && monitor && card) {
+      activeBookingData = active;
+      window._activeBookingId = active.id;
+      var isPickedUp = (active.status === 'Picked Up' || active.status === 'Ongoing');
+      var endNorm = _normDateStr(active.end_date);
+      var startNorm = _normDateStr(active.start_date);
+      var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
+      var imgHtml = imgSrc
+        ? '<img src="' + imgSrc + '" id="activeRentalImg" alt="' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\';">'
+        : '<div style="width:100%;height:100%;min-height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+
+      var statusLabel = isPickedUp ? (active.status === 'Picked Up' ? 'Picked Up' : 'Active') : active.status;
+      var statusBg = isPickedUp ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)';
+      var statusColor = isPickedUp ? 'var(--primary)' : '#3b82f6';
+      var statusBorder = isPickedUp ? 'rgba(16,185,129,0.25)' : 'rgba(59,130,246,0.25)';
+      var timeTitle = isPickedUp ? 'Time Remaining' : 'Pickup Date';
+      var returnLabel = isPickedUp ? 'Return by' : 'Starts on';
+      var returnTarget = isPickedUp ? endNorm : startNorm;
+      var subText = [active.color, active.plate_number].filter(Boolean).join(' - ') || active.plate_number || '';
+
+      card.innerHTML =
+        '<div class="active-rental-img">' + imgHtml + '</div>' +
+        '<div class="active-rental-info">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
+            '<div>' +
+              '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '</div>' +
+              '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + escapeHtml(subText) + '</div>' +
+            '</div>' +
+            '<span style="background:' + statusBg + ';color:' + statusColor + ';border:1px solid ' + statusBorder + ';padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">' + escapeHtml(statusLabel) + '</span>' +
+          '</div>' +
+          '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
+            '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">' + timeTitle + '</div>' +
+            '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
+            '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">' + returnLabel + ' <strong style="color:var(--text-primary);">' + _fmtDate(returnTarget) + '</strong></div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
+            '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
+              '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Start Date</div>' +
+              '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + '</div>' +
+            '</div>' +
+            '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
+              '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Booking #</div>' +
+              '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;">' +
+            '<button onclick="event.stopPropagation();openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
+            '<button onclick="event.stopPropagation();showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
+          '</div>' +
+        '</div>';
+
+      monitor.style.display = 'block';
+      _startActiveBookingCountdown(returnTarget);
+    } else {
+      if (monitor) monitor.style.display = 'none';
+      if (_activeBookingTimer) { clearInterval(_activeBookingTimer); _activeBookingTimer = null; }
+    }
+  }
+
+  // If we already have cached bookings data, render immediately
+  if (typeof _allBookingsData !== 'undefined' && Array.isArray(_allBookingsData) && _allBookingsData.length > 0) {
+    applyActiveBooking(_allBookingsData);
+  }
+
+  // Always fetch fresh from API
+  apiCall('/user-bookings?user_id=' + currentUser.id)
+    .then(function(bookings) {
+      applyActiveBooking(bookings);
+    })
+    .catch(function(err) {
+      console.error('[ActiveBookingMonitor] Error fetching bookings:', err);
+    });
+}
+window.refreshActiveBookingMonitor = refreshActiveBookingMonitor;
 
 function loadHome() {
   var nameEl = document.getElementById('homeUserName');
