@@ -4983,6 +4983,15 @@
 
 
 
+            <!-- Super Admin Edit Profile Pill (Super Admin Only) -->
+            <div id="superAdminProfileEditPill" style="display: none; justify-content: center; margin-top: 14px;">
+                <button type="button" onclick="openSuperAdminProfileModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border-radius: 20px; background: rgba(0, 177, 79, 0.12); border: 1px solid rgba(0, 177, 79, 0.4); color: #00B14F; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+                    <i class="fas fa-user-edit"></i> Edit Profile (Super Admin)
+                </button>
+            </div>
+
+
+
         </div>
 
 
@@ -4992,6 +5001,20 @@
 
 
         <div style="display: grid; gap: 12px;">
+
+
+
+            <!-- Super Admin Edit Profile Option (Super Admin Only) -->
+            <div id="superAdminEditProfileCard" class="stat-card" onclick="openSuperAdminProfileModal()" style="padding: 15px; display: none; align-items: center; gap: 15px; cursor: pointer; border: 1px solid rgba(0, 177, 79, 0.3);">
+                <div style="width: 40px; height: 40px; background: rgba(0, 177, 79, 0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user-shield" style="color: #00B14F;"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h4 style="font-size: 0.95rem; color: #ffffff;">Edit Super Admin Profile</h4>
+                    <p style="font-size: 0.7rem; color: var(--text-muted);">Change email address & password</p>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+            </div>
 
 
 
@@ -8549,6 +8572,68 @@
 
 
 
+    <!-- SUPER ADMIN PROFILE MODAL -->
+    <div id="superAdminProfileModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-sizing: border-box;">
+        <div style="background: var(--surface-container, #131d20); border-radius: 20px; padding: 24px; border: 1.5px solid rgba(0, 177, 79, 0.35); width: 100%; max-width: 440px; box-sizing: border-box; box-shadow: 0 20px 60px rgba(0,0,0,0.6);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(0, 177, 79, 0.15); display: flex; align-items: center; justify-content: center; color: #00B14F; font-size: 1.1rem;">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-main, #ffffff);">Edit Profile</h3>
+                        <span style="font-size: 0.72rem; color: #00B14F; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Super Admin Only</span>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSuperAdminProfileModal()" style="background: rgba(255,255,255,0.06); border: none; color: var(--text-muted, #94a3b8); width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="superAdminProfileError" style="display: none; padding: 10px 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; color: #ef4444; font-size: 0.8rem; margin-bottom: 16px;"></div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Email Address</label>
+                <div style="position: relative;">
+                    <input id="superAdminEditEmail" type="email" placeholder="superadmin@autoride.com" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Current Password <span style="color: #ef4444;">*</span></label>
+                <div style="position: relative;">
+                    <input id="superAdminCurrentPassword" type="password" placeholder="Enter current password to verify" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-muted, #64748b); margin-top: 3px; display: block;">Required to authorize email or password changes</span>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">New Password <span style="color: var(--text-muted, #64748b); font-weight: 400;">(leave blank to keep current)</span></label>
+                <div style="position: relative;">
+                    <input id="superAdminNewPassword" type="password" placeholder="Min. 6 characters" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted, #94a3b8); margin-bottom: 6px;">Confirm New Password</label>
+                <div style="position: relative;">
+                    <input id="superAdminConfirmPassword" type="password" placeholder="Re-enter new password" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container-high, #1a272b); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 10px; color: var(--text-main, #ffffff); font-size: 0.88rem; box-sizing: border-box;">
+                    <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #64748b); font-size: 0.85rem;"></i>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeSuperAdminProfileModal()" style="flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 10px; color: var(--text-secondary, #cbd5e1); font-weight: 600; cursor: pointer; font-size: 0.88rem;">Cancel</button>
+                <button id="superAdminSaveProfileBtn" type="button" onclick="submitSuperAdminProfileUpdate()" style="flex: 1.2; padding: 12px; background: #00B14F; border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 14px rgba(0, 177, 79, 0.4);">
+                    <i class="fas fa-check"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- CHANGE PASSWORD MODAL -->
 
 
@@ -9351,15 +9436,39 @@
     #adminLoginOverlay input::placeholder {
         color: rgba(255, 255, 255, 0.4);
     }
+    .admin-login-box {
+        width: calc(100% - 24px);
+        max-width: 460px;
+        margin: 16px auto;
+        padding: 36px 20px;
+        background: rgba(255,255,255,0.02);
+        border: 1.5px solid rgba(255,255,255,0.06);
+        border-radius: 24px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+        box-sizing: border-box;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+    @media (min-width: 480px) {
+        .admin-login-box {
+            padding: 48px 36px;
+            margin: 20px auto;
+        }
+    }
 </style>
-<div id="adminLoginOverlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(160deg,#0a1518,#0f2027,#0a1518);font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+<div id="adminLoginOverlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;display:flex;align-items:center;justify-content:center;overflow-y:auto;background:linear-gradient(160deg,#0a1518,#0f2027,#0a1518);font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
 
     <!-- Background glowing accents -->
     <div style="position:absolute;top:-10%;right:-10%;width:500px;height:500px;border-radius:50%;background:rgba(0,177,79,0.05);filter:blur(80px);pointer-events:none;z-index:1;"></div>
     <div style="position:absolute;bottom:-10%;left:-10%;width:500px;height:500px;border-radius:50%;background:rgba(0,177,79,0.03);filter:blur(80px);pointer-events:none;z-index:1;"></div>
 
     <!-- Centered Login Box -->
-    <div style="width:100%;max-width:440px;margin:20px;padding:48px 36px;background:rgba(255,255,255,0.02);border:1.5px solid rgba(255,255,255,0.06);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,0.6);box-sizing:border-box;position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
+    <div class="admin-login-box">
         
         <!-- Logo (Circular border wrapper from original admin design) -->
         <div style="width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,0.3);flex-shrink:0;">
@@ -9656,40 +9765,13 @@
                                 UserMgmt.refresh();
                             }
                         }
-
-
-
-                        }
-
-
-
                     } else if (newOnes.length > 1) {
-
-
-
                         window._adminShowToast('New Notifications', `You have ${newOnes.length} new notifications.`);
 
-
-
                         // Refresh extensions if any are extension requests
-
-
-
                         if (newOnes.some(n => n.type === 'admin_extension_request')) {
-
-
-
                             if (typeof Extensions !== 'undefined') Extensions.load();
-
-
-
                         }
-
-
-
-                        // Auto-refresh bookings for payment/cancel/refund notifications
-
-
 
                         // Auto-refresh bookings for payment/cancel/refund notifications
                         if (newOnes.some(n => n.type === 'admin_payment_proof' || n.type === 'admin_booking_cancelled' || n.type === 'admin_refund_request' || n.type === 'admin_new_booking' || n.type === 'admin_no_show')) {
@@ -9710,17 +9792,7 @@
                                 UserMgmt.refresh();
                             }
                         }
-
-
-
-                        }
-
-
-
                     }
-
-
-
                 }
 
 
@@ -10377,44 +10449,23 @@
 
 
                 if (roleEl) roleEl.textContent = user.role.replace('_', ' ').toUpperCase();
-
-
-
                 if (avatarEl) avatarEl.textContent = user.full_name[0].toUpperCase();
 
-
-
-
-
-
+                const emailEl = document.getElementById('settingsEmail');
+                if (emailEl && user.email) emailEl.textContent = user.email;
 
                 const userRole = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
 
-
-
-                const isSuper = userRole.includes('super admin') || userRole.includes('superadmin');
-
-
-
-                
-
-
+                const isSuper = userRole.includes('super admin') || userRole.includes('superadmin') || user.role === 'super_admin';
 
                 document.querySelectorAll('.revenue-restricted').forEach(el => {
-
-
-
                     el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
-
-
-
                 });
 
-
-
-
-
-
+                const superAdminPill = document.getElementById('superAdminProfileEditPill');
+                if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
+                const superAdminCard = document.getElementById('superAdminEditProfileCard');
+                if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
 
                 // Register FCM token if available from native layer
 
@@ -14059,7 +14110,11 @@ async edit(id) { this.openModal(id); }
 
                     if(document.getElementById('settingsEmail')) document.getElementById('settingsEmail').textContent = user.email || 'admin@autoride.com';
 
-
+                    const isSuper = (user.role === 'super_admin') || (user.role || '').toLowerCase().includes('super');
+                    const superAdminPill = document.getElementById('superAdminProfileEditPill');
+                    if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
+                    const superAdminCard = document.getElementById('superAdminEditProfileCard');
+                    if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
 
                     if (typeof Settings !== 'undefined') Settings.fetch();
 
@@ -23433,6 +23488,13 @@ async edit(id) { this.openModal(id); }
                         keys: ['loyalty_points_spend_ratio', 'loyalty_points_value', 'loyalty_max_discount_percent'],
                         settings: []
                     },
+                    payment: {
+                        title: 'PayMongo Payment Gateway',
+                        icon: 'fa-credit-card',
+                        color: '#00c389',
+                        keys: ['paymongo_mode', 'paymongo_test_secret_key', 'paymongo_test_public_key', 'paymongo_live_secret_key', 'paymongo_live_public_key', 'paymongo_webhook_secret'],
+                        settings: []
+                    },
                     general: {
                         title: 'General Configurations',
                         icon: 'fa-sliders-h',
@@ -23505,6 +23567,70 @@ async edit(id) { this.openModal(id); }
                             html += `
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        if (s.key === 'paymongo_mode') {
+                            const isLive = s.value === 'live';
+                            const badgeBg = isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+                            const badgeColor = isLive ? '#ef4444' : '#10b981';
+                            const badgeText = isLive ? '🔴 LIVE (Real Money / Production)' : '🧪 TEST (Sandbox / Safe Mode)';
+                            const inputField = `
+                                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                    <select data-key="${s.key}" onchange="updatePaymongoModeBadge(this)" style="flex: 1; min-width: 220px; padding: 12px 14px; background: var(--surface-solid); border: 2px solid ${isLive ? '#ef4444' : '#10b981'}; border-radius: 10px; color: var(--text-main); font-size: 0.95rem; font-weight: 700; outline: none; cursor: pointer;">
+                                        <option value="test" ${!isLive ? 'selected' : ''}>🧪 Test Mode (Sandbox)</option>
+                                        <option value="live" ${isLive ? 'selected' : ''}>🔴 Live Mode (Real Customer Payments)</option>
+                                    </select>
+                                    <span id="pmModeBadge" style="padding: 6px 14px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; border-radius: 20px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">
+                                        ${badgeText}
+                                    </span>
+                                    <button type="button" onclick="testPaymongoCredentials()" style="padding: 10px 16px; font-size: 0.82rem; font-weight: 700; border-radius: 10px; background: #00c389; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-plug"></i> Test Connection
+                                    </button>
+                                </div>
+                            `;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1; margin-bottom: 8px; background: rgba(0,195,137,0.05); padding: 14px; border-radius: 12px; border: 1px dashed rgba(0,195,137,0.3);">
+                                    <label style="font-size: 0.72rem; color: #00c389; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        if (s.key.includes('secret_key') || s.key === 'paymongo_webhook_secret') {
+                            const inputId = 'input_' + s.key;
+                            const isLiveKey = s.key.includes('live');
+                            const placeholder = s.key.includes('live') ? 'sk_live_...' : s.key.includes('webhook') ? 'whsec_...' : 'sk_test_...';
+                            const inputField = `
+                                <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                                    <input type="password" id="${inputId}" data-key="${s.key}" value="${s.value || ''}" placeholder="${placeholder}" style="width: 100%; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-family: monospace; font-weight: 600; outline: none;">
+                                    <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            `;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.65rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
+                                    ${inputField}
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        if (s.key.includes('public_key')) {
+                            const isLiveKey = s.key.includes('live');
+                            const placeholder = isLiveKey ? 'pk_live_...' : 'pk_test_...';
+                            const inputField = `
+                                <input type="text" data-key="${s.key}" value="${s.value || ''}" placeholder="${placeholder}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-family: monospace; font-weight: 600; outline: none;">
+                            `;
+                            html += `
+                                <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 0.65rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
                                     ${inputField}
                                 </div>
                             `;
@@ -23651,6 +23777,55 @@ async edit(id) { this.openModal(id); }
 
 
 
+    };
+
+    window.updatePaymongoModeBadge = function(selectEl) {
+        const badge = document.getElementById('pmModeBadge');
+        if (!badge) return;
+        const isLive = selectEl.value === 'live';
+        selectEl.style.borderColor = isLive ? '#ef4444' : '#10b981';
+        badge.style.background = isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = isLive ? '#ef4444' : '#10b981';
+        badge.style.borderColor = isLive ? '#ef4444' : '#10b981';
+        badge.textContent = isLive ? '🔴 LIVE (Real Money / Production)' : '🧪 TEST (Sandbox / Safe Mode)';
+    };
+
+    window.togglePasswordVisibility = function(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+        } else {
+            input.type = 'password';
+            if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+        }
+    };
+
+    window.testPaymongoCredentials = async function() {
+        const modeSelect = document.querySelector('select[data-key="paymongo_mode"]');
+        const mode = modeSelect ? modeSelect.value : 'test';
+        const keyName = mode === 'live' ? 'paymongo_live_secret_key' : 'paymongo_test_secret_key';
+        const secretKeyInput = document.querySelector(`input[data-key="${keyName}"]`);
+        const secretKey = secretKeyInput ? secretKeyInput.value.trim() : '';
+
+        showNotification('Testing PayMongo connection...', 'info');
+        try {
+            const res = await fetch(`${API_BASE}/admin/paymongo/test-connection`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode, secret_key: secretKey })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showNotification('✅ ' + data.message, 'success');
+            } else {
+                showNotification('❌ ' + (data.message || 'Connection test failed'), 'error');
+            }
+        } catch (e) {
+            showNotification('❌ Connection error: ' + e.message, 'error');
+        }
     };
 
 
@@ -26189,11 +26364,175 @@ async edit(id) { this.openModal(id); }
 
     }
 
+    function openSuperAdminProfileModal() {
+        const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+        if (!user) {
+            if (typeof showNotification === 'function') showNotification('Please log in first', 'error');
+            return;
+        }
+        const userRole = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
+        const isSuper = user.role === 'super_admin' || userRole.includes('super admin') || userRole.includes('superadmin');
+        if (!isSuper) {
+            if (typeof showNotification === 'function') showNotification('Only Super Admin can edit this profile.', 'error');
+            return;
+        }
 
+        const emailInput = document.getElementById('superAdminEditEmail');
+        if (emailInput) emailInput.value = user.email || '';
 
+        const currPass = document.getElementById('superAdminCurrentPassword');
+        if (currPass) currPass.value = '';
 
+        const newPass = document.getElementById('superAdminNewPassword');
+        if (newPass) newPass.value = '';
 
+        const confPass = document.getElementById('superAdminConfirmPassword');
+        if (confPass) confPass.value = '';
 
+        const errDiv = document.getElementById('superAdminProfileError');
+        if (errDiv) {
+            errDiv.textContent = '';
+            errDiv.style.display = 'none';
+        }
+
+        const modal = document.getElementById('superAdminProfileModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeSuperAdminProfileModal() {
+        const modal = document.getElementById('superAdminProfileModal');
+        if (modal) modal.style.display = 'none';
+        const currPass = document.getElementById('superAdminCurrentPassword');
+        if (currPass) currPass.value = '';
+        const newPass = document.getElementById('superAdminNewPassword');
+        if (newPass) newPass.value = '';
+        const confPass = document.getElementById('superAdminConfirmPassword');
+        if (confPass) confPass.value = '';
+    }
+
+    async function submitSuperAdminProfileUpdate() {
+        const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+        if (!user) {
+            if (typeof showNotification === 'function') showNotification('Please log in first', 'error');
+            return;
+        }
+        const userRole = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
+        const isSuper = user.role === 'super_admin' || userRole.includes('super admin') || userRole.includes('superadmin');
+        if (!isSuper) {
+            if (typeof showNotification === 'function') showNotification('Only Super Admin accounts can edit this profile.', 'error');
+            return;
+        }
+
+        const errDiv = document.getElementById('superAdminProfileError');
+        const showError = (msg) => {
+            if (errDiv) {
+                errDiv.textContent = msg;
+                errDiv.style.display = 'block';
+            } else if (typeof showNotification === 'function') {
+                showNotification(msg, 'error');
+            } else {
+                alert(msg);
+            }
+        };
+
+        if (errDiv) {
+            errDiv.textContent = '';
+            errDiv.style.display = 'none';
+        }
+
+        const email = (document.getElementById('superAdminEditEmail')?.value || '').trim();
+        const currentPassword = (document.getElementById('superAdminCurrentPassword')?.value || '').trim();
+        const newPassword = (document.getElementById('superAdminNewPassword')?.value || '').trim();
+        const confirmPassword = (document.getElementById('superAdminConfirmPassword')?.value || '').trim();
+
+        if (!email) {
+            showError('Please enter a valid email address.');
+            return;
+        }
+        if (!currentPassword) {
+            showError('Please enter your current password to authorize changes.');
+            return;
+        }
+        if (newPassword) {
+            if (newPassword.length < 6) {
+                showError('New password must be at least 6 characters long.');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                showError('New passwords do not match.');
+                return;
+            }
+        }
+
+        const btn = document.getElementById('superAdminSaveProfileBtn');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
+
+        try {
+            const payload = {
+                admin_id: user.id,
+                current_password: currentPassword,
+                email: email
+            };
+            if (newPassword) {
+                payload.new_password = newPassword;
+            }
+
+            const res = await fetch(`${API_BASE}/api/admin/super-admin/update-profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                try {
+                    const raw = localStorage.getItem('admin_user');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (parsed.user) {
+                            parsed.user.email = data.user.email;
+                            localStorage.setItem('admin_user', JSON.stringify(parsed));
+                        } else {
+                            parsed.email = data.user.email;
+                            localStorage.setItem('admin_user', JSON.stringify(parsed));
+                        }
+                    }
+                } catch(e) {
+                    console.error('Error updating cached admin user:', e);
+                }
+
+                const emailEl = document.getElementById('settingsEmail');
+                if (emailEl) emailEl.textContent = data.user.email;
+
+                closeSuperAdminProfileModal();
+
+                if (typeof showNotification === 'function') {
+                    showNotification(data.message || 'Super Admin profile updated successfully!', 'success');
+                } else {
+                    alert('Super Admin profile updated successfully!');
+                }
+            } else {
+                showError(data.error || 'Failed to update profile. Please check your credentials.');
+            }
+        } catch (err) {
+            console.error('Update profile error:', err);
+            showError('Network error. Failed to reach server.');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    }
+
+    window.openSuperAdminProfileModal = openSuperAdminProfileModal;
+    window.closeSuperAdminProfileModal = closeSuperAdminProfileModal;
+    window.submitSuperAdminProfileUpdate = submitSuperAdminProfileUpdate;
 
     function showNotification(message, type = 'info') {
 

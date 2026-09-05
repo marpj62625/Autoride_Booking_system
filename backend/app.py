@@ -7827,7 +7827,7 @@ def admin_login():
 
         # Only allow is_verified = 1 (Active)
 
-        cur.execute("SELECT id, full_name, role, assigned_location, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin')", (email,))
+        cur.execute("SELECT id, full_name, email, role, assigned_location, password FROM users WHERE email=%s AND role IN ('admin', 'super_admin')", (email,))
         admin_row = cur.fetchone()
         user = None
         if admin_row:
@@ -7843,38 +7843,22 @@ def admin_login():
             if pw_ok:
                 user = admin_row
 
-        
-
         if user:
-
             # Log activity
-
             log_activity(
-
                 admin_id=user['id'],
-
                 admin_name=user['full_name'],
-
                 action='ADMIN_LOGIN',
-
                 target_type='AUTH',
-
                 details=f"Admin logged in from {request.remote_addr}"
-
             )
 
-
-
             return jsonify({
-
                 "id": user['id'],
-
                 "full_name": user['full_name'],
-
+                "email": user.get('email') or email,
                 "role": user['role'],
-
                 "assigned_location": user['assigned_location']
-
             }), 200
 
         else:
@@ -8077,11 +8061,96 @@ def delete_admin(user_id):
         return jsonify({"message": "Admin deleted"}), 200
 
     except Exception as e:
-
         return jsonify({"error": str(e)}), 400
 
     finally:
+        if 'cur' in locals(): cur.close()
 
+
+@app.route('/admin/super-admin/update-profile', methods=['POST', 'PUT'])
+@app.route('/api/admin/super-admin/update-profile', methods=['POST', 'PUT'])
+def update_super_admin_profile():
+    data = request.json or {}
+    admin_id = data.get('admin_id') or data.get('user_id')
+    current_password = str(data.get('current_password', '')).strip()
+    new_email = str(data.get('email', '')).strip().lower()
+    new_password = str(data.get('new_password', '')).strip()
+
+    if not admin_id:
+        return jsonify({"error": "Admin ID is required."}), 400
+    if not current_password:
+        return jsonify({"error": "Current password is required to save changes."}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, email, password, role, assigned_location FROM users WHERE id = %s", (admin_id,))
+        admin = cur.fetchone()
+
+        if not admin:
+            return jsonify({"error": "Account not found."}), 404
+
+        # STRICT ROLE CHECK: Super Admin only!
+        if admin['role'] != 'super_admin':
+            return jsonify({"error": "Unauthorized. Only Super Admin accounts can edit this profile."}), 403
+
+        # Verify current password
+        stored_pw = admin['password'] or ''
+        try:
+            pw_ok = bcrypt.checkpw(current_password.encode('utf-8'), stored_pw.encode('utf-8'))
+        except Exception:
+            pw_ok = (stored_pw == current_password)
+
+        if not pw_ok:
+            return jsonify({"error": "Current password is incorrect."}), 401
+
+        # If email is changing, validate format and ensure uniqueness across users
+        if new_email and new_email != (admin['email'] or '').lower():
+            import re
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", new_email):
+                return jsonify({"error": "Invalid email address format."}), 400
+
+            cur.execute("SELECT id FROM users WHERE LOWER(email) = %s AND id != %s", (new_email, admin_id))
+            conflict = cur.fetchone()
+            if conflict:
+                return jsonify({"error": "That email address is already in use by another user."}), 409
+
+            cur.execute("UPDATE users SET email = %s WHERE id = %s", (new_email, admin_id))
+            admin['email'] = new_email
+
+        # If password is being changed
+        if new_password:
+            if len(new_password) < 6:
+                return jsonify({"error": "New password must be at least 6 characters long."}), 400
+            hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, admin_id))
+
+        commit_db()
+
+        log_activity(
+            admin_id=admin['id'],
+            admin_name=admin['full_name'] or 'Super Admin',
+            action='UPDATE_SUPER_ADMIN_PROFILE',
+            target_type='AUTH',
+            target_id=str(admin['id']),
+            details=f"Super Admin updated profile credentials (Email: {admin['email']})"
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "Super Admin profile updated successfully.",
+            "user": {
+                "id": admin['id'],
+                "full_name": admin['full_name'],
+                "email": admin['email'],
+                "role": admin['role'],
+                "assigned_location": admin.get('assigned_location')
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"[SuperAdminProfile] Error: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
         if 'cur' in locals(): cur.close()
 
 
