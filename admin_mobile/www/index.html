@@ -4410,6 +4410,7 @@
 
 
             <a href="javascript:void(0);" class="drawer-item" data-tab="activity" onclick="navTo('activity')"><i class="fas fa-history"></i> Activity Log</a>
+            <a href="javascript:void(0);" class="drawer-item" onclick="toggleNewsletterModal(true);closeDrawer();"><i class="fas fa-newspaper"></i> Newsletters & Promos</a>
 
 
 
@@ -5214,6 +5215,19 @@
                     <div style="flex: 1;">
                         <h4 style="font-size: 0.95rem;">System Email Settings</h4>
                         <p id="smtpStatusLabel" style="font-size: 0.7rem; color: var(--text-muted);">Loading email status...</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                </div>
+            </div>
+
+            <div id="mobileNewsletterConfig" style="margin-top: 15px;">
+                <div class="stat-card" onclick="toggleNewsletterModal(true)" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 3px solid #3b82f6;">
+                    <div style="width: 40px; height: 40px; background: rgba(59, 130, 246, 0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-newspaper" style="color: #3b82f6;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 0.95rem; font-weight: 700;">Newsletters & Promo Broadcasts</h4>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Broadcast promos, manage campaigns & subscriber audience</p>
                     </div>
                     <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
@@ -6359,6 +6373,127 @@
             <div style="font-size: 0.72rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">Active Blackout Periods</div>
             <div id="blackoutsList" style="display: flex; flex-direction: column; gap: 8px;">
                 <!-- Loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- NEWSLETTER MANAGEMENT MODAL -->
+    <div id="newsletterModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; backdrop-filter: blur(4px);">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); width: 92%; max-width: 680px; max-height: 90vh; overflow-y: auto;">
+            <!-- Modal Header -->
+            <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(59,130,246,0.12); display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 1.1rem;">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin: 0;">Newsletters & Promo Broadcasts</h2>
+                        <p style="font-size: 0.75rem; color: #64748b; margin: 0;">Publish campaigns & manage subscriber audience</p>
+                    </div>
+                </div>
+                <button onclick="toggleNewsletterModal(false)" style="background: #f1f5f9; border: none; color: #64748b; font-size: 1.1rem; width: 34px; height: 34px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Tab Navigation Bar -->
+            <div style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <button id="nlTabBtn_broadcast" onclick="NewsletterAdmin.switchTab('broadcast')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #3b82f6; background: #3b82f6; color: #ffffff; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fas fa-bullhorn"></i> New Campaign
+                </button>
+                <button id="nlTabBtn_campaigns" onclick="NewsletterAdmin.switchTab('campaigns')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f1f5f9; color: #475569; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fas fa-history"></i> Campaigns (<span id="adminCampaignCount">0</span>)
+                </button>
+                <button id="nlTabBtn_subscribers" onclick="NewsletterAdmin.switchTab('subscribers')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f1f5f9; color: #475569; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fas fa-users"></i> Audience (<span id="adminSubCount">0</span>)
+                </button>
+            </div>
+
+            <!-- TAB 1: CREATE & BROADCAST CAMPAIGN -->
+            <div id="nlTabPane_broadcast">
+                <form id="nlBroadcastForm" onsubmit="NewsletterAdmin.submitCampaign(event)" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div>
+                        <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Campaign Title *</label>
+                        <input type="text" id="nlFormTitle" required placeholder="e.g. Summer Weekend Roadtrip Special — 15% OFF" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Category</label>
+                            <select id="nlFormCategory" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
+                                <option value="Special Promo">Special Promo</option>
+                                <option value="Fleet Update">Fleet Update</option>
+                                <option value="Travel Guide">Travel Guide</option>
+                                <option value="Service Announcement">Service Announcement</option>
+                                <option value="General News">General News</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Discount % (Optional)</label>
+                            <input type="number" id="nlFormDiscount" min="1" max="99" placeholder="e.g. 15" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Promo Voucher Code (Optional)</label>
+                        <input type="text" id="nlFormCode" placeholder="e.g. SUMMER15 (Leave blank if no voucher)" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-family: monospace; font-weight: 700; color: #0f172a !important; background: #fff !important; text-transform: uppercase;">
+                    </div>
+
+                    <div>
+                        <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Campaign Content *</label>
+                        <textarea id="nlFormContent" required rows="4" placeholder="Write your newsletter announcement, promotional details, instructions or tips here..." style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="nlFormNotify" checked style="width: 17px; height: 17px; cursor: pointer; accent-color: #3b82f6;">
+                        <label for="nlFormNotify" style="font-size: 0.8rem; color: #334155; font-weight: 600; cursor: pointer; user-select: none;">
+                            <i class="fas fa-bell" style="color: #3b82f6; margin-right: 4px;"></i> Send in-app notification alert to all registered customers
+                        </label>
+                    </div>
+
+                    <button type="submit" id="nlSubmitBtn" class="btn-primary" style="width: 100%; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; background: #3b82f6; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;">
+                        <i class="fas fa-paper-plane"></i> Publish & Broadcast Newsletter
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 2: PUBLISHED CAMPAIGNS -->
+            <div id="nlTabPane_campaigns" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="font-size: 0.8rem; color: #64748b; font-weight: 600;">All Broadcasted Newsletters</div>
+                    <button onclick="NewsletterAdmin.loadCampaigns()" style="background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div id="nlAdminCampaignsList" style="display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto;">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- TAB 3: SUBSCRIBERS AUDIENCE -->
+            <div id="nlTabPane_subscribers" style="display: none;">
+                <!-- Summary Stat Pills -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px; text-align: center;">
+                        <div id="nlStatTotal" style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">0</div>
+                        <div style="font-size: 0.68rem; color: #64748b; text-transform: uppercase; font-weight: 700;">Total</div>
+                    </div>
+                    <div style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); border-radius: 10px; padding: 10px; text-align: center;">
+                        <div id="nlStatActive" style="font-size: 1.25rem; font-weight: 800; color: #16a34a;">0</div>
+                        <div style="font-size: 0.68rem; color: #16a34a; text-transform: uppercase; font-weight: 700;">Active</div>
+                    </div>
+                    <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; padding: 10px; text-align: center;">
+                        <div id="nlStatUnsub" style="font-size: 1.25rem; font-weight: 800; color: #ef4444;">0</div>
+                        <div style="font-size: 0.68rem; color: #ef4444; text-transform: uppercase; font-weight: 700;">Unsubscribed</div>
+                    </div>
+                </div>
+
+                <!-- Search Input -->
+                <div style="margin-bottom: 12px;">
+                    <input type="text" id="nlSubSearchInput" oninput="NewsletterAdmin.filterSubscribers()" placeholder="Search by email, name, or status..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.825rem; color: #0f172a !important; background: #fff !important;">
+                </div>
+
+                <div id="nlAdminSubscribersList" style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto;">
+                    <!-- Loaded dynamically -->
+                </div>
             </div>
         </div>
     </div>
@@ -13884,6 +14019,225 @@ async edit(id) { this.openModal(id); }
         modal.style.display = show ? 'flex' : 'none';
         if (show) {
             Blackouts.refresh();
+        }
+    }
+
+    const NewsletterAdmin = {
+        currentTab: 'broadcast',
+        campaigns: [],
+        subscribers: [],
+
+        switchTab(tab) {
+            this.currentTab = tab;
+            ['broadcast', 'campaigns', 'subscribers'].forEach(t => {
+                const btn = document.getElementById('nlTabBtn_' + t);
+                const pane = document.getElementById('nlTabPane_' + t);
+                if (btn) {
+                    if (t === tab) {
+                        btn.style.background = '#3b82f6';
+                        btn.style.color = '#ffffff';
+                        btn.style.borderColor = '#3b82f6';
+                    } else {
+                        btn.style.background = '#f1f5f9';
+                        btn.style.color = '#475569';
+                        btn.style.borderColor = '#e2e8f0';
+                    }
+                }
+                if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
+            });
+            if (tab === 'campaigns') this.loadCampaigns();
+            if (tab === 'subscribers') this.loadSubscribers();
+        },
+
+        async loadCampaigns() {
+            const listEl = document.getElementById('nlAdminCampaignsList');
+            if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading campaigns...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/newsletters`);
+                const data = await res.json();
+                this.campaigns = data.newsletters || [];
+                const countEl = document.getElementById('adminCampaignCount');
+                if (countEl) countEl.textContent = this.campaigns.length;
+                this.renderCampaigns();
+            } catch(e) {
+                if (listEl) listEl.innerHTML = '<div style="color:#ef4444;text-align:center;padding:15px;">Failed to load campaigns.</div>';
+            }
+        },
+
+        renderCampaigns() {
+            const listEl = document.getElementById('nlAdminCampaignsList');
+            if (!listEl) return;
+            if (this.campaigns.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:0.85rem;"><i class="fas fa-bullhorn" style="font-size:2rem;margin-bottom:8px;display:block;opacity:0.4;"></i>No campaigns published yet.</div>';
+                return;
+            }
+            listEl.innerHTML = this.campaigns.map(c => {
+                const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+                return `
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                            <div>
+                                <span style="background:rgba(59,130,246,0.12);color:#2563eb;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:6px;">${c.category || 'General'}</span>
+                                ${c.promo_code ? `<span style="background:rgba(0,177,79,0.12);color:#00B14F;font-size:0.7rem;font-weight:800;padding:2px 8px;border-radius:6px;"><i class="fas fa-tag"></i> ${c.promo_code} (${c.discount_percent || 0}% OFF)</span>` : ''}
+                                <h4 style="font-size:0.95rem;font-weight:700;color:#0f172a;margin:6px 0 2px;">${c.title}</h4>
+                                <span style="font-size:0.72rem;color:#64748b;"><i class="far fa-clock"></i> ${dateStr}</span>
+                            </div>
+                            <button onclick="NewsletterAdmin.deleteCampaign(${c.id})" title="Delete Campaign" style="background:rgba(239,68,68,0.1);color:#ef4444;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;transition:all 0.15s;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                        <p style="font-size:0.8rem;color:#475569;margin:0;line-height:1.45;white-space:pre-line;">${c.content || ''}</p>
+                    </div>
+                `;
+            }).join('');
+        },
+
+        async submitCampaign(e) {
+            e.preventDefault();
+            const title = document.getElementById('nlFormTitle').value.trim();
+            const category = document.getElementById('nlFormCategory').value;
+            const promo_code = document.getElementById('nlFormCode').value.trim();
+            const discount_percent = document.getElementById('nlFormDiscount').value;
+            const content = document.getElementById('nlFormContent').value.trim();
+            const broadcast_notification = document.getElementById('nlFormNotify').checked;
+
+            if (!title || !content) {
+                showNotification("Please fill in both title and content", "error");
+                return;
+            }
+
+            const btn = document.getElementById('nlSubmitBtn');
+            const origText = btn ? btn.innerHTML : '';
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Broadcasting...'; }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/newsletters`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        title, category, promo_code, discount_percent, content, broadcast_notification,
+                        created_by: (typeof adminAuth !== 'undefined' && adminAuth.getUser()) ? adminAuth.getUser().name || 'Admin' : 'Admin'
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification("Newsletter broadcasted successfully!", "success");
+                    document.getElementById('nlBroadcastForm').reset();
+                    this.switchTab('campaigns');
+                } else {
+                    showNotification(data.error || "Failed to broadcast newsletter", "error");
+                }
+            } catch(err) {
+                showNotification("Connection error", "error");
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+            }
+        },
+
+        async deleteCampaign(id) {
+            if (!confirm("Are you sure you want to delete this campaign?")) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/newsletters/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showNotification("Campaign deleted successfully", "success");
+                    this.loadCampaigns();
+                } else {
+                    showNotification("Failed to delete campaign", "error");
+                }
+            } catch(e) {
+                showNotification("Connection error", "error");
+            }
+        },
+
+        async loadSubscribers() {
+            const listEl = document.getElementById('nlAdminSubscribersList');
+            if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;"><i class="fas fa-spinner fa-spin"></i> Loading audience...</div>';
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/subscribers`);
+                const data = await res.json();
+                this.subscribers = data.subscribers || [];
+                const totalEl = document.getElementById('nlStatTotal');
+                const actEl = document.getElementById('nlStatActive');
+                const unEl = document.getElementById('nlStatUnsub');
+                const countBadge = document.getElementById('adminSubCount');
+                if (totalEl) totalEl.textContent = data.total || 0;
+                if (actEl) actEl.textContent = data.active_count || 0;
+                if (unEl) unEl.textContent = data.unsubscribed_count || 0;
+                if (countBadge) countBadge.textContent = data.active_count || 0;
+                this.renderSubscribers(this.subscribers);
+            } catch(e) {
+                if (listEl) listEl.innerHTML = '<div style="color:#ef4444;text-align:center;padding:15px;">Failed to load subscribers.</div>';
+            }
+        },
+
+        filterSubscribers() {
+            const q = (document.getElementById('nlSubSearchInput').value || '').toLowerCase().trim();
+            if (!q) {
+                this.renderSubscribers(this.subscribers);
+                return;
+            }
+            const filtered = this.subscribers.filter(s => 
+                (s.email && s.email.toLowerCase().includes(q)) ||
+                (s.user_name && s.user_name.toLowerCase().includes(q)) ||
+                (s.status && s.status.toLowerCase().includes(q))
+            );
+            this.renderSubscribers(filtered);
+        },
+
+        renderSubscribers(list) {
+            const listEl = document.getElementById('nlAdminSubscribersList');
+            if (!listEl) return;
+            if (!list || list.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:0.85rem;"><i class="fas fa-users-slash" style="font-size:2rem;margin-bottom:8px;display:block;opacity:0.4;"></i>No subscribers match this search.</div>';
+                return;
+            }
+            listEl.innerHTML = list.map(s => {
+                const dateStr = s.created_at ? new Date(s.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+                const isActive = (s.status === 'active');
+                return `
+                    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="font-size:0.875rem;font-weight:700;color:#0f172a;word-break:break-all;">${s.email}</span>
+                                <span style="background:${isActive ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)'};color:${isActive ? '#16a34a' : '#ef4444'};font-size:0.68rem;font-weight:700;padding:2px 6px;border-radius:10px;text-transform:capitalize;">${s.status || 'active'}</span>
+                            </div>
+                            <div style="font-size:0.75rem;color:#64748b;margin-top:2px;">
+                                ${s.user_name && s.user_name.trim() ? `<span><i class="fas fa-user" style="margin-right:4px;"></i>${s.user_name.trim()}</span> \u2022 ` : ''}
+                                <span><i class="far fa-calendar-alt" style="margin-right:4px;"></i>Subscribed ${dateStr}</span>
+                            </div>
+                        </div>
+                        <button onclick="NewsletterAdmin.deleteSubscriber(${s.id})" title="Remove Subscriber" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;padding:6px;font-size:0.85rem;transition:color 0.15s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        },
+
+        async deleteSubscriber(id) {
+            if (!confirm("Remove this subscriber from audience?")) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/subscribers/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showNotification("Subscriber removed", "success");
+                    this.loadSubscribers();
+                } else {
+                    showNotification("Failed to remove subscriber", "error");
+                }
+            } catch(e) {
+                showNotification("Connection error", "error");
+            }
+        }
+    };
+
+    function toggleNewsletterModal(show = true) {
+        const modal = document.getElementById('newsletterModal');
+        if (!modal) return;
+        modal.style.display = show ? 'flex' : 'none';
+        if (show) {
+            NewsletterAdmin.switchTab('broadcast');
+            NewsletterAdmin.loadCampaigns();
+            NewsletterAdmin.loadSubscribers();
         }
     }
 

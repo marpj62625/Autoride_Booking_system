@@ -7473,38 +7473,275 @@ def manage_instructions():
 
 
 
+# ============================================================
+# NEWSLETTER & PROMO BROADCAST SYSTEM
+# ============================================================
+
+@app.route('/api/newsletters', methods=['GET'])
+def get_newsletters():
+    """Public endpoint to fetch all active newsletters and promos for customer feed."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, title, category, promo_code, discount_percent, content, banner_url, is_active, created_by, created_at
+            FROM newsletters
+            WHERE is_active = TRUE
+            ORDER BY created_at DESC
+        """)
+        rows = cur.fetchall()
+        newsletters = []
+        for r in rows:
+            item = dict(r)
+            if item.get('created_at'):
+                item['created_at'] = item['created_at'].isoformat()
+            newsletters.append(item)
+        return jsonify({"newsletters": newsletters}), 200
+    except Exception as e:
+        return jsonify({"error": str(e), "newsletters": []}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+@app.route('/api/newsletter/status', methods=['GET'])
+def get_newsletter_status():
+    """Check subscription status for a given email or user_id."""
+    email = (request.args.get('email') or '').strip().lower()
+    user_id = request.args.get('user_id')
+    if not email and not user_id:
+        return jsonify({"subscribed": False, "status": "none", "email": ""}), 200
+
+    try:
+        cur = get_cursor()
+        sub = None
+        if email:
+            cur.execute("SELECT id, email, status, created_at FROM subscribers WHERE LOWER(email) = %s LIMIT 1", (email,))
+            sub = cur.fetchone()
+        if not sub and user_id:
+            try:
+                cur.execute("SELECT id, email, status, created_at FROM subscribers WHERE user_id = %s LIMIT 1", (int(user_id),))
+                sub = cur.fetchone()
+            except:
+                pass
+
+        is_subbed = bool(sub and sub.get('status') == 'active')
+        return jsonify({
+            "subscribed": is_subbed,
+            "status": sub['status'] if sub else 'none',
+            "email": sub['email'] if sub else email
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e), "subscribed": False}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
 @app.route('/newsletter', methods=['POST'])
 @app.route('/api/newsletter', methods=['POST'])
 def subscribe_newsletter():
+    """Subscribe or re-activate customer newsletter subscription."""
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    user_id = data.get('user_id')
 
-    data = request.json
-
-    email = data.get('email')
-
-    if not email:
-
-        return jsonify({"error": "Email required"}), 400
-
-    
+    if not email or '@' not in email:
+        return jsonify({"error": "Valid email address is required"}), 400
 
     try:
-
         cur = get_cursor()
+        cur.execute("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS user_id INTEGER")
+        cur.execute("ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'")
+        cur.execute("""
+            INSERT INTO subscribers (email, user_id, status)
+            VALUES (%s, %s, 'active')
+            ON CONFLICT (email) DO UPDATE SET status = 'active', user_id = COALESCE(EXCLUDED.user_id, subscribers.user_id)
+        """, (email, user_id if user_id else None))
+        commit_db()
+        return jsonify({"message": "Subscribed successfully! Welcome to Autoride Privileges.", "subscribed": True, "email": email}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 
-        cur.execute("INSERT INTO subscribers (email, status) VALUES (%s, 'active') ON CONFLICT(email) DO NOTHING", (email,))
+
+@app.route('/api/newsletter/unsubscribe', methods=['POST'])
+def unsubscribe_newsletter():
+    """Unsubscribe customer from newsletter."""
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    user_id = data.get('user_id')
+
+    if not email and not user_id:
+        return jsonify({"error": "Email or user_id required"}), 400
+
+    try:
+        cur = get_cursor()
+        if email:
+            cur.execute("UPDATE subscribers SET status = 'unsubscribed' WHERE LOWER(email) = %s", (email,))
+        elif user_id:
+            cur.execute("UPDATE subscribers SET status = 'unsubscribed' WHERE user_id = %s", (int(user_id),))
+        commit_db()
+        return jsonify({"message": "Unsubscribed successfully", "subscribed": False}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+# --- Admin Newsletter Endpoints ---
+
+@app.route('/api/admin/newsletters', methods=['GET'])
+def admin_get_newsletters():
+    """Admin endpoint to view all newsletters (active and inactive)."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, title, category, promo_code, discount_percent, content, banner_url, is_active, created_by, created_at
+            FROM newsletters
+            ORDER BY created_at DESC
+        """)
+        rows = cur.fetchall()
+        newsletters = []
+        for r in rows:
+            item = dict(r)
+            if item.get('created_at'):
+                item['created_at'] = item['created_at'].isoformat()
+            newsletters.append(item)
+        return jsonify({"newsletters": newsletters}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+@app.route('/api/admin/newsletters', methods=['POST'])
+def admin_create_newsletter():
+    """Admin endpoint to create and broadcast a new newsletter / promotion."""
+    data = request.json or {}
+    title = (data.get('title') or '').strip()
+    category = (data.get('category') or 'Announcements').strip()
+    promo_code = (data.get('promo_code') or '').strip().upper() or None
+    discount_percent = data.get('discount_percent')
+    content = (data.get('content') or '').strip()
+    banner_url = (data.get('banner_url') or '').strip() or None
+    created_by = (data.get('created_by') or 'Admin').strip()
+    broadcast_notif = bool(data.get('broadcast_notification', True))
+
+    if not title or not content:
+        return jsonify({"error": "Title and content are required"}), 400
+
+    discount_val = None
+    if discount_percent is not None and str(discount_percent).strip() != '':
+        try:
+            discount_val = int(discount_percent)
+        except:
+            discount_val = None
+
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            INSERT INTO newsletters (title, category, promo_code, discount_percent, content, banner_url, is_active, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, TRUE, %s)
+            RETURNING id, created_at
+        """, (title, category, promo_code, discount_val, content, banner_url, created_by))
+        new_row = cur.fetchone()
+        newsletter_id = new_row['id']
+
+        # If broadcast notification requested, notify all active customer users
+        if broadcast_notif:
+            try:
+                cur.execute("SELECT id FROM users WHERE role = 'customer' OR role IS NULL")
+                user_rows = cur.fetchall()
+                notif_title = f"📢 {title}"
+                notif_msg = f"{category}: {content[:100]}..." if len(content) > 100 else content
+                if promo_code:
+                    notif_msg += f" (Code: {promo_code})"
+                for u in user_rows:
+                    cur.execute("""
+                        INSERT INTO notifications (user_id, admin_id, title, message, type)
+                        VALUES (%s, NULL, %s, %s, 'newsletter')
+                    """, (u['id'], notif_title, notif_msg))
+            except Exception as ne:
+                print(f"[Newsletter] Broadcast notification notice: {ne}")
 
         commit_db()
-
-        return jsonify({"message": "Subscribed successfully"}), 201
-
+        return jsonify({"message": "Newsletter published and broadcasted successfully!", "id": newsletter_id}), 201
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals():
+            cur.close()
 
+
+@app.route('/api/admin/newsletters/<int:id>', methods=['DELETE'])
+def admin_delete_newsletter(id):
+    """Admin endpoint to delete a newsletter."""
+    try:
+        cur = get_cursor()
+        cur.execute("DELETE FROM newsletters WHERE id = %s", (id,))
+        commit_db()
+        return jsonify({"message": "Newsletter deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+@app.route('/api/admin/subscribers', methods=['GET'])
+def admin_get_subscribers():
+    """Admin endpoint to view audience of newsletter subscribers."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT s.id, s.email, s.user_id, s.status, s.created_at,
+                   COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name)) as user_name, u.phone as user_phone
+            FROM subscribers s
+            LEFT JOIN users u ON s.user_id = u.id
+            ORDER BY s.created_at DESC
+        """)
+        rows = cur.fetchall()
+        subscribers = []
+        active_count = 0
+        unsub_count = 0
+        for r in rows:
+            item = dict(r)
+            if item.get('created_at'):
+                item['created_at'] = item['created_at'].isoformat()
+            if item.get('status') == 'active':
+                active_count += 1
+            else:
+                unsub_count += 1
+            subscribers.append(item)
+        return jsonify({
+            "subscribers": subscribers,
+            "total": len(subscribers),
+            "active_count": active_count,
+            "unsubscribed_count": unsub_count
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+@app.route('/api/admin/subscribers/<int:id>', methods=['DELETE'])
+def admin_delete_subscriber(id):
+    """Admin endpoint to remove a subscriber."""
+    try:
+        cur = get_cursor()
+        cur.execute("DELETE FROM subscribers WHERE id = %s", (id,))
+        commit_db()
+        return jsonify({"message": "Subscriber removed successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
             cur.close()
 
 

@@ -8133,19 +8133,196 @@ function openNotificationsPage() {
         });
 }
 
-// NEWSLETTER
+// NEWSLETTER & PRIVILEGES HUB
 function loadNewsletter() {
   var el = document.getElementById('newsletterContent');
   if (!el) return;
+
+  var userEmail = (currentUser && currentUser.email) || '';
+  var userId = (currentUser && currentUser.id) || '';
+
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="closeOverlay(\'page-newsletter\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Newsletter</h2></div>' +
-    '<div class="scroll-content"><div class="card">' +
-    '<h4 style="font-weight:700;margin-bottom:10px;">Stay Updated</h4>' +
-    '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:14px;">Subscribe to receive promos and news from Autoride.</p>' +
-    '<div class="form-group"><label>Email Address</label><input type="email" id="nlEmail" placeholder="yourname@gmail.com"><span class="field-error" id="nlErr"></span></div>' +
-    '<button class="btn-primary" onclick="doSubscribeNewsletter()"><i class="fas fa-envelope"></i> Subscribe</button>' +
-    '</div></div>';
+    '<h2>Newsletter & Privileges</h2>' +
+    '</div>' +
+    '<div class="scroll-content" style="padding:16px;">' +
+      // Hero Banner
+      '<div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%);color:#fff;border-radius:16px;padding:20px;margin-bottom:16px;border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 20px rgba(0,0,0,0.15);">' +
+        '<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,177,79,0.2);color:#00B14F;border:1px solid rgba(0,177,79,0.4);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:800;letter-spacing:0.5px;margin-bottom:12px;">' +
+          '<i class="fas fa-crown"></i> AUTORIDE VIP PRIVILEGES' +
+        '</div>' +
+        '<h3 style="font-size:1.15rem;font-weight:700;margin:0 0 6px;color:#fff;">Unlock Secret Promos & Fleet Updates</h3>' +
+        '<p style="font-size:0.825rem;color:#cbd5e1;line-height:1.45;margin:0 0 12px;">Subscribe to receive exclusive voucher discounts, flash sales, newly arrived vehicles, and curated scenic roadtrip guides directly to your account.</p>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;font-size:0.75rem;color:#94a3b8;">' +
+          '<div style="display:flex;align-items:center;gap:6px;"><i class="fas fa-tag" style="color:#00B14F;"></i> Up to 20% Off Vouchers</div>' +
+          '<div style="display:flex;align-items:center;gap:6px;"><i class="fas fa-bell" style="color:#38bdf8;"></i> Priority Broadcast Alerts</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Subscription Status Card
+      '<div class="card" id="nlStatusContainer" style="margin-bottom:16px;padding:16px;">' +
+        '<div style="text-align:center;padding:15px;"><div class="spinner"></div></div>' +
+      '</div>' +
+
+      // Member Promos Section
+      '<div id="nlPromosContainer" style="margin-bottom:20px;"></div>' +
+
+      // Newsletters Feed Section
+      '<div id="nlFeedContainer"></div>' +
+    '</div>';
+
+  fetchNewsletterData(userEmail, userId);
+}
+
+function fetchNewsletterData(userEmail, userId) {
+  var statusUrl = '/api/newsletter/status';
+  if (userEmail || userId) {
+    statusUrl += '?email=' + encodeURIComponent(userEmail) + '&user_id=' + encodeURIComponent(userId);
+  }
+
+  Promise.all([
+    apiCall(statusUrl).catch(function() { return { subscribed: false, email: userEmail }; }),
+    apiCall('/api/newsletters').catch(function() { return { newsletters: [] }; })
+  ]).then(function(results) {
+    var statusData = results[0] || {};
+    var feedData = results[1] || {};
+    var isSubscribed = Boolean(statusData.subscribed);
+    var activeEmail = statusData.email || userEmail;
+    var newsletters = feedData.newsletters || [];
+
+    renderNewsletterStatus(isSubscribed, activeEmail);
+    renderNewsletterPromos(newsletters, isSubscribed);
+    renderNewsletterFeed(newsletters);
+  }).catch(function(err) {
+    console.error('Error loading newsletter:', err);
+    var sc = document.getElementById('nlStatusContainer');
+    if (sc) sc.innerHTML = '<div style="color:var(--text-secondary);font-size:0.85rem;text-align:center;">Failed to load status. <button class="btn-sm" onclick="loadNewsletter()">Retry</button></div>';
+  });
+}
+
+function renderNewsletterStatus(isSubscribed, email) {
+  var sc = document.getElementById('nlStatusContainer');
+  if (!sc) return;
+
+  if (isSubscribed) {
+    sc.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(34,197,94,0.12);color:#16a34a;border:1px solid rgba(34,197,94,0.3);padding:4px 10px;border-radius:20px;font-size:0.78rem;font-weight:700;">' +
+        '<i class="fas fa-check-circle"></i> Active VIP Subscriber' +
+      '</span>' +
+      '<button onclick="doUnsubscribeNewsletter(\'' + (email || '') + '\')" style="background:transparent;border:none;color:#ef4444;font-size:0.75rem;cursor:pointer;text-decoration:underline;padding:4px;">Unsubscribe</button>' +
+    '</div>' +
+    '<div style="font-size:0.875rem;color:var(--text-primary);margin-bottom:4px;word-break:break-all;">' +
+      'Subscribed as: <strong>' + (email || 'VIP Member') + '</strong>' +
+    '</div>' +
+    '<p style="font-size:0.78rem;color:var(--text-secondary);margin:0;">' +
+      'You are receiving member-exclusive promos, discounts, and latest announcements from Autoride.' +
+    '</p>';
+  } else {
+    sc.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+      '<div style="width:36px;height:36px;border-radius:10px;background:rgba(0,177,79,0.12);display:flex;align-items:center;justify-content:center;color:#00B14F;font-size:1.1rem;">' +
+        '<i class="fas fa-envelope-open-text"></i>' +
+      '</div>' +
+      '<div>' +
+        '<h4 style="font-size:0.95rem;font-weight:700;margin:0;">Subscribe to Newsletter</h4>' +
+        '<p style="font-size:0.75rem;color:var(--text-secondary);margin:0;">Get discount codes & stay in the loop</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="form-group" style="margin-bottom:10px;">' +
+      '<input type="email" id="nlEmail" placeholder="Enter your email address" value="' + (email || '') + '" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:0.875rem;">' +
+      '<span class="field-error" id="nlErr" style="color:#ef4444;font-size:0.75rem;display:block;margin-top:4px;"></span>' +
+    '</div>' +
+    '<button class="btn-primary" onclick="doSubscribeNewsletter()" style="width:100%;padding:11px;border-radius:10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<i class="fas fa-paper-plane"></i> Subscribe Now' +
+    '</button>';
+  }
+}
+
+function renderNewsletterPromos(newsletters, isSubscribed) {
+  var pc = document.getElementById('nlPromosContainer');
+  if (!pc) return;
+
+  var promoList = newsletters.filter(function(n) { return n.promo_code; });
+  if (promoList.length === 0) {
+    pc.innerHTML = '';
+    return;
+  }
+
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+    '<h4 style="font-size:0.95rem;font-weight:700;margin:0;display:flex;align-items:center;gap:6px;">' +
+      '<i class="fas fa-ticket-alt" style="color:#00B14F;"></i> Member Promo Codes' +
+    '</h4>' +
+    '<span style="font-size:0.75rem;color:var(--text-secondary);">' + promoList.length + ' Available</span>' +
+  '</div>' +
+  '<div style="display:flex;flex-direction:column;gap:10px;">';
+
+  promoList.forEach(function(item) {
+    var discountText = item.discount_percent ? item.discount_percent + '% OFF' : 'SPECIAL PROMO';
+    html += '<div style="background:var(--surface);border:1.5px dashed rgba(0,177,79,0.5);border-radius:14px;padding:14px;position:relative;overflow:hidden;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;">' +
+        '<div>' +
+          '<span style="background:rgba(0,177,79,0.12);color:#00B14F;padding:3px 8px;border-radius:6px;font-size:0.72rem;font-weight:800;letter-spacing:0.5px;display:inline-block;margin-bottom:4px;">' + discountText + '</span>' +
+          '<h5 style="font-size:0.9rem;font-weight:700;margin:0 0 2px;">' + (item.title || 'Promo Voucher') + '</h5>' +
+          '<p style="font-size:0.78rem;color:var(--text-secondary);margin:0;">' + (item.content ? item.content.slice(0, 90) + '...' : '') + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,0.03);padding:6px 10px;border-radius:8px;margin-top:6px;">' +
+        '<div style="font-family:monospace;font-size:0.95rem;font-weight:800;color:var(--primary);letter-spacing:1px;">' + item.promo_code + '</div>' +
+        '<button onclick="copyNewsletterPromo(\'' + item.promo_code + '\')" style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:#00B14F;color:#fff;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">' +
+          '<i class="fas fa-copy"></i> Copy Code' +
+        '</button>' +
+      '</div>' +
+    '</div>';
+  });
+
+  html += '</div>';
+  pc.innerHTML = html;
+}
+
+function renderNewsletterFeed(newsletters) {
+  var fc = document.getElementById('nlFeedContainer');
+  if (!fc) return;
+
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+    '<h4 style="font-size:0.95rem;font-weight:700;margin:0;display:flex;align-items:center;gap:6px;">' +
+      '<i class="fas fa-newspaper" style="color:#3b82f6;"></i> Latest Announcements & News' +
+    '</h4>' +
+  '</div>';
+
+  if (!newsletters || newsletters.length === 0) {
+    html += '<div class="card" style="text-align:center;padding:25px;color:var(--text-muted);font-size:0.85rem;">' +
+      '<i class="fas fa-inbox" style="font-size:1.8rem;margin-bottom:8px;display:block;opacity:0.5;"></i>' +
+      'No published newsletters yet. Check back soon for announcements!' +
+    '</div>';
+    fc.innerHTML = html;
+    return;
+  }
+
+  html += '<div style="display:flex;flex-direction:column;gap:12px;">';
+  newsletters.forEach(function(item) {
+    var dateStr = item.created_at ? new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    var cat = item.category || 'Announcement';
+    var catColor = '#3b82f6';
+    if (cat.toLowerCase().indexOf('promo') >= 0) catColor = '#00B14F';
+    else if (cat.toLowerCase().indexOf('fleet') >= 0) catColor = '#f59e0b';
+    else if (cat.toLowerCase().indexOf('travel') >= 0) catColor = '#8b5cf6';
+
+    html += '<div class="card" style="padding:16px;margin:0;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
+        '<span style="background:' + catColor + '18;color:' + catColor + ';border:1px solid ' + catColor + '33;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700;">' +
+          cat +
+        '</span>' +
+        (dateStr ? '<span style="font-size:0.72rem;color:var(--text-muted);"><i class="far fa-clock"></i> ' + dateStr + '</span>' : '') +
+      '</div>' +
+      '<h4 style="font-size:0.95rem;font-weight:700;margin:0 0 8px;color:var(--text-primary);line-height:1.35;">' +
+        (item.title || '') +
+      '</h4>' +
+      '<div style="font-size:0.825rem;color:var(--text-secondary);line-height:1.5;white-space:pre-line;">' +
+        (item.content || '') +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  fc.innerHTML = html;
 }
 
 function doSubscribeNewsletter() {
@@ -8153,12 +8330,71 @@ function doSubscribeNewsletter() {
   var errEl = document.getElementById('nlErr');
   var email = emailEl ? emailEl.value.trim() : '';
   if (errEl) errEl.textContent = '';
-  if (!email || email.indexOf('@') < 0) { if (errEl) errEl.textContent = 'Please enter a valid email.'; return; }
+  if (!email || email.indexOf('@') < 0) {
+    if (errEl) errEl.textContent = 'Please enter a valid email address.';
+    return;
+  }
   showLoading(true);
-  apiCall('/newsletter', { method: 'POST', body: JSON.stringify({ email: email }) })
-    .then(function() { showToast('Subscribed successfully!', 'success'); closeOverlay('page-newsletter'); })
-    .catch(function(err) { if (errEl) errEl.textContent = err.message; })
-    .finally(function() { showLoading(false); });
+  apiCall('/newsletter', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: email,
+      user_id: (currentUser && currentUser.id) ? currentUser.id : null
+    })
+  }).then(function(res) {
+    showToast(res.message || 'Subscribed successfully! Welcome to Autoride Privileges.', 'success');
+    loadNewsletter();
+  }).catch(function(err) {
+    if (errEl) errEl.textContent = err.message || 'Failed to subscribe';
+  }).finally(function() {
+    showLoading(false);
+  });
+}
+
+function doUnsubscribeNewsletter(email) {
+  if (!confirm('Are you sure you want to unsubscribe from Autoride newsletters and promos?')) return;
+  showLoading(true);
+  apiCall('/api/newsletter/unsubscribe', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: email,
+      user_id: (currentUser && currentUser.id) ? currentUser.id : null
+    })
+  }).then(function(res) {
+    showToast(res.message || 'Unsubscribed successfully', 'info');
+    loadNewsletter();
+  }).catch(function(err) {
+    showToast(err.message || 'Failed to unsubscribe', 'error');
+  }).finally(function() {
+    showLoading(false);
+  });
+}
+
+function copyNewsletterPromo(code) {
+  if (!code) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(function() {
+      showToast('\u2705 Copied code "' + code + '" to clipboard!', 'success');
+    }).catch(function() {
+      fallbackCopyPromoText(code);
+    });
+  } else {
+    fallbackCopyPromoText(code);
+  }
+}
+
+function fallbackCopyPromoText(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showToast('\u2705 Copied code "' + text + '" to clipboard!', 'success');
+  } catch(e) {
+    prompt('Copy this promo code:', text);
+  }
+  document.body.removeChild(ta);
 }
 
 // ============================================================
