@@ -4266,52 +4266,161 @@ def get_favorites():
 @app.route('/review', methods=['POST'])
 @app.route('/api/review', methods=['POST'])
 def add_review():
-
-    data = request.json
-
+    data = request.json or {}
     user_id = data.get('user_id')
-
     vehicle_id = data.get('vehicle_id')
-
     rating = data.get('rating')
-
-    comment = data.get('comment')
-
+    comment = (data.get('comment') or '').strip()
     booking_id = data.get('booking_id')
 
-    
-
-    if not all([user_id, vehicle_id, rating]):
-
-        return jsonify({"error": "user_id, vehicle_id, and rating are required"}), 400
-
-        
+    if not user_id or not rating:
+        return jsonify({"error": "user_id and rating are required"}), 400
 
     try:
+        rating = int(rating)
+        if rating < 1 or rating > 5:
+            return jsonify({"error": "Rating must be between 1 and 5 stars"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid rating format"}), 400
 
+    try:
         cur = get_cursor()
 
+        # If booking_id provided, find vehicle_id if not present & check if already reviewed
+        if booking_id:
+            try:
+                booking_id = int(booking_id)
+            except (ValueError, TypeError):
+                booking_id = None
+
+        if booking_id:
+            cur.execute("SELECT id, vehicle_id FROM bookings WHERE id = %s", (booking_id,))
+            b_row = cur.fetchone()
+            if b_row and not vehicle_id:
+                vehicle_id = b_row['vehicle_id']
+
+            cur.execute("SELECT review_id FROM reviews WHERE booking_id = %s", (booking_id,))
+            if cur.fetchone():
+                return jsonify({"success": True, "message": "Feedback already submitted for this booking.", "already_reviewed": True}), 200
+
         cur.execute("""
-
-            INSERT INTO reviews (user_id, vehicle_id, rating, comment, booking_id)
-
-            VALUES (%s, %s, %s, %s, %s)
-
+            INSERT INTO reviews (user_id, vehicle_id, rating, comment, booking_id, created_at)
+            VALUES (%s, %s, %s, %s, %s, NOW())
         """, (user_id, vehicle_id, rating, comment, booking_id))
 
         commit_db()
-
-        return jsonify({"message": "Review added successfully"}), 201
+        return jsonify({"success": True, "message": "Thank you! Your feedback has been recorded."}), 201
 
     except Exception as e:
-
+        print(f"[Review] Error: {e}")
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals():
-
             cur.close()
+
+
+@app.route('/user/unreviewed-booking/<int:user_id>', methods=['GET'])
+@app.route('/api/user/unreviewed-booking/<int:user_id>', methods=['GET'])
+def get_unreviewed_booking(user_id):
+    try:
+        cur = get_cursor()
+        # Find any Completed booking by this user that hasn't been reviewed yet
+        cur.execute("""
+            SELECT b.id, b.vehicle_id, b.start_date, b.end_date, b.status, b.total_price,
+                   v.brand, v.model, v.year_model, v.vehicle_image
+            FROM bookings b
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE b.user_id = %s
+              AND b.status = 'Completed'
+              AND b.id NOT IN (
+                  SELECT booking_id FROM reviews WHERE booking_id IS NOT NULL AND user_id = %s
+              )
+            ORDER BY b.end_date DESC
+            LIMIT 1
+        """, (user_id, user_id))
+        row = cur.fetchone()
+        if row:
+            v_name = f"{row.get('brand', '')} {row.get('model', '')}".strip() or 'Vehicle'
+            return jsonify({
+                "has_unreviewed": True,
+                "booking": {
+                    "id": row['id'],
+                    "vehicle_id": row['vehicle_id'],
+                    "vehicle_name": v_name,
+                    "brand": row.get('brand'),
+                    "model": row.get('model'),
+                    "year_model": row.get('year_model'),
+                    "image_url": row.get('vehicle_image'),
+                    "start_date": str(row['start_date']) if row.get('start_date') else None,
+                    "end_date": str(row['end_date']) if row.get('end_date') else None
+                }
+            }), 200
+        else:
+            return jsonify({"has_unreviewed": False, "booking": None}), 200
+    except Exception as e:
+        print(f"[UnreviewedBooking] Error: {e}")
+        return jsonify({"error": str(e), "has_unreviewed": False}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/reviews/company', methods=['GET'])
+@app.route('/api/reviews/company', methods=['GET'])
+def get_company_reviews():
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT r.review_id, r.user_id, r.vehicle_id, r.rating, r.comment, r.created_at, r.booking_id,
+                   u.full_name, u.profile_picture,
+                   v.brand, v.model, v.year_model
+            FROM reviews r
+            LEFT JOIN users u ON r.user_id = u.id
+            LEFT JOIN vehicles v ON r.vehicle_id = v.id
+            ORDER BY r.created_at DESC
+        """)
+        rows = cur.fetchall() or []
+
+        total = len(rows)
+        breakdown = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        total_rating_sum = 0
+        review_list = []
+
+        for r in rows:
+            rating_val = int(r.get('rating') or 5)
+            if rating_val in breakdown:
+                breakdown[rating_val] += 1
+            total_rating_sum += rating_val
+
+            created_str = r['created_at'].strftime('%b %d, %Y') if r.get('created_at') else ''
+            v_name = f"{r.get('brand') or ''} {r.get('model') or ''}".strip() or 'Autoride Fleet'
+
+            review_list.append({
+                "id": r.get('review_id') or r.get('id'),
+                "user_id": r.get('user_id'),
+                "full_name": r.get('full_name') or 'Verified Renter',
+                "profile_picture": r.get('profile_picture'),
+                "rating": rating_val,
+                "comment": r.get('comment') or '',
+                "vehicle_name": v_name,
+                "created_at": created_str,
+                "booking_id": r.get('booking_id')
+            })
+
+        avg_rating = round(total_rating_sum / total, 1) if total > 0 else 5.0
+
+        return jsonify({
+            "success": True,
+            "average_rating": avg_rating,
+            "total_reviews": total,
+            "rating_breakdown": breakdown,
+            "reviews": review_list
+        }), 200
+
+    except Exception as e:
+        print(f"[CompanyReviews] Error: {e}")
+        return jsonify({"error": str(e), "reviews": [], "total_reviews": 0, "average_rating": 5.0}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 

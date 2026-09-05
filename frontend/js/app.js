@@ -594,6 +594,9 @@ function subscribeToNotifications(userId) {
                     _showNotifPopup(title, msg, '#ef4444', 'fa-exclamation-circle');
                 } else if (type === 'ready_for_pickup' || type === 'picked_up' || type === 'booking_completed') {
                     _showNotifPopup(title, msg, '#00b14f', 'fa-car');
+                    if (type === 'booking_completed' && typeof checkUnreviewedBookings === 'function') {
+                        setTimeout(function() { checkUnreviewedBookings(); }, 1500);
+                    }
                 }
 
                 // Any booking related event triggers live data refresh
@@ -609,6 +612,9 @@ function subscribeToNotifications(userId) {
                 if (isBookingEvent) {
                     if (typeof loadBookings === 'function') loadBookings();
                     if (typeof refreshActiveBookingMonitor === 'function') refreshActiveBookingMonitor();
+                    if (type === 'booking_completed' && typeof checkUnreviewedBookings === 'function') {
+                        setTimeout(function() { checkUnreviewedBookings(); }, 1200);
+                    }
                     setTimeout(function() {
                         var detailPage = document.getElementById('page-booking-detail');
                         if (detailPage && (detailPage.style.display === 'block' || detailPage.classList.contains('active'))) {
@@ -989,6 +995,12 @@ var NAV_MAP = {
 };
 
 function showPage(id) {
+  // If user has an unreviewed completed booking, enforce mandatory rating
+  if (window._unreviewedBookingActive && _currentUnreviewedBooking) {
+    showToast('Please submit your rental feedback before continuing.', 'info');
+    return;
+  }
+
   // Save booking session if user navigates away mid-booking
   try { BookingSession.save(); } catch(e) {}
 
@@ -1091,6 +1103,10 @@ var _overlayZBase = 500;
 var _overlayZCounter = 0;
 
 function showOverlay(id) {
+  if (window._unreviewedBookingActive && _currentUnreviewedBooking && id !== 'page-company-reviews') {
+    showToast('Please submit your rental feedback before continuing.', 'info');
+    return;
+  }
   var el = document.getElementById(id);
   if (!el) return;
   el.classList.add('active');
@@ -1105,6 +1121,7 @@ function showOverlay(id) {
   if (id === 'page-chatbot') loadChatbot();
   if (id === 'page-livechat') loadLiveChat();
   if (id === 'page-newsletter') loadNewsletter();
+  if (id === 'page-company-reviews') loadCompanyReviews();
 }
 
 function closeOverlay(id) {
@@ -2392,6 +2409,12 @@ function loadHome() {
     }).catch(function() {});
   if (typeof refreshActiveBookingMonitor === 'function') {
     refreshActiveBookingMonitor();
+  }
+  if (typeof loadCompanyReviewsPreview === 'function') {
+    loadCompanyReviewsPreview();
+  }
+  if (typeof checkUnreviewedBookings === 'function') {
+    checkUnreviewedBookings();
   }
   updateNotifBadge();
 }
@@ -4782,8 +4805,12 @@ function renderBookingDetail(b) {
   if (canPayBalance) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
   }
+  var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
+  var plateInfo = b.plate_number ? ' (' + b.plate_number + ')' : '';
+
   if (!canPayNow && !canPayBalance && canReview) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;" onclick="openReviewForm(' + b.vehicle_id + ')"><i class="fas fa-star"></i> Leave a Review</button>';
+    var vNameEsc = escapeHtml(vehicleName).replace(/'/g, "\\'");
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' })"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
   }
   if (canExtend) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
@@ -4797,8 +4824,9 @@ function renderBookingDetail(b) {
   if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
   else secondaryActions += '</div>';
 
-  var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
-  var plateInfo = b.plate_number ? ' (' + b.plate_number + ')' : '';
+  if (b.status === 'Completed') {
+    secondaryActions += '<button class="btn-outline" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openCompanyReviews()"><i class="fas fa-star" style="color:#f59e0b;"></i> View All Company Reviews</button>';
+  }
 
   el.innerHTML =
     '<div class="page-header">' +
@@ -6272,6 +6300,363 @@ function submitReview(vehicleId) {
     })
     .catch(function(err) { if (reviewErrEl) reviewErrEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
+}
+
+// ==========================================
+// MANDATORY BOOKING FEEDBACK & COMPANY REVIEWS
+// ==========================================
+var _companyReviewsData = null;
+var _currentUnreviewedBooking = null;
+var _selectedMandatoryRating = 0;
+window._unreviewedBookingActive = false;
+
+function checkUnreviewedBookings() {
+  if (!currentUser || !currentUser.id) return;
+  apiCall('/user/unreviewed-booking/' + currentUser.id)
+    .then(function(res) {
+      if (res && res.has_unreviewed && res.booking) {
+        openMandatoryReviewModal(res.booking);
+      }
+    })
+    .catch(function(err) {
+      console.warn('[ReviewCheck] Error:', err);
+    });
+}
+window.checkUnreviewedBookings = checkUnreviewedBookings;
+
+function openMandatoryReviewModal(booking) {
+  if (!booking) return;
+  _currentUnreviewedBooking = booking;
+  _selectedMandatoryRating = 0;
+  window._unreviewedBookingActive = true;
+
+  var vehicleNameEl = document.getElementById('mandatoryBookingVehicleName');
+  if (vehicleNameEl) {
+    vehicleNameEl.textContent = booking.vehicle_name || ((booking.brand || '') + ' ' + (booking.model || '')).trim() || 'Autoride Vehicle';
+  }
+  var datesEl = document.getElementById('mandatoryBookingDates');
+  if (datesEl) {
+    var s = (booking.start_date || '').split('T')[0] || '';
+    var e = (booking.end_date || '').split('T')[0] || '';
+    datesEl.textContent = s && e ? (s + ' to ' + e) : 'Completed Rental';
+  }
+  var errEl = document.getElementById('mandatoryReviewErr');
+  if (errEl) errEl.textContent = '';
+  var commentEl = document.getElementById('mandatoryReviewComment');
+  if (commentEl) commentEl.value = '';
+
+  // Reset star ratings
+  var stars = document.querySelectorAll('#mandatoryStarContainer i');
+  for (var i = 0; i < stars.length; i++) {
+    stars[i].classList.remove('active');
+  }
+  var labelEl = document.getElementById('mandatoryRatingLabel');
+  if (labelEl) labelEl.textContent = 'Tap a star to rate';
+
+  // Reset compliment chips
+  var chips = document.querySelectorAll('#mandatoryComplimentsList .compliment-chip');
+  for (var j = 0; j < chips.length; j++) {
+    chips[j].classList.remove('selected');
+  }
+
+  var modal = document.getElementById('mandatoryReviewModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+window.openMandatoryReviewModal = openMandatoryReviewModal;
+
+function setMandatoryRating(val) {
+  _selectedMandatoryRating = val;
+  var stars = document.querySelectorAll('#mandatoryStarContainer i');
+  for (var i = 0; i < stars.length; i++) {
+    var starVal = parseInt(stars[i].getAttribute('data-val'));
+    stars[i].classList.toggle('active', starVal <= val);
+  }
+  var labels = {
+    1: '⭐ Poor - Needs improvement',
+    2: '⭐⭐ Fair - Below expectations',
+    3: '⭐⭐⭐ Good - Satisfactory',
+    4: '⭐⭐⭐⭐ Very Good - Highly satisfied',
+    5: '⭐⭐⭐⭐⭐ Excellent - Outstanding experience!'
+  };
+  var labelEl = document.getElementById('mandatoryRatingLabel');
+  if (labelEl) labelEl.textContent = labels[val] || '';
+}
+window.setMandatoryRating = setMandatoryRating;
+
+function toggleCompliment(btn) {
+  if (btn) btn.classList.toggle('selected');
+}
+window.toggleCompliment = toggleCompliment;
+
+function submitMandatoryReview() {
+  if (!_currentUnreviewedBooking) return;
+  var errEl = document.getElementById('mandatoryReviewErr');
+  if (errEl) errEl.textContent = '';
+
+  if (!_selectedMandatoryRating || _selectedMandatoryRating < 1) {
+    if (errEl) errEl.textContent = 'Please select a star rating (1 to 5) to proceed.';
+    return;
+  }
+
+  var chips = document.querySelectorAll('#mandatoryComplimentsList .compliment-chip.selected');
+  var tags = [];
+  for (var i = 0; i < chips.length; i++) {
+    tags.push(chips[i].textContent.trim());
+  }
+
+  var commentEl = document.getElementById('mandatoryReviewComment');
+  var commentText = commentEl ? sanitizeInput(commentEl.value.trim()) : '';
+
+  var fullComment = commentText;
+  if (tags.length > 0) {
+    var tagsPrefix = 'Highlights: ' + tags.join(', ');
+    fullComment = fullComment ? (tagsPrefix + ' — ' + fullComment) : tagsPrefix;
+  }
+
+  var submitBtn = document.getElementById('mandatorySubmitBtn');
+  var restoreBtn = setButtonLoading(submitBtn, 'Submitting...');
+  showLoading(true);
+
+  apiCall('/review', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_id: currentUser.id,
+      vehicle_id: _currentUnreviewedBooking.vehicle_id,
+      booking_id: _currentUnreviewedBooking.id,
+      rating: _selectedMandatoryRating,
+      comment: fullComment
+    })
+  })
+  .then(function(res) {
+    window._unreviewedBookingActive = false;
+    var modal = document.getElementById('mandatoryReviewModal');
+    if (modal) modal.style.display = 'none';
+    _currentUnreviewedBooking = null;
+    showToast('Thank you for rating your rental! ⭐', 'success');
+
+    // Refresh company reviews and bookings
+    if (typeof loadCompanyReviewsPreview === 'function') loadCompanyReviewsPreview();
+    if (typeof loadBookings === 'function') loadBookings();
+  })
+  .catch(function(err) {
+    if (errEl) errEl.textContent = err.message || 'Failed to submit review. Please try again.';
+  })
+  .finally(function() {
+    showLoading(false);
+    restoreBtn();
+  });
+}
+window.submitMandatoryReview = submitMandatoryReview;
+
+function openCompanyReviews() {
+  showOverlay('page-company-reviews');
+  loadCompanyReviews();
+}
+window.openCompanyReviews = openCompanyReviews;
+
+function loadCompanyReviews() {
+  var list = document.getElementById('companyReviewsList');
+  if (list && !list.innerHTML) {
+    list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin" style="font-size:1.8rem;color:var(--primary);margin-bottom:12px;"></i><p>Loading company reviews...</p></div>';
+  }
+
+  apiCall('/reviews/company')
+    .then(function(data) {
+      _companyReviewsData = data;
+      renderCompanyReviews(data, 'all');
+    })
+    .catch(function(err) {
+      if (list) list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--danger);"><i class="fas fa-exclamation-circle" style="font-size:2rem;margin-bottom:10px;"></i><p>Unable to load reviews at this time.</p></div>';
+    });
+}
+window.loadCompanyReviews = loadCompanyReviews;
+
+function renderCompanyReviews(data, filterStars) {
+  var summaryContainer = document.getElementById('companyReviewsSummaryContainer');
+  var list = document.getElementById('companyReviewsList');
+  if (!data) return;
+
+  var avg = (data.average_rating || 5.0).toFixed(1);
+  var total = data.total_reviews || 0;
+  var breakdown = data.rating_breakdown || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+  if (summaryContainer) {
+    var breakdownBars = [5, 4, 3, 2, 1].map(function(star) {
+      var count = breakdown[star] || 0;
+      var pct = total > 0 ? Math.round((count / total) * 100) : 0;
+      return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:0.8rem;">' +
+        '<span style="width:48px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:3px;">' + star + ' <i class="fas fa-star" style="color:#f59e0b;font-size:0.75rem;"></i></span>' +
+        '<div style="flex:1;background:var(--bg-input);height:8px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">' +
+          '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg, #f59e0b, #d97706);border-radius:10px;transition:width 0.4s;"></div>' +
+        '</div>' +
+        '<span style="width:36px;text-align:right;color:var(--text-muted);font-weight:600;font-size:0.75rem;">' + count + '</span>' +
+      '</div>';
+    }).join('');
+
+    summaryContainer.innerHTML =
+      '<div style="display:grid;grid-template-columns:minmax(130px, 1fr) 2fr;gap:20px;align-items:center;">' +
+        '<div style="text-align:center;border-right:1px solid var(--border);padding-right:16px;">' +
+          '<div style="font-size:3rem;font-weight:900;color:var(--text-primary);line-height:1;">' + avg + '</div>' +
+          '<div style="color:#f59e0b;font-size:1.1rem;margin:8px 0 4px;">' +
+            getStarIconsHtml(Math.round(data.average_rating || 5)) +
+          '</div>' +
+          '<div style="font-size:0.8rem;color:var(--text-muted);font-weight:600;">' + total + ' verified review' + (total === 1 ? '' : 's') + '</div>' +
+          '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:4px;background:rgba(16,185,129,0.1);color:#10b981;padding:3px 8px;border-radius:12px;font-size:0.68rem;font-weight:700;">' +
+            '<i class="fas fa-shield-alt"></i> Company Wide' +
+          '</div>' +
+        '</div>' +
+        '<div>' + breakdownBars + '</div>' +
+      '</div>';
+  }
+
+  if (list) {
+    var allReviews = data.reviews || [];
+    var filtered = allReviews;
+    if (filterStars !== 'all') {
+      var starInt = parseInt(filterStars);
+      filtered = allReviews.filter(function(r) { return r.rating === starInt; });
+    }
+
+    if (filtered.length === 0) {
+      list.innerHTML =
+        '<div style="text-align:center;padding:50px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;">' +
+          '<i class="fas fa-comment-dots" style="font-size:2.5rem;color:var(--text-muted);opacity:0.4;margin-bottom:12px;"></i>' +
+          '<h4 style="font-weight:700;color:var(--text-primary);margin-bottom:6px;">No reviews yet</h4>' +
+          '<p style="font-size:0.85rem;color:var(--text-muted);margin:0;">No customer reviews match this rating filter.</p>' +
+        '</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(function(r) {
+      var initials = (r.full_name || 'Customer').split(' ').map(function(n) { return n[0]; }).slice(0,2).join('').toUpperCase();
+      var avatar = r.profile_picture
+        ? '<img src="' + escapeHtml(r.profile_picture) + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;">'
+        : '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#059669);color:#fff;font-weight:800;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + initials + '</div>';
+
+      return '<div class="review-item" style="border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--bg-card);">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">' +
+          '<div style="display:flex;align-items:center;gap:12px;">' +
+            avatar +
+            '<div>' +
+              '<div style="font-weight:800;font-size:0.95rem;color:var(--text-primary);display:flex;align-items:center;gap:6px;">' +
+                escapeHtml(r.full_name || 'Verified Renter') +
+                '<span style="background:rgba(0,177,79,0.1);color:var(--primary);font-size:0.65rem;padding:2px 6px;border-radius:6px;font-weight:700;"><i class="fas fa-check-circle"></i> Verified</span>' +
+              '</div>' +
+              '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' +
+                (r.created_at || 'Recent rental') +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="color:#f59e0b;font-size:0.85rem;white-space:nowrap;">' +
+            getStarIconsHtml(r.rating || 5) +
+          '</div>' +
+        '</div>' +
+        (r.vehicle_name ? '<div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px;display:inline-flex;align-items:center;gap:5px;background:var(--bg-input);padding:3px 8px;border-radius:6px;border:1px solid var(--border);"><i class="fas fa-car" style="color:var(--primary);"></i> Rented: ' + escapeHtml(r.vehicle_name) + '</div>' : '') +
+        '<p style="font-size:0.875rem;color:var(--text-primary);line-height:1.5;margin:0;">' +
+          escapeHtml(r.comment || 'Great experience with Autoride! Highly recommended.') +
+        '</p>' +
+      '</div>';
+    }).join('');
+  }
+}
+window.renderCompanyReviews = renderCompanyReviews;
+
+function filterCompanyReviews(stars, btn) {
+  var pills = document.querySelectorAll('.review-filter-pill');
+  for (var i = 0; i < pills.length; i++) {
+    pills[i].classList.remove('active');
+  }
+  if (btn) btn.classList.add('active');
+  if (_companyReviewsData) {
+    renderCompanyReviews(_companyReviewsData, stars);
+  }
+}
+window.filterCompanyReviews = filterCompanyReviews;
+
+function getStarIconsHtml(count) {
+  var html = '';
+  for (var i = 1; i <= 5; i++) {
+    if (i <= count) html += '<i class="fas fa-star"></i>';
+    else html += '<i class="far fa-star" style="opacity:0.35;"></i>';
+  }
+  return html;
+}
+window.getStarIconsHtml = getStarIconsHtml;
+
+function loadCompanyReviewsPreview() {
+  apiCall('/reviews/company')
+    .then(function(data) {
+      if (!data) return;
+      _companyReviewsData = data;
+      var scoreEl = document.getElementById('homeRatingScore');
+      if (scoreEl) scoreEl.textContent = (data.average_rating || 5.0).toFixed(1);
+
+      var starsEl = document.getElementById('homeRatingStars');
+      if (starsEl) starsEl.innerHTML = getStarIconsHtml(Math.round(data.average_rating || 5));
+
+      var countEl = document.getElementById('homeRatingCount');
+      if (countEl) {
+        var count = data.total_reviews || 0;
+        countEl.textContent = 'Based on ' + count + ' verified rental' + (count === 1 ? '' : 's');
+      }
+
+      var snippetList = document.getElementById('homeReviewsSnippetList');
+      if (snippetList) {
+        var reviews = (data.reviews || []).slice(0, 4);
+        if (reviews.length === 0) {
+          snippetList.innerHTML =
+            '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;width:100%;color:var(--text-muted);font-size:0.8rem;text-align:center;">' +
+              'Be the first to leave a review after your rental!' +
+            '</div>';
+        } else {
+          snippetList.innerHTML = reviews.map(function(r) {
+            return '<div onclick="openCompanyReviews()" style="min-width:240px;max-width:260px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px;flex-shrink:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.03);">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+                '<span style="font-weight:700;font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">' + escapeHtml(r.full_name || 'Customer') + '</span>' +
+                '<span style="color:#f59e0b;font-size:0.75rem;">' + getStarIconsHtml(r.rating || 5) + '</span>' +
+              '</div>' +
+              (r.vehicle_name ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fas fa-car"></i> ' + escapeHtml(r.vehicle_name) + '</div>' : '') +
+              '<p style="font-size:0.75rem;color:var(--text-secondary);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;">' +
+                escapeHtml(r.comment || 'Excellent service and car condition.') +
+              '</p>' +
+            '</div>';
+          }).join('');
+        }
+      }
+    })
+    .catch(function(err) {
+      console.warn('[CompanyReviewsPreview] Error:', err);
+    });
+}
+window.loadCompanyReviewsPreview = loadCompanyReviewsPreview;
+
+// Ensure mandatory review modal cannot be dismissed by ESC or clicking background
+if (typeof document !== 'undefined') {
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && window._unreviewedBookingActive) {
+      e.preventDefault();
+      e.stopPropagation();
+      showToast('Rental feedback is required to complete your booking.', 'info');
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('mandatoryReviewModal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          var box = modal.querySelector('.mandatory-modal-content');
+          if (box) {
+            box.style.transform = 'scale(1.02)';
+            setTimeout(function() { box.style.transform = 'scale(1)'; }, 150);
+          }
+          showToast('Rental feedback is required to complete your booking.', 'info');
+        }
+      });
+    }
+  });
 }
 
 // PROFILE
