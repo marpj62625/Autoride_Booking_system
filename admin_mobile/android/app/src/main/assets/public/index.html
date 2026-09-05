@@ -4410,7 +4410,7 @@
 
 
             <a href="javascript:void(0);" class="drawer-item" data-tab="activity" onclick="navTo('activity')"><i class="fas fa-history"></i> Activity Log</a>
-            <a href="javascript:void(0);" class="drawer-item" onclick="toggleNewsletterModal(true);closeDrawer();"><i class="fas fa-newspaper"></i> Newsletters & Promos</a>
+            <a href="javascript:void(0);" class="drawer-item" onclick="toggleNewsletterModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-newspaper"></i> Newsletters & Promos</a>
 
 
 
@@ -14337,6 +14337,8 @@ async edit(id) { this.openModal(id); }
             }
         }
     };
+
+    window.closeDrawer = window.closeDrawer || function() {};
 
     function toggleNewsletterModal(show = true) {
         const modal = document.getElementById('newsletterModal');

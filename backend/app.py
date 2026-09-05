@@ -7477,6 +7477,7 @@ def manage_instructions():
 # NEWSLETTER & PROMO BROADCAST SYSTEM
 # ============================================================
 
+@app.route('/newsletter/toggle', methods=['GET', 'POST'])
 @app.route('/api/newsletter/toggle', methods=['GET', 'POST'])
 def handle_newsletter_toggle():
     """Get or update customer visibility toggle for newsletter & privileges."""
@@ -7518,6 +7519,7 @@ def handle_newsletter_toggle():
             cur.close()
 
 
+@app.route('/newsletters', methods=['GET'])
 @app.route('/api/newsletters', methods=['GET'])
 def get_newsletters():
     """Public endpoint to fetch all active newsletters and promos for customer feed."""
@@ -7544,6 +7546,7 @@ def get_newsletters():
             cur.close()
 
 
+@app.route('/newsletter/status', methods=['GET'])
 @app.route('/api/newsletter/status', methods=['GET'])
 def get_newsletter_status():
     """Check subscription status for a given email or user_id."""
@@ -7607,6 +7610,7 @@ def subscribe_newsletter():
             cur.close()
 
 
+@app.route('/newsletter/unsubscribe', methods=['POST'])
 @app.route('/api/newsletter/unsubscribe', methods=['POST'])
 def unsubscribe_newsletter():
     """Unsubscribe customer from newsletter."""
@@ -7634,6 +7638,7 @@ def unsubscribe_newsletter():
 
 # --- Admin Newsletter Endpoints ---
 
+@app.route('/admin/newsletters', methods=['GET'])
 @app.route('/api/admin/newsletters', methods=['GET'])
 def admin_get_newsletters():
     """Admin endpoint to view all newsletters (active and inactive)."""
@@ -7659,6 +7664,7 @@ def admin_get_newsletters():
             cur.close()
 
 
+@app.route('/admin/newsletters', methods=['POST'])
 @app.route('/api/admin/newsletters', methods=['POST'])
 def admin_create_newsletter():
     """Admin endpoint to create and broadcast a new newsletter / promotion."""
@@ -7718,6 +7724,7 @@ def admin_create_newsletter():
             cur.close()
 
 
+@app.route('/admin/newsletters/<int:id>', methods=['DELETE'])
 @app.route('/api/admin/newsletters/<int:id>', methods=['DELETE'])
 def admin_delete_newsletter(id):
     """Admin endpoint to delete a newsletter."""
@@ -7733,6 +7740,7 @@ def admin_delete_newsletter(id):
             cur.close()
 
 
+@app.route('/admin/subscribers', methods=['GET'])
 @app.route('/api/admin/subscribers', methods=['GET'])
 def admin_get_subscribers():
     """Admin endpoint to view audience of newsletter subscribers."""
@@ -7771,6 +7779,7 @@ def admin_get_subscribers():
             cur.close()
 
 
+@app.route('/admin/subscribers/<int:id>', methods=['DELETE'])
 @app.route('/api/admin/subscribers/<int:id>', methods=['DELETE'])
 def admin_delete_subscriber(id):
     """Admin endpoint to remove a subscriber."""
