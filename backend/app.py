@@ -857,10 +857,11 @@ def migrate_no_show_column():
 
 
 def migrate_booking_reviews():
-    """Ensures booking_id column exists in the reviews table to track reviews per booking."""
+    """Ensures booking_id column exists in reviews table and completed_at in bookings table."""
     try:
         cur = get_cursor()
         cur.execute("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP")
         commit_db()
         print("[MIGRATION] migrate_booking_reviews completed successfully")
     except Exception as e:
@@ -4324,7 +4325,8 @@ def add_review():
 def get_unreviewed_booking(user_id):
     try:
         cur = get_cursor()
-        # Find any Completed booking by this user that hasn't been reviewed yet
+        # Find Completed bookings completed starting from now (2026-09-05 onwards)
+        # Previous/past completed bookings before this are NOT mandatory
         cur.execute("""
             SELECT b.id, b.vehicle_id, b.start_date, b.end_date, b.status, b.total_price,
                    v.brand, v.model, v.year_model, v.vehicle_image
@@ -4332,6 +4334,10 @@ def get_unreviewed_booking(user_id):
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
             WHERE b.user_id = %s
               AND b.status = 'Completed'
+              AND (
+                  b.completed_at >= '2026-09-05 00:00:00'
+                  OR (b.completed_at IS NULL AND b.end_date >= '2026-09-05')
+              )
               AND b.id NOT IN (
                   SELECT booking_id FROM reviews WHERE booking_id IS NOT NULL AND user_id = %s
               )
@@ -5650,7 +5656,7 @@ def submit_inspection():
                             """, (new_end_date_str, new_end_time_str, booking_id))
                             print(f"[submit_inspection] Late pickup detected. Deducted {late_duration.total_seconds() / 3600:.2f} hours. New end datetime: {new_end_date_str} {new_end_time_str}")
         elif inspection_type == 'return':
-            cur.execute("UPDATE bookings SET status = 'Completed' WHERE id = %s", (booking_id,))
+            cur.execute("UPDATE bookings SET status = 'Completed', completed_at = NOW() WHERE id = %s", (booking_id,))
             if vehicle_id:
                 cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (vehicle_id,))
 
@@ -6387,7 +6393,7 @@ def complete_booking(booking_id):
             
         # Only award points if it was not already Completed
         if b_info['status'] != 'Completed':
-            cur.execute("UPDATE bookings SET status='Completed' WHERE id=%s", (booking_id,))
+            cur.execute("UPDATE bookings SET status='Completed', completed_at=NOW() WHERE id=%s", (booking_id,))
             
             # Reset vehicle status to 'Available'
             cur.execute("UPDATE vehicles SET status='Available' WHERE id=(SELECT vehicle_id FROM bookings WHERE id=%s)", (booking_id,))

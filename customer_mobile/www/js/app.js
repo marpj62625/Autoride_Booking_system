@@ -4779,7 +4779,7 @@ function renderBookingDetail(b) {
 
   if (!canPayNow && !canPayBalance && canReview) {
     var vNameEsc = escapeHtml(vehicleName).replace(/'/g, "\\'");
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' })"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' }, false)"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
   }
   if (canExtend) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
@@ -6288,7 +6288,7 @@ function checkUnreviewedBookings() {
   apiCall('/user/unreviewed-booking/' + currentUser.id)
     .then(function(res) {
       if (res && res.has_unreviewed && res.booking) {
-        openMandatoryReviewModal(res.booking);
+        openMandatoryReviewModal(res.booking, true);
       }
     })
     .catch(function(err) {
@@ -6297,11 +6297,27 @@ function checkUnreviewedBookings() {
 }
 window.checkUnreviewedBookings = checkUnreviewedBookings;
 
-function openMandatoryReviewModal(booking) {
+function closeMandatoryReviewModal() {
+  if (window._unreviewedBookingActive) {
+    showToast('Rental feedback is required to complete your booking record.', 'info');
+    return;
+  }
+  var modal = document.getElementById('mandatoryReviewModal');
+  if (modal) modal.style.display = 'none';
+  _currentUnreviewedBooking = null;
+}
+window.closeMandatoryReviewModal = closeMandatoryReviewModal;
+
+function openMandatoryReviewModal(booking, isMandatory) {
   if (!booking) return;
   _currentUnreviewedBooking = booking;
   _selectedMandatoryRating = 0;
-  window._unreviewedBookingActive = true;
+  window._unreviewedBookingActive = (isMandatory !== false);
+
+  var closeBtn = document.getElementById('mandatoryModalCloseBtn');
+  if (closeBtn) {
+    closeBtn.style.display = window._unreviewedBookingActive ? 'none' : 'block';
+  }
 
   var vehicleNameEl = document.getElementById('mandatoryBookingVehicleName');
   if (vehicleNameEl) {
