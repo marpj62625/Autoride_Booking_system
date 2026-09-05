@@ -4017,13 +4017,34 @@ function pickPaymentProof() {
   input.click();
 }
 
-// Helper to open PayMongo checkout in the same tab on Web (no new tab)
+// Helper to open PayMongo checkout securely and seamlessly
+var _paymongoWindow = null;
 function openPaymongoCheckout(checkoutUrl, bookingId, amount, method) {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-    window.Capacitor.Plugins.Browser.open({ url: checkoutUrl, presentationStyle: 'popover' });
+    window.Capacitor.Plugins.Browser.open({ url: checkoutUrl, presentationStyle: 'popover', toolbarColor: '#0f172a' });
   } else {
-    // Same-tab redirect on Web so no extra browser tab is opened!
-    window.location.href = checkoutUrl;
+    // On Web: Open checkout in a centered popup window so the main Autoride app tab remains active and keeps polling
+    var w = 550;
+    var h = 750;
+    var left = Math.max(0, (window.screen.width / 2) - (w / 2));
+    var top = Math.max(0, (window.screen.height / 2) - (h / 2));
+    try {
+      _paymongoWindow = window.open(
+        checkoutUrl,
+        'PayMongoCheckout',
+        'toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=' + w + ',height=' + h + ',top=' + top + ',left=' + left
+      );
+    } catch (e) {
+      _paymongoWindow = null;
+    }
+    
+    // Fallback to same-tab redirect if popup is blocked
+    if (!_paymongoWindow || _paymongoWindow.closed || typeof _paymongoWindow.closed === 'undefined') {
+      console.log('[PayMongo] Popup window unavailable, redirecting in same tab');
+      window.location.href = checkoutUrl;
+    } else {
+      try { _paymongoWindow.focus(); } catch(e) {}
+    }
   }
 }
 window.openPaymongoCheckout = openPaymongoCheckout;
@@ -4164,18 +4185,26 @@ function showPaymentWaiting(bookingId, amount, method) {
     }).catch(function() {});
   }
 
-  // Start polling every 3 seconds
+  window._pendingPaymentBookingId = bookingId;
+  window._pendingPaymentAmount = amount;
+  window._pendingPaymentMethod = method;
+
+  // Start polling every 2.5 seconds
   _paymentPollInterval = setInterval(function() {
     autoCheckPaymentStatus(bookingId, amount, method);
-  }, 3000);
+  }, 2500);
 }
-
 
 function stopPaymentPolling() {
   if (_paymentPollInterval) {
     clearInterval(_paymentPollInterval);
     _paymentPollInterval = null;
   }
+  if (_paymongoWindow && !_paymongoWindow.closed) {
+    try { _paymongoWindow.close(); } catch(e) {}
+    _paymongoWindow = null;
+  }
+  window._pendingPaymentBookingId = null;
   // Clean up browser event listeners
   if (window._browserFinishedListener) {
     try { window._browserFinishedListener.remove(); } catch(e) {}
@@ -4196,25 +4225,53 @@ function autoCheckPaymentStatus(bookingId, amount, method) {
       _paymentCheckInProgress = false;
       if (data.paid) {
         stopPaymentPolling();
-        // Close in-app browser if still open
+        // Close in-app browser or popup window if still open
+        if (_paymongoWindow && !_paymongoWindow.closed) {
+          try { _paymongoWindow.close(); } catch(e) {}
+          _paymongoWindow = null;
+        }
         if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
           window.Capacitor.Plugins.Browser.close().catch(function() {});
         }
         BookingSession.clear();
         closeOverlay('page-payment');
-        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
-        loadNotifications(currentUser.id);
+        closeOverlay('page-pay-balance');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is updated.', 'success');
+        loadNotifications(currentUser ? currentUser.id : null);
         loadBookings();
         showPage('page-bookings');
+        if (typeof openBookingDetail === 'function') {
+          openBookingDetail(bookingId);
+        }
       }
     })
     .catch(function() { _paymentCheckInProgress = false; });
 }
 
+// Auto-check payment status when the customer switches back to this tab/window
+if (typeof window !== 'undefined') {
+  window.addEventListener('focus', function() {
+    if (window._pendingPaymentBookingId) {
+      autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
+    }
+  });
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible' && window._pendingPaymentBookingId) {
+        autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
+      }
+    });
+  }
+}
+
 function checkPaymentStatus(bookingId, amount, method) {
   showLoading(true);
   stopPaymentPolling();
-  // Close in-app browser if still open
+  // Close in-app browser or popup window if still open
+  if (_paymongoWindow && !_paymongoWindow.closed) {
+    try { _paymongoWindow.close(); } catch(e) {}
+    _paymongoWindow = null;
+  }
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
   }
@@ -4224,10 +4281,14 @@ function checkPaymentStatus(bookingId, amount, method) {
       if (data.paid) {
         BookingSession.clear();
         closeOverlay('page-payment');
-        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
-        loadNotifications(currentUser.id);
+        closeOverlay('page-pay-balance');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is updated.', 'success');
+        loadNotifications(currentUser ? currentUser.id : null);
         loadBookings();
         showPage('page-bookings');
+        if (typeof openBookingDetail === 'function') {
+          openBookingDetail(bookingId);
+        }
       } else {
         showPaymentFailed(bookingId, amount, method, 'Payment not yet confirmed. Tap Try Again to create a new payment link.');
       }

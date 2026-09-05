@@ -4161,18 +4161,22 @@ function showPaymentWaiting(bookingId, amount, method) {
     }).catch(function() {});
   }
 
-  // Start polling every 3 seconds
+  window._pendingPaymentBookingId = bookingId;
+  window._pendingPaymentAmount = amount;
+  window._pendingPaymentMethod = method;
+
+  // Start polling every 2.5 seconds
   _paymentPollInterval = setInterval(function() {
     autoCheckPaymentStatus(bookingId, amount, method);
-  }, 3000);
+  }, 2500);
 }
-
 
 function stopPaymentPolling() {
   if (_paymentPollInterval) {
     clearInterval(_paymentPollInterval);
     _paymentPollInterval = null;
   }
+  window._pendingPaymentBookingId = null;
   // Clean up browser event listeners
   if (window._browserFinishedListener) {
     try { window._browserFinishedListener.remove(); } catch(e) {}
@@ -4199,13 +4203,38 @@ function autoCheckPaymentStatus(bookingId, amount, method) {
         }
         BookingSession.clear();
         closeOverlay('page-payment');
-        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
-        loadNotifications(currentUser.id);
+        closeOverlay('page-pay-balance');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is updated.', 'success');
+        loadNotifications(currentUser ? currentUser.id : null);
         loadBookings();
         showPage('page-bookings');
+        if (typeof openBookingDetail === 'function') {
+          openBookingDetail(bookingId);
+        }
       }
     })
     .catch(function() { _paymentCheckInProgress = false; });
+}
+
+// Auto-check payment status when the customer resumes the mobile app
+if (typeof window !== 'undefined') {
+  window.addEventListener('focus', function() {
+    if (window._pendingPaymentBookingId) {
+      autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
+    }
+  });
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible' && window._pendingPaymentBookingId) {
+        autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
+      }
+    });
+    document.addEventListener('resume', function() {
+      if (window._pendingPaymentBookingId) {
+        autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
+      }
+    });
+  }
 }
 
 function checkPaymentStatus(bookingId, amount, method) {
@@ -4221,10 +4250,14 @@ function checkPaymentStatus(bookingId, amount, method) {
       if (data.paid) {
         BookingSession.clear();
         closeOverlay('page-payment');
-        showToast('Payment confirmed! Booking #' + bookingId + ' is now active.', 'success');
-        loadNotifications(currentUser.id);
+        closeOverlay('page-pay-balance');
+        showToast('Payment confirmed! Booking #' + bookingId + ' is updated.', 'success');
+        loadNotifications(currentUser ? currentUser.id : null);
         loadBookings();
         showPage('page-bookings');
+        if (typeof openBookingDetail === 'function') {
+          openBookingDetail(bookingId);
+        }
       } else {
         showPaymentFailed(bookingId, amount, method, 'Payment not yet confirmed. Tap Try Again to create a new payment link.');
       }

@@ -162,8 +162,58 @@ def create_payment():
         success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
         cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
 
-    # Create PayMongo Payment Link
-    payload = {
+    # Billing details if provided
+    billing = {}
+    if customer_name:
+        billing['name'] = customer_name
+    if customer_email:
+        billing['email'] = customer_email
+    if customer_phone:
+        billing['phone'] = customer_phone
+
+    # Map method names for Checkout Sessions (supports native auto-redirect)
+    cs_method_map = {
+        'gcash': ['gcash', 'qrph'],
+        'maya': ['paymaya', 'qrph'],
+        'paymaya': ['paymaya', 'qrph'],
+        'card': ['card'],
+        'credit_card': ['card'],
+        'debit_card': ['card'],
+    }
+    cs_pm_types = cs_method_map.get(method.lower(), [pm_type, 'qrph'])
+
+    cs_payload = {
+        'data': {
+            'attributes': {
+                'send_email_receipt': False,
+                'show_description': True,
+                'show_line_items': True,
+                'line_items': [
+                    {
+                        'name': description,
+                        'amount': amount_centavos,
+                        'currency': 'PHP',
+                        'quantity': 1
+                    }
+                ],
+                'payment_method_types': cs_pm_types,
+                'success_url': success_url,
+                'cancel_url': cancel_url,
+                'description': description,
+                'metadata': {
+                    'booking_id': str(booking_id),
+                    'method': method,
+                    'payment_type': payment_type,
+                    'client': client
+                }
+            }
+        }
+    }
+    if billing:
+        cs_payload['data']['attributes']['billing'] = billing
+
+    # Legacy Payment Link payload as fallback
+    link_payload = {
         'data': {
             'attributes': {
                 'amount': amount_centavos,
@@ -181,37 +231,40 @@ def create_payment():
             }
         }
     }
-
-    # Add billing info if provided
-    if customer_email or customer_name:
-        billing = {}
-        if customer_name:
-            billing['name'] = customer_name
-        if customer_email:
-            billing['email'] = customer_email
-        if customer_phone:
-            billing['phone'] = customer_phone
-        payload['data']['attributes']['billing'] = billing
+    if billing:
+        link_payload['data']['attributes']['billing'] = billing
 
     try:
+        # Try Checkout Sessions first (PayMongo's modern hosted checkout with automatic success redirect)
         res = requests.post(
-            f'{PAYMONGO_API}/links',
+            f'{PAYMONGO_API}/checkout_sessions',
             headers=get_auth_header(),
-            json=payload,
+            json=cs_payload,
             timeout=15
         )
         result = res.json()
+
+        # If checkout session creation fails, fallback to legacy links
+        if res.status_code not in (200, 201):
+            print(f"[PayMongo] Checkout session failed ({res.status_code}), falling back to links: {res.text}")
+            res = requests.post(
+                f'{PAYMONGO_API}/links',
+                headers=get_auth_header(),
+                json=link_payload,
+                timeout=15
+            )
+            result = res.json()
 
         if res.status_code not in (200, 201):
             error_msg = result.get('errors', [{}])[0].get('detail', 'PayMongo error')
             return jsonify({'error': error_msg}), res.status_code
 
-        link_data = result['data']
-        link_id = link_data['id']
-        checkout_url = link_data['attributes']['checkout_url']
-        reference_number = link_data['attributes']['reference_number']
+        res_data = result['data']
+        link_id = res_data['id']
+        checkout_url = res_data['attributes']['checkout_url']
+        reference_number = res_data['attributes'].get('reference_number') or link_id
 
-        # Store the PayMongo link ID in the booking for webhook matching (only for non-extensions)
+        # Store the PayMongo session/link ID in the booking for webhook matching (only for non-extensions)
         if payment_type != 'Extension':
             cur = get_cursor()
             cur.execute(
@@ -253,20 +306,32 @@ def payment_success():
         booking = cur.fetchone()
 
         if booking and booking['paymongo_link_id']:
-            # Verify with PayMongo API
+            link_id = booking['paymongo_link_id']
+            endpoint = f"{PAYMONGO_API}/checkout_sessions/{link_id}" if link_id.startswith('cs_') else f"{PAYMONGO_API}/links/{link_id}"
             res = requests.get(
-                f"{PAYMONGO_API}/links/{booking['paymongo_link_id']}",
+                endpoint,
                 headers=get_auth_header(),
                 timeout=10
             )
             if res.status_code == 200:
                 link = res.json()['data']
-                status = link['attributes']['status']
-                payments = link['attributes'].get('payments', [])
+                link_attrs = link['attributes']
+                status = link_attrs.get('status')
+                payment_intent = link_attrs.get('payment_intent', {})
+                pi_status = payment_intent.get('attributes', {}).get('status') or payment_intent.get('status')
+                payments = link_attrs.get('payments', [])
 
-                if status == 'paid':
+                is_paid = (status == 'paid') or (pi_status == 'succeeded')
+                if not is_paid and payments:
+                    for p in payments:
+                        p_attrs = p.get('data', p).get('attributes', p)
+                        if p_attrs.get('status') == 'paid':
+                            is_paid = True
+                            break
+
+                if is_paid:
                     method = 'online'
-                    ref_num = booking['paymongo_link_id']
+                    ref_num = link_id
                     amount_paid = float(booking.get('total_price') or 0)
                     if payments:
                         try:
@@ -405,13 +470,28 @@ def paymongo_webhook():
         event = json.loads(payload)
         event_type = event.get('data', {}).get('attributes', {}).get('type', '')
 
-        if event_type == 'payment.paid':
-            payment_attrs = event['data']['attributes']['data']['attributes']
+        if event_type in ('payment.paid', 'checkout_session.payment.paid'):
+            event_data = event.get('data', {}).get('attributes', {}).get('data', {})
+            payment_attrs = event_data.get('attributes', {})
             metadata = payment_attrs.get('metadata', {})
             booking_id = metadata.get('booking_id')
-            amount = payment_attrs.get('amount', 0) / 100
-            method = payment_attrs.get('source', {}).get('type', 'online')
-            ref_num = event['data']['attributes']['data']['id']
+            raw_amount = payment_attrs.get('amount', 0)
+            payments = payment_attrs.get('payments', [])
+            method = 'online'
+            if payments:
+                try:
+                    p = payments[0]
+                    p_attrs = p.get('data', p).get('attributes', p)
+                    method = p_attrs.get('source', {}).get('type', 'online')
+                    if raw_amount == 0 and p_attrs.get('amount'):
+                        raw_amount = p_attrs.get('amount')
+                except Exception:
+                    pass
+            elif payment_attrs.get('source'):
+                method = payment_attrs.get('source', {}).get('type', 'online')
+
+            amount = raw_amount / 100 if raw_amount else 0
+            ref_num = event_data.get('id', 'online')
 
             if booking_id:
                 payment_type = metadata.get('payment_type', 'Full')
@@ -464,24 +544,39 @@ def check_payment_status(booking_id):
 
         # Not yet confirmed - actively check PayMongo API
         link_id = query_link_id or booking['paymongo_link_id']
-        debug_info = {'link_id': link_id, 'has_key': bool(PAYMONGO_SECRET_KEY)}
-        if link_id and PAYMONGO_SECRET_KEY:
+        cfg = get_paymongo_config()
+        secret_key = cfg.get('secret_key')
+        debug_info = {'link_id': link_id, 'has_key': bool(secret_key)}
+        if link_id and secret_key:
             try:
+                endpoint = f'{PAYMONGO_API}/checkout_sessions/{link_id}' if link_id.startswith('cs_') else f'{PAYMONGO_API}/links/{link_id}'
                 res = requests.get(
-                    f'{PAYMONGO_API}/links/{link_id}',
+                    endpoint,
                     headers=get_auth_header(),
                     timeout=10
                 )
                 debug_info['paymongo_http'] = res.status_code
                 if res.status_code == 200:
                     link_data = res.json()['data']
-                    link_status = link_data['attributes']['status']
-                    payments = link_data['attributes'].get('payments', [])
+                    link_attrs = link_data['attributes']
+                    link_status = link_attrs.get('status')
+                    payment_intent = link_attrs.get('payment_intent', {})
+                    pi_status = payment_intent.get('attributes', {}).get('status') or payment_intent.get('status')
+                    payments = link_attrs.get('payments', [])
                     debug_info['link_status'] = link_status
                     debug_info['payments_count'] = len(payments)
 
-                    # PayMongo paid link - process payment
-                    if link_status == 'paid':
+                    # Determine if paid
+                    is_paid = (link_status == 'paid') or (pi_status == 'succeeded')
+                    if not is_paid and payments:
+                        for p in payments:
+                            p_attrs = p.get('data', p).get('attributes', p)
+                            if p_attrs.get('status') == 'paid':
+                                is_paid = True
+                                break
+
+                    # PayMongo paid link or session - process payment
+                    if is_paid:
                         # If this is an extension payment, we just return paid status without triggering full payment confirmation
                         is_extension = bool(query_link_id and query_link_id != booking['paymongo_link_id'])
                         if is_extension:
@@ -596,23 +691,38 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
             except Exception:
                 pass
         
+        cfg = get_paymongo_config()
+        secret_key = cfg.get('secret_key')
         for booking in unpaid_bookings:
             booking_id = booking['id']
             link_id = booking['paymongo_link_id']
-            if not PAYMONGO_SECRET_KEY or not link_id:
+            if not secret_key or not link_id:
                 continue
                 
             try:
+                endpoint = f'{PAYMONGO_API}/checkout_sessions/{link_id}' if link_id.startswith('cs_') else f'{PAYMONGO_API}/links/{link_id}'
                 res = requests.get(
-                    f'{PAYMONGO_API}/links/{link_id}',
+                    endpoint,
                     headers=get_auth_header(),
                     timeout=5
                 )
                 if res.status_code == 200:
                     link_data = res.json()['data']
-                    link_status = link_data['attributes']['status']
-                    if link_status == 'paid':
-                        payments = link_data['attributes'].get('payments', [])
+                    link_attrs = link_data['attributes']
+                    link_status = link_attrs.get('status')
+                    payment_intent = link_attrs.get('payment_intent', {})
+                    pi_status = payment_intent.get('attributes', {}).get('status') or payment_intent.get('status')
+                    payments = link_attrs.get('payments', [])
+
+                    is_paid = (link_status == 'paid') or (pi_status == 'succeeded')
+                    if not is_paid and payments:
+                        for p in payments:
+                            p_attrs = p.get('data', p).get('attributes', p)
+                            if p_attrs.get('status') == 'paid':
+                                is_paid = True
+                                break
+
+                    if is_paid:
                         method = 'online'
                         ref_num = link_id
                         amount_paid = float(booking.get('total_price') or 0)
