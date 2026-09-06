@@ -1108,7 +1108,7 @@ function showPage(id) {
   if (id === 'page-more') loadMorePage();
 }
 
-var _overlayZBase = 500;
+var _overlayZBase = 2000;
 var _overlayZCounter = 0;
 
 function showOverlay(id) {
@@ -1123,6 +1123,10 @@ function showOverlay(id) {
   // Bump z-index so the most-recently opened overlay always sits on top
   _overlayZCounter++;
   el.style.zIndex = String(_overlayZBase + _overlayZCounter);
+
+  // Hide bottom nav when an overlay is open so it never covers inputs/buttons
+  var nav = document.getElementById('bottomNav');
+  if (nav) nav.classList.add('hidden');
   if (id === 'page-notifications') openNotificationsPage();
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
@@ -1150,6 +1154,15 @@ function closeOverlay(id) {
   if (id === 'page-gps-map') stopGpsPolling();
   if (id === 'page-livechat') LiveChat.stopPolling();
   if (id === 'page-payment') stopPaymentPolling();
+
+  // Restore bottom navigation if no active overlay remains
+  var anyActive = document.querySelector('.overlay-page.active');
+  if (!anyActive) {
+    var nav = document.getElementById('bottomNav');
+    if (nav && typeof currentPage !== 'undefined' && typeof MAIN_PAGES !== 'undefined' && MAIN_PAGES.indexOf(currentPage) >= 0) {
+      nav.classList.remove('hidden');
+    }
+  }
 }
 
 function statusPill(status) {
@@ -7985,14 +7998,17 @@ function loadChatbot() {
     overlay.style.display = 'flex';
     overlay.style.flexDirection = 'column';
     overlay.style.overflow = 'hidden';
+    overlay.style.height = '100dvh';
+    overlay.style.height = '100%';
+    overlay.style.bottom = '0';
   }
-  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;';
+  el.style.cssText = 'display:flex;flex-direction:column;flex:1;height:100%;overflow:hidden;min-height:0;';
 
   el.innerHTML =
     '<div class="page-header" style="flex-shrink:0;">' +
     '<button class="back-btn" onclick="closeChatbot()"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>AI Assistant</h2></div>' +
-    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:20px;">' +
+    '<div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;padding-bottom:20px;-webkit-overflow-scrolling:touch;">' +
     '<div class="chat-msg bot">Hi! 👋 I\'m the Autoride AI assistant. How can I help you today?</div>' +
     '<div id="chatQuickReplies" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px;">' +
     '<button onclick="sendChatMsg(\'Show me how to use the app\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">📖 App Tutorial</button>' +
@@ -8002,10 +8018,24 @@ function loadChatbot() {
     '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
     '</div>' +
     '</div>' +
-    '<div class="chat-input-row" style="flex-shrink:0;position:relative;z-index:100;background:var(--bg-card);padding:10px 14px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">' +
-    '<input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;" onkeydown="if(event.key===\'Enter\')sendChat()">' +
-    '<button onclick="sendChat()" style="width:42px;height:42px;border-radius:50%;background:var(--primary);color:white;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;"><i class="fas fa-paper-plane"></i></button>' +
+    '<div class="chat-input-row" id="chatbotInputRow" style="flex-shrink:0;position:relative;z-index:100;background:var(--bg-card);padding:10px 14px calc(14px + env(safe-area-inset-bottom, 0px));border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;box-shadow:0 -2px 10px rgba(0,0,0,0.05);">' +
+    '<input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;padding:12px 16px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:24px;font-size:0.95rem;color:var(--text-primary);outline:none;box-sizing:border-box;" onkeydown="if(event.key===\'Enter\')sendChat()">' +
+    '<button onclick="sendChat()" style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 6px rgba(0,177,79,0.3);"><i class="fas fa-paper-plane" style="font-size:1rem;"></i></button>' +
     '</div>';
+
+  setTimeout(function() {
+    var input = document.getElementById('chatInput');
+    if (input) {
+      input.addEventListener('focus', function() {
+        setTimeout(function() {
+          var msgs = document.getElementById('chatMessages');
+          if (msgs) msgs.scrollTop = msgs.scrollHeight;
+          var row = document.getElementById('chatbotInputRow');
+          if (row) row.scrollIntoView({ block: 'end', behavior: 'smooth' });
+        }, 300);
+      });
+    }
+  }, 100);
 }
 
 function closeChatbot() {
