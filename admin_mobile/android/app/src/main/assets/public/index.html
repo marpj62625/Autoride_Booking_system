@@ -65,6 +65,7 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/anime.min.js"></script>
 
 
 
@@ -5245,52 +5246,6 @@
                     <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
             </div>
-
-
-        </div>
-
-
-
-
-
-
-
-        <button onclick="adminAuth.logout()" style="width: 100%; margin-top: 30px; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius); color: var(--danger); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px;">
-
-
-
-            <i class="fas fa-sign-out-alt"></i>
-
-
-
-            Logout Account
-
-
-
-        </button>
-
-
-
-        
-
-
-
-        <div style="text-align: center; margin-top: 40px; opacity: 0.3; padding-bottom: 100px;">
-
-
-
-            <p style="font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;">AUTORIDE ADMIN MOBILE</p>
-
-
-
-            <p style="font-size: 0.6rem; margin-top: 5px;">v2.1.0-PREMIUM</p>
-
-
-
-        </div>
-
-
-
     </div>
 
 
@@ -25140,14 +25095,48 @@ function toggleNewsletterModal(show = true) {
 
 
             // Update stat cards
+            var targetRev = Number(data.total_revenue || 0);
+            var targetBookings = Number(data.total_bookings || 0);
 
+            if (window.anime) {
+                var revObj = { val: 0 };
+                anime({
+                    targets: revObj,
+                    val: targetRev,
+                    round: 1,
+                    easing: 'easeOutExpo',
+                    duration: 1200,
+                    update: function() {
+                        var el = document.getElementById('dashTotalRevenue');
+                        if (el) el.textContent = '\u20B1' + Number(revObj.val).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    }
+                });
 
+                var bookObj = { val: 0 };
+                anime({
+                    targets: bookObj,
+                    val: targetBookings,
+                    round: 1,
+                    easing: 'easeOutExpo',
+                    duration: 1000,
+                    update: function() {
+                        var el = document.getElementById('dashTotalBookings');
+                        if (el) el.textContent = Math.round(bookObj.val);
+                    }
+                });
 
-            document.getElementById('dashTotalRevenue').textContent = '\u20B1' + (data.total_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2});
-
-
-
-            document.getElementById('dashTotalBookings').textContent = data.total_bookings || 0;
+                anime({
+                    targets: '#dashboard .stat-card',
+                    opacity: [0, 1],
+                    translateY: [12, 0],
+                    delay: anime.stagger(40, { start: 20 }),
+                    duration: 400,
+                    easing: 'easeOutCubic'
+                });
+            } else {
+                document.getElementById('dashTotalRevenue').textContent = '\u20B1' + targetRev.toLocaleString('en-PH', {minimumFractionDigits: 2});
+                document.getElementById('dashTotalBookings').textContent = targetBookings;
+            }
 
 
 

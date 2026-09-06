@@ -1124,6 +1124,18 @@ function showOverlay(id) {
   _overlayZCounter++;
   el.style.zIndex = String(_overlayZBase + _overlayZCounter);
 
+  if (window.anime) {
+    try {
+      anime({
+        targets: el,
+        opacity: [0, 1],
+        translateY: [15, 0],
+        duration: 250,
+        easing: 'easeOutCubic'
+      });
+    } catch(err) {}
+  }
+
   // Hide bottom nav when an overlay is open so it never covers inputs/buttons
   var nav = document.getElementById('bottomNav');
   if (nav) nav.classList.add('hidden');
@@ -2551,6 +2563,20 @@ function renderVehicles(list) {
       'View <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i></div>' +
       '</div></div></div>';
   }).join('');
+
+  if (window.anime) {
+    try {
+      anime({
+        targets: grid.querySelectorAll('.vehicle-card'),
+        opacity: [0, 1],
+        translateY: [18, 0],
+        scale: [0.97, 1],
+        delay: anime.stagger(40, { start: 20 }),
+        duration: 400,
+        easing: 'easeOutCubic'
+      });
+    } catch(err) { console.warn('Anime error:', err); }
+  }
 }
 
 function filterVehicles(filter, chipEl) {
