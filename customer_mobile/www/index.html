@@ -1782,6 +1782,24 @@
           box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
         }
     
+
+/* Live Breathing Pulse for Active Rentals */
+@keyframes pulseDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.pill-picked-up::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  margin-right: 6px;
+  animation: pulseDot 2s infinite;
+  vertical-align: middle;
+}
 </style>
 
     <!-- Cropper.js for Driver's License Cropping -->

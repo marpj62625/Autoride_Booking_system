@@ -2646,7 +2646,12 @@ function renderVehicles(list) {
 function filterVehicles(filter, chipEl) {
   var chips = document.querySelectorAll('#vehicleFilters .chip');
   for (var i = 0; i < chips.length; i++) chips[i].classList.remove('active');
-  chipEl.classList.add('active');
+  if (chipEl) {
+    chipEl.classList.add('active');
+    if (window.anime) {
+      anime({ targets: chipEl, scale: [0.92, 1.06, 1], duration: 300, easing: 'easeOutBack' });
+    }
+  }
   if (filter === 'all') { renderVehicles(allVehicles); return; }
   var filtered = allVehicles.filter(function(v) {
     return v.vehicle_type === filter || v.transmission === filter || v.fuel_type === filter;
@@ -3816,6 +3821,18 @@ function updateBookingPrice() {
     (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
     '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' : '') +
     '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
+
+  if (window.anime) {
+    var totalSpan = el.querySelector('.price-row.total span:last-child');
+    if (totalSpan) {
+      anime({
+        targets: totalSpan,
+        scale: [0.95, 1.1, 1],
+        duration: 300,
+        easing: 'easeOutBack'
+      });
+    }
+  }
 }
 
 function submitBooking() {
@@ -4223,11 +4240,20 @@ function selectPayMethod(method, el) {
   document.getElementById('payMethod').value = method;
   var cards = document.querySelectorAll('#paymentContent .option-card');
   for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
-  if (el) el.classList.add('selected');
+  if (el) {
+    el.classList.add('selected');
+    if (window.anime) {
+      anime({ targets: el, scale: [0.96, 1.03, 1], duration: 300, easing: 'easeOutBack' });
+    }
+  }
   // Show cash fields only for cash method
   var cashFields = document.getElementById('cashPayFields');
   if (cashFields) {
-    cashFields.style.display = (method === 'cash') ? 'block' : 'none';
+    var isCash = (method === 'cash');
+    cashFields.style.display = isCash ? 'block' : 'none';
+    if (isCash && window.anime) {
+      anime({ targets: cashFields, opacity: [0, 1], translateY: [12, 0], duration: 300, easing: 'easeOutCubic' });
+    }
   }
 }
 
@@ -6406,6 +6432,16 @@ function setRating(val) {
   var stars = document.querySelectorAll('#starRating i');
   for (var i = 0; i < stars.length; i++) {
     stars[i].classList.toggle('active', parseInt(stars[i].getAttribute('data-val')) <= val);
+  }
+  if (window.anime) {
+    var activeStars = Array.from(stars).slice(0, val);
+    anime({
+      targets: activeStars,
+      scale: [0.7, 1.35, 1],
+      delay: anime.stagger(35),
+      duration: 350,
+      easing: 'easeOutBack'
+    });
   }
 }
 
