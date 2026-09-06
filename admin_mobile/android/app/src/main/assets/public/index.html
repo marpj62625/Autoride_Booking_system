@@ -11058,9 +11058,21 @@
 
 
     window.modalOpen = function() {
-
-
-
+        if (typeof anime !== 'undefined') {
+            const openModals = document.querySelectorAll('.modal[style*="display: flex"], .modal[style*="display: block"], [id$="Modal"][style*="display: flex"], [id$="Modal"][style*="display: block"]');
+            openModals.forEach(m => {
+                const card = m.querySelector('.modal-content') || m.querySelector('div[style*="background"]') || m.firstElementChild;
+                if (card) {
+                    anime({
+                        targets: card,
+                        scale: [0.93, 1],
+                        opacity: [0, 1],
+                        duration: 300,
+                        easing: 'easeOutBack'
+                    });
+                }
+            });
+        }
         // No body lock needed - modal is position:fixed and covers the screen
 
 
@@ -15014,7 +15026,13 @@ They will be safely secluded from operational queues to keep query latency fast.
 Enter reason for archiving:`, 'Completed Rental Retention');
             if (reason === null) return;
 
-            try {
+            
+            if (typeof anime !== 'undefined') {
+                const btn = (window.event && (window.event.currentTarget || window.event.target));
+                const row = btn && btn.closest ? btn.closest('tr') : null;
+                if (row) anime({ targets: row, translateX: [0, 60], opacity: [1, 0], duration: 320, easing: 'easeInQuad' });
+            }
+try {
                 const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/archive`, {
                     method: 'POST',
@@ -15048,6 +15066,12 @@ Enter reason for archiving:`, 'Completed Rental Retention');
                 return;
             }
 
+            if (typeof anime !== 'undefined') {
+                const btn = (window.event && (window.event.currentTarget || window.event.target));
+                const row = btn && btn.closest ? btn.closest('tr') : null;
+                if (row) anime({ targets: row, translateX: [0, -60], opacity: [1, 0], duration: 320, easing: 'easeInQuad' });
+            }
+
             try {
                 const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/unarchive`, {
                     method: 'POST',
@@ -15079,6 +15103,12 @@ Enter reason for archiving:`, 'Completed Rental Retention');
 
 This CANNOT be undone!`)) {
                 return;
+            }
+
+            if (typeof anime !== 'undefined') {
+                const btn = (window.event && (window.event.currentTarget || window.event.target));
+                const row = btn && btn.closest ? btn.closest('tr') : null;
+                if (row) anime({ targets: row, translateX: [0, 60], opacity: [1, 0], duration: 320, easing: 'easeInQuad' });
             }
 
             try {
@@ -16673,7 +16703,11 @@ function toggleNewsletterModal(show = true) {
 
 
         async markPaid(id) {
-            const b = (this.data || []).find(x => x.id == id);
+        if (typeof anime !== 'undefined') {
+            const btn = (window.event && (window.event.currentTarget || window.event.target));
+            if (btn) anime({ targets: btn, scale: [1, 0.92, 1], duration: 250, easing: 'easeOutBack' });
+        }
+        const b = (this.data || []).find(x => x.id == id);
             if (b && b.start_date) {
                 try {
                     const dStr = String(b.start_date).split('T')[0];
@@ -16797,10 +16831,11 @@ function toggleNewsletterModal(show = true) {
         },
 
         async cancel(id) {
-
-
-
-            const reason = prompt('Enter cancellation reason (optional):') || 'Cancelled by admin';
+        if (typeof anime !== 'undefined') {
+            const btn = (window.event && (window.event.currentTarget || window.event.target));
+            if (btn) anime({ targets: btn, scale: [1, 0.92, 1], duration: 250, easing: 'easeOutBack' });
+        }
+        const reason = prompt('Enter cancellation reason (optional):') || 'Cancelled by admin';
 
 
 
@@ -16873,10 +16908,11 @@ function toggleNewsletterModal(show = true) {
 
 
         async approve(id) {
-
-
-
-            if (!confirm('Approve this booking?')) return;
+        if (typeof anime !== 'undefined') {
+            const btn = (window.event && (window.event.currentTarget || window.event.target));
+            if (btn) anime({ targets: btn, scale: [1, 0.92, 1], duration: 250, easing: 'easeOutBack' });
+        }
+        if (!confirm('Approve this booking?')) return;
 
 
 
@@ -16995,10 +17031,11 @@ function toggleNewsletterModal(show = true) {
 
 
         async reject(id) {
-
-
-
-            const reason = prompt('Enter rejection reason:');
+        if (typeof anime !== 'undefined') {
+            const btn = (window.event && (window.event.currentTarget || window.event.target));
+            if (btn) anime({ targets: btn, scale: [1, 0.92, 1], duration: 250, easing: 'easeOutBack' });
+        }
+        const reason = prompt('Enter rejection reason:');
 
 
 
@@ -30173,10 +30210,11 @@ function toggleNewsletterModal(show = true) {
 
 
         async toggleFreeze(userId, currentlyFrozen) {
-
-
-
-            const freeze = !currentlyFrozen;
+        if (typeof anime !== 'undefined') {
+            const btn = (window.event && (window.event.currentTarget || window.event.target));
+            if (btn) anime({ targets: btn, scale: [1, 0.94, 1], duration: 250, easing: 'easeOutBack' });
+        }
+        const freeze = !currentlyFrozen;
 
 
 

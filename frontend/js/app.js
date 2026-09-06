@@ -5848,6 +5848,10 @@ function _showCancelPolicyModal(fee, refund, bookingId, reason) {
     '</div>';
 
   document.body.appendChild(modal);
+  if (typeof anime !== 'undefined') {
+    var dialog = modal.firstElementChild;
+    if (dialog) anime({ targets: dialog, scale: [0.92, 1], opacity: [0, 1], duration: 280, easing: 'easeOutBack' });
+  }
 }
 
 function _proceedCancel(bookingId, reason) {
@@ -6347,6 +6351,10 @@ function openInspection(bookingId, type) {
 }
 
 function addInspectionPhoto() {
+  var btn = (window.event && (window.event.currentTarget || window.event.target));
+  if (typeof anime !== 'undefined' && btn) {
+    anime({ targets: btn, scale: [1, 0.94, 1], duration: 250, easing: 'easeOutBack' });
+  }
   var input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
@@ -6362,6 +6370,15 @@ function addInspectionPhoto() {
       img.className = 'photo-thumb';
       img.src = URL.createObjectURL(file);
       thumbs.appendChild(img);
+      if (typeof anime !== 'undefined') {
+        anime({
+          targets: img,
+          scale: [0.65, 1.06, 1],
+          opacity: [0, 1],
+          duration: 350,
+          easing: 'easeOutBack'
+        });
+      }
     }
   };
   input.click();
