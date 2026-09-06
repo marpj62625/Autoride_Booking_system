@@ -945,10 +945,33 @@ function showToast(message, type) {
   t.appendChild(icon);
   t.appendChild(msg);
   container.appendChild(t);
-  requestAnimationFrame(function() { t.classList.add('show'); });
+  requestAnimationFrame(function() {
+    t.classList.add('show');
+    if (window.anime) {
+      anime({
+        targets: t,
+        translateY: [-20, 0],
+        opacity: [0, 1],
+        scale: [0.94, 1],
+        duration: 350,
+        easing: 'easeOutBack'
+      });
+    }
+  });
   setTimeout(function() {
-    t.classList.remove('show');
-    setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
+    if (window.anime) {
+      anime({
+        targets: t,
+        opacity: [1, 0],
+        translateY: [0, -15],
+        duration: 250,
+        easing: 'easeInCubic',
+        complete: function() { if (t.parentNode) t.remove(); }
+      });
+    } else {
+      t.classList.remove('show');
+      setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
+    }
   }, 3500);
 }
 
@@ -1069,7 +1092,20 @@ function showPage(id) {
       });
       if (NAV_MAP[id]) {
         var activeNav = document.getElementById(NAV_MAP[id]);
-        if (activeNav) activeNav.classList.add('active');
+        if (activeNav) {
+          activeNav.classList.add('active');
+          if (window.anime) {
+            var icon = activeNav.querySelector('i');
+            if (icon) {
+              anime({
+                targets: icon,
+                scale: [0.85, 1.25, 1],
+                duration: 350,
+                easing: 'easeOutBack'
+              });
+            }
+          }
+        }
       }
     } else {
       nav.classList.add('hidden');
@@ -4578,6 +4614,30 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
     '</div>';
 
   showOverlay('page-receipt');
+  if (window.anime) {
+    setTimeout(function() {
+      var checkIcon = el.querySelector('.fa-check-circle');
+      if (checkIcon) {
+        anime({
+          targets: checkIcon,
+          scale: [0, 1.3, 1],
+          rotate: [-45, 0],
+          duration: 650,
+          easing: 'easeOutElastic(1, .6)'
+        });
+      }
+      var rCard = el.querySelector('.receipt-card');
+      if (rCard) {
+        anime({
+          targets: rCard,
+          translateY: [25, 0],
+          opacity: [0, 1],
+          duration: 500,
+          easing: 'easeOutCubic'
+        });
+      }
+    }, 50);
+  }
 }
 
 function downloadReceipt(bookingId) {
@@ -7460,7 +7520,22 @@ function loadProfile(callback) {
       if (editPhoneEl) editPhoneEl.value = profile.phone || '';
       var editEmailEl = document.getElementById('editEmail');
       if (editEmailEl) editEmailEl.value = profile.email || '';
-      if (pointsEl) pointsEl.textContent = profile.loyalty_points || 0;
+      if (pointsEl) {
+        var targetPts = parseInt(profile.loyalty_points) || 0;
+        if (window.anime && targetPts > 0) {
+          var ptsObj = { val: 0 };
+          anime({
+            targets: ptsObj,
+            val: targetPts,
+            round: 1,
+            duration: 900,
+            easing: 'easeOutExpo',
+            update: function() { pointsEl.textContent = ptsObj.val; }
+          });
+        } else {
+          pointsEl.textContent = targetPts;
+        }
+      }
       currentUser.loyaltyPoints = profile.loyalty_points || 0;
       currentUser.isVerified = profile.is_verified !== undefined ? profile.is_verified : 0;
       currentUser.email = profile.email || '';
@@ -8085,6 +8160,10 @@ function sendChat() {
   if (oldQr) oldQr.remove();
 
   msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg user">' + msg + '</div>');
+  var lastUserMsg = msgs.lastElementChild;
+  if (window.anime && lastUserMsg) {
+    anime({ targets: lastUserMsg, translateY: [12, 0], opacity: [0, 1], scale: [0.94, 1], duration: 250, easing: 'easeOutCubic' });
+  }
   msgs.scrollTop = msgs.scrollHeight;
 
   var typingId = 'typing_' + Date.now();
@@ -8100,6 +8179,14 @@ function sendChat() {
       '<button onclick="sendChatMsg(\'Payment methods\')" style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);color:var(--primary);padding:6px 12px;border-radius:16px;font-size:0.78rem;font-weight:600;cursor:pointer;">💳 Payment</button>' +
       '</div>';
     msgs.insertAdjacentHTML('beforeend', qrHtml);
+    if (window.anime) {
+      setTimeout(function() {
+        var qrButtons = document.querySelectorAll('#chatQuickReplies button');
+        if (qrButtons.length) {
+          anime({ targets: qrButtons, translateY: [8, 0], opacity: [0, 1], delay: anime.stagger(35), duration: 250, easing: 'easeOutCubic' });
+        }
+      }, 20);
+    }
   };
 
   apiCall('/chat', { method: 'POST', body: JSON.stringify({ message: msg, user_id: currentUser.id }) })
@@ -8110,6 +8197,10 @@ function sendChat() {
       resp = resp.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
       resp = resp.replace(/\n/g, '<br>');
       msgs.insertAdjacentHTML('beforeend', '<div class="chat-msg bot">' + resp + '</div>');
+      var lastBotMsg = msgs.lastElementChild;
+      if (window.anime && lastBotMsg) {
+        anime({ targets: lastBotMsg, translateY: [12, 0], opacity: [0, 1], scale: [0.94, 1], duration: 300, easing: 'easeOutCubic' });
+      }
     })
     .catch(function() {
       var typing = document.getElementById(typingId);

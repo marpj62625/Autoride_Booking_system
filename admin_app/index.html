@@ -9978,14 +9978,25 @@
 
 
     window._adminToastDismiss = function() {
-
-
-
         const toast = document.getElementById('adminNotifToast');
-
-
-
-        if (toast) toast.classList.remove('show');
+        if (toast) {
+            if (window.anime) {
+                anime({
+                    targets: toast,
+                    translateY: [0, -20],
+                    opacity: [1, 0],
+                    duration: 250,
+                    easing: 'easeInCubic',
+                    complete: function() {
+                        toast.classList.remove('show');
+                        toast.style.opacity = '';
+                        toast.style.transform = '';
+                    }
+                });
+            } else {
+                toast.classList.remove('show');
+            }
+        }
 
 
 
@@ -10030,6 +10041,16 @@
 
 
         toast.classList.add('show');
+        if (window.anime) {
+            anime({
+                targets: toast,
+                translateY: [-20, 0],
+                opacity: [0, 1],
+                scale: [0.95, 1],
+                duration: 350,
+                easing: 'easeOutBack'
+            });
+        }
 
 
 
@@ -10217,6 +10238,20 @@
 
 
             badge.style.display = 'flex';
+            if (window.anime) {
+                anime({
+                    targets: '#adminNotifBtn i',
+                    rotate: [-14, 14, -10, 10, -5, 5, 0],
+                    duration: 700,
+                    easing: 'easeInOutSine'
+                });
+                anime({
+                    targets: badge,
+                    scale: [0, 1.25, 1],
+                    duration: 400,
+                    easing: 'easeOutBack'
+                });
+            }
 
 
 
@@ -15096,18 +15131,32 @@ function toggleNewsletterModal(show = true) {
 
 
             const target = document.getElementById(tabId);
-
-
-
-            if (target) target.style.display = 'block';
-
-
-
-            
-
-
-
-            document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => el.classList.add('active'));
+            if (target) {
+                target.style.display = 'block';
+                if (window.anime) {
+                    anime({
+                        targets: target,
+                        opacity: [0, 1],
+                        translateY: [12, 0],
+                        duration: 300,
+                        easing: 'easeOutCubic'
+                    });
+                }
+            }
+            document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => {
+                el.classList.add('active');
+                if (window.anime) {
+                    const icon = el.querySelector('i');
+                    if (icon) {
+                        anime({
+                            targets: icon,
+                            scale: [0.85, 1.25, 1],
+                            duration: 350,
+                            easing: 'easeOutBack'
+                        });
+                    }
+                }
+            });
 
             // Update URL hash for refresh persistence
             if (typeof window !== 'undefined') {
