@@ -1844,6 +1844,17 @@
   0% { transform: scale(0.4); opacity: 1; }
   100% { transform: scale(1.4); opacity: 0; }
 }
+
+/* Active booking countdown subtle live ticker glow */
+@keyframes countdownTickPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(16,185,129,0)); }
+  50% { transform: scale(1.02); filter: drop-shadow(0 0 5px rgba(16,185,129,0.35)); }
+}
+.ticker-pulse {
+  animation: countdownTickPulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  display: inline-block;
+}
+
 </style>
 
     <!-- Cropper.js for Driver's License Cropping -->

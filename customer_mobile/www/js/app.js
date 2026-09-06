@@ -2231,6 +2231,7 @@ function _startActiveBookingCountdown(endDateStr) {
     var result = _formatCountdown(msLeft);
     el.textContent = result.text;
     el.style.color = result.urgent ? '#ef4444' : '#10b981';
+    if (!el.classList.contains('ticker-pulse')) el.classList.add('ticker-pulse');
     if (result.urgent && !_activeBookingNotified) {
       _activeBookingNotified = true;
       showToast('Your rental ends in less than 24 hours!', 'error');
@@ -2341,7 +2342,7 @@ function refreshActiveBookingMonitor() {
           '</div>' +
           '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
             '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">' + timeTitle + '</div>' +
-            '<div id="activeBookingCountdown" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
+            '<div id="activeBookingCountdown" class="ticker-pulse" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
             '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">' + returnLabel + ' <strong style="color:var(--text-primary);">' + _fmtDate(returnTarget) + '</strong></div>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
@@ -2361,6 +2362,15 @@ function refreshActiveBookingMonitor() {
         '</div>';
 
       monitor.style.display = 'block';
+      if (typeof anime !== 'undefined') {
+        anime({
+          targets: '#activeBookingCard',
+          opacity: [0, 1],
+          translateY: [15, 0],
+          duration: 450,
+          easing: 'easeOutCubic'
+        });
+      }
       _startActiveBookingCountdown(returnTarget);
     } else {
       if (monitor) monitor.style.display = 'none';
@@ -2753,6 +2763,24 @@ function openColorSelection(brand, model) {
     .finally(function() { showLoading(false); });
 }
 
+function selectVehicleColorSwatch(cardEl, brandEnc, modelEnc, colorEnc) {
+  if (typeof anime !== 'undefined' && cardEl) {
+    var circle = cardEl.querySelector('.swatch-circle') || cardEl.querySelector('div[style*="border-radius:50%"]');
+    if (circle) {
+      anime({
+        targets: circle,
+        scale: [1, 1.25, 1],
+        boxShadow: ['0 0 0px rgba(0,177,79,0)', '0 0 14px rgba(0,177,79,0.6)', '0 0 0px rgba(0,177,79,0)'],
+        duration: 320,
+        easing: 'easeOutBack'
+      });
+    }
+  }
+  setTimeout(function() {
+    openVehicleUnits(brandEnc, modelEnc, colorEnc);
+  }, 120);
+}
+
 function renderColorSelection(brand, model, colors) {
   var el = document.getElementById('colorSelectionContent');
   if (!el) return;
@@ -2761,10 +2789,10 @@ function renderColorSelection(brand, model, colors) {
     var available = parseInt(c.available) || 0;
     var total = parseInt(c.total) || 0;
     var colorStyle = getColorStyle(colorName);
-    return '<div class="card" style="cursor:pointer;margin-bottom:10px;" onclick="openVehicleUnits(\'' +
+    return '<div class="card color-swatch-card" style="cursor:pointer;margin-bottom:10px;transition:all 0.2s ease;" onclick="selectVehicleColorSwatch(this, \'' +
       encodeURIComponent(brand) + '\',\'' + encodeURIComponent(model) + '\',\'' + encodeURIComponent(colorName) + '\')">' +
       '<div style="display:flex;align-items:center;gap:14px;">' +
-      '<div style="width:44px;height:44px;border-radius:50%;background:' + colorStyle + ';border:2px solid var(--border);flex-shrink:0;"></div>' +
+      '<div class="swatch-circle" style="width:44px;height:44px;border-radius:50%;background:' + colorStyle + ';border:2px solid var(--border);flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.08);"></div>' +
       '<div style="flex:1;">' +
       '<div style="font-weight:700;font-size:0.95rem;">' + colorName + '</div>' +
       '<div style="font-size:0.78rem;color:var(--text-secondary);">' + available + ' available of ' + total + ' units</div>' +
@@ -2779,14 +2807,25 @@ function renderColorSelection(brand, model, colors) {
     '<div class="scroll-content">' +
     '<p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:16px;">Select a color to view available units:</p>' +
     colorCards +
-    '<div class="card" style="cursor:pointer;margin-bottom:10px;border:1.5px dashed var(--border);" onclick="openVehicleUnits(\'' +
+    '<div class="card color-swatch-card" style="cursor:pointer;margin-bottom:10px;border:1.5px dashed var(--border);" onclick="selectVehicleColorSwatch(this, \'' +
     encodeURIComponent(brand) + '\',\'' + encodeURIComponent(model) + '\',\'all\')">' +
     '<div style="display:flex;align-items:center;gap:14px;">' +
-    '<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e63946,#4361ee,#2dc653);border:2px solid var(--border);flex-shrink:0;"></div>' +
+    '<div class="swatch-circle" style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#e63946,#4361ee,#2dc653);border:2px solid var(--border);flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.08);"></div>' +
     '<div style="flex:1;"><div style="font-weight:700;font-size:0.95rem;">View All Colors</div></div>' +
     '<i class="fas fa-chevron-right" style="color:var(--text-muted);"></i>' +
     '</div></div>' +
     '</div>';
+
+  if (typeof anime !== 'undefined') {
+    anime({
+      targets: el.querySelectorAll('.color-swatch-card'),
+      opacity: [0, 1],
+      translateY: [15, 0],
+      delay: anime.stagger(45),
+      duration: 350,
+      easing: 'easeOutCubic'
+    });
+  }
 }
 
 function getColorStyle(colorName) {
@@ -4672,7 +4711,17 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
   }
 }
 
-function downloadReceipt(bookingId) {
+function downloadReceipt(bookingId, btnEl) {
+  var btn = btnEl || (window.event && (window.event.currentTarget || window.event.target));
+  if (typeof anime !== 'undefined' && btn) {
+    var icon = (btn.querySelector && btn.querySelector('i')) || btn;
+    anime({
+      targets: icon,
+      translateY: [0, -6, 2, 0],
+      duration: 450,
+      easing: 'easeOutBack'
+    });
+  }
   showToast('Downloading receipt...', 'info');
   window.open(API_BASE + '/bookings/' + bookingId + '/receipt', '_blank');
 }

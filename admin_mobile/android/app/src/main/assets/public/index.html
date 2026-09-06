@@ -20408,9 +20408,17 @@ function toggleNewsletterModal(show = true) {
 
 
         async exportExcel() {
-
-
-
+            if (typeof anime !== 'undefined') {
+                const _btn = document.getElementById('activityExportBtn') || (window.event && (window.event.currentTarget || window.event.target));
+                if (_btn) {
+                    anime({
+                        targets: (_btn.querySelector && _btn.querySelector('i')) || _btn,
+                        translateY: [0, -6, 2, 0],
+                        duration: 450,
+                        easing: 'easeOutBack'
+                    });
+                }
+            }
             // Double-check role before exporting
 
 
@@ -24216,9 +24224,17 @@ function toggleNewsletterModal(show = true) {
 
 
         async exportExcel() {
-
-
-
+            if (typeof anime !== 'undefined') {
+                const _btn = (window.event && (window.event.currentTarget || window.event.target));
+                if (_btn) {
+                    anime({
+                        targets: (_btn.querySelector && _btn.querySelector('i')) || _btn,
+                        translateY: [0, -6, 2, 0],
+                        duration: 450,
+                        easing: 'easeOutBack'
+                    });
+                }
+            }
             const data = this._rawData;
 
 
@@ -25270,6 +25286,16 @@ function toggleNewsletterModal(show = true) {
 
 
                 `).join('');
+                if (typeof anime !== 'undefined') {
+                    anime({
+                        targets: '#dashTopPerformance > div',
+                        opacity: [0, 1],
+                        translateX: [-15, 0],
+                        delay: anime.stagger(60),
+                        duration: 400,
+                        easing: 'easeOutQuad'
+                    });
+                }
 
 
 
@@ -25326,6 +25352,16 @@ function toggleNewsletterModal(show = true) {
 
 
                 `).join('');
+                if (typeof anime !== 'undefined') {
+                    anime({
+                        targets: '#dashTopGrossing > div',
+                        opacity: [0, 1],
+                        translateX: [-15, 0],
+                        delay: anime.stagger(60),
+                        duration: 400,
+                        easing: 'easeOutQuad'
+                    });
+                }
 
 
 
@@ -30273,13 +30309,18 @@ function toggleNewsletterModal(show = true) {
 
 
         async exportCSV() {
-
-
-
+            if (typeof anime !== 'undefined') {
+                const _btn = (window.event && (window.event.currentTarget || window.event.target));
+                if (_btn) {
+                    anime({
+                        targets: (_btn.querySelector && _btn.querySelector('i')) || _btn,
+                        translateY: [0, -6, 2, 0],
+                        duration: 450,
+                        easing: 'easeOutBack'
+                    });
+                }
+            }
             try {
-
-
-
                 const url = `${API_URL}/admin/users/export`;
 
 
