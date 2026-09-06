@@ -1800,6 +1800,50 @@
   animation: pulseDot 2s infinite;
   vertical-align: middle;
 }
+
+/* Floating Empty State Illustration */
+@keyframes floatingIcon {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-7px); }
+  100% { transform: translateY(0px); }
+}
+.empty-state i {
+  display: inline-block;
+  animation: floatingIcon 2.6s ease-in-out infinite;
+}
+
+/* GPS Map Radar Beacon */
+.gps-radar-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gps-pulse-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #00B14F;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  z-index: 2;
+}
+.gps-pulse-ring {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 177, 79, 0.4);
+  animation: radarWave 2s infinite ease-out;
+  z-index: 1;
+}
+@keyframes radarWave {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
 </style>
 
     <!-- Cropper.js for Driver's License Cropping -->

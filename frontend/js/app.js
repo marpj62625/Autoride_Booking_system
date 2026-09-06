@@ -1686,6 +1686,12 @@ function doLogin() {
       } else {
         document.getElementById('loginErr').textContent = err.message || 'Invalid credentials.';
       }
+      if (window.anime) {
+        var loginBox = document.querySelector('#page-login .auth-card') || document.querySelector('#page-login form');
+        if (loginBox) {
+          anime({ targets: loginBox, translateX: [-10, 10, -7, 7, -4, 4, 0], duration: 400, easing: 'easeInOutSine' });
+        }
+      }
     })
     .finally(function() { showLoading(false); restoreBtn(); });
 }
@@ -6388,7 +6394,15 @@ function fetchVehicleLocation(vehicleId) {
       if (data.latitude && data.longitude) {
         var latlng = [data.latitude, data.longitude];
         if (gpsMarker) { gpsMarker.setLatLng(latlng); }
-        else { gpsMarker = L.marker(latlng).addTo(gpsMap).bindPopup('Vehicle Location').openPopup(); }
+        else {
+          var pulseIcon = L.divIcon({
+            className: 'gps-radar-wrap',
+            html: '<div class="gps-pulse-ring"></div><div class="gps-pulse-dot"><i class="fas fa-car" style="color:#fff;font-size:11px;"></i></div>',
+            iconSize: [36, 36],
+            iconAnchor: [18, 18]
+          });
+          gpsMarker = L.marker(latlng, { icon: pulseIcon }).addTo(gpsMap).bindPopup('Vehicle Location').openPopup();
+        }
         gpsMap.setView(latlng, 15);
         var ts = document.getElementById('gpsTimestamp');
         if (ts) ts.textContent = 'Last updated: ' + (data.last_gps_update ? new Date(data.last_gps_update).toLocaleString() : 'Unknown');
@@ -7193,7 +7207,13 @@ function processSelectedLicenseFile(file, side) {
   if (side === 'front') {
     _licenseFrontBlob = file;
     var preview = document.getElementById('licenseEditPreviewFront');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      if (window.anime) {
+        anime({ targets: preview, scale: [0.92, 1], opacity: [0, 1], duration: 350, easing: 'easeOutBack' });
+      }
+    }
 
     // Tesseract OCR Logic
     var statusText = document.getElementById('ocrStatusText');
@@ -7375,7 +7395,13 @@ function processSelectedLicenseFile(file, side) {
   } else {
     _licenseBackBlob = file;
     var preview = document.getElementById('licenseEditPreviewBack');
-    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = 'block'; }
+    if (preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+      if (window.anime) {
+        anime({ targets: preview, scale: [0.92, 1], opacity: [0, 1], duration: 350, easing: 'easeOutBack' });
+      }
+    }
   }
 }
 

@@ -3983,6 +3983,17 @@
   animation: pulseDot 2s infinite;
   vertical-align: middle;
 }
+
+/* Floating Empty State Illustration */
+@keyframes floatingIcon {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-7px); }
+  100% { transform: translateY(0px); }
+}
+.empty-state i {
+  display: inline-block;
+  animation: floatingIcon 2.6s ease-in-out infinite;
+}
 </style>
 
 
@@ -10651,6 +10662,12 @@
                     if (errEl) {
                         errEl.textContent = (res.status >= 500 ? 'Server error: ' : '') + (data.error || `Login failed (${res.status})`) + (data.detail ? ' [check Vercel logs]' : '');
                         errEl.style.display = 'block';
+                    }
+                    if (window.anime) {
+                        const box = document.querySelector('.admin-login-box');
+                        if (box) {
+                            anime({ targets: box, translateX: [-10, 10, -7, 7, -4, 4, 0], duration: 400, easing: 'easeInOutSine' });
+                        }
                     }
                 }
             } catch (err) {
