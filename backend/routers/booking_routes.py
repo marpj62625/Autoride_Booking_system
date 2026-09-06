@@ -413,7 +413,7 @@ def get_past_bookings():
             sort_column, sort_order = 'b.total_price', 'ASC'
 
         cur = get_cursor()
-        cur.execute("SELECT COUNT(*) as total FROM bookings b WHERE b.status = 'Completed'")
+        cur.execute("SELECT COUNT(*) as total FROM bookings b WHERE b.status = 'Completed' AND COALESCE(b.is_archived, FALSE) = FALSE")
         total_count = cur.fetchone()['total']
         total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
 
@@ -425,7 +425,7 @@ def get_past_bookings():
             FROM bookings b
             LEFT JOIN users u ON b.user_id = u.id
             LEFT JOIN vehicles v ON b.vehicle_id = v.id
-            WHERE b.status = 'Completed'
+            WHERE b.status = 'Completed' AND COALESCE(b.is_archived, FALSE) = FALSE
             ORDER BY {sort_column} {sort_order}
             LIMIT %s OFFSET %s
         """

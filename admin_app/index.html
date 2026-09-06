@@ -4414,7 +4414,8 @@
 
 
 
-            <a href="javascript:void(0);" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
+                        <a href="javascript:void(0);" class="drawer-item" onclick="toggleArchiveMaintenanceModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-archive"></i> Archive & Maintenance</a>
+<a href="javascript:void(0);" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
 
 
 
@@ -5232,6 +5233,19 @@
                     <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
                 </div>
             </div>
+            <div id="adminMaintenanceConfig" style="margin-top: 15px;">
+                <div class="stat-card" onclick="toggleArchiveMaintenanceModal(true)" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; border-left: 3px solid #8b5cf6;">
+                    <div style="width: 40px; height: 40px; background: rgba(139, 92, 246, 0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-archive" style="color: #8b5cf6;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 0.95rem; font-weight: 700;">Database Archive & Maintenance</h4>
+                        <p style="font-size: 0.7rem; color: var(--text-muted);">Archive old bookings, clean audit logs & optimize database storage</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                </div>
+            </div>
+
 
         </div>
 
@@ -5602,6 +5616,11 @@
 
 
             </button>
+            <button onclick="switchBookingTab('archived')" id="tabBtnArchived" class="booking-tab-btn" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-container); color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-archive" style="font-size: 0.75rem;"></i> Archived
+                <span id="archivedBookingsCountBadge" style="display:none;background:#8b5cf6;color:white;border-radius:50%;padding:1px 6px;font-size:0.65rem;font-weight:900;">0</span>
+            </button>
+
 
 
 
@@ -5966,6 +5985,93 @@
 
 
         </div>
+        <!-- ARCHIVED BOOKINGS TAB CONTENT -->
+        <div id="tabArchived" class="booking-tab-content" style="display: none;">
+            <!-- Header bar with batch actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                <div>
+                    <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-archive" style="color: #8b5cf6;"></i>
+                        Archived Bookings
+                        <span id="archivedBookingsHeaderBadge" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; background: rgba(139,92,246,0.15); color: #8b5cf6; font-weight: 800;">0 records</span>
+                    </h3>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin: 4px 0 0 0;">Historical bookings secluded from operational queues to maximize database performance.</p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button onclick="ArchivedBookings.promptBatchArchive()" style="padding: 8px 14px; background: rgba(139,92,246,0.15); border: 1.5px solid rgba(139,92,246,0.3); color: #8b5cf6; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-layer-group"></i> Batch Archive...
+                    </button>
+                    <button onclick="toggleArchiveMaintenanceModal(true)" style="padding: 8px 14px; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-tools"></i> Maintenance Center
+                    </button>
+                    <button onclick="ArchivedBookings.load()" style="padding: 8px 12px; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toolbar / Search -->
+            <div style="margin-bottom: 16px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px; position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
+                        <input type="text" id="archivedBookingsSearch" placeholder="Search by customer, booking #, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="ArchivedBookings.onSearch(this.value)">
+                    </div>
+                    <select id="archivedBookingsReasonFilter" onchange="ArchivedBookings.onFilterReason(this.value)" style="padding: 8px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 600;">
+                        <option value="all">All Archive Reasons</option>
+                        <option value="Completed Rental Retention">Completed Rental</option>
+                        <option value="Batch Auto-Archive">Batch Auto-Archive</option>
+                        <option value="Cancelled / No-Show Pruning">Cancelled / No-Show</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div style="overflow-x: auto; margin-bottom: 16px;">
+                <table id="archivedBookingsTable" style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                    <thead>
+                        <tr style="background: var(--surface-container); border-bottom: 2px solid var(--border);">
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">ID</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Customer</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rental Dates</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
+                            <th style="padding: 12px 10px; text-align: left; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Archived On</th>
+                            <th style="padding: 12px 10px; text-align: right; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
+                            <th style="padding: 12px 10px; text-align: center; font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archivedBookingsTableBody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;">
+                <button id="archivedBookingsPrevBtn" onclick="ArchivedBookings.prevPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    <i class="fas fa-chevron-left" style="margin-right: 6px;"></i> Previous
+                </button>
+                <span id="archivedBookingsPageInfo" style="font-size: 0.8rem; color: var(--text-main); font-weight: 600;">Page 1 of 1</span>
+                <button id="archivedBookingsNextBtn" onclick="ArchivedBookings.nextPage()" style="padding: 8px 16px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" disabled>
+                    Next <i class="fas fa-chevron-right" style="margin-left: 6px;"></i>
+                </button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="archivedBookingsEmpty" class="hidden" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <i class="fas fa-archive" style="font-size: 3rem; margin-bottom: 16px; opacity: 0.3; color: #8b5cf6;"></i>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">No Archived Bookings</h3>
+                <p style="font-size: 0.85rem;">Completed or cancelled bookings that you archive will appear here.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="archivedBookingsLoading" style="text-align: center; padding: 40px 20px; color: var(--text-muted); display: none;">
+                <div style="width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: #8b5cf6; border-radius: 50%; margin: 0 auto 16px; animation: spin 1s linear infinite;"></div>
+                <p style="font-size: 0.85rem; font-weight: 600;">Loading archived bookings...</p>
+            </div>
+        </div>
+
 
 
 
@@ -6518,7 +6624,179 @@
         </div>
     </div>
 
-    <!-- BOOKING DETAILS MODAL -->
+        <!-- DATABASE ARCHIVE & MAINTENANCE MODAL -->
+    <div id="archiveMaintenanceModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; backdrop-filter: blur(4px);">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); width: 94%; max-width: 760px; max-height: 90vh; overflow-y: auto;">
+            <!-- Modal Header -->
+            <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(139,92,246,0.12); display: flex; align-items: center; justify-content: center; color: #8b5cf6; font-size: 1.25rem;">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin: 0;">Database Archive & Maintenance Hub</h2>
+                        <p style="font-size: 0.75rem; color: #64748b; margin: 2px 0 0 0;">Seclude historical bookings, prune audit logs, and keep queries lightweight</p>
+                    </div>
+                </div>
+                <button onclick="toggleArchiveMaintenanceModal(false)" style="background: #f1f5f9; border: none; color: #64748b; font-size: 1.1rem; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Stats Overview Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Active Bookings</div>
+                    <div id="maintStatActiveBookings" style="font-size: 1.35rem; font-weight: 800; color: #00B14F;">--</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">operational queue</div>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Archived Bookings</div>
+                    <div id="maintStatArchivedBookings" style="font-size: 1.35rem; font-weight: 800; color: #8b5cf6;">--</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">safely secluded</div>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Eligible to Archive</div>
+                    <div id="maintStatEligibleBookings" style="font-size: 1.35rem; font-weight: 800; color: #f59e0b;">--</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">finished &gt; 30 days</div>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Old Audit Logs</div>
+                    <div id="maintStatOldLogs" style="font-size: 1.35rem; font-weight: 800; color: #64748b;">--</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">&gt; 30 days</div>
+                </div>
+            </div>
+
+            <!-- Maintenance Modules -->
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- 1. Bookings Batch Archiving -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-box-archive" style="color: #8b5cf6;"></i>
+                                Batch Archive Completed / Cancelled Bookings
+                            </div>
+                            <p style="font-size: 0.75rem; color: #64748b; margin: 4px 0 0 0;">
+                                Moves old finished bookings out of operational tables into archive storage. Historical financial reports and customer receipts remain 100% accessible.
+                            </p>
+                        </div>
+                        <button onclick="ArchiveMaintenanceAdmin.exportData('bookings')" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-download"></i> Export JSON Backup
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Archive finished bookings older than:</span>
+                        <select id="maintBatchBookingDays" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #0f172a;">
+                            <option value="30" selected>30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                            <option value="180">180 Days (6 Months)</option>
+                            <option value="0">All Finished Bookings</option>
+                        </select>
+                        <button id="btnRunBatchArchive" onclick="ArchiveMaintenanceAdmin.runBatchArchiveBookings()" style="padding: 7px 16px; background: #8b5cf6; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #ffffff; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                            <i class="fas fa-archive"></i> Run Batch Archive
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Audit Activity Logs Cleanup -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-history" style="color: #3b82f6;"></i>
+                                Activity Audit Logs Cleanup
+                            </div>
+                            <p style="font-size: 0.75rem; color: #64748b; margin: 4px 0 0 0;">
+                                Prunes old system login, update, and inspection audit trail rows to prevent PostgreSQL table bloat.
+                            </p>
+                        </div>
+                        <button onclick="ArchiveMaintenanceAdmin.exportData('activity_logs')" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-download"></i> Export JSON Backup
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Delete audit logs older than:</span>
+                        <select id="maintLogsDays" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #0f172a;">
+                            <option value="30" selected>30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                        </select>
+                        <button id="btnRunCleanupLogs" onclick="ArchiveMaintenanceAdmin.runCleanupLogs()" style="padding: 7px 16px; background: #3b82f6; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #ffffff; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                            <i class="fas fa-eraser"></i> Prune Old Logs
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Read Notifications Cleanup -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-bell" style="color: #f59e0b;"></i>
+                                Read Notifications Cleanup
+                            </div>
+                            <p style="font-size: 0.75rem; color: #64748b; margin: 4px 0 0 0;">
+                                Removes already-read alerts and push logs older than selected days. Unread notifications will NOT be deleted.
+                            </p>
+                        </div>
+                        <button onclick="ArchiveMaintenanceAdmin.exportData('notifications')" style="padding: 6px 12px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-download"></i> Export JSON Backup
+                        </button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Clean read notifications older than:</span>
+                        <select id="maintNotificationsDays" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #0f172a;">
+                            <option value="30" selected>30 Days</option>
+                            <option value="60">60 Days</option>
+                            <option value="90">90 Days</option>
+                        </select>
+                        <button id="btnRunCleanupNotifs" onclick="ArchiveMaintenanceAdmin.runCleanupNotifications()" style="padding: 7px 16px; background: #f59e0b; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #ffffff; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                            <i class="fas fa-broom"></i> Clean Read Alerts
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Support Chat History Maintenance -->
+                <div style="border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-comments" style="color: #06b6d4;"></i>
+                                Customer Chat Messages Maintenance
+                            </div>
+                            <p style="font-size: 0.75rem; color: #64748b; margin: 4px 0 0 0;">
+                                Prunes old support message exchanges older than 60/90 days to maintain snappy chat queries.
+                            </p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #475569;">Clean chat messages older than:</span>
+                        <select id="maintChatsDays" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600; color: #0f172a;">
+                            <option value="60" selected>60 Days</option>
+                            <option value="90">90 Days</option>
+                            <option value="180">180 Days</option>
+                        </select>
+                        <button id="btnRunCleanupChats" onclick="ArchiveMaintenanceAdmin.runCleanupChats()" style="padding: 7px 16px; background: #06b6d4; border: none; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #ffffff; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s;">
+                            <i class="fas fa-trash-alt"></i> Prune Old Messages
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer info -->
+            <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 0.72rem; color: #64748b; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-shield-alt" style="color: #00B14F;"></i>
+                    Automated safe backups & transactional operations enabled.
+                </div>
+                <button onclick="toggleArchiveMaintenanceModal(false)" style="padding: 8px 18px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: #475569; cursor: pointer;">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- BOOKING DETAILS MODAL -->
 
 
 
@@ -14340,7 +14618,475 @@ async edit(id) { this.openModal(id); }
 
     window.closeDrawer = window.closeDrawer || function() {};
 
-    function toggleNewsletterModal(show = true) {
+    
+    // ==========================================
+    // DATABASE ARCHIVING & MAINTENANCE CONTROLLERS
+    // ==========================================
+
+    function toggleArchiveMaintenanceModal(show = true) {
+        const modal = document.getElementById('archiveMaintenanceModal');
+        if (!modal) return;
+        modal.style.display = show ? 'flex' : 'none';
+        if (show && typeof ArchiveMaintenanceAdmin !== 'undefined') {
+            ArchiveMaintenanceAdmin.loadStats();
+        }
+    }
+
+    const ArchiveMaintenanceAdmin = {
+        stats: null,
+        async loadStats() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/maintenance/stats`);
+                if (!res.ok) throw new Error('Failed to load stats');
+                const data = await res.json();
+                this.stats = data;
+                
+                const setEl = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val !== undefined && val !== null ? val.toLocaleString() : '0';
+                };
+
+                setEl('maintStatActiveBookings', data.bookings?.active);
+                setEl('maintStatArchivedBookings', data.bookings?.archived);
+                setEl('maintStatEligibleBookings', data.bookings?.eligible_for_archive_30d);
+                setEl('maintStatOldLogs', data.activity_logs?.older_than_30d);
+
+                // Update archived count badge on bookings tab
+                const badge = document.getElementById('archivedBookingsCountBadge');
+                if (badge) {
+                    const count = data.bookings?.archived || 0;
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+                const headerBadge = document.getElementById('archivedBookingsHeaderBadge');
+                if (headerBadge) {
+                    headerBadge.textContent = `${(data.bookings?.archived || 0).toLocaleString()} records`;
+                }
+            } catch (err) {
+                console.error('Error loading maintenance stats:', err);
+            }
+        },
+
+        async runBatchArchiveBookings() {
+            const days = parseInt(document.getElementById('maintBatchBookingDays')?.value || '30', 10);
+            const label = days === 0 ? 'ALL completed/cancelled bookings' : `finished bookings older than ${days} days`;
+            if (!confirm(`Are you sure you want to batch-archive ${label}?
+
+They will be safely secluded from operational queues to keep query latency fast. You can restore them anytime.`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnRunBatchArchive');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...'; }
+
+            try {
+                const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
+                const res = await fetch(`${API_BASE}/api/admin/bookings/batch-archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ older_than_days: days, archived_by: user.name || user.username || 'Admin' })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Batch archive failed');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(data.message || `Archived ${data.archived_count} bookings!`, 'success');
+                } else {
+                    alert(data.message || `Archived ${data.archived_count} bookings!`);
+                }
+
+                await this.loadStats();
+                if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
+                if (typeof PastBookings !== 'undefined' && typeof PastBookings.load === 'function') PastBookings.load();
+                if (typeof ArchivedBookings !== 'undefined' && typeof ArchivedBookings.load === 'function') ArchivedBookings.load();
+            } catch (err) {
+                if (typeof showNotification === 'function') {
+                    showNotification(err.message, 'error');
+                } else {
+                    alert(err.message);
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-archive"></i> Run Batch Archive'; }
+            }
+        },
+
+        async runCleanupLogs() {
+            const days = parseInt(document.getElementById('maintLogsDays')?.value || '30', 10);
+            if (!confirm(`Permanently delete activity audit logs older than ${days} days?
+
+(Tip: You can export a JSON backup first if you need an audit trail archive).`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnRunCleanupLogs');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pruning...'; }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/maintenance/cleanup-logs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ older_than_days: days })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Logs cleanup failed');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(data.message || `Pruned ${data.deleted_count} old audit logs!`, 'success');
+                } else {
+                    alert(data.message || `Pruned ${data.deleted_count} old audit logs!`);
+                }
+                await this.loadStats();
+            } catch (err) {
+                if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else alert(err.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-eraser"></i> Prune Old Logs'; }
+            }
+        },
+
+        async runCleanupNotifications() {
+            const days = parseInt(document.getElementById('maintNotificationsDays')?.value || '30', 10);
+            if (!confirm(`Purge read notifications older than ${days} days? Unread notifications will not be affected.`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnRunCleanupNotifs');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cleaning...'; }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/maintenance/cleanup-notifications`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ older_than_days: days })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Notifications cleanup failed');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(data.message || `Cleaned ${data.deleted_count} read notifications!`, 'success');
+                } else {
+                    alert(data.message || `Cleaned ${data.deleted_count} read notifications!`);
+                }
+                await this.loadStats();
+            } catch (err) {
+                if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else alert(err.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-broom"></i> Clean Read Alerts'; }
+            }
+        },
+
+        async runCleanupChats() {
+            const days = parseInt(document.getElementById('maintChatsDays')?.value || '60', 10);
+            if (!confirm(`Purge support chat messages older than ${days} days?`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnRunCleanupChats');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cleaning...'; }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/maintenance/cleanup-chats`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ older_than_days: days })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Chat cleanup failed');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(data.message || `Cleaned ${data.deleted_count} chat messages!`, 'success');
+                } else {
+                    alert(data.message || `Cleaned ${data.deleted_count} chat messages!`);
+                }
+                await this.loadStats();
+            } catch (err) {
+                if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else alert(err.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt"></i> Prune Old Messages'; }
+            }
+        },
+
+        exportData(type) {
+            const url = `${API_BASE}/api/admin/maintenance/export/${type}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.download = `${type}_backup_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
+    const ArchivedBookings = {
+        data: [],
+        filteredData: [],
+        currentPage: 1,
+        pageSize: 10,
+        totalPages: 1,
+        totalCount: 0,
+        searchQuery: '',
+        reasonFilter: 'all',
+        _debounceTimer: null,
+
+        async load() {
+            const loadingEl = document.getElementById('archivedBookingsLoading');
+            const emptyEl = document.getElementById('archivedBookingsEmpty');
+            const tableEl = document.getElementById('archivedBookingsTable');
+
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (emptyEl) emptyEl.classList.add('hidden');
+            if (tableEl) tableEl.style.display = 'none';
+
+            try {
+                let url = `${API_BASE}/api/admin/bookings/archived?page=${this.currentPage}&page_size=${this.pageSize}`;
+                if (this.searchQuery) url += `&search=${encodeURIComponent(this.searchQuery)}`;
+                if (this.reasonFilter && this.reasonFilter !== 'all') url += `&reason=${encodeURIComponent(this.reasonFilter)}`;
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Failed to load archived bookings');
+                const result = await res.json();
+
+                this.data = result.bookings || [];
+                this.filteredData = this.data;
+                this.totalCount = result.total || 0;
+                this.totalPages = result.pages || 1;
+                this.currentPage = result.page || 1;
+
+                // Update tab counter badge
+                const badge = document.getElementById('archivedBookingsCountBadge');
+                if (badge) {
+                    badge.textContent = this.totalCount;
+                    badge.style.display = this.totalCount > 0 ? 'inline-block' : 'none';
+                }
+                const headerBadge = document.getElementById('archivedBookingsHeaderBadge');
+                if (headerBadge) {
+                    headerBadge.textContent = `${this.totalCount.toLocaleString()} records`;
+                }
+
+                this.renderTable();
+                this.updatePagination();
+            } catch (err) {
+                console.error('Error loading archived bookings:', err);
+                if (tableEl) tableEl.style.display = 'none';
+                if (emptyEl) {
+                    emptyEl.classList.remove('hidden');
+                    emptyEl.innerHTML = `
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 12px;"></i>
+                        <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">Failed to load archived bookings</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">${err.message}</p>
+                        <button onclick="ArchivedBookings.load()" style="padding: 8px 18px; background: var(--primary); border: none; color: white; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">Retry</button>
+                    `;
+                }
+            } finally {
+                if (loadingEl) loadingEl.style.display = 'none';
+            }
+        },
+
+        renderTable() {
+            const tbody = document.getElementById('archivedBookingsTableBody');
+            const emptyEl = document.getElementById('archivedBookingsEmpty');
+            const tableEl = document.getElementById('archivedBookingsTable');
+
+            if (!tbody) return;
+
+            if (this.filteredData.length === 0) {
+                if (emptyEl) emptyEl.classList.remove('hidden');
+                if (tableEl) tableEl.style.display = 'none';
+                return;
+            }
+
+            if (emptyEl) emptyEl.classList.add('hidden');
+            if (tableEl) tableEl.style.display = 'table';
+
+            tbody.innerHTML = this.filteredData.map(b => {
+                const startDateStr = b.start_date ? new Date(b.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const endDateStr = b.end_date ? new Date(b.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const archDateStr = b.archived_at ? new Date(b.archived_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Archived';
+                const totalPrice = b.total_price ? parseFloat(b.total_price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00';
+                const reason = b.archive_reason || 'Archived record';
+
+                return `
+                    <tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">
+                        <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 800; color: #8b5cf6;">#${b.id}</td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
+                            <div>${b.customer_name || 'N/A'}</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">${b.customer_email || ''}</div>
+                        </td>
+                        <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${b.car || b.vehicle || 'N/A'}</td>
+                        <td style="padding: 12px 10px; font-size: 0.78rem; color: var(--text-secondary);">${startDateStr} - ${endDateStr}</td>
+                        <td style="padding: 12px 10px;">
+                            <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 12px; background: rgba(139,92,246,0.12); color: #8b5cf6; text-transform: uppercase;">${b.status || 'COMPLETED'}</span>
+                        </td>
+                        <td style="padding: 12px 10px; font-size: 0.78rem; color: var(--text-muted);">
+                            <div><i class="fas fa-clock" style="margin-right: 4px; font-size: 0.7rem;"></i>${archDateStr}</div>
+                            <div style="font-size: 0.7rem; color: #8b5cf6; font-weight: 600; margin-top: 2px;">${reason}</div>
+                        </td>
+                        <td style="padding: 12px 10px; text-align: right; font-size: 0.9rem; font-weight: 800; color: var(--text-main);">₱${totalPrice}</td>
+                        <td style="padding: 12px 10px; text-align: center;">
+                            <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                                <button onclick="Bookings.view(${b.id})" style="padding: 6px 10px; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer;" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="ArchivedBookings.unarchiveSingle(${b.id})" style="padding: 6px 10px; background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: #8b5cf6; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;" title="Restore to Active">
+                                    <i class="fas fa-box-open"></i> Restore
+                                </button>
+                                <button onclick="ArchivedBookings.deleteSinglePermanent(${b.id})" style="padding: 6px 10px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;" title="Permanent Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        },
+
+        updatePagination() {
+            const prevBtn = document.getElementById('archivedBookingsPrevBtn');
+            const nextBtn = document.getElementById('archivedBookingsNextBtn');
+            const pageInfo = document.getElementById('archivedBookingsPageInfo');
+
+            if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = this.currentPage >= this.totalPages;
+            if (pageInfo) pageInfo.textContent = `Page ${this.currentPage} of ${Math.max(this.totalPages, 1)}`;
+        },
+
+        prevPage() {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.load();
+            }
+        },
+
+        nextPage() {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.load();
+            }
+        },
+
+        onSearch(val) {
+            clearTimeout(this._debounceTimer);
+            this.searchQuery = (val || '').trim();
+            this._debounceTimer = setTimeout(() => {
+                this.currentPage = 1;
+                this.load();
+            }, 300);
+        },
+
+        onFilterReason(val) {
+            this.reasonFilter = val;
+            this.currentPage = 1;
+            this.load();
+        },
+
+        async archiveSingle(id) {
+            const reason = prompt(`Archive Booking #${id}?
+
+Enter reason for archiving:`, 'Completed Rental Retention');
+            if (reason === null) return;
+
+            try {
+                const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/archive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason || 'Manual Admin Archive', archived_by: user.name || user.username || 'Admin' })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to archive booking');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(`Booking #${id} successfully archived!`, 'success');
+                } else {
+                    alert(`Booking #${id} successfully archived!`);
+                }
+
+                // Hide detail modal if open
+                const modal = document.getElementById('bookingDetailsModal');
+                if (modal) modal.style.display = 'none';
+
+                if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
+                if (typeof PastBookings !== 'undefined' && typeof PastBookings.load === 'function') PastBookings.load();
+                this.load();
+            } catch (err) {
+                if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else alert(err.message);
+            }
+        },
+
+        async unarchiveSingle(id) {
+            if (!confirm(`Restore Booking #${id} back to active operational bookings?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/unarchive`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to unarchive booking');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(`Booking #${id} restored to active operational records!`, 'success');
+                } else {
+                    alert(`Booking #${id} restored!`);
+                }
+
+                const modal = document.getElementById('bookingDetailsModal');
+                if (modal) modal.style.display = 'none';
+
+                if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') Bookings.refresh();
+                if (typeof PastBookings !== 'undefined' && typeof PastBookings.load === 'function') PastBookings.load();
+                this.load();
+            } catch (err) {
+                if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else alert(err.message);
+            }
+        },
+
+        async deleteSinglePermanent(id) {
+            if (!confirm(`⚠️ DANGER: Are you absolutely sure you want to PERMANENTLY delete Booking #${id} and all related payments/inspections/logs from the database?
+
+This CANNOT be undone!`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/permanent`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to delete booking');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(`Booking #${id} permanently purged.`, 'info');
+                } else {
+                    alert(`Booking #${id} purged.`);
+                }
+
+                const modal = document.getElementById('bookingDetailsModal');
+                if (modal) modal.style.display = 'none';
+
+                this.load();
+                if (typeof ArchiveMaintenanceAdmin !== 'undefined') ArchiveMaintenanceAdmin.loadStats();
+            } catch (err) {
+                if (typeof showNotification === 'function') showNotification(err.message, 'error');
+                else alert(err.message);
+            }
+        },
+
+        promptBatchArchive() {
+            toggleArchiveMaintenanceModal(true);
+        }
+    };
+
+
+function toggleNewsletterModal(show = true) {
         const modal = document.getElementById('newsletterModal');
         if (!modal) return;
         modal.style.display = show ? 'flex' : 'none';
@@ -15107,6 +15853,11 @@ async edit(id) { this.openModal(id); }
                                     <i class="fas fa-clipboard-check" style="margin-right:4px;"></i>Return Inspect
                                 </button>
                             ` : ''}
+                            ${['completed', 'cancelled', 'rejected', 'no show', 'no-show'].includes((b.status||'').toLowerCase()) && !b.is_archived ? `
+                                <button onclick="ArchivedBookings.archiveSingle(${b.id})" style="flex:1; min-width:100px; padding:10px 8px; background:rgba(139,92,246,0.12); color:#8b5cf6; border:1px solid rgba(139,92,246,0.3); border-radius:10px; font-size:0.78rem; font-weight:700; cursor:pointer;" title="Archive Booking">
+                                    <i class="fas fa-archive" style="margin-right:4px;"></i>Archive
+                                </button>
+                            ` : ''}
 
 
 
@@ -15478,7 +16229,7 @@ async edit(id) { this.openModal(id); }
 
 
         view(id) {
-            const b = this.data.find(x => x.id == id);
+            const b = this.data.find(x => x.id == id) || (typeof PastBookings !== "undefined" && PastBookings.data.find(x => x.id == id)) || (typeof ArchivedBookings !== "undefined" && ArchivedBookings.data.find(x => x.id == id));
             if (!b) { console.error('Booking not found:', id); return; }
 
             const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : 'N/A';
@@ -15537,6 +16288,15 @@ async edit(id) { this.openModal(id); }
             if (st === 'cancelled' && b.payment_status === 'Paid') {
                 actionBtns += `<button onclick="Bookings.triggerRefund(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-undo"></i>Trigger Refund</button>`;
             }
+
+            // Archive / Restore action buttons
+            if (b.is_archived) {
+                actionBtns += `<button onclick="ArchivedBookings.unarchiveSingle(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#8b5cf6;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-box-open"></i>Restore to Active</button>`;
+                actionBtns += `<button onclick="ArchivedBookings.deleteSinglePermanent(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-trash-alt"></i>Purge</button>`;
+            } else if (['completed', 'cancelled', 'rejected', 'no show', 'no-show'].includes(st)) {
+                actionBtns += `<button onclick="ArchivedBookings.archiveSingle(${b.id})" style="flex:1;min-width:120px;padding:11px 10px;background:rgba(139,92,246,0.12);color:#8b5cf6;border:1.5px solid rgba(139,92,246,0.3);border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-archive"></i>Archive Booking</button>`;
+            }
+
 
             document.getElementById('bookingDetailContent').innerHTML = `
             <div style="color:#0f172a;">
@@ -15658,7 +16418,7 @@ async edit(id) { this.openModal(id); }
             setTimeout(() => { Bookings.loadPenalties(b.id); }, 50);
         },
         async triggerRefund(id) {
-            const b = this.data.find(x => x.id == id);
+            const b = this.data.find(x => x.id == id) || (typeof PastBookings !== "undefined" && PastBookings.data.find(x => x.id == id)) || (typeof ArchivedBookings !== "undefined" && ArchivedBookings.data.find(x => x.id == id));
             const ps = b ? b.payment_status : 'Paid';
             if (!confirm(`Trigger refund for Booking #${id}?\n\nThis will calculate the refund based on cancellation time vs pickup date (cancellation policy).\n\nCurrent status: ${ps}`)) return;
             try {
@@ -20996,6 +21756,9 @@ async edit(id) { this.openModal(id); }
 
 
                             </button>
+                                <button onclick="ArchivedBookings.archiveSingle(${b.id})" style="padding: 6px 10px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); color: #8b5cf6; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-left: 6px;" title="Archive Booking">
+                                    <i class="fas fa-archive"></i> Archive
+                                </button>
 
 
 
@@ -22418,7 +23181,19 @@ async edit(id) { this.openModal(id); }
             }
             if (typeof Refunds !== 'undefined') {
                 Refunds.load();
+            } else if (tab === 'archived') {
+            const archTab = document.getElementById('tabArchived');
+            if (archTab) archTab.style.display = 'block';
+            const archBtn = document.getElementById('tabBtnArchived');
+            if (archBtn) {
+                archBtn.style.border = '1px solid #8b5cf6';
+                archBtn.style.background = '#8b5cf6';
+                archBtn.style.color = 'white';
             }
+            if (typeof ArchivedBookings !== 'undefined') {
+                ArchivedBookings.load();
+            }
+        }
         }
 
 

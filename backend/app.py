@@ -893,12 +893,33 @@ def migrate_smtp_oauth_keys():
     finally:
         if 'cur' in locals(): cur.close()
 
+
+def migrate_archive_columns():
+    """Ensures archive columns, created_at, and indexes exist in bookings, activity_logs, and notifications."""
+    try:
+        cur = get_cursor()
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_archived BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE DEFAULT NULL")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archived_by VARCHAR(100) DEFAULT NULL")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS archive_reason VARCHAR(255) DEFAULT NULL")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_bookings_is_archived ON bookings (is_archived, status)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs (created_at)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_notifications_cleanup ON notifications (is_read, created_at)")
+        commit_db()
+        print("[MIGRATION] migrate_archive_columns completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_archive_columns error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 try:
     with app.app_context():
         migrate_google_auth_columns()
         migrate_no_show_column()
         migrate_booking_reviews()
         migrate_smtp_oauth_keys()
+        migrate_archive_columns()
 except Exception as _e:
     pass
 
@@ -5065,7 +5086,11 @@ def get_all_bookings():
                    ld.license_back_url,
                    ld.emergency_contact_name,
                    ld.emergency_contact_phone,
-                   ld.emergency_contact_relationship
+                   ld.emergency_contact_relationship,
+                   COALESCE(b.is_archived, FALSE) AS is_archived,
+                   CAST(b.archived_at AS TEXT) AS archived_at,
+                   b.archived_by,
+                   b.archive_reason
 
             FROM bookings b
 
@@ -5086,21 +5111,25 @@ def get_all_bookings():
 
         """
 
-        
-
+        where_clauses = []
         params = []
 
+        include_archived = request.args.get('include_archived', 'false').lower() == 'true'
+        archived_only = request.args.get('archived_only', 'false').lower() == 'true'
+
+        if archived_only:
+            where_clauses.append("COALESCE(b.is_archived, FALSE) = TRUE")
+        elif not include_archived:
+            where_clauses.append("COALESCE(b.is_archived, FALSE) = FALSE")
+
         if location_filter:
-
-            query += " WHERE b.pickup_location = %s "
-
+            where_clauses.append("b.pickup_location = %s")
             params.append(location_filter)
 
-            
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
 
         query += " ORDER BY b.id DESC"
-
-        
 
         cur.execute(query, tuple(params))
 
@@ -7793,6 +7822,572 @@ def admin_delete_subscriber(id):
     finally:
         if 'cur' in locals():
             cur.close()
+
+
+# ============================================================
+# DATABASE ARCHIVING & SYSTEM MAINTENANCE
+# ============================================================
+
+@app.route('/admin/bookings/archived', methods=['GET'])
+@app.route('/api/admin/bookings/archived', methods=['GET'])
+def get_archived_bookings():
+    """Admin endpoint to fetch all archived bookings with pagination and filters."""
+    try:
+        page = max(1, request.args.get('page', 1, type=int))
+        page_size = min(100, max(5, request.args.get('page_size', 15, type=int)))
+        search = (request.args.get('search') or '').strip()
+        status_filter = (request.args.get('status') or '').strip()
+        date_from = (request.args.get('date_from') or '').strip()
+        date_to = (request.args.get('date_to') or '').strip()
+
+        offset = (page - 1) * page_size
+        cur = get_cursor()
+
+        where_clauses = ["COALESCE(b.is_archived, FALSE) = TRUE"]
+        params = []
+
+        if status_filter and status_filter.lower() != 'all':
+            where_clauses.append("LOWER(b.status) = LOWER(%s)")
+            params.append(status_filter)
+
+        if search:
+            where_clauses.append("""
+                (CAST(b.id AS TEXT) ILIKE %s OR 
+                 u.full_name ILIKE %s OR 
+                 u.email ILIKE %s OR 
+                 v.brand ILIKE %s OR 
+                 v.model ILIKE %s OR 
+                 v.plate_number ILIKE %s OR
+                 b.reference_num ILIKE %s)
+            """)
+            term = f"%{search}%"
+            params.extend([term, term, term, term, term, term, term])
+
+        if date_from:
+            where_clauses.append("b.start_date >= %s")
+            params.append(date_from)
+        if date_to:
+            where_clauses.append("b.end_date <= %s")
+            params.append(date_to)
+
+        where_sql = " WHERE " + " AND ".join(where_clauses)
+
+        count_sql = f"""
+            SELECT COUNT(*) as total
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            {where_sql}
+        """
+        cur.execute(count_sql, tuple(params))
+        total_count = cur.fetchone()['total']
+        total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+
+        query = f"""
+            SELECT b.id, b.user_id, u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
+                   CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
+                   v.plate_number, v.vehicle_image,
+                   b.start_date, b.end_date, b.start_time, b.end_time,
+                   b.total_price, b.status, b.payment_status, b.payment_type,
+                   b.amount_paid, b.balance_amount,
+                   b.pickup_location, b.rental_type, b.addons,
+                   COALESCE(b.is_archived, FALSE) AS is_archived,
+                   CAST(b.archived_at AS TEXT) AS archived_at,
+                   b.archived_by, b.archive_reason,
+                   CAST(b.completed_at AS TEXT) AS completed_at,
+                   CAST(b.cancelled_at AS TEXT) AS cancelled_at
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            {where_sql}
+            ORDER BY COALESCE(b.archived_at, b.end_date, b.completed_at) DESC
+            LIMIT %s OFFSET %s
+        """
+        fetch_params = list(params) + [page_size, offset]
+        cur.execute(query, tuple(fetch_params))
+        rows = [dict(r) for r in cur.fetchall()]
+
+        for r in rows:
+            if r.get('start_date'): r['start_date'] = str(r['start_date'])
+            if r.get('end_date'): r['end_date'] = str(r['end_date'])
+
+        return jsonify({
+            "bookings": rows,
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e), "bookings": [], "total": 0}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/bookings/<int:id>/archive', methods=['POST'])
+@app.route('/api/admin/bookings/<int:id>/archive', methods=['POST'])
+def archive_booking(id):
+    """Archive an individual booking."""
+    data = request.json or {}
+    reason = (data.get('reason') or 'Archived by Administrator').strip()
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, status, is_archived FROM bookings WHERE id = %s", (id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": f"Booking #{id} not found"}), 404
+
+        allowed_statuses = ['Completed', 'Cancelled', 'No Show', 'Rejected']
+        override = data.get('force', False)
+        if b['status'] not in allowed_statuses and not override:
+            return jsonify({"error": f"Only finished bookings ({', '.join(allowed_statuses)}) can be archived."}), 400
+
+        cur.execute("""
+            UPDATE bookings
+            SET is_archived = TRUE,
+                archived_at = NOW(),
+                archived_by = %s,
+                archive_reason = %s
+            WHERE id = %s
+        """, (admin_name, reason, id))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='ARCHIVE_BOOKING',
+            target_type='BOOKING',
+            target_id=str(id),
+            details=f"Archived booking #{id} (Status: {b['status']}). Reason: {reason}"
+        )
+
+        return jsonify({"success": True, "message": f"Booking #{id} has been archived successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/bookings/<int:id>/unarchive', methods=['POST'])
+@app.route('/api/admin/bookings/<int:id>/unarchive', methods=['POST'])
+def unarchive_booking(id):
+    """Restore an archived booking back to active list."""
+    data = request.json or {}
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, status, is_archived FROM bookings WHERE id = %s", (id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": f"Booking #{id} not found"}), 404
+
+        cur.execute("""
+            UPDATE bookings
+            SET is_archived = FALSE,
+                archived_at = NULL,
+                archive_reason = NULL
+            WHERE id = %s
+        """, (id,))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='RESTORE_BOOKING',
+            target_type='BOOKING',
+            target_id=str(id),
+            details=f"Restored archived booking #{id} back to active list"
+        )
+
+        return jsonify({"success": True, "message": f"Booking #{id} has been restored successfully."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/bookings/batch-archive', methods=['POST'])
+@app.route('/api/admin/bookings/batch-archive', methods=['POST'])
+def batch_archive_bookings():
+    """Batch archive completed and cancelled bookings older than N days."""
+    data = request.json or {}
+    older_than_days = data.get('older_than_days', 30)
+    statuses = data.get('statuses', ['Completed', 'Cancelled', 'No Show'])
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        days = int(older_than_days)
+    except:
+        days = 30
+
+    try:
+        cur = get_cursor()
+        status_placeholders = ", ".join(["%s"] * len(statuses))
+        params = list(statuses)
+
+        if days > 0:
+            query = f"""
+                UPDATE bookings
+                SET is_archived = TRUE,
+                    archived_at = NOW(),
+                    archived_by = %s,
+                    archive_reason = %s
+                WHERE COALESCE(is_archived, FALSE) = FALSE
+                  AND status IN ({status_placeholders})
+                  AND (
+                    (end_date IS NOT NULL AND end_date < CURRENT_DATE - INTERVAL '{days} days') OR
+                    (completed_at IS NOT NULL AND completed_at < NOW() - INTERVAL '{days} days') OR
+                    (cancelled_at IS NOT NULL AND cancelled_at < NOW() - INTERVAL '{days} days')
+                  )
+                RETURNING id;
+            """
+            exec_params = [admin_name, f"Batch archived (> {days} days old)"] + params
+        else:
+            query = f"""
+                UPDATE bookings
+                SET is_archived = TRUE,
+                    archived_at = NOW(),
+                    archived_by = %s,
+                    archive_reason = %s
+                WHERE COALESCE(is_archived, FALSE) = FALSE
+                  AND status IN ({status_placeholders})
+                RETURNING id;
+            """
+            exec_params = [admin_name, "Batch archived (all finished bookings)"] + params
+
+        cur.execute(query, tuple(exec_params))
+        archived_ids = [r['id'] for r in cur.fetchall()]
+        archived_count = len(archived_ids)
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='BATCH_ARCHIVE_BOOKINGS',
+            target_type='BOOKINGS',
+            target_id=f"{archived_count} items",
+            details=f"Batch archived {archived_count} bookings older than {days} days"
+        )
+
+        return jsonify({
+            "success": True,
+            "archived_count": archived_count,
+            "message": f"Successfully archived {archived_count} finished booking(s)."
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/bookings/<int:id>/permanent', methods=['DELETE'])
+@app.route('/api/admin/bookings/<int:id>/permanent', methods=['DELETE'])
+def permanently_delete_booking(id):
+    """Permanently delete an archived booking and cascade related dependent logs."""
+    data = request.json or {}
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, status, is_archived FROM bookings WHERE id = %s", (id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": f"Booking #{id} not found"}), 404
+
+        if not b['is_archived']:
+            return jsonify({"error": "Only archived bookings can be permanently deleted."}), 400
+
+        # Cascade dependent entries safely
+        cur.execute("DELETE FROM booking_penalties WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM booking_extensions WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM booking_conflicts WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM vehicle_inspections WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM split_payments WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM reviews WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM payments WHERE booking_id = %s", (id,))
+        cur.execute("DELETE FROM bookings WHERE id = %s", (id,))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='PERMANENT_DELETE_BOOKING',
+            target_type='BOOKING',
+            target_id=str(id),
+            details=f"Permanently purged archived booking #{id} from database"
+        )
+
+        return jsonify({"success": True, "message": f"Booking #{id} permanently purged."}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/maintenance/stats', methods=['GET'])
+@app.route('/api/admin/maintenance/stats', methods=['GET'])
+def get_maintenance_stats():
+    """Admin endpoint to fetch database storage metrics and archive opportunities."""
+    try:
+        cur = get_cursor()
+
+        # 1. Bookings breakdown
+        cur.execute("SELECT COUNT(*) as total FROM bookings")
+        total_b = cur.fetchone()['total']
+        cur.execute("SELECT COUNT(*) as active FROM bookings WHERE COALESCE(is_archived, FALSE) = FALSE")
+        active_b = cur.fetchone()['active']
+        cur.execute("SELECT COUNT(*) as archived FROM bookings WHERE COALESCE(is_archived, FALSE) = TRUE")
+        archived_b = cur.fetchone()['archived']
+        
+        cur.execute("""
+            SELECT COUNT(*) as eligible_30d 
+            FROM bookings 
+            WHERE COALESCE(is_archived, FALSE) = FALSE
+              AND status IN ('Completed', 'Cancelled', 'No Show')
+              AND (
+                (end_date IS NOT NULL AND end_date < CURRENT_DATE - INTERVAL '30 days') OR
+                (completed_at IS NOT NULL AND completed_at < NOW() - INTERVAL '30 days') OR
+                (cancelled_at IS NOT NULL AND cancelled_at < NOW() - INTERVAL '30 days')
+              )
+        """)
+        eligible_30d = cur.fetchone()['eligible_30d']
+
+        cur.execute("""
+            SELECT COUNT(*) as eligible_60d 
+            FROM bookings 
+            WHERE COALESCE(is_archived, FALSE) = FALSE
+              AND status IN ('Completed', 'Cancelled', 'No Show')
+              AND (
+                (end_date IS NOT NULL AND end_date < CURRENT_DATE - INTERVAL '60 days') OR
+                (completed_at IS NOT NULL AND completed_at < NOW() - INTERVAL '60 days') OR
+                (cancelled_at IS NOT NULL AND cancelled_at < NOW() - INTERVAL '60 days')
+              )
+        """)
+        eligible_60d = cur.fetchone()['eligible_60d']
+
+        # 2. Activity logs breakdown
+        cur.execute("SELECT COUNT(*) as total FROM activity_logs")
+        total_logs = cur.fetchone()['total']
+        cur.execute("SELECT COUNT(*) as count FROM activity_logs WHERE created_at < NOW() - INTERVAL '30 days'")
+        logs_30d = cur.fetchone()['count']
+        cur.execute("SELECT COUNT(*) as count FROM activity_logs WHERE created_at < NOW() - INTERVAL '60 days'")
+        logs_60d = cur.fetchone()['count']
+
+        # 3. Notifications breakdown
+        cur.execute("SELECT COUNT(*) as total FROM notifications")
+        total_notifs = cur.fetchone()['total']
+        cur.execute("SELECT COUNT(*) as count FROM notifications WHERE is_read = TRUE AND created_at < NOW() - INTERVAL '30 days'")
+        read_notifs_30d = cur.fetchone()['count']
+
+        # 4. Chat messages breakdown
+        cur.execute("SELECT COUNT(*) as total FROM chat_messages")
+        total_chats = cur.fetchone()['total']
+        cur.execute("SELECT COUNT(*) as count FROM chat_messages WHERE created_at < NOW() - INTERVAL '60 days'")
+        chats_60d = cur.fetchone()['count']
+
+        return jsonify({
+            "bookings": {
+                "total": total_b,
+                "active": active_b,
+                "archived": archived_b,
+                "eligible_30d": eligible_30d,
+                "eligible_60d": eligible_60d
+            },
+            "activity_logs": {
+                "total": total_logs,
+                "older_than_30d": logs_30d,
+                "older_than_60d": logs_60d
+            },
+            "notifications": {
+                "total": total_notifs,
+                "read_older_than_30d": read_notifs_30d
+            },
+            "chat_messages": {
+                "total": total_chats,
+                "older_than_60d": chats_60d
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/maintenance/cleanup-logs', methods=['POST'])
+@app.route('/api/admin/maintenance/cleanup-logs', methods=['POST'])
+def cleanup_activity_logs():
+    """Admin endpoint to clean up audit activity logs older than N days."""
+    data = request.json or {}
+    days = max(7, data.get('older_than_days', 30))
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        cur.execute(f"DELETE FROM activity_logs WHERE created_at < NOW() - INTERVAL '{days} days'")
+        deleted_count = cur.rowcount
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='CLEANUP_ACTIVITY_LOGS',
+            target_type='MAINTENANCE',
+            target_id=f"{deleted_count} logs",
+            details=f"Cleaned up {deleted_count} activity logs older than {days} days"
+        )
+
+        return jsonify({
+            "success": True,
+            "deleted_count": deleted_count,
+            "message": f"Successfully deleted {deleted_count} activity log entries older than {days} days."
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/maintenance/cleanup-notifications', methods=['POST'])
+@app.route('/api/admin/maintenance/cleanup-notifications', methods=['POST'])
+def cleanup_notifications():
+    """Admin endpoint to purge read notifications older than N days."""
+    data = request.json or {}
+    days = max(7, data.get('older_than_days', 30))
+    only_read = data.get('only_read', True)
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        read_clause = "AND is_read = TRUE" if only_read else ""
+        cur.execute(f"DELETE FROM notifications WHERE created_at < NOW() - INTERVAL '{days} days' {read_clause}")
+        deleted_count = cur.rowcount
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='CLEANUP_NOTIFICATIONS',
+            target_type='MAINTENANCE',
+            target_id=f"{deleted_count} notifs",
+            details=f"Purged {deleted_count} read notifications older than {days} days"
+        )
+
+        return jsonify({
+            "success": True,
+            "deleted_count": deleted_count,
+            "message": f"Successfully purged {deleted_count} read notifications older than {days} days."
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/maintenance/cleanup-chats', methods=['POST'])
+@app.route('/api/admin/maintenance/cleanup-chats', methods=['POST'])
+def cleanup_chat_messages():
+    """Admin endpoint to archive/clean support chats older than N days."""
+    data = request.json or {}
+    days = max(14, data.get('older_than_days', 60))
+    admin_name = (data.get('admin_name') or 'Admin').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        cur.execute(f"DELETE FROM chat_messages WHERE created_at < NOW() - INTERVAL '{days} days'")
+        deleted_count = cur.rowcount
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id or 0,
+            admin_name=admin_name,
+            action='CLEANUP_CHATS',
+            target_type='MAINTENANCE',
+            target_id=f"{deleted_count} chats",
+            details=f"Cleaned up {deleted_count} support messages older than {days} days"
+        )
+
+        return jsonify({
+            "success": True,
+            "deleted_count": deleted_count,
+            "message": f"Successfully cleaned {deleted_count} support messages older than {days} days."
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/maintenance/export/<string:data_type>', methods=['GET'])
+@app.route('/api/admin/maintenance/export/<string:data_type>', methods=['GET'])
+def export_maintenance_data(data_type):
+    """Admin endpoint to download JSON export backup of archived items or logs."""
+    import json
+    from flask import Response
+    from datetime import datetime
+
+    try:
+        cur = get_cursor()
+        data = []
+        if data_type == 'archived_bookings':
+            cur.execute("""
+                SELECT b.id, b.user_id, u.full_name AS customer_name, u.email AS customer_email,
+                       CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
+                       b.start_date, b.end_date, b.total_price, b.status, b.payment_status,
+                       b.pickup_location, b.rental_type, b.addons,
+                       b.is_archived, b.archived_at, b.archived_by, b.archive_reason
+                FROM bookings b
+                LEFT JOIN users u ON b.user_id = u.id
+                LEFT JOIN vehicles v ON b.vehicle_id = v.id
+                WHERE COALESCE(b.is_archived, FALSE) = TRUE
+                ORDER BY b.id DESC
+            """)
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                for k, val in r.items():
+                    if hasattr(val, 'isoformat'): r[k] = val.isoformat()
+                    elif hasattr(val, '__str__') and type(val).__name__ in ['Decimal', 'date', 'datetime']: r[k] = str(val)
+            data = rows
+
+        elif data_type == 'activity_logs':
+            cur.execute("SELECT * FROM activity_logs ORDER BY id DESC LIMIT 5000")
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                if r.get('created_at') and hasattr(r['created_at'], 'isoformat'):
+                    r['created_at'] = r['created_at'].isoformat()
+            data = rows
+
+        elif data_type == 'notifications':
+            cur.execute("SELECT * FROM notifications ORDER BY id DESC LIMIT 5000")
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                if r.get('created_at') and hasattr(r['created_at'], 'isoformat'):
+                    r['created_at'] = r['created_at'].isoformat()
+            data = rows
+        else:
+            return jsonify({"error": "Invalid export type. Options: archived_bookings, activity_logs, notifications"}), 400
+
+        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"autoride_{data_type}_backup_{ts}.json"
+        json_output = json.dumps(data, indent=2, default=str)
+        return Response(
+            json_output,
+            mimetype="application/json",
+            headers={"Content-Disposition": f"attachment;filename={filename}"}
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 
