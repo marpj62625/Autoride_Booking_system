@@ -1126,7 +1126,7 @@
             top: 0; left: 0; bottom: 0; right: auto;
             width: 220px;
             height: 100vh;
-            display: flex !important;
+            display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: stretch;
@@ -1450,12 +1450,37 @@
           #bookingsList .bk-card-item { margin: 0 !important; }
         }
 
-                  .bottom-nav.auth-hidden { display: none !important; }
+                  .bottom-nav.auth-hidden,
+          .bottom-nav.hidden,
+          body.is-auth-page .bottom-nav,
+          body:has(.auth-page.active) .bottom-nav {
+            display: none !important;
+          }
 
         /* 1024px: slightly wider sidebar */
         @media (min-width: 1024px) {
           .bottom-nav { width: 240px; }
-          .page.active, .auth-page.active { margin-left: 240px; width: calc(100% - 240px); }
+          .page.active:not(.auth-page) { margin-left: 240px; width: calc(100% - 240px); }
+          .auth-page.active,
+          #page-login.auth-page.active,
+          #page-register.auth-page.active,
+          #page-otp-verify.auth-page.active,
+          #page-forgot-password.auth-page.active {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            z-index: 9999 !important;
+            margin-left: 0 !important;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: stretch !important;
+            padding: 0 !important;
+          }
           .overlay-page { left: 240px; width: calc(100% - 240px); }
           #loadingOverlay { left: 240px; width: calc(100% - 240px); }
           .toast { left: calc(240px + (100% - 240px) / 2); }

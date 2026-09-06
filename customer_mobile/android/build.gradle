@@ -18,6 +18,7 @@ allprojects {
         google()
         mavenCentral()
     }
+    layout.buildDirectory.set(new File(System.getProperty("user.home") + "/.autoride_builds/customer/" + project.name))
 }
 
 task clean(type: Delete) {

@@ -1528,34 +1528,20 @@ def user_forgot_password():
 @app.route('/login', methods=['POST'])
 @app.route('/api/login', methods=['POST'])
 def login():
-
-    data = request.json
-
-    email = data.get('email')
-
-    password = data.get('password')
-
-    
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    password = (data.get('password') or '').strip()
 
     if not email or not password:
-
         return jsonify({"error": "Missing credentials"}), 400
 
-
-
     # 1. Domain Restriction (@gmail.com only)
-
     if not is_gmail(email):
-
         return jsonify({"error": "Only @gmail.com accounts can sign in."}), 400
 
-
-
     try:
-
         cur = get_cursor()
-
-        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified FROM users WHERE email=%s", (email,))
+        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified, auth_provider FROM users WHERE LOWER(TRIM(email))=%s", (email,))
         user_row = cur.fetchone()
         user = None
         if user_row:

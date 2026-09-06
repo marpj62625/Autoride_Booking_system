@@ -1080,11 +1080,25 @@ function showPage(id) {
     }
   } catch(e) {}
 
-  // Bottom nav
+  // Bottom nav & Auth State
   var nav = document.getElementById('bottomNav');
-  if (nav) {
-    if (MAIN_PAGES.indexOf(id) >= 0) {
+  var isAuthPage = (id === 'page-login' || id === 'page-register' || id === 'page-otp-verify' || id === 'page-splash' || id === 'page-forgot-password');
+  if (isAuthPage) {
+    document.body.classList.add('is-auth-page');
+    if (nav) {
+      nav.classList.add('hidden');
+      nav.classList.add('auth-hidden');
+      nav.style.setProperty('display', 'none', 'important');
+    }
+  } else {
+    document.body.classList.remove('is-auth-page');
+  }
+
+  if (nav && !isAuthPage) {
+    if (MAIN_PAGES.indexOf(id) >= 0 && currentUser && currentUser.id) {
       nav.classList.remove('hidden');
+      nav.classList.remove('auth-hidden');
+      nav.style.display = '';
       var navIds = Object.values ? Object.values(NAV_MAP) : ['nav-home','nav-vehicles','nav-bookings','nav-profile','nav-more'];
       navIds.forEach(function(nid) {
         var el = document.getElementById(nid);
@@ -1640,7 +1654,7 @@ function handleBackButton() {
 
 // AUTH: LOGIN
 function doLogin() {
-  var email = sanitizeInput(document.getElementById('loginEmail').value.trim());
+  var email = sanitizeInput((document.getElementById('loginEmail').value || '').trim().toLowerCase());
   var password = document.getElementById('loginPassword').value;
   document.getElementById('loginErr').textContent = '';
   var emailEl = document.getElementById('loginEmail');
