@@ -1126,7 +1126,7 @@
             top: 0; left: 0; bottom: 0; right: auto;
             width: 220px;
             height: 100vh;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             justify-content: flex-start;
             align-items: stretch;
@@ -1449,6 +1449,8 @@
           }
           #bookingsList .bk-card-item { margin: 0 !important; }
         }
+
+                  .bottom-nav.auth-hidden { display: none !important; }
 
         /* 1024px: slightly wider sidebar */
         @media (min-width: 1024px) {

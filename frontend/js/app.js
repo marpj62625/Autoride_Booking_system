@@ -1004,6 +1004,7 @@ var NAV_MAP = {
 };
 
 function showPage(id) {
+  window.currentPage = id;
   // If user has an unreviewed completed booking, enforce mandatory rating
   if (window._unreviewedBookingActive && _currentUnreviewedBooking) {
     showToast('Please submit your rental feedback before continuing.', 'info');
@@ -1136,9 +1137,12 @@ function showOverlay(id) {
     } catch(err) {}
   }
 
-  // Hide bottom nav when an overlay is open so it never covers inputs/buttons
-  var nav = document.getElementById('bottomNav');
-  if (nav) nav.classList.add('hidden');
+  // On mobile (< 768px), hide bottom nav so it never covers inputs/buttons.
+  // On desktop (>= 768px), #bottomNav is the left sidebar and stays visible.
+  if (window.innerWidth < 768) {
+    var nav = document.getElementById('bottomNav');
+    if (nav) nav.classList.add('hidden');
+  }
   if (id === 'page-notifications') openNotificationsPage();
   if (id === 'page-favorites') loadFavorites();
   if (id === 'page-saved-payments') loadSavedPayments();
@@ -1171,8 +1175,10 @@ function closeOverlay(id) {
   var anyActive = document.querySelector('.overlay-page.active');
   if (!anyActive) {
     var nav = document.getElementById('bottomNav');
-    if (nav && typeof currentPage !== 'undefined' && typeof MAIN_PAGES !== 'undefined' && MAIN_PAGES.indexOf(currentPage) >= 0) {
+    var isAuth = document.querySelector('.auth-page.active');
+    if (nav && !isAuth) {
       nav.classList.remove('hidden');
+      nav.classList.remove('auth-hidden');
     }
   }
 }
