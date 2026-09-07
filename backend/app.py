@@ -5049,7 +5049,7 @@ def get_all_bookings():
 
         query = """
 
-            SELECT b.id, u.full_name AS customer_name, u.email AS customer_email,
+            SELECT b.id, b.user_id, u.full_name AS customer_name, u.email AS customer_email,
 
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    v.plate_number,
@@ -10831,6 +10831,7 @@ def get_booking_license_details(booking_id):
 
         if details:
             result = dict(details)
+            result['user_id'] = user_id
             if result.get('expiry_date') and hasattr(result['expiry_date'], 'strftime'):
                 result['expiry_date'] = result['expiry_date'].strftime('%Y-%m-%d')
             if result.get('date_of_birth') and hasattr(result['date_of_birth'], 'strftime'):
@@ -10848,6 +10849,7 @@ def get_booking_license_details(booking_id):
         user = cur.fetchone()
         if user and (user.get('license_number') or user.get('license_front_url') or user.get('full_name')):
             result = dict(user)
+            result['user_id'] = user_id
             if result.get('expiry_date') and hasattr(result['expiry_date'], 'strftime'):
                 result['expiry_date'] = result['expiry_date'].strftime('%Y-%m-%d')
             result['emergency_contact_relation'] = '-'

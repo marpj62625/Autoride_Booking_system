@@ -15307,10 +15307,11 @@ function toggleNewsletterModal(show = true) {
 
 
             if (tabId === 'chat' && typeof AdminChat !== 'undefined') {
-
-
-
-                AdminChat.loadInbox();
+                if (window._suppressChatInbox) {
+                    window._suppressChatInbox = false;
+                } else {
+                    AdminChat.loadInbox();
+                }
 
 
 
@@ -16379,9 +16380,14 @@ function toggleNewsletterModal(show = true) {
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
                     <div style="background:#f8fafc;border-radius:12px;padding:12px;border:1px solid #e2e8f0;">
-                        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-                            <div style="width:28px;height:28px;background:#dbeafe;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#3b82f6;font-size:0.7rem;"></i></div>
-                            <span style="font-size:0.62rem;color:#94a3b8;font-weight:800;text-transform:uppercase;">Customer</span>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <div style="width:28px;height:28px;background:#dbeafe;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user" style="color:#3b82f6;font-size:0.7rem;"></i></div>
+                                <span style="font-size:0.62rem;color:#94a3b8;font-weight:800;text-transform:uppercase;">Customer</span>
+                            </div>
+                            <button onclick="document.getElementById('bookingDetailsModal').style.display='none';if(typeof modalClose==='function')modalClose();AdminChatWithUser(${b.id})" style="padding:3px 8px;background:rgba(0,177,79,0.1);color:#00B14F;border:1px solid rgba(0,177,79,0.25);border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">
+                                <i class="fas fa-comments"></i> Chat
+                            </button>
                         </div>
                         <div style="font-weight:800;font-size:0.88rem;color:#0f172a;margin-bottom:2px;">${b.customer_name||'N/A'}</div>
                         <div style="font-size:0.72rem;color:#64748b;word-break:break-all;">${b.customer_email||''}</div>
@@ -22215,74 +22221,75 @@ function toggleNewsletterModal(show = true) {
 
 
 
-    window.AdminChatWithUser = function(bookingId) {
+    window.AdminChatWithUser = async function(bookingId, directUserId, directUserName) {
+        // Find user info from Bookings.data, PastBookings.data, or ArchivedBookings.data
+        const b = (typeof Bookings !== 'undefined' && Bookings.data ? Bookings.data.find(x => x.id === bookingId) : null)
+            || (typeof PastBookings !== 'undefined' && PastBookings.data ? PastBookings.data.find(x => x.id === bookingId) : null)
+            || (typeof ArchivedBookings !== 'undefined' && ArchivedBookings.data ? ArchivedBookings.data.find(x => x.id === bookingId) : null);
 
+        let userId = directUserId || (b ? (b.user_id || b.customer_id) : null);
+        let name = directUserName || (b ? (b.customer_name || b.user_name || "Customer") : "Customer");
 
+        // If not found in memory, attempt resolution via API
+        if (!userId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${bookingId}/license-details`);
+                if (res.ok) {
+                    const d = await res.json();
+                    if (d && d.user_id) {
+                        userId = d.user_id;
+                        name = d.full_name || name;
+                    }
+                }
+            } catch(e) {}
+        }
 
-        // Find user info from Bookings.data, then open chat
+        if (!userId) {
+            try {
+                const res = await fetch(`${API_URL}/bookings/${bookingId}`);
+                if (res.ok) {
+                    const bk = await res.json();
+                    if (bk && bk.user_id) {
+                        userId = bk.user_id;
+                        name = bk.customer_name || bk.user_name || name;
+                    }
+                }
+            } catch(e) {}
+        }
 
+        if (!userId && name && name !== "Customer") {
+            try {
+                const res = await fetch(`${API_URL}/users/search?q=${encodeURIComponent(name)}&limit=1`);
+                if (res.ok) {
+                    const users = await res.json();
+                    if (Array.isArray(users) && users.length > 0) {
+                        userId = users[0].id;
+                        name = users[0].full_name || name;
+                    }
+                }
+            } catch(e) {}
+        }
 
-
-        const b = (Bookings.data || []).find(x => x.id === bookingId);
-
-
-
-        const name = b ? (b.customer_name || "Customer") : "Customer";
-
-
-
-        // We need user_id - fetch it via booking detail or use booking_id as fallback
-
-
-
-        fetch(`${API_BASE}/api/admin/bookings/${bookingId}/license-details`)
-
-
-
-            .then(r => r.json()).then(d => {
-
-
-
-                // license-details has user_id indirectly; use booking endpoint
-
-
-
-                return fetch(`${API_URL}/bookings?admin_id=`);
-
-
-
-            }).catch(() => {});
-
-
-
-        // Simpler: open chat tab and show user search pre-filled
-
-
-
-        switchTab("chat");
-
-
-
-        setTimeout(() => {
-
-
-
-            AdminChat.showUserSearch();
-
-
-
-            const inp = document.getElementById("acUserSearchInput");
-
-
-
-            if (inp) { inp.value = name; AdminChat.searchUsers(name); }
-
-
-
-        }, 300);
-
-
-
+        // Open chat tab directly into user's chat box
+        if (userId && typeof AdminChat !== 'undefined' && typeof AdminChat.openConversation === 'function') {
+            window._suppressChatInbox = true;
+            if (typeof switchTab === 'function') switchTab("chat");
+            if (typeof navTo === 'function') navTo("chat");
+            AdminChat.openConversation(userId, name);
+        } else {
+            if (typeof switchTab === 'function') switchTab("chat");
+            if (typeof navTo === 'function') navTo("chat");
+            setTimeout(() => {
+                if (typeof AdminChat !== 'undefined' && typeof AdminChat.showUserSearch === 'function') {
+                    AdminChat.showUserSearch();
+                    const inp = document.getElementById("acUserSearchInput");
+                    if (inp) {
+                        inp.value = name;
+                        AdminChat.searchUsers(name);
+                    }
+                }
+            }, 300);
+        }
     };
 
 
@@ -32269,9 +32276,12 @@ function toggleNewsletterModal(show = true) {
         banner.onclick = function(e) {
             if (e.target.tagName === 'BUTTON') return;
             banner.remove();
-            switchTab('chat');
             if (userId && typeof AdminChat !== 'undefined') {
-                setTimeout(function() { AdminChat.openConversation(userId, senderName); }, 300);
+                window._suppressChatInbox = true;
+                switchTab('chat');
+                AdminChat.openConversation(userId, senderName);
+            } else {
+                switchTab('chat');
             }
         };
 
