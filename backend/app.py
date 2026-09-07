@@ -1541,7 +1541,7 @@ def login():
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified, auth_provider FROM users WHERE LOWER(TRIM(email))=%s", (email,))
+        cur.execute("SELECT id, full_name, email, password, is_frozen, freeze_reason, is_email_verified, is_verified, auth_provider, phone, profile_picture, COALESCE(license_image_url, license_image) as license_image_url FROM users WHERE LOWER(TRIM(email))=%s", (email,))
         user_row = cur.fetchone()
         user = None
         if user_row:
@@ -1605,7 +1605,13 @@ def login():
 
                 "full_name": user['full_name'],
 
-                "is_verified": user.get('is_verified', 0)
+                "is_verified": user.get('is_verified', 0),
+
+                "profile_picture": user.get('profile_picture'),
+
+                "license_image_url": user.get('license_image_url'),
+
+                "phone": user.get('phone')
 
             }), 200
 
@@ -3979,7 +3985,7 @@ def profile():
 
         cur = get_cursor()
 
-        cur.execute("SELECT id, full_name, email, phone, license_image, profile_picture, is_verified FROM users WHERE id=%s", (user_id,))
+        cur.execute("SELECT id, full_name, email, phone, COALESCE(license_image_url, license_image) as license_image, COALESCE(license_image_url, license_image) as license_image_url, profile_picture, is_verified, force_logout_at FROM users WHERE id=%s", (user_id,))
 
         user = cur.fetchone()
 

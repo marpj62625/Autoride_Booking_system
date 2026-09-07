@@ -1368,6 +1368,9 @@ function initApp() {
             return;
           }
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : user.isVerified;
+          if (v.profile_picture) currentUser.profile_picture = v.profile_picture;
+          if (v.license_image_url || v.license_image) currentUser.license_image_url = v.license_image_url || v.license_image;
+          if (v.phone) currentUser.phone = v.phone;
           Session.save(currentUser);
           startBgSessionPolling();
         }).catch(function() {
@@ -1647,12 +1650,22 @@ function doLogin() {
   showLoading(true);
   apiCall('/login', { method: 'POST', body: JSON.stringify({ email: email, password: password }) })
     .then(function(data) {
-      currentUser = { id: data.user_id, fullName: data.full_name, isVerified: data.is_verified || 0 };
+      currentUser = {
+        id: data.user_id,
+        fullName: data.full_name,
+        isVerified: data.is_verified || 0,
+        profile_picture: data.profile_picture || null,
+        license_image_url: data.license_image_url || null,
+        phone: data.phone || null
+      };
       Session.save(currentUser);
       // Always fetch fresh verification status after login
       apiCall('/user/verify-status?user_id=' + data.user_id)
         .then(function(v) {
           currentUser.isVerified = v.is_verified !== undefined ? v.is_verified : (data.is_verified || 0);
+          if (v.profile_picture) currentUser.profile_picture = v.profile_picture;
+          if (v.license_image_url || v.license_image) currentUser.license_image_url = v.license_image_url || v.license_image;
+          if (v.phone) currentUser.phone = v.phone;
           Session.save(currentUser);
           startBgSessionPolling();
         }).catch(function() {
@@ -4082,18 +4095,60 @@ function confirmAndBook() {
     return;
   }
 
-  // Mandatory Profile Selfie & License completeness check
-  var hasProfilePic = currentUser && currentUser.profile_picture;
-  var licDetails = (currentUser && currentUser._licenseDetails) || window._userLicenseData || {};
-  var hasLicenseFront = (currentUser && (currentUser.license_front_url || currentUser.license_image_url)) || licDetails.license_front_url || licDetails.license_image_url;
+  // Check verification status:
+  // If user is verified by admin (isVerified == 2), they have already fulfilled all requirements!
+  var isVerified = currentUser && (parseInt(currentUser.isVerified, 10) === 2 || parseInt(currentUser.is_verified, 10) === 2);
 
-  if (!hasProfilePic || !hasLicenseFront) {
-    var modalEl = document.getElementById('rentalAgreementModal');
-    if (modalEl) modalEl.remove();
-    showRequirementGuardModal();
-    return;
+  if (!isVerified) {
+    var hasProfilePic = Boolean(currentUser && (currentUser.profile_picture || (currentUser._profileData && currentUser._profileData.profile_picture)));
+    var licDetails = (currentUser && currentUser._licenseDetails) || window._userLicenseData || {};
+    var hasLicenseFront = Boolean(
+      (currentUser && (currentUser.license_front_url || currentUser.license_image_url)) ||
+      licDetails.license_front_url || licDetails.license_image_url
+    );
+
+    if (!hasProfilePic || !hasLicenseFront) {
+      // Check latest verify-status from server in case user was verified in background
+      var uid = currentUser && (currentUser.id || currentUser.user_id);
+      if (uid) {
+        var confirmBtn = document.getElementById('confirmPayBtn');
+        var restoreBtn = setButtonLoading(confirmBtn, 'Checking verification...');
+        apiCall('/user/verify-status?user_id=' + uid)
+          .then(function(v) {
+            restoreBtn();
+            if (v && parseInt(v.is_verified, 10) === 2) {
+              currentUser.isVerified = 2;
+              if (v.profile_picture) currentUser.profile_picture = v.profile_picture;
+              if (v.license_image_url || v.license_image) currentUser.license_image_url = v.license_image_url || v.license_image;
+              if (v.phone) currentUser.phone = v.phone;
+              Session.save(currentUser);
+              _proceedWithBookingSubmission();
+            } else {
+              var modalEl = document.getElementById('rentalAgreementModal');
+              if (modalEl) modalEl.remove();
+              showRequirementGuardModal();
+            }
+          })
+          .catch(function() {
+            restoreBtn();
+            var modalEl = document.getElementById('rentalAgreementModal');
+            if (modalEl) modalEl.remove();
+            showRequirementGuardModal();
+          });
+        return;
+      }
+
+      var modalEl = document.getElementById('rentalAgreementModal');
+      if (modalEl) modalEl.remove();
+      showRequirementGuardModal();
+      return;
+    }
   }
 
+  _proceedWithBookingSubmission();
+}
+
+function _proceedWithBookingSubmission() {
   var modal = document.getElementById('rentalAgreementModal');
   if (modal) modal.remove();
   var confirmBtn = document.getElementById('confirmPayBtn');
@@ -7645,6 +7700,12 @@ function loadProfile(callback) {
       // Store license details on currentUser for reference
       currentUser._profileData = profile;
       currentUser._licenseDetails = licenseData;
+      if (profile.profile_picture) currentUser.profile_picture = profile.profile_picture;
+      if (profile.license_image_url) currentUser.license_image_url = profile.license_image_url;
+      if (licenseData.license_front_url) currentUser.license_front_url = licenseData.license_front_url;
+      if (profile.phone) currentUser.phone = profile.phone;
+      if (profile.is_verified !== undefined) currentUser.isVerified = profile.is_verified;
+      Session.save(currentUser);
 
       var nameEl = document.getElementById('profileName');
       var emailEl = document.getElementById('profileEmail');
