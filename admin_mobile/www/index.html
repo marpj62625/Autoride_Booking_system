@@ -5200,6 +5200,20 @@
 
             </div>
 
+            
+            <div id="adminChatControlsConfigCard" class="revenue-restricted">
+                <div class="stat-card" onclick="AdminChatControls.openModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
+                    <div style="width: 40px; height: 40px; background: rgba(0, 177, 79, 0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-robot" style="color: var(--primary);"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h4 style="font-size: 0.95rem; color: var(--text-main); font-weight: 700; margin: 0 0 2px;">Live Chat FAQs &amp; AI Assistant</h4>
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Configure chat FAQ chips, auto-replies &amp; AI chatbot</p>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+                </div>
+            </div>
+
             <div id="mobileAddonsConfig" class="revenue-restricted">
                 <div class="stat-card" onclick="toggleAddonsModal()" style="padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer;">
                     <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
@@ -7016,6 +7030,244 @@
             </div>
         </div>
     </div>
+
+    
+<!-- ===================== LIVE CHAT FAQ & AI ASSISTANT STYLES & MODALS ===================== -->
+<style id="adminChatControlsStyles">
+.ctrl-slider {
+    background-color: rgba(255,255,255,0.2) !important;
+}
+.ctrl-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+input:checked + .ctrl-slider {
+    background-color: var(--primary, #00B14F) !important;
+}
+input:checked + .ctrl-slider:before {
+    transform: translateX(20px);
+}
+.faq-admin-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+}
+.faq-admin-card:hover {
+    border-color: rgba(0, 177, 79, 0.4);
+}
+</style>
+
+<div id="adminChatControlsModal" class="premium-modal" style="display:none;" onclick="AdminChatControls.handleBackdropClick(event)">
+    <div class="modal-content" style="max-width: 900px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+            <div>
+                <h3 style="margin:0; font-size:1.25rem; color:var(--text-main); display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-sliders-h" style="color:var(--primary);"></i>
+                    Live Chat FAQs &amp; AI Assistant Controls
+                </h3>
+                <p style="margin:4px 0 0; font-size:0.75rem; color:var(--text-muted);">Configure automated FAQ quick chips in customer live chat and manage AI Assistant chatbot behavior.</p>
+            </div>
+            <button type="button" onclick="AdminChatControls.closeModal()" class="menu-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:10px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Tabs: FAQs vs AI Assistant -->
+        <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+            <button type="button" id="chatCtrlTabFaqs" onclick="AdminChatControls.switchTab('faqs')" style="padding:10px 18px; border-radius:12px; font-weight:700; font-size:0.85rem; border:none; cursor:pointer; background:var(--primary); color:#fff; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-question-circle"></i> Live Chat FAQs
+            </button>
+            <button type="button" id="chatCtrlTabAi" onclick="AdminChatControls.switchTab('ai')" style="padding:10px 18px; border-radius:12px; font-weight:700; font-size:0.85rem; border:1px solid var(--border); cursor:pointer; background:transparent; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-robot"></i> AI Assistant (Chatbot)
+            </button>
+        </div>
+
+        <!-- TAB 1: LIVE CHAT FAQs -->
+        <div id="chatCtrlPaneFaqs">
+            <!-- Master Switches Card -->
+            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+                <h4 style="margin:0 0 12px; font-size:0.95rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-toggle-on" style="color:var(--primary);"></i> Live Chat FAQ Master Switches
+                </h4>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                    <!-- FAQ Chips Master Toggle -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">FAQ Quick Chips</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Show clickable FAQ chips in customer live chat</div>
+                        </div>
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                            <input type="checkbox" id="chatCtrlFaqEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
+                            <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
+                        </label>
+                    </div>
+                    <!-- Auto-reply Master Toggle -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Automated FAQ Replies</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Auto-answer matching FAQ questions in chat</div>
+                        </div>
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                            <input type="checkbox" id="chatCtrlFaqAutoreplyEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
+                            <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Items Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h4 style="margin:0; font-size:1rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                        <span>Manage Live Chat Questions</span>
+                        <span id="chatCtrlFaqCount" style="font-size:0.75rem; background:rgba(0,177,79,0.15); color:var(--primary); padding:2px 8px; border-radius:10px; font-weight:800;">0</span>
+                    </h4>
+                    <p style="margin:2px 0 0; font-size:0.7rem; color:var(--text-muted);">Active FAQs appear as clickable quick chips in customer live chat.</p>
+                </div>
+                <button type="button" onclick="AdminChatControls.openFaqFormModal()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:0.82rem; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer; border:none; background:var(--primary); color:#fff;">
+                    <i class="fas fa-plus"></i> Add New FAQ
+                </button>
+            </div>
+
+            <!-- FAQ List Container -->
+            <div id="chatCtrlFaqList" style="display:flex; flex-direction:column; gap:12px;">
+                <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.85rem;">Loading FAQs...</div>
+            </div>
+        </div>
+
+        <!-- TAB 2: AI ASSISTANT (CHATBOT) -->
+        <div id="chatCtrlPaneAi" style="display:none;">
+            <!-- Master Switches Card -->
+            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+                <h4 style="margin:0 0 12px; font-size:0.95rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-toggle-on" style="color:var(--primary);"></i> AI Assistant Master Switches
+                </h4>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                    <!-- Floating Widget Master Toggle -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Floating AI Widget</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Show floating chatbot button on web &amp; mobile</div>
+                        </div>
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                            <input type="checkbox" id="chatCtrlAiEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
+                            <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
+                        </label>
+                    </div>
+                    <!-- Smart Auto-responses Master Toggle -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Smart Auto-Replies</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted);">Enable AI chatbot to automatically answer questions</div>
+                        </div>
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                            <input type="checkbox" id="chatCtrlAiAutoreplyEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
+                            <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Text Content Customization -->
+            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <label style="display:block; font-weight:700; font-size:0.85rem; color:var(--text-main); margin-bottom:6px;">
+                        <i class="fas fa-comment-dots" style="color:var(--primary); margin-right:4px;"></i> Welcome Greeting Message
+                    </label>
+                    <p style="margin:0 0 8px; font-size:0.7rem; color:var(--text-muted);">First message sent by the AI chatbot when a customer opens the chat.</p>
+                    <textarea id="chatCtrlAiGreeting" rows="3" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+
+                <div>
+                    <label style="display:block; font-weight:700; font-size:0.85rem; color:var(--text-main); margin-bottom:6px;">
+                        <i class="fas fa-question" style="color:#f59e0b; margin-right:4px;"></i> Fallback / Unrecognized Question Message
+                    </label>
+                    <p style="margin:0 0 8px; font-size:0.7rem; color:var(--text-muted);">Response sent when the AI assistant cannot understand or find a match for the customer's question.</p>
+                    <textarea id="chatCtrlAiFallback" rows="3" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end;">
+                    <button type="button" id="btnSaveAiSettings" onclick="AdminChatControls.saveAiSettings()" class="btn-primary" style="padding:10px 22px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer; background:var(--primary); color:#fff; border:none; display:flex; align-items:center; gap:8px;">
+                        <i class="fas fa-save"></i> Save AI Assistant Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== ADD / EDIT FAQ SUB-MODAL ===================== -->
+<div id="adminFaqFormModal" class="premium-modal" style="display:none; z-index:10001;" onclick="AdminChatControls.handleFaqBackdropClick(event)">
+    <div class="modal-content" style="max-width: 650px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border);">
+            <h3 id="adminFaqFormTitle" style="margin:0; font-size:1.15rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-edit" style="color:var(--primary);"></i> Add New FAQ
+            </h3>
+            <button type="button" onclick="AdminChatControls.closeFaqFormModal()" class="menu-btn" style="width:32px; height:32px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:8px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="adminFaqForm" onsubmit="event.preventDefault(); AdminChatControls.saveFaq();" style="display:flex; flex-direction:column; gap:14px;">
+            <input type="hidden" id="faqFormId" value="">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Chip Label (Button in Chat) *</label>
+                    <input type="text" id="faqFormChipLabel" placeholder="e.g. 💳 20% DP &amp; Balance" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Category</label>
+                    <input type="text" id="faqFormCategory" placeholder="e.g. payment, general, fuel" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Full Question (Sent as Customer Message) *</label>
+                <input type="text" id="faqFormQuestion" placeholder="e.g. How does the 20% downpayment and balance payment work?" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+            </div>
+
+            <div>
+                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Trigger Keywords (comma separated) *</label>
+                <input type="text" id="faqFormKeywords" placeholder="e.g. 20%, downpayment, dp, balance, upon pickup" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">If customer types any of these words in chat, this automated answer triggers.</div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Automated Bot Answer *</label>
+                <textarea id="faqFormAnswer" rows="5" placeholder="Enter clear policy explanation or instructions..." required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem; font-family:inherit; resize:vertical;"></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:center;">
+                <div>
+                    <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Display Order</label>
+                    <input type="number" id="faqFormDisplayOrder" value="1" min="1" max="999" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; padding-top:16px;">
+                    <input type="checkbox" id="faqFormIsActive" checked style="width:18px; height:18px; accent-color:var(--primary); cursor:pointer;">
+                    <label for="faqFormIsActive" style="font-size:0.82rem; font-weight:700; color:var(--text-main); cursor:pointer;">Active (Visible to users)</label>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px; padding-top:12px; border-top:1px solid var(--border);">
+                <button type="button" onclick="AdminChatControls.closeFaqFormModal()" style="padding:8px 16px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-size:0.85rem;">Cancel</button>
+                <button type="submit" id="btnSaveFaqItem" class="btn-primary" style="padding:8px 20px; border-radius:8px; border:none; background:var(--primary); color:#fff; cursor:pointer; font-weight:700; font-size:0.85rem; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-check"></i> Save FAQ
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
     <!-- SYSTEM CONFIGURATION MODAL -->
 
@@ -30654,7 +30906,9 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    '<button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-main);width:40px;height:40px;border-radius:12px;cursor:pointer;font-size:0.9rem;"><i class="fas fa-sync-alt"></i></button>' +
+                    '<div style="display:flex;align-items:center;gap:8px;">' +
+'<button onclick="AdminChatControls.openModal()" class="btn-primary" style="padding:8px 14px;border-radius:10px;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;border:none;background:var(--primary);color:#fff;"><i class="fas fa-sliders-h"></i> FAQ &amp; AI Controls</button>' +
+<button onclick="AdminChat.loadInbox()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-main);width:40px;height:40px;border-radius:12px;cursor:pointer;font-size:0.9rem;"><i class="fas fa-sync-alt"></i></button>' + '</div>' +
 
 
 
@@ -32235,6 +32489,412 @@ function toggleNewsletterModal(show = true) {
 
 
     })();
+
+
+    /* ==========================================================================
+       ADMIN CHAT CONTROLS MODULE (Live Chat FAQs & AI Assistant Controls)
+       ========================================================================== */
+    window.AdminChatControls = (function() {
+        let _data = {
+            settings: {
+                chat_faq_enabled: true,
+                chat_faq_autoreply_enabled: true,
+                ai_assistant_enabled: true,
+                ai_assistant_autoreply_enabled: true,
+                ai_assistant_greeting: "",
+                ai_assistant_fallback: ""
+            },
+            faqs: []
+        };
+
+        function _apiUrl(path) {
+            if (typeof API_URL !== 'undefined' && API_URL) {
+                return API_URL + path;
+            }
+            if (typeof API_BASE !== 'undefined' && API_BASE) {
+                return API_BASE + path;
+            }
+            return path;
+        }
+
+        function _esc(str) {
+            if (!str) return '';
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        async function openModal() {
+            const modal = document.getElementById('adminChatControlsModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            switchTab('faqs');
+            await loadControls();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('adminChatControlsModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function handleBackdropClick(e) {
+            if (e.target && e.target.id === 'adminChatControlsModal') {
+                closeModal();
+            }
+        }
+
+        function switchTab(tabName) {
+            const tabFaqs = document.getElementById('chatCtrlTabFaqs');
+            const tabAi = document.getElementById('chatCtrlTabAi');
+            const paneFaqs = document.getElementById('chatCtrlPaneFaqs');
+            const paneAi = document.getElementById('chatCtrlPaneAi');
+
+            if (tabName === 'faqs') {
+                if (tabFaqs) {
+                    tabFaqs.style.background = 'var(--primary)';
+                    tabFaqs.style.color = '#fff';
+                    tabFaqs.style.border = 'none';
+                }
+                if (tabAi) {
+                    tabAi.style.background = 'transparent';
+                    tabAi.style.color = 'var(--text-muted)';
+                    tabAi.style.border = '1px solid var(--border)';
+                }
+                if (paneFaqs) paneFaqs.style.display = 'block';
+                if (paneAi) paneAi.style.display = 'none';
+            } else {
+                if (tabAi) {
+                    tabAi.style.background = 'var(--primary)';
+                    tabAi.style.color = '#fff';
+                    tabAi.style.border = 'none';
+                }
+                if (tabFaqs) {
+                    tabFaqs.style.background = 'transparent';
+                    tabFaqs.style.color = 'var(--text-muted)';
+                    tabFaqs.style.border = '1px solid var(--border)';
+                }
+                if (paneFaqs) paneFaqs.style.display = 'none';
+                if (paneAi) paneAi.style.display = 'block';
+            }
+        }
+
+        async function loadControls() {
+            try {
+                const res = await fetch(_apiUrl('/admin/chat/controls'));
+                if (!res.ok) throw new Error('Failed to load controls (' + res.status + ')');
+                const json = await res.json();
+                _data = json;
+
+                // Populate toggles
+                const s = json.settings || {};
+                const elFaqEn = document.getElementById('chatCtrlFaqEnabled');
+                if (elFaqEn) elFaqEn.checked = !!s.chat_faq_enabled;
+
+                const elFaqAuto = document.getElementById('chatCtrlFaqAutoreplyEnabled');
+                if (elFaqAuto) elFaqAuto.checked = !!s.chat_faq_autoreply_enabled;
+
+                const elAiEn = document.getElementById('chatCtrlAiEnabled');
+                if (elAiEn) elAiEn.checked = !!s.ai_assistant_enabled;
+
+                const elAiAuto = document.getElementById('chatCtrlAiAutoreplyEnabled');
+                if (elAiAuto) elAiAuto.checked = !!s.ai_assistant_autoreply_enabled;
+
+                const elAiGreet = document.getElementById('chatCtrlAiGreeting');
+                if (elAiGreet) elAiGreet.value = s.ai_assistant_greeting || "";
+
+                const elAiFall = document.getElementById('chatCtrlAiFallback');
+                if (elAiFall) elAiFall.value = s.ai_assistant_fallback || "";
+
+                renderFaqList(json.faqs || []);
+            } catch (err) {
+                console.error('[AdminChatControls] Error loading controls:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Failed to load chat controls: ' + err.message, 'error');
+                }
+            }
+        }
+
+        function renderFaqList(faqs) {
+            const container = document.getElementById('chatCtrlFaqList');
+            const countBadge = document.getElementById('chatCtrlFaqCount');
+            if (countBadge) countBadge.textContent = faqs ? faqs.length : 0;
+            if (!container) return;
+
+            if (!faqs || faqs.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:30px; color:var(--text-muted); font-size:0.85rem; background:var(--surface-card); border-radius:12px; border:1px solid var(--border);">No FAQ items found. Click "+ Add New FAQ" to create one.</div>';
+                return;
+            }
+
+            let html = '';
+            faqs.forEach(function(item) {
+                const isActive = !!item.is_active;
+                const statusBadge = isActive
+                    ? '<span style="font-size:0.7rem; font-weight:800; color:#10b981; background:rgba(16,185,129,0.12); padding:3px 8px; border-radius:8px;"><i class="fas fa-check-circle"></i> Active</span>'
+                    : '<span style="font-size:0.7rem; font-weight:800; color:#6b7280; background:rgba(107,114,128,0.12); padding:3px 8px; border-radius:8px;"><i class="fas fa-eye-slash"></i> Inactive</span>';
+
+                html += '<div class="faq-admin-card">';
+                html += '  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:8px; flex-wrap:wrap;">';
+                html += '    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">';
+                html += '      <span style="font-weight:800; font-size:0.9rem; color:var(--text-main); background:rgba(0,177,79,0.1); border:1px solid rgba(0,177,79,0.25); padding:4px 10px; border-radius:8px;">' + _esc(item.chip_label) + '</span>';
+                html += '      <span style="font-size:0.7rem; color:var(--text-muted); background:rgba(255,255,255,0.05); padding:3px 8px; border-radius:6px;">Order: #' + (item.display_order || 0) + '</span>';
+                html += '      ' + statusBadge;
+                html += '    </div>';
+                html += '    <div style="display:flex; align-items:center; gap:8px;">';
+                html += '      <button type="button" onclick="AdminChatControls.toggleFaqStatus(' + item.id + ', ' + (!isActive) + ')" title="' + (isActive ? 'Deactivate' : 'Activate') + '" style="padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--text-main);"><i class="fas ' + (isActive ? 'fa-toggle-on' : 'fa-toggle-off') + '"></i></button>';
+                html += '      <button type="button" onclick="AdminChatControls.openFaqFormModal(' + item.id + ')" title="Edit" style="padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:rgba(0,177,79,0.15); border:1px solid rgba(0,177,79,0.3); color:var(--primary);"><i class="fas fa-pencil-alt"></i> Edit</button>';
+                html += '      <button type="button" onclick="AdminChatControls.deleteFaq(' + item.id + ')" title="Delete" style="padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:700; cursor:pointer; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444;"><i class="fas fa-trash-alt"></i></button>';
+                html += '    </div>';
+                html += '  </div>';
+
+                html += '  <div style="font-size:0.85rem; font-weight:700; color:var(--text-main); margin-bottom:6px;">' + _esc(item.question) + '</div>';
+                html += '  <div style="font-size:0.72rem; color:var(--text-muted); margin-bottom:8px;"><strong>Keywords:</strong> ' + _esc(item.keywords) + '</div>';
+                html += '  <div style="font-size:0.78rem; color:var(--text-muted); background:rgba(0,0,0,0.15); padding:10px 12px; border-radius:8px; border-left:3px solid var(--primary); white-space:pre-wrap; line-height:1.4;">' + _esc(item.answer) + '</div>';
+                html += '</div>';
+            });
+            container.innerHTML = html;
+        }
+
+        async function saveSettings() {
+            const faqEnabled = document.getElementById('chatCtrlFaqEnabled') ? document.getElementById('chatCtrlFaqEnabled').checked : true;
+            const faqAutoreply = document.getElementById('chatCtrlFaqAutoreplyEnabled') ? document.getElementById('chatCtrlFaqAutoreplyEnabled').checked : true;
+            const aiEnabled = document.getElementById('chatCtrlAiEnabled') ? document.getElementById('chatCtrlAiEnabled').checked : true;
+            const aiAutoreply = document.getElementById('chatCtrlAiAutoreplyEnabled') ? document.getElementById('chatCtrlAiAutoreplyEnabled').checked : true;
+
+            try {
+                const res = await fetch(_apiUrl('/admin/chat/controls'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_faq_enabled: faqEnabled,
+                        chat_faq_autoreply_enabled: faqAutoreply,
+                        ai_assistant_enabled: aiEnabled,
+                        ai_assistant_autoreply_enabled: aiAutoreply
+                    })
+                });
+                if (!res.ok) throw new Error('Save failed');
+                if (typeof showToast === 'function') {
+                    showToast('Chat settings updated', 'success');
+                }
+            } catch (err) {
+                console.error('[AdminChatControls] Save settings error:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Failed to save settings: ' + err.message, 'error');
+                }
+            }
+        }
+
+        async function saveAiSettings() {
+            const btn = document.getElementById('btnSaveAiSettings');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            const greeting = document.getElementById('chatCtrlAiGreeting') ? document.getElementById('chatCtrlAiGreeting').value : '';
+            const fallback = document.getElementById('chatCtrlAiFallback') ? document.getElementById('chatCtrlAiFallback').value : '';
+            const aiEnabled = document.getElementById('chatCtrlAiEnabled') ? document.getElementById('chatCtrlAiEnabled').checked : true;
+            const aiAutoreply = document.getElementById('chatCtrlAiAutoreplyEnabled') ? document.getElementById('chatCtrlAiAutoreplyEnabled').checked : true;
+
+            try {
+                const res = await fetch(_apiUrl('/admin/chat/controls'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ai_assistant_enabled: aiEnabled,
+                        ai_assistant_autoreply_enabled: aiAutoreply,
+                        ai_assistant_greeting: greeting,
+                        ai_assistant_fallback: fallback
+                    })
+                });
+                if (!res.ok) throw new Error('Save failed');
+                if (typeof showToast === 'function') {
+                    showToast('AI Assistant settings saved successfully!', 'success');
+                }
+            } catch (err) {
+                console.error('[AdminChatControls] Error saving AI settings:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Failed to save AI settings: ' + err.message, 'error');
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        }
+
+        function openFaqFormModal(faqId) {
+            const subModal = document.getElementById('adminFaqFormModal');
+            const titleEl = document.getElementById('adminFaqFormTitle');
+            const form = document.getElementById('adminFaqForm');
+            if (!subModal || !form) return;
+
+            document.getElementById('faqFormId').value = '';
+            document.getElementById('faqFormChipLabel').value = '';
+            document.getElementById('faqFormCategory').value = 'general';
+            document.getElementById('faqFormQuestion').value = '';
+            document.getElementById('faqFormKeywords').value = '';
+            document.getElementById('faqFormAnswer').value = '';
+            document.getElementById('faqFormDisplayOrder').value = (_data.faqs ? _data.faqs.length + 1 : 1);
+            document.getElementById('faqFormIsActive').checked = true;
+
+            if (faqId) {
+                const item = (_data.faqs || []).find(f => f.id === faqId);
+                if (item) {
+                    if (titleEl) titleEl.innerHTML = '<i class="fas fa-edit" style="color:var(--primary);"></i> Edit FAQ';
+                    document.getElementById('faqFormId').value = item.id;
+                    document.getElementById('faqFormChipLabel').value = item.chip_label || '';
+                    document.getElementById('faqFormCategory').value = item.category || 'general';
+                    document.getElementById('faqFormQuestion').value = item.question || '';
+                    document.getElementById('faqFormKeywords').value = item.keywords || '';
+                    document.getElementById('faqFormAnswer').value = item.answer || '';
+                    document.getElementById('faqFormDisplayOrder').value = item.display_order || 1;
+                    document.getElementById('faqFormIsActive').checked = !!item.is_active;
+                }
+            } else {
+                if (titleEl) titleEl.innerHTML = '<i class="fas fa-plus-circle" style="color:var(--primary);"></i> Add New FAQ';
+            }
+
+            subModal.style.display = 'flex';
+        }
+
+        function closeFaqFormModal() {
+            const subModal = document.getElementById('adminFaqFormModal');
+            if (subModal) subModal.style.display = 'none';
+        }
+
+        function handleFaqBackdropClick(e) {
+            if (e.target && e.target.id === 'adminFaqFormModal') {
+                closeFaqFormModal();
+            }
+        }
+
+        async function saveFaq() {
+            const btn = document.getElementById('btnSaveFaqItem');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            const id = document.getElementById('faqFormId').value;
+            const chipLabel = document.getElementById('faqFormChipLabel').value.trim();
+            const category = document.getElementById('faqFormCategory').value.trim() || 'general';
+            const question = document.getElementById('faqFormQuestion').value.trim();
+            const keywords = document.getElementById('faqFormKeywords').value.trim();
+            const answer = document.getElementById('faqFormAnswer').value.trim();
+            const displayOrder = parseInt(document.getElementById('faqFormDisplayOrder').value, 10) || 0;
+            const isActive = document.getElementById('faqFormIsActive').checked;
+
+            if (!chipLabel || !question || !answer) {
+                alert('Please fill out Chip Label, Question, and Answer.');
+                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+                return;
+            }
+
+            const payload = {
+                chip_label: chipLabel,
+                category: category,
+                question: question,
+                keywords: keywords,
+                answer: answer,
+                display_order: displayOrder,
+                is_active: isActive
+            };
+
+            const url = id ? _apiUrl('/admin/chat/faqs/' + id) : _apiUrl('/admin/chat/faqs');
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const errJson = await res.json().catch(() => ({}));
+                    throw new Error(errJson.error || 'Request failed with status ' + res.status);
+                }
+
+                closeFaqFormModal();
+                if (typeof showToast === 'function') {
+                    showToast(id ? 'FAQ updated successfully!' : 'FAQ created successfully!', 'success');
+                }
+                await loadControls();
+            } catch (err) {
+                console.error('[AdminChatControls] Save FAQ error:', err);
+                alert('Failed to save FAQ: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        }
+
+        async function toggleFaqStatus(faqId, newActiveStatus) {
+            try {
+                const res = await fetch(_apiUrl('/admin/chat/faqs/' + faqId), {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: newActiveStatus })
+                });
+                if (!res.ok) throw new Error('Failed to update status');
+                if (typeof showToast === 'function') {
+                    showToast('FAQ status updated', 'success');
+                }
+                await loadControls();
+            } catch (err) {
+                console.error('[AdminChatControls] Error toggling FAQ status:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Failed to toggle status: ' + err.message, 'error');
+                }
+            }
+        }
+
+        async function deleteFaq(faqId) {
+            const item = (_data.faqs || []).find(f => f.id === faqId);
+            const name = item ? item.chip_label : 'this FAQ';
+            if (!confirm('Are you sure you want to delete ' + name + '? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(_apiUrl('/admin/chat/faqs/' + faqId), {
+                    method: 'DELETE'
+                });
+                if (!res.ok) throw new Error('Delete failed');
+                if (typeof showToast === 'function') {
+                    showToast('FAQ deleted successfully', 'success');
+                }
+                await loadControls();
+            } catch (err) {
+                console.error('[AdminChatControls] Error deleting FAQ:', err);
+                if (typeof showToast === 'function') {
+                    showToast('Failed to delete FAQ: ' + err.message, 'error');
+                }
+            }
+        }
+
+        return {
+            openModal: openModal,
+            closeModal: closeModal,
+            handleBackdropClick: handleBackdropClick,
+            switchTab: switchTab,
+            loadControls: loadControls,
+            saveSettings: saveSettings,
+            saveAiSettings: saveAiSettings,
+            openFaqFormModal: openFaqFormModal,
+            closeFaqFormModal: closeFaqFormModal,
+            handleFaqBackdropClick: handleFaqBackdropClick,
+            saveFaq: saveFaq,
+            toggleFaqStatus: toggleFaqStatus,
+            deleteFaq: deleteFaq
+        };
+    })();
+
+
 
 
 

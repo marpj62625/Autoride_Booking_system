@@ -32,6 +32,30 @@ function initChat() {
 
     document.body.insertAdjacentHTML('beforeend', chatHtml);
 
+    // Load AI Assistant dynamic settings & check enabled toggle
+    try {
+        fetch(getApiBase() + '/api/chat/config')
+            .then(function(res) { return res.ok ? res.json() : null; })
+            .then(function(cfg) {
+                if (!cfg) return;
+                var widget = document.querySelector('.chat-widget');
+                if (cfg.ai_assistant_enabled === false) {
+                    if (widget) widget.style.display = 'none';
+                    if (windowEl) windowEl.classList.add('chat-hidden');
+                } else {
+                    if (widget) widget.style.display = '';
+                    if (cfg.ai_assistant_greeting) {
+                        var firstBubble = document.querySelector('.chat-bubble.bubble-bot');
+                        if (firstBubble) firstBubble.textContent = cfg.ai_assistant_greeting;
+                    }
+                }
+            })
+            .catch(function(err) {
+                console.warn('[ChatWidget] Could not load chat config:', err);
+            });
+    } catch (_cfgErr) {}
+
+
     const toggle = document.getElementById('chatToggle');
     const windowEl = document.getElementById('chatWindow');
     const close = document.getElementById('closeChat');
@@ -63,11 +87,12 @@ function initChat() {
 
     // Determine the API base URL
     function getApiBase() {
-        // If running from localhost (dev server), use localhost
+        if (typeof API_BASE !== 'undefined' && API_BASE) {
+            return String(API_BASE).replace(/\/api\/?$/, '');
+        }
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             return `http://${window.location.hostname}:9999`;
         }
-        // Otherwise use the same origin (for production or mobile)
         return window.location.origin;
     }
 

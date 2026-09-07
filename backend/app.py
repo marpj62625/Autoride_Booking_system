@@ -913,6 +913,104 @@ def migrate_archive_columns():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_chat_faq_and_ai_controls():
+    """Ensures settings and chat_faqs tables exist and seeds default Live Chat FAQs and AI Assistant settings."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT,
+                description TEXT
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS chat_faqs (
+                id SERIAL PRIMARY KEY,
+                category VARCHAR(50) DEFAULT 'general',
+                chip_label VARCHAR(100) NOT NULL,
+                question TEXT NOT NULL,
+                keywords TEXT NOT NULL,
+                answer TEXT NOT NULL,
+                display_order INT DEFAULT 0,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        default_settings = [
+            ("chat_faq_enabled", "true", "Show FAQ quick chips in customer live chat"),
+            ("chat_faq_autoreply_enabled", "true", "Enable automated FAQ replies in live chat"),
+            ("ai_assistant_enabled", "true", "Show floating AI assistant widget on customer web and mobile"),
+            ("ai_assistant_autoreply_enabled", "true", "Enable AI assistant smart auto-responses"),
+            ("ai_assistant_greeting", "Hello! 👋 I'm the Autoride assistant. Ask me about booking, pricing, requirements, payments, and more!", "Welcome message when opening AI assistant"),
+            ("ai_assistant_fallback", "I'm sorry, I didn't quite understand that. Please leave your message and our support team will get back to you!", "Fallback response when AI cannot answer")
+        ]
+        for k, v, d in default_settings:
+            cur.execute("""
+                INSERT INTO settings (key, value, description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (key) DO NOTHING;
+            """, (k, v, d))
+
+        cur.execute("SELECT COUNT(*) AS total FROM chat_faqs")
+        row = cur.fetchone()
+        count = row['total'] if row else 0
+        if count == 0:
+            default_faqs = [
+                (
+                    "payment",
+                    "💳 20% DP & Balance",
+                    "How does the 20% downpayment and balance payment upon pickup work?",
+                    "20%, downpayment, down payment, dp, balance, upon pickup, delivery payment, full payment, how does the 20%",
+                    "📌 **Downpayment & Balance Payment Policy:**\n\n• **20% Downpayment:** A minimum 20% downpayment (reservation deposit) is required to secure and confirm your booking.\n• **Full Balance Payment:** The remaining 80% balance must be settled in full upon physical vehicle pickup or delivery before vehicle keys are handed over.\n• **Accepted Payment Methods:** Online via PayMongo (GCash, Maya, Debit/Credit Card) or Cash upon release.",
+                    1
+                ),
+                (
+                    "requirements",
+                    "🪪 IDs & License",
+                    "What are the valid IDs and license requirements to rent?",
+                    "requirement, requirements, license, valid id, documents, kailangan, what are the valid ids",
+                    "📌 **Rental Requirements & Eligibility:**\n\n• **Age:** Primary renter must be at least 21 years old.\n• **Driver's License:** Original, valid government-issued Driver's License.\n• **Secondary ID:** At least 1 valid government ID (Passport, UMID, National ID, PhilSys, SSS, etc.).\n• **Account Verification:** Profile with driver's license photos must be approved in the app.",
+                    2
+                ),
+                (
+                    "fuel",
+                    "⛽ Fuel & Mileage",
+                    "What is the fuel and mileage policy?",
+                    "fuel, gas, mileage, gasolina, petrol, diesel, km/day, fuel and mileage policy",
+                    "📌 **Fuel & Mileage Policy:**\n\n• **Fuel (Same-to-Same):** Return the vehicle with the exact same fuel level as recorded during pickup inspection. Refueling charges + ₱200 fee apply if returned lower.\n• **Mileage Limit:** Standard limit is 250 km/day (unless unlimited mileage package was selected). Excess mileage is charged at ₱10/km.",
+                    3
+                ),
+                (
+                    "extensions",
+                    "📅 Extend Rental",
+                    "How can I extend my current active rental?",
+                    "extend, extension, pahaba, dagdag araw, mag extend, how can i extend",
+                    "📌 **Rental Extension Policy:**\n\n• Extensions must be requested through the app under **My Bookings** at least 4 hours before your scheduled drop-off time.\n• Extensions are subject to vehicle availability and approval.\n• Unauthorized late returns incur a late fee of ₱500 per hour.",
+                    4
+                ),
+                (
+                    "cancellation",
+                    "❌ Cancellation",
+                    "What is the cancellation and refund policy?",
+                    "cancel, cancellation, refund, i-cancel, kansela, cancellation and refund policy",
+                    "📌 **Cancellation & Refund Policy:**\n\n• **48+ hours before pickup:** Full refund or booking credit of your 20% downpayment.\n• **24 to 48 hours before pickup:** 50% reservation cancellation fee applies.\n• **Less than 24 hours / No-show:** 20% downpayment is non-refundable.",
+                    5
+                )
+            ]
+            for cat, chip, q, kw, ans, ord_num in default_faqs:
+                cur.execute("""
+                    INSERT INTO chat_faqs (category, chip_label, question, keywords, answer, display_order, is_active)
+                    VALUES (%s, %s, %s, %s, %s, %s, TRUE)
+                """, (cat, chip, q, kw, ans, ord_num))
+        commit_db()
+        print("[MIGRATION] migrate_chat_faq_and_ai_controls completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_chat_faq_and_ai_controls error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 try:
     with app.app_context():
         migrate_google_auth_columns()
@@ -920,6 +1018,7 @@ try:
         migrate_booking_reviews()
         migrate_smtp_oauth_keys()
         migrate_archive_columns()
+        migrate_chat_faq_and_ai_controls()
 except Exception as _e:
     pass
 
@@ -8733,26 +8832,51 @@ def match_chatbot_intent(message):
 @app.route('/chat', methods=['POST'])
 @app.route('/api/chat', methods=['POST'])
 def chat_endpoint():
-
-    """Smart FAQ chatbot endpoint"""
-
-    data = request.json
-
+    """Smart FAQ chatbot endpoint with Admin toggle controls."""
+    data = request.json or {}
     message = data.get('message', '').strip()
-
     user_id = data.get('user_id', None)
 
-    
-
     if not message:
-
         return jsonify({"error": "Message is required"}), 400
 
-    
+    # Check AI Assistant master toggles from settings
+    try:
+        cur_set = get_cursor()
+        cur_set.execute("SELECT key, value FROM settings WHERE key IN ('ai_assistant_enabled', 'ai_assistant_autoreply_enabled', 'ai_assistant_fallback')")
+        s_rows = cur_set.fetchall()
+        s_map = {r['key']: r['value'] for r in s_rows}
+        cur_set.close()
+    except Exception as _se:
+        s_map = {}
 
-    # Get bot response
+    ai_enabled = str(s_map.get('ai_assistant_enabled', 'true')).strip().lower() != 'false'
+    ai_autoreply = str(s_map.get('ai_assistant_autoreply_enabled', 'true')).strip().lower() != 'false'
+    fallback_msg = s_map.get('ai_assistant_fallback') or "I'm sorry, I didn't quite understand that. Please leave your message and our support team will get back to you!"
 
-    bot_response = match_chatbot_intent(message)
+    if not ai_enabled:
+        return jsonify({
+            "response": "The AI Assistant is currently disabled. Please reach out to our Live Chat support team for assistance!",
+            "matched": False,
+            "disabled": True
+        }), 200
+
+    if not ai_autoreply:
+        return jsonify({
+            "response": "Our automated AI replies are temporarily paused. A support agent will assist you shortly.",
+            "matched": False,
+            "disabled": True
+        }), 200
+
+    # Try matching live chat FAQs first
+    db_faq_reply = match_livechat_faq(message)
+    if db_faq_reply:
+        bot_response = db_faq_reply
+    else:
+        bot_response = match_chatbot_intent(message)
+        # If still unmatched default fallback, check if custom fallback is set
+        if bot_response == match_chatbot_intent("xyznonexistent"):
+            bot_response = fallback_msg
 
     
 
@@ -12143,50 +12267,238 @@ def users_search():
 
 
 def match_livechat_faq(msg_text):
+    """Match message against database-driven chat_faqs table."""
     if not msg_text:
         return None
-    m = msg_text.lower().strip()
-    # 1. Downpayment & Balance payment
-    if any(k in m for k in ['20%', 'downpayment', 'down payment', 'dp', 'balance', 'upon pickup', 'delivery payment', 'full payment', 'how does the 20%']):
-        return (
-            "📌 **Downpayment & Balance Payment Policy:**\n\n"
-            "• **20% Downpayment:** A minimum 20% downpayment (reservation deposit) is required to secure and confirm your booking.\n"
-            "• **Full Balance Payment:** The remaining 80% balance must be settled in full upon physical vehicle pickup or delivery before vehicle keys are handed over.\n"
-            "• **Accepted Payment Methods:** Online via PayMongo (GCash, Maya, Debit/Credit Card) or Cash upon release."
-        )
-    # 2. Requirements & License
-    if any(k in m for k in ['requirement', 'requirements', 'license', 'valid id', 'documents', 'kailangan', 'what are the valid ids']):
-        return (
-            "📌 **Rental Requirements & Eligibility:**\n\n"
-            "• **Age:** Primary renter must be at least 21 years old.\n"
-            "• **Driver's License:** Original, valid government-issued Driver's License.\n"
-            "• **Secondary ID:** At least 1 valid government ID (Passport, UMID, National ID, PhilSys, SSS, etc.).\n"
-            "• **Account Verification:** Profile with driver's license photos must be approved in the app."
-        )
-    # 3. Fuel & Mileage
-    if any(k in m for k in ['fuel', 'gas', 'mileage', 'gasolina', 'petrol', 'diesel', 'km/day', 'fuel and mileage policy']):
-        return (
-            "📌 **Fuel & Mileage Policy:**\n\n"
-            "• **Fuel (Same-to-Same):** Return the vehicle with the exact same fuel level as recorded during pickup inspection. Refueling charges + ₱200 fee apply if returned lower.\n"
-            "• **Mileage Limit:** Standard limit is 250 km/day (unless unlimited mileage package was selected). Excess mileage is charged at ₱10/km."
-        )
-    # 4. Extension
-    if any(k in m for k in ['extend', 'extension', 'pahaba', 'dagdag araw', 'mag extend', 'how can i extend']):
-        return (
-            "📌 **Rental Extension Policy:**\n\n"
-            "• Extensions must be requested through the app under **My Bookings** at least 4 hours before your scheduled drop-off time.\n"
-            "• Extensions are subject to vehicle availability and approval.\n"
-            "• Unauthorized late returns incur a late fee of ₱500 per hour."
-        )
-    # 5. Cancellation & Refund
-    if any(k in m for k in ['cancel', 'cancellation', 'refund', 'i-cancel', 'kansela', 'cancellation and refund policy']):
-        return (
-            "📌 **Cancellation & Refund Policy:**\n\n"
-            "• **48+ hours before pickup:** Full refund or booking credit of your 20% downpayment.\n"
-            "• **24 to 48 hours before pickup:** 50% reservation cancellation fee applies.\n"
-            "• **Less than 24 hours / No-show:** 20% downpayment is non-refundable."
-        )
+    try:
+        cur = get_cursor()
+        # Check if FAQ auto-reply is enabled
+        cur.execute("SELECT value FROM settings WHERE key = 'chat_faq_autoreply_enabled' LIMIT 1")
+        row = cur.fetchone()
+        if row and str(row.get('value', '')).strip().lower() == 'false':
+            cur.close()
+            return None
+
+        cur.execute("""
+            SELECT id, chip_label, question, keywords, answer 
+            FROM chat_faqs 
+            WHERE is_active = TRUE 
+            ORDER BY display_order ASC, id ASC
+        """)
+        faqs = cur.fetchall()
+        cur.close()
+
+        m = msg_text.lower().strip()
+        for faq in faqs:
+            keywords_raw = faq.get('keywords', '')
+            keywords = [k.strip().lower() for k in keywords_raw.split(',') if k.strip()]
+            if faq.get('question') and faq['question'].lower().strip() == m:
+                return faq['answer']
+            if any(k in m for k in keywords):
+                return faq['answer']
+    except Exception as e:
+        print(f"[match_livechat_faq] Error: {e}")
     return None
+
+
+# ==================== LIVE CHAT FAQ & AI ASSISTANT CONTROLS ====================
+
+@app.route('/chat/config', methods=['GET'])
+@app.route('/api/chat/config', methods=['GET'])
+def get_chat_config():
+    """Public endpoint for customer web & mobile apps to fetch chat settings and active FAQs."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('chat_faq_enabled', 'chat_faq_autoreply_enabled', 'ai_assistant_enabled', 'ai_assistant_autoreply_enabled', 'ai_assistant_greeting', 'ai_assistant_fallback')")
+        settings_rows = cur.fetchall()
+        settings_map = {r['key']: r['value'] for r in settings_rows}
+
+        cur.execute("""
+            SELECT id, category, chip_label, question, keywords, answer, display_order
+            FROM chat_faqs
+            WHERE is_active = TRUE
+            ORDER BY display_order ASC, id ASC
+        """)
+        faq_rows = cur.fetchall()
+        cur.close()
+
+        faq_enabled = str(settings_map.get('chat_faq_enabled', 'true')).strip().lower() != 'false'
+        faq_autoreply = str(settings_map.get('chat_faq_autoreply_enabled', 'true')).strip().lower() != 'false'
+        ai_enabled = str(settings_map.get('ai_assistant_enabled', 'true')).strip().lower() != 'false'
+        ai_autoreply = str(settings_map.get('ai_assistant_autoreply_enabled', 'true')).strip().lower() != 'false'
+        ai_greeting = settings_map.get('ai_assistant_greeting') or "Hello! 👋 I'm the Autoride assistant. Ask me about booking, pricing, requirements, payments, and more!"
+        ai_fallback = settings_map.get('ai_assistant_fallback') or "I'm sorry, I didn't quite understand that. Please leave your message and our support team will get back to you!"
+
+        faqs = [dict(f) for f in faq_rows]
+
+        return jsonify({
+            "faq_enabled": faq_enabled,
+            "faq_autoreply_enabled": faq_autoreply,
+            "ai_assistant_enabled": ai_enabled,
+            "ai_assistant_autoreply_enabled": ai_autoreply,
+            "ai_assistant_greeting": ai_greeting,
+            "ai_assistant_fallback": ai_fallback,
+            "faqs": faqs
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/chat/controls', methods=['GET'])
+@app.route('/api/admin/chat/controls', methods=['GET'])
+def get_admin_chat_controls():
+    """Admin endpoint to fetch all chat/AI toggles and the full FAQ list (active & inactive)."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('chat_faq_enabled', 'chat_faq_autoreply_enabled', 'ai_assistant_enabled', 'ai_assistant_autoreply_enabled', 'ai_assistant_greeting', 'ai_assistant_fallback')")
+        settings_rows = cur.fetchall()
+        settings_map = {r['key']: r['value'] for r in settings_rows}
+
+        cur.execute("""
+            SELECT id, category, chip_label, question, keywords, answer, display_order, is_active,
+                   CAST(created_at AS TEXT) AS created_at, CAST(updated_at AS TEXT) AS updated_at
+            FROM chat_faqs
+            ORDER BY display_order ASC, id ASC
+        """)
+        faqs = [dict(f) for f in cur.fetchall()]
+        cur.close()
+
+        return jsonify({
+            "settings": {
+                "chat_faq_enabled": str(settings_map.get('chat_faq_enabled', 'true')).strip().lower() != 'false',
+                "chat_faq_autoreply_enabled": str(settings_map.get('chat_faq_autoreply_enabled', 'true')).strip().lower() != 'false',
+                "ai_assistant_enabled": str(settings_map.get('ai_assistant_enabled', 'true')).strip().lower() != 'false',
+                "ai_assistant_autoreply_enabled": str(settings_map.get('ai_assistant_autoreply_enabled', 'true')).strip().lower() != 'false',
+                "ai_assistant_greeting": settings_map.get('ai_assistant_greeting') or "Hello! 👋 I'm the Autoride assistant. Ask me about booking, pricing, requirements, payments, and more!",
+                "ai_assistant_fallback": settings_map.get('ai_assistant_fallback') or "I'm sorry, I didn't quite understand that. Please leave your message and our support team will get back to you!"
+            },
+            "faqs": faqs
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/chat/controls', methods=['POST'])
+@app.route('/api/admin/chat/controls', methods=['POST'])
+def update_admin_chat_controls():
+    """Admin endpoint to update chat & AI configuration settings."""
+    try:
+        data = request.get_json(silent=True) or {}
+        cur = get_cursor()
+        
+        # Valid setting keys
+        valid_keys = [
+            'chat_faq_enabled',
+            'chat_faq_autoreply_enabled',
+            'ai_assistant_enabled',
+            'ai_assistant_autoreply_enabled',
+            'ai_assistant_greeting',
+            'ai_assistant_fallback'
+        ]
+
+        for k in valid_keys:
+            if k in data:
+                val = data[k]
+                if isinstance(val, bool):
+                    val_str = 'true' if val else 'false'
+                else:
+                    val_str = str(val or '').strip()
+                cur.execute("""
+                    INSERT INTO settings (key, value)
+                    VALUES (%s, %s)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                """, (k, val_str))
+
+        commit_db()
+        cur.close()
+        return jsonify({"message": "Chat and AI controls updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/chat/faqs', methods=['POST'])
+@app.route('/api/admin/chat/faqs', methods=['POST'])
+def add_admin_chat_faq():
+    """Admin endpoint to add a new Live Chat FAQ item."""
+    try:
+        data = request.get_json(silent=True) or {}
+        chip_label = (data.get('chip_label') or '').strip()
+        question = (data.get('question') or '').strip()
+        keywords = (data.get('keywords') or '').strip()
+        answer = (data.get('answer') or '').strip()
+        category = (data.get('category') or 'general').strip()
+        display_order = int(data.get('display_order', 0) or 0)
+        is_active = bool(data.get('is_active', True))
+
+        if not chip_label or not question or not answer:
+            return jsonify({"error": "Chip label, Question, and Answer are required"}), 400
+
+        cur = get_cursor()
+        cur.execute("""
+            INSERT INTO chat_faqs (category, chip_label, question, keywords, answer, display_order, is_active, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+            RETURNING id, category, chip_label, question, keywords, answer, display_order, is_active
+        """, (category, chip_label, question, keywords, answer, display_order, is_active))
+        new_faq = dict(cur.fetchone())
+        commit_db()
+        cur.close()
+        return jsonify({"message": "FAQ created successfully", "faq": new_faq}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/chat/faqs/<int:faq_id>', methods=['PUT', 'POST'])
+@app.route('/api/admin/chat/faqs/<int:faq_id>', methods=['PUT', 'POST'])
+def update_admin_chat_faq(faq_id):
+    """Admin endpoint to update an existing FAQ."""
+    try:
+        data = request.get_json(silent=True) or {}
+        cur = get_cursor()
+        cur.execute("SELECT * FROM chat_faqs WHERE id = %s", (faq_id,))
+        existing = cur.fetchone()
+        if not existing:
+            cur.close()
+            return jsonify({"error": "FAQ not found"}), 404
+
+        chip_label = (data.get('chip_label') if 'chip_label' in data else existing['chip_label']) or ''
+        question = (data.get('question') if 'question' in data else existing['question']) or ''
+        keywords = (data.get('keywords') if 'keywords' in data else existing['keywords']) or ''
+        answer = (data.get('answer') if 'answer' in data else existing['answer']) or ''
+        category = (data.get('category') if 'category' in data else existing['category']) or 'general'
+        display_order = int(data.get('display_order', existing['display_order']) or 0)
+        is_active = bool(data.get('is_active', existing['is_active']))
+
+        cur.execute("""
+            UPDATE chat_faqs
+            SET category = %s, chip_label = %s, question = %s, keywords = %s, answer = %s,
+                display_order = %s, is_active = %s, updated_at = NOW()
+            WHERE id = %s
+            RETURNING id, category, chip_label, question, keywords, answer, display_order, is_active
+        """, (category, chip_label.strip(), question.strip(), keywords.strip(), answer.strip(), display_order, is_active, faq_id))
+        updated_faq = dict(cur.fetchone())
+        commit_db()
+        cur.close()
+        return jsonify({"message": "FAQ updated successfully", "faq": updated_faq}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/chat/faqs/<int:faq_id>', methods=['DELETE'])
+@app.route('/api/admin/chat/faqs/<int:faq_id>', methods=['DELETE'])
+def delete_admin_chat_faq(faq_id):
+    """Admin endpoint to delete an FAQ item."""
+    try:
+        cur = get_cursor()
+        cur.execute("DELETE FROM chat_faqs WHERE id = %s RETURNING id", (faq_id,))
+        deleted = cur.fetchone()
+        if not deleted:
+            cur.close()
+            return jsonify({"error": "FAQ not found"}), 404
+        commit_db()
+        cur.close()
+        return jsonify({"message": "FAQ deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/chat/send', methods=['POST'])

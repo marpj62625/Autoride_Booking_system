@@ -8863,7 +8863,7 @@ var LiveChat = (function () {
           '</span>' +
           '<span style="font-size:0.65rem;color:var(--text-muted);">Tap to ask</span>' +
         '</div>' +
-        '<div class="faq-chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">' +
+        '<div id="lcFaqChipsContainer" class="faq-chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">' +
           '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'How does the 20% downpayment and balance payment upon pickup work?\')">💳 20% DP &amp; Balance</button>' +
           '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'What are the valid IDs and license requirements to rent?\')">🪪 IDs &amp; License</button>' +
           '<button type="button" class="faq-chip-btn" onclick="LiveChat.askFaq(\'What is the fuel and mileage policy?\')">⛽ Fuel &amp; Mileage</button>' +
@@ -8876,6 +8876,7 @@ var LiveChat = (function () {
         '<button onclick="LiveChat.send()"><i class="fas fa-paper-plane"></i></button>' +
       '</div>';
 
+    loadFaqChips();
     apiCall('/chat/mark-read', {
       method: 'POST',
       body: JSON.stringify({ receiver_type: 'user', receiver_id: currentUser.id, sender_type: 'admin', sender_id: adminId })
@@ -8982,6 +8983,43 @@ var LiveChat = (function () {
       .finally(function () { if (inputEl) inputEl.disabled = false; });
   }
 
+    var _faqConfig = null;
+
+  function loadFaqChips() {
+    var faqSection = document.getElementById('lcFaqSection');
+    var container = document.getElementById('lcFaqChipsContainer');
+    if (!faqSection || !container) return;
+
+    function renderFaqs(cfg) {
+      if (!cfg || cfg.faq_enabled === false || !cfg.faqs || !cfg.faqs.length) {
+        faqSection.style.display = 'none';
+        return;
+      }
+      faqSection.style.display = 'block';
+      var html = '';
+      cfg.faqs.forEach(function(item) {
+        var label = escapeHtml(item.chip_label || item.question || '');
+        var qJson = JSON.stringify(item.question || item.chip_label || '');
+        html += '<button type="button" class="faq-chip-btn" onclick=\'LiveChat.askFaq(' + qJson + ')\'>' + label + '</button>';
+      });
+      container.innerHTML = html;
+    }
+
+    if (_faqConfig) {
+      renderFaqs(_faqConfig);
+      return;
+    }
+
+    apiCall('/chat/config')
+      .then(function(res) {
+        _faqConfig = res;
+        renderFaqs(res);
+      })
+      .catch(function(err) {
+        console.warn('[LiveChat] Could not load faq config:', err);
+      });
+  }
+
   function askFaq(questionText) {
     var inputEl = document.getElementById('lcInput');
     if (!inputEl) return;
@@ -9005,6 +9043,7 @@ var LiveChat = (function () {
     closeLiveChat: closeLiveChat,
     send: send,
     askFaq: askFaq,
+    loadFaqChips: loadFaqChips,
     backToInbox: backToInbox,
     stopPolling: stopPolling
   };
