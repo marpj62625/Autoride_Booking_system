@@ -1046,6 +1046,41 @@ ALL_DELEGATABLE_PERMISSIONS = {
     }
 }
 
+def migrate_vehicle_gps_logs():
+    """Ensures vehicle_gps_logs table exists and vehicles table has last_address and gps_status."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicles' AND column_name = 'last_address') THEN
+                    ALTER TABLE vehicles ADD COLUMN last_address TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicles' AND column_name = 'gps_status') THEN
+                    ALTER TABLE vehicles ADD COLUMN gps_status VARCHAR(30) DEFAULT 'offline';
+                END IF;
+            END $$;
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS vehicle_gps_logs (
+                id SERIAL PRIMARY KEY,
+                vehicle_id INT NOT NULL,
+                latitude DOUBLE PRECISION NOT NULL,
+                longitude DOUBLE PRECISION NOT NULL,
+                speed NUMERIC DEFAULT 0,
+                address TEXT,
+                gps_status VARCHAR(30) DEFAULT 'online',
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_vehicle_gps_logs_veh_id ON vehicle_gps_logs(vehicle_id, created_at DESC);
+        """)
+        commit_db()
+        print("[MIGRATION] migrate_vehicle_gps_logs completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_vehicle_gps_logs error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 def migrate_staff_permissions_and_requests():
     """Ensures staff_permissions and permission_requests tables exist."""
     try:
@@ -1092,8 +1127,9 @@ try:
         migrate_archive_columns()
         migrate_chat_faq_and_ai_controls()
         migrate_staff_permissions_and_requests()
+        migrate_vehicle_gps_logs()
 except Exception as _e:
-    pass
+    print(f"[STARTUP ERROR] {_e}")
 
 
 
@@ -3160,119 +3196,168 @@ def process_refund():
 @app.route('/vehicles/<int:vehicle_id>/location', methods=['POST'])
 @app.route('/api/vehicles/<int:vehicle_id>/location', methods=['POST'])
 def update_vehicle_location(vehicle_id):
-
-    """Update GPS coordinates for a specific vehicle."""
-
-    data = request.json
-
+    """Update GPS coordinates and record trail history for a specific vehicle."""
+    data = request.get_json(silent=True) or {}
     lat = data.get('latitude')
-
     lng = data.get('longitude')
-
-    
+    address = data.get('address')
+    speed = data.get('speed', 0)
+    gps_status = data.get('gps_status') or 'online'
 
     if lat is None or lng is None:
-
         return jsonify({"error": "Latitude and Longitude are required"}), 400
 
-        
-
     try:
-
         cur = get_cursor()
-
+        # 1. Update current vehicle record
         cur.execute("""
-
             UPDATE vehicles 
-
-            SET latitude = %s, longitude = %s, last_gps_update = CURRENT_TIMESTAMP 
-
+            SET latitude = %s,
+                longitude = %s,
+                last_gps_update = CURRENT_TIMESTAMP,
+                last_address = COALESCE(%s, last_address),
+                gps_status = %s
             WHERE id = %s
+        """, (lat, lng, address, gps_status, vehicle_id))
 
-        """, (lat, lng, vehicle_id))
+        # 2. Check last recorded point to avoid spamming identical locations within 30 seconds
+        cur.execute("""
+            SELECT latitude, longitude, created_at
+            FROM vehicle_gps_logs
+            WHERE vehicle_id = %s
+            ORDER BY id DESC LIMIT 1
+        """, (vehicle_id,))
+        last_log = cur.fetchone()
+
+        should_log = True
+        if last_log:
+            lat_diff = abs(float(last_log['latitude']) - float(lat))
+            lng_diff = abs(float(last_log['longitude']) - float(lng))
+            # If coordinates barely moved (< 10 meters ~ 0.0001 deg), don't insert duplicate log
+            if lat_diff < 0.0001 and lng_diff < 0.0001:
+                should_log = False
+
+        if should_log:
+            cur.execute("""
+                INSERT INTO vehicle_gps_logs (vehicle_id, latitude, longitude, speed, address, gps_status, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            """, (vehicle_id, lat, lng, speed, address, gps_status))
 
         commit_db()
-
-        return jsonify({"message": "Location updated successfully"}), 200
-
+        return jsonify({
+            "message": "Location updated successfully",
+            "vehicle_id": vehicle_id,
+            "latitude": lat,
+            "longitude": lng,
+            "address": address,
+            "gps_status": gps_status,
+            "logged": should_log
+        }), 200
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals():
-
             cur.close()
-
 
 
 @app.route('/admin/gps-locations', methods=['GET'])
 @app.route('/api/admin/gps-locations', methods=['GET'])
 def get_all_gps_locations():
-
-    """Fetch real-time location for all active vehicles."""
-
+    """Fetch real-time or last known location for all vehicles."""
     admin_id = request.args.get('admin_id')
-
     try:
-
         cur = get_cursor()
-
-        
-
-        # Determine location filter
-
         location_filter = None
-
         if admin_id:
-
             cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (admin_id,))
-
             adm = cur.fetchone()
-
             if adm and adm['role'] == 'admin' and adm['assigned_location']:
-
                 location_filter = adm['assigned_location']
 
-
-
         query = """
-
-            SELECT id, name, plate_number, latitude, longitude, last_gps_update, status
-
+            SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, status
             FROM vehicles 
-
             WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-
         """
-
         params = []
-
         if location_filter:
-
             query += " AND location = %s "
-
             params.append(location_filter)
 
-            
-
+        query += " ORDER BY id ASC"
         cur.execute(query, tuple(params))
-
         locations = cur.fetchall()
 
-        return jsonify([dict(loc) for loc in locations]), 200
+        # If no coordinates are set, fallback to listing vehicles so admin can see fleet options
+        if not locations:
+            cur.execute("""
+                SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, status 
+                FROM vehicles ORDER BY id ASC LIMIT 20
+            """)
+            locations = cur.fetchall()
 
+        results = []
+        for loc in locations:
+            d = dict(loc)
+            if d.get('last_gps_update'):
+                d['last_gps_update_iso'] = d['last_gps_update'].isoformat()
+                d['last_gps_update_str'] = str(d['last_gps_update'])
+            results.append(d)
+
+        return jsonify(results), 200
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals():
-
             cur.close()
 
+
+@app.route('/vehicles/<int:vehicle_id>/gps-history', methods=['GET'])
+@app.route('/api/vehicles/<int:vehicle_id>/gps-history', methods=['GET'])
+def get_vehicle_gps_history(vehicle_id):
+    """Fetch breadcrumb trip history logs for a specific vehicle."""
+    limit = min(int(request.args.get('limit', 100)), 500)
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    try:
+        cur = get_cursor()
+        query = """
+            SELECT id, vehicle_id, latitude, longitude, speed, address, gps_status, created_at
+            FROM vehicle_gps_logs
+            WHERE vehicle_id = %s
+        """
+        params = [vehicle_id]
+
+        if start_date:
+            query += " AND created_at >= %s"
+            params.append(start_date)
+        if end_date:
+            query += " AND created_at <= %s"
+            params.append(end_date)
+
+        query += " ORDER BY id DESC LIMIT %s"
+        params.append(limit)
+
+        cur.execute(query, tuple(params))
+        rows = cur.fetchall()
+        cur.close()
+
+        results = []
+        for r in rows:
+            d = dict(r)
+            if d.get('created_at'):
+                d['created_at_iso'] = d['created_at'].isoformat()
+                d['created_at_str'] = str(r['created_at'])
+            results.append(d)
+
+        return jsonify({
+            "vehicle_id": vehicle_id,
+            "total_points": len(results),
+            "logs": results
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/vehicle/<int:vehicle_id>', methods=['GET'])

@@ -8354,6 +8354,58 @@ input:checked + .ctrl-slider:before {
             <span id="gpsStatusBadge" style="font-size:0.6rem;padding:4px 10px;background:rgba(0,177,79,0.1);color:var(--success);border-radius:20px;font-weight:800;border:1px solid currentColor;">LIVE</span>
         </div>
 
+        <!-- LAST KNOWN LOCATION & FLEET STATUS CARD -->
+        <div class="stat-card" style="padding: 18px 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); background: var(--surface-card); border-radius: 14px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle Fleet:</span>
+                    <select id="gpsVehicleSelect" onchange="GPS.onVehicleSelect(this.value)" style="padding: 7px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-weight: 700; font-size: 0.85rem; outline: none; cursor: pointer;">
+                        <option value="">Loading vehicles...</option>
+                    </select>
+                </div>
+                <div id="gpsStatusPill" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3);">
+                    <span id="gpsPillDot" style="width: 8px; height: 8px; border-radius: 50%; background: #00B14F; display: inline-block;"></span>
+                    <span id="gpsPillText">CHECKING STATUS...</span>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: center;">
+                <!-- Location & Address -->
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(0, 177, 79, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--primary); font-size: 1.2rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Recorded Last Location</div>
+                        <div id="gpsLastAddressText" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); line-height: 1.35; margin-top: 2px;">Searching recorded location...</div>
+                        <div id="gpsCoordsText" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Lat: --, Lng: --</div>
+                    </div>
+                </div>
+
+                <!-- Timestamp & Activity -->
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                        <i class="fas fa-history" style="color: #3b82f6; font-size: 1.15rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Last Seen / Ping</div>
+                        <div id="gpsLastTimeElapsed" style="font-size: 0.95rem; font-weight: 700; color: #3b82f6; margin-top: 2px;">--</div>
+                        <div id="gpsLastTimeExact" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">--</div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Buttons -->
+                <div style="display: flex; gap: 8px; justify-content: flex-start; flex-wrap: wrap;">
+                    <button type="button" onclick="GPS.openGoogleMaps()" class="btn-premium" style="flex: 1; min-width: 140px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fas fa-location-arrow"></i> Google Maps
+                    </button>
+                    <button type="button" onclick="GPS.openTripHistoryModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fas fa-route"></i> Trip History
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="chart-card" style="padding:0;overflow:hidden;height:calc(100vh - 210px);min-height:460px;position:relative;margin-bottom:0;">
             <iframe id="blynkMapFrame" src="https://car-rental-inlaguna.vercel.app/" style="width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
             <div style="position:absolute;top:14px;right:14px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:10px;padding:7px 14px;display:flex;align-items:center;gap:8px;">
@@ -20742,110 +20794,309 @@ function toggleNewsletterModal(show = true) {
 
 
 
-    // --- GPS MODULE (Blynk IoT) ---
+        // --- GPS MODULE (Blynk IoT + Persistent DB Recording) ---
     const GPS = {
         BLYNK_TOKEN: '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz',
         BLYNK_SERVER: 'sgp1.blynk.cloud',
         lat: null,
         lng: null,
+        currentAddress: '',
         lastActive: 0,
         timer: null,
+        selectedVehicleId: null,
+        fleetVehicles: [],
+        _lastGeoLookupTime: 0,
+        _lastSavedCoords: null,
+
+        async init() {
+            await this.loadFleetVehicles();
+            await this.loadLastKnownLocationFromDB();
+        },
+
+        async loadFleetVehicles() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this.fleetVehicles = data || [];
+                    const select = document.getElementById('gpsVehicleSelect');
+                    if (select && this.fleetVehicles.length > 0) {
+                        select.innerHTML = this.fleetVehicles.map((v, idx) => `
+                            <option value="${v.id}" ${idx === 0 ? 'selected' : ''}>
+                                ${v.name} (${v.plate_number || 'No Plate'})
+                            </option>
+                        `).join('');
+                        this.selectedVehicleId = this.fleetVehicles[0].id;
+                    }
+                }
+            } catch (e) {
+                console.error('[GPS] loadFleetVehicles error:', e);
+            }
+        },
+
+        onVehicleSelect(vehicleId) {
+            this.selectedVehicleId = parseInt(vehicleId, 10);
+            this.loadLastKnownLocationFromDB();
+        },
+
+        async loadLastKnownLocationFromDB() {
+            if (!this.selectedVehicleId && this.fleetVehicles.length > 0) {
+                this.selectedVehicleId = this.fleetVehicles[0].id;
+            }
+            if (!this.selectedVehicleId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
+                if (res.ok) {
+                    const list = await res.json();
+                    const veh = list.find(v => v.id === this.selectedVehicleId);
+                    if (veh) {
+                        this._updateCardWithData(veh);
+                    }
+                }
+            } catch (e) {
+                console.error('[GPS] loadLastKnownLocationFromDB error:', e);
+            }
+        },
+
+        _updateCardWithData(veh) {
+            const addrEl = document.getElementById('gpsLastAddressText');
+            const coordsEl = document.getElementById('gpsCoordsText');
+            const elapsedEl = document.getElementById('gpsLastTimeElapsed');
+            const exactEl = document.getElementById('gpsLastTimeExact');
+            const pill = document.getElementById('gpsStatusPill');
+            const pillDot = document.getElementById('gpsPillDot');
+            const pillText = document.getElementById('gpsPillText');
+
+            if (veh.latitude && veh.longitude) {
+                this.lat = parseFloat(veh.latitude);
+                this.lng = parseFloat(veh.longitude);
+                this.currentAddress = veh.last_address || 'Recorded Location';
+
+                if (addrEl) addrEl.textContent = veh.last_address || 'Recorded Location Coordinates Available';
+                if (coordsEl) coordsEl.textContent = `Lat: ${this.lat.toFixed(6)}, Lng: ${this.lng.toFixed(6)}`;
+            } else {
+                if (addrEl) addrEl.textContent = 'No GPS coordinates recorded yet for this vehicle.';
+                if (coordsEl) coordsEl.textContent = 'Lat: --, Lng: --';
+            }
+
+            if (veh.last_gps_update) {
+                const dt = new Date(veh.last_gps_update);
+                const elapsedMin = Math.round((Date.now() - dt.getTime()) / 60000);
+                let elapsedStr = '';
+                if (elapsedMin < 2) elapsedStr = 'Just now';
+                else if (elapsedMin < 60) elapsedStr = `${elapsedMin} minutes ago`;
+                else if (elapsedMin < 1440) elapsedStr = `${Math.floor(elapsedMin / 60)} hour(s) ago`;
+                else elapsedStr = `${Math.floor(elapsedMin / 1440)} day(s) ago`;
+
+                if (elapsedEl) elapsedEl.textContent = elapsedStr;
+                if (exactEl) exactEl.textContent = dt.toLocaleString();
+
+                const isRecentlyOnline = elapsedMin < 5;
+                if (pill && pillDot && pillText) {
+                    if (isRecentlyOnline) {
+                        pill.style.background = 'rgba(0, 177, 79, 0.12)';
+                        pill.style.borderColor = 'rgba(0, 177, 79, 0.3)';
+                        pill.style.color = 'var(--primary)';
+                        pillDot.style.background = '#00B14F';
+                        pillText.textContent = 'LIVE • MOVING / IDLE';
+                    } else {
+                        pill.style.background = 'rgba(245, 158, 11, 0.12)';
+                        pill.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        pill.style.color = '#f59e0b';
+                        pillDot.style.background = '#f59e0b';
+                        pillText.textContent = 'LAST KNOWN • PARKED / OFFLINE';
+                    }
+                }
+            } else {
+                if (elapsedEl) elapsedEl.textContent = 'Never active';
+                if (exactEl) exactEl.textContent = 'No signal recorded';
+                if (pill && pillDot && pillText) {
+                    pill.style.background = 'rgba(148, 163, 184, 0.12)';
+                    pill.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                    pill.style.color = '#94a3b8';
+                    pillDot.style.background = '#94a3b8';
+                    pillText.textContent = 'NO SIGNAL';
+                }
+            }
+        },
+
+        async reverseGeocode(lat, lng) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+                    headers: { 'Accept-Language': 'en' }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.display_name) {
+                        const a = data.address || {};
+                        const parts = [
+                            a.road || a.street,
+                            a.suburb || a.village || a.neighbourhood,
+                            a.city || a.municipality || a.town,
+                            a.state || a.province
+                        ].filter(Boolean);
+                        return parts.length > 0 ? parts.join(', ') : data.display_name;
+                    }
+                }
+            } catch (e) {}
+            return '';
+        },
 
         async refresh() {
             try {
-                // Fetch all pins in a single request (same as car-rental site)
                 const res = await fetch(
                     `https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&v1&v2&v3&v4&_=${Date.now()}`
                 );
-                if (!res.ok) { this._showOffline('Device offline'); return; }
+                if (!res.ok) {
+                    this._showOffline('Device offline');
+                    this.loadLastKnownLocationFromDB();
+                    return;
+                }
 
                 const data = await res.json();
                 const now = Date.now();
 
-                // V4 is the heartbeat pin - update lastActive if it changed
                 if (data.v4 !== undefined) this.lastActive = now;
-
-                // Check if device is online (within 20 seconds)
                 const isOnline = (now - this.lastActive) < 20000;
-                if (!isOnline && this.lastActive > 0) { this._showOffline('Device offline'); return; }
 
                 const rawLat = String(data.v1 || '');
                 const rawLng = String(data.v2 || '');
-                const sats = data.v3 || '0';
                 const isEncrypted = rawLat.includes('ENCRYPTED') || rawLat === '' || rawLat === '0';
 
-                // Update status badge + status bar
                 const badge = document.getElementById('gpsStatusBadge');
-                const dot = document.getElementById('gpsStatusDot');
-                const txt = document.getElementById('gpsStatusText');
-                const upBar = document.getElementById('gpsLastUpdateBar');
-
-                if (isEncrypted) {
-                    if (badge) { badge.textContent = 'ENCRYPTED'; badge.style.color = '#d97706'; }
-                    if (dot) { dot.style.background = '#d97706'; dot.style.boxShadow = 'none'; }
-                    if (txt) { txt.textContent = 'Location Encrypted'; txt.style.color = '#d97706'; }
-                    if (upBar) upBar.textContent = 'Use Decrypt button on the map';
-                } else if (isOnline) {
+                if (isOnline && !isEncrypted) {
                     if (badge) { badge.textContent = 'LIVE'; badge.style.color = 'var(--success)'; }
-                    if (dot) { dot.style.background = '#00B14F'; dot.style.boxShadow = '0 0 0 3px rgba(0,177,79,0.2)'; }
-                    if (txt) { txt.textContent = 'Live — Car-001'; txt.style.color = 'var(--text-main)'; }
-                    if (upBar) upBar.textContent = 'Updated ' + new Date().toLocaleTimeString();
                 } else {
-                    if (badge) { badge.textContent = 'WAITING'; badge.style.color = '#d97706'; }
-                    if (dot) { dot.style.background = '#d97706'; dot.style.boxShadow = 'none'; }
-                    if (txt) { txt.textContent = 'Waiting for device...'; txt.style.color = '#d97706'; }
-                    if (upBar) upBar.textContent = 'No recent signal';
+                    if (badge) { badge.textContent = 'OFFLINE'; badge.style.color = '#f59e0b'; }
                 }
 
-                // Update coordinates display
-                const latEl = document.getElementById('gpsLat');
-                const lngEl = document.getElementById('gpsLng');
-                const satsEl = document.getElementById('gpsSats');
-                const upEl = document.getElementById('gpsLastUpdate');
-
-                if (isEncrypted) {
-                    // Location is encrypted - show hidden state
-                    if (latEl) { latEl.textContent = '*** ENCRYPTED ***'; latEl.style.color = '#d97706'; latEl.style.fontSize = '0.7rem'; }
-                    if (lngEl) { lngEl.textContent = '*** ENCRYPTED ***'; lngEl.style.color = '#d97706'; lngEl.style.fontSize = '0.7rem'; }
-                    if (satsEl) { satsEl.textContent = 'Hidden'; satsEl.style.color = '#94a3b8'; }
-                    if (upEl) upEl.textContent = 'Location encrypted';
-                } else {
+                if (!isEncrypted) {
                     const lat = parseFloat(rawLat);
                     const lng = parseFloat(rawLng);
                     if (!isNaN(lat) && !isNaN(lng)) {
                         this.lat = lat;
                         this.lng = lng;
-                        if (latEl) { latEl.textContent = lat.toFixed(6); latEl.style.color = ''; latEl.style.fontSize = ''; }
-                        if (lngEl) { lngEl.textContent = lng.toFixed(6); lngEl.style.color = ''; lngEl.style.fontSize = ''; }
-                        if (satsEl) { satsEl.textContent = sats; satsEl.style.color = ''; }
-                        if (upEl) upEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
-                    } else {
-                        if (latEl) { latEl.textContent = '--'; latEl.style.color = ''; }
-                        if (lngEl) { lngEl.textContent = '--'; lngEl.style.color = ''; }
-                        if (satsEl) satsEl.textContent = '0';
-                        if (upEl) upEl.textContent = 'No GPS fix';
+
+                        // Reverse geocode if 60s elapsed
+                        if (now - this._lastGeoLookupTime > 60000 || !this.currentAddress) {
+                            this._lastGeoLookupTime = now;
+                            const addr = await this.reverseGeocode(lat, lng);
+                            if (addr) this.currentAddress = addr;
+                        }
+
+                        // Auto-persist to database for selected vehicle
+                        const vehId = this.selectedVehicleId || (this.fleetVehicles[0] ? this.fleetVehicles[0].id : 12);
+                        if (vehId) {
+                            try {
+                                await fetch(`${API_BASE}/api/vehicles/${vehId}/location`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        latitude: lat,
+                                        longitude: lng,
+                                        address: this.currentAddress || undefined,
+                                        speed: 0,
+                                        gps_status: isOnline ? 'online' : 'offline'
+                                    })
+                                });
+                            } catch (e) {}
+                        }
+
+                        // Update UI Card
+                        this._updateCardWithData({
+                            id: vehId,
+                            latitude: lat,
+                            longitude: lng,
+                            last_address: this.currentAddress,
+                            last_gps_update: new Date().toISOString(),
+                            gps_status: isOnline ? 'online' : 'offline'
+                        });
+                        return;
                     }
                 }
 
-            } catch(e) { this._showOffline('Connection error'); }
+                this.loadLastKnownLocationFromDB();
+
+            } catch (e) {
+                this._showOffline('Connection error');
+                this.loadLastKnownLocationFromDB();
+            }
         },
 
         _showOffline(reason) {
             const badge = document.getElementById('gpsStatusBadge');
             if (badge) { badge.textContent = 'OFFLINE'; badge.style.color = 'var(--text-muted)'; }
-            const dot = document.getElementById('gpsStatusDot');
-            if (dot) { dot.style.background = '#94a3b8'; dot.style.boxShadow = 'none'; }
-            const txt = document.getElementById('gpsStatusText');
-            if (txt) { txt.textContent = 'Device Offline'; txt.style.color = 'var(--text-muted)'; }
-            const upBar = document.getElementById('gpsLastUpdateBar');
-            if (upBar) upBar.textContent = reason || 'No signal';
         },
 
         openMap() {
             window.open('https://car-rental-inlaguna.vercel.app/', '_blank');
         },
 
+        openGoogleMaps() {
+            if (this.lat && this.lng) {
+                window.open(`https://www.google.com/maps?q=${this.lat},${this.lng}`, '_blank');
+            } else {
+                alert('No recorded GPS coordinates available yet.');
+            }
+        },
+
+        async openTripHistoryModal() {
+            const vehId = this.selectedVehicleId || (this.fleetVehicles[0] ? this.fleetVehicles[0].id : 12);
+            if (!vehId) return;
+
+            const modal = document.getElementById('gpsTripHistoryModal');
+            if (modal) modal.style.display = 'flex';
+
+            const container = document.getElementById('gpsHistoryListContainer');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading trail logs...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/vehicles/${vehId}/gps-history?limit=50`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const logs = data.logs || [];
+                    if (logs.length === 0) {
+                        container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-map-marked-alt" style="font-size:2rem;opacity:0.3;margin-bottom:8px;display:block;"></i>No trip logs recorded yet for this vehicle. Logs are recorded automatically while moving.</div>';
+                        return;
+                    }
+
+                    container.innerHTML = logs.map(l => `
+                        <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div style="width:34px;height:34px;border-radius:8px;background:rgba(0,177,79,0.12);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:0.9rem;">
+                                    <i class="fas fa-map-pin"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);">${l.address || 'Recorded Coordinate Point'}</div>
+                                    <div style="font-family:monospace;font-size:0.75rem;color:var(--text-muted);margin-top:2px;">
+                                        ${parseFloat(l.latitude).toFixed(6)}, ${parseFloat(l.longitude).toFixed(6)}
+                                        ${l.speed ? ` • ${l.speed} km/h` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:0.75rem;font-weight:700;color:var(--primary);">${new Date(l.created_at).toLocaleTimeString()}</div>
+                                <div style="font-size:0.68rem;color:var(--text-muted);">${new Date(l.created_at).toLocaleDateString()}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;">Failed to load trip history logs.</div>';
+                }
+            } catch (err) {
+                container.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444;">Connection error: ${err.message || err}</div>`;
+            }
+        },
+
+        closeTripHistoryModal() {
+            const modal = document.getElementById('gpsTripHistoryModal');
+            if (modal) modal.style.display = 'none';
+        },
+
         startLive() {
+            this.init();
             this.refresh();
             if (this.timer) clearInterval(this.timer);
             this.timer = setInterval(() => this.refresh(), 10000);
@@ -34276,6 +34527,34 @@ function toggleNewsletterModal(show = true) {
             <button type="button" id="staffReqSubmitBtn" onclick="StaffPermissions.submitRequest()" class="btn-premium" style="padding: 10px 22px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-paper-plane"></i> Submit Request
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- TRIP HISTORY MODAL -->
+<div id="gpsTripHistoryModal" class="premium-modal" style="display:none;" onclick="if(event.target===this) GPS.closeTripHistoryModal()">
+    <div class="modal-box" style="max-width: 650px; width: 92%; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border-radius: 16px;">
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface-card);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 177, 79, 0.12); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-route" style="color: var(--primary);"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">Recorded GPS Trip History</h3>
+                    <div id="gpsHistSubtitle" style="font-size: 0.75rem; color: var(--text-muted);">Showing recent breadcrumb trail logs</div>
+                </div>
+            </div>
+            <button type="button" onclick="GPS.closeTripHistoryModal()" class="menu-btn" style="width:34px; height:34px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:8px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div style="overflow-y: auto; flex: 1; padding: 18px 22px; max-height: 60vh;">
+            <div id="gpsHistoryListContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="text-align: center; padding: 30px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading trail logs...</div>
+            </div>
+        </div>
+        <div style="padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; background: var(--surface-card);">
+            <button type="button" onclick="GPS.closeTripHistoryModal()" style="padding: 8px 20px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Close</button>
         </div>
     </div>
 </div>
