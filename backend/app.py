@@ -1019,6 +1019,8 @@ try:
         migrate_smtp_oauth_keys()
         migrate_archive_columns()
         migrate_chat_faq_and_ai_controls()
+        migrate_staff_permissions_and_requests()
+        migrate_staff_permissions_and_requests()
 except Exception as _e:
     pass
 
@@ -12937,9 +12939,8 @@ def create_addon():
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM users WHERE id = %s AND role = 'super_admin'", (admin_id,))
-        if not cur.fetchone():
-            return jsonify({'error': 'Unauthorized. Only Super Admin can manage add-ons.'}), 403
+        if not check_staff_permission(admin_id, 'perm_addons'):
+            return jsonify({'error': 'Unauthorized. Add-ons management permission required.'}), 403
 
         cur.execute("""
             INSERT INTO addons (name, price_per_day, description)
@@ -13026,9 +13027,8 @@ def delete_addon(addon_id):
 
     try:
         cur = get_cursor()
-        cur.execute("SELECT id FROM users WHERE id = %s AND role = 'super_admin'", (admin_id,))
-        if not cur.fetchone():
-            return jsonify({'error': 'Unauthorized. Only Super Admin can manage add-ons.'}), 403
+        if not check_staff_permission(admin_id, 'perm_addons'):
+            return jsonify({'error': 'Unauthorized. Add-ons management permission required.'}), 403
 
         cur.execute("DELETE FROM addons WHERE id = %s", (addon_id,))
         commit_db()
@@ -13244,6 +13244,8 @@ def add_admin_blackout_date():
     
     if not all([start_date, end_date, reason, created_by]):
         return jsonify({'error': 'Missing required fields'}), 400
+    if not check_staff_permission(created_by, 'perm_blackout_dates'):
+        return jsonify({'error': 'Unauthorized. Blackout dates management permission required.'}), 403
         
     try:
         cur = get_cursor()
@@ -13642,4 +13644,364 @@ def disconnect_smtp_oauth():
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
+
+
+
+# ==================== DYNAMIC STAFF PERMISSIONS & REQUESTS ====================
+
+ALL_DELEGATABLE_PERMISSIONS = {
+    'perm_chat_ai': {
+        'key': 'perm_chat_ai',
+        'label': 'Live Chat FAQ & AI Assistant Controls',
+        'desc': 'Manage FAQ quick buttons, toggle AI chatbot, auto-replies'
+    },
+    'perm_blackout_dates': {
+        'key': 'perm_blackout_dates',
+        'label': 'Blackout Dates Management',
+        'desc': 'Block or unblock dates on the booking calendar'
+    },
+    'perm_addons': {
+        'key': 'perm_addons',
+        'label': 'Add-ons & Pricing Management',
+        'desc': 'Create, edit, and price rental add-ons (helmets, seats, etc.)'
+    },
+    'perm_locations': {
+        'key': 'perm_locations',
+        'label': 'Locations & Delivery Zones',
+        'desc': 'Manage pickup/dropoff branches, zones, and delivery fees'
+    },
+    'perm_system_config': {
+        'key': 'perm_system_config',
+        'label': 'System Rules Configuration',
+        'desc': 'Configure min/max rental days, buffer hours, business contact'
+    },
+    'perm_reports_view': {
+        'key': 'perm_reports_view',
+        'label': 'Analytics & Reports View',
+        'desc': 'View operational statistics and reports tab'
+    }
+}
+
+def migrate_staff_permissions_and_requests():
+    """Ensures staff_permissions and permission_requests tables exist."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS staff_permissions (
+                id SERIAL PRIMARY KEY,
+                staff_id INT NOT NULL,
+                permission_key VARCHAR(100) NOT NULL,
+                is_granted BOOLEAN DEFAULT TRUE,
+                granted_by INT,
+                updated_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(staff_id, permission_key)
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS permission_requests (
+                id SERIAL PRIMARY KEY,
+                staff_id INT NOT NULL,
+                staff_name VARCHAR(150),
+                staff_email VARCHAR(150),
+                permission_key VARCHAR(100) NOT NULL,
+                permission_label VARCHAR(150) NOT NULL,
+                reason TEXT,
+                status VARCHAR(30) DEFAULT 'pending',
+                reviewed_by INT,
+                reviewed_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        commit_db()
+    except Exception as e:
+        print(f"[MIGRATION] migrate_staff_permissions_and_requests error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+def check_staff_permission(user_id, perm_key):
+    """Returns True if user_id is super_admin OR has perm_key granted."""
+    if not user_id:
+        return False
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT role FROM users WHERE id = %s", (user_id,))
+        row = cur.fetchone()
+        if not row:
+            cur.close()
+            return False
+        role = (row.get('role') or '').lower().strip()
+        if role in ['super_admin', 'superadmin']:
+            cur.close()
+            return True
+        cur.execute("SELECT is_granted FROM staff_permissions WHERE staff_id = %s AND permission_key = %s", (user_id, perm_key))
+        perm = cur.fetchone()
+        cur.close()
+        return bool(perm and perm.get('is_granted'))
+    except Exception as e:
+        print(f"[check_staff_permission] error: {e}")
+        return False
+
+@app.route('/api/admin/permissions', methods=['GET'])
+def get_staff_permissions():
+    """Returns permissions dictionary for a given staff_id or requester."""
+    staff_id = request.args.get('staff_id')
+    requester_id = request.args.get('requester_id') or staff_id
+    target_id = staff_id or requester_id
+
+    if not target_id:
+        return jsonify({"error": "Missing user id"}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, email, role FROM users WHERE id = %s", (target_id,))
+        user_row = cur.fetchone()
+        if not user_row:
+            cur.close()
+            return jsonify({"error": "User not found"}), 404
+
+        role = (user_row.get('role') or '').lower().strip()
+        is_super = role in ['super_admin', 'superadmin']
+
+        cur.execute("SELECT permission_key, is_granted FROM staff_permissions WHERE staff_id = %s", (target_id,))
+        granted_rows = cur.fetchall()
+        cur.close()
+
+        granted_map = {r['permission_key']: bool(r['is_granted']) for r in granted_rows}
+
+        permissions = {}
+        for p_key, meta in ALL_DELEGATABLE_PERMISSIONS.items():
+            permissions[p_key] = {
+                'key': p_key,
+                'label': meta['label'],
+                'desc': meta['desc'],
+                'granted': True if is_super else granted_map.get(p_key, False)
+            }
+
+        return jsonify({
+            "staff_id": int(target_id),
+            "is_super_admin": is_super,
+            "permissions": permissions
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/permissions/grant', methods=['POST'])
+def grant_staff_permission():
+    """Super Admin endpoint to grant or revoke a permission for a staff member."""
+    data = request.get_json(silent=True) or {}
+    requester_id = data.get('requester_id')
+    staff_id = data.get('staff_id')
+    permission_key = data.get('permission_key')
+    is_granted = bool(data.get('is_granted', True))
+
+    if not requester_id or not staff_id or not permission_key:
+        return jsonify({"error": "requester_id, staff_id, and permission_key are required"}), 400
+
+    if permission_key not in ALL_DELEGATABLE_PERMISSIONS:
+        return jsonify({"error": f"Invalid permission key: {permission_key}"}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT role FROM users WHERE id = %s", (requester_id,))
+        req_row = cur.fetchone()
+        if not req_row or req_row['role'] not in ['super_admin', 'superadmin']:
+            cur.close()
+            return jsonify({"error": "Unauthorized: Super Admin access required"}), 403
+
+        cur.execute("""
+            INSERT INTO staff_permissions (staff_id, permission_key, is_granted, granted_by, updated_at)
+            VALUES (%s, %s, %s, %s, NOW())
+            ON CONFLICT (staff_id, permission_key)
+            DO UPDATE SET is_granted = EXCLUDED.is_granted, granted_by = EXCLUDED.granted_by, updated_at = NOW()
+        """, (staff_id, permission_key, is_granted, requester_id))
+
+        label = ALL_DELEGATABLE_PERMISSIONS[permission_key]['label']
+        action_text = "granted" if is_granted else "revoked"
+
+        try:
+            cur.execute("""
+                INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+                VALUES (%s, %s, %s, %s, FALSE, NOW())
+            """, (staff_id, "Access Permission Updated", f"Your control access for '{label}' has been {action_text} by Super Admin.", "permission"))
+        except Exception:
+            pass
+
+        commit_db()
+        cur.close()
+        return jsonify({
+            "message": f"Permission '{label}' {action_text} successfully",
+            "staff_id": staff_id,
+            "permission_key": permission_key,
+            "is_granted": is_granted
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/permissions/request', methods=['POST'])
+def request_staff_permission():
+    """Staff Admin endpoint to submit an access request to Super Admin."""
+    data = request.get_json(silent=True) or {}
+    staff_id = data.get('staff_id')
+    permission_key = data.get('permission_key')
+    reason = (data.get('reason') or '').strip()
+
+    if not staff_id or not permission_key:
+        return jsonify({"error": "staff_id and permission_key are required"}), 400
+
+    if permission_key not in ALL_DELEGATABLE_PERMISSIONS:
+        return jsonify({"error": f"Invalid permission key: {permission_key}"}), 400
+
+    perm_label = ALL_DELEGATABLE_PERMISSIONS[permission_key]['label']
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, email, role FROM users WHERE id = %s", (staff_id,))
+        staff_row = cur.fetchone()
+        if not staff_row:
+            cur.close()
+            return jsonify({"error": "Staff account not found"}), 404
+
+        staff_name = staff_row['full_name'] or 'Staff'
+        staff_email = staff_row['email'] or ''
+
+        cur.execute("""
+            SELECT id FROM permission_requests 
+            WHERE staff_id = %s AND permission_key = %s AND status = 'pending'
+        """, (staff_id, permission_key))
+        existing_pending = cur.fetchone()
+        if existing_pending:
+            cur.close()
+            return jsonify({"message": "You already have a pending request for this control.", "already_pending": True}), 200
+
+        cur.execute("""
+            INSERT INTO permission_requests (staff_id, staff_name, staff_email, permission_key, permission_label, reason, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, 'pending', NOW())
+            RETURNING id
+        """, (staff_id, staff_name, staff_email, permission_key, perm_label, reason))
+        new_req = cur.fetchone()
+
+        try:
+            cur.execute("SELECT id FROM users WHERE role IN ('super_admin', 'superadmin')")
+            super_admins = cur.fetchall()
+            for sa in super_admins:
+                cur.execute("""
+                    INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+                    VALUES (%s, %s, %s, %s, FALSE, NOW())
+                """, (sa['id'], "New Staff Access Request", f"{staff_name} requested control access for '{perm_label}'. Reason: {reason or 'None provided'}", "permission_request"))
+        except Exception:
+            pass
+
+        commit_db()
+        cur.close()
+        return jsonify({
+            "message": f"Access request for '{perm_label}' submitted to Super Admin",
+            "request_id": new_req['id']
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/permissions/requests', methods=['GET'])
+def list_permission_requests():
+    """List permission requests. Super Admins see all requests. Staff see their own requests."""
+    user_id = request.args.get('user_id')
+    status = request.args.get('status')
+
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT role FROM users WHERE id = %s", (user_id,))
+        user_row = cur.fetchone()
+        if not user_row:
+            cur.close()
+            return jsonify({"error": "User not found"}), 404
+
+        is_super = (user_row['role'] or '').lower().strip() in ['super_admin', 'superadmin']
+
+        query = "SELECT id, staff_id, staff_name, staff_email, permission_key, permission_label, reason, status, reviewed_by, CAST(reviewed_at AS TEXT) as reviewed_at, CAST(created_at AS TEXT) as created_at FROM permission_requests"
+        params = []
+        conditions = []
+        if not is_super:
+            conditions.append("staff_id = %s")
+            params.append(user_id)
+        if status:
+            conditions.append("status = %s")
+            params.append(status)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += " ORDER BY CASE WHEN status = 'pending' THEN 0 ELSE 1 END, id DESC"
+
+        cur.execute(query, tuple(params))
+        rows = [dict(r) for r in cur.fetchall()]
+        cur.close()
+        return jsonify({"requests": rows, "is_super_admin": is_super}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/admin/permissions/requests/<int:req_id>/review', methods=['POST'])
+def review_permission_request(req_id):
+    """Super Admin reviews (approves or rejects) an access request."""
+    data = request.get_json(silent=True) or {}
+    requester_id = data.get('requester_id')
+    action = (data.get('action') or '').lower().strip()
+
+    if not requester_id or action not in ['approve', 'reject']:
+        return jsonify({"error": "requester_id and valid action ('approve' or 'reject') required"}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT role FROM users WHERE id = %s", (requester_id,))
+        user_row = cur.fetchone()
+        if not user_row or user_row['role'] not in ['super_admin', 'superadmin']:
+            cur.close()
+            return jsonify({"error": "Unauthorized: Super Admin access required"}), 403
+
+        cur.execute("SELECT * FROM permission_requests WHERE id = %s", (req_id,))
+        req_row = cur.fetchone()
+        if not req_row:
+            cur.close()
+            return jsonify({"error": "Request not found"}), 404
+
+        staff_id = req_row['staff_id']
+        permission_key = req_row['permission_key']
+        perm_label = req_row['permission_label']
+        new_status = 'approved' if action == 'approve' else 'rejected'
+
+        cur.execute("""
+            UPDATE permission_requests
+            SET status = %s, reviewed_by = %s, reviewed_at = NOW()
+            WHERE id = %s
+        """, (new_status, requester_id, req_id))
+
+        if action == 'approve':
+            cur.execute("""
+                INSERT INTO staff_permissions (staff_id, permission_key, is_granted, granted_by, updated_at)
+                VALUES (%s, %s, TRUE, %s, NOW())
+                ON CONFLICT (staff_id, permission_key)
+                DO UPDATE SET is_granted = TRUE, granted_by = EXCLUDED.granted_by, updated_at = NOW()
+            """, (staff_id, permission_key, requester_id))
+
+        try:
+            status_word = "Approved" if action == 'approve' else "Rejected"
+            cur.execute("""
+                INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+                VALUES (%s, %s, %s, %s, FALSE, NOW())
+            """, (staff_id, f"Permission Request {status_word}", f"Your request for access to '{perm_label}' has been {new_status} by Super Admin.", "permission_result"))
+        except Exception:
+            pass
+
+        commit_db()
+        cur.close()
+        return jsonify({
+            "message": f"Request {new_status} successfully",
+            "request_id": req_id,
+            "status": new_status,
+            "permission_key": permission_key
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 

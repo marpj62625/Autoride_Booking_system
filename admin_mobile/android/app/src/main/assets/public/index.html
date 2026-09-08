@@ -366,9 +366,7 @@
         .role-staff #archiveDrawerLink,
         body.role-staff #archiveDrawerLink,
         .role-staff #adminMaintenanceConfig,
-        body.role-staff #adminMaintenanceConfig,
-        .role-staff .revenue-restricted,
-        body.role-staff .revenue-restricted {
+        body.role-staff #adminMaintenanceConfig {
             display: none !important;
         }
 
@@ -5179,6 +5177,98 @@
             </div>
 
 
+
+            
+            <!-- Super Admin Staff Permissions Card -->
+            <div id="superAdminPermissionsCard" class="stat-card" onclick="StaffPermissions.openSuperAdminModal()" style="padding: 15px; display: none; align-items: center; gap: 15px; cursor: pointer; border-left: 4px solid var(--primary); margin-top: 15px;">
+                <div style="width: 40px; height: 40px; background: rgba(0, 177, 79, 0.12); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user-shield" style="color: var(--primary);"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0;">Staff Permissions &amp; Requests</h4>
+                        <span id="pendingRequestsBadge" style="display: none; background: #ef4444; color: #fff; font-size: 0.65rem; font-weight: 800; padding: 2px 7px; border-radius: 10px;">0 NEW</span>
+                    </div>
+                    <p style="font-size: 0.7rem; color: var(--text-muted); margin: 0;">Allow or restrict controls for staff members &amp; review requests</p>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 0.8rem;"></i>
+            </div>
+
+            <!-- Locked Preview Cards for Staff Admin -->
+            <div id="lockPerm_chat_ai" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-robot" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Live Chat FAQs &amp; AI Controls <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Configure automated chat FAQ chips &amp; AI chatbot</div>
+                    </div>
+                </div>
+                <button type="button" onclick="StaffPermissions.openRequestModal('perm_chat_ai')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
+                    Request Access
+                </button>
+            </div>
+
+            <div id="lockPerm_blackout_dates" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-calendar-times" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Blackout Dates <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Block rentals during holidays or maintenance</div>
+                    </div>
+                </div>
+                <button type="button" onclick="StaffPermissions.openRequestModal('perm_blackout_dates')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
+                    Request Access
+                </button>
+            </div>
+
+            <div id="lockPerm_addons" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-plus-circle" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Add-ons Management <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Manage rental add-ons and pricing</div>
+                    </div>
+                </div>
+                <button type="button" onclick="StaffPermissions.openRequestModal('perm_addons')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
+                    Request Access
+                </button>
+            </div>
+
+            <div id="lockPerm_locations" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">Locations Management <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Manage delivery zones and pick-up branches</div>
+                    </div>
+                </div>
+                <button type="button" onclick="StaffPermissions.openRequestModal('perm_locations')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
+                    Request Access
+                </button>
+            </div>
+
+            <div id="lockPerm_system_config" class="stat-card" style="padding: 14px 16px; display: none; align-items: center; justify-content: space-between; border: 1px dashed var(--border); opacity: 0.9; margin-top: 15px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 38px; height: 38px; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-cogs" style="color: var(--text-muted);"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">System Configuration <i class="fas fa-lock" style="font-size:0.75rem; color:var(--text-muted);"></i></div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Manage rental duration rules &amp; company settings</div>
+                    </div>
+                </div>
+                <button type="button" onclick="StaffPermissions.openRequestModal('perm_system_config')" class="btn-premium" style="padding: 7px 14px; font-size: 0.75rem; border-radius: 8px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
+                    Request Access
+                </button>
+            </div>
 
             <div id="mobileSystemConfig" class="revenue-restricted">
 
@@ -11136,6 +11226,7 @@ input:checked + .ctrl-slider:before {
 
                 const isSuper = isSuperAdmin();
                 applyRolePermissions();
+                if (typeof StaffPermissions !== 'undefined') StaffPermissions.init();
 
                 const superAdminPill = document.getElementById('superAdminProfileEditPill');
                 if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
@@ -11320,8 +11411,43 @@ input:checked + .ctrl-slider:before {
         const archConfig = document.getElementById('adminMaintenanceConfig');
         if (archConfig) archConfig.style.display = isSuper ? 'block' : 'none';
 
-        document.querySelectorAll('.revenue-restricted').forEach(el => {
-            el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
+        const saPermCard = document.getElementById('superAdminPermissionsCard');
+        if (saPermCard) saPermCard.style.display = isSuper ? 'flex' : 'none';
+
+        // Delegatable controls (granted by Super Admin or requested by staff)
+        const hasChatAI = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_chat_ai'));
+        const chatCard = document.getElementById('adminChatControlsConfigCard');
+        if (chatCard) chatCard.style.display = hasChatAI ? 'block' : 'none';
+        const chatLock = document.getElementById('lockPerm_chat_ai');
+        if (chatLock) chatLock.style.display = (!isSuper && !hasChatAI) ? 'flex' : 'none';
+
+        const hasBlackouts = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_blackout_dates'));
+        const blackoutsCard = document.getElementById('mobileBlackoutsConfig');
+        if (blackoutsCard) blackoutsCard.style.display = hasBlackouts ? 'block' : 'none';
+        const blackoutsLock = document.getElementById('lockPerm_blackout_dates');
+        if (blackoutsLock) blackoutsLock.style.display = (!isSuper && !hasBlackouts) ? 'flex' : 'none';
+
+        const hasAddons = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_addons'));
+        const addonsCard = document.getElementById('mobileAddonsConfig');
+        if (addonsCard) addonsCard.style.display = hasAddons ? 'block' : 'none';
+        const addonsLock = document.getElementById('lockPerm_addons');
+        if (addonsLock) addonsLock.style.display = (!isSuper && !hasAddons) ? 'flex' : 'none';
+
+        const hasLocations = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_locations'));
+        const locationsCard = document.getElementById('mobileLocationsConfig');
+        if (locationsCard) locationsCard.style.display = hasLocations ? 'block' : 'none';
+        const locationsLock = document.getElementById('lockPerm_locations');
+        if (locationsLock) locationsLock.style.display = (!isSuper && !hasLocations) ? 'flex' : 'none';
+
+        const hasSysConfig = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_system_config'));
+        const sysConfigCard = document.getElementById('mobileSystemConfig');
+        if (sysConfigCard) sysConfigCard.style.display = hasSysConfig ? 'block' : 'none';
+        const sysConfigLock = document.getElementById('lockPerm_system_config');
+        if (sysConfigLock) sysConfigLock.style.display = (!isSuper && !hasSysConfig) ? 'flex' : 'none';
+
+        const hasReports = isSuper || (typeof StaffPermissions !== 'undefined' && StaffPermissions.isGranted('perm_reports_view'));
+        document.querySelectorAll('[data-tab="reports"]').forEach(el => {
+            el.style.display = hasReports ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
         });
 
         const superAdminPill = document.getElementById('superAdminProfileEditPill');
@@ -11332,6 +11458,443 @@ input:checked + .ctrl-slider:before {
         if (regularPassCard) regularPassCard.style.display = isSuper ? 'none' : 'flex';
     }
     window.applyRolePermissions = applyRolePermissions;
+
+    
+    // ==================== STAFF PERMISSIONS & ACCESS REQUESTS MODULE ====================
+    const StaffPermissions = {
+        _permissions: {},
+        _staffList: [],
+        _requests: [],
+        _selectedStaffId: null,
+        _activeRequestKey: null,
+
+        meta: {
+            perm_chat_ai: {
+                label: 'Live Chat FAQ & AI Controls',
+                icon: 'fas fa-robot',
+                desc: 'Manage live chat FAQ quick buttons and AI chatbot settings'
+            },
+            perm_blackout_dates: {
+                label: 'Blackout Dates Management',
+                icon: 'fas fa-calendar-times',
+                desc: 'Block specific dates on the booking calendar'
+            },
+            perm_addons: {
+                label: 'Add-ons & Pricing Management',
+                icon: 'fas fa-plus-circle',
+                desc: 'Create and price rental add-ons (helmets, car seats, GPS)'
+            },
+            perm_locations: {
+                label: 'Locations & Delivery Zones',
+                icon: 'fas fa-map-marker-alt',
+                desc: 'Manage pickup/dropoff branches and delivery fees'
+            },
+            perm_system_config: {
+                label: 'System Rules Configuration',
+                icon: 'fas fa-cogs',
+                desc: 'Manage rental duration limits, buffer hours, and rules'
+            },
+            perm_reports_view: {
+                label: 'Analytics & Reports View',
+                icon: 'fas fa-chart-pie',
+                desc: 'View operational statistics and the analytics reports tab'
+            }
+        },
+
+        async init() {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return;
+            const isSuper = (typeof isSuperAdmin === 'function') && isSuperAdmin();
+
+            if (isSuper) {
+                this.pollPendingRequests();
+            } else {
+                await this.fetchMyPermissions(user.id);
+            }
+        },
+
+        isGranted(permKey) {
+            if (typeof isSuperAdmin === 'function' && isSuperAdmin()) return true;
+            return Boolean(this._permissions && this._permissions[permKey] && this._permissions[permKey].granted);
+        },
+
+        async fetchMyPermissions(staffId) {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions?staff_id=${staffId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this._permissions = data.permissions || {};
+                    if (typeof applyRolePermissions === 'function') applyRolePermissions();
+                }
+            } catch (err) {
+                console.error('[StaffPermissions] fetchMyPermissions error:', err);
+            }
+        },
+
+        async pollPendingRequests() {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions/requests?user_id=${user.id}&status=pending`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const count = (data.requests || []).length;
+                    const badge = document.getElementById('pendingRequestsBadge');
+                    const modalBadge = document.getElementById('permModalRequestsBadge');
+                    if (badge) {
+                        badge.style.display = count > 0 ? 'inline-block' : 'none';
+                        badge.textContent = `${count} NEW`;
+                    }
+                    if (modalBadge) {
+                        modalBadge.style.display = count > 0 ? 'inline-block' : 'none';
+                        modalBadge.textContent = count;
+                    }
+                }
+            } catch (err) {}
+        },
+
+        async openSuperAdminModal() {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return;
+            const modal = document.getElementById('staffPermissionsSuperModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+
+            // Load staff list
+            const selectEl = document.getElementById('permStaffSelect');
+            if (selectEl) selectEl.innerHTML = '<option value="">Loading staff accounts...</option>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/list?requester_id=${user.id}`);
+                if (res.ok) {
+                    const staffData = await res.json();
+                    this._staffList = (staffData || []).filter(s => s.role !== 'super_admin');
+                    if (this._staffList.length === 0) {
+                        if (selectEl) selectEl.innerHTML = '<option value="">No staff accounts found</option>';
+                        document.getElementById('permGridContainer').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);">No staff accounts registered yet. Create a staff account in Staff Management.</div>';
+                        return;
+                    }
+
+                    if (selectEl) {
+                        selectEl.innerHTML = this._staffList.map(s => `
+                            <option value="${s.id}">${s.full_name || 'Staff'} (${s.email || 'No email'})</option>
+                        `).join('');
+                    }
+
+                    this._selectedStaffId = this._staffList[0].id;
+                    await this.loadSelectedStaffPermissions();
+                }
+            } catch (err) {
+                console.error('Error loading staff for permissions modal:', err);
+            }
+
+            // Also load requests count & list in background
+            this.loadRequests();
+        },
+
+        closeSuperAdminModal() {
+            const modal = document.getElementById('staffPermissionsSuperModal');
+            if (modal) modal.style.display = 'none';
+        },
+
+        handleBackdropClick(e) {
+            if (e.target && e.target.id === 'staffPermissionsSuperModal') this.closeSuperAdminModal();
+        },
+
+        switchSuperTab(tab) {
+            const viewToggles = document.getElementById('permSuperViewToggles');
+            const viewRequests = document.getElementById('permSuperViewRequests');
+            const btnToggles = document.getElementById('permTabToggles');
+            const btnRequests = document.getElementById('permTabRequests');
+
+            if (tab === 'toggles') {
+                if (viewToggles) viewToggles.style.display = 'block';
+                if (viewRequests) viewRequests.style.display = 'none';
+                if (btnToggles) { btnToggles.style.background = 'var(--primary)'; btnToggles.style.color = '#fff'; btnToggles.style.borderColor = 'transparent'; }
+                if (btnRequests) { btnRequests.style.background = 'transparent'; btnRequests.style.color = 'var(--text-muted)'; btnRequests.style.borderColor = 'var(--border)'; }
+            } else {
+                if (viewToggles) viewToggles.style.display = 'none';
+                if (viewRequests) viewRequests.style.display = 'block';
+                if (btnToggles) { btnToggles.style.background = 'transparent'; btnToggles.style.color = 'var(--text-muted)'; btnToggles.style.borderColor = 'var(--border)'; }
+                if (btnRequests) { btnRequests.style.background = 'var(--primary)'; btnRequests.style.color = '#fff'; btnRequests.style.borderColor = 'transparent'; }
+                this.loadRequests();
+            }
+        },
+
+        async onStaffSelected() {
+            const selectEl = document.getElementById('permStaffSelect');
+            if (selectEl) {
+                this._selectedStaffId = selectEl.value;
+                await this.loadSelectedStaffPermissions();
+            }
+        },
+
+        async loadSelectedStaffPermissions() {
+            if (!this._selectedStaffId) return;
+            const container = document.getElementById('permGridContainer');
+            if (!container) return;
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading permissions...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions?staff_id=${this._selectedStaffId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const perms = data.permissions || {};
+
+                    container.innerHTML = Object.keys(this.meta).map(key => {
+                        const m = this.meta[key];
+                        const isGranted = Boolean(perms[key] && perms[key].granted);
+                        return `
+                            <div style="background:var(--surface-card);border:1px solid ${isGranted ? 'rgba(0,177,79,0.35)' : 'var(--border)'};border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:all 0.2s;">
+                                <div style="display:flex;align-items:center;gap:12px;flex:1;">
+                                    <div style="width:38px;height:38px;border-radius:10px;background:${isGranted ? 'rgba(0,177,79,0.15)' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;">
+                                        <i class="${m.icon}" style="color:${isGranted ? 'var(--primary)' : 'var(--text-muted)'};font-size:1.05rem;"></i>
+                                    </div>
+                                    <div style="flex:1;">
+                                        <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);">${m.label}</div>
+                                        <div style="font-size:0.7rem;color:var(--text-muted);">${m.desc}</div>
+                                    </div>
+                                </div>
+                                <label class="ctrl-switch" style="margin-left:8px;">
+                                    <input type="checkbox" ${isGranted ? 'checked' : ''} onchange="StaffPermissions.togglePermission('${key}', this.checked)">
+                                    <span class="ctrl-slider"></span>
+                                </label>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#ef4444;">Failed to load staff permissions.</div>';
+            }
+        },
+
+        async togglePermission(permKey, isGranted) {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user || !this._selectedStaffId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions/grant`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requester_id: user.id,
+                        staff_id: this._selectedStaffId,
+                        permission_key: permKey,
+                        is_granted: isGranted
+                    })
+                });
+
+                if (res.ok) {
+                    if (typeof showNotification === 'function') {
+                        showNotification(isGranted ? 'Permission granted to staff' : 'Permission revoked', 'success');
+                    }
+                    this.loadSelectedStaffPermissions();
+                } else {
+                    const d = await res.json().catch(() => ({}));
+                    alert(d.error || 'Failed to update permission');
+                    this.loadSelectedStaffPermissions();
+                }
+            } catch (err) {
+                alert('Connection error');
+                this.loadSelectedStaffPermissions();
+            }
+        },
+
+        async grantAllCurrentStaff(isGranted) {
+            if (!this._selectedStaffId) return;
+            const keys = Object.keys(this.meta);
+            for (const k of keys) {
+                await this.togglePermission(k, isGranted);
+            }
+        },
+
+        async loadRequests() {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return;
+            const container = document.getElementById('permRequestsList');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading access requests...</div>';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions/requests?user_id=${user.id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const requests = data.requests || [];
+                    this._requests = requests;
+
+                    const pendingCount = requests.filter(r => r.status === 'pending').length;
+                    const badge = document.getElementById('pendingRequestsBadge');
+                    const modalBadge = document.getElementById('permModalRequestsBadge');
+                    if (badge) {
+                        badge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+                        badge.textContent = `${pendingCount} NEW`;
+                    }
+                    if (modalBadge) {
+                        modalBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
+                        modalBadge.textContent = pendingCount;
+                    }
+
+                    if (requests.length === 0) {
+                        container.innerHTML = '<div style="text-align:center;padding:36px;color:var(--text-muted);"><i class="fas fa-check-circle" style="font-size:2rem;color:var(--primary);opacity:0.4;margin-bottom:8px;display:block;"></i>No access requests from staff.</div>';
+                        return;
+                    }
+
+                    container.innerHTML = requests.map(r => {
+                        const isPending = r.status === 'pending';
+                        const statusColor = isPending ? '#f59e0b' : (r.status === 'approved' ? '#10b981' : '#ef4444');
+                        return `
+                            <div style="background:var(--surface-card);border:1px solid ${isPending ? 'rgba(245,158,11,0.4)' : 'var(--border)'};border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+                                    <div>
+                                        <div style="font-size:0.95rem;font-weight:700;color:var(--text-main);display:flex;align-items:center;gap:8px;">
+                                            ${r.staff_name || 'Staff Member'}
+                                            <span style="font-size:0.65rem;color:var(--text-muted);font-weight:500;">(${r.staff_email})</span>
+                                        </div>
+                                        <div style="font-size:0.8rem;color:var(--primary);font-weight:700;margin-top:2px;">
+                                            Requested: ${r.permission_label}
+                                        </div>
+                                    </div>
+                                    <span style="font-size:0.65rem;font-weight:800;text-transform:uppercase;padding:3px 10px;border-radius:12px;background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44;">
+                                        ${r.status}
+                                    </span>
+                                </div>
+                                ${r.reason ? `<div style="font-size:0.75rem;color:var(--text-secondary);background:var(--surface-solid);padding:10px 12px;border-radius:8px;border:1px solid var(--border);"><strong>Reason:</strong> ${r.reason}</div>` : ''}
+                                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--text-muted);padding-top:6px;border-top:1px solid var(--border);">
+                                    <span>Submitted: ${new Date(r.created_at).toLocaleDateString()}</span>
+                                    ${isPending ? `
+                                        <div style="display:flex;gap:8px;">
+                                            <button type="button" onclick="StaffPermissions.reviewRequest(${r.id}, 'reject')" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.72rem;font-weight:700;cursor:pointer;">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                            <button type="button" onclick="StaffPermissions.reviewRequest(${r.id}, 'approve')" class="btn-premium" style="padding:6px 16px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:0.72rem;font-weight:700;cursor:pointer;">
+                                                <i class="fas fa-check"></i> Approve &amp; Grant
+                                            </button>
+                                        </div>
+                                    ` : `<span style="font-weight:600;">Reviewed</span>`}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                container.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;">Failed to load requests.</div>';
+            }
+        },
+
+        async reviewRequest(reqId, action) {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions/requests/${reqId}/review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        requester_id: user.id,
+                        action: action
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (typeof showNotification === 'function') {
+                        showNotification(`Request ${action === 'approve' ? 'approved & permission granted' : 'rejected'}.`, 'success');
+                    }
+                    this.loadRequests();
+                    this.loadSelectedStaffPermissions();
+                } else {
+                    const d = await res.json().catch(() => ({}));
+                    alert(d.error || 'Failed to review request');
+                }
+            } catch (err) {
+                alert('Connection error');
+            }
+        },
+
+        // ---------- STAFF ADMIN REQUEST WORKFLOW ----------
+        openRequestModal(permKey) {
+            this._activeRequestKey = permKey;
+            const m = this.meta[permKey];
+            if (!m) return;
+
+            const modal = document.getElementById('staffRequestPermModal');
+            const titleEl = document.getElementById('staffReqPermTitle');
+            const descEl = document.getElementById('staffReqPermDesc');
+            const reasonEl = document.getElementById('staffReqPermReason');
+
+            if (titleEl) titleEl.textContent = m.label;
+            if (descEl) descEl.textContent = m.desc;
+            if (reasonEl) reasonEl.value = '';
+
+            if (modal) modal.style.display = 'flex';
+        },
+
+        closeRequestModal() {
+            const modal = document.getElementById('staffRequestPermModal');
+            if (modal) modal.style.display = 'none';
+        },
+
+        handleRequestBackdrop(e) {
+            if (e.target && e.target.id === 'staffRequestPermModal') this.closeRequestModal();
+        },
+
+        async submitRequest() {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user || !this._activeRequestKey) return;
+
+            const reasonEl = document.getElementById('staffReqPermReason');
+            const reason = reasonEl ? reasonEl.value.trim() : '';
+            const btn = document.getElementById('staffReqSubmitBtn');
+            const origText = btn ? btn.innerHTML : 'Submit';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/permissions/request`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        staff_id: user.id,
+                        permission_key: this._activeRequestKey,
+                        reason: reason
+                    })
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    this.closeRequestModal();
+                    if (typeof showNotification === 'function') {
+                        showNotification(data.message || 'Access request submitted to Super Admin!', 'success');
+                    } else {
+                        alert(data.message || 'Request submitted!');
+                    }
+
+                    // Update button on locked card
+                    const lockCardBtn = document.querySelector(`#lockPerm_${this._activeRequestKey} button`);
+                    if (lockCardBtn) {
+                        lockCardBtn.disabled = true;
+                        lockCardBtn.innerHTML = '⏳ Pending Review';
+                        lockCardBtn.style.background = 'rgba(245,158,11,0.15)';
+                        lockCardBtn.style.color = '#f59e0b';
+                        lockCardBtn.style.borderColor = 'rgba(245,158,11,0.3)';
+                    }
+                } else {
+                    alert(data.error || 'Failed to submit request');
+                }
+            } catch (err) {
+                alert('Connection error. Please try again.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origText;
+                }
+            }
+        }
+    };
+    window.StaffPermissions = StaffPermissions;
 
     window.adminAuth = adminAuth;
 
@@ -33599,6 +34162,98 @@ function toggleNewsletterModal(show = true) {
     </div>
     <div id="vehicleDetailContent" style="padding:0;"></div>
   </div>
+</div>
+
+
+<!-- ==================== STAFF PERMISSIONS & ACCESS REQUESTS (SUPER ADMIN MODAL) ==================== -->
+<div id="staffPermissionsSuperModal" class="premium-modal" style="display:none;" onclick="StaffPermissions.handleBackdropClick(event)">
+    <div class="modal-content" style="max-width: 860px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+            <div>
+                <h3 style="margin:0; font-size:1.2rem; color:var(--text-main); display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-user-shield" style="color:var(--primary);"></i>
+                    Staff Control Permissions &amp; Requests
+                    <span style="font-size:0.65rem; background:rgba(0,177,79,0.15); color:var(--primary); font-weight:800; padding:3px 8px; border-radius:8px;">SUPER ADMIN</span>
+                </h3>
+                <p style="margin:4px 0 0; font-size:0.75rem; color:var(--text-muted);">Allow or restrict specific operational controls for staff members, and review incoming access requests.</p>
+            </div>
+            <button type="button" onclick="StaffPermissions.closeSuperAdminModal()" class="menu-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:10px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Sub Tabs -->
+        <div style="display:flex; gap:10px; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+            <button type="button" id="permTabToggles" onclick="StaffPermissions.switchSuperTab('toggles')" style="padding:8px 16px; border-radius:10px; font-weight:700; font-size:0.82rem; border:none; cursor:pointer; background:var(--primary); color:#fff; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-toggle-on"></i> Control Permissions
+            </button>
+            <button type="button" id="permTabRequests" onclick="StaffPermissions.switchSuperTab('requests')" style="padding:8px 16px; border-radius:10px; font-weight:700; font-size:0.82rem; border:1px solid var(--border); cursor:pointer; background:transparent; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-inbox"></i> Access Requests <span id="permModalRequestsBadge" style="display:none; background:#ef4444; color:#fff; font-size:0.6rem; padding:1px 6px; border-radius:8px; margin-left:4px;">0</span>
+            </button>
+        </div>
+
+        <!-- Tab 1: Permissions by Staff Member -->
+        <div id="permSuperViewToggles">
+            <div style="margin-bottom: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Select Staff Member:</label>
+                <select id="permStaffSelect" onchange="StaffPermissions.onStaffSelected()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-weight: 600; outline: none;">
+                    <option value="">Loading staff accounts...</option>
+                </select>
+                <button type="button" onclick="StaffPermissions.grantAllCurrentStaff(true)" class="btn-premium" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
+                    <i class="fas fa-check-double"></i> Allow All
+                </button>
+                <button type="button" onclick="StaffPermissions.grantAllCurrentStaff(false)" class="btn-premium" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700; cursor: pointer;">
+                    <i class="fas fa-ban"></i> Restrict All
+                </button>
+            </div>
+
+            <div id="permGridContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Tab 2: Access Requests Review -->
+        <div id="permSuperViewRequests" style="display: none;">
+            <div id="permRequestsList" style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== REQUEST PERMISSION ACCESS (STAFF ADMIN MODAL) ==================== -->
+<div id="staffRequestPermModal" class="premium-modal" style="display:none;" onclick="StaffPermissions.handleRequestBackdrop(event)">
+    <div class="modal-content" style="max-width: 520px; width: 90%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+            <h3 style="margin:0; font-size:1.1rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-key" style="color:var(--primary);"></i>
+                Request Control Access
+            </h3>
+            <button type="button" onclick="StaffPermissions.closeRequestModal()" class="menu-btn" style="width:32px; height:32px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:8px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Requested Control</div>
+            <div id="staffReqPermTitle" style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin: 3px 0;">Control Name</div>
+            <div id="staffReqPermDesc" style="font-size: 0.75rem; color: var(--text-muted);">Control description goes here.</div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">Reason for Request <span style="font-weight: 400; color: var(--text-muted);">(Optional)</span>:</label>
+            <textarea id="staffReqPermReason" placeholder="e.g. Need access to manage incoming holiday blackout dates for customers..." rows="3" style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; resize: vertical; box-sizing: border-box; outline: none;"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button type="button" onclick="StaffPermissions.closeRequestModal()" style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">
+                Cancel
+            </button>
+            <button type="button" id="staffReqSubmitBtn" onclick="StaffPermissions.submitRequest()" class="btn-premium" style="padding: 10px 22px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-paper-plane"></i> Submit Request
+            </button>
+        </div>
+    </div>
 </div>
 
 </body>
