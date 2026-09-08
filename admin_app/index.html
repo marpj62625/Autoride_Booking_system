@@ -35,8 +35,13 @@
                 var loggedIn = false;
                 if (raw) {
                     var parsed = JSON.parse(raw);
-                    if (parsed && (parsed.id || (parsed.user && parsed.savedAt && (Date.now() - parsed.savedAt < 7*24*60*60*1000)))) {
+                    if (parsed && (parsed.id || (parsed.user && (!parsed.savedAt || Date.now() - parsed.savedAt < 7*24*60*60*1000)))) {
                         loggedIn = true;
+                        var _u = parsed.user || parsed;
+                        var _r = (_u && _u.role) ? String(_u.role).toLowerCase() : '';
+                        if (!(_r.includes('super') || _r === 'super_admin')) {
+                            document.documentElement.classList.add('role-staff');
+                        }
                     }
                 }
                 if (!loggedIn) {
@@ -346,6 +351,27 @@
 
 
         .revenue-restricted { display: none; }
+
+        /* Super Admin vs Staff Admin Role Restrictions */
+        .role-staff [data-tab="dashboard"],
+        body.role-staff [data-tab="dashboard"],
+        .role-staff [data-tab="staff"],
+        body.role-staff [data-tab="staff"],
+        .role-staff [data-tab="activity"],
+        body.role-staff [data-tab="activity"],
+        .role-staff #nlDrawerLink,
+        body.role-staff #nlDrawerLink,
+        .role-staff #mobileNewsletterConfig,
+        body.role-staff #mobileNewsletterConfig,
+        .role-staff #archiveDrawerLink,
+        body.role-staff #archiveDrawerLink,
+        .role-staff #adminMaintenanceConfig,
+        body.role-staff #adminMaintenanceConfig,
+        .role-staff .revenue-restricted,
+        body.role-staff .revenue-restricted {
+            display: none !important;
+        }
+
 
 
 
@@ -4440,11 +4466,11 @@
 
 
             <a href="javascript:void(0);" class="drawer-item" data-tab="activity" onclick="navTo('activity')"><i class="fas fa-history"></i> Activity Log</a>
-            <a href="javascript:void(0);" class="drawer-item" onclick="toggleNewsletterModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-newspaper"></i> Newsletters & Promos</a>
+            <a href="javascript:void(0);" class="drawer-item" id="nlDrawerLink" onclick="toggleNewsletterModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-newspaper"></i> Newsletters & Promos</a>
 
 
 
-                        <a href="javascript:void(0);" class="drawer-item" onclick="toggleArchiveMaintenanceModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-archive"></i> Archive & Maintenance</a>
+                        <a href="javascript:void(0);" class="drawer-item" id="archiveDrawerLink" onclick="toggleArchiveMaintenanceModal(true); if(typeof closeDrawer === 'function') closeDrawer();"><i class="fas fa-archive"></i> Archive & Maintenance</a>
 <a href="javascript:void(0);" class="drawer-item" onclick="navTo('settings')"><i class="fas fa-cog"></i> Settings</a>
 
 
@@ -11108,13 +11134,8 @@ input:checked + .ctrl-slider:before {
                 const emailEl = document.getElementById('settingsEmail');
                 if (emailEl && user.email) emailEl.textContent = user.email;
 
-                const userRole = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
-
-                const isSuper = userRole.includes('super admin') || userRole.includes('superadmin') || user.role === 'super_admin';
-
-                document.querySelectorAll('.revenue-restricted').forEach(el => {
-                    el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
-                });
+                const isSuper = isSuperAdmin();
+                applyRolePermissions();
 
                 const superAdminPill = document.getElementById('superAdminProfileEditPill');
                 if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
@@ -11252,6 +11273,65 @@ input:checked + .ctrl-slider:before {
     };
 
 
+
+    
+    function isSuperAdmin() {
+        try {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user) return false;
+            const r = (user.role || '').toLowerCase().replace(/_/g, ' ').trim();
+            return r.includes('super admin') || r.includes('superadmin') || user.role === 'super_admin';
+        } catch(_) { return false; }
+    }
+    window.isSuperAdmin = isSuperAdmin;
+
+    function applyRolePermissions() {
+        const isSuper = isSuperAdmin();
+        if (isSuper) {
+            document.documentElement.classList.remove('role-staff');
+            document.body && document.body.classList.remove('role-staff');
+            document.documentElement.classList.add('role-super');
+            document.body && document.body.classList.add('role-super');
+        } else {
+            document.documentElement.classList.remove('role-super');
+            document.body && document.body.classList.remove('role-super');
+            document.documentElement.classList.add('role-staff');
+            document.body && document.body.classList.add('role-staff');
+        }
+
+        // Apply explicit styles
+        document.querySelectorAll('[data-tab="dashboard"]').forEach(el => {
+            el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
+        });
+        document.querySelectorAll('[data-tab="staff"]').forEach(el => {
+            el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
+        });
+        document.querySelectorAll('[data-tab="activity"]').forEach(el => {
+            el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
+        });
+
+        const nlDrawer = document.getElementById('nlDrawerLink');
+        if (nlDrawer) nlDrawer.style.display = isSuper ? 'flex' : 'none';
+        const nlConfig = document.getElementById('mobileNewsletterConfig');
+        if (nlConfig) nlConfig.style.display = isSuper ? 'block' : 'none';
+
+        const archDrawer = document.getElementById('archiveDrawerLink');
+        if (archDrawer) archDrawer.style.display = isSuper ? 'flex' : 'none';
+        const archConfig = document.getElementById('adminMaintenanceConfig');
+        if (archConfig) archConfig.style.display = isSuper ? 'block' : 'none';
+
+        document.querySelectorAll('.revenue-restricted').forEach(el => {
+            el.style.display = isSuper ? (el.tagName === 'A' || el.tagName === 'BUTTON' ? 'flex' : 'block') : 'none';
+        });
+
+        const superAdminPill = document.getElementById('superAdminProfileEditPill');
+        if (superAdminPill) superAdminPill.style.display = isSuper ? 'flex' : 'none';
+        const superAdminCard = document.getElementById('superAdminEditProfileCard');
+        if (superAdminCard) superAdminCard.style.display = isSuper ? 'flex' : 'none';
+        const regularPassCard = document.getElementById('adminChangePasswordCard');
+        if (regularPassCard) regularPassCard.style.display = isSuper ? 'none' : 'flex';
+    }
+    window.applyRolePermissions = applyRolePermissions;
 
     window.adminAuth = adminAuth;
 
@@ -11899,6 +11979,10 @@ input:checked + .ctrl-slider:before {
 
 
         const user = adminAuth.getUser();
+        if (typeof isSuperAdmin === 'function' && !isSuperAdmin()) {
+            console.log('[Dashboard] Suppressing dashboard stats refresh for non-superadmin');
+            return;
+        }
 
 
 
@@ -15378,6 +15462,15 @@ function toggleNewsletterModal(show = true) {
         currentTab = tabId;
 
 
+
+        // Guard restricted tabs for non-superadmin
+        if (typeof isSuperAdmin === 'function' && !isSuperAdmin()) {
+            if (tabId === 'dashboard' || tabId === 'staff' || tabId === 'activity') {
+                console.warn(`[Access Guard] Tab '${tabId}' is restricted to Super Admin. Redirecting to vehicles.`);
+                tabId = 'vehicles';
+            }
+        }
+        if (typeof applyRolePermissions === 'function') applyRolePermissions();
 
         // Stop ActiveNow timers when leaving bookings tab
 
