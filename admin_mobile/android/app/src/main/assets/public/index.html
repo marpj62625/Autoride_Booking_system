@@ -11662,9 +11662,12 @@ input:checked + .ctrl-slider:before {
                             </div>
                         `;
                     }).join('');
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Failed to load permissions: ${errData.error || ('Status ' + res.status)}</div>`;
                 }
             } catch (err) {
-                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#ef4444;">Failed to load staff permissions.</div>';
+                container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Connection error: ${err.message || err}</div>`;
             }
         },
 
@@ -11701,11 +11704,29 @@ input:checked + .ctrl-slider:before {
         },
 
         async grantAllCurrentStaff(isGranted) {
-            if (!this._selectedStaffId) return;
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user || !this._selectedStaffId) return;
+            const container = document.getElementById('permGridContainer');
+            if (container) container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Updating permissions...</div>';
             const keys = Object.keys(this.meta);
             for (const k of keys) {
-                await this.togglePermission(k, isGranted);
+                try {
+                    await fetch(`${API_BASE}/api/admin/permissions/grant`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            requester_id: user.id,
+                            staff_id: this._selectedStaffId,
+                            permission_key: k,
+                            is_granted: isGranted
+                        })
+                    });
+                } catch(e) {}
             }
+            if (typeof showNotification === 'function') {
+                showNotification(isGranted ? 'All permissions granted' : 'All permissions revoked', 'success');
+            }
+            await this.loadSelectedStaffPermissions();
         },
 
         async loadRequests() {
@@ -11775,9 +11796,12 @@ input:checked + .ctrl-slider:before {
                             </div>
                         `;
                     }).join('');
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    container.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Failed to load requests: ${errData.error || ('Status ' + res.status)}</div>`;
                 }
             } catch (err) {
-                container.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;">Failed to load requests.</div>';
+                container.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Connection error: ${err.message || err}</div>`;
             }
         },
 

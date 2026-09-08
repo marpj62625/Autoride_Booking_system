@@ -1011,6 +1011,78 @@ def migrate_chat_faq_and_ai_controls():
     finally:
         if 'cur' in locals(): cur.close()
 
+# ==================== DYNAMIC STAFF PERMISSIONS & REQUESTS ====================
+
+ALL_DELEGATABLE_PERMISSIONS = {
+    'perm_chat_ai': {
+        'key': 'perm_chat_ai',
+        'label': 'Live Chat FAQ & AI Assistant Controls',
+        'desc': 'Manage FAQ quick buttons, toggle AI chatbot, auto-replies'
+    },
+    'perm_blackout_dates': {
+        'key': 'perm_blackout_dates',
+        'label': 'Blackout Dates Management',
+        'desc': 'Block or unblock dates on the booking calendar'
+    },
+    'perm_addons': {
+        'key': 'perm_addons',
+        'label': 'Add-ons & Pricing Management',
+        'desc': 'Create, edit, and price rental add-ons (helmets, seats, etc.)'
+    },
+    'perm_locations': {
+        'key': 'perm_locations',
+        'label': 'Locations & Delivery Zones',
+        'desc': 'Manage pickup/dropoff branches, zones, and delivery fees'
+    },
+    'perm_system_config': {
+        'key': 'perm_system_config',
+        'label': 'System Rules Configuration',
+        'desc': 'Configure min/max rental days, buffer hours, business contact'
+    },
+    'perm_reports_view': {
+        'key': 'perm_reports_view',
+        'label': 'Analytics & Reports View',
+        'desc': 'View operational statistics and reports tab'
+    }
+}
+
+def migrate_staff_permissions_and_requests():
+    """Ensures staff_permissions and permission_requests tables exist."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS staff_permissions (
+                id SERIAL PRIMARY KEY,
+                staff_id INT NOT NULL,
+                permission_key VARCHAR(100) NOT NULL,
+                is_granted BOOLEAN DEFAULT TRUE,
+                granted_by INT,
+                updated_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(staff_id, permission_key)
+            );
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS permission_requests (
+                id SERIAL PRIMARY KEY,
+                staff_id INT NOT NULL,
+                staff_name VARCHAR(150),
+                staff_email VARCHAR(150),
+                permission_key VARCHAR(100) NOT NULL,
+                permission_label VARCHAR(150) NOT NULL,
+                reason TEXT,
+                status VARCHAR(30) DEFAULT 'pending',
+                reviewed_by INT,
+                reviewed_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        commit_db()
+        print("[MIGRATION] migrate_staff_permissions_and_requests completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_staff_permissions_and_requests error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 try:
     with app.app_context():
         migrate_google_auth_columns()
@@ -1019,7 +1091,6 @@ try:
         migrate_smtp_oauth_keys()
         migrate_archive_columns()
         migrate_chat_faq_and_ai_controls()
-        migrate_staff_permissions_and_requests()
         migrate_staff_permissions_and_requests()
 except Exception as _e:
     pass
@@ -13650,74 +13721,7 @@ def disconnect_smtp_oauth():
 
 # ==================== DYNAMIC STAFF PERMISSIONS & REQUESTS ====================
 
-ALL_DELEGATABLE_PERMISSIONS = {
-    'perm_chat_ai': {
-        'key': 'perm_chat_ai',
-        'label': 'Live Chat FAQ & AI Assistant Controls',
-        'desc': 'Manage FAQ quick buttons, toggle AI chatbot, auto-replies'
-    },
-    'perm_blackout_dates': {
-        'key': 'perm_blackout_dates',
-        'label': 'Blackout Dates Management',
-        'desc': 'Block or unblock dates on the booking calendar'
-    },
-    'perm_addons': {
-        'key': 'perm_addons',
-        'label': 'Add-ons & Pricing Management',
-        'desc': 'Create, edit, and price rental add-ons (helmets, seats, etc.)'
-    },
-    'perm_locations': {
-        'key': 'perm_locations',
-        'label': 'Locations & Delivery Zones',
-        'desc': 'Manage pickup/dropoff branches, zones, and delivery fees'
-    },
-    'perm_system_config': {
-        'key': 'perm_system_config',
-        'label': 'System Rules Configuration',
-        'desc': 'Configure min/max rental days, buffer hours, business contact'
-    },
-    'perm_reports_view': {
-        'key': 'perm_reports_view',
-        'label': 'Analytics & Reports View',
-        'desc': 'View operational statistics and reports tab'
-    }
-}
-
-def migrate_staff_permissions_and_requests():
-    """Ensures staff_permissions and permission_requests tables exist."""
-    try:
-        cur = get_cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS staff_permissions (
-                id SERIAL PRIMARY KEY,
-                staff_id INT NOT NULL,
-                permission_key VARCHAR(100) NOT NULL,
-                is_granted BOOLEAN DEFAULT TRUE,
-                granted_by INT,
-                updated_at TIMESTAMPTZ DEFAULT NOW(),
-                UNIQUE(staff_id, permission_key)
-            );
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS permission_requests (
-                id SERIAL PRIMARY KEY,
-                staff_id INT NOT NULL,
-                staff_name VARCHAR(150),
-                staff_email VARCHAR(150),
-                permission_key VARCHAR(100) NOT NULL,
-                permission_label VARCHAR(150) NOT NULL,
-                reason TEXT,
-                status VARCHAR(30) DEFAULT 'pending',
-                reviewed_by INT,
-                reviewed_at TIMESTAMPTZ,
-                created_at TIMESTAMPTZ DEFAULT NOW()
-            );
-        """)
-        commit_db()
-    except Exception as e:
-        print(f"[MIGRATION] migrate_staff_permissions_and_requests error: {e}")
-    finally:
-        if 'cur' in locals(): cur.close()
+# (ALL_DELEGATABLE_PERMISSIONS & migrate_staff_permissions_and_requests defined above)
 
 def check_staff_permission(user_id, perm_key):
     """Returns True if user_id is super_admin OR has perm_key granted."""
@@ -13742,6 +13746,7 @@ def check_staff_permission(user_id, perm_key):
         print(f"[check_staff_permission] error: {e}")
         return False
 
+@app.route('/admin/permissions', methods=['GET'])
 @app.route('/api/admin/permissions', methods=['GET'])
 def get_staff_permissions():
     """Returns permissions dictionary for a given staff_id or requester."""
@@ -13786,6 +13791,7 @@ def get_staff_permissions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/admin/permissions/grant', methods=['POST'])
 @app.route('/api/admin/permissions/grant', methods=['POST'])
 def grant_staff_permission():
     """Super Admin endpoint to grant or revoke a permission for a staff member."""
@@ -13838,6 +13844,7 @@ def grant_staff_permission():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/admin/permissions/request', methods=['POST'])
 @app.route('/api/admin/permissions/request', methods=['POST'])
 def request_staff_permission():
     """Staff Admin endpoint to submit an access request to Super Admin."""
@@ -13901,6 +13908,7 @@ def request_staff_permission():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/admin/permissions/requests', methods=['GET'])
 @app.route('/api/admin/permissions/requests', methods=['GET'])
 def list_permission_requests():
     """List permission requests. Super Admins see all requests. Staff see their own requests."""
@@ -13942,6 +13950,7 @@ def list_permission_requests():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/admin/permissions/requests/<int:req_id>/review', methods=['POST'])
 @app.route('/api/admin/permissions/requests/<int:req_id>/review', methods=['POST'])
 def review_permission_request(req_id):
     """Super Admin reviews (approves or rejects) an access request."""
