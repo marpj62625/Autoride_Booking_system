@@ -20845,26 +20845,60 @@ function toggleNewsletterModal(show = true) {
 
         async loadFleetVehicles() {
             try {
-                const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
+                let res = await fetch(`${API_BASE}/api/admin/gps-locations`);
+                if (!res.ok) res = await fetch(`${API_BASE}/admin/gps-locations`);
                 if (res.ok) {
                     const data = await res.json();
                     this.fleetVehicles = data || [];
-                    const select = document.getElementById('gpsVehicleSelect');
-                    if (select && this.fleetVehicles.length > 0) {
-                        select.innerHTML = this.fleetVehicles.map((v, idx) => `
-                            <option value="${v.id}" ${idx === 0 ? 'selected' : ''}>
-                                ${v.name} (${v.plate_number || 'No Plate'})
-                            </option>
-                        `).join('');
-                        if (!this.selectedVehicleId) {
-                            this.selectedVehicleId = this.fleetVehicles[0].id;
-                        }
-                    }
-                    this._updateHeaderDeviceLabel();
                 }
             } catch (e) {
                 console.error('[GPS] loadFleetVehicles error:', e);
             }
+
+            // Fallback: If fleetVehicles has fewer than 2 vehicles, fetch from /api/vehicles to guarantee full fleet
+            if (!this.fleetVehicles || this.fleetVehicles.length <= 1) {
+                try {
+                    let vRes = await fetch(`${API_BASE}/api/vehicles`);
+                    if (!vRes.ok) vRes = await fetch(`${API_BASE}/vehicles`);
+                    if (vRes.ok) {
+                        const vList = await vRes.json();
+                        if (vList && vList.length > (this.fleetVehicles ? this.fleetVehicles.length : 0)) {
+                            const existingMap = new Map((this.fleetVehicles || []).map(x => [x.id, x]));
+                            this.fleetVehicles = vList.map(v => {
+                                const exist = existingMap.get(v.id) || {};
+                                return {
+                                    id: v.id,
+                                    name: v.name || `${v.brand || ''} ${v.model || ''}`.trim() || `Vehicle #${v.id}`,
+                                    plate_number: v.plate_number,
+                                    latitude: exist.latitude || v.latitude,
+                                    longitude: exist.longitude || v.longitude,
+                                    last_address: exist.last_address || v.last_address,
+                                    last_gps_update: exist.last_gps_update || v.last_gps_update,
+                                    gps_status: exist.gps_status || v.gps_status,
+                                    gps_device_token: exist.gps_device_token || v.gps_device_token,
+                                    gps_device_name: exist.gps_device_name || v.gps_device_name,
+                                    gps_server: exist.gps_server || v.gps_server || 'sgp1.blynk.cloud'
+                                };
+                            });
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            const select = document.getElementById('gpsVehicleSelect');
+            if (select && this.fleetVehicles.length > 0) {
+                const curVal = this.selectedVehicleId;
+                select.innerHTML = this.fleetVehicles.map(v => `
+                    <option value="${v.id}" style="background:var(--surface-card, #1e293b); color:var(--text-main, #fff);" ${v.id === curVal ? 'selected' : ''}>
+                        ${v.name || 'Vehicle'} (${v.plate_number || 'No Plate'})
+                    </option>
+                `).join('');
+                if (!this.selectedVehicleId || !this.fleetVehicles.some(v => v.id === this.selectedVehicleId)) {
+                    this.selectedVehicleId = this.fleetVehicles[0].id;
+                }
+                select.value = this.selectedVehicleId;
+            }
+            this._updateHeaderDeviceLabel();
         },
 
         _updateHeaderDeviceLabel() {
@@ -21181,16 +21215,22 @@ function toggleNewsletterModal(show = true) {
             if (modal) modal.style.display = 'none';
         },
 
-        openConfigModal(vehicleId = null) {
+        async openConfigModal(vehicleId = null) {
             const modal = document.getElementById('gpsConfigModal');
             if (!modal) return;
 
+            if (!this.fleetVehicles || this.fleetVehicles.length <= 1) {
+                await this.loadFleetVehicles();
+            }
+
             const sel = document.getElementById('gpsConfigVehicleSelect');
             if (sel && this.fleetVehicles.length > 0) {
-                sel.innerHTML = this.fleetVehicles.map(v => `
-                    <option value="${v.id}">${v.name} (${v.plate_number || 'No Plate'})</option>
-                `).join('');
                 const targetId = vehicleId || this.selectedVehicleId || this.fleetVehicles[0].id;
+                sel.innerHTML = this.fleetVehicles.map(v => `
+                    <option value="${v.id}" style="background:var(--surface-card, #1e293b); color:var(--text-main, #fff);" ${v.id == targetId ? 'selected' : ''}>
+                        ${v.name || 'Vehicle'} (${v.plate_number || 'No Plate'})
+                    </option>
+                `).join('');
                 sel.value = targetId;
                 this.onConfigVehicleChange(targetId);
             }

@@ -3291,26 +3291,19 @@ def get_all_gps_locations():
                 location_filter = adm['assigned_location']
 
         query = """
-            SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status
-            FROM vehicles 
-            WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+            SELECT id, 
+                   COALESCE(NULLIF(name, ''), CONCAT(brand, ' ', model), 'Vehicle #' || id) AS name,
+                   plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status
+            FROM vehicles
         """
         params = []
         if location_filter:
-            query += " AND location = %s "
+            query += " WHERE location = %s "
             params.append(location_filter)
 
         query += " ORDER BY id ASC"
         cur.execute(query, tuple(params))
         locations = cur.fetchall()
-
-        # If no coordinates are set, fallback to listing vehicles so admin can see fleet options
-        if not locations:
-            cur.execute("""
-                SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status 
-                FROM vehicles ORDER BY id ASC LIMIT 20
-            """)
-            locations = cur.fetchall()
 
         results = []
         for loc in locations:
