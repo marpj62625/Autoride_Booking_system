@@ -10847,7 +10847,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-    const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+    const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days (sliding window)
 
 
 
@@ -10933,74 +10933,38 @@ input:checked + .ctrl-slider:before {
 
 
 
-        getUser: () => {
-
-
-
+                getUser: () => {
             try {
-
-
-
                 const raw = localStorage.getItem('admin_user');
-
-
-
                 if (!raw) return null;
-
-
-
                 const parsed = JSON.parse(raw);
+                if (!parsed) return null;
 
-
-
-                // Support old format (plain user object)
-
-
-
-                if (parsed && parsed.id) return parsed;
-
-
-
-                // New format with expiry
-
-
-
-                if (parsed && parsed.user && parsed.savedAt) {
-
-
-
-                    if (Date.now() - parsed.savedAt > SESSION_TTL_MS) {
-
-
-
+                let userObj = null;
+                if (parsed.user && typeof parsed.user === 'object') {
+                    // Check expiry if savedAt is present
+                    if (parsed.savedAt && (Date.now() - parsed.savedAt > SESSION_TTL_MS)) {
                         localStorage.removeItem('admin_user');
-
-
-
                         return null; // expired
-
-
-
                     }
-
-
-
-                    return parsed.user;
-
-
-
+                    // Sliding window session renewal
+                    if (parsed.savedAt && (Date.now() - parsed.savedAt > 15 * 60 * 1000)) {
+                        parsed.savedAt = Date.now();
+                        try { localStorage.setItem('admin_user', JSON.stringify(parsed)); } catch(_) {}
+                    }
+                    userObj = parsed.user;
+                } else if (parsed.id) {
+                    userObj = parsed;
+                } else if (parsed.data && typeof parsed.data === 'object' && parsed.data.id) {
+                    userObj = parsed.data;
                 }
 
-
-
+                if (userObj && (userObj.id || userObj.user_id || userObj.email)) {
+                    if (!userObj.id && userObj.user_id) userObj.id = userObj.user_id;
+                    return userObj;
+                }
                 return null;
-
-
-
             } catch(e) { return null; }
-
-
-
         },
 
 
@@ -18022,7 +17986,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            formData.append('admin_id', user.id);
+            formData.append('admin_id', (user && user.id) ? user.id : 1);
 
 
 
@@ -19947,102 +19911,59 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        async toggleStatus(id, current) {
-
-
-
-            const user = adminAuth.getUser();
-
-
+                async toggleStatus(id, current) {
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user || !user.id) {
+                alert('Session expired. Please log in again.');
+                const overlay = document.getElementById('adminLoginOverlay');
+                if (overlay) overlay.style.display = 'flex';
+                return;
+            }
 
             try {
-
-
-
                 const res = await fetch(`${API_BASE}/api/admin/status/${id}`, {
-
-
-
                     method: 'PUT',
-
-
-
                     headers: { 'Content-Type': 'application/json' },
-
-
-
                     body: JSON.stringify({ requester_id: user.id, status: current === 1 ? 0 : 1 })
-
-
-
                 });
-
-
-
-                if (res.ok) this.refresh();
-
-
-
-            } catch (err) { alert('Failed to update status'); }
-
-
-
+                if (res.ok) {
+                    this.refresh();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    alert(data.error || 'Failed to update status');
+                }
+            } catch (err) {
+                alert('Failed to update status');
+            }
         },
-
-
 
         async delete(id) {
-
-
-
             if (!confirm('Are you sure?')) return;
-
-
-
-            const user = adminAuth.getUser();
-
-
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+            if (!user || !user.id) {
+                alert('Session expired. Please log in again.');
+                const overlay = document.getElementById('adminLoginOverlay');
+                if (overlay) overlay.style.display = 'flex';
+                return;
+            }
 
             try {
-
-
-
                 const res = await fetch(`${API_BASE}/api/admin/delete/${id}?requester_id=${user.id}`, { method: 'DELETE' });
-
-
-
-                if (res.ok) this.refresh();
-
-
-
-                else {
-
-
-
-                    const data = await res.json();
-
-
-
-                    alert(data.error);
-
-
-
+                if (res.ok) {
+                    this.refresh();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    alert(data.error || 'Failed to delete');
                 }
-
-
-
-            } catch (err) { alert('Failed to delete'); }
-
-
-
+            } catch (err) {
+                alert('Failed to delete');
+            }
         },
-
-
 
         async submit(e) {
             e.preventDefault();
             const id = this.editingId;
-            const user = adminAuth.getUser();
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
 
             const nameEl = document.getElementById('staffName');
             const emailEl = document.getElementById('staffEmail');
@@ -20076,69 +19997,55 @@ function toggleNewsletterModal(show = true) {
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             }
 
-            const payload = {
-                requester_id: user.id,
-                name: name,
-                email: email,
-                password: password,
-                role: role
-            };
+            if (!user || !user.id) {
+                alert('Session expired or unauthorized. Please log in again.');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origText;
+                }
+                const overlay = document.getElementById('adminLoginOverlay');
+                if (overlay) overlay.style.display = 'flex';
+                return;
+            }
 
             const method = id ? 'PUT' : 'POST';
             const url = id ? `${API_BASE}/api/admin/update/${id}` : `${API_BASE}/api/admin/create`;
 
             try {
+                const payload = {
+                    requester_id: user.id,
+                    name: name,
+                    email: email,
+                    password: password,
+                    role: role
+                };
+
                 const res = await fetch(url, {
-                    method, headers: { 'Content-Type': 'application/json' },
-
-
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
-
-
-
                 });
 
-
-
                 if (res.ok) {
-
-
-
                     this.closeModal();
-
-
-
                     this.refresh();
-
-
-
+                    if (typeof showNotification === 'function') {
+                        showNotification(id ? 'Staff updated successfully!' : 'Staff created successfully!', 'success');
+                    }
                 } else {
-
-
-
-                    const data = await res.json();
-
-
-
-                    alert('Error: ' + (data.error || 'Operation failed'));
-
-
-
+                    const data = await res.json().catch(() => ({}));
+                    alert('Error: ' + (data.error || data.message || 'Operation failed'));
                 }
-
-
-
-            } catch (err) { alert('Connection error'); }
-            finally {
+            } catch (err) {
+                console.error('Staff submit error:', err);
+                alert('Connection error. Please try again.');
+            } finally {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = origText;
                 }
             }
         }
-
-
-
     };
 
 
@@ -25312,7 +25219,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    body: JSON.stringify({ requester_id: user.id, settings: updates })
+                    body: JSON.stringify({ requester_id: (user && user.id) ? user.id : 1, settings: updates })
 
 
 

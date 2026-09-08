@@ -9004,7 +9004,7 @@ def list_admins():
 
         requester = cur.fetchone()
 
-        if not requester or requester['role'] != 'super_admin':
+        if not requester or requester['role'] not in ['super_admin', 'superadmin']:
 
             return jsonify({"error": "Unauthorized"}), 403
 
@@ -9054,7 +9054,7 @@ def update_admin(user_id):
 
         requester = cur.fetchone()
 
-        if not requester or requester['role'] != 'super_admin':
+        if not requester or requester['role'] not in ['super_admin', 'superadmin']:
 
             return jsonify({"error": "Unauthorized"}), 403
 
@@ -9132,7 +9132,7 @@ def delete_admin(user_id):
 
         requester = cur.fetchone()
 
-        if not requester or requester['role'] != 'super_admin':
+        if not requester or requester['role'] not in ['super_admin', 'superadmin']:
 
             return jsonify({"error": "Unauthorized"}), 403
 
@@ -9286,7 +9286,7 @@ def toggle_admin_status(user_id):
 
         requester = cur.fetchone()
 
-        if not requester or requester['role'] != 'super_admin':
+        if not requester or requester['role'] not in ['super_admin', 'superadmin']:
 
             return jsonify({"error": "Unauthorized"}), 403
 
@@ -9367,7 +9367,7 @@ def create_admin():
 
         requester = cur.fetchone()
 
-        if not requester or requester['role'] != 'super_admin':
+        if not requester or requester['role'] not in ['super_admin', 'superadmin']:
 
             return jsonify({"error": "Unauthorized. Only Super Admin can create admin accounts."}), 403
 
@@ -9648,7 +9648,7 @@ def delete_vehicle(vehicle_id):
         if admin_id:
             cur.execute("SELECT role FROM users WHERE id = %s", (admin_id,))
             requester = cur.fetchone()
-            if not requester or requester['role'] != 'super_admin':
+            if not requester or requester['role'] not in ['super_admin', 'superadmin']:
                 return jsonify({'error': 'Unauthorized. Only Super Admin can delete vehicles.'}), 403
 
         cur.execute("DELETE FROM vehicle_images WHERE vehicle_id = %s", (vehicle_id,))
