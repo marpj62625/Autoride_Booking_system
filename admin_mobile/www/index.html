@@ -8362,6 +8362,7 @@ input:checked + .ctrl-slider:before {
                     <select id="gpsVehicleSelect" onchange="GPS.onVehicleSelect(this.value)" style="padding: 7px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-weight: 700; font-size: 0.85rem; outline: none; cursor: pointer;">
                         <option value="">Loading vehicles...</option>
                     </select>
+                    <span id="gpsDeviceLabel" style="font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600;">Tracker: Loading...</span>
                 </div>
                 <div id="gpsStatusPill" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3);">
                     <span id="gpsPillDot" style="width: 8px; height: 8px; border-radius: 50%; background: #00B14F; display: inline-block;"></span>
@@ -8401,6 +8402,9 @@ input:checked + .ctrl-slider:before {
                     </button>
                     <button type="button" onclick="GPS.openTripHistoryModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         <i class="fas fa-route"></i> Trip History
+                    </button>
+                    <button type="button" onclick="GPS.openConfigModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fas fa-satellite-dish"></i> GPS Device
                     </button>
                 </div>
             </div>
@@ -9281,6 +9285,26 @@ input:checked + .ctrl-slider:before {
                         <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary);margin-bottom:6px;">LTO Expiry Date</label>
                         <input type="date" id="vLtoExpiry"
                             style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                    </div>
+
+                    <!-- GPS Tracker Device Settings (Hardware Integration) -->
+                    <div style="grid-column:span 2;margin-top:8px;padding:14px 16px;background:rgba(0,177,79,0.04);border:1px dashed rgba(0,177,79,0.3);border-radius:14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <i class="fas fa-satellite-dish" style="color:var(--primary);font-size:1rem;"></i>
+                            <span style="font-size:0.82rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:0.5px;">GPS Tracker Hardware Device</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                            <div>
+                                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Tracker Unit / Label</label>
+                                <input type="text" id="vGpsDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)"
+                                    style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:4px;">Blynk Auth Token</label>
+                                <input type="text" id="vGpsDeviceToken" placeholder="e.g. 6fub_AeSZfywBab9j..."
+                                    style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;font-family:monospace;box-sizing:border-box;">
+                            </div>
+                        </div>
                     </div>
 
 
@@ -13694,6 +13718,8 @@ input:checked + .ctrl-slider:before {
                 document.getElementById('vFuelLevel').value = v.fuel_level || 'Full Tank';
                 document.getElementById('vNextService').value = v.next_service_schedule || '';
                 document.getElementById('vLtoExpiry').value = v.lto_expiry_date || '';
+                document.getElementById('vGpsDeviceName').value = v.gps_device_name || '';
+                document.getElementById('vGpsDeviceToken').value = v.gps_device_token || '';
 
                 this.galleryDetails = v.gallery_details || [];
                 this.renderGalleryManager();
@@ -13709,6 +13735,8 @@ input:checked + .ctrl-slider:before {
                 document.getElementById('vFuelLevel').value = 'Full Tank';
                 document.getElementById('vNextService').value = '';
                 document.getElementById('vLtoExpiry').value = '';
+                document.getElementById('vGpsDeviceName').value = '';
+                document.getElementById('vGpsDeviceToken').value = '';
 
                 document.getElementById('vExistingGallery').style.display = 'none';
                 this.galleryDetails = [];
@@ -14115,6 +14143,10 @@ input:checked + .ctrl-slider:before {
             formData.append('fuel_level', document.getElementById('vFuelLevel').value || 'Full Tank');
             formData.append('next_service_schedule', document.getElementById('vNextService').value || '');
             formData.append('lto_expiry_date', document.getElementById('vLtoExpiry').value || '');
+        const vGpsDeviceNameEl = document.getElementById('vGpsDeviceName');
+        const vGpsDeviceTokenEl = document.getElementById('vGpsDeviceToken');
+        if (vGpsDeviceNameEl) formData.append('gps_device_name', vGpsDeviceNameEl.value.trim());
+        if (vGpsDeviceTokenEl) formData.append('gps_device_token', vGpsDeviceTokenEl.value.trim());
 
 
 
@@ -20794,10 +20826,8 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        // --- GPS MODULE (Blynk IoT + Persistent DB Recording) ---
+        // --- GPS MODULE (Blynk IoT + Multi-Device Fleet Assignment + Persistent DB Recording) ---
     const GPS = {
-        BLYNK_TOKEN: '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz',
-        BLYNK_SERVER: 'sgp1.blynk.cloud',
         lat: null,
         lng: null,
         currentAddress: '',
@@ -20826,17 +20856,41 @@ function toggleNewsletterModal(show = true) {
                                 ${v.name} (${v.plate_number || 'No Plate'})
                             </option>
                         `).join('');
-                        this.selectedVehicleId = this.fleetVehicles[0].id;
+                        if (!this.selectedVehicleId) {
+                            this.selectedVehicleId = this.fleetVehicles[0].id;
+                        }
                     }
+                    this._updateHeaderDeviceLabel();
                 }
             } catch (e) {
                 console.error('[GPS] loadFleetVehicles error:', e);
             }
         },
 
+        _updateHeaderDeviceLabel() {
+            const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
+            const labelEl = document.getElementById('gpsDeviceLabel');
+            if (labelEl && currentVeh) {
+                if (currentVeh.gps_device_name) {
+                    labelEl.textContent = `Tracker: ${currentVeh.gps_device_name}`;
+                    labelEl.style.color = 'var(--text-main)';
+                    labelEl.style.borderColor = 'var(--border)';
+                } else if (currentVeh.gps_device_token) {
+                    labelEl.textContent = 'Tracker: Linked';
+                    labelEl.style.color = 'var(--primary)';
+                    labelEl.style.borderColor = 'rgba(0,177,79,0.3)';
+                } else {
+                    labelEl.textContent = 'Tracker: Unassigned';
+                    labelEl.style.color = '#f59e0b';
+                    labelEl.style.borderColor = 'rgba(245,158,11,0.3)';
+                }
+            }
+        },
+
         onVehicleSelect(vehicleId) {
             this.selectedVehicleId = parseInt(vehicleId, 10);
-            this.loadLastKnownLocationFromDB();
+            this._updateHeaderDeviceLabel();
+            this.refresh();
         },
 
         async loadLastKnownLocationFromDB() {
@@ -20849,7 +20903,9 @@ function toggleNewsletterModal(show = true) {
                 const res = await fetch(`${API_BASE}/api/admin/gps-locations`);
                 if (res.ok) {
                     const list = await res.json();
-                    const veh = list.find(v => v.id === this.selectedVehicleId);
+                    this.fleetVehicles = list || [];
+                    this._updateHeaderDeviceLabel();
+                    const veh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId);
                     if (veh) {
                         this._updateCardWithData(veh);
                     }
@@ -20944,9 +21000,21 @@ function toggleNewsletterModal(show = true) {
         },
 
         async refresh() {
+            const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
+            const token = currentVeh?.gps_device_token;
+            const server = currentVeh?.gps_server || 'sgp1.blynk.cloud';
+
+            this._updateHeaderDeviceLabel();
+
+            if (!token) {
+                this._showNoDevice();
+                this.loadLastKnownLocationFromDB();
+                return;
+            }
+
             try {
                 const res = await fetch(
-                    `https://${this.BLYNK_SERVER}/external/api/get?token=${this.BLYNK_TOKEN}&v1&v2&v3&v4&_=${Date.now()}`
+                    `https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&_=${Date.now()}`
                 );
                 if (!res.ok) {
                     this._showOffline('Device offline');
@@ -20986,7 +21054,7 @@ function toggleNewsletterModal(show = true) {
                         }
 
                         // Auto-persist to database for selected vehicle
-                        const vehId = this.selectedVehicleId || (this.fleetVehicles[0] ? this.fleetVehicles[0].id : 12);
+                        const vehId = this.selectedVehicleId || (currentVeh ? currentVeh.id : 12);
                         if (vehId) {
                             try {
                                 await fetch(`${API_BASE}/api/vehicles/${vehId}/location`, {
@@ -21021,6 +21089,24 @@ function toggleNewsletterModal(show = true) {
             } catch (e) {
                 this._showOffline('Connection error');
                 this.loadLastKnownLocationFromDB();
+            }
+        },
+
+        _showNoDevice() {
+            const badge = document.getElementById('gpsStatusBadge');
+            if (badge) {
+                badge.textContent = 'NO TRACKER LINKED';
+                badge.style.color = '#94a3b8';
+            }
+            const pill = document.getElementById('gpsStatusPill');
+            const pillDot = document.getElementById('gpsPillDot');
+            const pillText = document.getElementById('gpsPillText');
+            if (pill && pillDot && pillText) {
+                pill.style.background = 'rgba(148, 163, 184, 0.12)';
+                pill.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                pill.style.color = '#94a3b8';
+                pillDot.style.background = '#94a3b8';
+                pillText.innerHTML = 'NO TRACKER LINKED &bull; <a href="javascript:void(0)" onclick="GPS.openConfigModal()" style="color:var(--primary);font-weight:700;text-decoration:underline;">+ Assign</a>';
             }
         },
 
@@ -21093,6 +21179,192 @@ function toggleNewsletterModal(show = true) {
         closeTripHistoryModal() {
             const modal = document.getElementById('gpsTripHistoryModal');
             if (modal) modal.style.display = 'none';
+        },
+
+        openConfigModal(vehicleId = null) {
+            const modal = document.getElementById('gpsConfigModal');
+            if (!modal) return;
+
+            const sel = document.getElementById('gpsConfigVehicleSelect');
+            if (sel && this.fleetVehicles.length > 0) {
+                sel.innerHTML = this.fleetVehicles.map(v => `
+                    <option value="${v.id}">${v.name} (${v.plate_number || 'No Plate'})</option>
+                `).join('');
+                const targetId = vehicleId || this.selectedVehicleId || this.fleetVehicles[0].id;
+                sel.value = targetId;
+                this.onConfigVehicleChange(targetId);
+            }
+
+            const statusBox = document.getElementById('gpsTestStatusBox');
+            if (statusBox) statusBox.style.display = 'none';
+
+            modal.style.display = 'flex';
+        },
+
+        closeConfigModal() {
+            const modal = document.getElementById('gpsConfigModal');
+            if (modal) modal.style.display = 'none';
+        },
+
+        toggleTokenVisibility() {
+            const input = document.getElementById('gpsConfigToken');
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+        },
+
+        async onConfigVehicleChange(vehicleId) {
+            if (!vehicleId) return;
+            const veh = this.fleetVehicles.find(v => v.id == vehicleId);
+            const tokenInput = document.getElementById('gpsConfigToken');
+            const nameInput = document.getElementById('gpsConfigDeviceName');
+            const serverInput = document.getElementById('gpsConfigServer');
+            const statusBox = document.getElementById('gpsTestStatusBox');
+            if (statusBox) statusBox.style.display = 'none';
+
+            if (veh) {
+                if (tokenInput) tokenInput.value = veh.gps_device_token || '';
+                if (nameInput) nameInput.value = veh.gps_device_name || '';
+                if (serverInput) serverInput.value = veh.gps_server || 'sgp1.blynk.cloud';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/vehicles/${vehicleId}/gps-config`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (tokenInput) tokenInput.value = data.gps_device_token || '';
+                    if (nameInput) nameInput.value = data.gps_device_name || '';
+                    if (serverInput) serverInput.value = data.gps_server || 'sgp1.blynk.cloud';
+                }
+            } catch (e) {}
+        },
+
+        async testDeviceConnection() {
+            const token = (document.getElementById('gpsConfigToken')?.value || '').trim();
+            const server = (document.getElementById('gpsConfigServer')?.value || 'sgp1.blynk.cloud').trim();
+            const statusBox = document.getElementById('gpsTestStatusBox');
+            const btn = document.getElementById('gpsTestBtn');
+
+            if (!token) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                    statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    statusBox.style.color = '#ef4444';
+                    statusBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a Blynk Auth Token to test.';
+                }
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            }
+
+            try {
+                const res = await fetch(`https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&_=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const hasSignal = data.v4 !== undefined || (data.v1 && data.v1 !== '0');
+                    if (statusBox) {
+                        statusBox.style.display = 'block';
+                        statusBox.style.background = 'rgba(0, 177, 79, 0.12)';
+                        statusBox.style.border = '1px solid rgba(0, 177, 79, 0.3)';
+                        statusBox.style.color = 'var(--primary)';
+                        statusBox.innerHTML = `
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Token Valid &amp; Connected! ${hasSignal ? '(Online / Signal Received)' : '(Token OK, waiting for GPS fix)'}</span>
+                            </div>
+                            ${data.v1 && data.v2 ? `<div style="font-size:0.72rem;font-family:monospace;margin-top:4px;color:var(--text-secondary);">Lat: ${data.v1}, Lng: ${data.v2}</div>` : ''}
+                        `;
+                    }
+                } else {
+                    if (statusBox) {
+                        statusBox.style.display = 'block';
+                        statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                        statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                        statusBox.style.color = '#ef4444';
+                        statusBox.innerHTML = `<i class="fas fa-times-circle"></i> Connection Failed (HTTP ${res.status}). Verify the Blynk Token and Server.`;
+                    }
+                }
+            } catch (err) {
+                if (statusBox) {
+                    statusBox.style.display = 'block';
+                    statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                    statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    statusBox.style.color = '#ef4444';
+                    statusBox.innerHTML = `<i class="fas fa-times-circle"></i> Connection error: ${err.message || err}`;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+                }
+            }
+        },
+
+        async saveDeviceConfig() {
+            const sel = document.getElementById('gpsConfigVehicleSelect');
+            const vehId = sel ? parseInt(sel.value, 10) : null;
+            if (!vehId) {
+                alert('Please select a vehicle.');
+                return;
+            }
+
+            const token = (document.getElementById('gpsConfigToken')?.value || '').trim();
+            const name = (document.getElementById('gpsConfigDeviceName')?.value || '').trim();
+            const server = (document.getElementById('gpsConfigServer')?.value || 'sgp1.blynk.cloud').trim();
+            const btn = document.getElementById('gpsSaveConfigBtn');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/vehicles/${vehId}/gps-config`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gps_device_token: token,
+                        gps_device_name: name,
+                        gps_server: server
+                    })
+                });
+
+                if (res.ok) {
+                    const veh = this.fleetVehicles.find(v => v.id === vehId);
+                    if (veh) {
+                        veh.gps_device_token = token;
+                        veh.gps_device_name = name;
+                        veh.gps_server = server;
+                    }
+
+                    this._updateHeaderDeviceLabel();
+
+                    if (this.selectedVehicleId === vehId) {
+                        this.refresh();
+                    }
+
+                    this.closeConfigModal();
+                    if (typeof showToast === 'function') {
+                        showToast('GPS device configuration saved successfully!', 'success');
+                    } else {
+                        alert('GPS device configuration saved successfully!');
+                    }
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    alert(data.error || 'Failed to save GPS configuration.');
+                }
+            } catch (err) {
+                alert('Save failed: ' + (err.message || err));
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Save Device';
+                }
+            }
         },
 
         startLive() {
@@ -34555,6 +34827,88 @@ function toggleNewsletterModal(show = true) {
         </div>
         <div style="padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; background: var(--surface-card);">
             <button type="button" onclick="GPS.closeTripHistoryModal()" style="padding: 8px 20px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- GPS DEVICE SETTINGS MODAL -->
+<div id="gpsConfigModal" class="premium-modal" style="display:none;" onclick="if(event.target===this) GPS.closeConfigModal()">
+    <div class="modal-box" style="max-width: 520px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border-radius: 16px; background: var(--surface-card); border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <!-- Modal Header -->
+        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-satellite-dish" style="color: #3b82f6;"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">GPS Tracker Hardware Setup</h3>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Assign physical GPS hardware (Blynk IoT) to vehicles</div>
+                </div>
+            </div>
+            <button type="button" onclick="GPS.closeConfigModal()" class="menu-btn" style="width:34px; height:34px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:8px; cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div style="overflow-y: auto; flex: 1; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+            <!-- Select Vehicle -->
+            <div>
+                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                    Assigned Vehicle <span style="color:#ef4444;">*</span>
+                </label>
+                <select id="gpsConfigVehicleSelect" onchange="GPS.onConfigVehicleChange(this.value)" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.88rem; font-weight:600; outline:none;">
+                    <option value="">Select Vehicle...</option>
+                </select>
+            </div>
+
+            <!-- Tracker Name/Label -->
+            <div>
+                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                    GPS Tracker Name / Label
+                </label>
+                <input type="text" id="gpsConfigDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.88rem; outline:none; box-sizing:border-box;">
+                <span style="font-size:0.72rem; color:var(--text-muted); margin-top:3px; display:block;">Physical label written on the device or vehicle dashboard.</span>
+            </div>
+
+            <!-- Blynk Auth Token -->
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px;">
+                        Blynk Device Auth Token <span style="color:#ef4444;">*</span>
+                    </label>
+                    <button type="button" onclick="GPS.toggleTokenVisibility()" style="background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer;">Show/Hide</button>
+                </div>
+                <div style="position:relative;">
+                    <input type="password" id="gpsConfigToken" placeholder="Paste Blynk Auth Token from hardware / console" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.85rem; font-family:monospace; outline:none; box-sizing:border-box;">
+                </div>
+                <span style="font-size:0.72rem; color:var(--text-muted); margin-top:3px; display:block;">Token generated by Blynk IoT cloud for this specific physical GPS device.</span>
+            </div>
+
+            <!-- Server Host -->
+            <div>
+                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                    Blynk Cloud Server Host
+                </label>
+                <input type="text" id="gpsConfigServer" value="sgp1.blynk.cloud" placeholder="sgp1.blynk.cloud" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.88rem; font-family:monospace; outline:none; box-sizing:border-box;">
+                <span style="font-size:0.72rem; color:var(--text-muted); margin-top:3px; display:block;">Default is <code>sgp1.blynk.cloud</code> (Singapore region for Philippines).</span>
+            </div>
+
+            <!-- Test Connection Result Area -->
+            <div id="gpsTestStatusBox" style="display:none; padding:10px 14px; border-radius:10px; font-size:0.8rem; font-weight:700;"></div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div style="padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface-card); gap: 10px;">
+            <button type="button" id="gpsTestBtn" onclick="GPS.testDeviceConnection()" style="padding: 10px 16px; border-radius: 10px; border: 1.5px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size:0.82rem; font-weight: 700; cursor: pointer; display:flex; align-items:center; gap:6px;">
+                <i class="fas fa-plug"></i> Test Connection
+            </button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" onclick="GPS.closeConfigModal()" style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size:0.82rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" id="gpsSaveConfigBtn" onclick="GPS.saveDeviceConfig()" style="padding: 10px 20px; border-radius: 10px; border: none; background: #00B14F; color: #fff; font-size:0.82rem; font-weight: 800; cursor: pointer; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-check"></i> Save Device
+                </button>
+            </div>
         </div>
     </div>
 </div>

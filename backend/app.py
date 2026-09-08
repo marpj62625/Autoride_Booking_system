@@ -1059,7 +1059,23 @@ def migrate_vehicle_gps_logs():
                 IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicles' AND column_name = 'gps_status') THEN
                     ALTER TABLE vehicles ADD COLUMN gps_status VARCHAR(30) DEFAULT 'offline';
                 END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicles' AND column_name = 'gps_device_token') THEN
+                    ALTER TABLE vehicles ADD COLUMN gps_device_token TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicles' AND column_name = 'gps_device_name') THEN
+                    ALTER TABLE vehicles ADD COLUMN gps_device_name VARCHAR(100);
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicles' AND column_name = 'gps_server') THEN
+                    ALTER TABLE vehicles ADD COLUMN gps_server VARCHAR(100) DEFAULT 'sgp1.blynk.cloud';
+                END IF;
             END $$;
+        """)
+        cur.execute("""
+            UPDATE vehicles
+            SET gps_device_token = '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz',
+                gps_device_name = 'Tracker Unit 1',
+                gps_server = 'sgp1.blynk.cloud'
+            WHERE id = 12 AND (gps_device_token IS NULL OR gps_device_token = '');
         """)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS vehicle_gps_logs (
@@ -3275,7 +3291,7 @@ def get_all_gps_locations():
                 location_filter = adm['assigned_location']
 
         query = """
-            SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, status
+            SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status
             FROM vehicles 
             WHERE latitude IS NOT NULL AND longitude IS NOT NULL
         """
@@ -3291,7 +3307,7 @@ def get_all_gps_locations():
         # If no coordinates are set, fallback to listing vehicles so admin can see fleet options
         if not locations:
             cur.execute("""
-                SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, status 
+                SELECT id, name, plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status 
                 FROM vehicles ORDER BY id ASC LIMIT 20
             """)
             locations = cur.fetchall()
@@ -3355,6 +3371,58 @@ def get_vehicle_gps_history(vehicle_id):
             "vehicle_id": vehicle_id,
             "total_points": len(results),
             "logs": results
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/vehicles/<int:vehicle_id>/gps-config', methods=['GET'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/gps-config', methods=['GET'])
+def get_vehicle_gps_config(vehicle_id):
+    """Fetch GPS tracker configuration for a specific vehicle."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, name, plate_number, gps_device_token, gps_device_name, gps_server, status, last_gps_update, last_address, gps_status
+            FROM vehicles WHERE id = %s
+        """, (vehicle_id,))
+        veh = cur.fetchone()
+        cur.close()
+        if not veh:
+            return jsonify({"error": "Vehicle not found"}), 404
+        d = dict(veh)
+        d['gps_server'] = d.get('gps_server') or 'sgp1.blynk.cloud'
+        return jsonify(d), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/vehicles/<int:vehicle_id>/gps-config', methods=['PUT'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/gps-config', methods=['PUT'])
+def update_vehicle_gps_config(vehicle_id):
+    """Update GPS tracker device configuration for a vehicle."""
+    data = request.get_json(silent=True) or {}
+    token = (data.get('gps_device_token') or '').strip()
+    name = (data.get('gps_device_name') or '').strip()
+    server = (data.get('gps_server') or 'sgp1.blynk.cloud').strip()
+
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            UPDATE vehicles
+            SET gps_device_token = %s,
+                gps_device_name = %s,
+                gps_server = %s
+            WHERE id = %s
+        """, (token or None, name or None, server or 'sgp1.blynk.cloud', vehicle_id))
+        commit_db()
+        cur.close()
+        return jsonify({
+            "message": "GPS configuration saved successfully",
+            "vehicle_id": vehicle_id,
+            "gps_device_token": token,
+            "gps_device_name": name,
+            "gps_server": server
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -9653,6 +9721,8 @@ def add_vehicle():
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_level VARCHAR(20) DEFAULT 'Full Tank'")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS next_service_schedule DATE DEFAULT NULL")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS lto_expiry_date DATE DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_token TEXT DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_name VARCHAR(100) DEFAULT NULL")
         
         color = data.get('color') or None
         mileage_type = data.get('mileage_type') or 'limited'
@@ -9662,6 +9732,8 @@ def add_vehicle():
         fuel_level = data.get('fuel_level') or 'Full Tank'
         next_service_schedule = data.get('next_service_schedule') or None
         lto_expiry_date = data.get('lto_expiry_date') or None
+        gps_device_token = (data.get('gps_device_token') or '').strip() or None
+        gps_device_name = (data.get('gps_device_name') or '').strip() or None
 
         # Handle image upload if file provided
         vehicle_image = data.get('vehicle_image', '')
@@ -9677,11 +9749,11 @@ def add_vehicle():
                 except Exception:
                     pass
         cur.execute(
-            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
              data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
-             odometer, fuel_level, next_service_schedule, lto_expiry_date)
+             odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name)
         )
         new_id = cur.fetchone()['id']
         # Handle additional gallery files
@@ -9723,6 +9795,8 @@ def update_vehicle(vehicle_id):
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS fuel_level VARCHAR(20) DEFAULT 'Full Tank'")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS next_service_schedule DATE DEFAULT NULL")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS lto_expiry_date DATE DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_token TEXT DEFAULT NULL")
+        cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_name VARCHAR(100) DEFAULT NULL")
         
         color = data.get('color') or None
         mileage_type = data.get('mileage_type') or 'limited'
@@ -9732,6 +9806,8 @@ def update_vehicle(vehicle_id):
         fuel_level = data.get('fuel_level') or 'Full Tank'
         next_service_schedule = data.get('next_service_schedule') or None
         lto_expiry_date = data.get('lto_expiry_date') or None
+        gps_device_token = (data.get('gps_device_token') or '').strip() or None
+        gps_device_name = (data.get('gps_device_name') or '').strip() or None
 
         # Fetch existing vehicle_image from DB so it's preserved if no new photo is uploaded
         cur.execute("SELECT vehicle_image FROM vehicles WHERE id = %s", (vehicle_id,))
@@ -9756,11 +9832,11 @@ def update_vehicle(vehicle_id):
                     except Exception:
                         pass
         cur.execute(
-            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s WHERE id=%s",
+            "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s, gps_device_token=%s, gps_device_name=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
              data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
              data.get('status'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
-             odometer, fuel_level, next_service_schedule, lto_expiry_date, vehicle_id)
+             odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name, vehicle_id)
         )
         commit_db()
         return jsonify({"message": "Vehicle updated"}), 200
