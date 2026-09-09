@@ -70,6 +70,12 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.animation.duration = 1000;
+            Chart.defaults.animation.easing = 'easeOutQuart';
+        }
+    </script>
     <script src="js/anime.min.js"></script>
 
 
@@ -25123,6 +25129,7 @@ function toggleNewsletterModal(show = true) {
 
 
                 options: { responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 1200, easing: 'easeOutQuart' },
 
 
 
@@ -25227,6 +25234,7 @@ function toggleNewsletterModal(show = true) {
 
 
                 options: { responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
 
 
 
@@ -25375,6 +25383,7 @@ function toggleNewsletterModal(show = true) {
 
 
                     maintainAspectRatio: false,
+                    animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
 
 
 
@@ -27114,7 +27123,11 @@ function toggleNewsletterModal(show = true) {
                         pointBorderWidth: 2
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 1200, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false } }, scales: defaultScales
+                }
             });
         }
 
@@ -27146,7 +27159,11 @@ function toggleNewsletterModal(show = true) {
                         borderRadius: 4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false } }, scales: defaultScales
+                }
             });
         }
 
@@ -27166,6 +27183,7 @@ function toggleNewsletterModal(show = true) {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false, cutout: '75%',
+                    animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
                     plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
                 }
             });
@@ -27188,8 +27206,8 @@ function toggleNewsletterModal(show = true) {
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
+                        animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
                         plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
                     }
                 });
@@ -27684,6 +27702,12 @@ function toggleNewsletterModal(show = true) {
 
 
 
+                chartConfig.options.animation = {
+            duration: 800,
+            easing: 'easeOutQuart',
+            animateRotate: true,
+            animateScale: true
+        };
         currentPopupChart = new Chart(ctx, chartConfig);
 
 
