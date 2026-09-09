@@ -932,6 +932,7 @@ def _confirm_payment(booking_id, amount, method, ref_num, payment_type):
 
 # ??? ADMIN PAYMONGO CREDENTIAL TEST ??????????????????????????????????????????
 
+@paymongo_bp.route('/admin/paymongo/test-connection', methods=['POST'])
 @paymongo_bp.route('/api/admin/paymongo/test-connection', methods=['POST'])
 def test_paymongo_connection():
     """
@@ -944,21 +945,32 @@ def test_paymongo_connection():
 
     # If secret_key not provided in body, load from active or mode-specific config
     if not secret_key:
-        cfg = get_paymongo_config()
-        if mode == 'live':
-            secret_key = cfg.get('live_secret_key') or (cfg.get('secret_key') if cfg.get('mode') == 'live' else '')
-        elif mode == 'test':
-            secret_key = cfg.get('test_secret_key') or (cfg.get('secret_key') if cfg.get('mode') == 'test' else '')
-        else:
-            secret_key = cfg.get('secret_key')
+        try:
+            cfg = get_paymongo_config()
+            if mode == 'live':
+                secret_key = cfg.get('live_secret_key') or (cfg.get('secret_key') if cfg.get('mode') == 'live' else '')
+            elif mode == 'test':
+                secret_key = cfg.get('test_secret_key') or (cfg.get('secret_key') if cfg.get('mode') == 'test' else '')
+            else:
+                secret_key = cfg.get('secret_key')
+        except Exception as cfg_err:
+            print(f"Error fetching paymongo config: {cfg_err}")
 
     if not secret_key:
-        return jsonify({'success': False, 'message': 'No Secret Key configured to test.'}), 400
+        return jsonify({'success': False, 'message': 'No Secret Key configured or entered to test.'}), 400
+
+    # Helpful hint if user accidentally pasted public key
+    if secret_key.startswith('pk_'):
+        return jsonify({
+            'success': False,
+            'message': 'You entered a Public Key (starts with pk_). Please enter the Secret Key (starts with sk_test_ or sk_live_).'
+        }), 400
 
     encoded = base64.b64encode(f'{secret_key}:'.encode()).decode()
     try:
+        # PayMongo GET /v1/payments?limit=1 verifies secret key authentication
         res = requests.get(
-            f'{PAYMONGO_API}/payment_methods',
+            f'{PAYMONGO_API}/payments?limit=1',
             headers={'Authorization': f'Basic {encoded}', 'Content-Type': 'application/json'},
             timeout=10
         )
@@ -969,12 +981,21 @@ def test_paymongo_connection():
                 'message': f'Connection successful! Valid PayMongo {key_type} Secret Key.',
                 'key_type': key_type
             }), 200
+        elif res.status_code == 401:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid PayMongo Secret Key or unauthorized. Please verify the key in your PayMongo Dashboard.'
+            }), 400
         else:
-            err_data = res.json()
-            err_msg = err_data.get('errors', [{}])[0].get('detail', 'PayMongo authentication failed')
+            try:
+                err_data = res.json()
+                err_msg = err_data.get('errors', [{}])[0].get('detail', f'PayMongo returned status {res.status_code}')
+            except Exception:
+                err_msg = f'PayMongo returned status {res.status_code}'
             return jsonify({'success': False, 'message': f'PayMongo rejected key: {err_msg}'}), 400
     except requests.exceptions.Timeout:
         return jsonify({'success': False, 'message': 'PayMongo request timed out. Check network connection.'}), 504
     except Exception as e:
         return jsonify({'success': False, 'message': f'Connection error: {str(e)}'}), 500
+
 

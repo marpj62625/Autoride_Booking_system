@@ -26577,21 +26577,40 @@ function toggleNewsletterModal(show = true) {
         const secretKeyInput = document.querySelector(`input[data-key="${keyName}"]`);
         const secretKey = secretKeyInput ? secretKeyInput.value.trim() : '';
 
+        const testBtn = document.querySelector('button[onclick*="testPaymongoCredentials"]');
+        const originalBtnHtml = testBtn ? testBtn.innerHTML : '';
+        if (testBtn) {
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+        }
+
         showNotification('Testing PayMongo connection...', 'info');
         try {
-            const res = await fetch(`${API_BASE}/admin/paymongo/test-connection`, {
+            let res = await fetch(`${API_BASE}/admin/paymongo/test-connection`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mode: mode, secret_key: secretKey })
             });
-            const data = await res.json();
+            if (res.status === 404 || res.status === 405) {
+                res = await fetch(`${API_BASE}/api/admin/paymongo/test-connection`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: mode, secret_key: secretKey })
+                });
+            }
+            const data = await res.json().catch(() => ({ success: false, message: `Server error (${res.status})` }));
             if (res.ok && data.success) {
                 showNotification('✅ ' + data.message, 'success');
             } else {
-                showNotification('❌ ' + (data.message || 'Connection test failed'), 'error');
+                showNotification('❌ ' + (data.message || data.error || 'Connection test failed'), 'error');
             }
         } catch (e) {
             showNotification('❌ Connection error: ' + e.message, 'error');
+        } finally {
+            if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = originalBtnHtml || '<i class="fas fa-plug"></i> Test Connection';
+            }
         }
     };
 
