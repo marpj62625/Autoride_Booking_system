@@ -3284,8 +3284,8 @@ def get_all_gps_locations():
     try:
         cur = get_cursor()
         location_filter = None
-        if admin_id:
-            cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (admin_id,))
+        if admin_id and str(admin_id).strip().isdigit():
+            cur.execute("SELECT role, assigned_location FROM users WHERE id = %s", (int(admin_id),))
             adm = cur.fetchone()
             if adm and adm['role'] == 'admin' and adm['assigned_location']:
                 location_filter = adm['assigned_location']

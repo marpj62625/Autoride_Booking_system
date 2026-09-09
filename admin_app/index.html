@@ -10569,9 +10569,7 @@ input:checked + .ctrl-slider:before {
 
 
     window.loadAdminNotifications = function(adminId) {
-
-
-
+        if (!adminId || adminId === 'undefined' || adminId === 'null') return;
         fetch(API_URL + '/admin/notifications?admin_id=' + adminId)
 
 
