@@ -7883,6 +7883,114 @@ input:checked + .ctrl-slider:before {
 
 
 
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+            <button onclick="Reports.openRecordExpenseModal()" class="btn-premium" style="padding:10px 20px;border-radius:10px;font-size:0.8rem;display:flex;align-items:center;gap:8px;font-weight:700;border:none;background:var(--primary);color:white;cursor:pointer;">
+                <i class="fas fa-plus"></i> Record Expense
+            </button>
+        </div>
+
+
+
+        <!-- Charts grid: Revenue + Top Vehicles side by side, Bookings full width -->
+
+
+
+        <div style="display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
+
+
+
+            <!-- Revenue Trend -->
+
+
+
+            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
+
+
+
+                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Revenue Trend</div>
+
+
+
+                <div style="height:150px;position:relative;">
+
+
+
+                    <canvas id="reportsRevenueChart"></canvas>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+            <!-- Top Vehicles Pie -->
+
+
+
+            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
+
+
+
+                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Top Vehicles</div>
+
+
+
+                <div style="height:150px;position:relative;">
+
+
+
+                    <canvas id="reportsTopPieChart"></canvas>
+
+
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+        <!-- BOOKINGS DETAIL full width -->
+
+
+
+        <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:16px;">
+
+
+
+            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">BOOKINGS DETAIL</div>
+
+
+
+            <div style="height:150px;position:relative;">
+
+
+
+                <canvas id="reportsBookingsChart"></canvas>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
         <!-- Summary stats -->
 
 
@@ -7988,120 +8096,6 @@ input:checked + .ctrl-slider:before {
 
 
         </div>
-
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-            <button onclick="Reports.openRecordExpenseModal()" class="btn-premium" style="padding:10px 20px;border-radius:10px;font-size:0.8rem;display:flex;align-items:center;gap:8px;font-weight:700;border:none;background:var(--primary);color:white;cursor:pointer;">
-                <i class="fas fa-plus"></i> Record Expense
-            </button>
-        </div>
-
-
-
-
-
-
-
-        <!-- Charts grid: Revenue + Top Vehicles side by side, Bookings full width -->
-
-
-
-        <div style="display:-webkit-flex;display:flex;-webkit-flex-wrap:wrap;flex-wrap:wrap;gap:12px;margin-bottom:12px;">
-
-
-
-            <!-- Revenue Trend -->
-
-
-
-            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
-
-
-
-                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Revenue Trend</div>
-
-
-
-                <div style="height:150px;position:relative;">
-
-
-
-                    <canvas id="reportsRevenueChart"></canvas>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-            <!-- Top Vehicles Pie -->
-
-
-
-            <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:0;-webkit-flex:1 1 45%;flex:1 1 45%;min-width:140px;">
-
-
-
-                <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">Top Vehicles</div>
-
-
-
-                <div style="height:150px;position:relative;">
-
-
-
-                    <canvas id="reportsTopPieChart"></canvas>
-
-
-
-                </div>
-
-
-
-            </div>
-
-
-
-        </div>
-
-
-
-
-
-
-
-        <!-- BOOKINGS DETAIL full width -->
-
-
-
-        <div class="stat-card" style="padding:14px;border-left:3px solid var(--primary);margin-bottom:16px;">
-
-
-
-            <div style="font-size:0.6rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">BOOKINGS DETAIL</div>
-
-
-
-            <div style="height:150px;position:relative;">
-
-
-
-                <canvas id="reportsBookingsChart"></canvas>
-
-
-
-            </div>
-
-
-
-        </div>
-
-
-
-
 
 
 
