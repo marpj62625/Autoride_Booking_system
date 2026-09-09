@@ -7,6 +7,9 @@
 
 
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
 
 
@@ -72,8 +75,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         if (typeof Chart !== 'undefined') {
-            Chart.defaults.animation.duration = 1000;
-            Chart.defaults.animation.easing = 'easeOutQuart';
+            Chart.defaults.animation = {
+                duration: 1200,
+                easing: 'easeOutQuart'
+            };
+            Chart.defaults.transitions = Chart.defaults.transitions || {};
+            Chart.defaults.transitions.resize = {
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            };
         }
     </script>
     <script src="js/anime.min.js"></script>
@@ -16241,6 +16253,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
+            if (tabId === 'dashboard' && typeof refreshDashboard === 'function') refreshDashboard();
             if (tabId === 'vehicles' && typeof Vehicles !== 'undefined') Vehicles.refresh();
 
 
@@ -25130,6 +25143,7 @@ function toggleNewsletterModal(show = true) {
 
                 options: { responsive: true, maintainAspectRatio: false,
                     animation: { duration: 1200, easing: 'easeOutQuart' },
+                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
 
 
 
@@ -25235,6 +25249,7 @@ function toggleNewsletterModal(show = true) {
 
                 options: { responsive: true, maintainAspectRatio: false,
                     animation: { duration: 1000, easing: 'easeOutQuart' },
+                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
 
 
 
@@ -25384,6 +25399,7 @@ function toggleNewsletterModal(show = true) {
 
                     maintainAspectRatio: false,
                     animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
+                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutCirc' } } },
 
 
 
@@ -27126,6 +27142,7 @@ function toggleNewsletterModal(show = true) {
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     animation: { duration: 1200, easing: 'easeOutQuart' },
+                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
                     plugins: { legend: { display: false } }, scales: defaultScales
                 }
             });
@@ -27162,6 +27179,7 @@ function toggleNewsletterModal(show = true) {
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     animation: { duration: 1000, easing: 'easeOutQuart' },
+                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
                     plugins: { legend: { display: false } }, scales: defaultScales
                 }
             });
@@ -27208,6 +27226,7 @@ function toggleNewsletterModal(show = true) {
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
+                        transitions: { resize: { animation: { duration: 800, easing: 'easeOutCirc' } } },
                         plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
                     }
                 });
@@ -27226,6 +27245,17 @@ function toggleNewsletterModal(show = true) {
         makeChartClickable('revenueChart', charts.revenue, 'revenue');
         makeChartClickable('bookingsChart', charts.bookings, 'bookings');
         if (charts.topPie) makeChartClickable('topVehiclesPieChart', charts.topPie, 'topveh');
+        // Animate canvas elements smoothly on render / filter change
+        if (window.anime) {
+            anime({
+                targets: ['#revenueChart', '#bookingsChart', '#topVehiclesPieChart'].filter(id => document.querySelector(id)),
+                opacity: [0, 1],
+                scale: [0.96, 1],
+                translateY: [8, 0],
+                duration: 650,
+                easing: 'easeOutCubic'
+            });
+        }
     }
 
 
