@@ -4018,6 +4018,31 @@
   display: inline-block;
   animation: floatingIcon 2.6s ease-in-out infinite;
 }
+
+        /* High-Contrast GPS Tracker Device Setup & Selection */
+        #gpsConfigModal select,
+        #gpsConfigModal select option,
+        #gpsConfigModal input,
+        #gpsVehicleSelect,
+        #gpsVehicleSelect option {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+        }
+        #gpsConfigVehicleSelect option,
+        #gpsVehicleSelect option {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            padding: 10px 14px !important;
+        }
+        #gpsConfigVehicleSelect option:checked,
+        #gpsVehicleSelect option:checked {
+            background-color: #00B14F !important;
+            color: #ffffff !important;
+        }
+        #gpsConfigModal input::placeholder {
+            color: #64748b !important;
+        }
+
 </style>
 
 
@@ -8358,8 +8383,8 @@ input:checked + .ctrl-slider:before {
         <div class="stat-card" style="padding: 18px 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); background: var(--surface-card); border-radius: 14px; border: 1px solid var(--border);">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle Fleet:</span>
-                    <select id="gpsVehicleSelect" onchange="GPS.onVehicleSelect(this.value)" style="padding: 7px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-weight: 700; font-size: 0.85rem; outline: none; cursor: pointer;">
+                    <span style="font-size: 0.85rem; font-weight: 800; color: #e2e8f0; text-transform: uppercase; letter-spacing: 0.5px;">Vehicle Fleet:</span>
+                    <select id="gpsVehicleSelect" onchange="GPS.onVehicleSelect(this.value)" style="padding: 8px 14px; background: #0f172a !important; border: 1.5px solid #475569 !important; border-radius: 8px; color: #ffffff !important; font-weight: 700; font-size: 0.88rem; outline: none; cursor: pointer;">
                         <option value="">Loading vehicles...</option>
                     </select>
                     <span id="gpsDeviceLabel" style="font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600;">Tracker: Loading...</span>
@@ -8377,7 +8402,7 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-map-marker-alt" style="color: var(--primary); font-size: 1.2rem;"></i>
                     </div>
                     <div>
-                        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Recorded Last Location</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Recorded Last Location</div>
                         <div id="gpsLastAddressText" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); line-height: 1.35; margin-top: 2px;">Searching recorded location...</div>
                         <div id="gpsCoordsText" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Lat: --, Lng: --</div>
                     </div>
@@ -8389,7 +8414,7 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-history" style="color: #3b82f6; font-size: 1.15rem;"></i>
                     </div>
                     <div>
-                        <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Last Seen / Ping</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Last Seen / Ping</div>
                         <div id="gpsLastTimeElapsed" style="font-size: 0.95rem; font-weight: 700; color: #3b82f6; margin-top: 2px;">--</div>
                         <div id="gpsLastTimeExact" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">--</div>
                     </div>
@@ -20889,7 +20914,7 @@ function toggleNewsletterModal(show = true) {
             if (select && this.fleetVehicles.length > 0) {
                 const curVal = this.selectedVehicleId;
                 select.innerHTML = this.fleetVehicles.map(v => `
-                    <option value="${v.id}" style="background:var(--surface-card, #1e293b); color:var(--text-main, #fff);" ${v.id === curVal ? 'selected' : ''}>
+                    <option value="${v.id}" style="background-color:#0f172a !important; color:#ffffff !important; padding:8px 10px;" ${v.id === curVal ? 'selected' : ''}>
                         ${v.name || 'Vehicle'} (${v.plate_number || 'No Plate'})
                     </option>
                 `).join('');
@@ -21227,7 +21252,7 @@ function toggleNewsletterModal(show = true) {
             if (sel && this.fleetVehicles.length > 0) {
                 const targetId = vehicleId || this.selectedVehicleId || this.fleetVehicles[0].id;
                 sel.innerHTML = this.fleetVehicles.map(v => `
-                    <option value="${v.id}" style="background:var(--surface-card, #1e293b); color:var(--text-main, #fff);" ${v.id == targetId ? 'selected' : ''}>
+                    <option value="${v.id}" style="background-color:#0f172a !important; color:#ffffff !important; padding:8px 10px;" ${v.id == targetId ? 'selected' : ''}>
                         ${v.name || 'Vehicle'} (${v.plate_number || 'No Plate'})
                     </option>
                 `).join('');
@@ -34873,84 +34898,83 @@ function toggleNewsletterModal(show = true) {
 
 <!-- GPS DEVICE SETTINGS MODAL -->
 <div id="gpsConfigModal" class="premium-modal" style="display:none;" onclick="if(event.target===this) GPS.closeConfigModal()">
-    <div class="modal-box" style="max-width: 520px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border-radius: 16px; background: var(--surface-card); border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+    <div class="modal-box" style="max-width: 520px; width: 92%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border-radius: 18px; background: #1e293b; border: 1.5px solid #334155; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
         <!-- Modal Header -->
-        <div style="padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-satellite-dish" style="color: #3b82f6;"></i>
+        <div style="padding: 18px 24px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; background: #0f172a;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-satellite-dish" style="color: #60a5fa; font-size: 1.15rem;"></i>
                 </div>
                 <div>
-                    <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text-main);">GPS Tracker Hardware Setup</h3>
-                    <div style="font-size: 0.75rem; color: var(--text-muted);">Assign physical GPS hardware (Blynk IoT) to vehicles</div>
+                    <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #ffffff;">GPS Tracker Hardware Setup</h3>
+                    <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">Assign physical GPS hardware (Blynk IoT) to vehicles</div>
                 </div>
             </div>
-            <button type="button" onclick="GPS.closeConfigModal()" class="menu-btn" style="width:34px; height:34px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:8px; cursor:pointer;">
+            <button type="button" onclick="GPS.closeConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #ffffff; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
         <!-- Modal Body -->
-        <div style="overflow-y: auto; flex: 1; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px;">
+        <div style="overflow-y: auto; flex: 1; padding: 22px 24px; display: flex; flex-direction: column; gap: 18px; background: #1e293b;">
             <!-- Select Vehicle -->
             <div>
-                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                <label style="display:block; font-size:0.82rem; font-weight:800; color:#f8fafc; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                     Assigned Vehicle <span style="color:#ef4444;">*</span>
                 </label>
-                <select id="gpsConfigVehicleSelect" onchange="GPS.onConfigVehicleChange(this.value)" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.88rem; font-weight:600; outline:none;">
-                    <option value="">Select Vehicle...</option>
+                <select id="gpsConfigVehicleSelect" onchange="GPS.onConfigVehicleChange(this.value)" style="width:100%; padding:12px 14px; background:#0f172a !important; border:1.5px solid #475569 !important; border-radius:10px; color:#ffffff !important; font-size:0.92rem; font-weight:700; outline:none; cursor:pointer;">
+                    <option value="" style="background:#0f172a; color:#ffffff;">Select Vehicle...</option>
                 </select>
             </div>
 
             <!-- Tracker Name/Label -->
             <div>
-                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                <label style="display:block; font-size:0.82rem; font-weight:800; color:#f8fafc; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                     GPS Tracker Name / Label
                 </label>
-                <input type="text" id="gpsConfigDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.88rem; outline:none; box-sizing:border-box;">
-                <span style="font-size:0.72rem; color:var(--text-muted); margin-top:3px; display:block;">Physical label written on the device or vehicle dashboard.</span>
+                <input type="text" id="gpsConfigDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%; padding:12px 14px; background:#0f172a !important; border:1.5px solid #475569 !important; border-radius:10px; color:#ffffff !important; font-size:0.92rem; font-weight:600; outline:none; box-sizing:border-box;">
+                <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px; display:block;">Physical label written on the device or vehicle dashboard.</span>
             </div>
 
             <!-- Blynk Auth Token -->
             <div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <label style="font-size:0.78rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px;">
+                    <label style="font-size:0.82rem; font-weight:800; color:#f8fafc; text-transform:uppercase; letter-spacing:0.5px;">
                         Blynk Device Auth Token <span style="color:#ef4444;">*</span>
                     </label>
-                    <button type="button" onclick="GPS.toggleTokenVisibility()" style="background:none; border:none; color:var(--primary); font-size:0.72rem; font-weight:700; cursor:pointer;">Show/Hide</button>
+                    <button type="button" onclick="GPS.toggleTokenVisibility()" style="background:rgba(0,177,79,0.15); border:1px solid rgba(0,177,79,0.4); color:#00B14F; font-size:0.75rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">Show/Hide</button>
                 </div>
                 <div style="position:relative;">
-                    <input type="password" id="gpsConfigToken" placeholder="Paste Blynk Auth Token from hardware / console" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.85rem; font-family:monospace; outline:none; box-sizing:border-box;">
+                    <input type="password" id="gpsConfigToken" placeholder="Paste Blynk Auth Token from hardware / console" style="width:100%; padding:12px 14px; background:#0f172a !important; border:1.5px solid #475569 !important; border-radius:10px; color:#ffffff !important; font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
                 </div>
-                <span style="font-size:0.72rem; color:var(--text-muted); margin-top:3px; display:block;">Token generated by Blynk IoT cloud for this specific physical GPS device.</span>
+                <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px; display:block;">Token generated by Blynk IoT cloud for this specific physical GPS device.</span>
             </div>
 
             <!-- Server Host -->
             <div>
-                <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.4px;">
+                <label style="display:block; font-size:0.82rem; font-weight:800; color:#f8fafc; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                     Blynk Cloud Server Host
                 </label>
-                <input type="text" id="gpsConfigServer" value="sgp1.blynk.cloud" placeholder="sgp1.blynk.cloud" style="width:100%; padding:11px 14px; background:var(--bg-input, var(--surface-container)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.88rem; font-family:monospace; outline:none; box-sizing:border-box;">
-                <span style="font-size:0.72rem; color:var(--text-muted); margin-top:3px; display:block;">Default is <code>sgp1.blynk.cloud</code> (Singapore region for Philippines).</span>
+                <input type="text" id="gpsConfigServer" value="sgp1.blynk.cloud" placeholder="sgp1.blynk.cloud" style="width:100%; padding:12px 14px; background:#0f172a !important; border:1.5px solid #475569 !important; border-radius:10px; color:#ffffff !important; font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
+                <span style="font-size:0.75rem; color:#94a3b8; margin-top:4px; display:block;">Default is <code style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; color:#60a5fa;">sgp1.blynk.cloud</code> (Singapore region for Philippines).</span>
             </div>
 
             <!-- Test Connection Result Area -->
-            <div id="gpsTestStatusBox" style="display:none; padding:10px 14px; border-radius:10px; font-size:0.8rem; font-weight:700;"></div>
+            <div id="gpsTestStatusBox" style="display:none; padding:12px 16px; border-radius:10px; font-size:0.85rem; font-weight:700;"></div>
         </div>
 
         <!-- Modal Footer -->
-        <div style="padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface-card); gap: 10px;">
-            <button type="button" id="gpsTestBtn" onclick="GPS.testDeviceConnection()" style="padding: 10px 16px; border-radius: 10px; border: 1.5px solid rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size:0.82rem; font-weight: 700; cursor: pointer; display:flex; align-items:center; gap:6px;">
+        <div style="padding: 16px 24px; border-top: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; background: #0f172a; gap: 10px;">
+            <button type="button" id="gpsTestBtn" onclick="GPS.testDeviceConnection()" style="padding: 11px 18px; border-radius: 10px; border: 1.5px solid rgba(59, 130, 246, 0.5); background: rgba(59, 130, 246, 0.15); color: #60a5fa; font-size:0.85rem; font-weight: 700; cursor: pointer; display:flex; align-items:center; gap:8px;">
                 <i class="fas fa-plug"></i> Test Connection
             </button>
             <div style="display: flex; gap: 8px;">
-                <button type="button" onclick="GPS.closeConfigModal()" style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-size:0.82rem; font-weight: 600; cursor: pointer;">Cancel</button>
-                <button type="button" id="gpsSaveConfigBtn" onclick="GPS.saveDeviceConfig()" style="padding: 10px 20px; border-radius: 10px; border: none; background: #00B14F; color: #fff; font-size:0.82rem; font-weight: 800; cursor: pointer; display:flex; align-items:center; gap:6px;">
+                <button type="button" onclick="GPS.closeConfigModal()" style="padding: 11px 18px; border-radius: 10px; border: 1px solid #475569; background: rgba(255,255,255,0.06); color: #cbd5e1; font-size:0.85rem; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" id="gpsSaveConfigBtn" onclick="GPS.saveDeviceConfig()" style="padding: 11px 22px; border-radius: 10px; border: none; background: #00B14F; color: #ffffff; font-size:0.85rem; font-weight: 800; cursor: pointer; display:flex; align-items:center; gap:8px; box-shadow: 0 4px 14px rgba(0, 177, 79, 0.35);">
                     <i class="fas fa-check"></i> Save Device
                 </button>
             </div>
         </div>
     </div>
 </div>
-
 </body>
