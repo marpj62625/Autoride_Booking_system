@@ -43,6 +43,10 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/paymongo/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/addons",
       "dest": "/api/index.py"
     },
