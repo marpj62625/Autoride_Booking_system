@@ -10225,20 +10225,14 @@ def get_vehicle_details_v2(vehicle_id):
 @app.route('/admin/stats', methods=['GET'], strict_slashes=False)
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats_v2():
-
     admin_id = request.args.get('admin_id')
-
     try:
-
         cur = get_cursor()
-
-        cur.execute("SELECT role, assigned_location FROM users WHERE id=%s", (admin_id,))
-
-        adm = cur.fetchone()
-
-        location_filter = adm['assigned_location'] if adm and adm['role'] == 'admin' else None
-
-        
+        location_filter = None
+        if admin_id and str(admin_id).strip().isdigit():
+            cur.execute("SELECT role, assigned_location FROM users WHERE id=%s", (int(admin_id),))
+            adm = cur.fetchone()
+            location_filter = adm['assigned_location'] if adm and adm['role'] == 'admin' else None
 
         period = request.args.get('period', 'today')
         date_from = request.args.get('date_from', '')
@@ -10286,106 +10280,106 @@ def get_admin_stats_v2():
             cur.execute(v_q)
             stats['active_vehicles'] = int(cur.fetchone()['count'] or 0)
 
+        # 1. Filtered Revenue Trend (matches the active dashboard filter)
+        loc_clause = " AND b.pickup_location = %s" if location_filter else ""
+        trend_params = list(params)
+        if location_filter:
+            trend_params.append(location_filter)
 
-
-        # Revenue trend
-
-        cur.execute("SELECT DATE(start_date) as day, SUM(total_price) as amount FROM bookings WHERE payment_status = 'Paid' GROUP BY day ORDER BY day DESC LIMIT 7")
-
+        if period == 'thisyear':
+            # Group by month for yearly view
+            trend_q = f"""
+                SELECT TO_CHAR(b.start_date, 'Mon') as day, EXTRACT(MONTH FROM b.start_date) as m_num,
+                       SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
+                FROM bookings b
+                WHERE 1=1 {date_filter} {loc_clause}
+                GROUP BY day, m_num
+                ORDER BY m_num ASC
+            """
+        elif period == 'today':
+            # Group by hour for today's view
+            trend_q = f"""
+                SELECT TO_CHAR(b.start_date, 'HH12 AM') as day, EXTRACT(HOUR FROM b.start_date) as hr,
+                       SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
+                FROM bookings b
+                WHERE 1=1 {date_filter} {loc_clause}
+                GROUP BY day, hr
+                ORDER BY hr ASC
+            """
+        else:
+            # Group by day for this month or custom date range
+            trend_q = f"""
+                SELECT TO_CHAR(b.start_date, 'YYYY-MM-DD') as day,
+                       SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
+                FROM bookings b
+                WHERE 1=1 {date_filter} {loc_clause}
+                GROUP BY day
+                ORDER BY day ASC
+            """
+        cur.execute(trend_q, tuple(trend_params))
         trend = [{"day": str(t['day']), "amount": float(t['amount'] or 0)} for t in cur.fetchall()]
 
-            
-
         # Fleet distribution
-
-        cur.execute("SELECT status, COUNT(*) as count FROM vehicles GROUP BY status")
-
+        if location_filter:
+            cur.execute("SELECT status, COUNT(*) as count FROM vehicles WHERE location = %s GROUP BY status", (location_filter,))
+        else:
+            cur.execute("SELECT status, COUNT(*) as count FROM vehicles GROUP BY status")
         fleet = [{"status": f['status'], "count": int(f['count'])} for f in cur.fetchall()]
 
-
-
-        # Booking status breakdown
-
-        cur.execute("SELECT status, COUNT(*) as count FROM bookings GROUP BY status")
-
+        # 2. Filtered Booking status breakdown (matches the active dashboard filter)
+        status_params = list(params)
+        if location_filter:
+            status_params.append(location_filter)
+        status_q = f"SELECT b.status, COUNT(*) as count FROM bookings b WHERE 1=1 {date_filter} {loc_clause} GROUP BY b.status ORDER BY count DESC"
+        cur.execute(status_q, tuple(status_params))
         booking_breakdown = {r['status'].lower(): int(r['count']) for r in cur.fetchall()}
 
-
-
-        # User verification stats (Currently unused in dashboard frontend)
         user_stats = {
             "email": {"verified": 0, "unverified": 0},
             "license": {"approved": 0, "pending": 0, "rejected": 0}
         }
 
-
-
-        # Top grossing vehicles
-
+        # 3. Filtered Top Performing Vehicles (matches active dashboard filter)
         try:
-            # We construct date filter string matching exact behavior above
-            left_join_filter = ""
-            top_params = []
-            if period == 'today':
-                left_join_filter = " AND b.start_date::date = (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date"
-            elif period == 'thismonth':
-                left_join_filter = " AND DATE_TRUNC('month', b.start_date::date) = DATE_TRUNC('month', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
-            elif period == 'thisyear':
-                left_join_filter = " AND DATE_TRUNC('year', b.start_date::date) = DATE_TRUNC('year', (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date)"
-            elif period == 'custom':
-                if date_from:
-                    left_join_filter += " AND b.start_date::date >= %s::date"
-                    top_params.append(date_from)
-                if date_to:
-                    left_join_filter += " AND b.start_date::date <= %s::date"
-                    top_params.append(date_to)
+            top_params = list(params)
+            veh_loc_clause = ""
+            if location_filter:
+                veh_loc_clause = " AND v.location = %s"
+                top_params.append(location_filter)
 
-            cur.execute(f"""
+            top_q = f"""
                 SELECT v.brand, v.model, v.plate_number,
                        COUNT(b.id) as booking_count,
-                       COALESCE(SUM(b.total_price), 0) as revenue
+                       COALESCE(SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END), 0) as revenue
                 FROM vehicles v
-                LEFT JOIN bookings b ON b.vehicle_id = v.id AND b.payment_status = 'Paid'{left_join_filter}
+                JOIN bookings b ON b.vehicle_id = v.id
+                WHERE 1=1 {date_filter} {veh_loc_clause}
                 GROUP BY v.id, v.brand, v.model, v.plate_number
-                ORDER BY revenue DESC
+                ORDER BY revenue DESC, booking_count DESC
                 LIMIT 5
-            """, tuple(top_params))
+            """
+            cur.execute(top_q, tuple(top_params))
             top_vehicles = [{"brand": r.get('brand'), "model": r.get('model'), "plate_number": r.get('plate_number'), "booking_count": int(r.get('booking_count') or 0), "revenue": float(r.get('revenue') or 0)} for r in cur.fetchall()]
         except Exception as e:
             print("ERROR in topVehicles query:", e)
             top_vehicles = []
 
-
-        
-
         return jsonify({
-
             "summary": stats, 
-
             "total_revenue": stats['total_revenue'], 
-
             "total_bookings": stats['total_bookings'],
-
             "revenueTrend": trend, 
-
             "fleetDistribution": fleet,
-
             "bookingsByStatus": booking_breakdown,
-
             "userStats": user_stats,
-
             "topVehicles": top_vehicles
-
         }), 200
 
     except Exception as e: 
-
         print(f"ERROR in get_admin_stats: {e}")
-
         return jsonify({"error": str(e)}), 500
 
     finally:
-
         if 'cur' in locals(): cur.close()
 
 

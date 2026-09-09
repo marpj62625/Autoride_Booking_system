@@ -4797,7 +4797,7 @@
 
 
 
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Last 30 days</div>
+                <div id="dashRevenueSubtitle" style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Today</div>
 
 
 
@@ -4825,7 +4825,7 @@
 
 
 
-                <div style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Volume daily</div>
+                <div id="dashBookingsSubtitle" style="font-size:0.6rem;color:var(--text-muted);margin-bottom:8px;">Volume by status</div>
 
 
 
@@ -26658,6 +26658,23 @@ function toggleNewsletterModal(show = true) {
 
 
 
+            // Dynamically update chart subtitles based on active filter
+            const revSub = document.getElementById('dashRevenueSubtitle');
+            const bookSub = document.getElementById('dashBookingsSubtitle');
+            if (revSub) {
+                if (currentDashPeriod === 'today') revSub.textContent = 'Today';
+                else if (currentDashPeriod === 'thismonth') revSub.textContent = 'This Month (Daily)';
+                else if (currentDashPeriod === 'thisyear') revSub.textContent = 'This Year (Monthly)';
+                else if (dateFrom || dateTo) revSub.textContent = `${dateFrom || 'Start'} to ${dateTo || 'End'}`;
+                else revSub.textContent = 'Filtered Period';
+            }
+            if (bookSub) {
+                if (currentDashPeriod === 'today') bookSub.textContent = "Today's Status Volume";
+                else if (currentDashPeriod === 'thismonth') bookSub.textContent = "This Month's Status Volume";
+                else if (currentDashPeriod === 'thisyear') bookSub.textContent = "This Year's Status Volume";
+                else bookSub.textContent = "Filtered Period Volume";
+            }
+
             // Update stat cards
             var targetRev = Number(data.total_revenue || 0);
             var targetBookings = Number(data.total_bookings || 0);
@@ -27059,485 +27076,138 @@ function toggleNewsletterModal(show = true) {
 
 
     function initCharts(data) {
-
-
-
-        if (charts.revenue) charts.revenue.destroy();
-
-
-
-        if (charts.bookings) charts.bookings.destroy();
-
-
-
-        if (charts.health) charts.health.destroy();
-
-
-
-        if (charts.topPie) charts.topPie.destroy();
-
-
-
-
-
-
+        if (charts.revenue) { charts.revenue.destroy(); charts.revenue = null; }
+        if (charts.bookings) { charts.bookings.destroy(); charts.bookings = null; }
+        if (charts.health) { charts.health.destroy(); charts.health = null; }
+        if (charts.topPie) { charts.topPie.destroy(); charts.topPie = null; }
 
         const defaultScales = {
-
-
-
             x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-
-
-
             y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-
-
-
         };
 
-
-
-
-
-
-
-        // Revenue Line Chart
-
-
-
+        // 1. Revenue Line Chart (Filtered by active period)
         const revTrend = data.revenueTrend || [];
-
-
-
-        const revCtx = document.getElementById('revenueChart').getContext('2d');
-
-
-
-        charts.revenue = new Chart(revCtx, {
-
-
-
-            type: 'line',
-
-
-
-            data: {
-
-
-
-                labels: revTrend.length > 0 ? revTrend.map(t => t.day.split('-').slice(1).join('/')) : ['No Data'],
-
-
-
-                datasets: [{
-
-
-
-                    data: revTrend.length > 0 ? revTrend.map(t => t.amount) : [0],
-
-
-
-                    borderColor: '#00B14F',
-
-
-
-                    borderWidth: 3,
-
-
-
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-
-
-
-                    fill: true,
-
-
-
-                    tension: 0.4,
-
-
-
-                    pointRadius: 4,
-
-
-
-                    pointBackgroundColor: '#00B14F',
-
-
-
-                    pointBorderColor: '#fff',
-
-
-
-                    pointBorderWidth: 2
-
-
-
-                }]
-
-
-
-            },
-
-
-
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
-
-
-
-        });
-
-
-
-
-
-
-
-        // Bookings Bar Chart - use booking status breakdown
-
-
-
-        const bookCtx = document.getElementById('bookingsChart');
-
-
-
-        if (bookCtx) {
-
-
-
-            const bStatus = data.bookingsByStatus || {};
-
-
-
-            const bLabels = Object.keys(bStatus).map(k => k.charAt(0).toUpperCase() + k.slice(1));
-
-
-
-            const bData = Object.values(bStatus);
-
-
-
-            const barPalette = ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
-
-
-
-            const bColors = bLabels.length
-
-
-
-                ? bLabels.map((_, i) => barPalette[i % barPalette.length])
-
-
-
-                : revTrend.map((_, i) => barPalette[i % barPalette.length]);
-
-
-
-            charts.bookings = new Chart(bookCtx.getContext('2d'), {
-
-
-
-                type: 'bar',
-
-
-
+        const revCtx = document.getElementById('revenueChart');
+        if (revCtx) {
+            const labels = revTrend.length > 0 ? revTrend.map(t => {
+                if (!t.day) return '';
+                if (t.day.includes('-')) return t.day.split('-').slice(1).join('/');
+                return t.day;
+            }) : (currentDashPeriod === 'today' ? ['Today'] : ['No Data']);
+            const values = revTrend.length > 0 ? revTrend.map(t => t.amount) : [0];
+
+            charts.revenue = new Chart(revCtx.getContext('2d'), {
+                type: 'line',
                 data: {
-
-
-
-                    labels: bLabels.length ? bLabels : revTrend.map(t => t.day.split('-').slice(1).join('/')),
-
-
-
+                    labels: labels,
                     datasets: [{
-
-
-
-                        label: 'Bookings',
-
-
-
-                        data: bData.length ? bData : revTrend.map(() => 0),
-
-
-
-                        backgroundColor: bColors,
-
-
-
-                        borderRadius: 4
-
-
-
+                        data: values,
+                        borderColor: '#00B14F',
+                        borderWidth: 3,
+                        backgroundColor: 'rgba(0, 177, 79, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#00B14F',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2
                     }]
-
-
-
                 },
-
-
-
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
-
-
-
             });
-
-
-
         }
 
-
-
-
-
-
-
-        // Fleet Health doughnut (only if canvas exists)
-
-
-
-        const fleetCtxEl = document.getElementById('fleetHealthChart');
-
-
-
-        if (fleetCtxEl) {
-
-
-
-            const fleetDist = data.fleetDistribution || [];
-
-
-
-            if (charts.health) charts.health.destroy();
-
-
-
-            charts.health = new Chart(fleetCtxEl.getContext('2d'), {
-
-
-
-                type: 'doughnut',
-
-
-
-                data: {
-
-
-
-                    labels: fleetDist.map(f => f.status),
-
-
-
-                    datasets: [{
-
-
-
-                        data: fleetDist.map(f => f.count),
-
-
-
-                        backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#94a3b8'],
-
-
-
-                        borderWidth: 0
-
-
-
-                    }]
-
-
-
-                },
-
-
-
-                options: {
-
-
-
-                    responsive: true, maintainAspectRatio: false, cutout: '75%',
-
-
-
-                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
-
-
-
-                }
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-        // Top Vehicles Pie Chart
-
-
-
-        const topVehEl = document.getElementById('topVehiclesPieChart');
-
-
-
-        if (topVehEl) {
-
-
-
-            const topVeh = (data.topVehicles || []).slice(0, 6);
-
-
-
-            if (charts.topPie) charts.topPie.destroy();
-
-
-
-            
-
-
-
-            const hasData = topVeh.length > 0 && topVeh.some(c => c.booking_count > 0);
-
-
-
-            
-
-
-
-            if (hasData) {
-
-
-
-                charts.topPie = new Chart(topVehEl.getContext('2d'), {
-
-
-
-                    type: 'pie',
-
-
-
-                    data: {
-
-
-
-                        labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
-
-
-
-                        datasets: [{
-
-
-
-                            data: topVeh.map(c => c.booking_count || 0),
-
-
-
-                            backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899'],
-
-
-
-                            borderWidth: 0
-
-
-
-                        }]
-
-
-
-                    },
-
-
-
-                    options: {
-
-
-
-                        responsive: true, maintainAspectRatio: false,
-
-
-
-                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
-
-
-
-                    }
-
-
-
-                });
-
-
-
-            } else {
-
-
-
-                const ctx = topVehEl.getContext('2d');
-
-
-
-                ctx.clearRect(0, 0, topVehEl.width, topVehEl.height);
-
-
-
-                ctx.font = 'bold 12px Arial';
-
-
-
-                ctx.fillStyle = '#94a3b8';
-
-
-
-                ctx.textAlign = 'center';
-
-
-
-                ctx.textBaseline = 'middle';
-
-
-
-                ctx.fillText('No data available', topVehEl.width / 2, topVehEl.height / 2);
-
-
-
+        // 2. Bookings Bar Chart (Filtered by active period)
+        const bookCtx = document.getElementById('bookingsChart');
+        if (bookCtx) {
+            const bStatus = data.bookingsByStatus || {};
+            const keys = Object.keys(bStatus);
+            let bLabels = keys.map(k => k.charAt(0).toUpperCase() + k.slice(1));
+            let bData = Object.values(bStatus);
+
+            // When no bookings in active period, display baseline so admin sees 0 volume
+            if (bLabels.length === 0) {
+                bLabels = ['Cancelled', 'Completed', 'No Show', 'Picked Up'];
+                bData = [0, 0, 0, 0];
             }
 
+            const barPalette = ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+            const bColors = bLabels.map((_, i) => barPalette[i % barPalette.length]);
 
-
+            charts.bookings = new Chart(bookCtx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: bLabels,
+                    datasets: [{
+                        label: 'Bookings',
+                        data: bData,
+                        backgroundColor: bColors,
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: defaultScales }
+            });
         }
 
+        // 3. Fleet Health doughnut (only if canvas exists)
+        const fleetCtxEl = document.getElementById('fleetHealthChart');
+        if (fleetCtxEl) {
+            const fleetDist = data.fleetDistribution || [];
+            charts.health = new Chart(fleetCtxEl.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: fleetDist.map(f => f.status),
+                    datasets: [{
+                        data: fleetDist.map(f => f.count),
+                        backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#94a3b8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '75%',
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
+                }
+            });
+        }
 
-
-
-
-
+        // 4. Top Vehicles Pie Chart (Filtered by active period)
+        const topVehEl = document.getElementById('topVehiclesPieChart');
+        if (topVehEl) {
+            const topVeh = (data.topVehicles || []).slice(0, 6);
+            const hasData = topVeh.length > 0 && topVeh.some(c => (c.booking_count > 0 || c.revenue > 0));
+            if (hasData) {
+                charts.topPie = new Chart(topVehEl.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: topVeh.map(c => `${c.brand} ${c.model} ${c.plate_number ? '('+c.plate_number+')' : ''}`.trim()),
+                        datasets: [{
+                            data: topVeh.map(c => c.revenue > 0 ? c.revenue : (c.booking_count || 0)),
+                            backgroundColor: ['#00B14F','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#ec4899'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
+                    }
+                });
+            } else {
+                const ctx = topVehEl.getContext('2d');
+                ctx.clearRect(0, 0, topVehEl.width, topVehEl.height);
+                ctx.font = 'bold 12px Arial';
+                ctx.fillStyle = '#94a3b8';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('No booking data for this period', topVehEl.width / 2, topVehEl.height / 2);
+            }
+        }
 
         // Make dashboard charts clickable
-
-
-
         makeChartClickable('revenueChart', charts.revenue, 'revenue');
-
-
-
         makeChartClickable('bookingsChart', charts.bookings, 'bookings');
-
-
-
         if (charts.topPie) makeChartClickable('topVehiclesPieChart', charts.topPie, 'topveh');
-
-
-
     }
 
 
