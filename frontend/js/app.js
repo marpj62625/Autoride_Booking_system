@@ -1394,17 +1394,40 @@ function initApp() {
         var bId = urlParams.get('booking_id');
         if (paymentStatus === 'success' && bId) {
           window.history.replaceState({}, document.title, window.location.pathname);
-          showToast('Payment successful! Your booking is confirmed.', 'success');
-          setTimeout(function() {
-            if (typeof showBookingDetail === 'function') {
-              showBookingDetail(parseInt(bId));
-            } else {
-              showPage('page-bookings');
-            }
-          }, 800);
+          showToast('Verifying payment for booking #' + bId + '...', 'info');
+          // Actively verify and confirm booking status in DB
+          apiCall('/paymongo/status/' + bId)
+            .then(function(res) {
+              showToast('Payment successful! Your booking is confirmed.', 'success');
+              loadBookings();
+              setTimeout(function() {
+                if (typeof openBookingDetail === 'function') {
+                  openBookingDetail(parseInt(bId));
+                } else {
+                  showPage('page-bookings');
+                }
+              }, 400);
+            })
+            .catch(function() {
+              showToast('Payment received! Your booking is being updated.', 'success');
+              loadBookings();
+              setTimeout(function() {
+                if (typeof openBookingDetail === 'function') {
+                  openBookingDetail(parseInt(bId));
+                } else {
+                  showPage('page-bookings');
+                }
+              }, 400);
+            });
         } else if (paymentStatus === 'cancelled' && bId) {
           window.history.replaceState({}, document.title, window.location.pathname);
           showToast('Payment was cancelled. You can retry anytime from your bookings.', 'info');
+          loadBookings();
+          setTimeout(function() {
+            if (typeof openBookingDetail === 'function') {
+              openBookingDetail(parseInt(bId));
+            }
+          }, 400);
         }
       }
 
@@ -4338,6 +4361,8 @@ function togglePaymentAddon(idx, bookingId) {
 
 // directPayMethod: immediately triggers PayMongo for GCash/Maya/Card (no extra button needed)
 function directPayMethod(method, bookingId, amount) {
+  var bId = parseInt(bookingId);
+  var amt = parseFloat(parseFloat(amount).toFixed(2));
   var methodEl = document.getElementById('payMethod');
   if (methodEl) methodEl.value = method;
   // Visual feedback - mark the tapped card as selected
@@ -4347,7 +4372,7 @@ function directPayMethod(method, bookingId, amount) {
   var card = document.getElementById(idMap[method]);
   if (card) card.classList.add('selected');
   // Immediately call PayMongo
-  submitPayment(bookingId, amount);
+  submitPayment(bId, amt);
 }
 
 function selectPayMethod(method, el) {
@@ -4420,10 +4445,15 @@ function openPaymongoCheckout(checkoutUrl, bookingId, amount, method) {
 window.openPaymongoCheckout = openPaymongoCheckout;
 
 function submitPayment(bookingId, amount) {
+  var bId = parseInt(bookingId);
+  var amt = parseFloat(parseFloat(amount).toFixed(2));
   var methodEl = document.getElementById('payMethod');
   var method = methodEl ? methodEl.value : 'gcash';
-  var errEl = document.getElementById('payErr');
-  if (errEl) errEl.textContent = '';
+  var errEl = document.getElementById('payErrOnline') || document.getElementById('payErr');
+  if (errEl) {
+    errEl.textContent = '';
+    errEl.style.display = 'none';
+  }
 
   // Cash payment - use existing manual flow
   if (method === 'cash') {
@@ -4433,24 +4463,26 @@ function submitPayment(bookingId, amount) {
     var promise;
     if (paymentProofBlob) {
       var fd = new FormData();
-      fd.append('booking_id', bookingId);
-      fd.append('amount', amount);
+      fd.append('booking_id', bId);
+      fd.append('amount', amt);
       fd.append('method', 'Cash (Over the counter)');
       fd.append('reference_number', ref);
       fd.append('payment_proof', paymentProofBlob, 'proof.jpg');
       promise = uploadFile('/legacy-payment', fd);
     } else {
-      promise = apiCall('/payment', { method: 'POST', body: JSON.stringify({ booking_id: bookingId, amount: amount, method: 'Cash (Over the counter)', reference_number: ref }) });
+      promise = apiCall('/payment', { method: 'POST', body: JSON.stringify({ booking_id: bId, amount: amt, method: 'Cash (Over the counter)', reference_number: ref }) });
     }
     promise
       .then(function(data) {
         BookingSession.clear();
         closeOverlay('page-payment');
-        NotifStore.add('Booking #' + bookingId + ' received! Pay at our office upon pickup.');
-        showReceipt(bookingId, data, amount, 'Cash (Over the counter)', ref);
+        NotifStore.add('Booking #' + bId + ' received! Pay at our office upon pickup.');
+        showReceipt(bId, data, amt, 'Cash (Over the counter)', ref);
       })
       .catch(function(err) {
-        if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+        var msg = err.message || 'Payment failed. Please try again.';
+        if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        showToast(msg, 'error');
       })
       .finally(function() { showLoading(false); });
     return;
@@ -4467,29 +4499,39 @@ function submitPayment(bookingId, amount) {
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
-      booking_id: bookingId,
-      amount: amount,
+      booking_id: bId,
+      amount: amt,
       method: method,
       payment_type: paymentTypeForPaymongo,
       client: 'web',
-      description: 'Autoride Booking #' + bookingId,
-      customer_name: currentUser.fullName || '',
-      customer_email: currentUser.email || ''
+      description: 'Autoride Booking #' + bId,
+      customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
+      customer_email: (currentUser && currentUser.email) || ''
     })
   })
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        openPaymongoCheckout(data.checkout_url, bookingId, amount, method);
+        openPaymongoCheckout(data.checkout_url, bId, amt, method);
         // Show waiting screen and poll for payment confirmation
-        showPaymentWaiting(bookingId, amount, method);
+        showPaymentWaiting(bId, amt, method);
       } else {
-        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+        var errMsg = data.error || 'Failed to create payment. Please try again.';
+        if (errEl) {
+          errEl.textContent = errMsg;
+          errEl.style.display = 'block';
+        }
+        showToast(errMsg, 'error');
       }
     })
     .catch(function(err) {
       showLoading(false);
-      if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+      var errMsg = (err && (err.message || (err.data && err.data.error))) || 'Payment failed. Please try again.';
+      if (errEl) {
+        errEl.textContent = errMsg;
+        errEl.style.display = 'block';
+      }
+      showToast(errMsg, 'error');
     });
 }
 
@@ -4694,6 +4736,8 @@ function showPaymentFailed(bookingId, amount, method, message) {
 }
 
 function retryPayment(bookingId, amount, method) {
+  var bId = parseInt(bookingId);
+  var amt = parseFloat(parseFloat(amount).toFixed(2));
   showLoading(true);
   var paymentTypeForPaymongo = _pendingPayType || 'Full';
   if (activeBookingData && activeBookingData.payment_status === 'Partially Paid') {
@@ -4704,28 +4748,32 @@ function retryPayment(bookingId, amount, method) {
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
-      booking_id: bookingId,
-      amount: amount,
+      booking_id: bId,
+      amount: amt,
       method: method,
       payment_type: paymentTypeForPaymongo,
       client: 'web',
-      description: 'Autoride Booking #' + bookingId,
-      customer_name: currentUser.fullName || currentUser.full_name || '',
-      customer_email: currentUser.email || ''
+      description: 'Autoride Booking #' + bId,
+      customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
+      customer_email: (currentUser && currentUser.email) || ''
     })
   })
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        openPaymongoCheckout(data.checkout_url, bookingId, amount, method);
-        showPaymentWaiting(bookingId, amount, method);
+        openPaymongoCheckout(data.checkout_url, bId, amt, method);
+        showPaymentWaiting(bId, amt, method);
       } else {
-        showPaymentFailed(bookingId, amount, method, data.error || 'Failed to create payment. Please try again.');
+        var errMsg = data.error || 'Failed to create payment. Please try again.';
+        showPaymentFailed(bId, amt, method, errMsg);
+        showToast(errMsg, 'error');
       }
     })
     .catch(function(err) {
       showLoading(false);
-      showPaymentFailed(bookingId, amount, method, (err && err.message) || 'Network error. Please check your connection and try again.');
+      var errMsg = (err && (err.message || (err.data && err.data.error))) || 'Network error. Please check your connection and try again.';
+      showPaymentFailed(bId, amt, method, errMsg);
+      showToast(errMsg, 'error');
     });
 }
 
@@ -5799,29 +5847,35 @@ function submitExtension(bookingId) {
   // PayMongo for GCash / Maya
   if (method === 'gcash' || method === 'maya') {
     showLoading(true);
+    var bId = parseInt(bookingId);
+    var extAmt = parseFloat(parseFloat(price).toFixed(2));
     apiCall('/paymongo/create-payment', {
       method: 'POST',
       body: JSON.stringify({
-        booking_id: bookingId,
-        amount: price,
+        booking_id: bId,
+        amount: extAmt,
         method: method,
         client: 'web',
-        description: 'Booking #' + bookingId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
-        customer_name: currentUser.fullName || '',
-        customer_email: currentUser.email || '',
+        description: 'Booking #' + bId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
+        customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
+        customer_email: (currentUser && currentUser.email) || '',
         payment_type: 'Extension'
       })
     }).then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        openPaymongoCheckout(data.checkout_url, bookingId, price, method);
-        _showExtPaymentWaiting(bookingId, newEnd, price, methodLabel, days, data.link_id);
+        openPaymongoCheckout(data.checkout_url, bId, extAmt, method);
+        _showExtPaymentWaiting(bId, newEnd, extAmt, methodLabel, days, data.link_id);
       } else {
-        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+        var errMsg = data.error || 'Failed to create payment. Please try again.';
+        if (errEl) errEl.textContent = errMsg;
+        showToast(errMsg, 'error');
       }
     }).catch(function(err) {
       showLoading(false);
-      if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+      var errMsg = (err && (err.message || (err.data && err.data.error))) || 'Payment failed. Please try again.';
+      if (errEl) errEl.textContent = errMsg;
+      showToast(errMsg, 'error');
     });
     return;
   }
@@ -6355,8 +6409,10 @@ function openPayNowFromDetail(bookingId) {
 }
 
 function submitBalancePayment(method, bookingId, amount) {
-  var errEl = document.getElementById('balErr');
-  if (errEl) errEl.textContent = '';
+  var bId = parseInt(bookingId);
+  var amt = parseFloat(parseFloat(amount).toFixed(2));
+  var errEl = document.getElementById('balErr') || document.getElementById('payErrOnline');
+  if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
   // Visual feedback
   var idMap = { gcash: 'balPmGcash', maya: 'balPmMaya', card: 'balPmCard' };
   var cards = document.querySelectorAll('#paymentContent .option-card');
@@ -6369,28 +6425,32 @@ function submitBalancePayment(method, bookingId, amount) {
   apiCall('/paymongo/create-payment', {
     method: 'POST',
     body: JSON.stringify({
-      booking_id: bookingId,
-      amount: amount,
+      booking_id: bId,
+      amount: amt,
       method: method,
       payment_type: 'Balance',
       client: 'web',
-      description: 'Autoride Booking #' + bookingId + ' Balance Payment',
-      customer_name: currentUser ? (currentUser.fullName || '') : '',
-      customer_email: currentUser ? (currentUser.email || '') : ''
+      description: 'Autoride Booking #' + bId + ' Balance Payment',
+      customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
+      customer_email: (currentUser && currentUser.email) || ''
     })
   })
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        openPaymongoCheckout(data.checkout_url, bookingId, amount, method);
-        showPaymentWaiting(bookingId, amount, method);
+        openPaymongoCheckout(data.checkout_url, bId, amt, method);
+        showPaymentWaiting(bId, amt, method);
       } else {
-        if (errEl) errEl.textContent = data.error || 'Failed to create payment. Please try again.';
+        var errMsg = data.error || 'Failed to create payment. Please try again.';
+        if (errEl) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
+        showToast(errMsg, 'error');
       }
     })
     .catch(function(err) {
       showLoading(false);
-      if (errEl) errEl.textContent = err.message || 'Payment failed. Please try again.';
+      var errMsg = (err && (err.message || (err.data && err.data.error))) || 'Payment failed. Please try again.';
+      if (errEl) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
+      showToast(errMsg, 'error');
     });
 }
 

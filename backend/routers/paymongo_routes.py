@@ -8,7 +8,7 @@ import hashlib
 import hmac
 import json
 import requests
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect
 from database import get_cursor, commit_db, get_db
 from config import PAYMONGO_SECRET_KEY, PAYMONGO_PUBLIC_KEY, PAYMONGO_WEBHOOK_SECRET, APP_BASE_URL
 
@@ -175,20 +175,20 @@ def create_payment():
 
     # Build success/failure redirect URLs based on client platform
     if client == 'web':
-        success_url = f'{APP_BASE_URL}/?payment=success&booking_id={booking_id}'
-        cancel_url = f'{APP_BASE_URL}/?payment=cancelled&booking_id={booking_id}'
+        success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}&client=web'
+        cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}&client=web'
     else:
         success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
         cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
 
     # Billing details if provided
     billing = {}
-    if customer_name:
-        billing['name'] = customer_name
-    if customer_email:
-        billing['email'] = customer_email
-    if customer_phone:
-        billing['phone'] = customer_phone
+    if customer_name and customer_name.strip():
+        billing['name'] = customer_name.strip()
+    if customer_email and '@' in customer_email and '.' in customer_email:
+        billing['email'] = customer_email.strip()
+    if customer_phone and customer_phone.strip():
+        billing['phone'] = customer_phone.strip()
 
     # Map method names for Checkout Sessions (supports native auto-redirect)
     cs_method_map = {
@@ -316,7 +316,10 @@ def payment_success():
     Verifies payment and updates booking status.
     """
     booking_id = request.args.get('booking_id')
+    client = request.args.get('client', 'mobile')
     if not booking_id:
+        if client == 'web':
+            return redirect(f'{APP_BASE_URL}/')
         return '<h2>Payment confirmed. Please return to the app.</h2>', 200
 
     try:
@@ -369,7 +372,11 @@ def payment_success():
                     
                     _confirm_payment(booking_id, amount_paid, method, ref_num, pay_type)
 
-        # Redirect back to app with deep link
+        # If web client, redirect directly to web application with payment=success
+        if client == 'web':
+            return redirect(f'{APP_BASE_URL}/?payment=success&booking_id={booking_id}')
+
+        # Redirect back to mobile app with deep link
         return f'''
         <html>
         <head>
@@ -426,6 +433,9 @@ def payment_success():
 def payment_cancel():
     """PayMongo redirects here if user cancels payment."""
     booking_id = request.args.get('booking_id')
+    client = request.args.get('client', 'mobile')
+    if client == 'web':
+        return redirect(f'{APP_BASE_URL}/?payment=cancelled&booking_id={booking_id or ""}')
     return f'''
     <html>
     <head>
