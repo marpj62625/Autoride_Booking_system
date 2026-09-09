@@ -63,8 +63,13 @@ def get_paymongo_config():
 
     # Resolve active credentials based on selected mode
     if mode == 'live':
-        active_sk = live_sk or PAYMONGO_SECRET_KEY
-        active_pk = live_pk or PAYMONGO_PUBLIC_KEY
+        active_sk = live_sk
+        active_pk = live_pk
+        # Only fall back to env var if it's explicitly a LIVE key
+        if not active_sk and PAYMONGO_SECRET_KEY and PAYMONGO_SECRET_KEY.startswith('sk_live_'):
+            active_sk = PAYMONGO_SECRET_KEY
+        if not active_pk and PAYMONGO_PUBLIC_KEY and PAYMONGO_PUBLIC_KEY.startswith('pk_live_'):
+            active_pk = PAYMONGO_PUBLIC_KEY
     else:
         active_sk = test_sk or PAYMONGO_SECRET_KEY
         active_pk = test_pk or PAYMONGO_PUBLIC_KEY
@@ -137,6 +142,20 @@ def create_payment():
     if amount_centavos < 10000:  # Minimum 100 PHP
         error_msg = 'Minimum payment amount is PHP 100'
         print(f"[PayMongo] Error: {error_msg} (amount_centavos={amount_centavos})")
+        return jsonify({'error': error_msg}), 400
+
+    cfg = get_paymongo_config()
+    active_sk = cfg.get('secret_key', '')
+    active_mode = cfg.get('mode', 'test')
+
+    if not active_sk:
+        error_msg = f'PayMongo is configured for {active_mode.upper()} mode, but no Secret Key is set. Please enter and save your key in Admin Settings.'
+        print(f"[PayMongo] Error: {error_msg}")
+        return jsonify({'error': error_msg}), 400
+
+    if active_mode == 'live' and active_sk.startswith('sk_test_'):
+        error_msg = 'PayMongo mode is set to LIVE, but the active Secret Key is a TEST key (sk_test_). Please enter your Live Secret Key (starts with sk_live_) in Admin Settings.'
+        print(f"[PayMongo] Error: {error_msg}")
         return jsonify({'error': error_msg}), 400
 
     # Map method names to PayMongo payment method types
@@ -976,6 +995,12 @@ def test_paymongo_connection():
         )
         if res.status_code == 200:
             key_type = 'Live' if secret_key.startswith('sk_live_') else 'Test'
+            if mode == 'live' and key_type == 'Test':
+                return jsonify({
+                    'success': True,
+                    'message': 'Warning: Valid PayMongo key, but it is a TEST key (sk_test_). For real customer payments, enter your LIVE Secret Key (sk_live_).',
+                    'key_type': 'Test'
+                }), 200
             return jsonify({
                 'success': True,
                 'message': f'Connection successful! Valid PayMongo {key_type} Secret Key.',

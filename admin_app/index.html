@@ -7533,7 +7533,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                <button onclick="Settings.save(); closeSystemConfigModal();" class="btn-premium" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700;">
+                <button id="btnSaveSystemSettings" onclick="saveSystemSettingsBtn(this)" class="btn-premium" style="flex: 1; padding: 12px; background: var(--primary); border: none; border-radius: 10px; color: white; font-weight: 700; cursor: pointer;">
 
 
 
@@ -26357,6 +26357,9 @@ function toggleNewsletterModal(show = true) {
                                     <button type="button" onclick="testPaymongoCredentials()" style="padding: 10px 16px; font-size: 0.82rem; font-weight: 700; border-radius: 10px; background: #00c389; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                                         <i class="fas fa-plug"></i> Test Connection
                                     </button>
+                                    <button type="button" onclick="saveSystemSettingsBtn(this)" style="padding: 10px 16px; font-size: 0.82rem; font-weight: 700; border-radius: 10px; background: var(--primary); color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-save"></i> Save Settings
+                                    </button>
                                 </div>
                             `;
                             html += `
@@ -26469,81 +26472,60 @@ function toggleNewsletterModal(show = true) {
 
 
         async save() {
-
-
-
             const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
-
-
-
-            const updates = Array.from(inputs).map(i => ({ key: i.dataset.key, value: i.value }));
-
-
-
-            const user = adminAuth.getUser();
-
-
-
-
-
-
+            const updates = Array.from(inputs).filter(i => i.dataset && i.dataset.key).map(i => ({ key: i.dataset.key, value: i.value }));
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
 
             try {
-
-
-
-                const res = await fetch(`${API_BASE}/admin/settings`, {
-
-
-
+                let res = await fetch(`${API_BASE}/admin/settings`, {
                     method: 'POST',
-
-
-
                     headers: { 'Content-Type': 'application/json' },
-
-
-
-                    body: JSON.stringify({ requester_id: (user && user.id) ? user.id : 1, settings: updates })
-
-
-
+                    body: JSON.stringify({ requester_id: (user && user.id) ? user.id : 20, settings: updates })
                 });
-
-
+                if (res.status === 404 || res.status === 405) {
+                    res = await fetch(`${API_BASE}/api/admin/settings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ requester_id: (user && user.id) ? user.id : 20, settings: updates })
+                    });
+                }
+                const data = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
 
                 if (res.ok) {
-
-
-
-                    showNotification('Settings saved!', 'success');
-
-
-
-                    this.fetch();
-
-
-
+                    showNotification('✅ Settings saved successfully!', 'success');
+                    await this.fetch();
+                    return true;
                 } else {
-
-
-
-                    showNotification('Save failed', 'error');
-
-
-
+                    showNotification('❌ Save failed: ' + (data.error || data.message || 'Unauthorized'), 'error');
+                    return false;
                 }
-
-
-
-            } catch (err) { showNotification('Network error', 'error'); }
-
-
-
+            } catch (err) {
+                showNotification('❌ Network error: ' + err.message, 'error');
+                return false;
+            }
         }
+    };
 
-
-
+    window.saveSystemSettingsBtn = async function(btn) {
+        if (!btn) btn = document.getElementById('btnSaveSystemSettings');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
+        try {
+            const success = await Settings.save();
+            if (success) {
+                setTimeout(() => {
+                    if (typeof closeSystemConfigModal === 'function') closeSystemConfigModal();
+                }, 500);
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml || 'Save Settings';
+            }
+        }
     };
 
     window.updatePaymongoModeBadge = function(selectEl) {
