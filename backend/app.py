@@ -672,6 +672,66 @@ except Exception as _e:
     pass
 
 
+def migrate_violation_system():
+    """Creates violation tracking columns and user_violation_history table for the Strike/Suspension system."""
+    try:
+        cur = get_cursor()
+
+        # Add violation tracking columns to users table
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS violation_strikes INT DEFAULT 0")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS violation_last_at TIMESTAMPTZ")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS booking_suspension_until TIMESTAMPTZ")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS violation_commitment_fee_required BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS violation_permanently_restricted BOOLEAN DEFAULT FALSE")
+
+        # Create violation history table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_violation_history (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                booking_id INTEGER REFERENCES bookings(id) ON DELETE SET NULL,
+                violation_number INT NOT NULL,
+                suspension_type VARCHAR(50),
+                suspension_until TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                reset_by_admin_id INTEGER,
+                reset_at TIMESTAMPTZ,
+                reset_note TEXT
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_uvh_user_id ON user_violation_history (user_id, created_at DESC)")
+
+        # Insert default violation system settings
+        violation_settings = [
+            ('violation_max_strikes', '3', 'Number of violations before permanent restriction'),
+            ('violation_1st_suspension_hours', '24', 'Hours suspended after 1st violation'),
+            ('violation_2nd_suspension_days', '7', 'Days suspended after 2nd violation'),
+            ('violation_commitment_fee_amount', '200', 'Non-refundable commitment fee (PHP) required on next booking after violation'),
+            ('violation_auto_reset_clean_days', '30', 'Days of no violations before auto-reset of strike count'),
+            ('violation_warning_15min_enabled', 'true', 'Send 15-minute payment warning notification'),
+            ('violation_warning_5min_enabled', 'true', 'Send 5-minute payment warning notification'),
+        ]
+        for key, val, desc in violation_settings:
+            cur.execute("""
+                INSERT INTO settings (key, value, description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (key) DO NOTHING
+            """, (key, val, desc))
+
+        commit_db()
+        print("DEBUG: migrate_violation_system completed successfully.")
+    except Exception as e:
+        print(f"DEBUG: migrate_violation_system error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_violation_system()
+except Exception as _e:
+    pass
+
+
 def migrate_extensions_v1():
     """Creates booking_extensions and booking_conflicts tables and adds extension columns to bookings."""
     try:
@@ -2305,6 +2365,246 @@ def admin_freeze_user(user_id):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/admin/users/<int:user_id>/violations', methods=['GET'])
+@app.route('/api/admin/users/<int:user_id>/violations', methods=['GET'])
+def admin_get_user_violations(user_id):
+    """Get a user's violation history and current suspension status."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT violation_strikes, violation_last_at, booking_suspension_until,
+                   violation_commitment_fee_required, violation_permanently_restricted
+            FROM users WHERE id = %s
+        """, (user_id,))
+        urow = cur.fetchone()
+        if not urow:
+            return jsonify({'error': 'User not found'}), 404
+        cur.execute("""
+            SELECT h.id, h.booking_id, h.violation_number, h.suspension_type,
+                   h.suspension_until, h.created_at, h.reset_at, h.reset_note,
+                   a.full_name AS reset_by_name
+            FROM user_violation_history h
+            LEFT JOIN users a ON a.id = h.reset_by_admin_id
+            WHERE h.user_id = %s
+            ORDER BY h.created_at DESC
+        """, (user_id,))
+        history = []
+        for row in (cur.fetchall() or []):
+            r = dict(row)
+            for k in ('suspension_until', 'created_at', 'reset_at'):
+                if r.get(k): r[k] = str(r[k])
+            history.append(r)
+        d = dict(urow)
+        if d.get('violation_last_at'): d['violation_last_at'] = str(d['violation_last_at'])
+        if d.get('booking_suspension_until'): d['booking_suspension_until'] = str(d['booking_suspension_until'])
+        d['violation_strikes'] = int(d.get('violation_strikes') or 0)
+        d['history'] = history
+        return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/users/<int:user_id>/violations/reset', methods=['POST'])
+@app.route('/api/admin/users/<int:user_id>/violations/reset', methods=['POST'])
+def admin_reset_user_violations(user_id):
+    """Reset a user's strikes and lift any suspension."""
+    data = request.get_json(silent=True) or {}
+    note = data.get('note', '')
+    admin_id = data.get('admin_id')
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            UPDATE users
+            SET violation_strikes = 0,
+                booking_suspension_until = NULL,
+                violation_commitment_fee_required = FALSE,
+                violation_permanently_restricted = FALSE,
+                violation_last_at = NULL
+            WHERE id = %s
+        """, (user_id,))
+        # Log the reset in history
+        cur.execute("""
+            UPDATE user_violation_history
+            SET reset_by_admin_id = %s, reset_at = NOW(), reset_note = %s
+            WHERE user_id = %s AND reset_at IS NULL
+        """, (admin_id, note or 'Admin reset', user_id))
+        commit_db()
+        # Notify user
+        try:
+            from notifications import Notification_Service
+            Notification_Service().notify_user(
+                user_id,
+                'Booking Restriction Lifted',
+                'Your booking account has been restored by an admin. You can now book vehicles again.',
+                'violation_reset'
+            )
+        except Exception:
+            pass
+        return jsonify({'message': 'Violations reset and suspension lifted successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/users/<int:user_id>/violations/blacklist', methods=['POST'])
+@app.route('/api/admin/users/<int:user_id>/violations/blacklist', methods=['POST'])
+def admin_blacklist_user(user_id):
+    """Permanently restrict a user from booking."""
+    data = request.get_json(silent=True) or {}
+    blacklist = data.get('blacklist', True)
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            UPDATE users
+            SET violation_permanently_restricted = %s
+            WHERE id = %s
+        """, (blacklist, user_id))
+        commit_db()
+        action = 'permanently blacklisted' if blacklist else 'removed from blacklist'
+        try:
+            from notifications import Notification_Service
+            if blacklist:
+                Notification_Service().notify_user(
+                    user_id,
+                    'Account Booking Restriction',
+                    'Your account has been permanently restricted from making bookings due to repeated violations. Contact support for assistance.',
+                    'violation_blacklist'
+                )
+        except Exception:
+            pass
+        return jsonify({'message': f'User {action} successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/violations', methods=['GET'])
+@app.route('/api/admin/violations', methods=['GET'])
+def admin_list_violations():
+    """List all users with any violations (strikes > 0 or suspended)."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, full_name, email, phone,
+                   violation_strikes, violation_last_at, booking_suspension_until,
+                   violation_commitment_fee_required, violation_permanently_restricted,
+                   is_frozen
+            FROM users
+            WHERE violation_strikes > 0
+               OR booking_suspension_until IS NOT NULL
+               OR violation_permanently_restricted = TRUE
+            ORDER BY violation_strikes DESC, violation_last_at DESC
+        """)
+        users = []
+        for row in (cur.fetchall() or []):
+            r = dict(row)
+            if r.get('violation_last_at'): r['violation_last_at'] = str(r['violation_last_at'])
+            if r.get('booking_suspension_until'): r['booking_suspension_until'] = str(r['booking_suspension_until'])
+            r['violation_strikes'] = int(r.get('violation_strikes') or 0)
+            users.append(r)
+        return jsonify({'users': users, 'total': len(users)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/violation-settings', methods=['GET'])
+@app.route('/api/admin/violation-settings', methods=['GET'])
+def admin_get_violation_settings():
+    """Get all violation system configuration settings."""
+    try:
+        cur = get_cursor()
+        keys = [
+            'violation_max_strikes', 'violation_1st_suspension_hours',
+            'violation_2nd_suspension_days', 'violation_commitment_fee_amount',
+            'violation_auto_reset_clean_days', 'violation_warning_15min_enabled',
+            'violation_warning_5min_enabled'
+        ]
+        cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (keys,))
+        result = {row['key']: row['value'] for row in (cur.fetchall() or [])}
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/violation-settings', methods=['POST'])
+@app.route('/api/admin/violation-settings', methods=['POST'])
+def admin_save_violation_settings():
+    """Update violation system configuration settings."""
+    data = request.get_json(silent=True) or {}
+    allowed_keys = [
+        'violation_max_strikes', 'violation_1st_suspension_hours',
+        'violation_2nd_suspension_days', 'violation_commitment_fee_amount',
+        'violation_auto_reset_clean_days', 'violation_warning_15min_enabled',
+        'violation_warning_5min_enabled'
+    ]
+    try:
+        cur = get_cursor()
+        for key in allowed_keys:
+            if key in data:
+                cur.execute("""
+                    INSERT INTO settings (key, value) VALUES (%s, %s)
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+                """, (key, str(data[key])))
+        commit_db()
+        return jsonify({'message': 'Violation settings saved.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/api/user/violation-status', methods=['GET'])
+def user_violation_status():
+    """Customer checks their own violation/suspension status."""
+    user_id = request.args.get('user_id', type=int)
+    if not user_id:
+        return jsonify({'error': 'user_id required'}), 400
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT violation_strikes, violation_last_at, booking_suspension_until,
+                   violation_commitment_fee_required, violation_permanently_restricted
+            FROM users WHERE id = %s
+        """, (user_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'User not found'}), 404
+        d = dict(row)
+        if d.get('violation_last_at'): d['violation_last_at'] = str(d['violation_last_at'])
+        if d.get('booking_suspension_until'): d['booking_suspension_until'] = str(d['booking_suspension_until'])
+        d['violation_strikes'] = int(d.get('violation_strikes') or 0)
+        # Compute is_currently_suspended
+        sus_until = row.get('booking_suspension_until')
+        perm = bool(row.get('violation_permanently_restricted'))
+        if perm:
+            d['is_suspended'] = True
+            d['suspension_type'] = 'permanent'
+        elif sus_until:
+            from datetime import timezone as _tz
+            import datetime as _dt_mod
+            now_utc = _dt_mod.datetime.now(_tz.utc)
+            if sus_until.tzinfo is None:
+                sus_until = sus_until.replace(tzinfo=_tz.utc)
+            d['is_suspended'] = now_utc < sus_until
+            d['suspension_type'] = 'temporary' if d['is_suspended'] else 'none'
+        else:
+            d['is_suspended'] = False
+            d['suspension_type'] = 'none'
+        return jsonify(d), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/admin/users/<int:user_id>/edit', methods=['PUT'])
 @app.route('/api/admin/users/<int:user_id>/edit', methods=['PUT'])
 def admin_edit_user(user_id):
@@ -3756,7 +4056,38 @@ def book():
 
         cur = get_cursor()
 
-
+        # ── Violation Suspension Guard ──────────────────────────────────────
+        cur.execute("""
+            SELECT violation_strikes, booking_suspension_until,
+                   violation_permanently_restricted, violation_commitment_fee_required
+            FROM users WHERE id = %s
+        """, (user_id,))
+        vrow = cur.fetchone()
+        if vrow:
+            perm = bool(vrow.get('violation_permanently_restricted'))
+            sus_until = vrow.get('booking_suspension_until')
+            if perm:
+                return jsonify({
+                    'error': 'Your account has been permanently restricted from booking due to repeated payment violations. Please contact support.',
+                    'suspended': True,
+                    'suspension_type': 'permanent'
+                }), 403
+            if sus_until:
+                from datetime import timezone as _tz
+                import datetime as _dt_mod
+                now_utc = _dt_mod.datetime.now(_tz.utc)
+                if sus_until.tzinfo is None:
+                    sus_until = sus_until.replace(tzinfo=_tz.utc)
+                if now_utc < sus_until:
+                    return jsonify({
+                        'error': f'Your account is temporarily suspended from booking until {sus_until.strftime("%B %d, %Y %I:%M %p")} UTC due to unpaid booking violations.',
+                        'suspended': True,
+                        'suspension_until': sus_until.isoformat(),
+                        'suspension_type': 'temporary'
+                    }), 403
+                else:
+                    # Suspension expired — auto-lift it
+                    cur.execute("UPDATE users SET booking_suspension_until = NULL WHERE id = %s", (user_id,))
 
         # Security Check: Driver's License Verification (Must be 2 = Verified if requirement is strict)
 

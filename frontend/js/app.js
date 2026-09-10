@@ -1373,6 +1373,25 @@ function initApp() {
           if (v.phone) currentUser.phone = v.phone;
           Session.save(currentUser);
           startBgSessionPolling();
+
+          // Check violation/suspension status on login
+          apiCall('/user/violation-status?user_id=' + user.id).then(function(vs) {
+            if (vs && (vs.suspended || vs.permanently_restricted)) {
+              var existingBanner = document.getElementById('violationBanner');
+              if (!existingBanner) {
+                var banner = document.createElement('div');
+                banner.id = 'violationBanner';
+                banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:8888;background:#dc2626;color:#fff;padding:10px 16px;font-size:0.8rem;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+                if (vs.permanently_restricted) {
+                  banner.innerHTML = '<i class="fas fa-ban"></i> <strong>Account Restricted:</strong> You are permanently banned from booking. <a style="color:#fff;text-decoration:underline;cursor:pointer;" onclick="showSuspensionModal(' + JSON.stringify(vs) + ')">Details</a>';
+                } else {
+                  var suspUntil = vs.suspension_until ? new Date(vs.suspension_until).toLocaleDateString('en-PH', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'further notice';
+                  banner.innerHTML = '<i class="fas fa-clock"></i> <strong>Booking Suspended</strong> until ' + suspUntil + '. <a style="color:#fff;text-decoration:underline;cursor:pointer;" onclick="showSuspensionModal(' + JSON.stringify(vs) + ')">Details</a> <i class="fas fa-times" style="margin-left:8px;cursor:pointer;" onclick="document.getElementById(\'violationBanner\').remove()"></i>';
+                }
+                document.body.prepend(banner);
+              }
+            }
+          }).catch(function() {});
         }).catch(function() {
           startBgSessionPolling();
         });
@@ -4209,8 +4228,14 @@ function _proceedWithBookingSubmission() {
       openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      var errEl = document.getElementById('bfErr');
-      if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
+      if (err && err.data && err.data.suspended) {
+        showSuspensionModal(err.data);
+      } else if (err && err.status === 403 && err.message && err.message.toLowerCase().indexOf('suspend') !== -1) {
+        showSuspensionModal({ suspension_type: 'temporary', message: err.message });
+      } else {
+        var errEl = document.getElementById('bfErr');
+        if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
+      }
     })
     .finally(function() { showLoading(false); restoreBtn(); });
 }
@@ -4605,12 +4630,55 @@ function showPaymentWaiting(bookingId, amount, method) {
   _paymentPollInterval = setInterval(function() {
     autoCheckPaymentStatus(bookingId, amount, method);
   }, 2500);
+
+  // --- 30-minute payment countdown timer ---
+  var payDeadlineMs = 30 * 60 * 1000;
+  var payStartTime = Date.now();
+  if (window._payCountdownInterval) {
+    clearInterval(window._payCountdownInterval);
+    window._payCountdownInterval = null;
+  }
+  var countdownEl = document.getElementById('payCountdownDisplay');
+  window._payCountdownInterval = setInterval(function() {
+    var elapsed = Date.now() - payStartTime;
+    var remaining = payDeadlineMs - elapsed;
+    if (remaining <= 0) {
+      clearInterval(window._payCountdownInterval);
+      window._payCountdownInterval = null;
+      stopPaymentPolling();
+      showToast('Payment window expired. Your booking has been cancelled due to non-payment. A violation has been recorded.', 'error', 6000);
+      return;
+    }
+    var mins = Math.floor(remaining / 60000);
+    var secs = Math.floor((remaining % 60000) / 1000);
+    var display = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+    if (countdownEl) {
+      countdownEl.textContent = display;
+      if (remaining <= 5 * 60 * 1000) {
+        countdownEl.style.color = '#dc2626';
+        countdownEl.style.fontWeight = '900';
+        if (remaining > (5 * 60 * 1000 - 2500)) {
+          showToast('Only 5 minutes left to complete your payment!', 'error', 4000);
+        }
+      } else if (remaining <= 15 * 60 * 1000) {
+        countdownEl.style.color = '#f59e0b';
+        if (remaining > (15 * 60 * 1000 - 2500)) {
+          showToast('15 minutes remaining to complete your payment.', 'warning', 3500);
+        }
+      }
+    }
+  }, 1000);
 }
 
 function stopPaymentPolling() {
   if (_paymentPollInterval) {
     clearInterval(_paymentPollInterval);
     _paymentPollInterval = null;
+  }
+  // Clear countdown timer
+  if (window._payCountdownInterval) {
+    clearInterval(window._payCountdownInterval);
+    window._payCountdownInterval = null;
   }
   if (_paymongoWindow && !_paymongoWindow.closed) {
     try { _paymongoWindow.close(); } catch(e) {}
@@ -4627,6 +4695,42 @@ function stopPaymentPolling() {
     window._browserPageLoadedListener = null;
   }
 }
+
+function showSuspensionModal(data) {
+  var isPermanent = data && data.suspension_type === 'permanent';
+  var msg, title;
+  if (isPermanent) {
+    title = 'Account Permanently Restricted';
+    msg = 'Your account has been permanently restricted from making bookings due to repeated unpaid booking violations. Please contact us for assistance.';
+  } else {
+    title = 'Account Temporarily Suspended';
+    var until = '';
+    if (data && data.suspension_until) {
+      try {
+        until = ' until ' + new Date(data.suspension_until).toLocaleDateString('en-PH', {
+          year: 'numeric', month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+      } catch(e) {}
+    }
+    var strikes = data && data.strikes ? ' (' + data.strikes + ' violation' + (data.strikes > 1 ? 's' : '') + ')' : '';
+    msg = (data && data.message) || ('Your booking privileges are suspended' + until + strikes + '. Please wait for the suspension to lift or contact support.');
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'suspensionOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = '<div style="background:var(--bg-card,#fff);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;text-align:center;">' +
+    '<div style="width:64px;height:64px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">' +
+    '<i class=\"fas ' + (isPermanent ? 'fa-ban' : 'fa-clock') + '\" style=\"font-size:2rem;color:#dc2626;\"></i></div>' +
+    '<h3 style=\"font-size:1.1rem;font-weight:800;color:#dc2626;margin-bottom:12px;\">' + title + '</h3>' +
+    '<p style=\"font-size:0.875rem;color:var(--text-secondary,#666);line-height:1.5;margin-bottom:20px;\">' + msg + '</p>' +
+    '<button class=\"btn-primary\" onclick=\"var el=document.getElementById(\'suspensionOverlay\');if(el)el.remove();\" style=\"width:100%;\">OK, I understand</button>' +
+    '</div>';
+  var existing = document.getElementById('suspensionOverlay');
+  if (existing) existing.remove();
+  document.body.appendChild(overlay);
+}
+
 
 var _paymentCheckInProgress = false;
 function autoCheckPaymentStatus(bookingId, amount, method) {

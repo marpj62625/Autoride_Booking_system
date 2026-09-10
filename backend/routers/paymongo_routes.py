@@ -688,12 +688,24 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                     cancel_cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (erow['vehicle_id'],))
             commit_db()
             cancel_cur.close()
+            # Apply violation strikes for each expired booking
+            if expired_rows:
+                try:
+                    _apply_violation_strikes(expired_rows)
+                except Exception as _ve:
+                    print(f"[Violation] Strike apply error: {_ve}")
         except Exception as _ce:
             print(f"[PayMongo] Auto-cancel expired pending bookings error: {_ce}")
             try:
                 get_db().rollback()
             except Exception:
                 pass
+
+        # Send payment deadline warnings (15-min and 5-min)
+        try:
+            _send_payment_deadline_warnings()
+        except Exception as _pw:
+            print(f"[Violation] Payment warning error: {_pw}")
 
         cur = get_cursor()
         if user_id:
@@ -1034,3 +1046,231 @@ def test_paymongo_connection():
         return jsonify({'success': False, 'message': f'Connection error: {str(e)}'}), 500
 
 
+# ─── VIOLATION / STRIKE SYSTEM ───────────────────────────────────────────────
+
+
+def _get_violation_settings():
+    """Fetch violation system settings from DB. Returns a dict with defaults."""
+    defaults = {
+        'violation_max_strikes': 3,
+        'violation_1st_suspension_hours': 24,
+        'violation_2nd_suspension_days': 7,
+        'violation_commitment_fee_amount': 200,
+        'violation_auto_reset_clean_days': 30,
+        'violation_warning_15min_enabled': 'true',
+        'violation_warning_5min_enabled': 'true',
+    }
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT key, value FROM settings WHERE key LIKE 'violation_%'")
+        rows = cur.fetchall() or []
+        cur.close()
+        for row in rows:
+            k, v = row['key'], row['value']
+            if k in ('violation_max_strikes', 'violation_1st_suspension_hours',
+                     'violation_2nd_suspension_days', 'violation_commitment_fee_amount',
+                     'violation_auto_reset_clean_days'):
+                try:
+                    defaults[k] = int(v)
+                except Exception:
+                    pass
+            else:
+                defaults[k] = v
+    except Exception as e:
+        print(f"[Violation] Settings fetch error: {e}")
+    return defaults
+
+
+def _apply_violation_strikes(expired_rows):
+    """
+    Called after a booking is auto-cancelled for non-payment.
+    Increments the user's violation strike count and applies
+    the appropriate suspension based on strike number.
+    """
+    import psycopg
+    from config import SUPABASE_DB_URL
+    from psycopg.rows import dict_row
+    from datetime import datetime, timedelta, timezone
+
+    cfg = _get_violation_settings()
+    max_strikes = cfg['violation_max_strikes']
+    hours_1st = cfg['violation_1st_suspension_hours']
+    days_2nd = cfg['violation_2nd_suspension_days']
+    reset_days = cfg['violation_auto_reset_clean_days']
+
+    for erow in expired_rows:
+        uid = erow.get('user_id')
+        booking_id = erow.get('id')
+        if not uid:
+            continue
+        try:
+            conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            cur = conn.cursor(row_factory=dict_row)
+
+            # Fetch current user violation state
+            cur.execute("""
+                SELECT violation_strikes, violation_last_at, violation_permanently_restricted
+                FROM users WHERE id = %s
+            """, (uid,))
+            urow = cur.fetchone()
+            if not urow:
+                conn.close()
+                continue
+
+            # Skip if already permanently restricted
+            if urow.get('violation_permanently_restricted'):
+                conn.close()
+                continue
+
+            # Auto-reset strikes if enough clean days have passed
+            current_strikes = int(urow.get('violation_strikes') or 0)
+            last_at = urow.get('violation_last_at')
+            now_utc = datetime.now(timezone.utc)
+            if last_at and current_strikes > 0:
+                if last_at.tzinfo is None:
+                    last_at = last_at.replace(tzinfo=timezone.utc)
+                days_since = (now_utc - last_at).days
+                if days_since >= reset_days:
+                    current_strikes = 0  # Auto-reset
+
+            new_strikes = current_strikes + 1
+
+            # Determine suspension
+            suspension_until = None
+            suspension_type = 'none'
+            permanently_restricted = False
+
+            if new_strikes == 1:
+                suspension_until = now_utc + timedelta(hours=hours_1st)
+                suspension_type = f'24h'
+            elif new_strikes == 2:
+                suspension_until = now_utc + timedelta(days=days_2nd)
+                suspension_type = f'7d'
+            elif new_strikes >= max_strikes:
+                permanently_restricted = True
+                suspension_type = 'permanent'
+
+            # Update user record
+            cur.execute("""
+                UPDATE users
+                SET violation_strikes = %s,
+                    violation_last_at = NOW(),
+                    booking_suspension_until = %s,
+                    violation_commitment_fee_required = TRUE,
+                    violation_permanently_restricted = %s
+                WHERE id = %s
+            """, (new_strikes, suspension_until, permanently_restricted, uid))
+
+            # Insert violation history record
+            cur.execute("""
+                INSERT INTO user_violation_history
+                    (user_id, booking_id, violation_number, suspension_type, suspension_until)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (uid, booking_id, new_strikes, suspension_type, suspension_until))
+
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            # Send notification to user
+            try:
+                from notifications import Notification_Service
+                ns = Notification_Service()
+                if permanently_restricted:
+                    msg = (
+                        f'Strike #{new_strikes}: You have been permanently restricted from booking '
+                        f'due to repeated failure to pay the reservation deposit. '
+                        f'Please contact support.'
+                    )
+                elif new_strikes == 2:
+                    msg = (
+                        f'Strike #{new_strikes}: Your account has been suspended from booking for 7 days '
+                        f'(until {suspension_until.strftime("%B %d, %Y")}) due to not completing '
+                        f'your reservation deposit payment.'
+                    )
+                else:
+                    msg = (
+                        f'Strike #{new_strikes}: Your account has been suspended from booking for 24 hours '
+                        f'(until {suspension_until.strftime("%B %d, %Y %I:%M %p")}) because your booking '
+                        f'was cancelled for non-payment of the reservation deposit.'
+                    )
+                ns.notify_user(uid, f'Booking Violation - Strike #{new_strikes}', msg, 'violation')
+
+                # Notify admins
+                ns.notify_admins_inapp(
+                    f'Booking Violation - Strike #{new_strikes}',
+                    f'User #{uid} received Strike #{new_strikes} (Booking #{booking_id}). '
+                    f'Suspension: {suspension_type}.',
+                    'violation_admin'
+                )
+            except Exception as ne:
+                print(f"[Violation] Notification error for user {uid}: {ne}")
+
+        except Exception as err:
+            print(f"[Violation] Error processing user {uid}: {err}")
+
+
+def _send_payment_deadline_warnings():
+    """
+    Sends in-app notifications at 15-min and 5-min before the 30-min payment deadline.
+    Called during check_and_update_unpaid_paymongo_bookings().
+    """
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT id, user_id, created_at FROM bookings
+            WHERE payment_status IN ('Unpaid', 'Downpayment unpaid')
+              AND status IN ('Pending', 'Pending Payment')
+              AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''
+              AND created_at > NOW() - INTERVAL '30 minutes'
+              AND created_at < NOW() - INTERVAL '14 minutes'
+        """)
+        warn_rows = cur.fetchall() or []
+        cur.close()
+
+        for row in warn_rows:
+            uid = row.get('user_id')
+            bid = row.get('id')
+            created = row.get('created_at')
+            if not uid or not created:
+                continue
+            try:
+                from datetime import datetime, timezone, timedelta
+                if created.tzinfo is None:
+                    created = created.replace(tzinfo=timezone.utc)
+                now_utc = datetime.now(timezone.utc)
+                elapsed = (now_utc - created).total_seconds() / 60
+                remaining = 30 - elapsed
+
+                # 15-min warning: between 14 and 16 minutes elapsed
+                if 14 <= elapsed < 16:
+                    try:
+                        from notifications import Notification_Service
+                        Notification_Service().notify_user(
+                            uid,
+                            '⏰ 15 Minutes Left to Pay!',
+                            f'Booking #{bid}: You have 15 minutes remaining to complete your reservation deposit payment. '
+                            f'If not paid, your booking will be cancelled and a violation strike may be applied.',
+                            'payment_warning'
+                        )
+                        print(f"[Violation] 15-min warning sent for booking #{bid} user #{uid}")
+                    except Exception as ne:
+                        print(f"[Violation] 15-min warning notification error: {ne}")
+
+                # 5-min warning: between 24 and 26 minutes elapsed
+                elif 24 <= elapsed < 26:
+                    try:
+                        from notifications import Notification_Service
+                        Notification_Service().notify_user(
+                            uid,
+                            '🚨 FINAL WARNING: 5 Minutes Left!',
+                            f'Booking #{bid}: Only 5 minutes remaining! Complete your reservation deposit NOW to avoid cancellation and a booking violation strike.',
+                            'payment_warning_final'
+                        )
+                        print(f"[Violation] 5-min warning sent for booking #{bid} user #{uid}")
+                    except Exception as ne:
+                        print(f"[Violation] 5-min warning notification error: {ne}")
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[Violation] Payment deadline warning check error: {e}")

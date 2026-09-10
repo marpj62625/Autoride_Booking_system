@@ -30252,6 +30252,14 @@ function toggleNewsletterModal(show = true) {
 
                     : '';
 
+                const violationBadge = u.violation_permanently_restricted
+                    ? `<span style="background:rgba(220,38,38,0.2);color:#dc2626;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(220,38,38,0.4);"><i class="fas fa-ban" style="font-size:0.55rem;margin-right:2px;"></i>BANNED</span>`
+                    : (u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date())
+                    ? `<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="font-size:0.55rem;margin-right:2px;"></i>SUSPENDED</span>`
+                    : (u.violation_strikes > 0)
+                    ? `<span style="background:rgba(251,146,60,0.15);color:#fb923c;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(251,146,60,0.3);"><i class="fas fa-exclamation-triangle" style="font-size:0.55rem;margin-right:2px;"></i>${u.violation_strikes} STRIKE${(u.violation_strikes || 0) !== 1 ? 'S' : ''}</span>`
+                    : '';
+
 
 
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
@@ -30326,7 +30334,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}</div>
+                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}</div>
 
 
 
@@ -31075,6 +31083,49 @@ function toggleNewsletterModal(show = true) {
 
 
 
+
+            <!-- Violation / Strike System -->
+
+            <div id="umViolationSection_${u.id}" style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                    <span><i class="fas fa-exclamation-triangle" style="margin-right:6px;color:#f59e0b;"></i>Violation / Strike Record</span>
+                    <span style="color:${u.violation_strikes > 0 ? '#fb923c' : 'var(--text-muted)'};">${u.violation_strikes || 0} strike${(u.violation_strikes || 0) !== 1 ? 's' : ''}</span>
+                </div>
+
+                ${u.violation_permanently_restricted ? `
+                <div style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#dc2626;font-weight:700;text-align:center;">
+                    <i class="fas fa-ban"></i> Account is PERMANENTLY RESTRICTED from booking
+                </div>` : u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date() ? `
+                <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#f59e0b;">
+                    <i class="fas fa-clock"></i> <strong>Suspended until:</strong> ${new Date(u.booking_suspension_until).toLocaleString('en-PH', {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                </div>` : `
+                <div style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.15);border-radius:10px;padding:8px;margin-bottom:10px;font-size:0.78rem;color:var(--success);text-align:center;">
+                    <i class="fas fa-check-circle"></i> No active suspension
+                </div>`}
+
+                ${u.violation_commitment_fee_required ? `
+                <div style="font-size:0.75rem;color:#fb923c;margin-bottom:10px;"><i class="fas fa-coins"></i> Commitment fee required on next booking</div>` : ''}
+
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <button onclick="UserMgmt.loadViolationHistory(${u.id})" style="flex:1;padding:9px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;color:#818cf8;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-history"></i> History
+                    </button>
+                    <button onclick="UserMgmt.resetViolations(${u.id})" style="flex:1;padding:9px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);border-radius:10px;color:var(--success);font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                    ${!u.violation_permanently_restricted ? `
+                    <button onclick="UserMgmt.blacklistUser(${u.id})" style="flex:1;padding:9px;background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.25);border-radius:10px;color:#dc2626;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-ban"></i> Ban
+                    </button>` : `
+                    <button onclick="UserMgmt.liftBlacklist(${u.id})" style="flex:1;padding:9px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);border-radius:10px;color:var(--success);font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-unlock"></i> Lift Ban
+                    </button>`}
+                </div>
+
+                <div id="umViolationHistory_${u.id}" style="display:none;margin-top:8px;"></div>
+
+            </div>
 
             <!-- Freeze / Unfreeze -->
 
