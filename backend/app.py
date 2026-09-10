@@ -10628,9 +10628,10 @@ def get_admin_stats_v2():
                 ORDER BY m_num ASC
             """
         elif period == 'today':
-            # Group by hour for today's view
+            # start_date is a DATE column — can't extract hours; group by date instead
             trend_q = f"""
-                SELECT TO_CHAR(b.start_date, 'HH12 AM') as day, EXTRACT(HOUR FROM b.start_date) as hr,
+                SELECT TO_CHAR(b.start_date, 'Mon DD') as day,
+                       EXTRACT(DOY FROM b.start_date) as hr,
                        SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
                 FROM bookings b
                 WHERE 1=1 {date_filter} {loc_clause}
