@@ -2528,7 +2528,7 @@ function refreshActiveBookingMonitor() {
             '</div>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;">' +
-            '<button onclick="event.stopPropagation();openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
+            '<button onclick="event.stopPropagation();window._openedExtendFromDetail=false;openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
             '<button onclick="event.stopPropagation();showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
           '</div>' +
         '</div>';
@@ -5305,7 +5305,7 @@ function renderBookingDetail(b) {
 
   // Primary action button - customer-relevant only
   var primaryAction = '';
-  var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing');
+  var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
   if (canPayNow) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Now (' + formatPHP(b.total_price) + ')</button>';
   }
@@ -5320,7 +5320,7 @@ function renderBookingDetail(b) {
     primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' }, false)"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
   }
   if (canExtend) {
-    primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
+    primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
       '<i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Extend Booking</button>';
   }
 
@@ -5690,20 +5690,36 @@ function reRenderBookingDetail(bookingId) {
   }
 }
 
+function handleExtendBack(bookingId) {
+  var modal = document.getElementById('extendModal');
+  if (modal) {
+    modal.remove();
+    return;
+  }
+  if (window._openedExtendFromDetail && activeBookingData && (activeBookingData.id == bookingId)) {
+    window._openedExtendFromDetail = false;
+    renderBookingDetail(activeBookingData);
+  } else {
+    window._openedExtendFromDetail = false;
+    closeOverlay('page-booking-detail');
+  }
+}
+window.handleExtendBack = handleExtendBack;
+
 function openExtendBooking(bookingId, currentEndDate, dailyRate) {
   // Set activeBookingData from bookings cache if not already set
-  if ((!activeBookingData || activeBookingData.id !== bookingId) && typeof _allBookingsData !== 'undefined') {
+  if ((!activeBookingData || activeBookingData.id != bookingId) && typeof _allBookingsData !== 'undefined' && Array.isArray(_allBookingsData)) {
     for (var i = 0; i < _allBookingsData.length; i++) {
-      if (_allBookingsData[i].id === bookingId) { activeBookingData = _allBookingsData[i]; break; }
+      if (_allBookingsData[i].id == bookingId) { activeBookingData = _allBookingsData[i]; break; }
     }
   }
   // Prefer activeBookingData.end_date as authoritative source (avoids attribute-escaping issues)
   var endDate = '';
   if (activeBookingData && activeBookingData.end_date) {
-    endDate = activeBookingData.end_date.toString().split('T')[0];
+    endDate = _normDateStr(activeBookingData.end_date);
   }
   if (!endDate || endDate === 'undefined') {
-    endDate = (currentEndDate || '').toString().split('T')[0];
+    endDate = _normDateStr(currentEndDate);
   }
   var rate = parseFloat(dailyRate) || (activeBookingData ? parseFloat(activeBookingData.daily_rate || 0) : 0);
   var el = document.getElementById('bookingDetailContent');
@@ -5717,7 +5733,9 @@ function openExtendBooking(bookingId, currentEndDate, dailyRate) {
   }
   var prev = el.innerHTML;
   _renderExtendForm(el, bookingId, endDate, rate, false, prev);
+  showOverlay('page-booking-detail');
 }
+window.openExtendBooking = openExtendBooking;
 
 function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isModal, prevHtml) {
   var rate = parseFloat(dailyRate) || 0;
@@ -5776,9 +5794,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   // Build HTML using array join to avoid quote escaping issues
   var parts = [];
   parts.push('<div class="page-header">');
-  if (!isModal) {
-    parts.push('<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')"><i class="fas fa-arrow-left"></i></button>');
-  }
+  parts.push('<button class="back-btn" onclick="handleExtendBack(' + bookingId + ')"><i class="fas fa-arrow-left"></i></button>');
   parts.push('<h2 style="text-align:center;flex:1;">Extend Booking #' + bookingId + '</h2>');
   parts.push('</div>');
   parts.push('<div class="scroll-content" style="padding:20px;padding-bottom:60px;">');
@@ -5830,6 +5846,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
 
   parts.push('<span class="field-error" id="extErr" style="display:block;margin-bottom:12px;text-align:center;"></span>');
   parts.push('<button class="btn-primary" onclick="submitExtension(' + bookingId + ')" style="margin-bottom:12px;"><i class="fas fa-paper-plane" style="margin-right:6px;"></i>Submit Extension Request</button>');
+  parts.push('<button class="btn-secondary" onclick="handleExtendBack(' + bookingId + ')" style="width:100%;margin-bottom:12px;">Cancel</button>');
   parts.push('</div>');
 
   var html = parts.join('');
