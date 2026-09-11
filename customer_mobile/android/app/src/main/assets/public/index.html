@@ -16,10 +16,41 @@
     <title>Autoride</title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <script>
+        // Suppress browser DevTools live metrics / web-vitals internal inspection errors
+        (function() {
+            function isDevToolsError(msg) {
+                if (!msg) return false;
+                var str = String(msg);
+                return str.indexOf('startTime') !== -1 || str.indexOf('reportAllChanges') !== -1;
+            }
+            window.addEventListener('error', function(event) {
+                if (isDevToolsError(event.message) || (event.error && isDevToolsError(event.error.stack))) {
+                    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+                    if (event.preventDefault) event.preventDefault();
+                    return true;
+                }
+            }, true);
+            window.addEventListener('unhandledrejection', function(event) {
+                if (isDevToolsError(event.reason) || (event.reason && isDevToolsError(event.reason.stack))) {
+                    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+                    if (event.preventDefault) event.preventDefault();
+                    return true;
+                }
+            }, true);
+            var prevOnError = window.onerror;
+            window.onerror = function(msg, src, line, col, err) {
+                if (isDevToolsError(msg) || (err && isDevToolsError(err.stack))) return true;
+                if (prevOnError) return prevOnError.apply(this, arguments);
+                return false;
+            };
+        })();
+    </script>
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
