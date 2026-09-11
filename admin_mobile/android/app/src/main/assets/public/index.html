@@ -28407,6 +28407,77 @@ function toggleNewsletterModal(show = true) {
             document.getElementById('inspectionModal').style.display = 'flex'; modalOpen();
         },
 
+        onFuelChange() {
+            const typeEl = document.getElementById('inspectType');
+            const type = typeEl ? typeEl.value : 'pickup';
+            const fuelEl = document.getElementById('inspectFuel');
+            const refuelSec = document.getElementById('inspectRefuelSection');
+            const fullBanner = document.getElementById('inspectFuelFullReturnedBanner');
+            const amountInput = document.getElementById('inspectFuelChargeAmount');
+            const notesInput = document.getElementById('inspectFuelChargeNotes');
+            const deficitTag = document.getElementById('inspectFuelDeficitTag');
+            const policyDesc = document.getElementById('inspectPolicyDesc');
+            const policyTitle = document.getElementById('inspectPolicyTitle');
+
+            if (!fuelEl) return;
+            const val = fuelEl.value;
+
+            if (type === 'pickup') {
+                if (refuelSec) refuelSec.style.display = 'none';
+                if (fullBanner) fullBanner.style.display = 'none';
+                if (policyTitle) policyTitle.innerHTML = '⛽ Pickup Rule: Released 100% Full Tank';
+                if (val !== 'Full') {
+                    if (policyDesc) policyDesc.innerHTML = `<span style="color: #dc2626; font-weight: 700;">⚠️ Policy Warning: Selected '${val}'. Rules require vehicles to be released 100% FULL TANK before rental. Please top up before releasing to customer!</span>`;
+                } else {
+                    if (policyDesc) policyDesc.innerHTML = `Vehicle must be released with a <strong>100% Full Tank</strong>. Customer is required to return Full Tank.`;
+                }
+                return;
+            }
+
+            // type === 'return'
+            if (policyTitle) policyTitle.innerHTML = '⛽ Return Rule: Must Return 100% Full Tank';
+            if (val === 'Full') {
+                if (refuelSec) refuelSec.style.display = 'none';
+                if (fullBanner) fullBanner.style.display = 'flex';
+                if (amountInput) { amountInput.value = '0'; delete amountInput.dataset.autoFilled; }
+                if (policyDesc) policyDesc.innerHTML = `Vehicle returned with <strong>100% Full Tank</strong> ✅ No refuel fee required.`;
+            } else {
+                if (fullBanner) fullBanner.style.display = 'none';
+                if (refuelSec) refuelSec.style.display = 'block';
+
+                let suggestedFee = 650;
+                let missingText = 'Missing 1/4 Tank (~10L)';
+                if (val === '3/4') {
+                    suggestedFee = 650;
+                    missingText = 'Missing 1/4 Tank (~10L)';
+                } else if (val === '1/2') {
+                    suggestedFee = 1300;
+                    missingText = 'Missing 1/2 Tank (~20L)';
+                } else if (val === '1/4') {
+                    suggestedFee = 1950;
+                    missingText = 'Missing 3/4 Tank (~30L)';
+                } else if (val === 'Reserve') {
+                    suggestedFee = 2400;
+                    missingText = 'Near Empty (Reserve Tank)';
+                } else if (val === 'Empty') {
+                    suggestedFee = 2600;
+                    missingText = '100% Empty Tank';
+                }
+
+                if (deficitTag) deficitTag.textContent = missingText;
+                if (amountInput) {
+                    amountInput.value = suggestedFee;
+                    amountInput.dataset.autoFilled = 'true';
+                }
+                if (notesInput) {
+                    notesInput.value = `Refueling Fee: Returned at ${val} (Full Tank required, ${missingText})`;
+                }
+                if (policyDesc) {
+                    policyDesc.innerHTML = `<span style="color:#e11d48; font-weight:700;">⚠️ Refuel Fee Required: Returned with ${val} fuel. Customer must pay ₱${suggestedFee.toLocaleString()} to refill tank back to Full.</span>`;
+                }
+            }
+        },
+
 
 
 
