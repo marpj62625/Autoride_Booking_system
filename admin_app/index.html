@@ -7433,83 +7433,41 @@ input:checked + .ctrl-slider:before {
 
 
 
-    <div id="systemConfigModal" class="premium-modal" style="display: none;" onclick="closeSystemConfigModalBackdrop(event)">
-        <div class="modal-content" style="max-width: 800px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
-
-
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-
-
-
-                <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
-
-
-
-                    <i class="fas fa-cogs" style="color: var(--primary);"></i>
-
-
-
-                    System Configuration
-
-
-
-                </h3>
-
-
-
-                <button onclick="closeSystemConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px;">
-
-
-
+        <div id="systemConfigModal" class="premium-modal" style="display: none;" onclick="closeSystemConfigModalBackdrop(event)">
+        <div class="modal-content" style="max-width: 920px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-sliders-h" style="color: var(--primary);"></i>
+                        System Configurations
+                    </h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 3px 0 0 0;">
+                        Manage system rules, policies, and parameters organized by category.
+                    </p>
+                </div>
+                <button onclick="closeSystemConfigModal()" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-times"></i>
-
-
-
                 </button>
-
-
-
             </div>
 
-
-
-            
-
-
-
             <div style="margin-bottom: 20px;">
-
-
-
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
-
-
-
-                    Configure system-wide settings and parameters.
-
-
-
-                </p>
-
-
-
-                
-
-
-
-                <div id="mobileSettingsList" style="display: grid; gap: 12px;">
-
-
-
-                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading settings...</p>
-
-
-
+                <!-- Search Box -->
+                <div style="position: relative; margin-bottom: 12px;">
+                    <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none;"></i>
+                    <input type="text" id="settingsSearchInput" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
+                    <button id="settingsSearchClearBtn" type="button" onclick="Settings.clearSearch()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 0.9rem;">
+                        <i class="fas fa-times-circle"></i>
+                    </button>
                 </div>
 
+                <!-- Category Tabs Navigation Bar -->
+                <div id="settingsCategoryTabs" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px; -webkit-overflow-scrolling: touch; scrollbar-width: thin;">
+                    <!-- Injected dynamically by Settings.render() -->
+                </div>
 
-
+                <div id="mobileSettingsList" style="display: grid; gap: 16px;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading settings...</p>
+                </div>
             </div>
 
 
@@ -26189,289 +26147,534 @@ function toggleNewsletterModal(show = true) {
 
 
 
-    const Settings = {
-
-
+        const Settings = {
+        _allData: [],
+        _groups: {},
+        _activeCat: 'all',
+        _searchQuery: '',
 
         async fetch() {
-
-
-
             const list = document.getElementById('mobileSettingsList');
-
-
-
-            const user = adminAuth.getUser();
-
-
+            const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
 
             if (!user || (user.role !== 'super_admin' && user.role !== 'superadmin')) return;
 
-
-
-            
-
-
-
             try {
-
-
-
                 const res = await fetch(`${API_BASE}/admin/settings`);
-
-
-
                 const data = await res.json();
+                this._allData = Array.isArray(data) ? data : [];
+                this.render();
+            } catch (err) {
+                if (list) list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
+            }
+        },
 
+        render() {
+            const list = document.getElementById('mobileSettingsList');
+            const tabsContainer = document.getElementById('settingsCategoryTabs');
+            if (!list) return;
 
+            // Define modular categories
+            const groups = {
+                safety: {
+                    title: 'Customer Safety & Verification',
+                    shortTitle: 'Safety',
+                    icon: 'fa-user-shield',
+                    color: '#8b5cf6',
+                    desc: 'Driver license verification and emergency contact rules',
+                    keys: ['require_license_verification', 'require_emergency_contact'],
+                    settings: []
+                },
+                violations: {
+                    title: 'Violations & Strike System',
+                    shortTitle: 'Violations',
+                    icon: 'fa-gavel',
+                    color: '#f43f5e',
+                    desc: 'Deposit cancellation penalties, suspension times, and warning notifications',
+                    keys: [
+                        'violation_max_strikes',
+                        'violation_1st_suspension_hours',
+                        'violation_2nd_suspension_days',
+                        'violation_commitment_fee_amount',
+                        'violation_auto_reset_clean_days',
+                        'violation_warning_15min_enabled',
+                        'violation_warning_5min_enabled'
+                    ],
+                    settings: []
+                },
+                rentals: {
+                    title: 'Rental & Fleet Policies',
+                    shortTitle: 'Rentals',
+                    icon: 'fa-car-side',
+                    color: '#10b981',
+                    desc: 'Mileage allowances, max rental duration, low fuel alert, and rental terms',
+                    keys: ['mileage_limit', 'max_booking_duration_days', 'low_fuel_alert_threshold', 'rental_terms'],
+                    settings: []
+                },
+                cancellation: {
+                    title: 'Cancellations & Refunds',
+                    shortTitle: 'Cancellations',
+                    icon: 'fa-calendar-times',
+                    color: '#ef4444',
+                    desc: 'Cutoff deadlines and non-refundable penalty fee percentages',
+                    keys: ['cancellation_deadline_hours', 'cancellation_penalty_percent'],
+                    settings: []
+                },
+                discounts: {
+                    title: 'Discounts & Booking Extensions',
+                    shortTitle: 'Discounts',
+                    icon: 'fa-tags',
+                    color: '#f59e0b',
+                    desc: 'Long-term rental discounts and extension overlap conflict deadlines',
+                    keys: ['long_term_discount_days', 'long_term_discount_percent', 'extension_conflict_deadline_hours'],
+                    settings: []
+                },
+                loyalty: {
+                    title: 'Loyalty Points System',
+                    shortTitle: 'Loyalty',
+                    icon: 'fa-coins',
+                    color: '#3b82f6',
+                    desc: 'Point accumulation rates, peso conversion, and max discount redemption',
+                    keys: ['loyalty_points_spend_ratio', 'loyalty_points_value', 'loyalty_max_discount_percent'],
+                    settings: []
+                },
+                ai_chat: {
+                    title: 'AI Assistant & Live Chat',
+                    shortTitle: 'AI & Chat',
+                    icon: 'fa-robot',
+                    color: '#6366f1',
+                    desc: 'Floating AI chatbot, automated FAQ responses, and greeting messages',
+                    keys: [
+                        'ai_assistant_enabled',
+                        'ai_assistant_autoreply_enabled',
+                        'ai_assistant_greeting',
+                        'ai_assistant_fallback',
+                        'chat_faq_enabled',
+                        'chat_faq_autoreply_enabled'
+                    ],
+                    settings: []
+                },
+                payment: {
+                    title: 'PayMongo Payment Gateway',
+                    shortTitle: 'Payment',
+                    icon: 'fa-credit-card',
+                    color: '#00c389',
+                    desc: 'Payment mode (Sandbox / Production), API credentials, and webhook secret',
+                    keys: [
+                        'paymongo_mode',
+                        'paymongo_test_public_key',
+                        'paymongo_test_secret_key',
+                        'paymongo_live_public_key',
+                        'paymongo_live_secret_key',
+                        'paymongo_webhook_secret'
+                    ],
+                    settings: []
+                },
+                email_smtp: {
+                    title: 'Email & Notification Integration',
+                    shortTitle: 'Email & SMTP',
+                    icon: 'fa-envelope-open-text',
+                    color: '#0284c7',
+                    desc: 'Gmail OAuth credentials and notification delivery settings',
+                    keys: [
+                        'smtp_oauth_email',
+                        'smtp_oauth_access_token',
+                        'smtp_oauth_refresh_token',
+                        'smtp_oauth_token_expiry'
+                    ],
+                    settings: []
+                },
+                general: {
+                    title: 'General & Regional Preferences',
+                    shortTitle: 'General',
+                    icon: 'fa-sliders-h',
+                    color: '#64748b',
+                    desc: 'System currency symbol, local timezone, and marketing newsletter feature',
+                    keys: ['currency', 'time_zone', 'enable_newsletter'],
+                    settings: []
+                }
+            };
 
-                list.innerHTML = '';
-                
-                // Define categories
-                const groups = {
-                    safety: {
-                        title: 'Customer Verification & Safety Locks',
-                        icon: 'fa-shield-alt',
-                        color: '#8b5cf6',
-                        keys: ['require_license_verification', 'require_emergency_contact'],
-                        settings: []
-                    },
-                    cancellation: {
-                        title: 'Cancellation & Refund Policy',
-                        icon: 'fa-calendar-times',
-                        color: '#ef4444',
-                        keys: ['cancellation_deadline_hours', 'cancellation_penalty_percent'],
-                        settings: []
-                    },
-                    discounts: {
-                        title: 'Discounts & Rentals',
-                        icon: 'fa-tags',
-                        color: '#f59e0b',
-                        keys: ['long_term_discount_days', 'long_term_discount_percent', 'extension_conflict_deadline_hours', 'max_booking_duration_days'],
-                        settings: []
-                    },
-                    loyalty: {
-                        title: 'Loyalty Points System',
-                        icon: 'fa-coins',
-                        color: '#3b82f6',
-                        keys: ['loyalty_points_spend_ratio', 'loyalty_points_value', 'loyalty_max_discount_percent'],
-                        settings: []
-                    },
-                    payment: {
-                        title: 'PayMongo Payment Gateway',
-                        icon: 'fa-credit-card',
-                        color: '#00c389',
-                        keys: ['paymongo_mode', 'paymongo_test_secret_key', 'paymongo_test_public_key', 'paymongo_live_secret_key', 'paymongo_live_public_key', 'paymongo_webhook_secret'],
-                        settings: []
-                    },
-                    general: {
-                        title: 'General Configurations',
-                        icon: 'fa-sliders-h',
-                        color: '#10b981',
-                        keys: ['mileage_limit', 'currency', 'rental_terms', 'time_zone', 'low_fuel_alert_threshold'],
-                        settings: []
+            // Distribute settings into categories
+            this._allData.forEach(s => {
+                let grouped = false;
+                for (const cat in groups) {
+                    if (groups[cat].keys.includes(s.key)) {
+                        groups[cat].settings.push(s);
+                        grouped = true;
+                        break;
                     }
-                };
+                }
+                if (!grouped) {
+                    groups.general.settings.push(s);
+                }
+            });
 
-                // Group the settings data
-                data.forEach(s => {
-                    let grouped = false;
-                    for (const cat in groups) {
-                        if (groups[cat].keys.includes(s.key)) {
-                            groups[cat].settings.push(s);
-                            grouped = true;
-                            break;
-                        }
-                    }
-                    if (!grouped) {
-                        groups.general.settings.push(s);
-                    }
-                });
+            this._groups = groups;
 
-                // Generate HTML content grouped into premium cards
-                let html = '';
+            // Render category navigation tabs
+            if (tabsContainer) {
+                const totalCount = this._allData.length;
+                let tabsHtml = `
+                    <button type="button" onclick="Settings.selectCategory('all')" id="tab_all" class="settings-tab-btn" style="display: flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 0.78rem; font-weight: 700; border-radius: 20px; border: 1px solid ${this._activeCat === 'all' ? 'var(--primary)' : 'var(--border)'}; background: ${this._activeCat === 'all' ? 'rgba(59,130,246,0.15)' : 'var(--surface-solid)'}; color: ${this._activeCat === 'all' ? 'var(--primary)' : 'var(--text-muted)'}; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
+                        <i class="fas fa-layer-group"></i> All <span style="font-size: 0.7rem; opacity: 0.85; padding: 1px 6px; border-radius: 10px; background: rgba(255,255,255,0.08);">${totalCount}</span>
+                    </button>
+                `;
+
                 for (const cat in groups) {
                     const g = groups[cat];
                     if (g.settings.length === 0) continue;
-
-                    html += `
-                        <div class="settings-group-card" style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
-                                <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas ${g.icon}" style="color: ${g.color}; font-size: 0.95rem;"></i>
-                                </div>
-                                <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">${g.title}</span>
-                            </div>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
-                    `;
-
-                    g.settings.forEach(s => {
-                        const isTextarea = s.key === 'rental_terms';
-                        const numericKeys = ['mileage_limit','long_term_discount_days','long_term_discount_percent','extension_conflict_deadline_hours',
-                            'loyalty_points_spend_ratio','loyalty_points_value','loyalty_max_discount_percent',
-                            'cancellation_deadline_hours','cancellation_penalty_percent','max_booking_duration_days'];
-                        const isNumeric = numericKeys.includes(s.key);
-
-                        if (s.key === 'require_license_verification' || s.key === 'require_emergency_contact') {
-                            const val = s.value || 'true';
-                            const inputField = `
-                                <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">
-                                    <option value="true" ${val === 'true' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Required' : 'Strict (Require Approved License)'}</option>
-                                    <option value="false" ${val === 'false' ? 'selected' : ''}>${s.key === 'require_emergency_contact' ? 'Optional' : 'Relaxed (Allow Booking Pending Verification)'}</option>
-                                </select>`;
-                            html += `
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
-                                    ${inputField}
-                                </div>
-                            `;
-                            return;
-                        }
-
-                        if (s.key === 'low_fuel_alert_threshold') {
-                            const val = s.value || '1/4';
-                            const options = ['Off', 'Empty', 'Reserve', '1/4', '1/2', '3/4', 'Full'];
-                            const optHtml = options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('');
-                            const inputField = `<select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer;">${optHtml}</select>`;
-                            html += `
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
-                                    ${inputField}
-                                </div>
-                            `;
-                            return;
-                        }
-
-                        if (s.key === 'paymongo_mode') {
-                            const isLive = s.value === 'live';
-                            const badgeBg = isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
-                            const badgeColor = isLive ? '#ef4444' : '#10b981';
-                            const badgeText = isLive ? '🔴 LIVE (Real Money / Production)' : '🧪 TEST (Sandbox / Safe Mode)';
-                            const inputField = `
-                                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                                    <select data-key="${s.key}" onchange="updatePaymongoModeBadge(this)" style="flex: 1; min-width: 220px; padding: 12px 14px; background: var(--surface-solid); border: 2px solid ${isLive ? '#ef4444' : '#10b981'}; border-radius: 10px; color: var(--text-main); font-size: 0.95rem; font-weight: 700; outline: none; cursor: pointer;">
-                                        <option value="test" ${!isLive ? 'selected' : ''}>🧪 Test Mode (Sandbox)</option>
-                                        <option value="live" ${isLive ? 'selected' : ''}>🔴 Live Mode (Real Customer Payments)</option>
-                                    </select>
-                                    <span id="pmModeBadge" style="padding: 6px 14px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; border-radius: 20px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase;">
-                                        ${badgeText}
-                                    </span>
-                                    <button type="button" onclick="testPaymongoCredentials()" style="padding: 10px 16px; font-size: 0.82rem; font-weight: 700; border-radius: 10px; background: #00c389; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                                        <i class="fas fa-plug"></i> Test Connection
-                                    </button>
-                                    <button type="button" onclick="saveSystemSettingsBtn(this)" style="padding: 10px 16px; font-size: 0.82rem; font-weight: 700; border-radius: 10px; background: var(--primary); color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                                        <i class="fas fa-save"></i> Save Settings
-                                    </button>
-                                </div>
-                            `;
-                            html += `
-                                <div style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1; margin-bottom: 8px; background: rgba(0,195,137,0.05); padding: 14px; border-radius: 12px; border: 1px dashed rgba(0,195,137,0.3);">
-                                    <label style="font-size: 0.72rem; color: #00c389; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
-                                    ${inputField}
-                                </div>
-                            `;
-                            return;
-                        }
-
-                        if (s.key.includes('secret_key') || s.key === 'paymongo_webhook_secret') {
-                            const inputId = 'input_' + s.key;
-                            const isLiveKey = s.key.includes('live');
-                            const placeholder = s.key.includes('live') ? 'sk_live_...' : s.key.includes('webhook') ? 'whsec_...' : 'sk_test_...';
-                            const inputField = `
-                                <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                                    <input type="password" id="${inputId}" data-key="${s.key}" value="${s.value || ''}" placeholder="${placeholder}" style="width: 100%; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-family: monospace; font-weight: 600; outline: none;">
-                                    <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                            `;
-                            html += `
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    <label style="font-size: 0.65rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
-                                    ${inputField}
-                                </div>
-                            `;
-                            return;
-                        }
-
-                        if (s.key.includes('public_key')) {
-                            const isLiveKey = s.key.includes('live');
-                            const placeholder = isLiveKey ? 'pk_live_...' : 'pk_test_...';
-                            const inputField = `
-                                <input type="text" data-key="${s.key}" value="${s.value || ''}" placeholder="${placeholder}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-family: monospace; font-weight: 600; outline: none;">
-                            `;
-                            html += `
-                                <div style="display: flex; flex-direction: column; gap: 6px;">
-                                    <label style="font-size: 0.65rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
-                                    ${inputField}
-                                </div>
-                            `;
-                            return;
-                        }
-
-                        const numConfig = {
-                            'long_term_discount_percent':    { min: 0,  max: 100, step: 1,   suffix: '%' },
-                            'loyalty_max_discount_percent':  { min: 0,  max: 100, step: 1,   suffix: '%' },
-                            'cancellation_penalty_percent':  { min: 0,  max: 100, step: 1,   suffix: '%' },
-                            'cancellation_deadline_hours':   { min: 1,  max: 168, step: 1,   suffix: 'hrs' },
-                            'loyalty_points_spend_ratio':    { min: 1,  max: 9999,step: 1,   suffix: 'PHP' },
-                            'loyalty_points_value':          { min: 0.01, max: 100, step: 0.01, suffix: 'PHP' },
-                            'mileage_limit':                 { min: 50, max: 9999,step: 10,  suffix: 'km/day' },
-                            'long_term_discount_days':       { min: 1,  max: 365, step: 1,   suffix: 'days' },
-                            'extension_conflict_deadline_hours': { min: 1,  max: 720, step: 1,   suffix: 'hrs' },
-                            'max_booking_duration_days':     { min: 1,  max: 3650, step: 1,  suffix: 'days' },
-                        };
-                        const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
-
-                        let inputField = '';
-                        if (isTextarea) {
-                            inputField = `<textarea data-key="${s.key}" style="width: 100%; height: 120px; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none;">${s.value}</textarea>`;
-                        } else if (isNumeric) {
-                            inputField = `
-                                <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                                    <input type="number" data-key="${s.key}" value="${s.value}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="width: 100%; padding: 12px 60px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-weight: 700; outline: none; transition: border-color 0.2s;">
-                                    <span style="position: absolute; right: 14px; font-size: 0.75rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; pointer-events: none;">${nc.suffix}</span>
-                                </div>`;
-                        } else {
-                            inputField = `<input type="text" data-key="${s.key}" value="${s.value}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-weight: 600; outline: none; transition: border-color 0.2s;">`;
-                        }
-
-                        // Wide/span column layout rules for textarea or full-width config elements
-                        const colSpanStyle = isTextarea ? 'grid-column: 1 / -1;' : '';
-
-                        html += `
-                            <div style="display: flex; flex-direction: column; gap: 6px; ${colSpanStyle}">
-                                <label style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description}</label>
-                                ${inputField}
-                            </div>
-                        `;
-                    });
-
-                    html += `
-                            </div>
-                        </div>
+                    const isActive = this._activeCat === cat;
+                    tabsHtml += `
+                        <button type="button" onclick="Settings.selectCategory('${cat}')" id="tab_${cat}" class="settings-tab-btn" style="display: flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 0.78rem; font-weight: 700; border-radius: 20px; border: 1px solid ${isActive ? g.color : 'var(--border)'}; background: ${isActive ? g.color + '22' : 'var(--surface-solid)'}; color: ${isActive ? g.color : 'var(--text-muted)'}; cursor: pointer; white-space: nowrap; transition: all 0.2s;">
+                            <i class="fas ${g.icon}" style="color: ${g.color};"></i> ${g.shortTitle} <span style="font-size: 0.7rem; opacity: 0.85; padding: 1px 6px; border-radius: 10px; background: rgba(255,255,255,0.08);">${g.settings.length}</span>
+                        </button>
                     `;
                 }
-
-                list.innerHTML = html;
-
-
-
-            } catch (err) {
-
-
-
-                list.innerHTML = `<p style="color: var(--danger); text-align: center; padding: 20px;">Failed to load settings.</p>`;
-
-
-
+                tabsContainer.innerHTML = tabsHtml;
             }
 
+            // Build all category cards into DOM
+            let html = '';
+            for (const cat in groups) {
+                const g = groups[cat];
+                if (g.settings.length === 0) continue;
 
+                html += `
+                    <div class="settings-group-card" data-cat="${cat}" style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 36px; height: 36px; background: ${g.color}15; border: 1px solid ${g.color}33; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas ${g.icon}" style="color: ${g.color}; font-size: 1rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.96rem; font-weight: 700; color: var(--text-main);">${g.title}</div>
+                                    <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;">${g.desc}</div>
+                                </div>
+                            </div>
+                            <span style="font-size: 0.72rem; font-weight: 700; color: ${g.color}; background: ${g.color}15; padding: 3px 10px; border-radius: 12px; border: 1px solid ${g.color}33; white-space: nowrap;">
+                                ${g.settings.length} ${g.settings.length === 1 ? 'setting' : 'settings'}
+                            </span>
+                        </div>
+                        <div class="settings-fields-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 14px;">
+                `;
 
+                g.settings.forEach(s => {
+                    html += this.renderField(s);
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            list.innerHTML = html;
+            this.applyFilters();
         },
 
+        renderField(s) {
+            const isTextarea = ['rental_terms', 'ai_assistant_greeting', 'ai_assistant_fallback'].includes(s.key);
+            const booleanKeys = [
+                'require_license_verification',
+                'require_emergency_contact',
+                'ai_assistant_enabled',
+                'ai_assistant_autoreply_enabled',
+                'chat_faq_enabled',
+                'chat_faq_autoreply_enabled',
+                'enable_newsletter',
+                'violation_warning_15min_enabled',
+                'violation_warning_5min_enabled'
+            ];
+            const isBool = booleanKeys.includes(s.key);
 
+            const numericKeys = [
+                'mileage_limit', 'long_term_discount_days', 'long_term_discount_percent', 'extension_conflict_deadline_hours',
+                'loyalty_points_spend_ratio', 'loyalty_points_value', 'loyalty_max_discount_percent',
+                'cancellation_deadline_hours', 'cancellation_penalty_percent', 'max_booking_duration_days',
+                'violation_max_strikes', 'violation_1st_suspension_hours', 'violation_2nd_suspension_days',
+                'violation_commitment_fee_amount', 'violation_auto_reset_clean_days'
+            ];
+            const isNumeric = numericKeys.includes(s.key);
+
+            const secretKeys = [
+                'paymongo_test_secret_key', 'paymongo_live_secret_key', 'paymongo_webhook_secret',
+                'smtp_oauth_access_token', 'smtp_oauth_refresh_token'
+            ];
+            const isSecret = secretKeys.includes(s.key);
+
+            const val = s.value !== null && s.value !== undefined ? String(s.value) : '';
+
+            // 1. License verification dropdown
+            if (s.key === 'require_license_verification') {
+                const isStrict = val === 'true';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="true" ${isStrict ? 'selected' : ''}>🛡️ Strict (Require Approved License)</option>
+                            <option value="false" ${!isStrict ? 'selected' : ''}>⚠️ Relaxed (Allow Booking Pending Verification)</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            // 2. Emergency contact dropdown
+            if (s.key === 'require_emergency_contact') {
+                const isReq = val === 'true';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="true" ${isReq ? 'selected' : ''}>✅ Required (Mandatory Before Booking)</option>
+                            <option value="false" ${!isReq ? 'selected' : ''}>⚪ Optional</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            // 3. Generic Booleans (AI, FAQ, Newsletter, Violation Warnings)
+            if (isBool) {
+                const isEnabled = val === 'true';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="true" ${isEnabled ? 'selected' : ''}>🟢 Enabled</option>
+                            <option value="false" ${!isEnabled ? 'selected' : ''}>⚪ Disabled</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            // 4. Low Fuel Alert Threshold
+            if (s.key === 'low_fuel_alert_threshold') {
+                const curVal = val || '1/4';
+                const options = ['Off', 'Empty', 'Reserve', '1/4', '1/2', '3/4', 'Full'];
+                const optHtml = options.map(o => `<option value="${o}" ${curVal === o ? 'selected' : ''}>${o}</option>`).join('');
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">${optHtml}</select>
+                    </div>
+                `;
+            }
+
+            // 5. PayMongo Environment Mode
+            if (s.key === 'paymongo_mode') {
+                const isLive = val === 'live';
+                const badgeBg = isLive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)';
+                const badgeColor = isLive ? '#ef4444' : '#10b981';
+                const badgeText = isLive ? '🔴 LIVE (Real Money / Production)' : '🧪 TEST (Sandbox / Safe Mode)';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1; margin-bottom: 4px; background: rgba(0,195,137,0.05); padding: 14px; border-radius: 12px; border: 1px dashed rgba(0,195,137,0.3);">
+                        <label style="font-size: 0.72rem; color: #00c389; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <select data-key="${s.key}" onchange="updatePaymongoModeBadge(this)" style="flex: 1; min-width: 200px; padding: 12px 14px; background: var(--surface-solid); border: 2px solid ${isLive ? '#ef4444' : '#10b981'}; border-radius: 10px; color: var(--text-main); font-size: 0.92rem; font-weight: 700; outline: none; cursor: pointer;">
+                                <option value="test" ${!isLive ? 'selected' : ''}>🧪 Test Mode (Sandbox)</option>
+                                <option value="live" ${isLive ? 'selected' : ''}>🔴 Live Mode (Real Payments)</option>
+                            </select>
+                            <span id="pmModeBadge" style="padding: 6px 14px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; border-radius: 20px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase;">
+                                ${badgeText}
+                            </span>
+                            <button type="button" onclick="testPaymongoCredentials()" style="padding: 10px 16px; font-size: 0.8rem; font-weight: 700; border-radius: 10px; background: #00c389; color: white; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-plug"></i> Test Connection
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 6. Passwords / Secrets / OAuth Tokens
+            if (isSecret) {
+                const inputId = 'input_' + s.key;
+                const isLiveKey = s.key.includes('live');
+                const placeholder = s.key.includes('live') ? 'sk_live_...' : s.key.includes('webhook') ? 'whsec_...' : s.key.includes('refresh') ? 'OAuth Refresh Token' : s.key.includes('access') ? 'OAuth Access Token' : 'sk_test_...';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                            <input type="password" id="${inputId}" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                            <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 7. Public Keys
+            if (s.key.includes('public_key')) {
+                const isLiveKey = s.key.includes('live');
+                const placeholder = isLiveKey ? 'pk_live_...' : 'pk_test_...';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <input type="text" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                    </div>
+                `;
+            }
+
+            // 8. Numeric Fields
+            if (isNumeric) {
+                const numConfig = {
+                    'long_term_discount_percent':        { min: 0,    max: 100,  step: 1,    suffix: '%' },
+                    'loyalty_max_discount_percent':      { min: 0,    max: 100,  step: 1,    suffix: '%' },
+                    'cancellation_penalty_percent':      { min: 0,    max: 100,  step: 1,    suffix: '%' },
+                    'cancellation_deadline_hours':       { min: 1,    max: 168,  step: 1,    suffix: 'hrs' },
+                    'loyalty_points_spend_ratio':        { min: 1,    max: 9999, step: 1,    suffix: 'PHP' },
+                    'loyalty_points_value':              { min: 0.01, max: 100,  step: 0.01, suffix: 'PHP' },
+                    'mileage_limit':                     { min: 10,   max: 9999, step: 10,   suffix: 'km/day' },
+                    'long_term_discount_days':           { min: 1,    max: 365,  step: 1,    suffix: 'days' },
+                    'extension_conflict_deadline_hours': { min: 1,    max: 720,  step: 1,    suffix: 'hrs' },
+                    'max_booking_duration_days':         { min: 1,    max: 3650, step: 1,    suffix: 'days' },
+                    'violation_max_strikes':             { min: 1,    max: 10,   step: 1,    suffix: 'strikes' },
+                    'violation_1st_suspension_hours':    { min: 1,    max: 168,  step: 1,    suffix: 'hrs' },
+                    'violation_2nd_suspension_days':     { min: 1,    max: 60,   step: 1,    suffix: 'days' },
+                    'violation_commitment_fee_amount':   { min: 0,    max: 5000, step: 20,   suffix: 'PHP' },
+                    'violation_auto_reset_clean_days':   { min: 1,    max: 365,  step: 1,    suffix: 'days' },
+                };
+                const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                            <input type="number" data-key="${s.key}" value="${val}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="width: 100%; padding: 12px 65px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 700; outline: none; transition: border-color 0.2s;">
+                            <span style="position: absolute; right: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; pointer-events: none;">${nc.suffix}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 9. Textareas
+            if (isTextarea) {
+                const height = s.key === 'rental_terms' ? '120px' : '75px';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <textarea data-key="${s.key}" style="width: 100%; height: ${height}; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${val}</textarea>
+                    </div>
+                `;
+            }
+
+            // 10. Default Text Input
+            const isExpiry = s.key === 'smtp_oauth_token_expiry';
+            const helperNote = isExpiry ? '<span style="font-size: 0.65rem; color: #0284c7; margin-top: 2px;"><i class="fas fa-info-circle"></i> Auto-managed by Gmail OAuth</span>' : '';
+            return `
+                <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                    <input type="text" data-key="${s.key}" value="${val}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;">
+                    ${helperNote}
+                </div>
+            `;
+        },
+
+        selectCategory(catKey) {
+            this._activeCat = catKey;
+            this.updateTabStyles();
+            this.applyFilters();
+        },
+
+        updateTabStyles() {
+            const tabs = document.querySelectorAll('.settings-tab-btn');
+            tabs.forEach(tab => {
+                const isCurrent = (tab.id === `tab_${this._activeCat}`);
+                if (isCurrent) {
+                    tab.style.background = 'rgba(59,130,246,0.18)';
+                    tab.style.borderColor = 'var(--primary)';
+                    tab.style.color = 'var(--primary)';
+                } else {
+                    tab.style.background = 'var(--surface-solid)';
+                    tab.style.borderColor = 'var(--border)';
+                    tab.style.color = 'var(--text-muted)';
+                }
+            });
+        },
+
+        onSearchInput(val) {
+            this._searchQuery = (val || '').trim().toLowerCase();
+            const clearBtn = document.getElementById('settingsSearchClearBtn');
+            if (clearBtn) clearBtn.style.display = this._searchQuery ? 'block' : 'none';
+            this.applyFilters();
+        },
+
+        clearSearch() {
+            this._searchQuery = '';
+            const input = document.getElementById('settingsSearchInput');
+            if (input) input.value = '';
+            const clearBtn = document.getElementById('settingsSearchClearBtn');
+            if (clearBtn) clearBtn.style.display = 'none';
+            this.applyFilters();
+        },
+
+        applyFilters() {
+            const list = document.getElementById('mobileSettingsList');
+            if (!list) return;
+
+            const cards = list.querySelectorAll('.settings-group-card');
+            const q = this._searchQuery;
+            let visibleCards = 0;
+
+            cards.forEach(card => {
+                const cat = card.dataset.cat;
+                const matchesCategory = (this._activeCat === 'all' || this._activeCat === cat);
+
+                if (!matchesCategory && !q) {
+                    card.style.display = 'none';
+                    return;
+                }
+
+                if (!q) {
+                    card.style.display = 'block';
+                    card.querySelectorAll('.settings-field-item').forEach(item => item.style.display = 'flex');
+                    visibleCards++;
+                    return;
+                }
+
+                // We have a search query: filter field items inside the card
+                let matchingFields = 0;
+                card.querySelectorAll('.settings-field-item').forEach(item => {
+                    const key = (item.dataset.key || '').toLowerCase();
+                    const label = (item.querySelector('label') ? item.querySelector('label').innerText : '').toLowerCase();
+                    const input = item.querySelector('input, select, textarea');
+                    const val = (input ? input.value : '').toLowerCase();
+                    const cardTitle = (card.innerText || '').toLowerCase();
+
+                    if (key.includes(q) || label.includes(q) || val.includes(q) || cardTitle.includes(q)) {
+                        item.style.display = 'flex';
+                        matchingFields++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                if (matchingFields > 0 && (this._activeCat === 'all' || this._activeCat === cat)) {
+                    card.style.display = 'block';
+                    visibleCards++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            let emptyNotice = document.getElementById('settingsEmptyNotice');
+            if (visibleCards === 0) {
+                if (!emptyNotice) {
+                    emptyNotice = document.createElement('div');
+                    emptyNotice.id = 'settingsEmptyNotice';
+                    emptyNotice.style.cssText = 'text-align: center; padding: 36px 20px; color: var(--text-muted);';
+                    list.appendChild(emptyNotice);
+                }
+                emptyNotice.innerHTML = `
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0 0 6px 0;">No matching settings</p>
+                    <p style="font-size: 0.8rem; margin: 0 0 12px 0;">No settings found matching "${q}".</p>
+                    <button type="button" onclick="Settings.clearSearch(); Settings.selectCategory('all');" style="padding: 8px 16px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.8rem; font-weight: 600; cursor: pointer;">Reset Filters</button>
+                `;
+                emptyNotice.style.display = 'block';
+            } else if (emptyNotice) {
+                emptyNotice.style.display = 'none';
+            }
+        },
 
         async save() {
             const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
