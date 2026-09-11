@@ -2294,6 +2294,7 @@ function otpBackspace(event, currentInput, prevIdx) {
 // Active booking countdown timer handle
 var _activeBookingTimer = null;
 var _activeBookingNotified = false; // fire warning toast once per session
+var _graceNotified = false; // fire grace period toast once per session
 
 function _formatCountdown(msLeft) {
   if (msLeft <= 0) return { text: 'Ended', urgent: true };
@@ -2306,6 +2307,81 @@ function _formatCountdown(msLeft) {
     ? days + 'd ' + hours + 'h ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's'
     : hours + 'h ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's';
   return { text: text, urgent: msLeft < 24 * 3600 * 1000 };
+}
+
+// Build a Date from a YYYY-MM-DD date string + 'HH:MM' time string
+function _buildDatetime(dateStr, timeStr) {
+  var dp = _normDateStr(dateStr).split('-');
+  var tp = (timeStr || '00:00').toString().substring(0, 5).split(':');
+  return new Date(parseInt(dp[0]), parseInt(dp[1])-1, parseInt(dp[2]),
+                  parseInt(tp[0]) || 0, parseInt(tp[1]) || 0, 0);
+}
+
+// Pickup countdown: counts to exact pickup time; switches to 1-hr grace after
+function _startPickupCountdown(startDateStr, startTimeStr) {
+  if (_activeBookingTimer) clearInterval(_activeBookingTimer);
+  var pickupDt = _buildDatetime(startDateStr, startTimeStr);
+  var graceEndDt = new Date(pickupDt.getTime() + 60 * 60 * 1000); // +1 hour
+
+  function tick() {
+    var el = document.getElementById('activeBookingCountdown');
+    var labelEl = document.getElementById('activeBookingTimerLabel');
+    if (!el) { clearInterval(_activeBookingTimer); return; }
+    var now = new Date();
+    if (now < pickupDt) {
+      // --- Phase 1: Before pickup time → countdown to pickup ---
+      var msLeft = pickupDt - now;
+      var result = _formatCountdown(msLeft);
+      el.textContent = result.text;
+      el.style.color = '#3b82f6'; // blue
+      if (labelEl) labelEl.textContent = 'Time Until Pickup';
+    } else if (now < graceEndDt) {
+      // --- Phase 2: Grace period (1 hour after pickup time) ---
+      var msLeft = graceEndDt - now;
+      var result = _formatCountdown(msLeft);
+      el.textContent = result.text;
+      el.style.color = '#ef4444'; // red — urgent
+      if (labelEl) labelEl.textContent = '⚠️ Grace Period';
+      if (!_graceNotified) {
+        _graceNotified = true;
+        showToast('It\'s your pickup time! You have 1 hour before No Show.', 'error');
+        NotifStore.add('Your pickup time has arrived. 1-hour grace period is now running.');
+      }
+    } else {
+      // --- Phase 3: Grace expired ---
+      el.textContent = 'Grace Expired';
+      el.style.color = '#ef4444';
+      if (labelEl) labelEl.textContent = '⚠️ No Show';
+    }
+    if (!el.classList.contains('ticker-pulse')) el.classList.add('ticker-pulse');
+  }
+  tick();
+  _activeBookingTimer = setInterval(tick, 1000);
+}
+
+// Return countdown: counts to end_date + end_time (exact)
+function _startReturnCountdown(endDateStr, endTimeStr) {
+  if (_activeBookingTimer) clearInterval(_activeBookingTimer);
+  var endDt = _buildDatetime(endDateStr, endTimeStr);
+
+  function tick() {
+    var el = document.getElementById('activeBookingCountdown');
+    var labelEl = document.getElementById('activeBookingTimerLabel');
+    if (!el) { clearInterval(_activeBookingTimer); return; }
+    var msLeft = endDt - new Date();
+    var result = _formatCountdown(msLeft);
+    el.textContent = result.text;
+    el.style.color = result.urgent ? '#ef4444' : '#10b981';
+    if (labelEl) labelEl.textContent = result.urgent ? '⚠️ Time Remaining' : 'Time Remaining';
+    if (!el.classList.contains('ticker-pulse')) el.classList.add('ticker-pulse');
+    if (result.urgent && !_activeBookingNotified) {
+      _activeBookingNotified = true;
+      showToast('Your rental ends in less than 24 hours!', 'error');
+      NotifStore.add('Your rental is ending soon - less than 24 hours remaining.');
+    }
+  }
+  tick();
+  _activeBookingTimer = setInterval(tick, 1000);
 }
 
 function _startActiveBookingCountdown(endDateStr) {
@@ -2416,10 +2492,16 @@ function refreshActiveBookingMonitor() {
       var statusBg = isPickedUp ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)';
       var statusColor = isPickedUp ? 'var(--primary)' : '#3b82f6';
       var statusBorder = isPickedUp ? 'rgba(16,185,129,0.25)' : 'rgba(59,130,246,0.25)';
-      var timeTitle = isPickedUp ? 'Time Remaining' : 'Pickup Date';
-      var returnLabel = isPickedUp ? 'Return by' : 'Starts on';
-      var returnTarget = isPickedUp ? endNorm : startNorm;
+      var returnLabel = isPickedUp ? 'Return by' : 'Pickup at';
       var subText = [active.color, active.plate_number].filter(Boolean).join(' - ') || active.plate_number || '';
+
+      // Determine what time to show next to the date
+      var startTimeStr = active.start_time ? String(active.start_time).substring(0,5) : '00:00';
+      var endTimeStr   = active.end_time   ? String(active.end_time).substring(0,5)   : '00:00';
+      var returnDateDisplay = isPickedUp
+        ? (_fmtDate(endNorm) + ' ' + endTimeStr)
+        : (_fmtDate(startNorm) + ' ' + startTimeStr);
+      var initialTimerLabel = isPickedUp ? 'Time Remaining' : 'Time Until Pickup';
 
       card.innerHTML =
         '<div class="active-rental-img">' + imgHtml + '</div>' +
@@ -2432,14 +2514,14 @@ function refreshActiveBookingMonitor() {
             '<span style="background:' + statusBg + ';color:' + statusColor + ';border:1px solid ' + statusBorder + ';padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">' + escapeHtml(statusLabel) + '</span>' +
           '</div>' +
           '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
-            '<div style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">' + timeTitle + '</div>' +
+            '<div id="activeBookingTimerLabel" style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">' + initialTimerLabel + '</div>' +
             '<div id="activeBookingCountdown" class="ticker-pulse" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
-            '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">' + returnLabel + ' <strong style="color:var(--text-primary);">' + _fmtDate(returnTarget) + '</strong></div>' +
+            '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">' + returnLabel + ' <strong style="color:var(--text-primary);">' + returnDateDisplay + '</strong></div>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
             '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
               '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Start Date</div>' +
-              '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + '</div>' +
+              '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + ' ' + startTimeStr + '</div>' +
             '</div>' +
             '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
               '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Booking #</div>' +
@@ -2462,7 +2544,11 @@ function refreshActiveBookingMonitor() {
           easing: 'easeOutCubic'
         });
       }
-      _startActiveBookingCountdown(returnTarget);
+      if (isPickedUp) {
+        _startReturnCountdown(endNorm, endTimeStr);
+      } else {
+        _startPickupCountdown(startNorm, startTimeStr);
+      }
     } else {
       if (monitor) monitor.style.display = 'none';
       if (_activeBookingTimer) { clearInterval(_activeBookingTimer); _activeBookingTimer = null; }
