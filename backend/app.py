@@ -6310,6 +6310,55 @@ def submit_inspection():
         if b_status in ('cancelled', 'no show', 'noshow', 'rejected'):
             return jsonify({"error": f"Cannot submit inspection for a booking marked as '{bk.get('status')}'. Please update booking status first."}), 400
 
+        # ── Guard: Mileage reading validation (cannot decrease) ──
+        if mileage is None or not str(mileage).strip():
+            return jsonify({"error": "Mileage reading is required."}), 400
+
+        try:
+            new_mileage = float(str(mileage).strip())
+            if new_mileage < 0:
+                return jsonify({"error": "Mileage must be a positive number."}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid mileage number format."}), 400
+
+        vehicle_id = bk.get('vehicle_id')
+        current_odometer = 0.0
+        if vehicle_id:
+            cur.execute("SELECT odometer FROM vehicles WHERE id = %s", (vehicle_id,))
+            v_row = cur.fetchone()
+            if v_row and v_row.get('odometer') is not None:
+                try:
+                    current_odometer = float(v_row['odometer'])
+                except (ValueError, TypeError):
+                    current_odometer = 0.0
+
+        if inspection_type == 'pickup':
+            if new_mileage < current_odometer:
+                return jsonify({
+                    "error": f"Pickup mileage ({new_mileage:,.0f} km) cannot be lower than the vehicle's current odometer ({current_odometer:,.0f} km)."
+                }), 400
+        elif inspection_type == 'return':
+            cur.execute("""
+                SELECT mileage FROM vehicle_inspections 
+                WHERE booking_id = %s AND inspection_type = 'pickup' 
+                ORDER BY id DESC LIMIT 1
+            """, (booking_id,))
+            p_insp = cur.fetchone()
+            pickup_mileage = None
+            if p_insp and p_insp.get('mileage') is not None and str(p_insp['mileage']).strip() != '':
+                try:
+                    pickup_mileage = float(p_insp['mileage'])
+                except (ValueError, TypeError):
+                    pickup_mileage = None
+
+            min_required = pickup_mileage if pickup_mileage is not None else current_odometer
+            min_label = "pickup inspection mileage" if pickup_mileage is not None else "vehicle current odometer"
+
+            if new_mileage < min_required:
+                return jsonify({
+                    "error": f"Return mileage ({new_mileage:,.0f} km) cannot be lower than the {min_label} ({min_required:,.0f} km). Mileage reading cannot decrease."
+                }), 400
+
         from datetime import datetime, timezone, timedelta, date
         PH = timezone(timedelta(hours=8))
         now_ph = datetime.now(tz=PH)

@@ -28365,11 +28365,58 @@ function toggleNewsletterModal(show = true) {
                 } catch(e) { console.warn('Vehicle fetch fallback error:', e); }
             }
 
-            const currentOdom = (veh && veh.odometer !== undefined && veh.odometer !== null) ? veh.odometer : 0;
+            const currentOdom = (veh && veh.odometer !== undefined && veh.odometer !== null) ? parseFloat(veh.odometer) : 0;
             const currentFuel = (veh && veh.fuel_level) ? veh.fuel_level : 'Full Tank';
 
+            // Calculate minimum allowed mileage (cannot decrease on pickup or return)
+            let minMileage = currentOdom;
+            let minLabel = 'Current Vehicle Odometer';
+
+            if (type === 'return') {
+                try {
+                    const iRes = await fetch(`${API_BASE}/api/inspections/${bookingId}`);
+                    if (iRes.ok) {
+                        const iList = await iRes.json();
+                        const pInsp = (iList || []).find(x => x.inspection_type === 'pickup');
+                        if (pInsp && pInsp.mileage !== undefined && pInsp.mileage !== null && String(pInsp.mileage).trim() !== '') {
+                            const pm = parseFloat(pInsp.mileage);
+                            if (!isNaN(pm)) {
+                                minMileage = pm;
+                                minLabel = 'Pickup Inspection Mileage';
+                            }
+                        }
+                    }
+                } catch(e) { console.warn('Pickup inspection lookup error:', e); }
+            }
+
             const mileageEl = document.getElementById('inspectMileage');
-            if (mileageEl) mileageEl.value = currentOdom;
+            if (mileageEl) {
+                mileageEl.value = minMileage;
+                mileageEl.min = minMileage;
+                mileageEl.dataset.minAllowed = minMileage;
+                mileageEl.dataset.minLabel = minLabel;
+                mileageEl.oninput = function() {
+                    const val = parseFloat(this.value);
+                    const min = parseFloat(this.dataset.minAllowed || 0);
+                    const lbl = this.dataset.minLabel || 'minimum';
+                    if (!isNaN(val) && val < min) {
+                        showInlineError(this, `Mileage cannot be lower than ${lbl.toLowerCase()} (${min.toLocaleString()} km)`);
+                    } else {
+                        clearInlineError(this);
+                    }
+                };
+            }
+
+            let minNoticeEl = document.getElementById('inspectMileageMinNotice');
+            if (!minNoticeEl && mileageEl && mileageEl.parentElement) {
+                minNoticeEl = document.createElement('div');
+                minNoticeEl.id = 'inspectMileageMinNotice';
+                mileageEl.parentElement.appendChild(minNoticeEl);
+            }
+            if (minNoticeEl) {
+                minNoticeEl.style.cssText = 'font-size: 0.72rem; color: #475569; margin-top: 5px; font-weight: 600; display: flex; align-items: center; gap: 4px;';
+                minNoticeEl.innerHTML = `<i class="fas fa-tachometer-alt" style="color: #2563eb;"></i> Min required: <strong style="color: #0f172a;">${minMileage.toLocaleString()} KM</strong> <span style="font-size: 0.68rem; color: #64748b;">(${minLabel})</span>`;
+            }
 
             const fuelEl = document.getElementById('inspectFuel');
             if (fuelEl) {
@@ -28570,8 +28617,16 @@ function toggleNewsletterModal(show = true) {
             if (fuelEl) clearInlineError(fuelEl);
             let hasError = false;
 
-            if (mileageEl && (!mileageEl.value.trim() || isNaN(mileageEl.value) || parseInt(mileageEl.value) < 0)) {
-                showInlineError(mileageEl, 'Valid mileage is required');
+            const enteredMileage = parseFloat(mileageEl ? mileageEl.value : NaN);
+            const minAllowed = parseFloat(mileageEl ? (mileageEl.dataset.minAllowed || 0) : 0);
+            const minLabel = mileageEl ? (mileageEl.dataset.minLabel || 'minimum reading') : 'minimum reading';
+
+            if (mileageEl && (!mileageEl.value.trim() || isNaN(enteredMileage) || enteredMileage < 0)) {
+                showInlineError(mileageEl, 'Valid positive mileage is required');
+                hasError = true;
+            } else if (mileageEl && enteredMileage < minAllowed) {
+                showInlineError(mileageEl, `Mileage (${enteredMileage.toLocaleString()} km) cannot be lower than ${minLabel.toLowerCase()} (${minAllowed.toLocaleString()} km)`);
+                showNotification(`Mileage cannot be lower than ${minLabel.toLowerCase()} (${minAllowed.toLocaleString()} km). Reading cannot decrease!`, 'error');
                 hasError = true;
             }
 

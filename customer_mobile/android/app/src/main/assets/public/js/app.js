@@ -6949,7 +6949,7 @@ function openInspection(bookingId, type) {
     'Every vehicle is released with a <strong>100% Full Tank</strong> and must be returned with a <strong>100% Full Tank</strong>. ' +
     (type === 'return' ? '<span style="color:#e11d48;display:block;margin-top:4px;font-weight:700;">⚠️ Note: If returned with less than a Full Tank, a refueling fee will be charged to restore the tank back to 100% Full.</span>' : 'Please verify that the fuel gauge reads Full before departing.') +
     '</div>' +
-    '<div class="form-group"><label>Mileage Reading (km) *</label><input type="number" id="inspMileage" placeholder="e.g. 12500"><span class="field-error" id="inspMileageErr"></span></div>' +
+    '<div class="form-group"><label>Mileage Reading (km) *</label><input type="number" id="inspMileage" placeholder="e.g. 12500"><div id="inspMileageMinNotice" style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;font-weight:600;"></div><span class="field-error" id="inspMileageErr"></span></div>' +
     '<div class="form-group"><label>Fuel Level</label><select id="inspFuel" style="font-weight:700;"><option value="Full" selected>Full (100% Full Tank)</option><option value="3/4">3/4 Tank (Missing 1/4)</option><option value="1/2">1/2 Tank (Missing 1/2)</option><option value="1/4">1/4 Tank (Missing 3/4)</option><option value="Empty">Empty (0% Tank)</option></select></div>' +
     '<div class="form-group"><label>Condition Notes</label><textarea id="inspNotes" placeholder="Describe vehicle condition..."></textarea></div>' +
     '</div>' +
@@ -7006,6 +7006,17 @@ function submitInspection(bookingId, type) {
   if (mileageErrEl) mileageErrEl.textContent = '';
   if (inspErrEl) inspErrEl.textContent = '';
   if (isBlank(mileage)) { if (mileageErrEl) mileageErrEl.textContent = 'Mileage reading is required.'; return; }
+  var enteredMileage = parseFloat(mileage);
+  var minAllowed = parseFloat(mileageEl ? (mileageEl.dataset.minAllowed || 0) : 0);
+  var minLabel = mileageEl ? (mileageEl.dataset.minLabel || 'minimum reading') : 'minimum reading';
+  if (isNaN(enteredMileage) || enteredMileage < 0) {
+    if (mileageErrEl) mileageErrEl.textContent = 'Valid positive mileage reading is required.';
+    return;
+  }
+  if (enteredMileage < minAllowed) {
+    if (mileageErrEl) mileageErrEl.textContent = 'Mileage (' + enteredMileage.toLocaleString() + ' km) cannot be lower than ' + minLabel.toLowerCase() + ' (' + minAllowed.toLocaleString() + ' km).';
+    return;
+  }
   var fd = new FormData();
   fd.append('booking_id', bookingId);
   fd.append('inspection_type', type);
@@ -7029,6 +7040,33 @@ function submitInspection(bookingId, type) {
 function loadPastInspections(bookingId) {
   apiCall('/inspections/' + bookingId)
     .then(function(data) {
+      if (!data) return;
+      var mileageEl = document.getElementById('inspMileage');
+      var noticeEl = document.getElementById('inspMileageMinNotice');
+      if (Array.isArray(data) && data.length) {
+        var pickup = data.find(function(i) { return i.inspection_type === 'pickup'; });
+        if (pickup && pickup.mileage !== undefined && pickup.mileage !== null && mileageEl) {
+          var pm = parseFloat(pickup.mileage);
+          if (!isNaN(pm)) {
+            mileageEl.min = pm;
+            mileageEl.dataset.minAllowed = pm;
+            mileageEl.dataset.minLabel = 'Pickup Inspection Mileage';
+            if (!mileageEl.value || parseFloat(mileageEl.value) < pm) mileageEl.value = pm;
+            if (noticeEl) noticeEl.innerHTML = '<i class="fas fa-tachometer-alt" style="color:var(--primary);"></i> Min required: <strong>' + pm.toLocaleString() + ' km</strong> (Pickup Mileage)';
+            mileageEl.oninput = function() {
+              var val = parseFloat(this.value);
+              var merr = document.getElementById('inspMileageErr');
+              if (merr) {
+                if (!isNaN(val) && val < pm) {
+                  merr.textContent = 'Mileage cannot be lower than pickup mileage (' + pm.toLocaleString() + ' km)';
+                } else {
+                  merr.textContent = '';
+                }
+              }
+            };
+          }
+        }
+      }
       if (!data.length) return;
       var el = document.getElementById('pastInspectionsWrap');
       if (!el) return;
