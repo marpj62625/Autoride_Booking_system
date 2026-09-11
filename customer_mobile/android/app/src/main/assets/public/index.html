@@ -941,15 +941,17 @@
           left: 0;
           width: 100vw;
           height: 100vh;
-          background: rgba(15, 23, 42, 0.82);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          z-index: 10000;
+          background: rgba(15, 23, 42, 0.88);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          z-index: 99999;
           display: none;
           align-items: center;
           justify-content: center;
           padding: 16px;
           box-sizing: border-box;
+          cursor: default;
+          user-select: none;
         }
         .mandatory-modal-content {
           background: var(--bg-card);
@@ -959,11 +961,21 @@
           max-width: 480px;
           max-height: 90vh;
           overflow-y: auto;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.35);
+          box-shadow: 0 25px 60px rgba(0,0,0,0.5);
           animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           padding: 24px;
           box-sizing: border-box;
           position: relative;
+          cursor: auto;
+          user-select: auto;
+        }
+        @keyframes modalShake {
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-8px); }
+          40%, 80% { transform: translateX(8px); }
+        }
+        .mandatory-modal-content.shake-animate {
+          animation: modalShake 0.4s ease-in-out !important;
         }
         @keyframes modalSlideUp {
           from { opacity: 0; transform: translateY(20px) scale(0.96); }
@@ -4613,6 +4625,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script src="js/anime.min.js"></script>
 <script src="js/utils.js"></script>
-<script src="js/app.js?v=20260911_v30m"></script>
+<script src="js/app.js?v=20260911_v31m_mandatory_review"></script>
 </body>
 </html>

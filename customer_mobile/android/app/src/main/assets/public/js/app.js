@@ -1030,6 +1030,16 @@ function showPage(id) {
   window.currentPage = id;
   // If user has an unreviewed completed booking, enforce mandatory rating
   if (window._unreviewedBookingActive && _currentUnreviewedBooking) {
+    var m = document.getElementById('mandatoryReviewModal');
+    if (m) {
+      m.style.display = 'flex';
+      var box = m.querySelector('.mandatory-modal-content');
+      if (box) {
+        box.classList.remove('shake-animate');
+        void box.offsetWidth;
+        box.classList.add('shake-animate');
+      }
+    }
     showToast('Please submit your rental feedback before continuing.', 'info');
     return;
   }
@@ -1170,6 +1180,16 @@ var _overlayZCounter = 0;
 
 function showOverlay(id) {
   if (window._unreviewedBookingActive && _currentUnreviewedBooking && id !== 'page-company-reviews' && id !== 'page-terms') {
+    var m = document.getElementById('mandatoryReviewModal');
+    if (m) {
+      m.style.display = 'flex';
+      var box = m.querySelector('.mandatory-modal-content');
+      if (box) {
+        box.classList.remove('shake-animate');
+        void box.offsetWidth;
+        box.classList.add('shake-animate');
+      }
+    }
     showToast('Please submit your rental feedback before continuing.', 'info');
     return;
   }
@@ -1481,6 +1501,9 @@ function initApp() {
         }
       }
       showPage(startPage);
+      if (typeof checkUnreviewedBookings === 'function') {
+        setTimeout(function() { checkUnreviewedBookings(); }, 800);
+      }
     } else {
       showPage('page-login');
     }
@@ -1552,6 +1575,22 @@ var _backPressedOnce = false;
 var _backPressTimer = null;
 
 function handleBackButton() {
+  // 0. Mandatory Review Modal Guard - Cannot back out or exit until rating submitted
+  if (window._unreviewedBookingActive && _currentUnreviewedBooking) {
+    var modal = document.getElementById('mandatoryReviewModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      var box = modal.querySelector('.mandatory-modal-content');
+      if (box) {
+        box.classList.remove('shake-animate');
+        void box.offsetWidth;
+        box.classList.add('shake-animate');
+      }
+    }
+    showToast('Please submit your rental rating and feedback before continuing.', 'info');
+    return;
+  }
+
   // 1. Close any open rental agreement modal
   var rentalModal = document.getElementById('rentalAgreementModal');
   if (rentalModal && rentalModal.parentNode) {
@@ -1694,6 +1733,19 @@ function handleBackButton() {
     // 3. Generic Modals / Dialogs
     var openGenericModals = document.querySelectorAll('.modal, .premium-modal, [id$="Modal"], [id$="Dialog"]');
     openGenericModals.forEach(function(modal) {
+      if (modal.id === 'mandatoryReviewModal') {
+        if (e.target === modal) {
+          // Disabled outside click: clicking backdrop shakes the card & shows warning
+          var box = modal.querySelector('.mandatory-modal-content');
+          if (box) {
+            box.classList.remove('shake-animate');
+            void box.offsetWidth;
+            box.classList.add('shake-animate');
+          }
+          showToast('Rental rating & feedback is mandatory before continuing.', 'info');
+        }
+        return; // NEVER close mandatoryReviewModal on backdrop click!
+      }
       if ((modal.style.display !== 'none' && modal.style.display !== '') && e.target === modal) {
         modal.style.display = 'none';
       }
@@ -7219,6 +7271,16 @@ window.checkUnreviewedBookings = checkUnreviewedBookings;
 
 function closeMandatoryReviewModal() {
   if (window._unreviewedBookingActive) {
+    var modal = document.getElementById('mandatoryReviewModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      var box = modal.querySelector('.mandatory-modal-content');
+      if (box) {
+        box.classList.remove('shake-animate');
+        void box.offsetWidth;
+        box.classList.add('shake-animate');
+      }
+    }
     showToast('Rental feedback is required to complete your booking record.', 'info');
     return;
   }
