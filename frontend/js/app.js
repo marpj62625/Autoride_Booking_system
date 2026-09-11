@@ -6953,8 +6953,13 @@ function openInspection(bookingId, type) {
     '<h2>' + (type === 'pickup' ? 'Pre-Rental' : 'Post-Rental') + ' Inspection</h2></div>' +
     '<div class="scroll-content">' +
     '<div class="card">' +
+    '<div style="margin-bottom:14px;padding:12px 14px;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.25);border-radius:12px;font-size:0.78rem;color:#0f172a;line-height:1.4;">' +
+    '<strong style="color:#00873c;display:block;margin-bottom:2px;font-size:0.82rem;">⛽ Full-to-Full Fuel Policy:</strong>' +
+    'Every vehicle is released with a <strong>100% Full Tank</strong> and must be returned with a <strong>100% Full Tank</strong>. ' +
+    (type === 'return' ? '<span style="color:#e11d48;display:block;margin-top:4px;font-weight:700;">⚠️ Note: If returned with less than a Full Tank, a refueling fee will be charged to restore the tank back to 100% Full.</span>' : 'Please verify that the fuel gauge reads Full before departing.') +
+    '</div>' +
     '<div class="form-group"><label>Mileage Reading (km) *</label><input type="number" id="inspMileage" placeholder="e.g. 12500"><span class="field-error" id="inspMileageErr"></span></div>' +
-    '<div class="form-group"><label>Fuel Level</label><select id="inspFuel"><option>Full</option><option>3/4</option><option>1/2</option><option>1/4</option><option>Empty</option></select></div>' +
+    '<div class="form-group"><label>Fuel Level</label><select id="inspFuel" style="font-weight:700;"><option value="Full" selected>Full (100% Full Tank)</option><option value="3/4">3/4 Tank (Missing 1/4)</option><option value="1/2">1/2 Tank (Missing 1/2)</option><option value="1/4">1/4 Tank (Missing 3/4)</option><option value="Empty">Empty (0% Tank)</option></select></div>' +
     '<div class="form-group"><label>Condition Notes</label><textarea id="inspNotes" placeholder="Describe vehicle condition..."></textarea></div>' +
     '</div>' +
     '<div class="card"><h4 style="font-weight:700;margin-bottom:10px;">Photos</h4>' +

@@ -6286,6 +6286,12 @@ def submit_inspection():
         fuel_level = request.form.get('fuel_level')
         notes = request.form.get('notes')
         inspector_id = request.form.get('inspector_id')
+        fuel_charge = request.form.get('fuel_charge')
+        fuel_charge_notes = request.form.get('fuel_charge_notes')
+        
+        # Policy: Pickup defaults to Full Tank if unspecified
+        if inspection_type == 'pickup' and (not fuel_level or not str(fuel_level).strip()):
+            fuel_level = 'Full'
         
         if not booking_id or not inspection_type:
             return jsonify({"error": "Missing required fields"}), 400
@@ -6452,6 +6458,62 @@ def submit_inspection():
             if vehicle_id:
                 cur.execute("UPDATE vehicles SET status = 'Available' WHERE id = %s", (vehicle_id,))
 
+        # ── Refueling Penalty: If returned without Full Tank and fuel_charge is applied ──
+        applied_fuel_charge = 0.0
+        if inspection_type == 'return' and fuel_charge:
+            try:
+                fc_amount = float(fuel_charge)
+                if fc_amount > 0:
+                    applied_fuel_charge = fc_amount
+                    cur.execute("CREATE TABLE IF NOT EXISTS booking_penalties (id SERIAL PRIMARY KEY, booking_id INT, charge_type VARCHAR(50), penalty_type VARCHAR(50), amount DECIMAL(10,2) DEFAULT 0, notes TEXT, description TEXT, created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);")
+                    cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS penalty_amount DECIMAL(10,2) DEFAULT 0")
+                    fc_note = (fuel_charge_notes or '').strip() or f"Refueling Fee: Vehicle returned with {fuel_level} fuel (100% Full Tank required)."
+                    cur.execute("""
+                        INSERT INTO booking_penalties (booking_id, charge_type, penalty_type, amount, notes, description, created_by)
+                        VALUES (%s, 'fuel', 'fuel', %s, %s, %s, %s)
+                    """, (booking_id, applied_fuel_charge, fc_note, fc_note, inspector_id))
+
+                    # Recalculate total penalties and balance
+                    cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM booking_penalties WHERE booking_id = %s", (booking_id,))
+                    total_penalty = cur.fetchone()['total']
+
+                    cur.execute("SELECT total_price, amount_paid, user_id FROM bookings WHERE id = %s", (booking_id,))
+                    b_row = cur.fetchone()
+                    if b_row:
+                        new_balance = float(b_row['total_price'] or 0) + float(total_penalty) - float(b_row['amount_paid'] or 0)
+                        p_status = 'Unpaid'
+                        if new_balance <= 0:
+                            p_status = 'Paid'
+                            new_balance = 0.0
+                        elif float(b_row['amount_paid'] or 0) > 0:
+                            p_status = 'Partially Paid'
+
+                        cur.execute("""
+                            UPDATE bookings
+                            SET penalty_amount = %s, balance_amount = %s, payment_status = %s
+                            WHERE id = %s
+                        """, (float(total_penalty), new_balance, p_status, booking_id))
+
+                        c_uid = b_row.get('user_id')
+                        if c_uid:
+                            try:
+                                from notifications import Notification_Service
+                                Notification_Service().notify_user(
+                                    c_uid,
+                                    "⛽ Refueling Charge Applied",
+                                    f"Vehicle returned with {fuel_level} fuel. A refueling fee of ₱{applied_fuel_charge:,.2f} was added to Booking #{booking_id} (Full Tank return required).",
+                                    "fuel_charge"
+                                )
+                                Notification_Service().notify_admins_inapp(
+                                    "⛽ Refuel Fee Added",
+                                    f"Booking #{booking_id}: ₱{applied_fuel_charge:,.2f} refuel charge applied for returning at {fuel_level} fuel.",
+                                    "admin_refuel_alert"
+                                )
+                            except Exception as _ne:
+                                print(f"[submit_inspection] Refuel notification error: {_ne}")
+            except Exception as _fe:
+                print(f"[submit_inspection] Refuel fee error: {_fe}")
+
         # ── Auto-update Vehicle Master Odometer and Fuel Level ──
         distance_driven = None
         if vehicle_id:
@@ -6558,6 +6620,8 @@ def submit_inspection():
         }
         if distance_driven is not None:
             res_payload["distance_driven"] = distance_driven
+        if applied_fuel_charge > 0:
+            res_payload["fuel_charge"] = applied_fuel_charge
 
         return jsonify(res_payload), 201
 
