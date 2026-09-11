@@ -9955,6 +9955,7 @@ input:checked + .ctrl-slider:before {
         <button class="um-filter-btn" onclick="UserMgmt.setFilter('verified', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Verified</button>
         <button class="um-filter-btn" onclick="UserMgmt.setFilter('unverified', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Unverified</button>
         <button class="um-filter-btn" onclick="UserMgmt.setFilter('frozen', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;">Frozen</button>
+        <button class="um-filter-btn" onclick="UserMgmt.setFilter('violations', this)" style="white-space:nowrap; flex-shrink:0; padding:8px 18px; border-radius:50px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:0.78rem; font-weight:700;"><i class="fas fa-exclamation-triangle" style="margin-right:5px;color:#f59e0b;"></i>With Violations</button>
     </div>
 
 
@@ -30160,6 +30161,7 @@ function toggleNewsletterModal(show = true) {
 
 
             else if (this._filter === 'frozen') list = list.filter(u => u.is_frozen);
+            else if (this._filter === 'violations') list = list.filter(u => (u.violation_strikes > 0 || u.booking_suspension_until || u.violation_permanently_restricted));
 
 
 
@@ -31077,6 +31079,111 @@ function toggleNewsletterModal(show = true) {
 
 
 
+            <!-- Violation / Strike Record & Account Standing -->
+            <div id="umViolationSection_${u.id}" style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                    <span><i class="fas fa-user-shield" style="margin-right:6px;color:#f59e0b;"></i>Account Standing / Violations</span>
+                    <span id="umStrikesBadge_${u.id}" style="padding:2px 8px;border-radius:8px;font-weight:800;font-size:0.75rem;background:${u.violation_permanently_restricted ? 'rgba(220,38,38,0.2)' : (u.violation_strikes > 0 ? 'rgba(245,158,11,0.2)' : 'rgba(0,177,79,0.15)')};color:${u.violation_permanently_restricted ? '#dc2626' : (u.violation_strikes > 0 ? '#fb923c' : 'var(--success)')};">
+                        ${u.violation_permanently_restricted ? 'PERMANENTLY RESTRICTED' : ((u.violation_strikes || 0) + ' strike' + ((u.violation_strikes || 0) !== 1 ? 's' : ''))}
+                    </span>
+                </div>
+
+                ${u.violation_permanently_restricted ? `
+                <div style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#dc2626;font-weight:700;text-align:center;">
+                    <i class="fas fa-ban"></i> Account is PERMANENTLY RESTRICTED from booking
+                </div>` : u.booking_suspension_until && new Date(u.booking_suspension_until) > new Date() ? `
+                <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:#f59e0b;">
+                    <i class="fas fa-clock"></i> <strong>Suspended until:</strong> ${new Date(u.booking_suspension_until).toLocaleString('en-PH', {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                </div>` : `
+                <div style="background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.15);border-radius:10px;padding:8px;margin-bottom:10px;font-size:0.78rem;color:var(--success);text-align:center;">
+                    <i class="fas fa-check-circle"></i> Good Standing · No active suspension
+                </div>`}
+
+                ${u.violation_commitment_fee_required ? `
+                <div style="font-size:0.75rem;color:#fb923c;margin-bottom:10px;background:rgba(245,158,11,0.1);padding:6px 10px;border-radius:8px;">
+                    <i class="fas fa-coins" style="margin-right:4px;"></i> ₱200 Commitment fee required on next booking
+                </div>` : ''}
+
+                <!-- Action Buttons -->
+                <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                    <button onclick="UserMgmt.toggleEditStanding(${u.id})" style="flex:1;min-width:105px;padding:9px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.35);border-radius:10px;color:#f59e0b;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-edit"></i> Edit Standing
+                    </button>
+                    <button onclick="UserMgmt.loadViolationHistory(${u.id})" style="flex:1;min-width:85px;padding:9px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);border-radius:10px;color:#818cf8;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-history"></i> History
+                    </button>
+                    <button onclick="UserMgmt.resetViolations(${u.id})" style="flex:1;min-width:85px;padding:9px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);border-radius:10px;color:var(--success);font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                    ${!u.violation_permanently_restricted ? `
+                    <button onclick="UserMgmt.blacklistUser(${u.id})" style="flex:1;min-width:75px;padding:9px;background:rgba(220,38,38,0.1);border:1px solid rgba(220,38,38,0.25);border-radius:10px;color:#dc2626;font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-ban"></i> Ban
+                    </button>` : `
+                    <button onclick="UserMgmt.liftBlacklist(${u.id})" style="flex:1;min-width:85px;padding:9px;background:rgba(0,177,79,0.1);border:1px solid rgba(0,177,79,0.25);border-radius:10px;color:var(--success);font-weight:700;font-size:0.78rem;cursor:pointer;">
+                        <i class="fas fa-unlock"></i> Lift Ban
+                    </button>`}
+                </div>
+
+                <!-- Inline Edit Form (collapsed by default) -->
+                <div id="umEditStandingForm_${u.id}" style="display:none;margin-top:12px;padding:14px;background:rgba(0,0,0,0.35);border:1.5px solid rgba(245,158,11,0.3);border-radius:12px;">
+                    <div style="font-weight:800;font-size:0.82rem;color:#f59e0b;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-sliders-h"></i> Modify Account Standing &amp; Penalties
+                    </div>
+                    
+                    <div style="margin-bottom:10px;">
+                        <label style="display:block;font-size:0.72rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">STRIKE COUNT</label>
+                        <select id="editStrikes_${u.id}" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;">
+                            <option value="0" ${(!u.violation_strikes || u.violation_strikes === 0) ? 'selected' : ''}>0 Strikes (Good Standing)</option>
+                            <option value="1" ${u.violation_strikes === 1 ? 'selected' : ''}>1 Strike (Caution / 24h default)</option>
+                            <option value="2" ${u.violation_strikes === 2 ? 'selected' : ''}>2 Strikes (Suspended / 7d default)</option>
+                            <option value="3" ${u.violation_strikes === 3 ? 'selected' : ''}>3 Strikes (Permanent Restriction)</option>
+                            <option value="4" ${u.violation_strikes === 4 ? 'selected' : ''}>4 Strikes</option>
+                            <option value="5" ${u.violation_strikes === 5 ? 'selected' : ''}>5 Strikes</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom:10px;">
+                        <label style="display:block;font-size:0.72rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">BOOKING SUSPENSION</label>
+                        <select id="editSuspPreset_${u.id}" onchange="UserMgmt.onSuspPresetChange(${u.id})" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;margin-bottom:6px;">
+                            <option value="keep">Keep Current Suspension</option>
+                            <option value="none">No Suspension (Lift / Clear)</option>
+                            <option value="24h">Suspend for 24 Hours from now</option>
+                            <option value="7d">Suspend for 7 Days from now</option>
+                            <option value="30d">Suspend for 30 Days from now</option>
+                            <option value="custom">Set Custom Expiry Date &amp; Time...</option>
+                        </select>
+                        <input type="datetime-local" id="editSuspCustom_${u.id}" style="display:none;width:100%;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;" />
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-primary);cursor:pointer;">
+                            <input type="checkbox" id="editFeeReq_${u.id}" ${u.violation_commitment_fee_required ? 'checked' : ''} style="width:16px;height:16px;accent-color:#f59e0b;">
+                            <span>Require <strong>₱200 Commitment Fee</strong> on next booking</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#f87171;cursor:pointer;">
+                            <input type="checkbox" id="editPermRest_${u.id}" ${u.violation_permanently_restricted ? 'checked' : ''} style="width:16px;height:16px;accent-color:#dc2626;">
+                            <span><strong>Permanently restrict</strong> from making bookings</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom:12px;">
+                        <label style="display:block;font-size:0.72rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">ADMIN NOTE / REASON FOR CHANGE</label>
+                        <input type="text" id="editNote_${u.id}" placeholder="e.g., Customer dispute approved / Strike reduction granted" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;">
+                    </div>
+
+                    <div style="display:flex;gap:8px;">
+                        <button onclick="UserMgmt.saveStandingEdit(${u.id})" style="flex:2;padding:10px;background:var(--primary);border:none;border-radius:8px;color:white;font-weight:800;font-size:0.82rem;cursor:pointer;">
+                            <i class="fas fa-check" style="margin-right:4px;"></i> Save Standing
+                        </button>
+                        <button onclick="document.getElementById('umEditStandingForm_${u.id}').style.display='none'" style="flex:1;padding:10px;background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);font-weight:700;font-size:0.82rem;cursor:pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <div id="umViolationHistory_${u.id}" style="display:none;margin-top:10px;max-height:220px;overflow-y:auto;"></div>
+            </div>
+
             <!-- Freeze / Unfreeze -->
 
 
@@ -31512,32 +31619,197 @@ function toggleNewsletterModal(show = true) {
             }
             try {
                 const url = `${API_URL}/admin/users/export`;
-
-
-
                 const a = document.createElement('a');
-
-
-
                 a.href = url;
-
-
-
                 a.download = 'users_export.csv';
-
-
-
                 a.click();
-
-
-
             } catch (e) { alert('Export failed: ' + e.message); }
+        },
 
+        toggleEditStanding(userId) {
+            const form = document.getElementById(`umEditStandingForm_${userId}`);
+            if (!form) return;
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        },
 
+        onSuspPresetChange(userId) {
+            const sel = document.getElementById(`editSuspPreset_${userId}`);
+            const custom = document.getElementById(`editSuspCustom_${userId}`);
+            if (sel && custom) {
+                custom.style.display = sel.value === 'custom' ? 'block' : 'none';
+            }
+        },
 
+        async saveStandingEdit(userId) {
+            const strikesEl = document.getElementById(`editStrikes_${userId}`);
+            const suspPresetEl = document.getElementById(`editSuspPreset_${userId}`);
+            const suspCustomEl = document.getElementById(`editSuspCustom_${userId}`);
+            const feeReqEl = document.getElementById(`editFeeReq_${userId}`);
+            const permRestEl = document.getElementById(`editPermRest_${userId}`);
+            const noteEl = document.getElementById(`editNote_${userId}`);
+
+            const strikes = parseInt(strikesEl ? strikesEl.value : 0);
+            const feeReq = feeReqEl ? feeReqEl.checked : false;
+            const permRest = permRestEl ? permRestEl.checked : false;
+            const note = (noteEl ? noteEl.value : '').trim();
+
+            let suspUntil = undefined;
+            const preset = suspPresetEl ? suspPresetEl.value : 'keep';
+            const now = new Date();
+            if (preset === 'none') {
+                suspUntil = null;
+            } else if (preset === '24h') {
+                suspUntil = new Date(now.getTime() + 24 * 3600 * 1000).toISOString();
+            } else if (preset === '7d') {
+                suspUntil = new Date(now.getTime() + 7 * 24 * 3600 * 1000).toISOString();
+            } else if (preset === '30d') {
+                suspUntil = new Date(now.getTime() + 30 * 24 * 3600 * 1000).toISOString();
+            } else if (preset === 'custom' && suspCustomEl && suspCustomEl.value) {
+                suspUntil = new Date(suspCustomEl.value).toISOString();
+            }
+
+            const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser && adminAuth.getUser()) ? adminAuth.getUser() : null;
+            const payload = {
+                violation_strikes: strikes,
+                violation_commitment_fee_required: feeReq,
+                violation_permanently_restricted: permRest,
+                note: note,
+                admin_id: adminUser ? adminUser.id : null
+            };
+            if (preset !== 'keep') {
+                payload.booking_suspension_until = suspUntil;
+            }
+
+            try {
+                const res = await apiFetch(`admin/users/${userId}/violations/edit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed to update standing');
+
+                if (typeof showNotification === 'function') {
+                    showNotification(d.message || 'Account standing updated successfully', 'success');
+                } else {
+                    alert(d.message || 'Account standing updated successfully');
+                }
+                this.openModal(userId);
+                this.refresh();
+            } catch (err) {
+                alert('Error updating standing: ' + err.message);
+            }
+        },
+
+        async resetViolations(userId) {
+            if (!confirm('Are you sure you want to reset violation strikes and lift all suspensions for this user?')) return;
+            const note = prompt('Optional note for resetting violations:', 'Admin reset strikes');
+            const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser && adminAuth.getUser()) ? adminAuth.getUser() : null;
+            try {
+                const res = await apiFetch(`admin/users/${userId}/violations/reset`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        note: note || 'Admin reset',
+                        admin_id: adminUser ? adminUser.id : null
+                    })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed to reset violations');
+                if (typeof showNotification === 'function') {
+                    showNotification(d.message || 'Violations reset successfully', 'success');
+                } else {
+                    alert(d.message || 'Violations reset successfully');
+                }
+                this.openModal(userId);
+                this.refresh();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        },
+
+        async blacklistUser(userId) {
+            if (!confirm('Permanently restrict this user from booking?')) return;
+            try {
+                const res = await apiFetch(`admin/users/${userId}/violations/blacklist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blacklist: true })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed to ban user');
+                if (typeof showNotification === 'function') {
+                    showNotification(d.message || 'User blacklisted from booking', 'success');
+                } else {
+                    alert(d.message || 'User blacklisted from booking');
+                }
+                this.openModal(userId);
+                this.refresh();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        },
+
+        async liftBlacklist(userId) {
+            if (!confirm('Lift permanent booking restriction for this user?')) return;
+            try {
+                const res = await apiFetch(`admin/users/${userId}/violations/blacklist`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blacklist: false })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed to lift restriction');
+                if (typeof showNotification === 'function') {
+                    showNotification(d.message || 'Booking restriction lifted', 'success');
+                } else {
+                    alert(d.message || 'Booking restriction lifted');
+                }
+                this.openModal(userId);
+                this.refresh();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        },
+
+        async loadViolationHistory(userId) {
+            const histDiv = document.getElementById(`umViolationHistory_${userId}`);
+            if (!histDiv) return;
+            if (histDiv.style.display === 'block') {
+                histDiv.style.display = 'none';
+                return;
+            }
+            histDiv.style.display = 'block';
+            histDiv.innerHTML = '<div style="text-align:center;padding:10px;font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading history...</div>';
+            try {
+                const res = await apiFetch(`admin/users/${userId}/violations`);
+                const data = await res.json();
+                const hist = data.history || [];
+                if (!hist.length) {
+                    histDiv.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);text-align:center;padding:8px;background:rgba(255,255,255,0.03);border-radius:8px;">No violation records found for this user.</div>';
+                    return;
+                }
+                histDiv.innerHTML = hist.map(h => {
+                    const dt = h.created_at ? new Date(h.created_at).toLocaleString('en-PH', {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Unknown';
+                    const isReset = Boolean(h.reset_at);
+                    return `
+                    <div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:0.75rem;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                            <span style="font-weight:800;color:${isReset ? 'var(--success)' : '#f87171'};">
+                                ${isReset ? '✅ Resolved / Reset' : `⚠️ Strike #${h.violation_number}`}
+                            </span>
+                            <span style="color:var(--text-muted);font-size:0.7rem;">${dt}</span>
+                        </div>
+                        <div style="color:var(--text-secondary);">
+                            ${h.booking_id ? `Booking #${h.booking_id} · ` : ''}${h.suspension_type || 'Penalty applied'}
+                        </div>
+                        ${h.reset_note ? `<div style="color:var(--success);font-size:0.7rem;margin-top:2px;"><i class="fas fa-info-circle"></i> ${h.reset_note}</div>` : ''}
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                histDiv.innerHTML = `<div style="color:#ef4444;font-size:0.75rem;">Error loading history: ${err.message}</div>`;
+            }
         }
-
-
 
     };
 

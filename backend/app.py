@@ -2482,6 +2482,108 @@ def admin_blacklist_user(user_id):
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/admin/users/<int:user_id>/violations/edit', methods=['POST', 'PUT'])
+@app.route('/api/admin/users/<int:user_id>/violations/edit', methods=['POST', 'PUT'])
+def admin_edit_user_violations(user_id):
+    """
+    Admin manually updates a user's account standing:
+    - violation_strikes (int)
+    - booking_suspension_until (ISO string, datetime, or null)
+    - violation_permanently_restricted (bool)
+    - violation_commitment_fee_required (bool)
+    - admin_id (int)
+    - note (str)
+    """
+    data = request.get_json(silent=True) or {}
+    strikes = data.get('violation_strikes')
+    susp_until = data.get('booking_suspension_until')
+    perm = data.get('violation_permanently_restricted')
+    fee_req = data.get('violation_commitment_fee_required')
+    note = (data.get('note') or '').strip()
+    admin_id = data.get('admin_id')
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, email, violation_strikes FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        susp_dt = None
+        if susp_until:
+            from datetime import datetime, timezone
+            try:
+                clean_s = str(susp_until).replace('Z', '+00:00')
+                if 'T' in clean_s:
+                    susp_dt = datetime.fromisoformat(clean_s)
+                else:
+                    susp_dt = datetime.strptime(clean_s, '%Y-%m-%d %H:%M:%S')
+                if susp_dt.tzinfo is None:
+                    susp_dt = susp_dt.replace(tzinfo=timezone.utc)
+            except Exception as _ex:
+                print(f"[ViolationEdit] Date parse warning: {_ex}")
+                susp_dt = None
+
+        strikes_int = int(strikes) if strikes is not None else int(user.get('violation_strikes') or 0)
+        perm_bool = bool(perm) if perm is not None else False
+        fee_bool = bool(fee_req) if fee_req is not None else False
+
+        if strikes_int == 0 and not perm_bool and not susp_dt:
+            cur.execute("""
+                UPDATE users
+                SET violation_strikes = 0,
+                    booking_suspension_until = NULL,
+                    violation_permanently_restricted = FALSE,
+                    violation_commitment_fee_required = %s,
+                    violation_last_at = NULL
+                WHERE id = %s
+            """, (fee_bool, user_id))
+        else:
+            cur.execute("""
+                UPDATE users
+                SET violation_strikes = %s,
+                    booking_suspension_until = %s,
+                    violation_permanently_restricted = %s,
+                    violation_commitment_fee_required = %s,
+                    violation_last_at = CASE WHEN violation_last_at IS NULL THEN NOW() ELSE violation_last_at END
+                WHERE id = %s
+            """, (strikes_int, susp_dt, perm_bool, fee_bool, user_id))
+
+        action_desc = f"Admin set {strikes_int} strike(s)"
+        if perm_bool: action_desc += " [Permanent Restriction]"
+        elif susp_dt: action_desc += f" [Suspended until {susp_dt.strftime('%Y-%m-%d %H:%M')}]"
+
+        cur.execute("""
+            INSERT INTO user_violation_history
+                (user_id, violation_number, suspension_type, suspension_until,
+                 reset_by_admin_id, reset_at, reset_note)
+            VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+        """, (user_id, strikes_int, action_desc, susp_dt, admin_id, note or 'Manual admin update'))
+
+        commit_db()
+
+        try:
+            from notifications import Notification_Service
+            ns = Notification_Service()
+            if perm_bool:
+                msg = f"Your account booking status has been updated: Permanent Booking Restriction. Note: {note}" if note else "Your account booking status has been updated: Permanent Booking Restriction."
+                ns.notify_user(user_id, "Account Standing Updated", msg, "violation_update")
+            elif susp_dt:
+                msg = f"Your booking suspension has been updated until {susp_dt.strftime('%B %d, %Y %I:%M %p')}. Note: {note}" if note else f"Your booking suspension has been updated until {susp_dt.strftime('%B %d, %Y %I:%M %p')}."
+                ns.notify_user(user_id, "Account Standing Updated", msg, "violation_update")
+            else:
+                msg = f"Your account standing has been updated by an administrator. Active strikes: {strikes_int}. Note: {note}" if note else f"Your account standing has been updated by an administrator. Active strikes: {strikes_int}."
+                ns.notify_user(user_id, "Account Standing Updated", msg, "violation_update")
+        except Exception:
+            pass
+
+        return jsonify({'message': 'Account standing updated successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/admin/violations', methods=['GET'])
 @app.route('/api/admin/violations', methods=['GET'])
 def admin_list_violations():
