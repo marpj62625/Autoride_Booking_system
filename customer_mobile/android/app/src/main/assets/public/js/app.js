@@ -2454,6 +2454,16 @@ function _fmtDate(d) {
   return months[parseInt(parts[1])-1] + ' ' + parseInt(parts[2]) + ', ' + parts[0];
 }
 
+function parseBookingDateMs(d) {
+  if (!d) return NaN;
+  if (typeof d === 'number') return d;
+  var s = String(d).trim().replace(' ', 'T');
+  if (!s.endsWith('Z') && !s.includes('+') && !s.includes('-', 10)) s += 'Z';
+  var ms = new Date(s).getTime();
+  if (isNaN(ms)) ms = new Date(d).getTime();
+  return ms;
+}
+
 function refreshActiveBookingMonitor() {
   if (!currentUser || !currentUser.id) {
     var monitor = document.getElementById('activeBookingMonitor');
@@ -2478,7 +2488,7 @@ function refreshActiveBookingMonitor() {
       var isPendingSt = (pst === 'Pending' || pst === 'Pending Payment');
       var isUnpaidSt = (paySt === 'Unpaid' || paySt === 'Downpayment unpaid' || paySt === 'Pending Payment');
       if (isPendingSt && isUnpaidSt && pb.created_at) {
-        var cMs = new Date(pb.created_at).getTime();
+        var cMs = parseBookingDateMs(pb.created_at);
         if (!isNaN(cMs)) {
           var remMs = (cMs + 30 * 60 * 1000) - Date.now();
           if (remMs > 0) {
@@ -2549,7 +2559,7 @@ function refreshActiveBookingMonitor() {
 
       payMonitor.style.display = 'block';
 
-      var pDeadlineMs = new Date(pendingPayBooking.created_at).getTime() + (30 * 60 * 1000);
+      var pDeadlineMs = parseBookingDateMs(pendingPayBooking.created_at) + (30 * 60 * 1000);
       window._homePayTimer = setInterval(function() {
         var rem = pDeadlineMs - Date.now();
         var cdEl = document.getElementById('homePayCountdown');
@@ -4823,6 +4833,24 @@ function showPaymentWaiting(bookingId, amount, method) {
   // Start 30-minute countdown timer
   var _countdownWarned15 = false, _countdownWarned5 = false;
   var _countdownSeconds = 30 * 60;
+  if (window._pendingPaymentBookingCreatedAt) {
+    var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
+    if (!isNaN(_bkCreatedMs)) {
+      var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
+      var _initialRem = Math.floor((_bkDeadline - Date.now()) / 1000);
+      if (_initialRem > 0 && _initialRem <= 30 * 60) {
+        _countdownSeconds = _initialRem;
+      }
+    }
+  }
+  var initM = Math.floor(_countdownSeconds / 60);
+  var initS = _countdownSeconds % 60;
+  var cdEl = document.getElementById('payCountdownDisplay');
+  if (cdEl) {
+    cdEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
+    if (_countdownSeconds <= 5 * 60) cdEl.style.color = '#dc2626';
+    else if (_countdownSeconds <= 15 * 60) cdEl.style.color = '#f59e0b';
+  }
   if (window._payCountdownInterval) clearInterval(window._payCountdownInterval);
   window._payCountdownInterval = setInterval(function() {
     _countdownSeconds--;
@@ -5324,7 +5352,7 @@ function renderBookingsList(data) {
                            (b.payment_status === 'Unpaid' || b.payment_status === 'Downpayment unpaid' || b.payment_status === 'Pending Payment');
         var payBadgeExtra = '';
         if (isPendingDep && b.created_at) {
-          var bC = new Date(b.created_at).getTime();
+          var bC = parseBookingDateMs(b.created_at);
           if (!isNaN(bC) && (bC + 30 * 60 * 1000 - Date.now() > 0)) {
             payBadgeExtra = '<span style="margin-left:8px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="margin-right:3px;"></i>Pay within 30m</span>';
           }
@@ -5408,7 +5436,7 @@ function renderBookingDetail(b) {
   var payCountdownHtml = '';
   var bDeadlineMs = null;
   if (isPendingPay && b.created_at) {
-    var bCreatedMs = new Date(b.created_at).getTime();
+    var bCreatedMs = parseBookingDateMs(b.created_at);
     if (!isNaN(bCreatedMs)) {
       bDeadlineMs = bCreatedMs + (30 * 60 * 1000);
       var bRemainingMs = bDeadlineMs - Date.now();
@@ -6809,6 +6837,7 @@ function openPayNowFromDetail(bookingId) {
     openPayBalanceScreen(bookingId, b.balance_amount);
     return;
   }
+  window._pendingPaymentBookingCreatedAt = b.created_at;
   var total = parseFloat(b.total_price) || 0;
   var days = 1;
   var start = b.start_date ? b.start_date.split('T')[0] : null;

@@ -688,8 +688,8 @@ def migrate_violation_system():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS user_violation_history (
                 id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                booking_id INTEGER REFERENCES bookings(id) ON DELETE SET NULL,
+                user_id INTEGER NOT NULL,
+                booking_id INTEGER,
                 violation_number INT NOT NULL,
                 suspension_type VARCHAR(50),
                 suspension_until TIMESTAMPTZ,
@@ -2561,6 +2561,7 @@ def admin_save_violation_settings():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/user/violation-status', methods=['GET'])
 @app.route('/api/user/violation-status', methods=['GET'])
 def user_violation_status():
     """Customer checks their own violation/suspension status."""
@@ -4582,6 +4583,8 @@ def user_bookings():
                    b.is_conflict_affected,
                    b.conflict_id,
                    EXISTS (SELECT 1 FROM reviews r WHERE r.booking_id = b.id) AS is_reviewed,
+                   b.paymongo_link_id,
+                   TO_CHAR(b.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at,
                    v.brand, v.model, v.plate_number, v.vehicle_image, v.daily_rate, v.color,
                    COALESCE(ld.full_name, u.full_name) AS license_full_name,
                    COALESCE(ld.license_number, u.license_number) AS license_number,
