@@ -1211,6 +1211,15 @@ function showOverlay(id) {
     var sc = el.querySelector('.scroll-content');
     if (sc) sc.scrollTop = 0;
   }
+  if (id === 'page-account-standing') {
+    var scStanding = el.querySelector('.scroll-content');
+    if (scStanding) scStanding.scrollTop = 0;
+    loadAccountStanding();
+  }
+}
+
+function openAccountStanding() {
+  showOverlay('page-account-standing');
 }
 
 function openTermsAndConditions() {
@@ -1388,6 +1397,7 @@ function initApp() {
 
           // Check violation/suspension status on login
           apiCall('/user/violation-status?user_id=' + user.id).then(function(vs) {
+            updateStandingCard(vs);
             if (vs && (vs.suspended || vs.permanently_restricted)) {
               var existingBanner = document.getElementById('violationBanner');
               if (!existingBanner) {
@@ -2722,6 +2732,7 @@ function loadHome() {
   }
   // Update chat unread badge
   updateChatUnreadBadge();
+  try { loadAccountStanding(); } catch(e) {}
   apiCall('/user/points?user_id=' + currentUser.id)
     .then(function(pts) {
       var pts_val = parseInt(pts.points) || 0;
@@ -9341,6 +9352,242 @@ function fallbackCopyPromoText(text) {
 function loadMorePage() {
   applyNewsletterVisibility();
   if (!currentUser.id) return;
+  loadAccountStanding();
+}
+
+// ============================================================
+// ACCOUNT STANDING & VIOLATIONS (Customer)
+// ============================================================
+function updateStandingCard(data) {
+  var cardBadge = document.getElementById('standingCardBadge');
+  var cardSubtext = document.getElementById('standingCardSubtext');
+  var cardIconWrap = document.getElementById('standingCardIconWrap');
+  var cardIcon = document.getElementById('standingCardIcon');
+  var dot = document.getElementById('navMoreViolationDot');
+
+  var strikes = parseInt(data && data.violation_strikes) || 0;
+  var isSuspended = Boolean(data && data.is_suspended);
+  var perm = Boolean(data && data.violation_permanently_restricted);
+
+  if (dot) {
+    if (perm || isSuspended || strikes > 0) {
+      dot.style.display = 'block';
+      dot.style.background = (perm || isSuspended) ? '#ef4444' : '#f59e0b';
+    } else {
+      dot.style.display = 'none';
+    }
+  }
+
+  if (!cardBadge || !cardSubtext) return;
+
+  if (perm) {
+    cardBadge.textContent = 'Restricted';
+    cardBadge.style.background = 'rgba(239,68,68,0.15)';
+    cardBadge.style.color = '#ef4444';
+    cardSubtext.textContent = 'Account permanently restricted from booking';
+    if (cardIconWrap) cardIconWrap.style.background = 'rgba(239,68,68,0.1)';
+    if (cardIcon) {
+      cardIcon.className = 'fas fa-ban';
+      cardIcon.style.color = '#ef4444';
+    }
+  } else if (isSuspended) {
+    cardBadge.textContent = 'Suspended (' + strikes + (strikes === 1 ? ' Strike' : ' Strikes') + ')';
+    cardBadge.style.background = 'rgba(239,68,68,0.15)';
+    cardBadge.style.color = '#ef4444';
+    var suspUntil = data.booking_suspension_until ? new Date(data.booking_suspension_until).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'temporary';
+    cardSubtext.textContent = 'Booking suspended until ' + suspUntil;
+    if (cardIconWrap) cardIconWrap.style.background = 'rgba(239,68,68,0.1)';
+    if (cardIcon) {
+      cardIcon.className = 'fas fa-user-lock';
+      cardIcon.style.color = '#ef4444';
+    }
+  } else if (strikes > 0) {
+    cardBadge.textContent = strikes + (strikes === 1 ? ' Strike' : ' Strikes') + ' (Caution)';
+    cardBadge.style.background = 'rgba(245,158,11,0.15)';
+    cardBadge.style.color = '#f59e0b';
+    cardSubtext.textContent = strikes + ' violation' + (strikes === 1 ? '' : 's') + ' · Active caution';
+    if (cardIconWrap) cardIconWrap.style.background = 'rgba(245,158,11,0.1)';
+    if (cardIcon) {
+      cardIcon.className = 'fas fa-exclamation-triangle';
+      cardIcon.style.color = '#f59e0b';
+    }
+  } else {
+    cardBadge.textContent = 'Good Standing';
+    cardBadge.style.background = 'rgba(0,177,79,0.15)';
+    cardBadge.style.color = 'var(--primary)';
+    cardSubtext.textContent = '0 Strikes · Full booking access';
+    if (cardIconWrap) cardIconWrap.style.background = 'rgba(0,177,79,0.1)';
+    if (cardIcon) {
+      cardIcon.className = 'fas fa-shield-alt';
+      cardIcon.style.color = 'var(--primary)';
+    }
+  }
+}
+
+function renderStandingOverlay(data) {
+  var mainCard = document.getElementById('standingMainCard');
+  var suspBanner = document.getElementById('standingSuspensionBanner');
+  var suspTitle = document.getElementById('standingSuspensionTitle');
+  var suspText = document.getElementById('standingSuspensionText');
+  var feeBanner = document.getElementById('standingCommitmentFeeBanner');
+  var autoResetText = document.getElementById('standingAutoResetText');
+  var historyList = document.getElementById('standingHistoryList');
+  var historyCount = document.getElementById('standingHistoryCount');
+
+  var strikes = parseInt(data && data.violation_strikes) || 0;
+  var isSuspended = Boolean(data && data.is_suspended);
+  var perm = Boolean(data && data.violation_permanently_restricted);
+  var feeReq = Boolean(data && data.violation_commitment_fee_required);
+
+  // 1. Render Main Card
+  if (mainCard) {
+    var bg, iconClass, iconColor, statusTitle, statusDesc;
+    if (perm) {
+      bg = 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05))';
+      iconClass = 'fas fa-ban';
+      iconColor = '#ef4444';
+      statusTitle = 'Account Restricted';
+      statusDesc = 'Your account has reached the maximum strikes and is permanently restricted from booking vehicles.';
+    } else if (isSuspended) {
+      bg = 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.04))';
+      iconClass = 'fas fa-user-lock';
+      iconColor = '#ef4444';
+      statusTitle = 'Booking Suspended';
+      statusDesc = 'Your account is temporarily suspended from creating bookings due to unpaid reservation deposit cancellation.';
+    } else if (strikes > 0) {
+      bg = 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))';
+      iconClass = 'fas fa-exclamation-triangle';
+      iconColor = '#f59e0b';
+      statusTitle = strikes + (strikes === 1 ? ' Strike (Caution)' : ' Strikes (Caution)');
+      statusDesc = 'You have active violation strikes on your record. Another unpaid booking will result in extended suspension.';
+    } else {
+      bg = 'linear-gradient(135deg, rgba(0,177,79,0.12), rgba(0,177,79,0.04))';
+      iconClass = 'fas fa-shield-alt';
+      iconColor = 'var(--primary)';
+      statusTitle = 'Good Standing';
+      statusDesc = 'You have a clean record with 0 strikes. You have full access to all vehicle reservations!';
+    }
+
+    var strikePill1 = strikes >= 1 ? (perm || strikes >= 2 ? '#ef4444' : '#f59e0b') : 'var(--border)';
+    var strikePill2 = strikes >= 2 ? '#ef4444' : 'var(--border)';
+    var strikePill3 = strikes >= 3 || perm ? '#ef4444' : 'var(--border)';
+
+    mainCard.style.background = bg;
+    mainCard.style.border = '1.5px solid ' + iconColor;
+    mainCard.innerHTML =
+      '<div style="width:58px;height:58px;border-radius:50%;background:' + iconColor + '20;color:' + iconColor + ';display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:12px;">' +
+        '<i class="' + iconClass + '"></i>' +
+      '</div>' +
+      '<h3 style="margin:0 0 4px;font-size:1.25rem;font-weight:900;color:var(--text-primary);">' + statusTitle + '</h3>' +
+      '<p style="margin:0 0 16px;font-size:0.85rem;color:var(--text-secondary);max-width:440px;margin-left:auto;margin-right:auto;line-height:1.4;">' + statusDesc + '</p>' +
+      '<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding-top:10px;border-top:1px dashed var(--border);">' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<div style="width:12px;height:12px;border-radius:50%;background:' + strikePill1 + ';"></div>' +
+          '<span style="font-size:0.75rem;font-weight:700;color:' + (strikes >= 1 ? iconColor : 'var(--text-muted)') + ';">Strike 1 (24h)</span>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right" style="font-size:0.65rem;color:var(--text-muted);"></i>' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<div style="width:12px;height:12px;border-radius:50%;background:' + strikePill2 + ';"></div>' +
+          '<span style="font-size:0.75rem;font-weight:700;color:' + (strikes >= 2 ? iconColor : 'var(--text-muted)') + ';">Strike 2 (7d)</span>' +
+        '</div>' +
+        '<i class="fas fa-chevron-right" style="font-size:0.65rem;color:var(--text-muted);"></i>' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<div style="width:12px;height:12px;border-radius:50%;background:' + strikePill3 + ';"></div>' +
+          '<span style="font-size:0.75rem;font-weight:700;color:' + (strikes >= 3 || perm ? iconColor : 'var(--text-muted)') + ';">Strike 3 (Ban)</span>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // 2. Render Active Suspension Banner
+  if (suspBanner) {
+    if (perm) {
+      suspBanner.style.display = 'block';
+      if (suspTitle) suspTitle.textContent = 'Account Permanently Restricted';
+      if (suspText) suspText.innerHTML = 'You are blocked from creating new reservations due to repeated payment cancellations. If you believe this was an error, please contact support.';
+    } else if (isSuspended && data.booking_suspension_until) {
+      suspBanner.style.display = 'block';
+      var untilDate = new Date(data.booking_suspension_until);
+      var formattedUntil = untilDate.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      if (suspTitle) suspTitle.textContent = 'Booking Suspended Until ' + formattedUntil;
+      if (suspText) suspText.innerHTML = 'You cannot make new vehicle reservations until this suspension expires. The suspension was applied automatically after an unpaid deposit cancellation.';
+    } else {
+      suspBanner.style.display = 'none';
+    }
+  }
+
+  // 3. Render Commitment Fee Banner
+  if (feeBanner) {
+    feeBanner.style.display = feeReq ? 'block' : 'none';
+  }
+
+  // 4. Auto-Reset Countdown calculation
+  if (autoResetText) {
+    if (strikes > 0 && data.violation_last_at && !perm) {
+      try {
+        var lastAt = new Date(data.violation_last_at);
+        var cleanMs = 30 * 24 * 60 * 60 * 1000;
+        var resetDate = new Date(lastAt.getTime() + cleanMs);
+        var now = new Date();
+        var msLeft = resetDate.getTime() - now.getTime();
+        var daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+        var resetStr = resetDate.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+        autoResetText.innerHTML = 'Your <strong>' + strikes + ' strike' + (strikes === 1 ? '' : 's') + '</strong> will automatically reset to <strong>0</strong> in approximately <strong>' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + '</strong> (' + resetStr + ') if no further payment cancellations occur.';
+      } catch(e) {
+        autoResetText.innerHTML = 'Payment violation strikes automatically reset to <strong>0</strong> after <strong>30 consecutive days</strong> with no payment cancellations.';
+      }
+    } else {
+      autoResetText.innerHTML = 'Payment violation strikes automatically reset to <strong>0</strong> after <strong>30 consecutive days</strong> with no payment cancellations.';
+    }
+  }
+
+  // 5. Render History List
+  if (historyList) {
+    var hist = data && data.history ? data.history : [];
+    if (historyCount) historyCount.textContent = hist.length + (hist.length === 1 ? ' Record' : ' Records');
+    if (!hist.length) {
+      historyList.innerHTML =
+        '<div style="text-align:center;padding:24px 10px;color:var(--text-muted);">' +
+          '<div style="font-size:2rem;margin-bottom:6px;color:var(--primary);"><i class="fas fa-check-circle"></i></div>' +
+          '<div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);margin-bottom:4px;">Clean Record!</div>' +
+          '<div style="font-size:0.8rem;">You have never received a payment violation strike.</div>' +
+        '</div>';
+    } else {
+      historyList.innerHTML = hist.map(function(h) {
+        var dt = h.created_at ? new Date(h.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown date';
+        var isReset = Boolean(h.reset_at);
+        var badgeColor = isReset ? '#10b981' : '#ef4444';
+        var badgeLabel = isReset ? 'Resolved / Reset' : 'Strike #' + h.violation_number;
+        var suspInfo = h.suspension_type ? 'Suspension: ' + h.suspension_type : 'Penalty applied';
+        var bInfo = h.booking_id ? 'Booking #' + h.booking_id : 'Auto-cancelled booking';
+
+        return '<div style="background:rgba(0,0,0,0.02);border:1px solid var(--border);border-radius:12px;padding:12px 14px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+              '<span style="background:' + badgeColor + '20;color:' + badgeColor + ';font-size:0.7rem;font-weight:800;padding:2px 8px;border-radius:8px;">' + badgeLabel + '</span>' +
+              '<span style="font-size:0.8rem;font-weight:700;color:var(--text-primary);">' + bInfo + '</span>' +
+            '</div>' +
+            '<span style="font-size:0.72rem;color:var(--text-muted);">' + dt + '</span>' +
+          '</div>' +
+          '<div style="font-size:0.78rem;color:var(--text-secondary);">' +
+            'Reason: 30-minute reservation deposit payment expired. ' + suspInfo + '.' +
+          '</div>' +
+          (isReset && h.reset_note ? '<div style="margin-top:4px;font-size:0.74rem;color:#10b981;"><i class="fas fa-info-circle"></i> ' + escapeHtml(h.reset_note) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+  }
+}
+
+function loadAccountStanding() {
+  if (!currentUser || !currentUser.id) return;
+  apiCall('/user/violation-status?user_id=' + currentUser.id)
+    .then(function(data) {
+      updateStandingCard(data);
+      renderStandingOverlay(data);
+    })
+    .catch(function(err) {
+      console.warn('[AccountStanding] Error loading status:', err);
+    });
 }
 
 // ============================================================

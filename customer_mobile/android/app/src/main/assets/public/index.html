@@ -2560,7 +2560,7 @@
   <button onclick="showPage('page-profile')" id="nav-profile"><i class="fas fa-user"></i><span>Profile</span></button>
 
 
-  <button onclick="showPage('page-more')" id="nav-more"><i class="fas fa-ellipsis-h"></i><span>More</span></button>
+  <button onclick="showPage('page-more')" id="nav-more" style="position:relative;"><i class="fas fa-ellipsis-h"></i><span>More</span><span id="navMoreViolationDot" style="display:none;position:absolute;top:6px;right:calc(50% - 14px);width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px var(--surface);"></span></button>
   <button id="nav-logout" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="display:none;color:var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button>
 </nav>
 
@@ -3904,6 +3904,18 @@
 
     <div class="more-grid">
 
+      <!-- Account Standing & Violations -->
+      <div class="more-card" id="moreAccountStandingCard" onclick="openAccountStanding()">
+        <div class="more-card-icon" id="standingCardIconWrap" style="background:rgba(0,177,79,0.1);"><i class="fas fa-shield-alt" id="standingCardIcon" style="color:var(--primary);font-size:1.6rem;"></i></div>
+        <div class="more-card-body">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <h4 style="margin:0;">Account Standing</h4>
+            <span id="standingCardBadge" style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(0,177,79,0.15);color:var(--primary);">Good Standing</span>
+          </div>
+          <p id="standingCardSubtext">0 Strikes · Full booking access</p>
+        </div>
+        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
 
       <div class="more-card" onclick="showOverlay('page-livechat')">
 
@@ -4068,6 +4080,102 @@
 
 
 <div id="page-review" class="overlay-page"><div id="reviewContent"></div></div>
+
+<!-- ACCOUNT STANDING & VIOLATIONS OVERLAY -->
+<div id="page-account-standing" class="overlay-page">
+  <div class="overlay-header">
+    <button onclick="closeOverlay('page-account-standing')" class="back-btn"><i class="fas fa-arrow-left"></i></button>
+    <h2 style="font-size:1.15rem;font-weight:800;">Account Standing</h2>
+  </div>
+  <div class="scroll-content" style="padding:16px;max-width:680px;margin:0 auto;padding-bottom:60px;">
+    <!-- Main Standing Status Card -->
+    <div id="standingMainCard" style="border-radius:20px;padding:24px;text-align:center;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,0.05);transition:all 0.3s ease;">
+      <div style="padding:30px;"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Active Suspension Notice (shown only if suspended) -->
+    <div id="standingSuspensionBanner" style="display:none;margin-bottom:20px;border-radius:16px;padding:16px;background:rgba(239,68,68,0.08);border:1.5px solid #ef4444;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+          <i class="fas fa-ban"></i>
+        </div>
+        <div style="flex:1;">
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:#ef4444;" id="standingSuspensionTitle">Booking Suspended</h4>
+          <p style="margin:4px 0 0;font-size:0.82rem;color:var(--text-secondary);line-height:1.4;" id="standingSuspensionText"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commitment Fee Notice (shown only if fee required) -->
+    <div id="standingCommitmentFeeBanner" style="display:none;margin-bottom:20px;border-radius:16px;padding:16px;background:rgba(245,158,11,0.08);border:1.5px solid #f59e0b;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:10px;background:#f59e0b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">
+          <i class="fas fa-receipt"></i>
+        </div>
+        <div style="flex:1;">
+          <h4 style="margin:0;font-size:0.95rem;font-weight:800;color:#f59e0b;">Commitment Fee Required</h4>
+          <p style="margin:4px 0 0;font-size:0.82rem;color:var(--text-secondary);line-height:1.4;">
+            Due to past payment violations, a non-refundable commitment fee of <strong>₱200</strong> will be required on your next reservation attempt.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clean Record / Auto-Reset Policy Banner -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <i class="fas fa-history" style="color:var(--primary);font-size:1.1rem;"></i>
+        <h4 style="margin:0;font-size:0.92rem;font-weight:800;color:var(--text-primary);">30-Day Clean Record Policy</h4>
+      </div>
+      <p style="margin:0;font-size:0.8rem;color:var(--text-secondary);line-height:1.45;" id="standingAutoResetText">
+        Payment violation strikes automatically reset to <strong>0</strong> after <strong>30 consecutive days</strong> with no payment cancellations.
+      </p>
+    </div>
+
+    <!-- Strike Progression Breakdown Card -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;">
+      <h4 style="margin:0 0 12px;font-size:0.92rem;font-weight:800;color:var(--text-primary);"><i class="fas fa-gavel" style="color:var(--primary);margin-right:6px;"></i> Strike &amp; Suspension Rules</h4>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px;border-radius:10px;background:rgba(0,0,0,0.02);">
+          <span style="background:rgba(245,158,11,0.15);color:#f59e0b;font-weight:800;font-size:0.75rem;padding:2px 8px;border-radius:6px;white-space:nowrap;">Strike 1</span>
+          <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.35;">
+            <strong>24-Hour Booking Suspension:</strong> Occurs when the 20% reservation deposit is not paid within 30 minutes.
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px;border-radius:10px;background:rgba(0,0,0,0.02);">
+          <span style="background:rgba(239,68,68,0.15);color:#ef4444;font-weight:800;font-size:0.75rem;padding:2px 8px;border-radius:6px;white-space:nowrap;">Strike 2</span>
+          <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.35;">
+            <strong>7-Day Suspension + ₱200 Fee:</strong> 7 days booking suspension and a commitment fee on the next booking.
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px;border-radius:10px;background:rgba(0,0,0,0.02);">
+          <span style="background:rgba(185,28,28,0.2);color:#b91c1c;font-weight:800;font-size:0.75rem;padding:2px 8px;border-radius:6px;white-space:nowrap;">Strike 3</span>
+          <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.35;">
+            <strong>Permanent Restriction:</strong> Account is permanently blocked from creating vehicle bookings.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Violation History List -->
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h4 style="margin:0;font-size:0.92rem;font-weight:800;color:var(--text-primary);"><i class="fas fa-list-alt" style="color:var(--primary);margin-right:6px;"></i> Violation History</h4>
+        <span id="standingHistoryCount" style="font-size:0.75rem;color:var(--text-muted);"></span>
+      </div>
+      <div id="standingHistoryList" style="display:flex;flex-direction:column;gap:10px;">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Support / Dispute Button -->
+    <div style="text-align:center;margin-top:10px;">
+      <button onclick="closeOverlay('page-account-standing');showOverlay('page-livechat');" class="btn btn-outline" style="border-radius:12px;font-size:0.85rem;padding:10px 20px;cursor:pointer;">
+        <i class="fas fa-headset" style="margin-right:6px;"></i> Inquire or Dispute with Support
+      </button>
+    </div>
+  </div>
+</div>
 
 <div id="page-company-reviews" class="overlay-page">
   <div class="overlay-header">

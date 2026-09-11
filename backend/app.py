@@ -2599,6 +2599,23 @@ def user_violation_status():
         else:
             d['is_suspended'] = False
             d['suspension_type'] = 'none'
+
+        # Fetch violation history
+        cur.execute("""
+            SELECT h.id, h.booking_id, h.violation_number, h.suspension_type,
+                   h.suspension_until, h.created_at, h.reset_at, h.reset_note
+            FROM user_violation_history h
+            WHERE h.user_id = %s
+            ORDER BY h.created_at DESC
+        """, (user_id,))
+        history = []
+        for hrow in (cur.fetchall() or []):
+            hr = dict(hrow)
+            for k in ('suspension_until', 'created_at', 'reset_at'):
+                if hr.get(k): hr[k] = str(hr[k])
+            history.append(hr)
+        d['history'] = history
+
         return jsonify(d), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
