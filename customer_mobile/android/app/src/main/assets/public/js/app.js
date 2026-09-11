@@ -1044,10 +1044,16 @@ function showPage(id) {
     overlays[i].style.display = 'none';
   }
   stopGpsPolling();
-  // Stop active booking countdown when leaving home
-  if (id !== 'page-home' && _activeBookingTimer) {
-    clearInterval(_activeBookingTimer);
-    _activeBookingTimer = null;
+  // Stop active booking & pending pay countdowns when leaving home
+  if (id !== 'page-home') {
+    if (_activeBookingTimer) {
+      clearInterval(_activeBookingTimer);
+      _activeBookingTimer = null;
+    }
+    if (window._homePayTimer) {
+      clearInterval(window._homePayTimer);
+      window._homePayTimer = null;
+    }
   }
 
   // Hide splash
@@ -1220,6 +1226,12 @@ function closeOverlay(id) {
   if (id === 'page-gps-map') stopGpsPolling();
   if (id === 'page-livechat') LiveChat.stopPolling();
   if (id === 'page-payment') stopPaymentPolling();
+  if (id === 'page-booking-detail') {
+    if (window._detailPayCountdownInterval) {
+      clearInterval(window._detailPayCountdownInterval);
+      window._detailPayCountdownInterval = null;
+    }
+  }
 
   // Restore bottom navigation if no active overlay remains
   var anyActive = document.querySelector('.overlay-page.active');
@@ -2446,12 +2458,129 @@ function refreshActiveBookingMonitor() {
   if (!currentUser || !currentUser.id) {
     var monitor = document.getElementById('activeBookingMonitor');
     if (monitor) monitor.style.display = 'none';
+    var payMon = document.getElementById('pendingPaymentMonitor');
+    if (payMon) payMon.style.display = 'none';
+    if (window._homePayTimer) { clearInterval(window._homePayTimer); window._homePayTimer = null; }
     return;
   }
 
   function applyActiveBooking(bookings) {
     if (!Array.isArray(bookings)) return;
     _allBookingsData = bookings;
+
+    // ── 30-Minute Pending Deposit / Payment Monitor ────────────────────────
+    var pendingPayBooking = null;
+    var pendingRemainingMs = 0;
+    for (var pi = 0; pi < bookings.length; pi++) {
+      var pb = bookings[pi];
+      var pst = (pb.status || '').trim();
+      var paySt = (pb.payment_status || '').trim();
+      var isPendingSt = (pst === 'Pending' || pst === 'Pending Payment');
+      var isUnpaidSt = (paySt === 'Unpaid' || paySt === 'Downpayment unpaid' || paySt === 'Pending Payment');
+      if (isPendingSt && isUnpaidSt && pb.created_at) {
+        var cMs = new Date(pb.created_at).getTime();
+        if (!isNaN(cMs)) {
+          var remMs = (cMs + 30 * 60 * 1000) - Date.now();
+          if (remMs > 0) {
+            pendingPayBooking = pb;
+            pendingRemainingMs = remMs;
+            break; // take most recent
+          }
+        }
+      }
+    }
+
+    var payMonitor = document.getElementById('pendingPaymentMonitor');
+    var payCard = document.getElementById('pendingPaymentCard');
+    if (window._homePayTimer) {
+      clearInterval(window._homePayTimer);
+      window._homePayTimer = null;
+    }
+
+    if (pendingPayBooking && payMonitor && payCard) {
+      var pTotal = parseFloat(pendingPayBooking.total_price) || 0;
+      var pDeposit = parseFloat((pTotal * 0.20).toFixed(2));
+      var isCash = (pendingPayBooking.payment_type || '').toLowerCase().indexOf('cash') !== -1;
+      var pNowDue = isCash ? pDeposit : pTotal;
+      var pDueLabel = isCash ? '20% Deposit Due Now' : 'Payment Due Now';
+
+      var pMins = Math.floor(pendingRemainingMs / 60000);
+      var pSecs = Math.floor((pendingRemainingMs % 60000) / 1000);
+      var pDisplay = (pMins < 10 ? '0' : '') + pMins + ':' + (pSecs < 10 ? '0' : '') + pSecs;
+      var pColor = pendingRemainingMs <= 5 * 60 * 1000 ? '#dc2626' : '#d97706';
+
+      payCard.innerHTML =
+        '<div style="padding:16px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:0.68rem;font-weight:800;color:#d97706;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:5px;margin-bottom:4px;">' +
+                '<i class="fas fa-stopwatch"></i> Reservation Deposit Window' +
+              '</div>' +
+              '<div style="font-size:1.05rem;font-weight:900;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                escapeHtml((pendingPayBooking.brand || '') + ' ' + (pendingPayBooking.model || '')) +
+              '</div>' +
+              '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' +
+                'Booking #' + pendingPayBooking.id + ' • ' + formatBookingDate(pendingPayBooking.start_date) +
+              '</div>' +
+            '</div>' +
+            '<div style="background:rgba(245,158,11,0.12);border:1.5px solid rgba(245,158,11,0.3);border-radius:14px;padding:8px 12px;text-align:center;min-width:100px;flex-shrink:0;">' +
+              '<div id="homePayCountdown" style="font-size:1.5rem;font-weight:900;color:' + pColor + ';letter-spacing:-0.5px;font-variant-numeric:tabular-nums;line-height:1.1;">' + pDisplay + '</div>' +
+              '<div id="homePayCountdownLabel" style="font-size:0.6rem;font-weight:700;color:#b45309;text-transform:uppercase;margin-top:2px;">Time Left</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="background:var(--bg-card2);border-radius:12px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">' +
+            '<div>' +
+              '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;">' + pDueLabel + '</div>' +
+              '<div style="font-size:1.15rem;font-weight:900;color:var(--primary);">' + formatPHP(pNowDue) + '</div>' +
+            '</div>' +
+            '<div style="font-size:0.72rem;color:var(--text-secondary);text-align:right;max-width:185px;">' +
+              'Pay within 30 mins to lock vehicle dates & prevent auto-cancellation.' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<button onclick="event.stopPropagation();openPayNowFromDetail(' + pendingPayBooking.id + ')" style="padding:11px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:12px;font-size:0.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(245,158,11,0.25);">' +
+              '<i class="fas fa-credit-card"></i> Pay Now' +
+            '</button>' +
+            '<button onclick="event.stopPropagation();openBookingDetail(' + pendingPayBooking.id + ')" style="padding:11px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+              '<i class="fas fa-file-invoice"></i> Details' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+
+      payMonitor.style.display = 'block';
+
+      var pDeadlineMs = new Date(pendingPayBooking.created_at).getTime() + (30 * 60 * 1000);
+      window._homePayTimer = setInterval(function() {
+        var rem = pDeadlineMs - Date.now();
+        var cdEl = document.getElementById('homePayCountdown');
+        if (rem <= 0) {
+          clearInterval(window._homePayTimer);
+          window._homePayTimer = null;
+          if (cdEl) {
+            cdEl.textContent = '00:00';
+            cdEl.style.color = '#dc2626';
+          }
+          showToast('Payment window expired for Booking #' + pendingPayBooking.id + '.', 'error');
+          setTimeout(function() { refreshActiveBookingMonitor(); }, 2500);
+          return;
+        }
+        var m = Math.floor(rem / 60000);
+        var s = Math.floor((rem % 60000) / 1000);
+        var disp = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        if (cdEl) {
+          cdEl.textContent = disp;
+          if (rem <= 5 * 60 * 1000) {
+            cdEl.style.color = '#dc2626';
+          } else if (rem <= 15 * 60 * 1000) {
+            cdEl.style.color = '#ea580c';
+          } else {
+            cdEl.style.color = '#d97706';
+          }
+        }
+      }, 1000);
+    } else {
+      if (payMonitor) payMonitor.style.display = 'none';
+    }
 
     // Active booking monitor - find booking that is currently active or upcoming
     // Priority 1: Picked Up or Ongoing (in customer's active possession)
@@ -5190,10 +5319,24 @@ function renderBookingsList(data) {
       '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
 
       /* Footer row: payment badge + price */
-      '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-        '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + payColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
-        '<div style="font-weight:800;font-size:1.1rem;color:var(--primary);">' + formatPHP(b.total_price) + '</div>' +
-      '</div>' +
+      (function() {
+        var isPendingDep = (b.status === 'Pending' || b.status === 'Pending Payment') &&
+                           (b.payment_status === 'Unpaid' || b.payment_status === 'Downpayment unpaid' || b.payment_status === 'Pending Payment');
+        var payBadgeExtra = '';
+        if (isPendingDep && b.created_at) {
+          var bC = new Date(b.created_at).getTime();
+          if (!isNaN(bC) && (bC + 30 * 60 * 1000 - Date.now() > 0)) {
+            payBadgeExtra = '<span style="margin-left:8px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="margin-right:3px;"></i>Pay within 30m</span>';
+          }
+        }
+        return '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
+            '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + payColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
+            payBadgeExtra +
+          '</div>' +
+          '<div style="font-weight:800;font-size:1.1rem;color:var(--primary);">' + formatPHP(b.total_price) + '</div>' +
+        '</div>';
+      }()) +
 
       '</div></div>';
   }).join('');
@@ -5255,9 +5398,57 @@ function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
   var canReview = b.status === 'Completed';
   var canPayBalance = b.payment_status === 'Partially Paid';
-  var canPayNow = (b.payment_status === 'Unpaid' || b.payment_status === 'Pending Payment') && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
+  var canPayNow = (b.payment_status === 'Unpaid' || b.payment_status === 'Pending Payment' || b.payment_status === 'Downpayment unpaid') && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
+
+  // 30-Minute Payment Deadline Card for Pending/Unpaid Bookings
+  var isPendingPay = (b.status === 'Pending' || b.status === 'Pending Payment') &&
+                     (b.payment_status === 'Unpaid' || b.payment_status === 'Downpayment unpaid' || b.payment_status === 'Pending Payment');
+  var payCountdownHtml = '';
+  var bDeadlineMs = null;
+  if (isPendingPay && b.created_at) {
+    var bCreatedMs = new Date(b.created_at).getTime();
+    if (!isNaN(bCreatedMs)) {
+      bDeadlineMs = bCreatedMs + (30 * 60 * 1000);
+      var bRemainingMs = bDeadlineMs - Date.now();
+      if (bRemainingMs > 0) {
+        var bMins = Math.floor(bRemainingMs / 60000);
+        var bSecs = Math.floor((bRemainingMs % 60000) / 1000);
+        var initialDisp = (bMins < 10 ? '0' : '') + bMins + ':' + (bSecs < 10 ? '0' : '') + bSecs;
+        var initialColor = bRemainingMs <= 5 * 60 * 1000 ? '#dc2626' : '#d97706';
+
+        payCountdownHtml =
+          '<div id="detailPayCountdownCard" style="background:linear-gradient(135deg, rgba(245,158,11,0.09), rgba(217,119,6,0.13));border:1.5px solid rgba(245,158,11,0.4);border-radius:16px;padding:16px;margin-bottom:20px;box-shadow:0 4px 15px rgba(245,158,11,0.08);">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+              '<div style="display:flex;align-items:center;gap:10px;">' +
+                '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#f59e0b;color:#fff;font-size:1rem;box-shadow:0 2px 8px rgba(245,158,11,0.3);">' +
+                  '<i class="fas fa-stopwatch"></i>' +
+                '</span>' +
+                '<div>' +
+                  '<div style="font-size:0.75rem;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:0.5px;">Reservation Deposit Window</div>' +
+                  '<div style="font-size:0.75rem;color:var(--text-secondary);">30 minutes to confirm your reservation</div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="text-align:right;">' +
+                '<div id="detailPayCountdownDisplay" style="font-size:1.6rem;font-weight:900;color:' + initialColor + ';letter-spacing:-0.5px;font-variant-numeric:tabular-nums;line-height:1.1;">' + initialDisp + '</div>' +
+                '<div id="detailPayCountdownLabel" style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Time Remaining</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="background:var(--bg-card);border-radius:10px;padding:10px 12px;font-size:0.75rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;border:1px solid rgba(245,158,11,0.2);">' +
+              '<i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:0.9rem;flex-shrink:0;"></i>' +
+              '<span>Please settle your reservation deposit online via PayMongo before the timer expires. Unpaid reservations are auto-cancelled and record a strike.</span>' +
+            '</div>' +
+          '</div>';
+      } else {
+        payCountdownHtml =
+          '<div style="background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.3);border-radius:16px;padding:14px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">' +
+            '<i class="fas fa-clock" style="color:#ef4444;font-size:1.2rem;flex-shrink:0;"></i>' +
+            '<div style="font-size:0.8rem;color:var(--danger);font-weight:600;">The 30-minute payment window for this booking has expired. The reservation is being cancelled.</div>' +
+          '</div>';
+      }
+    }
+  }
 
   // Status colors
   var statusColors = {
@@ -5306,8 +5497,11 @@ function renderBookingDetail(b) {
   // Primary action button - customer-relevant only
   var primaryAction = '';
   var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
+  var isCashType = (b.payment_type || '').toLowerCase().indexOf('cash') !== -1;
+  var payNowAmt = isCashType ? (parseFloat(b.total_price) || 0) * 0.20 : (parseFloat(b.total_price) || 0);
+  var payNowLabel = isCashType ? 'Pay 20% Deposit (' + formatPHP(payNowAmt) + ')' : 'Pay Now (' + formatPHP(payNowAmt) + ')';
   if (canPayNow) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Now (' + formatPHP(b.total_price) + ')</button>';
+    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 14px rgba(245,158,11,0.35);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> ' + payNowLabel + '</button>';
   }
   if (canPayBalance) {
     primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
@@ -5344,6 +5538,9 @@ function renderBookingDetail(b) {
 
       // Title
       '<h2 style="font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-bottom:20px;">Booking Details #' + b.id + '</h2>' +
+
+      // 30-Minute Payment Deadline Card
+      payCountdownHtml +
 
       // Info grid: customer / vehicle / rental period
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
@@ -5501,6 +5698,44 @@ function renderBookingDetail(b) {
       secondaryActions +
 
     '</div>';
+
+  // Start or clear 30-minute payment countdown interval for Booking Detail
+  if (window._detailPayCountdownInterval) {
+    clearInterval(window._detailPayCountdownInterval);
+    window._detailPayCountdownInterval = null;
+  }
+  if (bDeadlineMs && (bDeadlineMs - Date.now() > 0)) {
+    window._detailPayCountdownInterval = setInterval(function() {
+      var rem = bDeadlineMs - Date.now();
+      var dispEl = document.getElementById('detailPayCountdownDisplay');
+      if (rem <= 0) {
+        clearInterval(window._detailPayCountdownInterval);
+        window._detailPayCountdownInterval = null;
+        if (dispEl) {
+          dispEl.textContent = '00:00';
+          dispEl.style.color = '#dc2626';
+        }
+        showToast('Payment window expired for Booking #' + b.id + '.', 'error');
+        setTimeout(function() {
+          if (typeof openBookingDetail === 'function') openBookingDetail(b.id);
+        }, 2000);
+        return;
+      }
+      var m = Math.floor(rem / 60000);
+      var s = Math.floor((rem % 60000) / 1000);
+      var disp = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      if (dispEl) {
+        dispEl.textContent = disp;
+        if (rem <= 5 * 60 * 1000) {
+          dispEl.style.color = '#dc2626';
+        } else if (rem <= 15 * 60 * 1000) {
+          dispEl.style.color = '#ea580c';
+        } else {
+          dispEl.style.color = '#d97706';
+        }
+      }
+    }, 1000);
+  }
 
   // Load penalties asynchronously
   setTimeout(function() { _loadWebPenalties(b.id); }, 60);

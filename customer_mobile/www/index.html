@@ -2768,9 +2768,20 @@
   <div style="padding:0 16px;">
 
 
+    <!-- Pending Payment / 30-Min Deposit Countdown Monitor -->
+    <div id="pendingPaymentMonitor" style="display:none;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 style="font-size:1rem;font-weight:900;color:#d97706;display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-clock"></i> Pending Deposit Payment
+        </h3>
+        <span style="font-size:0.65rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;">30-MIN LIMIT</span>
+      </div>
+      <div id="pendingPaymentCard" class="active-rental-card" style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,0.4);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(245,158,11,0.12);">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
     <!-- Active Booking Monitor -->
-
-
     <div id="activeBookingMonitor" style="display:none;margin-bottom:20px;">
 
 
