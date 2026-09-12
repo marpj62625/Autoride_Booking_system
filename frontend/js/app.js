@@ -4355,8 +4355,6 @@ function submitBooking() {
     returnLocation = pickupLocation; returnProvince = pickupProvince; returnMunicipality = pickupMunicipality; returnBarangay = pickupBarangay;
   }
 
-  var splitEmail = document.getElementById('bfSplitEmail') ? document.getElementById('bfSplitEmail').value.trim() : '';
-
   var payload = {
     user_id: currentUser.id,
     vehicle_id: bookingFormVehicle.id,
@@ -4379,8 +4377,7 @@ function submitBooking() {
     points_redeemed: pts,
     points_earned: result.pointsEarned,
     service_type: serviceType,
-    delivery_fee: delFee,
-    split_with_email: splitEmail || null
+    delivery_fee: delFee
   };
 
   var submitBtn = document.querySelector('button[onclick="submitBooking()"]');
@@ -4669,13 +4666,6 @@ function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
     '<i class="fas fa-credit-card"></i> Pay 20% Deposit via Maya / Card (' + formatPHP(nowDue) + ')</button>' +
     '</div>' +
 
-    // Split payment (new bookings only)
-    (!isExistingBooking ? 
-    '<div class="card" style="border:1.5px dashed var(--primary);">' +
-    '<button class="btn-outline" onclick="showOverlay(\'page-split-payment\')" style="width:100%;">' +
-    '<i class="fas fa-users"></i> Split Payment with a Friend</button>' +
-    '</div>' : '') +
-
     '<span class="field-error" id="payErrOnline" style="display:none;margin-bottom:12px;text-align:center;"></span>' +
     '</div>';
 
@@ -4863,7 +4853,8 @@ function submitPayment(bookingId, amount) {
       client: 'web',
       description: 'Autoride Booking #' + bId,
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
-      customer_email: (currentUser && currentUser.email) || ''
+      customer_email: (currentUser && currentUser.email) || '',
+      customer_phone: (currentUser && currentUser.phone) || ''
     })
   })
     .then(function(data) {

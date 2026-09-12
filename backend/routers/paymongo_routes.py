@@ -181,6 +181,24 @@ def create_payment():
         success_url = f'{APP_BASE_URL}/api/paymongo/success?booking_id={booking_id}'
         cancel_url = f'{APP_BASE_URL}/api/paymongo/cancel?booking_id={booking_id}'
 
+    # Auto-populate customer billing details from database if not passed (crucial for 3DS2 card authorization)
+    if not (customer_name and customer_email) and booking_id:
+        try:
+            cur = get_cursor()
+            cur.execute("""
+                SELECT u.full_name, u.email, u.phone
+                FROM bookings b
+                LEFT JOIN users u ON u.id = b.user_id
+                WHERE b.id = %s
+            """, (booking_id,))
+            urow = cur.fetchone()
+            if urow:
+                if not customer_name: customer_name = urow.get('full_name') or ''
+                if not customer_email: customer_email = urow.get('email') or ''
+                if not customer_phone: customer_phone = urow.get('phone') or ''
+        except Exception as _bke:
+            print(f"[PayMongo] Could not query user billing info: {_bke}")
+
     # Billing details if provided
     billing = {}
     if customer_name and customer_name.strip():
@@ -190,14 +208,14 @@ def create_payment():
     if customer_phone and customer_phone.strip():
         billing['phone'] = customer_phone.strip()
 
-    # Map method names for Checkout Sessions (supports native auto-redirect)
+    # Map method names for Checkout Sessions (supports native auto-redirect and card fallback)
     cs_method_map = {
         'gcash': ['gcash', 'qrph'],
         'maya': ['paymaya', 'qrph'],
         'paymaya': ['paymaya', 'qrph'],
-        'card': ['card'],
-        'credit_card': ['card'],
-        'debit_card': ['card'],
+        'card': ['card', 'paymaya'],
+        'credit_card': ['card', 'paymaya'],
+        'debit_card': ['card', 'paymaya'],
     }
     cs_pm_types = cs_method_map.get(method.lower(), [pm_type, 'qrph'])
 
@@ -335,6 +353,14 @@ def payment_success():
                 headers=get_auth_header(),
                 timeout=10
             )
+            if res.status_code == 404:
+                cfg_temp = get_paymongo_config()
+                alt_k = cfg_temp.get('live_secret_key') if cfg_temp.get('mode') == 'test' else cfg_temp.get('test_secret_key')
+                if alt_k:
+                    alt_auth = {'Authorization': f'Basic {base64.b64encode(f"{alt_k}:".encode()).decode()}', 'Content-Type': 'application/json'}
+                    alt_res = requests.get(endpoint, headers=alt_auth, timeout=10)
+                    if alt_res.status_code == 200:
+                        res = alt_res
             if res.status_code == 200:
                 link = res.json()['data']
                 link_attrs = link['attributes']
@@ -584,6 +610,13 @@ def check_payment_status(booking_id):
                     headers=get_auth_header(),
                     timeout=10
                 )
+                if res.status_code == 404:
+                    alt_k = cfg.get('live_secret_key') if cfg.get('mode') == 'test' else cfg.get('test_secret_key')
+                    if alt_k:
+                        alt_auth = {'Authorization': f'Basic {base64.b64encode(f"{alt_k}:".encode()).decode()}', 'Content-Type': 'application/json'}
+                        alt_res = requests.get(endpoint, headers=alt_auth, timeout=10)
+                        if alt_res.status_code == 200:
+                            res = alt_res
                 debug_info['paymongo_http'] = res.status_code
                 if res.status_code == 200:
                     link_data = res.json()['data']

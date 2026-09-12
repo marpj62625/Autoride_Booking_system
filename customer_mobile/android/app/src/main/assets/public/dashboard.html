@@ -145,11 +145,7 @@
                 <div id="upcomingBookingsList"></div>
             </section>
 
-            <!-- Pending Split Requests -->
-            <section class="dashboard-section" id="splitBillSection">
-                <h3>Incoming Split Requests</h3>
-                <div id="splitBillList"></div>
-            </section>
+
 
             <!-- Booking History -->
             <section class="dashboard-section">
@@ -317,10 +313,6 @@
                     console.log('Booking change detected:', payload);
                     fetchDashboard(); // Reload UI
                 })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'split_payments' }, payload => {
-                    console.log('Split payment change detected:', payload);
-                    fetchDashboard(); // Reload UI
-                })
                 .subscribe();
         }
 
@@ -336,23 +328,6 @@
                     console.log("DEBUG: Bookings received:", bookings);
                 } else {
                     console.error("DEBUG: Failed to fetch bookings. Status:", bookingsRes.status);
-                }
-                
-                let userEmail = "";
-                const profRes = await fetch(`${API_BASE}/profile?user_id=${userId}`);
-                if (profRes.ok) {
-                    const profData = await profRes.json();
-                    userEmail = profData.email;
-                    console.log("DEBUG: Profile loaded for email:", userEmail);
-                }
-
-                if (userEmail) {
-                    const splitRes = await fetch(`${API_BASE}/split-bills?email=${userEmail}`);
-                    if (splitRes.ok) {
-                         const splits = await splitRes.json();
-                         console.log("DEBUG: Split bills received:", splits);
-                         renderSplitBills(splits);
-                    }
                 }
 
                 renderBookings(bookings);
@@ -486,43 +461,6 @@
             if (historyCount === 0) historyList.innerHTML = '<div class="empty-state">No past booking history found.</div>';
         }
         
-        function renderSplitBills(splits) {
-            const splitList = document.getElementById('splitBillList');
-            const splitSection = document.getElementById('splitBillSection');
-            
-            if (!splits || splits.length === 0) {
-                splitSection.style.display = 'none'; // Hide if no splits
-                return;
-            }
-            
-            splitSection.style.display = 'block';
-            splitList.innerHTML = '';
-            
-            splits.forEach(sp => {
-                const isPaid = sp.status === 'Paid';
-                const itemHTML = `
-                    <div class="booking-item" style="border-left: 4px solid var(--primary-color);">
-                        <div class="booking-details">
-                            <h4>Split Request from ${sp.initiator_name}</h4>
-                            <p><strong>Vehicle:</strong> ${sp.brand} ${sp.model}</p>
-                            <p><strong>Dates:</strong> ${new Date(sp.start_date).toLocaleDateString()} to ${new Date(sp.end_date).toLocaleDateString()}</p>
-                        </div>
-                        <div class="booking-meta">
-                            <span class="price">₱${parseFloat(sp.amount).toFixed(2)}</span>
-                            <span class="status-badge" style="background: ${isPaid ? '#dcfce7' : '#fef3c7'}; color: ${isPaid ? '#16a34a' : '#d97706'}">${sp.status}</span>
-                            
-                            ${!isPaid ? `
-                            <div style="margin-top: 0.8rem; display: flex; flex-direction: column; align-items: flex-end;">
-                                <button onclick="paySplitBill(${sp.split_id}, ${sp.amount})" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Pay Your Share</button>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                splitList.insertAdjacentHTML('beforeend', itemHTML);
-            });
-        }
-        
         function resumeBookingPayment(b) {
             // Prepare for Checkout
             const resumeData = {
@@ -561,10 +499,6 @@
             };
             sessionStorage.setItem('pending_booking', JSON.stringify(resumeData));
             window.location.href = 'checkout.html';
-        }
-
-        function paySplitBill(splitId, amount) {
-            alert('Split billing payments should be completed through the shared link or by contacting support. This feature is being unified.');
         }
 
         function setPaymentData(id, amount) {

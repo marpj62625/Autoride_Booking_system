@@ -79,7 +79,6 @@
     <script>
         const bookingId = localStorage.getItem('current_booking_id');
         const amount = localStorage.getItem('current_amount');
-        const splitId = localStorage.getItem('paying_split_id');
 
         if (!bookingId || !amount) {
             alert('No active booking found. Returning to vehicles.');
@@ -87,10 +86,6 @@
         }
 
         document.getElementById('amountDisplay').textContent = `₱${parseFloat(amount).toFixed(2)}`;
-        
-        if (splitId) {
-            document.querySelector('h2').textContent = "Pay Your Split Share";
-        }
 
         // Toggle file upload based on method
         document.getElementById('method').addEventListener('change', (e) => {
@@ -128,57 +123,36 @@
             btn.textContent = 'Processing...';
 
             try {
-                if (splitId) {
-                    // Split Bill Payment Logic
-                    const response = await fetch('/api/split-bill/pay', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ split_id: splitId })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        msg.innerHTML = '<span class="success">Split payment recorded! Redirecting...</span>';
-                        localStorage.removeItem('paying_split_id');
-                        setTimeout(() => {
-                            window.location.href = 'dashboard.html'; 
-                        }, 1500);
+                // Booking Payment Logic
+                const formData = new FormData();
+                formData.append('booking_id', bookingId);
+                formData.append('amount', amount);
+                formData.append('method', document.getElementById('method').value);
+                formData.append('reference_number', document.getElementById('referenceNumber').value);
+                
+                const fileInput = document.getElementById('paymentProof');
+                if (fileInput.files.length > 0) {
+                    formData.append('payment_proof', fileInput.files[0]);
+                }
+
+                const response = await fetch('/api/payment', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.receipt) {
+                        showReceipt(data.receipt);
                     } else {
-                        throw new Error(data.error || 'Failed to process split payment.');
+                        msg.innerHTML = '<span class="success">Payment recorded! Redirecting...</span>';
+                        setTimeout(() => {
+                            window.location.href = 'booking-confirmation.html';
+                        }, 1500);
                     }
                 } else {
-                    // Normal Booking Payment Logic
-                    const formData = new FormData();
-                    formData.append('booking_id', bookingId);
-                    formData.append('amount', amount);
-                    formData.append('method', document.getElementById('method').value);
-                    formData.append('reference_number', document.getElementById('referenceNumber').value);
-                    
-                    const fileInput = document.getElementById('paymentProof');
-                    if (fileInput.files.length > 0) {
-                        formData.append('payment_proof', fileInput.files[0]);
-                    }
-
-                    const response = await fetch('/api/payment', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        if (data.receipt) {
-                            showReceipt(data.receipt);
-                        } else {
-                            msg.innerHTML = '<span class="success">Payment recorded! Redirecting...</span>';
-                            setTimeout(() => {
-                                window.location.href = 'booking-confirmation.html';
-                            }, 1500);
-                        }
-                    } else {
-                        throw new Error(data.error || 'Failed to process payment.');
-                    }
+                    throw new Error(data.error || 'Failed to process payment.');
                 }
             } catch (err) {
                 msg.innerHTML = `<span class="error">${err.message || 'Server error.'}</span>`;
