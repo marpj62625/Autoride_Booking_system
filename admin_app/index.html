@@ -6562,7 +6562,7 @@
 
 
     <!-- BLACKOUT DATES MODAL -->
-    <div id="blackoutsModal" class="premium-modal" style="background: rgba(15,23,42,0.9); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;">
+    <div id="blackoutsModal" class="premium-modal" style="background: rgba(15,23,42,0.9); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;" onclick="if(event.target === this) toggleBlackoutsModal(false)">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 25px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
             <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,0,0,0.05);">
                 <button onclick="toggleBlackoutsModal(false)" style="position: absolute; right: 0; background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 8px 10px; border-radius: 8px; cursor: pointer;"><i class="fas fa-times"></i></button>
@@ -6604,7 +6604,7 @@
     </div>
 
     <!-- NEWSLETTER MANAGEMENT MODAL -->
-    <div id="newsletterModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; backdrop-filter: blur(4px);">
+    <div id="newsletterModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; backdrop-filter: blur(4px);" onclick="if(event.target === this) toggleNewsletterModal(false)">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); width: 92%; max-width: 680px; max-height: 90vh; overflow-y: auto;">
             <!-- Modal Header -->
             <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
@@ -6745,7 +6745,7 @@
     </div>
 
         <!-- DATABASE ARCHIVE & MAINTENANCE MODAL -->
-    <div id="archiveMaintenanceModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; backdrop-filter: blur(4px);">
+    <div id="archiveMaintenanceModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; backdrop-filter: blur(4px);" onclick="if(event.target === this) toggleArchiveMaintenanceModal(false)">
         <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); width: 94%; max-width: 760px; max-height: 90vh; overflow-y: auto;">
             <!-- Modal Header -->
             <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
@@ -6920,7 +6920,7 @@
 
 
 
-    <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);">
+    <div id="bookingDetailsModal" class="premium-modal" style="background: rgba(15,23,42,0.9);" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }">
 
 
 
@@ -6976,7 +6976,7 @@
 
 
 
-    <div id="licensePreviewModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);">
+    <div id="licensePreviewModal" class="premium-modal" style="display: none; align-items: center; justify-content: center; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9);" onclick="if(event.target === this) this.style.display='none'">
 
 
 
@@ -7041,7 +7041,7 @@
 
 
 
-    <div id="receiptPreviewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10001; align-items:flex-start; justify-content:center; overflow-y:auto;">
+    <div id="receiptPreviewModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.92); z-index:10001; align-items:flex-start; justify-content:center; overflow-y:auto;" onclick="if(event.target === this) this.style.display='none'">
 
 
 
@@ -8546,7 +8546,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-    <div id="staffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
+    <div id="staffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 2000; padding: 20px; align-items: center; justify-content: center;" onclick="if(event.target === this) Staff.closeModal()">
         <div style="background: var(--surface-solid); border-radius: 20px; padding: 30px; border: 1px solid var(--border); width: 100%; max-width: 420px; box-shadow: var(--shadow-modal);">
             <h2 id="staffFormTitle" style="margin-bottom: 24px; font-size: 1.25rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
                 <i class="fas fa-user-shield" style="color: var(--primary);"></i> Add New Staff
@@ -8601,7 +8601,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-    <div id="vehicleModal" style="display:none;position:fixed;inset:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);z-index:2000;overflow-y:auto;padding:20px;box-sizing:border-box;-webkit-overflow-scrolling:touch;align-items:center;justify-content:center;">
+    <div id="vehicleModal" style="display:none;position:fixed;inset:0;width:100%;height:100%;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);z-index:2000;overflow-y:auto;padding:20px;box-sizing:border-box;-webkit-overflow-scrolling:touch;align-items:center;justify-content:center;" onclick="if(event.target === this) Vehicles.closeModal()">
 
 
 
@@ -9433,7 +9433,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-    <div id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;">
+    <div id="changePasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; padding: 20px; align-items: center; justify-content: center;" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }">
 
 
 
@@ -9510,7 +9510,7 @@ input:checked + .ctrl-slider:before {
 
 
         <!-- INSPECTION MODAL -->
-    <div id="inspectionModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 8000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div id="inspectionModal" class="modal" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 8000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
         <div class="modal-content" style="max-width: 540px; width: 100%; margin: auto; position: relative; padding: 0; overflow: hidden; border-radius: 24px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px -10px rgba(0,0,0,0.45); background: #ffffff;">
 
 
@@ -9902,7 +9902,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-<div id="umModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); overflow-y:auto; padding:20px; box-sizing:border-box;">
+<div id="umModal" style="display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); overflow-y:auto; padding:20px; box-sizing:border-box;" onclick="if(event.target === this) UserMgmt.closeModal()">
 
 
 
@@ -9948,7 +9948,7 @@ input:checked + .ctrl-slider:before {
 
 <!-- Custom Push Notification Modal -->
 
-<div id="pushNotifModal" style="display:none; position:fixed; inset:0; z-index:3100; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); overflow-y:auto;">
+<div id="pushNotifModal" style="display:none; position:fixed; inset:0; z-index:3100; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); overflow-y:auto;" onclick="if(event.target === this) this.style.display='none'">
 
     <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;">
 
@@ -10861,12 +10861,29 @@ input:checked + .ctrl-slider:before {
             }
         }
 
-        // 2. All Full-Screen Modals with backdrop (Clicking outside modal content)
+        // 2. All Full-Screen Modals with backdrop (Clicking outside modal card/content)
+        const modalBackdropIds = [
+            'inspectionModal', 'bookingDetailsModal', 'vehicleModal', 'umModal',
+            'licensePreviewModal', 'receiptPreviewModal', 'changePasswordModal',
+            'blackoutsModal', 'exitConfirmModal', 'pushNotifModal', 'superAdminProfileModal',
+            'staffModal', 'archiveMaintenanceModal', 'vehicleDetailModal',
+            'staffPermissionsSuperModal', 'recordExpenseModal', 'adminChatControlsModal',
+            'adminFaqFormModal', 'chartPopupModal', 'newsletterModal', 'systemConfigModal',
+            'addonsConfigModal', 'locationsConfigModal', 'smtpConfigModal', 'gpsConfigModal',
+            'gpsTripHistoryModal', 'staffRequestPermModal'
+        ];
+        if (e.target && modalBackdropIds.includes(e.target.id)) {
+            e.target.style.display = 'none';
+            if (typeof modalClose === 'function') modalClose();
+            return;
+        }
+
         const modalBackdrops = document.querySelectorAll('.premium-modal, .modal, [id$="Modal"], [id$="Overlay"]');
         modalBackdrops.forEach(modal => {
             if (modal.id === 'adminLoginOverlay' || modal.id === 'adminLoadingOverlay') return;
             if (modal.style.display !== 'none' && modal.style.display !== '' && e.target === modal) {
                 modal.style.display = 'none';
+                if (typeof modalClose === 'function') modalClose();
             }
         });
     });
@@ -28584,7 +28601,10 @@ function toggleNewsletterModal(show = true) {
                         msg += ` Refueling fee of ₱${parseFloat(data.fuel_charge).toLocaleString()} added to booking.`;
                     }
                     showNotification(msg, 'success');
-                    document.getElementById('inspectionModal').style.display = 'none'; modalClose();
+                    document.getElementById('inspectionModal').style.display = 'none';
+                    const bdm = document.getElementById('bookingDetailsModal');
+                    if (bdm) bdm.style.display = 'none';
+                    modalClose();
                     Bookings.refresh();
                     if (typeof Vehicles !== 'undefined' && Vehicles.refresh) Vehicles.refresh();
                 } else {
@@ -35011,7 +35031,7 @@ function toggleNewsletterModal(show = true) {
 
 
 <!-- Vehicle Detail Modal -->
-<div id="vehicleDetailModal" class="premium-modal" style="display:none;background:rgba(15,23,42,0.85);align-items:center;justify-content:center;padding:20px;">
+<div id="vehicleDetailModal" class="premium-modal" style="display:none;background:rgba(15,23,42,0.85);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target === this) this.style.display='none'">
   <div class="modal-content" style="background:var(--surface,#fff);color:var(--text-main,#0f1117);padding:0;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.3);max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
     <div style="position:relative;display:flex;justify-content:center;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <h2 id="vdModalTitle" style="font-size:1.05rem;font-weight:700;margin:0;">Vehicle Details</h2>

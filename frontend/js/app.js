@@ -6511,6 +6511,7 @@ function _showCancelPolicyModal(fee, refund, bookingId, reason) {
     '</div>';
 
   document.body.appendChild(modal);
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
   if (typeof anime !== 'undefined') {
     var dialog = modal.firstElementChild;
     if (dialog) anime({ targets: dialog, scale: [0.92, 1], opacity: [0, 1], duration: 280, easing: 'easeOutBack' });
@@ -7093,6 +7094,12 @@ function submitInspection(bookingId, type) {
     .then(function() {
       showToast('Inspection submitted successfully!', 'success');
       closeOverlay('page-inspection');
+      closeOverlay('page-booking-detail');
+      if (typeof loadBookings === 'function') loadBookings();
+      if (typeof loadMyBookings === 'function') loadMyBookings();
+      if (type === 'return' && typeof checkUnreviewedBookings === 'function') {
+        setTimeout(function() { checkUnreviewedBookings(); }, 350);
+      }
     })
     .catch(function(err) { if (inspErrEl) inspErrEl.textContent = err.message; })
     .finally(function() { showLoading(false); });
@@ -8704,6 +8711,7 @@ function showRequirementGuardModal() {
     '<button class="btn-secondary" style="width:100%;margin-top:8px;padding:10px;" onclick="document.getElementById(\'requirementGuardModal\').remove()">Cancel</button>' +
     '</div>';
   document.body.appendChild(modal);
+  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
 }
 
 function doUpdateProfile() {
