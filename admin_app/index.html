@@ -56,12 +56,17 @@
                 }
             } catch(e) {}
         })();
-        if ('serviceWorker' in navigator) {
+        if ('serviceWorker' in navigator && !window.Capacitor) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js', { scope: '/admin_app/' })
+                const swScope = window.location.pathname.includes('/admin_app/') ? '/admin_app/' : './';
+                navigator.serviceWorker.register('sw.js', { scope: swScope })
                     .then(reg => console.log('[Admin PWA] Service Worker registered:', reg.scope))
                     .catch(err => console.error('[Admin PWA] Service Worker registration failed:', err));
             });
+        } else if ('serviceWorker' in navigator && window.Capacitor) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                for (let r of regs) r.unregister();
+            }).catch(() => {});
         }
     </script>
 
@@ -8369,7 +8374,7 @@ input:checked + .ctrl-slider:before {
         </div>
 
         <div class="chart-card" style="padding:0;overflow:hidden;height:calc(100vh - 210px);min-height:460px;position:relative;margin-bottom:0;">
-            <iframe id="blynkMapFrame" src="https://car-rental-inlaguna.vercel.app/" style="width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
+            <iframe id="blynkMapFrame" src="about:blank" data-src="https://car-rental-inlaguna.vercel.app/" loading="lazy" style="width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
             <div style="position:absolute;top:14px;right:14px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:10px;padding:7px 14px;display:flex;align-items:center;gap:8px;">
                 <span style="width:8px;height:8px;background:#00B14F;border-radius:50%;animation:pulse 1.5s infinite;display:inline-block;"></span>
                 <span style="font-size:0.72rem;font-weight:700;color:white;">Live Tracker</span>
@@ -20771,6 +20776,10 @@ function toggleNewsletterModal(show = true) {
         _lastSavedCoords: null,
 
         async init() {
+            const frame = document.getElementById('blynkMapFrame');
+            if (frame && (!frame.src || frame.src === 'about:blank' || frame.src.endsWith('about:blank'))) {
+                frame.src = frame.getAttribute('data-src') || 'https://car-rental-inlaguna.vercel.app/';
+            }
             await this.loadFleetVehicles();
             await this.loadLastKnownLocationFromDB();
         },

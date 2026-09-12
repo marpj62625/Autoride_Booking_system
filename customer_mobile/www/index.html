@@ -49,12 +49,16 @@
                 return false;
             };
         })();
-        if ('serviceWorker' in navigator) {
+        if ('serviceWorker' in navigator && !window.Capacitor) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(reg => console.log('[PWA] Service Worker registered successfully:', reg.scope))
                     .catch(err => console.error('[PWA] Service Worker registration failed:', err));
             });
+        } else if ('serviceWorker' in navigator && window.Capacitor) {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                for (let r of regs) r.unregister();
+            }).catch(() => {});
         }
     </script>
 
