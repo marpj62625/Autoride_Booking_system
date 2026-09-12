@@ -606,10 +606,23 @@ function subscribeToNotifications(userId) {
                     if (type === 'booking_completed' && typeof checkUnreviewedBookings === 'function') {
                         setTimeout(function() { checkUnreviewedBookings(); }, 1500);
                     }
+                } else if (type === 'return_reminder_3d') {
+                    _showNotifPopup(title, msg, '#3b82f6', 'fa-calendar-day');
+                } else if (type === 'return_reminder_24h') {
+                    _showNotifPopup(title, msg, '#f59e0b', 'fa-business-time');
+                } else if (type === 'return_warning_5h') {
+                    _showNotifPopup(title, msg, '#f97316', 'fa-exclamation-triangle');
+                } else if (type === 'return_warning_1h') {
+                    _showNotifPopup(title, msg, '#ef4444', 'fa-hourglass-half');
+                } else if (type === 'return_warning_30m') {
+                    _showNotifPopup(title, msg, '#dc2626', 'fa-bell');
+                } else if (type === 'return_overdue') {
+                    _showNotifPopup(title, msg, '#991b1b', 'fa-ban');
                 }
 
                 // Any booking related event triggers live data refresh
                 var isBookingEvent = (
+                    type.indexOf('return_') === 0 ||
                     type === 'booking_approved' || type === 'booking_confirmed' ||
                     type === 'booking_cancelled' || type === 'booking_cancelled_by_admin' ||
                     type === 'booking_completed' || type === 'payment_confirmed' ||
@@ -5429,6 +5442,41 @@ function renderBookingsList(data) {
         '</div>';
       }()) +
 
+      /* Approaching Return Status Badge on Booking Card */
+      (function() {
+        var isOngoing = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
+        if (!isOngoing || !b.end_date) return '';
+        try {
+          var eD = (b.end_date || '').split('T')[0];
+          var eT = b.end_time || '18:00';
+          if (eT.length === 5) eT += ':00';
+          var rMs = new Date(eD + 'T' + eT).getTime();
+          if (isNaN(rMs)) return '';
+          var rDiff = rMs - Date.now();
+          var rH = rDiff / (1000 * 3600);
+          var rM = Math.floor(rDiff / 60000);
+          var sD = (b.start_date || '').split('T')[0];
+          var sT = b.start_time || '06:00';
+          if (sT.length === 5) sT += ':00';
+          var durDays = (rMs - new Date(sD + 'T' + sT).getTime()) / (1000 * 86400);
+
+          if (rDiff <= 0) {
+            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1.5px solid #ef4444;display:flex;align-items:center;gap:6px;"><i class="fas fa-ban"></i> OVERDUE RETURN — Late penalties applying!</div>';
+          } else if (rH <= 0.5) {
+            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(220,38,38,0.15);color:#dc2626;border:1.5px solid #dc2626;display:flex;align-items:center;gap:6px;"><i class="fas fa-bell"></i> FINAL 30m WARNING: Due in ' + Math.max(1, rM) + 'm — Penalty applies!</div>';
+          } else if (rH <= 1.0) {
+            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.12);color:#dc2626;border:1px solid #ef4444;display:flex;align-items:center;gap:6px;"><i class="fas fa-hourglass-half"></i> 1 HOUR LEFT: Due in ' + Math.max(1, rM) + 'm — Penalty applies!</div>';
+          } else if (rH <= 5.0) {
+            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(249,115,22,0.12);color:#ea580c;border:1px solid #f97316;display:flex;align-items:center;gap:6px;"><i class="fas fa-exclamation-triangle"></i> 5h WARNING: Due today — Late returns incur penalties!</div>';
+          } else if (rH <= 24.0) {
+            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;background:rgba(245,158,11,0.12);color:#d97706;border:1px solid #f59e0b;display:flex;align-items:center;gap:6px;"><i class="fas fa-business-time"></i> 24h Left: Return due tomorrow at ' + (b.end_time || '18:00') + '</div>';
+          } else if (rH <= 72.0 && durDays > 3) {
+            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid #3b82f6;display:flex;align-items:center;gap:6px;"><i class="fas fa-calendar-day"></i> 3 Days Left: Return on ' + formatBookingDate(b.end_date) + '</div>';
+          }
+          return '';
+        } catch(e) { return ''; }
+      }()) +
+
       '</div></div>';
   }).join('');
 }
@@ -5547,6 +5595,103 @@ function renderBookingDetail(b) {
     'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
   };
   var payColors = { 'Paid': '#00b14f', 'Partially Paid': '#fbbf24', 'Unpaid': '#f87171', 'Refund Pending': '#f59e0b', 'Refunded': '#00b14f', 'Cancelled': '#a1a1aa' };
+    // Approaching Return Reminder & Late Penalty Warning Card for Active / Picked Up Bookings
+  var returnWarningBannerHtml = '';
+  var isOngoingReturn = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
+  if (isOngoingReturn && b.end_date) {
+    try {
+      var eDateStr = (b.end_date || '').split('T')[0];
+      var eTimeStr = b.end_time || '18:00';
+      if (eTimeStr.length === 5) eTimeStr += ':00';
+      var returnTimeMs = new Date(eDateStr + 'T' + eTimeStr).getTime();
+      if (!isNaN(returnTimeMs)) {
+        var sDateStr = (b.start_date || '').split('T')[0];
+        var sTimeStr = b.start_time || '06:00';
+        if (sTimeStr.length === 5) sTimeStr += ':00';
+        var totalDurationDays = (returnTimeMs - new Date(sDateStr + 'T' + sTimeStr).getTime()) / (1000 * 86400);
+        var remMs = returnTimeMs - Date.now();
+        var remHours = remMs / (1000 * 3600);
+        var remMins = Math.floor(remMs / 60000);
+
+        if (remMs <= 0) {
+          // Overdue
+          returnWarningBannerHtml = 
+            '<div style="background:rgba(239,68,68,0.12);border:2px solid #ef4444;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+                '<i class="fas fa-ban"></i>' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.95rem;font-weight:800;color:#dc2626;margin-bottom:4px;">⛔ OVERDUE: Return Deadline Passed!</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Your scheduled return was on <strong>' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '') + '</strong>. You are currently incurring <strong>Late Return Penalties</strong>. Please return the vehicle immediately or contact support.</div>' +
+              '</div>' +
+            '</div>';
+        } else if (remHours <= 0.5) {
+          // 30 Minutes
+          returnWarningBannerHtml = 
+            '<div style="background:rgba(220,38,38,0.1);border:2px solid #dc2626;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+                '<i class="fas fa-bell"></i>' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.95rem;font-weight:800;color:#dc2626;margin-bottom:4px;">🚨 FINAL WARNING: ' + Math.max(1, remMins) + ' Minutes Remaining!</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Return deadline is at <strong>' + (b.end_time || 'scheduled time') + '</strong>! ⚠️ <strong>Late return penalty fees will be automatically assessed</strong> if the vehicle is not returned on time.</div>' +
+              '</div>' +
+            '</div>';
+        } else if (remHours <= 1.0) {
+          // 1 Hour
+          returnWarningBannerHtml = 
+            '<div style="background:rgba(239,68,68,0.08);border:1.5px solid #ef4444;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(239,68,68,0.2);color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+                '<i class="fas fa-hourglass-half"></i>' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.95rem;font-weight:800;color:#dc2626;margin-bottom:4px;">🚨 1 Hour Left: Return Vehicle Soon (' + Math.max(1, remMins) + 'm left)</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Return is due at <strong>' + (b.end_time || 'scheduled time') + '</strong>. Please head to the drop-off location. ⚠️ <strong>Late returns are subject to hourly penalty fees!</strong></div>' +
+              '</div>' +
+            '</div>';
+        } else if (remHours <= 5.0) {
+          // 5 Hours
+          returnWarningBannerHtml = 
+            '<div style="background:rgba(249,115,22,0.08);border:1.5px solid #f97316;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(249,115,22,0.2);color:#ea580c;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+                '<i class="fas fa-exclamation-triangle"></i>' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.95rem;font-weight:800;color:#ea580c;margin-bottom:4px;">⚠️ 5 Hours Left — Late Return Penalty Warning!</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Return is due today at <strong>' + (b.end_time || 'scheduled time') + '</strong> (~' + Math.round(remHours) + ' hours remaining). ⚠️ <strong>IMPORTANT: Late returns incur strict penalty charges!</strong> Please return on or before your deadline or request an extension if available.</div>' +
+              '</div>' +
+            '</div>';
+        } else if (remHours <= 24.0) {
+          // 24 Hours
+          returnWarningBannerHtml = 
+            '<div style="background:rgba(245,158,11,0.08);border:1.5px solid #f59e0b;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(245,158,11,0.2);color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+                '<i class="fas fa-business-time"></i>' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.95rem;font-weight:800;color:#d97706;margin-bottom:4px;">⏰ 24 Hours Left: Return Tomorrow</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Your vehicle return is scheduled for tomorrow at <strong>' + (b.end_time || 'scheduled time') + '</strong>. Please ensure the vehicle is clean and fuel level matches pickup.</div>' +
+              '</div>' +
+            '</div>';
+        } else if (remHours <= 72.0 && totalDurationDays > 3) {
+          // 3 Days (only if duration > 3 days)
+          returnWarningBannerHtml = 
+            '<div style="background:rgba(59,130,246,0.08);border:1.5px solid #3b82f6;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
+              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(59,130,246,0.2);color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+                '<i class="fas fa-calendar-day"></i>' +
+              '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:0.95rem;font-weight:800;color:#2563eb;margin-bottom:4px;">🕒 3 Days Remaining: Vehicle Return Reminder</div>' +
+                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Vehicle return is scheduled on <strong>' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '') + '</strong>. Need more time? You may request a rental extension under My Bookings.</div>' +
+              '</div>' +
+            '</div>';
+        }
+      }
+    } catch (e) {
+      console.warn('Error calculating return warning banner:', e);
+    }
+  }
+
   var sColor = statusColors[b.status] || '#a1a1aa';
   var pColor = payColors[b.payment_status] || '#f87171';
 
@@ -5632,6 +5777,9 @@ function renderBookingDetail(b) {
 
       // 30-Minute Payment Deadline Card
       payCountdownHtml +
+
+      // Approaching Return Warning Banner with Penalty Warnings
+      returnWarningBannerHtml +
 
       // Info grid: customer / vehicle / rental period
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +

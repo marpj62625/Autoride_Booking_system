@@ -10576,7 +10576,7 @@ input:checked + .ctrl-slider:before {
 
 
                         // Auto-refresh bookings for payment/cancel/refund/new booking notifications
-                        if (newOnes[0].type === 'admin_payment_proof' || newOnes[0].type === 'admin_booking_cancelled' || newOnes[0].type === 'admin_refund_request' || newOnes[0].type === 'admin_new_booking' || newOnes[0].type === 'admin_no_show') {
+                        if (newOnes[0].type === 'admin_payment_proof' || newOnes[0].type === 'admin_booking_cancelled' || newOnes[0].type === 'admin_refund_request' || newOnes[0].type === 'admin_new_booking' || newOnes[0].type === 'admin_no_show' || newOnes[0].type === 'admin_return_reminder' || newOnes[0].type === 'admin_return_warning' || newOnes[0].type === 'admin_return_overdue') {
                             if (typeof Bookings !== 'undefined' && typeof Bookings.refresh === 'function') {
                                 Bookings.refresh();
                             }
@@ -17335,6 +17335,83 @@ function toggleNewsletterModal(show = true) {
             }
 
 
+            
+            let adminReturnBanner = '';
+            const isOngoingAdmin = ['picked up', 'ongoing', 'confirmed', 'approved'].includes((b.status || '').toLowerCase());
+            if (isOngoingAdmin && b.end_date) {
+                try {
+                    const eD = (b.end_date || '').split('T')[0];
+                    let eT = b.end_time || '18:00';
+                    if (eT.length === 5) eT += ':00';
+                    const rMs = new Date(eD + 'T' + eT).getTime();
+                    if (!isNaN(rMs)) {
+                        const diffMs = rMs - Date.now();
+                        const diffH = diffMs / 3600000;
+                        const diffM = Math.floor(diffMs / 60000);
+                        const sD = (b.start_date || '').split('T')[0];
+                        let sT = b.start_time || '06:00';
+                        if (sT.length === 5) sT += ':00';
+                        const durD = (rMs - new Date(sD + 'T' + sT).getTime()) / 86400000;
+
+                        if (diffMs <= 0) {
+                            adminReturnBanner = `
+                            <div style="background:rgba(239,68,68,0.12);border:1.5px solid #ef4444;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-ban" style="color:#dc2626;font-size:1.1rem;"></i>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.82rem;font-weight:800;color:#dc2626;">⛔ OVERDUE RETURN</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">Return was due at ${fmtDate(b.end_date)} ${b.end_time||''}. Customer is incurring late penalties.</div>
+                                </div>
+                            </div>`;
+                        } else if (diffH <= 0.5) {
+                            adminReturnBanner = `
+                            <div style="background:rgba(220,38,38,0.1);border:1.5px solid #dc2626;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-bell" style="color:#dc2626;font-size:1.1rem;animation:pulse 1.5s infinite;"></i>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.82rem;font-weight:800;color:#dc2626;">🚨 FINAL RETURN ALERT — ${Math.max(1, diffM)}m REMAINING</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">Vehicle is due in ${Math.max(1, diffM)} mins. Prepare for return inspection.</div>
+                                </div>
+                            </div>`;
+                        } else if (diffH <= 1.0) {
+                            adminReturnBanner = `
+                            <div style="background:rgba(239,68,68,0.08);border:1.5px solid #ef4444;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-hourglass-half" style="color:#dc2626;font-size:1.1rem;"></i>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.82rem;font-weight:800;color:#dc2626;">🚨 RETURN DUE IN 1 HOUR (${Math.max(1, diffM)}m left)</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">Due at ${b.end_time||'scheduled time'}. Customer warned of hourly penalties.</div>
+                                </div>
+                            </div>`;
+                        } else if (diffH <= 5.0) {
+                            adminReturnBanner = `
+                            <div style="background:rgba(249,115,22,0.08);border:1.5px solid #f97316;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-exclamation-triangle" style="color:#ea580c;font-size:1.1rem;"></i>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.82rem;font-weight:800;color:#ea580c;">⚠️ RETURN DUE IN 5 HOURS (~${Math.round(diffH)}h left)</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">Customer has received late return penalty warning.</div>
+                                </div>
+                            </div>`;
+                        } else if (diffH <= 24.0) {
+                            adminReturnBanner = `
+                            <div style="background:rgba(245,158,11,0.08);border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-business-time" style="color:#d97706;font-size:1.1rem;"></i>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.82rem;font-weight:800;color:#d97706;">⏰ RETURN DUE TOMORROW (~${Math.round(diffH)}h left)</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">Return scheduled for tomorrow at ${b.end_time||''}.</div>
+                                </div>
+                            </div>`;
+                        } else if (diffH <= 72.0 && durD > 3) {
+                            adminReturnBanner = `
+                            <div style="background:rgba(59,130,246,0.08);border:1.5px solid #3b82f6;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                                <i class="fas fa-calendar-day" style="color:#2563eb;font-size:1.1rem;"></i>
+                                <div style="flex:1;">
+                                    <div style="font-size:0.82rem;font-weight:800;color:#2563eb;">🕒 3 DAYS REMAINING</div>
+                                    <div style="font-size:0.75rem;color:#64748b;">Return scheduled on ${fmtDate(b.end_date)} ${b.end_time||''}.</div>
+                                </div>
+                            </div>`;
+                        }
+                    }
+                } catch(e) {}
+            }
+
             document.getElementById('bookingDetailContent').innerHTML = `
             <div style="color:#0f172a;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
@@ -17344,6 +17421,7 @@ function toggleNewsletterModal(show = true) {
                     </div>
                     <span style="padding:6px 14px;border-radius:20px;font-size:0.72rem;font-weight:800;letter-spacing:0.3px;background:${ss.bg};color:${ss.color};border:1.5px solid ${ss.border};">${(b.status||'PENDING').toUpperCase()}</span>
                 </div>
+                ${adminReturnBanner}
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
                     <div style="background:#f8fafc;border-radius:12px;padding:12px;border:1px solid #e2e8f0;">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">

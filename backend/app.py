@@ -203,6 +203,204 @@ app.register_blueprint(conflict_bp)
 import threading
 import time
 
+
+def check_approaching_return_deadlines():
+    """
+    Checks active/ongoing bookings and sends return reminders & penalty warnings:
+    - 3 days remaining (only if total booking duration > 3 days)
+    - 24 hours (1 day) remaining
+    - 5 hours remaining (Penalty Warning starts here!)
+    - 1 hour remaining (Urgent Penalty Warning)
+    - 30 minutes remaining (Final Urgent Penalty Warning)
+    - Overdue (Return deadline passed, ongoing late penalty)
+    """
+    import psycopg
+    from config import SUPABASE_DB_URL
+    from psycopg.rows import dict_row
+    from datetime import datetime, timezone, timedelta
+
+    conn = None
+    try:
+        conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+        cur = conn.cursor(row_factory=dict_row)
+
+        PH = timezone(timedelta(hours=8))
+        now_ph = datetime.now(tz=PH)
+
+        cur.execute("""
+            SELECT COALESCE(b.booking_id, b.id) AS id, b.user_id, b.vehicle_id, b.start_date, b.end_date, b.start_time, b.end_time,
+                   b.status, b.total_price,
+                   COALESCE(u.full_name, 'Customer') AS customer_name,
+                   COALESCE(v.name, CONCAT(v.brand, ' ', v.model), 'Vehicle') AS vehicle_name,
+                   v.plate_number
+            FROM bookings b
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN vehicles v ON b.vehicle_id = v.id
+            WHERE b.status IN ('Picked Up', 'Ongoing', 'Confirmed', 'Approved')
+              AND b.end_date IS NOT NULL
+        """)
+        active_bookings = cur.fetchall() or []
+
+        if not active_bookings:
+            return
+
+        b_ids = [bk['id'] for bk in active_bookings]
+        cur.execute("""
+            SELECT booking_id, milestone
+            FROM booking_return_reminders
+            WHERE booking_id = ANY(%s)
+        """, (b_ids,))
+        sent_rows = cur.fetchall() or []
+        sent_map = set((r['booking_id'], r['milestone']) for r in sent_rows)
+
+        from notifications import Notification_Service
+        ns = Notification_Service()
+
+        for bk in active_bookings:
+            b_id = bk['id']
+            u_id = bk['user_id']
+            veh_name = bk['vehicle_name']
+            if bk.get('plate_number'):
+                veh_name += f" ({bk['plate_number']})"
+            cust_name = bk['customer_name']
+
+            s_date = bk['start_date']
+            e_date = bk['end_date']
+            if hasattr(s_date, 'date'): s_date = s_date.date()
+            if hasattr(e_date, 'date'): e_date = e_date.date()
+
+            e_time_str = bk.get('end_time') or '18:00'
+            if hasattr(e_time_str, 'strftime'):
+                e_time_str = e_time_str.strftime('%H:%M')
+            try:
+                eh, em = map(int, str(e_time_str)[:5].split(':'))
+            except Exception:
+                eh, em = 18, 0
+
+            return_dt = datetime(e_date.year, e_date.month, e_date.day, eh, em, tzinfo=PH)
+            return_time_formatted = return_dt.strftime("%I:%M %p")
+            return_datetime_formatted = return_dt.strftime("%b %d, %Y %I:%M %p")
+
+            duration_days = (e_date - s_date).days
+            diff_seconds = (return_dt - now_ph).total_seconds()
+
+            # 1. Milestone 3 Days: duration > 3 days, remaining <= 72h and > 24h
+            if duration_days > 3 and 24 * 3600 < diff_seconds <= 3 * 86400:
+                if (b_id, '3d') not in sent_map:
+                    c_title = "🕒 3 Days Left: Vehicle Return Reminder"
+                    c_msg = f"Booking #{b_id} ({veh_name}): You have 3 days remaining. Return is scheduled on {return_datetime_formatted}. If you need more time, you may request an extension in the app."
+                    a_title = f"🕒 Vehicle Return in 3 Days (Booking #{b_id})"
+                    a_msg = f"Booking #{b_id} for {cust_name} ({veh_name}) is scheduled for return in 3 days on {return_datetime_formatted}."
+
+                    ns.notify_user(u_id, c_title, c_msg, 'return_reminder_3d')
+                    ns.notify_admins_inapp(a_title, a_msg, 'admin_return_reminder', booking_id=b_id)
+
+                    cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, '3d') ON CONFLICT DO NOTHING", (b_id,))
+                    conn.commit()
+                    sent_map.add((b_id, '3d'))
+                    print(f"[ReturnReminder] Sent 3d reminder for booking #{b_id}")
+
+            # 2. Milestone 24 Hours: remaining <= 24h and > 5h
+            if 5 * 3600 < diff_seconds <= 24 * 3600:
+                if (b_id, '24h') not in sent_map:
+                    c_title = "⏰ 24 Hours Left: Vehicle Return Tomorrow"
+                    c_msg = f"Booking #{b_id} ({veh_name}): Only 24 hours remaining! Return is scheduled for tomorrow at {return_time_formatted}. Please ensure the vehicle is clean and fuel level matches pickup."
+                    a_title = f"⏰ Return in 24 Hours (Booking #{b_id})"
+                    a_msg = f"Booking #{b_id} for {cust_name} ({veh_name}) is due for return in 24 hours on {return_datetime_formatted}."
+
+                    ns.notify_user(u_id, c_title, c_msg, 'return_reminder_24h')
+                    ns.notify_admins_inapp(a_title, a_msg, 'admin_return_reminder', booking_id=b_id)
+
+                    cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, '24h') ON CONFLICT DO NOTHING", (b_id,))
+                    conn.commit()
+                    sent_map.add((b_id, '24h'))
+                    print(f"[ReturnReminder] Sent 24h reminder for booking #{b_id}")
+
+            # 3. Milestone 5 Hours: remaining <= 5h and > 1h (PENALTY WARNING STARTS HERE)
+            if 1 * 3600 < diff_seconds <= 5 * 3600:
+                if (b_id, '5h') not in sent_map:
+                    c_title = "⚠️ 5 Hours Remaining — Penalty Warning!"
+                    c_msg = f"Booking #{b_id} ({veh_name}): Return is due in 5 hours at {return_time_formatted}. ⚠️ WARNING: Late returns are strictly subject to penalty fee charges! Please return the vehicle on or before your scheduled time to avoid extra fees."
+                    a_title = f"⚠️ Return Due in 5 Hours (Booking #{b_id})"
+                    a_msg = f"Booking #{b_id} ({cust_name}, {veh_name}) is due for return in 5 hours at {return_time_formatted}. Customer has received late penalty warning."
+
+                    ns.notify_user(u_id, c_title, c_msg, 'return_warning_5h')
+                    ns.notify_admins_inapp(a_title, a_msg, 'admin_return_warning', booking_id=b_id)
+
+                    cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, '5h') ON CONFLICT DO NOTHING", (b_id,))
+                    conn.commit()
+                    sent_map.add((b_id, '5h'))
+                    print(f"[ReturnReminder] Sent 5h penalty warning for booking #{b_id}")
+
+            # 4. Milestone 1 Hour: remaining <= 1h and > 30m
+            if 30 * 60 < diff_seconds <= 1 * 3600:
+                if (b_id, '1h') not in sent_map:
+                    c_title = "🚨 1 Hour Left: Return Vehicle Soon!"
+                    c_msg = f"Booking #{b_id} ({veh_name}): Only 1 HOUR remaining until your return deadline ({return_time_formatted})! Please head to the drop-off location now. Late returns are subject to penalty fee charges."
+                    a_title = f"🚨 Return Due in 1 Hour (Booking #{b_id})"
+                    a_msg = f"Booking #{b_id} ({cust_name}, {veh_name}) is due for return in 1 hour at {return_time_formatted}."
+
+                    ns.notify_user(u_id, c_title, c_msg, 'return_warning_1h')
+                    ns.notify_admins_inapp(a_title, a_msg, 'admin_return_warning', booking_id=b_id)
+
+                    cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, '1h') ON CONFLICT DO NOTHING", (b_id,))
+                    conn.commit()
+                    sent_map.add((b_id, '1h'))
+                    print(f"[ReturnReminder] Sent 1h penalty warning for booking #{b_id}")
+
+            # 5. Milestone 30 Minutes: remaining <= 30m and > 0
+            if 0 < diff_seconds <= 30 * 60:
+                if (b_id, '30m') not in sent_map:
+                    c_title = "🚨 FINAL WARNING: 30 Minutes Remaining!"
+                    c_msg = f"Booking #{b_id} ({veh_name}): Your return deadline is in 30 MINUTES ({return_time_formatted})! Late return penalties will be automatically charged if the vehicle is not returned on time."
+                    a_title = f"🚨 Final Return Alert: 30 Mins (Booking #{b_id})"
+                    a_msg = f"Booking #{b_id} ({cust_name}, {veh_name}) return deadline is in 30 minutes ({return_time_formatted}). Please prepare for return inspection."
+
+                    ns.notify_user(u_id, c_title, c_msg, 'return_warning_30m')
+                    ns.notify_admins_inapp(a_title, a_msg, 'admin_return_warning', booking_id=b_id)
+
+                    cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, '30m') ON CONFLICT DO NOTHING", (b_id,))
+                    conn.commit()
+                    sent_map.add((b_id, '30m'))
+                    print(f"[ReturnReminder] Sent 30m final penalty warning for booking #{b_id}")
+
+            # 6. Overdue Alert: remaining < 0 (grace period 5 mins)
+            if diff_seconds < -300 and diff_seconds >= -86400 * 2:
+                if (b_id, 'overdue') not in sent_map:
+                    c_title = "⛔ OVERDUE: Return Deadline Passed!"
+                    c_msg = f"Booking #{b_id} ({veh_name}): Your scheduled return time ({return_time_formatted}) has passed. You are now incurring late return penalties. Please contact Autoride or return the vehicle immediately!"
+                    a_title = f"⛔ OVERDUE ALERT: Booking #{b_id}"
+                    a_msg = f"Vehicle {veh_name} (Booking #{b_id}, Customer: {cust_name}) is OVERDUE! Scheduled return was {return_datetime_formatted}. Late penalties apply."
+
+                    ns.notify_user(u_id, c_title, c_msg, 'return_overdue')
+                    ns.notify_admins_inapp(a_title, a_msg, 'admin_return_overdue', booking_id=b_id)
+
+                    cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, 'overdue') ON CONFLICT DO NOTHING", (b_id,))
+                    conn.commit()
+                    sent_map.add((b_id, 'overdue'))
+                    print(f"[ReturnReminder] Sent overdue alert for booking #{b_id}")
+
+    except Exception as err:
+        print(f"[ReturnReminder] check_approaching_return_deadlines error: {err}")
+    finally:
+        if conn:
+            try:
+                cur.close()
+                conn.close()
+            except Exception:
+                pass
+
+
+@app.route('/api/bookings/check-return-reminders', methods=['GET', 'POST'])
+def trigger_return_reminders():
+    """Manual or hook trigger for return reminder checks."""
+    try:
+        check_approaching_return_deadlines()
+        return jsonify({"message": "Return reminders checked successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def start_deadline_monitor():
     def monitor_loop():
         # Wait a short while on startup
@@ -292,7 +490,14 @@ def start_deadline_monitor():
 
             except Exception as e:
                 print("Deadline monitor thread error:", e)
-            time.sleep(600)  # Check every 10 minutes
+
+            # Check approaching vehicle return deadlines (3d, 24h, 5h, 1h, 30m, overdue)
+            try:
+                check_approaching_return_deadlines()
+            except Exception as _rd_err:
+                print("Deadline monitor thread return reminders check failed:", _rd_err)
+
+            time.sleep(60)  # Check every 60 seconds (1 minute) for accurate reminders
 
     t = threading.Thread(target=monitor_loop, daemon=True)
     t.start()
@@ -730,6 +935,40 @@ try:
         migrate_violation_system()
 except Exception as _e:
     pass
+
+
+def migrate_return_reminders():
+    """Creates tracking table for 3d, 24h, 5h, 1h, 30m, and overdue return warnings."""
+    try:
+        import psycopg
+        from config import SUPABASE_DB_URL
+        conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS booking_return_reminders (
+                id SERIAL PRIMARY KEY,
+                booking_id INTEGER NOT NULL REFERENCES bookings(booking_id) ON DELETE CASCADE,
+                milestone VARCHAR(20) NOT NULL,
+                sent_at TIMESTAMPTZ DEFAULT NOW(),
+                customer_notified BOOLEAN DEFAULT TRUE,
+                admin_notified BOOLEAN DEFAULT TRUE,
+                UNIQUE(booking_id, milestone)
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_brr_booking_milestone ON booking_return_reminders (booking_id, milestone)")
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("DEBUG: migrate_return_reminders completed successfully.")
+    except Exception as e:
+        print(f"DEBUG: migrate_return_reminders error (non-fatal): {e}")
+
+try:
+    with app.app_context():
+        migrate_return_reminders()
+except Exception as _e:
+    pass
+
 
 
 def migrate_extensions_v1():
