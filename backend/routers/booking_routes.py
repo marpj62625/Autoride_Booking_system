@@ -43,6 +43,31 @@ def book_vehicle():
 
         cur = get_cursor()
 
+        # Outstanding Balance & Penalty Guard
+        cur.execute("""
+            SELECT id, total_price, balance_amount, penalty_amount
+            FROM bookings
+            WHERE user_id = %s
+              AND balance_amount > 0
+              AND status NOT IN ('Cancelled', 'Rejected')
+            ORDER BY id DESC LIMIT 1
+        """, (user_id,))
+        unpaid_bk = cur.fetchone()
+        if unpaid_bk:
+            cur.execute("SELECT value FROM settings WHERE key = 'block_booking_on_unpaid_penalty'")
+            setting_row = cur.fetchone()
+            block_enabled = (setting_row.get('value', 'true').lower() in ('true', '1', 'yes')) if setting_row else True
+            if block_enabled:
+                u_bid = unpaid_bk.get('id')
+                u_bal = float(unpaid_bk.get('balance_amount') or 0)
+                return jsonify({
+                    "error": "Outstanding Balance Required",
+                    "message": f"You have an outstanding balance / unpaid penalty of PHP {u_bal:,.2f} on Booking #{u_bid}. Please settle your balance before booking another vehicle.",
+                    "unpaid_booking_id": u_bid,
+                    "balance_amount": u_bal,
+                    "has_unpaid_balance": True
+                }), 403
+
         # Security Check: Ensure user has an approved license
         cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
         verify_row = cur.fetchone()

@@ -364,13 +364,28 @@ def check_approaching_return_deadlines():
                     sent_map.add((b_id, '30m'))
                     print(f"[ReturnReminder] Sent 30m final penalty warning for booking #{b_id}")
 
-            # 6. Overdue Alert: remaining < 0 (grace period 5 mins)
-            if diff_seconds < -300 and diff_seconds >= -86400 * 2:
+            # 6. Overdue Alert & Automated Late Penalty Engine
+            # Fetch penalty configuration settings from settings table
+            try:
+                cur.execute("SELECT key, value FROM settings WHERE key LIKE 'late_return_%'")
+                s_rows = cur.fetchall() or []
+                s_map = {r['key']: r['value'] for r in s_rows}
+                auto_penalty = s_map.get('late_return_auto_apply_enabled', 'true').lower() in ('true', '1', 'yes')
+                grace_mins = int(s_map.get('late_return_grace_period_mins', 15) or 15)
+                hourly_rate = float(s_map.get('late_return_hourly_rate', 300) or 300)
+                fixed_base_fee = float(s_map.get('late_return_fixed_base_fee', 200) or 200)
+                max_cap = float(s_map.get('late_return_max_penalty_cap', 5000) or 5000)
+            except Exception as _se:
+                auto_penalty, grace_mins, hourly_rate, fixed_base_fee, max_cap = True, 15, 300.0, 200.0, 5000.0
+
+            grace_seconds = grace_mins * 60
+            if diff_seconds < -grace_seconds and diff_seconds >= -86400 * 3:
+                # Milestone notification (sent once when entering overdue)
                 if (b_id, 'overdue') not in sent_map:
                     c_title = "⛔ OVERDUE: Return Deadline Passed!"
-                    c_msg = f"Booking #{b_id} ({veh_name}): Your scheduled return time ({return_time_formatted}) has passed. You are now incurring late return penalties. Please contact Autoride or return the vehicle immediately!"
+                    c_msg = f"Booking #{b_id} ({veh_name}): Your scheduled return time ({return_time_formatted}) has passed. Late return penalties are being applied. Please return the vehicle immediately!"
                     a_title = f"⛔ OVERDUE ALERT: Booking #{b_id}"
-                    a_msg = f"Vehicle {veh_name} (Booking #{b_id}, Customer: {cust_name}) is OVERDUE! Scheduled return was {return_datetime_formatted}. Late penalties apply."
+                    a_msg = f"Vehicle {veh_name} (Booking #{b_id}, Customer: {cust_name}) is OVERDUE! Scheduled return was {return_datetime_formatted}. Late penalties applying."
 
                     ns.notify_user(u_id, c_title, c_msg, 'return_overdue')
                     ns.notify_admins_inapp(a_title, a_msg, 'admin_return_overdue', booking_id=b_id)
@@ -378,7 +393,65 @@ def check_approaching_return_deadlines():
                     cur.execute("INSERT INTO booking_return_reminders (booking_id, milestone) VALUES (%s, 'overdue') ON CONFLICT DO NOTHING", (b_id,))
                     conn.commit()
                     sent_map.add((b_id, 'overdue'))
-                    print(f"[ReturnReminder] Sent overdue alert for booking #{b_id}")
+                    print(f"[ReturnReminder] Sent initial overdue alert for booking #{b_id}")
+
+                # Automated Late Return Penalty Application
+                if auto_penalty:
+                    try:
+                        import math
+                        overdue_seconds = abs(diff_seconds)
+                        overdue_hours = max(1, math.ceil(overdue_seconds / 3600.0))
+                        computed_penalty = min(fixed_base_fee + (overdue_hours * hourly_rate), max_cap)
+
+                        # Check existing late_return penalty
+                        cur.execute("""
+                            SELECT id, amount, notes FROM booking_penalties
+                            WHERE booking_id = %s AND (charge_type = 'late_return' OR penalty_type = 'late_return')
+                            LIMIT 1
+                        """, (b_id,))
+                        existing_p = cur.fetchone()
+
+                        penalty_applied = False
+                        if not existing_p:
+                            cur.execute("""
+                                INSERT INTO booking_penalties (booking_id, charge_type, penalty_type, amount, notes, description)
+                                VALUES (%s, 'late_return', 'late_return', %s, %s, %s)
+                            """, (b_id, computed_penalty, f"Auto-applied: Overdue by {overdue_hours} hr(s)", f"Late return fee for {overdue_hours} hour(s) overdue"))
+                            penalty_applied = True
+                        elif float(existing_p.get('amount') or 0) < computed_penalty:
+                            cur.execute("""
+                                UPDATE booking_penalties
+                                SET amount = %s, notes = %s, description = %s
+                                WHERE id = %s
+                            """, (computed_penalty, f"Auto-applied: Overdue by {overdue_hours} hr(s)", f"Late return fee for {overdue_hours} hour(s) overdue", existing_p['id']))
+                            penalty_applied = True
+
+                        if penalty_applied:
+                            # Recalculate booking balance and penalty amount
+                            cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM booking_penalties WHERE booking_id = %s", (b_id,))
+                            tot_pen = float(cur.fetchone()['total'] or 0)
+                            cur.execute("SELECT total_price, amount_paid FROM bookings WHERE id = %s", (b_id,))
+                            b_price_row = cur.fetchone()
+                            if b_price_row:
+                                tp = float(b_price_row['total_price'] or 0)
+                                ap = float(b_price_row['amount_paid'] or 0)
+                                new_bal = max(0.0, tp + tot_pen - ap)
+                                p_stat = 'Paid' if new_bal <= 0 else ('Partially Paid' if ap > 0 else 'Unpaid')
+                                cur.execute("""
+                                    UPDATE bookings
+                                    SET penalty_amount = %s, balance_amount = %s, payment_status = %s
+                                    WHERE id = %s
+                                """, (tot_pen, new_bal, p_stat, b_id))
+                                conn.commit()
+
+                                # Send late penalty notification
+                                p_title = "🚨 Late Return Penalty Applied"
+                                p_msg = f"Booking #{b_id}: You are {overdue_hours} hr(s) overdue. A late penalty of PHP {computed_penalty:,.2f} has been added to your balance. Please settle your balance via GCash/Card or cash upon vehicle return."
+                                ns.notify_user(u_id, p_title, p_msg, 'late_penalty_applied')
+                                ns.notify_admins_inapp(f"Late Penalty Applied (Booking #{b_id})", f"Auto-applied PHP {computed_penalty:,.2f} late return penalty ({overdue_hours} hrs overdue) for customer {cust_name}.", 'admin_penalty_applied', booking_id=b_id)
+                                print(f"[LatePenaltyEngine] Applied PHP {computed_penalty} penalty for booking #{b_id} ({overdue_hours} hrs overdue)")
+                    except Exception as _pe:
+                        print(f"[LatePenaltyEngine] Error applying late penalty for booking #{b_id}: {_pe}")
 
     except Exception as err:
         print(f"[ReturnReminder] check_approaching_return_deadlines error: {err}")
@@ -966,6 +1039,40 @@ def migrate_return_reminders():
 try:
     with app.app_context():
         migrate_return_reminders()
+except Exception as _e:
+    pass
+
+
+def migrate_penalty_settings():
+    """Seeds default settings for Penalty & Late Return Management."""
+    try:
+        cur = get_cursor()
+        penalty_defaults = [
+            ('late_return_auto_apply_enabled', 'true', 'Auto-apply penalty when return deadline passes'),
+            ('late_return_grace_period_mins', '15', 'Minutes of grace period before late penalty starts'),
+            ('late_return_hourly_rate', '300', 'Hourly rate charged for late return (PHP)'),
+            ('late_return_fixed_base_fee', '200', 'Base fee charged upon late return (PHP)'),
+            ('late_return_max_penalty_cap', '5000', 'Maximum cap on late return penalties (PHP)'),
+            ('block_booking_on_unpaid_penalty', 'true', 'Block new bookings if customer has unpaid balance/penalty'),
+            ('cleaning_fee_standard', '500', 'Standard dirty vehicle cleaning fee (PHP)'),
+            ('refuel_price_per_liter', '65', 'Fuel fee per missing liter (PHP)'),
+        ]
+        for k, v, d in penalty_defaults:
+            cur.execute("""
+                INSERT INTO settings (key, value, description)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (key) DO NOTHING
+            """, (k, v, d))
+        commit_db()
+        print("DEBUG: migrate_penalty_settings completed successfully.")
+    except Exception as e:
+        print(f"DEBUG: migrate_penalty_settings error (non-fatal): {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
+try:
+    with app.app_context():
+        migrate_penalty_settings()
 except Exception as _e:
     pass
 
@@ -4414,6 +4521,31 @@ def book():
         
 
         cur = get_cursor()
+
+        # ── Outstanding Balance & Penalty Guard ─────────────────────────────
+        cur.execute("""
+            SELECT id, total_price, balance_amount, penalty_amount
+            FROM bookings
+            WHERE user_id = %s
+              AND balance_amount > 0
+              AND status NOT IN ('Cancelled', 'Rejected')
+            ORDER BY id DESC LIMIT 1
+        """, (user_id,))
+        unpaid_bk = cur.fetchone()
+        if unpaid_bk:
+            cur.execute("SELECT value FROM settings WHERE key = 'block_booking_on_unpaid_penalty'")
+            setting_row = cur.fetchone()
+            block_enabled = (setting_row.get('value', 'true').lower() in ('true', '1', 'yes')) if setting_row else True
+            if block_enabled:
+                u_bid = unpaid_bk.get('id') or unpaid_bk.get('booking_id')
+                u_bal = float(unpaid_bk.get('balance_amount') or 0)
+                return jsonify({
+                    "error": "Outstanding Balance Required",
+                    "message": f"You have an outstanding balance / unpaid penalty of PHP {u_bal:,.2f} on Booking #{u_bid}. Please settle your balance before booking another vehicle.",
+                    "unpaid_booking_id": u_bid,
+                    "balance_amount": u_bal,
+                    "has_unpaid_balance": True
+                }), 403
 
         # ── Violation Suspension Guard ──────────────────────────────────────
         cur.execute("""
@@ -14455,6 +14587,87 @@ def add_booking_penalty(booking_id):
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
+
+@app.route('/admin/penalties/<int:p_id>', methods=['PUT'])
+@app.route('/api/admin/penalties/<int:p_id>', methods=['PUT'])
+def edit_penalty(p_id):
+    """Admin edits or waives a penalty charge, updating booking balance."""
+    data = request.json or {}
+    new_amount = data.get('amount')
+    new_notes = data.get('notes')
+    new_charge_type = data.get('charge_type')
+    admin_id = data.get('admin_id')
+
+    if new_amount is None:
+        return jsonify({'error': 'Amount is required'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT booking_id, amount, charge_type FROM booking_penalties WHERE id = %s", (p_id,))
+        p_row = cur.fetchone()
+        if not p_row:
+            return jsonify({'error': 'Penalty not found'}), 404
+        booking_id = p_row['booking_id']
+
+        update_fields = ["amount = %s"]
+        params = [float(new_amount)]
+
+        if new_notes is not None:
+            update_fields.append("notes = %s")
+            update_fields.append("description = %s")
+            params.extend([new_notes, new_notes])
+        if new_charge_type:
+            update_fields.append("charge_type = %s")
+            update_fields.append("penalty_type = %s")
+            params.extend([new_charge_type, new_charge_type])
+
+        params.append(p_id)
+        cur.execute(f"UPDATE booking_penalties SET {', '.join(update_fields)} WHERE id = %s", tuple(params))
+
+        # Recalculate booking penalties and balance
+        cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM booking_penalties WHERE booking_id = %s", (booking_id,))
+        total_penalty = float(cur.fetchone()['total'] or 0)
+
+        cur.execute("SELECT total_price, amount_paid, user_id FROM bookings WHERE id = %s", (booking_id,))
+        bk = cur.fetchone()
+        if bk:
+            tp = float(bk['total_price'] or 0)
+            ap = float(bk['amount_paid'] or 0)
+            new_balance = max(0.0, tp + total_penalty - ap)
+            payment_status = 'Paid' if new_balance <= 0 else ('Partially Paid' if ap > 0 else 'Unpaid')
+            cur.execute("""
+                UPDATE bookings
+                SET penalty_amount = %s, balance_amount = %s, payment_status = %s
+                WHERE id = %s
+            """, (total_penalty, new_balance, payment_status, booking_id))
+
+            # In-app notification to customer about adjustment
+            try:
+                from notifications import Notification_Service
+                ns = Notification_Service()
+                ns.notify_user(
+                    bk['user_id'],
+                    'Penalty Fee Adjusted',
+                    f'Booking #{booking_id}: Your penalty charge has been adjusted to PHP {float(new_amount):,.2f}. Updated balance: PHP {new_balance:,.2f}.',
+                    'penalty_adjusted'
+                )
+            except Exception:
+                pass
+
+        commit_db()
+        return jsonify({
+            'message': 'Penalty updated successfully',
+            'penalty_id': p_id,
+            'booking_id': booking_id,
+            'new_amount': float(new_amount),
+            'total_penalty': total_penalty,
+            'new_balance': new_balance if bk else 0.0
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
 
 @app.route('/admin/penalties/<int:p_id>', methods=['DELETE'])
 @app.route('/api/admin/penalties/<int:p_id>', methods=['DELETE'])

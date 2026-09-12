@@ -1,3 +1,28 @@
+function showUnpaidBalanceModal(data) {
+  var existing = document.getElementById('unpaidBalanceModal');
+  if (existing) existing.remove();
+  var bid = data.unpaid_booking_id || '';
+  var bal = parseFloat(data.balance_amount || 0);
+  var msg = data.message || ('You have an outstanding balance of ' + formatPHP(bal) + ' on Booking #' + bid + '. Please settle your balance before booking another vehicle.');
+
+  var modalHtml =
+    '<div id="unpaidBalanceModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;">' +
+      '<div style="background:var(--bg-card);border:1.5px solid #ef4444;border-radius:24px;padding:26px 22px;max-width:440px;width:100%;box-shadow:0 25px 60px -10px rgba(0,0,0,0.5);text-align:center;">' +
+        '<div style="width:58px;height:58px;border-radius:50%;background:rgba(239,68,68,0.15);color:#ef4444;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;font-size:1.6rem;">' +
+          '<i class="fas fa-exclamation-triangle"></i>' +
+        '</div>' +
+        '<h3 style="font-size:1.15rem;font-weight:900;color:var(--text-primary);margin-bottom:8px;">Outstanding Balance Required</h3>' +
+        '<p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.5;margin-bottom:20px;">' + escapeHtml(msg) + '</p>' +
+        '<div style="display:flex;flex-direction:column;gap:10px;">' +
+          (bid ? '<button class="btn-primary" style="background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 14px rgba(239,68,68,0.35);font-weight:800;padding:12px;" onclick="document.getElementById(\'unpaidBalanceModal\').remove();closeOverlay(\'page-booking-form\');closeOverlay(\'page-vehicle-detail\');openBookingDetail(' + bid + ');"><i class="fas fa-credit-card" style="margin-right:6px;"></i> View & Settle Booking #' + bid + '</button>' : '') +
+          '<button class="btn-outline" style="border-radius:12px;padding:10px;" onclick="document.getElementById(\'unpaidBalanceModal\').remove();">Close</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+
 /**
  * Autoride Customer Mobile App - Main Application Script
  * utils.js is loaded as a separate script tag before this file
@@ -618,6 +643,10 @@ function subscribeToNotifications(userId) {
                     _showNotifPopup(title, msg, '#dc2626', 'fa-bell');
                 } else if (type === 'return_overdue') {
                     _showNotifPopup(title, msg, '#991b1b', 'fa-ban');
+                } else if (type === 'late_penalty_applied') {
+                    _showNotifPopup(title, msg, '#dc2626', 'fa-gavel');
+                } else if (type === 'penalty_adjusted') {
+                    _showNotifPopup(title, msg, '#10b981', 'fa-check-circle');
                 }
 
                 // Any booking related event triggers live data refresh
@@ -627,7 +656,7 @@ function subscribeToNotifications(userId) {
                     type === 'booking_cancelled' || type === 'booking_cancelled_by_admin' ||
                     type === 'booking_completed' || type === 'payment_confirmed' ||
                     type === 'ready_for_pickup' || type === 'picked_up' ||
-                    type === 'penalty_added' || type === 'extension_approved' ||
+                    type === 'penalty_added' || type === 'late_penalty_applied' || type === 'penalty_adjusted' || type === 'extension_approved' ||
                     type === 'extension_rejected' || type === 'refund_processed'
                 );
 
@@ -4529,7 +4558,9 @@ function _proceedWithBookingSubmission() {
       openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      if (err && err.data && err.data.suspended) {
+      if (err && err.data && (err.data.has_unpaid_balance || (err.data.error && err.data.error.indexOf('Outstanding Balance') !== -1))) {
+        showUnpaidBalanceModal(err.data);
+      } else if (err && err.data && err.data.suspended) {
         showSuspensionModal(err.data);
       } else if (err && err.status === 403 && err.message && err.message.toLowerCase().indexOf('suspend') !== -1) {
         showSuspensionModal({ suspension_type: 'temporary', message: err.message });
@@ -5450,6 +5481,7 @@ function renderBookingsList(data) {
           '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
             '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + payColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
             payBadgeExtra +
+            (parseFloat(b.balance_amount || 0) > 0 ? '<span style="margin-left:4px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);"><i class="fas fa-exclamation-circle" style="margin-right:3px;"></i>Bal: ' + formatPHP(b.balance_amount) + '</span>' : '') +
           '</div>' +
           '<div style="font-weight:800;font-size:1.1rem;color:var(--primary);">' + formatPHP(b.total_price) + '</div>' +
         '</div>';
@@ -5549,7 +5581,7 @@ function openBookingDetail(bookingId) {
 function renderBookingDetail(b) {
   var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
   var canReview = b.status === 'Completed';
-  var canPayBalance = b.payment_status === 'Partially Paid';
+  var canPayBalance = (b.payment_status === 'Partially Paid' || parseFloat(b.balance_amount || 0) > 0);
   var canPayNow = (b.payment_status === 'Unpaid' || b.payment_status === 'Pending Payment' || b.payment_status === 'Downpayment unpaid') && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
@@ -5793,6 +5825,27 @@ function renderBookingDetail(b) {
 
       // Approaching Return Warning Banner with Penalty Warnings
       returnWarningBannerHtml +
+
+      // Outstanding Penalty & Balance Alert Banner
+      (function() {
+        var bal = parseFloat(b.balance_amount || 0);
+        if (bal <= 0) return '';
+        var pen = parseFloat(b.penalty_amount || 0);
+        var penNote = pen > 0 ? ' (Includes ₱' + pen.toFixed(2) + ' in penalties)' : '';
+        return '<div style="background:rgba(239,68,68,0.08);border:1.5px solid #ef4444;border-radius:14px;padding:14px 16px;margin-bottom:16px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+            '<i class="fas fa-exclamation-circle" style="color:#ef4444;font-size:1.3rem;"></i>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:0.92rem;font-weight:800;color:#dc2626;">Outstanding Balance: ₱' + bal.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) + penNote + '</div>' +
+              '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">Please settle your balance to maintain good account standing and enable new bookings.</div>' +
+            '</div>' +
+          '</div>' +
+          '<button class="btn-primary" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 14px rgba(239,68,68,0.35);font-weight:800;" onclick="openPayBalanceScreen(' + b.id + ',' + bal + ')">' +
+            '<i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Balance via GCash / Maya / Card' +
+          '</button>' +
+          '<div style="font-size:0.7rem;color:var(--text-muted);text-align:center;margin-top:6px;">Or settle via cash over the counter upon vehicle return at our depot.</div>' +
+        '</div>';
+      })() +
 
       // Info grid: customer / vehicle / rental period
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
