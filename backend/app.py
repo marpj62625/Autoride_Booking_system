@@ -8360,7 +8360,7 @@ def manage_instructions():
 
         else:
 
-            cur.execute("SELECT description as instruction_text, TRUE as is_active FROM pickup_instructions ORDER BY id DESC")
+            cur.execute("SELECT id, description as instruction_text, TRUE as is_active FROM pickup_instructions ORDER BY id DESC")
 
             instructions = cur.fetchall()
 
@@ -8376,8 +8376,19 @@ def manage_instructions():
 
             cur.close()
 
-
-
+@app.route('/admin/instructions/<int:instruction_id>', methods=['DELETE'])
+@app.route('/api/admin/instructions/<int:instruction_id>', methods=['DELETE'])
+def delete_instruction(instruction_id):
+    try:
+        cur = get_cursor()
+        cur.execute("DELETE FROM pickup_instructions WHERE id = %s", (instruction_id,))
+        commit_db()
+        return jsonify({"message": "Instruction deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
 # ============================================================
 # NEWSLETTER & PROMO BROADCAST SYSTEM
 # ============================================================
