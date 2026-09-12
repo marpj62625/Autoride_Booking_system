@@ -22320,10 +22320,12 @@ function toggleNewsletterModal(show = true) {
 
 
                 const endDate = b.end_date ? new Date(b.end_date) : null;
-
-
-
-                const endStr  = endDate ? endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'}) : 'N/A';
+                const endTimeStr = b.end_time ? String(b.end_time).substring(0, 5) : '';
+                let endStr = 'N/A';
+                if (endDate) {
+                    const dStr = endDate.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'});
+                    endStr = endTimeStr ? `${dStr} ${endTimeStr}` : dStr;
+                }
 
 
 
@@ -22636,70 +22638,33 @@ function toggleNewsletterModal(show = true) {
 
 
                 const endParts = this._normDate(b.end_date).split('-');
-
-
-
-                const endDt = new Date(parseInt(endParts[0]), parseInt(endParts[1])-1, parseInt(endParts[2]), 23, 59, 59);
-
-
-
+                let endH = 23, endM = 59, endS = 59;
+                if (b.end_time) {
+                    const tp = String(b.end_time).substring(0, 5).split(':');
+                    if (tp.length >= 2) {
+                        endH = parseInt(tp[0], 10) || 0;
+                        endM = parseInt(tp[1], 10) || 0;
+                        endS = 0;
+                    }
+                }
+                const endDt = new Date(parseInt(endParts[0], 10), parseInt(endParts[1], 10)-1, parseInt(endParts[2], 10), endH, endM, endS);
                 const cdId = 'anCountdown_' + b.id;
-
-
-
-                this._countdown[b.id] = setInterval(() => {
-
-
-
+                const updateCountdown = () => {
                     const el = document.getElementById(cdId);
-
-
-
                     if (!el) { clearInterval(this._countdown[b.id]); return; }
-
-
-
                     const ms = endDt - new Date();
-
-
-
                     if (ms <= 0) { el.textContent = 'Ended'; el.style.color = '#ef4444'; return; }
-
-
-
                     const d = Math.floor(ms/86400000);
-
-
-
                     const h = Math.floor((ms%86400000)/3600000);
-
-
-
                     const m = Math.floor((ms%3600000)/60000);
-
-
-
                     const s = Math.floor((ms%60000)/1000);
-
-
-
                     el.textContent = d > 0
-
-
-
                         ? `${d}d ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`
-
-
-
                         : `${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-
-
-
                     el.style.color = ms < 86400000 ? '#ef4444' : '#00B14F';
-
-
-
-                }, 1000);
+                };
+                updateCountdown();
+                this._countdown[b.id] = setInterval(updateCountdown, 1000);
 
 
 
