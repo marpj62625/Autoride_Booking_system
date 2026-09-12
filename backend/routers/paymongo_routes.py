@@ -213,9 +213,9 @@ def create_payment():
         'gcash': ['gcash', 'qrph'],
         'maya': ['paymaya', 'qrph'],
         'paymaya': ['paymaya', 'qrph'],
-        'card': ['card', 'paymaya'],
-        'credit_card': ['card', 'paymaya'],
-        'debit_card': ['card', 'paymaya'],
+        'card': ['card', 'paymaya', 'qrph'],
+        'credit_card': ['card', 'paymaya', 'qrph'],
+        'debit_card': ['card', 'paymaya', 'qrph'],
     }
     cs_pm_types = cs_method_map.get(method.lower(), [pm_type, 'qrph'])
 
