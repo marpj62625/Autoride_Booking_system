@@ -8449,7 +8449,7 @@ def download_receipt(booking_id):
 
         # 3b. Fetch Payment Details
         cur.execute("""
-            SELECT method, reference_number, amount, status, created_at 
+            SELECT method, reference_number, amount, status 
             FROM payments 
             WHERE booking_id = %s 
             ORDER BY id DESC LIMIT 1
