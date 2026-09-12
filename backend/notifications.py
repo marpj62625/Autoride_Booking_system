@@ -49,12 +49,13 @@ class Notification_Service:
         Also sends an FCM push notification if the user has a registered token.
         Returns True on success, False on failure.
         """
+        conn = None
         try:
             import psycopg
             import os
             from config import SUPABASE_DB_URL
             from psycopg.rows import dict_row
-            conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            conn = psycopg.connect(conninfo=SUPABASE_DB_URL, autocommit=True, prepare_threshold=None)
             cur = conn.cursor(row_factory=dict_row)
             cur.execute(
                 """
@@ -63,9 +64,7 @@ class Notification_Service:
                 """,
                 (user_id, title, message, notif_type)
             )
-            conn.commit()
             cur.close()
-            conn.close()
             # Also send FCM push
             try:
                 global fcm_service
@@ -80,6 +79,10 @@ class Notification_Service:
                 file=sys.stderr
             )
             return False
+        finally:
+            if conn and not conn.closed:
+                try: conn.close()
+                except Exception: pass
 
     def notify_admins_inapp(self, title: str, message: str, notif_type: str, **kwargs) -> list:
         """
@@ -359,17 +362,17 @@ class FCM_Service:
         Looks up the user's FCM token from the users table and sends a push.
         Returns True on success, False if no token or send failed.
         """
+        conn = None
         try:
             import psycopg
             from config import SUPABASE_DB_URL
             from psycopg.rows import dict_row
-            conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            conn = psycopg.connect(conninfo=SUPABASE_DB_URL, autocommit=True, prepare_threshold=None)
             cur = conn.cursor(row_factory=dict_row)
             cur.execute("SELECT fcm_token FROM users WHERE user_id = %s", (user_id,))
 
             row = cur.fetchone()
             cur.close()
-            conn.close()
 
             if not row or not row.get('fcm_token'):
                 return False
@@ -378,6 +381,10 @@ class FCM_Service:
         except Exception as exc:
             print(f"FCM_Service.notify_user_push: DB error: {exc}", file=sys.stderr)
             return False
+        finally:
+            if conn and not conn.closed:
+                try: conn.close()
+                except Exception: pass
 
 
 # Module-level singletons

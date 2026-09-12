@@ -930,11 +930,12 @@ def migrate_chat():
 
 
 
-try:
-    with app.app_context():
-        migrate_chat()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_chat()
+    except Exception as _e:
+        pass
 
 def migrate_fcm_tokens():
     """Adds fcm_token column to users and admins tables for push notifications."""
@@ -1148,11 +1149,12 @@ def migrate_extensions_v1():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_extensions_v1()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_extensions_v1()
+    except Exception as _e:
+        pass
 
 
 def migrate_license_details_table():
@@ -1186,11 +1188,12 @@ def migrate_license_details_table():
         if 'cur' in locals() and cur: cur.close()
 
 
-try:
-    with app.app_context():
-        migrate_license_details_table()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_license_details_table()
+    except Exception as _e:
+        pass
 
 
 def migrate_refund_columns():
@@ -1212,11 +1215,12 @@ def migrate_refund_columns():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_refund_columns()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_refund_columns()
+    except Exception as _e:
+        pass
 
 
 def migrate_loyalty_points():
@@ -1230,11 +1234,12 @@ def migrate_loyalty_points():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_loyalty_points()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_loyalty_points()
+    except Exception as _e:
+        pass
 
 
 def migrate_google_auth_columns():
@@ -1549,18 +1554,19 @@ def migrate_staff_permissions_and_requests():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_google_auth_columns()
-        migrate_no_show_column()
-        migrate_booking_reviews()
-        migrate_smtp_oauth_keys()
-        migrate_archive_columns()
-        migrate_chat_faq_and_ai_controls()
-        migrate_staff_permissions_and_requests()
-        migrate_vehicle_gps_logs()
-except Exception as _e:
-    print(f"[STARTUP ERROR] {_e}")
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_google_auth_columns()
+            migrate_no_show_column()
+            migrate_booking_reviews()
+            migrate_smtp_oauth_keys()
+            migrate_archive_columns()
+            migrate_chat_faq_and_ai_controls()
+            migrate_staff_permissions_and_requests()
+            migrate_vehicle_gps_logs()
+    except Exception as _e:
+        print(f"[STARTUP ERROR] {_e}")
 
 
 

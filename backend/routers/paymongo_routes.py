@@ -1103,8 +1103,9 @@ def _apply_violation_strikes(expired_rows):
         booking_id = erow.get('id')
         if not uid:
             continue
+        conn = None
         try:
-            conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+            conn = psycopg.connect(conninfo=SUPABASE_DB_URL, autocommit=True, prepare_threshold=None)
             cur = conn.cursor(row_factory=dict_row)
 
             # Fetch current user violation state
@@ -1114,12 +1115,12 @@ def _apply_violation_strikes(expired_rows):
             """, (uid,))
             urow = cur.fetchone()
             if not urow:
-                conn.close()
+                cur.close()
                 continue
 
             # Skip if already permanently restricted
             if urow.get('violation_permanently_restricted'):
-                conn.close()
+                cur.close()
                 continue
 
             # Auto-reset strikes if enough clean days have passed
@@ -1168,9 +1169,7 @@ def _apply_violation_strikes(expired_rows):
                 VALUES (%s, %s, %s, %s, %s)
             """, (uid, booking_id, new_strikes, suspension_type, suspension_until))
 
-            conn.commit()
             cur.close()
-            conn.close()
 
             # Send notification to user
             try:
@@ -1208,6 +1207,10 @@ def _apply_violation_strikes(expired_rows):
 
         except Exception as err:
             print(f"[Violation] Error processing user {uid}: {err}")
+        finally:
+            if conn and not conn.closed:
+                try: conn.close()
+                except Exception: pass
 
 
 def _send_payment_deadline_warnings():
