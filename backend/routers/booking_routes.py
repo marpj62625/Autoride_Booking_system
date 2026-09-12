@@ -256,7 +256,7 @@ def cancel_booking(booking_id):
 
         cur.execute("""
             UPDATE bookings
-            SET status = 'Cancelled', balance_amount = 0.00, cancellation_reason = %s, cancelled_by = 'Customer'
+            SET status = 'Cancelled', balance_amount = 0.00, points_earned = 0, cancellation_reason = %s, cancelled_by = 'Customer'
             WHERE id = %s
         """, (reason, booking_id))
 

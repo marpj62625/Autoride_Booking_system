@@ -189,9 +189,9 @@ def generate_booking_pdf(booking, user, vehicle, payment=None):
             add_row('Remaining Balance Due', 0, custom_val_str='PHP 0.00 (Fully Settled)', is_bold=True)
             pdf.set_text_color(0, 0, 0)
 
-    # Points Earned
+    # Points Earned — only award/display if booking is successfully COMPLETED
     earned = booking.get('points_earned', 0)
-    if earned and earned > 0:
+    if b_status == 'COMPLETED' and earned and earned > 0:
         pdf.ln(4)
         pdf.set_font('Helvetica', 'I', 9)
         pdf.set_text_color(21, 128, 61)

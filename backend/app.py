@@ -7171,6 +7171,7 @@ def user_cancel_booking():
             UPDATE bookings
             SET status = 'Cancelled',
                 balance_amount = 0.00,
+                points_earned = 0,
                 payment_status = %s,
                 cancellation_reason = %s,
                 cancelled_by = 'customer',
