@@ -575,7 +575,9 @@ def start_deadline_monitor():
     t = threading.Thread(target=monitor_loop, daemon=True)
     t.start()
 
-start_deadline_monitor()
+# Only start the background daemon loop on standalone/local server, NEVER in Vercel serverless functions!
+if not os.environ.get('VERCEL') and not os.environ.get('AWS_LAMBDA_FUNCTION_NAME'):
+    start_deadline_monitor()
 
 
 def migrate_settings_v2():
@@ -753,11 +755,12 @@ def migrate_settings_v2():
 
 
 # Run migration on startup
-try:
-    with app.app_context():
-        migrate_settings_v2()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_settings_v2()
+    except Exception as _e:
+        pass
 
 
 
@@ -792,11 +795,12 @@ def migrate_payment_cancellation():
 
 
 
-try:
-    with app.app_context():
-        migrate_payment_cancellation()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_payment_cancellation()
+    except Exception as _e:
+        pass
 
 
 def migrate_notifications():
@@ -856,11 +860,12 @@ def migrate_notifications():
 
 
 
-try:
-    with app.app_context():
-        migrate_notifications()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_notifications()
+    except Exception as _e:
+        pass
 
 def migrate_chat():
 
@@ -943,11 +948,12 @@ def migrate_fcm_tokens():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_fcm_tokens()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_fcm_tokens()
+    except Exception as _e:
+        pass
 
 
 def migrate_violation_system():
@@ -1003,11 +1009,12 @@ def migrate_violation_system():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_violation_system()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_violation_system()
+    except Exception as _e:
+        pass
 
 
 def migrate_return_reminders():
@@ -1036,11 +1043,12 @@ def migrate_return_reminders():
     except Exception as e:
         print(f"DEBUG: migrate_return_reminders error (non-fatal): {e}")
 
-try:
-    with app.app_context():
-        migrate_return_reminders()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_return_reminders()
+    except Exception as _e:
+        pass
 
 
 def migrate_penalty_settings():
@@ -1070,11 +1078,12 @@ def migrate_penalty_settings():
     finally:
         if 'cur' in locals(): cur.close()
 
-try:
-    with app.app_context():
-        migrate_penalty_settings()
-except Exception as _e:
-    pass
+if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
+    try:
+        with app.app_context():
+            migrate_penalty_settings()
+    except Exception as _e:
+        pass
 
 
 
