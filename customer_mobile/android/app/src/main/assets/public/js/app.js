@@ -5466,11 +5466,15 @@ function renderBookingsList(data) {
             payBadgeExtra = '<span style="margin-left:8px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="margin-right:3px;"></i>Pay within 30m</span>';
           }
         }
+        var isCancelledOrRefund = (b.status === 'Cancelled' || b.status === 'Rejected' || b.payment_status === 'Refund Pending' || b.payment_status === 'Refunded');
+        var balBadge = (!isCancelledOrRefund && parseFloat(b.balance_amount || 0) > 0)
+          ? '<span style="margin-left:4px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);"><i class="fas fa-exclamation-circle" style="margin-right:3px;"></i>Bal: ' + formatPHP(b.balance_amount) + '</span>'
+          : '';
         return '<div style="display:flex;align-items:center;justify-content:space-between;">' +
           '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
             '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + payColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
             payBadgeExtra +
-            (parseFloat(b.balance_amount || 0) > 0 ? '<span style="margin-left:4px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);"><i class="fas fa-exclamation-circle" style="margin-right:3px;"></i>Bal: ' + formatPHP(b.balance_amount) + '</span>' : '') +
+            balBadge +
           '</div>' +
           '<div style="font-weight:800;font-size:1.1rem;color:var(--primary);">' + formatPHP(b.total_price) + '</div>' +
         '</div>';
@@ -5568,10 +5572,11 @@ function openBookingDetail(bookingId) {
 }
 
 function renderBookingDetail(b) {
-  var canCancel = b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved';
+  var isCancelledOrRefunded = (b.status === 'Cancelled' || b.status === 'Rejected' || b.payment_status === 'Refund Pending' || b.payment_status === 'Refunded');
+  var canCancel = (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') && !isCancelledOrRefunded;
   var canReview = b.status === 'Completed';
-  var canPayBalance = (b.payment_status === 'Partially Paid' || parseFloat(b.balance_amount || 0) > 0);
-  var canPayNow = (b.payment_status === 'Unpaid' || b.payment_status === 'Pending Payment' || b.payment_status === 'Downpayment unpaid') && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved');
+  var canPayBalance = !isCancelledOrRefunded && (b.payment_status === 'Partially Paid' || parseFloat(b.balance_amount || 0) > 0) && (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved' || b.status === 'Completed');
+  var canPayNow = (b.payment_status === 'Unpaid' || b.payment_status === 'Pending Payment' || b.payment_status === 'Downpayment unpaid') && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') && !isCancelledOrRefunded;
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
 
@@ -5817,6 +5822,7 @@ function renderBookingDetail(b) {
 
       // Outstanding Penalty & Balance Alert Banner
       (function() {
+        if (isCancelledOrRefunded) return '';
         var bal = parseFloat(b.balance_amount || 0);
         if (bal <= 0) return '';
         var pen = parseFloat(b.penalty_amount || 0);
@@ -5852,24 +5858,42 @@ function renderBookingDetail(b) {
         '</div>' +
       '</div>' +
 
-      // Status grid: payment status / total price / booking status
-      '<div style="display:flex;flex-wrap:wrap;gap:20px;margin-bottom:24px;">' +
-        '<div style="flex:1;min-width:110px;">' +
+      // Status grid: payment status / payment method / total price / booking status
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:12px;margin-bottom:16px;">' +
+        '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
           '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + pColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
         '</div>' +
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Payment Method</div>' +
+          '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + (b.payment_method || (b.payment_type ? b.payment_type : 'N/A')) + '</div>' +
+        '</div>' +
         (b.discount_amount && parseFloat(b.discount_amount) > 0 ? 
-        '<div style="flex:1;min-width:110px;">' +
+        '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Discount Applied</div>' +
           '<div style="font-size:1rem;font-weight:700;color:var(--success);">-₱' + (parseFloat(b.discount_amount) || 0).toFixed(2) + '</div>' +
         '</div>' : '') +
-        '<div style="flex:1;min-width:110px;">' +
+        '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
           '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">₱' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
         '</div>' +
-        '<div style="flex:1;min-width:110px;">' +
+        '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
           '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + sColor + ';color:#fff;">' + b.status.toUpperCase() + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      // Payment Settlement Record (Amount Paid vs Balance)
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+        '<div>' +
+          '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Amount Paid:</span>' +
+          '<strong style="font-size:0.9rem;color:#16a34a;">' + formatPHP(b.amount_paid || 0) + '</strong>' +
+        '</div>' +
+        '<div>' +
+          '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Balance Due:</span>' +
+          '<strong style="font-size:0.9rem;color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#16a34a')) + ';">' + 
+            (isCancelledOrRefunded ? '₱0.00 (Cancelled)' : (parseFloat(b.balance_amount || 0) > 0 ? formatPHP(b.balance_amount) : '₱0.00 (Settled)')) + 
+          '</strong>' +
         '</div>' +
       '</div>' +
 

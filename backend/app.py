@@ -4529,6 +4529,7 @@ def book():
             WHERE user_id = %s
               AND balance_amount > 0
               AND status NOT IN ('Cancelled', 'Rejected')
+              AND payment_status NOT IN ('Refund Pending', 'Refunded', 'Cancelled')
             ORDER BY id DESC LIMIT 1
         """, (user_id,))
         unpaid_bk = cur.fetchone()
@@ -5062,7 +5063,9 @@ def user_bookings():
                    b.start_time, b.end_time,
                    b.pickup_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
                    b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
-                   b.payment_type, b.amount_paid, b.balance_amount,
+                   b.payment_type, b.amount_paid,
+                   CASE WHEN b.status IN ('Cancelled', 'Rejected') THEN 0.00 ELSE b.balance_amount END AS balance_amount,
+                   (SELECT p.method FROM payments p WHERE p.booking_id = b.id ORDER BY p.id DESC LIMIT 1) AS payment_method,
                    b.applied_coupon_id, b.discount_amount, b.points_redeemed, b.points_earned,
                    b.cancellation_reason, b.cancelled_by,
                    COALESCE(b.refund_amount, 0) AS refund_amount,
@@ -7167,6 +7170,7 @@ def user_cancel_booking():
         cur.execute("""
             UPDATE bookings
             SET status = 'Cancelled',
+                balance_amount = 0.00,
                 payment_status = %s,
                 cancellation_reason = %s,
                 cancelled_by = 'customer',
@@ -8434,28 +8438,27 @@ def download_receipt(booking_id):
         
 
         # 2. Fetch User
-
-        cur.execute("SELECT full_name, email FROM users WHERE id = %s", (booking_dict['user_id'],))
-
+        cur.execute("SELECT full_name, email, phone FROM users WHERE id = %s", (booking_dict['user_id'],))
         user = cur.fetchone()
-
         user_dict = dict(user) if user else {"full_name": "Valued Customer", "email": "N/A"}
 
-        
-
         # 3. Fetch Vehicle
-
         cur.execute("SELECT brand, model, plate_number FROM vehicles WHERE id = %s", (booking_dict['vehicle_id'],))
-
         vehicle = cur.fetchone()
-
         vehicle_dict = dict(vehicle) if vehicle else {"brand": "Unknown", "model": "Vehicle", "plate_number": "N/A"}
 
-        
+        # 3b. Fetch Payment Details
+        cur.execute("""
+            SELECT method, reference_number, amount, status, created_at 
+            FROM payments 
+            WHERE booking_id = %s 
+            ORDER BY id DESC LIMIT 1
+        """, (booking_id,))
+        payment = cur.fetchone()
+        payment_dict = dict(payment) if payment else None
 
         # 4. Generate PDF
-
-        pdf_content = generate_booking_pdf(booking_dict, user_dict, vehicle_dict)
+        pdf_content = generate_booking_pdf(booking_dict, user_dict, vehicle_dict, payment_dict)
 
         
 

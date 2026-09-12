@@ -50,6 +50,7 @@ def book_vehicle():
             WHERE user_id = %s
               AND balance_amount > 0
               AND status NOT IN ('Cancelled', 'Rejected')
+              AND payment_status NOT IN ('Refund Pending', 'Refunded', 'Cancelled')
             ORDER BY id DESC LIMIT 1
         """, (user_id,))
         unpaid_bk = cur.fetchone()
@@ -255,7 +256,7 @@ def cancel_booking(booking_id):
 
         cur.execute("""
             UPDATE bookings
-            SET status = 'Cancelled', cancellation_reason = %s, cancelled_by = 'Customer'
+            SET status = 'Cancelled', balance_amount = 0.00, cancellation_reason = %s, cancelled_by = 'Customer'
             WHERE id = %s
         """, (reason, booking_id))
 
