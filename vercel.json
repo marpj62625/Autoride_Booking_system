@@ -21,7 +21,17 @@
       "use": "@vercel/static"
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron/tick",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "routes": [
+    {
+      "src": "/cron/(.*)",
+      "dest": "/api/index.py"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/api/index.py"

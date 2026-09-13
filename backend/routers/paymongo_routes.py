@@ -496,7 +496,10 @@ def payment_cancel():
 def paymongo_webhook():
     """
     PayMongo sends payment events here.
-    Verifies signature and processes payment.payment.paid events.
+    Verifies signature (supports both Live 'li' and Test 'te' keys) and processes:
+    - checkout_session.payment.paid
+    - payment.paid
+    - payment_intent.succeeded
     """
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Paymongo-Signature', '')
@@ -504,28 +507,37 @@ def paymongo_webhook():
     # Verify webhook signature using active dynamic secret
     cfg = get_paymongo_config()
     wh_secret = cfg.get('webhook_secret') or PAYMONGO_WEBHOOK_SECRET
+    mode = cfg.get('mode', 'test')
 
     if wh_secret and sig_header:
         try:
             parts = dict(p.split('=', 1) for p in sig_header.split(','))
             timestamp = parts.get('t', '')
-            test_sig = parts.get('te', parts.get('li', ''))
+            # PayMongo sends 'li' for live events and 'te' for test events
+            active_sig = parts.get('li') if mode == 'live' else (parts.get('te') or parts.get('li'))
+            if not active_sig:
+                active_sig = parts.get('li') or parts.get('te') or ''
+
             signed_payload = f'{timestamp}.{payload}'
             expected = hmac.new(
                 wh_secret.encode(),
                 signed_payload.encode(),
                 hashlib.sha256
             ).hexdigest()
-            if not hmac.compare_digest(expected, test_sig):
+
+            if not hmac.compare_digest(expected, active_sig):
+                print(f"[PayMongo Webhook] Signature mismatch. mode={mode}, expected={expected[:8]}..., got={active_sig[:8]}...")
                 return jsonify({'error': 'Invalid signature'}), 400
-        except Exception:
-            pass  # Don't block if signature check fails in dev
+        except Exception as _sig_err:
+            print(f"[PayMongo Webhook] Signature verification error: {_sig_err}")
+            return jsonify({'error': 'Signature verification error'}), 400
 
     try:
         event = json.loads(payload)
         event_type = event.get('data', {}).get('attributes', {}).get('type', '')
+        print(f"[PayMongo Webhook] Processing event: {event_type}")
 
-        if event_type in ('payment.paid', 'checkout_session.payment.paid'):
+        if event_type in ('payment.paid', 'checkout_session.payment.paid', 'payment_intent.succeeded'):
             event_data = event.get('data', {}).get('attributes', {}).get('data', {})
             payment_attrs = event_data.get('attributes', {})
             metadata = payment_attrs.get('metadata', {})
@@ -548,23 +560,59 @@ def paymongo_webhook():
             amount = raw_amount / 100 if raw_amount else 0
             ref_num = event_data.get('id', 'online')
 
+            # Fallback for booking_id if metadata was not preserved in third-party gateway redirect
+            if not booking_id:
+                # 1. Check description
+                desc = payment_attrs.get('description', '')
+                import re
+                m = re.search(r'Booking\s*#?(\d+)', desc, re.IGNORECASE)
+                if m:
+                    booking_id = m.group(1)
+
+            if not booking_id:
+                # 2. Check line items
+                line_items = payment_attrs.get('line_items', [])
+                import re
+                for li in line_items:
+                    li_name = li.get('name', '')
+                    m = re.search(r'Booking\s*#?(\d+)', li_name, re.IGNORECASE)
+                    if m:
+                        booking_id = m.group(1)
+                        break
+
+            if not booking_id:
+                # 3. Match by session/link id in database
+                session_id = event_data.get('id')
+                if session_id:
+                    try:
+                        cur = get_cursor()
+                        cur.execute("SELECT id FROM bookings WHERE paymongo_link_id = %s", (session_id,))
+                        b_row = cur.fetchone()
+                        if b_row:
+                            booking_id = b_row['id']
+                        cur.close()
+                    except Exception as _b_err:
+                        print(f"[PayMongo Webhook] Lookup by paymongo_link_id failed: {_b_err}")
+
             if booking_id:
                 payment_type = metadata.get('payment_type', 'Full')
                 if payment_type == 'Extension':
-                    # Extension payment is confirmed by the frontend calling check_payment_status,
-                    # and the extension is submitted to the backend as pending.
-                    pass
+                    print(f"[PayMongo Webhook] Extension payment received for booking #{booking_id}")
                 else:
                     cur = get_cursor()
                     cur.execute("SELECT payment_type, payment_status FROM bookings WHERE id = %s", (booking_id,))
                     booking = cur.fetchone()
                     if booking:
+                        print(f"[PayMongo Webhook] Auto-confirming booking #{booking_id}: amount={amount}, method={method}")
                         _confirm_payment(booking_id, amount, method, ref_num, payment_type)
+                    cur.close()
+            else:
+                print(f"[PayMongo Webhook] Warning: Could not identify booking_id for event {event_data.get('id')}")
 
         return jsonify({'received': True}), 200
 
     except Exception as e:
-        print(f'WEBHOOK ERROR: {e}')
+        print(f'[PayMongo Webhook] Error: {e}')
         return jsonify({'error': str(e)}), 500
 
 

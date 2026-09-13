@@ -474,6 +474,128 @@ def trigger_return_reminders():
         return jsonify({"error": str(e)}), 500
 
 
+def check_no_show_bookings():
+    """Checks Confirmed/Approved bookings 2 hours past pickup time and alerts admins."""
+    try:
+        from database import get_connection, release_connection
+        from datetime import datetime, timezone, timedelta
+        from psycopg.rows import dict_row
+        PH = timezone(timedelta(hours=8))
+        now_ph = datetime.now(tz=PH)
+
+        conn = None
+        try:
+            conn = get_connection()
+            cur = conn.cursor(row_factory=dict_row)
+            cur.execute("""
+                SELECT b.booking_id, b.booking_id AS id, b.start_date, b.start_time, COALESCE(u.full_name, 'Unknown') as customer_name
+                FROM bookings b
+                LEFT JOIN users u ON b.user_id = u.user_id
+                WHERE b.status IN ('Confirmed', 'Approved')
+                  AND b.no_show_notified_at IS NULL
+            """)
+            active_bookings = cur.fetchall() or []
+
+            for bk in active_bookings:
+                b_id = bk.get('booking_id') or bk.get('id')
+                pickup_date = bk['start_date']
+                if hasattr(pickup_date, 'date'):
+                    pickup_date = pickup_date.date()
+                pickup_time_str = bk.get('start_time') or '06:00'
+                if hasattr(pickup_time_str, 'strftime'):
+                    pickup_time_str = pickup_time_str.strftime('%H:%M')
+                try:
+                    ph_hour, ph_min = map(int, str(pickup_time_str)[:5].split(':'))
+                except Exception:
+                    ph_hour, ph_min = 6, 0
+
+                pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
+                deadline_dt = pickup_dt + timedelta(hours=2)
+
+                if now_ph >= deadline_dt:
+                    print(f"[MONITOR] Booking #{b_id} is 2 hours past pickup time. Alerting admins.")
+                    from notifications import notification_service
+                    try:
+                        notification_service.notify_admins_inapp(
+                            f"⚠️ No Show Alert: Booking #{b_id}",
+                            f"Customer '{bk['customer_name']}' has not shown up. Scheduled pickup was {pickup_date} at {pickup_time_str}. Please mark as No Show.",
+                            "admin_no_show",
+                            type="admin_no_show",
+                            booking_id=b_id
+                        )
+                    except Exception as n_err:
+                        print(f"Failed to send admin no-show alert push: {n_err}")
+
+                    cur.execute("UPDATE bookings SET no_show_notified_at = NOW() WHERE booking_id = %s", (b_id,))
+                    conn.commit()
+            cur.close()
+        finally:
+            if conn:
+                release_connection(conn)
+    except Exception as ns_err:
+        print("[NoShowCheck] error:", ns_err)
+
+
+@app.route('/cron/tick', methods=['GET', 'POST'])
+@app.route('/api/cron/tick', methods=['GET', 'POST'])
+def cron_tick():
+    """
+    Automated tick endpoint for Vercel Cron or external schedulers (e.g. cron-job.org).
+    Executes background business checks:
+    1. Unpaid PayMongo booking expiry (30m timer), auto-cancel, violation strikes, 15m/5m warnings
+    2. Approaching vehicle return reminders (3d, 24h, 5h, 1h, 30m, overdue)
+    3. No-show alert notifications for pickups 2 hours overdue
+    4. Conflict / extension deadlines
+    """
+    # Verify optional CRON_SECRET if configured in env
+    cron_secret = os.environ.get('CRON_SECRET')
+    if cron_secret:
+        auth_header = request.headers.get('Authorization', '')
+        query_key = request.args.get('key', '')
+        expected_bearer = f"Bearer {cron_secret}"
+        if auth_header != expected_bearer and query_key != cron_secret:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+    results = {}
+
+    # 1. PayMongo unpaid bookings check + 30-min auto-cancel + strikes + 15m/5m warnings
+    try:
+        from routers.paymongo_routes import check_and_update_unpaid_paymongo_bookings
+        check_and_update_unpaid_paymongo_bookings()
+        results['unpaid_bookings'] = 'ok'
+    except Exception as e:
+        results['unpaid_bookings'] = f'error: {e}'
+
+    # 2. Vehicle return reminders
+    try:
+        check_approaching_return_deadlines()
+        results['return_reminders'] = 'ok'
+    except Exception as e:
+        results['return_reminders'] = f'error: {e}'
+
+    # 3. No-show checks
+    try:
+        check_no_show_bookings()
+        results['no_show_alerts'] = 'ok'
+    except Exception as e:
+        results['no_show_alerts'] = f'error: {e}'
+
+    # 4. Expired extension conflict checks
+    try:
+        from services.extension_service import check_expired_deadlines
+        check_expired_deadlines()
+        results['extension_deadlines'] = 'ok'
+    except Exception as e:
+        results['extension_deadlines'] = f'error: {e}'
+
+    from datetime import datetime, timezone
+    return jsonify({
+        'status': 'success',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+        'results': results
+    }), 200
+
+
 def start_deadline_monitor():
     def monitor_loop():
         # Wait a short while on startup
@@ -495,80 +617,30 @@ def start_deadline_monitor():
                     if exists:
                         from services.extension_service import check_expired_deadlines
                         check_expired_deadlines()
-
-                    # ── Check for no-show alerts (2hrs past pickup, still Confirmed/Approved, not yet notified) ──
-                    try:
-                        from datetime import datetime, timezone, timedelta
-                        from psycopg.rows import dict_row
-                        PH = timezone(timedelta(hours=8))
-                        now_ph = datetime.now(tz=PH)
-
-                        # We run a separate query with dict_row or manual fetch to get bookings
-                        # Select Confirmed/Approved bookings where no_show_notified_at is null
-                        cur.close()
-                        cur = conn.cursor(row_factory=dict_row)
-                        cur.execute("""
-                            SELECT b.booking_id, b.booking_id AS id, b.start_date, b.start_time, COALESCE(u.full_name, 'Unknown') as customer_name
-                            FROM bookings b
-                            LEFT JOIN users u ON b.user_id = u.user_id
-                            WHERE b.status IN ('Confirmed', 'Approved')
-                              AND b.no_show_notified_at IS NULL
-                        """)
-                        active_bookings = cur.fetchall()
-
-                        for bk in active_bookings:
-                            b_id = bk.get('booking_id') or bk.get('id')
-                            pickup_date = bk['start_date']
-                            if hasattr(pickup_date, 'date'):
-                                pickup_date = pickup_date.date()
-                            pickup_time_str = bk.get('start_time') or '06:00'
-                            # Handle time objects (not just strings)
-                            if hasattr(pickup_time_str, 'strftime'):
-                                pickup_time_str = pickup_time_str.strftime('%H:%M')
-                            try:
-                                ph_hour, ph_min = map(int, str(pickup_time_str)[:5].split(':'))
-                            except Exception:
-                                ph_hour, ph_min = 6, 0
-
-                            pickup_dt = datetime(pickup_date.year, pickup_date.month, pickup_date.day, ph_hour, ph_min, tzinfo=PH)
-                            deadline_dt = pickup_dt + timedelta(hours=2)
-
-                            if now_ph >= deadline_dt:
-                                # Trigger alert!
-                                print(f"[MONITOR] Booking #{b_id} is 2 hours past pickup time. Alerting admins.")
-                                from notifications import notification_service
-                                try:
-                                    notification_service.notify_admins_inapp(
-                                        f"⚠️ No Show Alert: Booking #{b_id}",
-                                        f"Customer '{bk['customer_name']}' has not shown up. Scheduled pickup was {pickup_date} at {pickup_time_str}. Please mark as No Show.",
-                                        "admin_no_show",
-                                        type="admin_no_show",
-                                        booking_id=b_id
-                                    )
-                                except Exception as n_err:
-                                    print(f"Failed to send admin no-show alert push: {n_err}")
-
-                                # Update notified status
-                                cur.execute("UPDATE bookings SET no_show_notified_at = NOW() WHERE booking_id = %s", (b_id,))
-                                conn.commit()
-
-                    except Exception as ns_err:
-                        print("Deadline monitor thread no-show check failed:", ns_err)
-
-                except Exception as e:
-                    print("Deadline monitor thread table check failed:", e)
                 finally:
                     if conn:
                         release_connection(conn)
-
             except Exception as e:
-                print("Deadline monitor thread error:", e)
+                print("Deadline monitor thread table check failed:", e)
+
+            # Check no-show alerts
+            try:
+                check_no_show_bookings()
+            except Exception as ns_err:
+                print("Deadline monitor thread no-show check failed:", ns_err)
 
             # Check approaching vehicle return deadlines (3d, 24h, 5h, 1h, 30m, overdue)
             try:
                 check_approaching_return_deadlines()
             except Exception as _rd_err:
                 print("Deadline monitor thread return reminders check failed:", _rd_err)
+
+            # Check unpaid PayMongo bookings (30-min auto-cancel, strike, warnings)
+            try:
+                from routers.paymongo_routes import check_and_update_unpaid_paymongo_bookings
+                check_and_update_unpaid_paymongo_bookings()
+            except Exception as _pm_err:
+                print("Deadline monitor thread unpaid PayMongo check failed:", _pm_err)
 
             time.sleep(60)  # Check every 60 seconds (1 minute) for accurate reminders
 
