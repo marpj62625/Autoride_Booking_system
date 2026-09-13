@@ -7757,31 +7757,46 @@ function renderCompanyReviews(data, filterStars) {
     list.innerHTML = filtered.map(function(r) {
       var initials = (r.full_name || 'Customer').split(' ').map(function(n) { return n[0]; }).slice(0,2).join('').toUpperCase();
       var avatar = r.profile_picture
-        ? '<img src="' + escapeHtml(r.profile_picture) + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;">'
+        ? '<img src="' + escapeHtml(r.profile_picture) + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
         : '<div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#059669);color:#fff;font-weight:800;font-size:0.95rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + initials + '</div>';
 
-      return '<div class="review-item" style="border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--bg-card);">' +
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">' +
-          '<div style="display:flex;align-items:center;gap:12px;">' +
-            avatar +
-            '<div>' +
-              '<div style="font-weight:800;font-size:0.95rem;color:var(--text-primary);display:flex;align-items:center;gap:6px;">' +
-                escapeHtml(r.full_name || 'Verified Renter') +
-                '<span style="background:rgba(0,177,79,0.1);color:var(--primary);font-size:0.65rem;padding:2px 6px;border-radius:6px;font-weight:700;"><i class="fas fa-check-circle"></i> Verified</span>' +
+      var rawComment = (r.comment || '').trim();
+      var highlightsText = '';
+      var commentBody = rawComment;
+      if (rawComment.indexOf('Highlights:') === 0) {
+        var parts = rawComment.split(' — ');
+        highlightsText = parts[0].replace('Highlights:', '').trim();
+        commentBody = parts.slice(1).join(' — ').trim();
+      }
+
+      var badgesHtml = '';
+      if (r.vehicle_name) {
+        badgesHtml += '<div style="font-size:0.72rem;color:var(--text-secondary);display:inline-flex;align-items:center;gap:5px;background:var(--bg-input);padding:3px 8px;border-radius:6px;border:1px solid var(--border);"><i class="fas fa-car" style="color:var(--primary);"></i> Rented: ' + escapeHtml(r.vehicle_name) + '</div>';
+      }
+      if (highlightsText) {
+        badgesHtml += '<div style="font-size:0.72rem;color:var(--primary);display:inline-flex;align-items:center;gap:5px;background:rgba(0,177,79,0.08);padding:3px 8px;border-radius:6px;border:1px solid rgba(0,177,79,0.2);font-weight:600;"><i class="fas fa-thumbs-up"></i> ' + escapeHtml(highlightsText) + '</div>';
+      }
+
+      return '<div class="review-item" style="border:1px solid var(--border);border-radius:16px;padding:16px;background:var(--bg-card);box-shadow:0 1px 4px rgba(0,0,0,0.02);">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">' +
+          avatar +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+              '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
+                '<span style="font-weight:800;font-size:0.92rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">' + escapeHtml(r.full_name || 'Verified Renter') + '</span>' +
+                '<span style="background:rgba(0,177,79,0.1);color:var(--primary);font-size:0.65rem;padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap;flex-shrink:0;"><i class="fas fa-check-circle"></i> Verified</span>' +
               '</div>' +
-              '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' +
-                (r.created_at || 'Recent rental') +
+              '<div style="color:#f59e0b;font-size:0.8rem;white-space:nowrap;flex-shrink:0;letter-spacing:1px;">' +
+                getStarIconsHtml(r.rating || 5) +
               '</div>' +
             '</div>' +
-          '</div>' +
-          '<div style="color:#f59e0b;font-size:0.85rem;white-space:nowrap;">' +
-            getStarIconsHtml(r.rating || 5) +
+            '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' +
+              escapeHtml(r.created_at || 'Recent rental') +
+            '</div>' +
           '</div>' +
         '</div>' +
-        (r.vehicle_name ? '<div style="font-size:0.75rem;color:var(--text-secondary);margin-bottom:8px;display:inline-flex;align-items:center;gap:5px;background:var(--bg-input);padding:3px 8px;border-radius:6px;border:1px solid var(--border);"><i class="fas fa-car" style="color:var(--primary);"></i> Rented: ' + escapeHtml(r.vehicle_name) + '</div>' : '') +
-        '<p style="font-size:0.875rem;color:var(--text-primary);line-height:1.5;margin:0;">' +
-          escapeHtml(r.comment || 'Great experience with Autoride! Highly recommended.') +
-        '</p>' +
+        (badgesHtml ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">' + badgesHtml + '</div>' : '') +
+        (commentBody ? '<p style="font-size:0.85rem;color:var(--text-primary);line-height:1.5;margin:0;">' + escapeHtml(commentBody) + '</p>' : '') +
       '</div>';
     }).join('');
   }
