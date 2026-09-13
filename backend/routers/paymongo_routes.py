@@ -1248,21 +1248,32 @@ def _apply_violation_strikes(expired_rows):
 
 def _send_payment_deadline_warnings():
     """
-    Sends in-app notifications at 15-min and 5-min before the 30-min payment deadline.
+    Sends in-app and push notifications at 15-min and 5-min before the 30-min payment deadline.
     Called during check_and_update_unpaid_paymongo_bookings().
+    Guarantees each warning is sent strictly once per booking using database flags.
     """
+    import psycopg
+    from config import SUPABASE_DB_URL
+    from psycopg.rows import dict_row
+    from datetime import datetime, timezone
+
+    conn = None
     try:
-        cur = get_cursor()
+        conn = psycopg.connect(conninfo=SUPABASE_DB_URL)
+        cur = conn.cursor(row_factory=dict_row)
         cur.execute("""
-            SELECT id, user_id, created_at FROM bookings
+            SELECT id, user_id, created_at,
+                   COALESCE(warning_15min_sent, FALSE) AS warning_15min_sent,
+                   COALESCE(warning_5min_sent, FALSE) AS warning_5min_sent
+            FROM bookings
             WHERE payment_status IN ('Unpaid', 'Downpayment unpaid')
               AND status IN ('Pending', 'Pending Payment')
               AND paymongo_link_id IS NOT NULL AND paymongo_link_id != ''
               AND created_at > NOW() - INTERVAL '30 minutes'
               AND created_at < NOW() - INTERVAL '14 minutes'
+              AND (warning_15min_sent IS NOT TRUE OR warning_5min_sent IS NOT TRUE)
         """)
         warn_rows = cur.fetchall() or []
-        cur.close()
 
         for row in warn_rows:
             uid = row.get('user_id')
@@ -1270,17 +1281,18 @@ def _send_payment_deadline_warnings():
             created = row.get('created_at')
             if not uid or not created:
                 continue
+
             try:
-                from datetime import datetime, timezone, timedelta
                 if created.tzinfo is None:
                     created = created.replace(tzinfo=timezone.utc)
                 now_utc = datetime.now(timezone.utc)
                 elapsed = (now_utc - created).total_seconds() / 60
-                remaining = 30 - elapsed
 
-                # 15-min warning: between 14 and 16 minutes elapsed
-                if 14 <= elapsed < 16:
+                # 15-min warning: 14 to 24 min elapsed and not yet sent
+                if 14 <= elapsed < 24 and not row.get('warning_15min_sent'):
                     try:
+                        cur.execute("UPDATE bookings SET warning_15min_sent = TRUE WHERE id = %s", (bid,))
+                        conn.commit()
                         from notifications import Notification_Service
                         Notification_Service().notify_user(
                             uid,
@@ -1293,9 +1305,11 @@ def _send_payment_deadline_warnings():
                     except Exception as ne:
                         print(f"[Violation] 15-min warning notification error: {ne}")
 
-                # 5-min warning: between 24 and 26 minutes elapsed
-                elif 24 <= elapsed < 26:
+                # 5-min final warning: 24 to 30 min elapsed and not yet sent
+                elif 24 <= elapsed < 30 and not row.get('warning_5min_sent'):
                     try:
+                        cur.execute("UPDATE bookings SET warning_5min_sent = TRUE WHERE id = %s", (bid,))
+                        conn.commit()
                         from notifications import Notification_Service
                         Notification_Service().notify_user(
                             uid,
@@ -1306,7 +1320,13 @@ def _send_payment_deadline_warnings():
                         print(f"[Violation] 5-min warning sent for booking #{bid} user #{uid}")
                     except Exception as ne:
                         print(f"[Violation] 5-min warning notification error: {ne}")
-            except Exception:
-                pass
+            except Exception as item_err:
+                print(f"[Violation] Error processing deadline warning for booking #{bid}: {item_err}")
+
+        cur.close()
     except Exception as e:
         print(f"[Violation] Payment deadline warning check error: {e}")
+    finally:
+        if conn and not conn.closed:
+            try: conn.close()
+            except Exception: pass

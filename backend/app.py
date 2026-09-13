@@ -969,6 +969,10 @@ def migrate_violation_system():
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS violation_commitment_fee_required BOOLEAN DEFAULT FALSE")
         cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS violation_permanently_restricted BOOLEAN DEFAULT FALSE")
 
+        # Add payment warning tracking columns to bookings table
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS warning_15min_sent BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS warning_5min_sent BOOLEAN DEFAULT FALSE")
+
         # Create violation history table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS user_violation_history (
@@ -3548,12 +3552,16 @@ def register_fcm_token(user_id):
             
         cur = get_cursor()
         
+        # Clear this token from any OTHER user so only this active user has it
+        cur.execute(
+            "UPDATE users SET fcm_token = NULL WHERE fcm_token = %s AND id != %s",
+            (fcm_token, user_id)
+        )
         # Update user's FCM token
         cur.execute(
             "UPDATE users SET fcm_token = %s WHERE id = %s",
             (fcm_token, user_id)
         )
-        
         commit_db()
         
         return jsonify({
@@ -12674,6 +12682,11 @@ def register_admin_device_fcm_token():
             commit_db()
         except Exception:
             pass  # Column already exists or can't alter
+        # Clear this token from any other admin/user first
+        cur.execute(
+            "UPDATE users SET fcm_token = NULL WHERE fcm_token = %s AND id != %s",
+            (fcm_token, int(admin_id))
+        )
         cur.execute(
             "UPDATE users SET fcm_token = %s WHERE id = %s AND role IN ('admin', 'super_admin')",
             (fcm_token, int(admin_id))
@@ -12686,6 +12699,10 @@ def register_admin_device_fcm_token():
         # Try fallback: upsert via separate statement
         try:
             cur2 = get_cursor()
+            cur2.execute(
+                "UPDATE users SET fcm_token = NULL WHERE fcm_token = %s AND id != %s",
+                (fcm_token, int(admin_id))
+            )
             cur2.execute(
                 "UPDATE users SET fcm_token = %s WHERE id = %s",
                 (fcm_token, int(admin_id))
@@ -12720,15 +12737,48 @@ def register_user_fcm_token():
             commit_db()
         except Exception:
             pass  # Column already exists or can't alter
+
+        # Revoke this token from any OTHER user so only this active user has it
+        cur.execute(
+            "UPDATE users SET fcm_token = NULL WHERE fcm_token = %s AND id != %s",
+            (fcm_token, int(user_id))
+        )
         cur.execute(
             "UPDATE users SET fcm_token = %s WHERE id = %s",
             (fcm_token, int(user_id))
         )
         commit_db()
-        print(f"[FCM] User {user_id} token saved OK")
+        print(f"[FCM] User {user_id} token saved OK (unassigned from other accounts)")
         return jsonify({'message': 'FCM token registered'}), 200
     except Exception as e:
         print(f"[FCM] User FCM token save error: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/user/fcm-token/clear', methods=['POST'])
+@app.route('/api/user/fcm-token/clear', methods=['POST'])
+def clear_user_fcm_token():
+    """Clear FCM device token on logout for user or device"""
+    data = request.get_json(silent=True) or {}
+    user_id = data.get('user_id')
+    fcm_token = data.get('fcm_token')
+    if not user_id and not fcm_token:
+        return jsonify({'message': 'Nothing to clear'}), 200
+    try:
+        cur = get_cursor()
+        if user_id and fcm_token:
+            cur.execute("UPDATE users SET fcm_token = NULL WHERE id = %s OR fcm_token = %s", (int(user_id), fcm_token))
+        elif user_id:
+            cur.execute("UPDATE users SET fcm_token = NULL WHERE id = %s", (int(user_id),))
+        elif fcm_token:
+            cur.execute("UPDATE users SET fcm_token = NULL WHERE fcm_token = %s", (fcm_token,))
+        commit_db()
+        print(f"[FCM] Cleared token on logout: user_id={user_id}")
+        return jsonify({'message': 'FCM token cleared successfully'}), 200
+    except Exception as e:
+        print(f"[FCM] Clear token error: {e}")
         return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()

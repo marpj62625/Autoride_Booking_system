@@ -11147,47 +11147,36 @@ input:checked + .ctrl-slider:before {
 
 
         logout: function() {
-
-
-
+            try {
+                var adminUser = adminAuth.getUser();
+                if (adminUser && adminUser.id) {
+                    fetch(API_BASE_URL + '/user/fcm-token/clear', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: adminUser.id })
+                    }).catch(function() {});
+                }
+            } catch(e) {}
             localStorage.removeItem('admin_user');
-
-
-
             location.reload(); 
-
-
-
         },
 
-
-
         logoutAndExit: function() {
-
-
-
+            try {
+                var adminUser = adminAuth.getUser();
+                if (adminUser && adminUser.id) {
+                    fetch(API_BASE_URL + '/user/fcm-token/clear', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: adminUser.id })
+                    }).catch(function() {});
+                }
+            } catch(e) {}
             localStorage.removeItem('admin_user');
-
-
-
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-
-
-
                 window.Capacitor.Plugins.App.exitApp();
-
-
-
             } else {
-
-
-
                 location.reload();
-
-
-
-            }
-
 
 
         },

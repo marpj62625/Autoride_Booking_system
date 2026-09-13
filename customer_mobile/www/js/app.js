@@ -647,6 +647,12 @@ function subscribeToNotifications(userId) {
                     _showNotifPopup(title, msg, '#dc2626', 'fa-gavel');
                 } else if (type === 'penalty_adjusted') {
                     _showNotifPopup(title, msg, '#10b981', 'fa-check-circle');
+                } else if (type === 'payment_warning' || type === 'payment_warning_final') {
+                    _showNotifPopup(title, msg, '#f59e0b', 'fa-hourglass-half');
+                } else if (type === 'violation' || type === 'violation_blacklist') {
+                    _showNotifPopup(title, msg, '#dc2626', 'fa-ban');
+                } else if (type === 'violation_reset') {
+                    _showNotifPopup(title, msg, '#10b981', 'fa-check-circle');
                 }
 
                 // Any booking related event triggers live data refresh
@@ -655,6 +661,8 @@ function subscribeToNotifications(userId) {
                     type === 'booking_approved' || type === 'booking_confirmed' ||
                     type === 'booking_cancelled' || type === 'booking_cancelled_by_admin' ||
                     type === 'booking_completed' || type === 'payment_confirmed' ||
+                    type === 'payment_warning' || type === 'payment_warning_final' ||
+                    type === 'violation' || type === 'violation_reset' || type === 'violation_blacklist' ||
                     type === 'ready_for_pickup' || type === 'picked_up' ||
                     type === 'penalty_added' || type === 'late_penalty_applied' || type === 'penalty_adjusted' || type === 'extension_approved' ||
                     type === 'extension_rejected' || type === 'refund_processed'
@@ -1938,6 +1946,20 @@ function doForgotPassword() {
 // AUTH: LOGOUT
 function doLogout() {
   if (!confirm('Are you sure you want to log out?')) return;
+  var oldUserId = currentUser && currentUser.id;
+  var oldToken = window._fcmToken || (typeof PushNotifications !== 'undefined' && PushNotifications && PushNotifications.currentToken) || null;
+  if (oldUserId || oldToken) {
+    try {
+      apiCall('/user/fcm-token/clear', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: oldUserId, fcm_token: oldToken })
+      }).catch(function() {});
+    } catch(e) {}
+  }
+  window._fcmToken = null;
+  if (typeof PushNotifications !== 'undefined' && PushNotifications) {
+    PushNotifications.currentToken = null;
+  }
   window._googleLoginInProgress = false;
   unsubscribeFromNotifications();
   stopBgSessionPolling();
