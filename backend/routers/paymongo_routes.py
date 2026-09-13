@@ -537,7 +537,7 @@ def paymongo_webhook():
         event_type = event.get('data', {}).get('attributes', {}).get('type', '')
         print(f"[PayMongo Webhook] Processing event: {event_type}")
 
-        if event_type in ('payment.paid', 'checkout_session.payment.paid', 'payment_intent.succeeded'):
+        if event_type in ('payment.paid', 'checkout_session.payment.paid', 'payment_intent.succeeded', 'link.payment.paid'):
             event_data = event.get('data', {}).get('attributes', {}).get('data', {})
             payment_attrs = event_data.get('attributes', {})
             metadata = payment_attrs.get('metadata', {})
