@@ -260,11 +260,14 @@ class FCM_Service:
         Sends a push notification via FCM V1 API (service account) with
         legacy FCM HTTP API fallback if service account is unavailable.
         """
-        print(f"FCM_Service.send_push: Attempting to send push notification")
-        print(f"  - Token: {fcm_token[:20]}...{fcm_token[-10:] if len(fcm_token) > 30 else fcm_token}")
-        print(f"  - Title: {title}")
-        print(f"  - Body: {body}")
-        print(f"  - Channel: {channel_id}")
+        try:
+            print(f"FCM_Service.send_push: Attempting to send push notification")
+            print(f"  - Token: {fcm_token[:20]}...{fcm_token[-10:] if len(fcm_token) > 30 else fcm_token}")
+            print(f"  - Title: {title.encode('ascii', 'replace').decode('ascii')}")
+            print(f"  - Body: {body.encode('ascii', 'replace').decode('ascii')}")
+            print(f"  - Channel: {channel_id}")
+        except Exception:
+            pass
         
         # Build extra data dict for deep links
         extra_data = {
