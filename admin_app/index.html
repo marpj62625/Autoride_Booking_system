@@ -8598,29 +8598,62 @@ input:checked + .ctrl-slider:before {
 
 
 
-        <!-- VEHICLE MODAL -->
-    <div id="vehicleModal" style="display:none;position:fixed;inset:0;width:100%;height:100%;background:rgba(15,23,42,0.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:2000;overflow-y:auto;padding:24px 16px 48px;box-sizing:border-box;-webkit-overflow-scrolling:touch;" onclick="if(event.target === this) Vehicles.closeModal()">
-        <div style="background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:22px;max-width:640px;width:100%;margin:0 auto;box-shadow:0 25px 60px rgba(0,0,0,0.5);overflow:hidden;box-sizing:border-box;">
-            <!-- Sticky Header -->
-            <div style="padding:18px 24px;border-bottom:1px solid var(--border, rgba(255,255,255,0.08));display:flex;align-items:center;justify-content:space-between;background:var(--surface, #1e293b);position:sticky;top:0;z-index:10;">
+            <!-- VEHICLE MODAL -->
+    <style>
+        #vehicleModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 2000;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #vehicleModal[style*="display: block"] {
+            display: flex !important;
+        }
+        #vModalScrollBody::-webkit-scrollbar {
+            width: 6px;
+        }
+        #vModalScrollBody::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #vModalScrollBody::-webkit-scrollbar-thumb {
+            background: var(--border, rgba(255,255,255,0.2));
+            border-radius: 4px;
+        }
+        #vModalScrollBody::-webkit-scrollbar-thumb:hover {
+            background: var(--primary, #00B14F);
+        }
+    </style>
+    <div id="vehicleModal" onclick="if(event.target === this) Vehicles.closeModal()">
+        <form id="vehicleForm" style="position:relative;background:var(--surface, #1e293b);border:1px solid var(--border, rgba(255,255,255,0.12));border-radius:20px;max-width:620px;width:100%;max-height:calc(100vh - 32px);margin:auto;box-shadow:0 25px 60px rgba(0,0,0,0.6);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
+            <input type="hidden" id="editId">
+
+            <!-- PINNED HEADER -->
+            <div style="flex-shrink:0;padding:16px 20px;border-bottom:1px solid var(--border, rgba(255,255,255,0.08));display:flex;align-items:center;justify-content:space-between;background:var(--surface, #1e293b);">
                 <div style="display:flex;align-items:center;gap:12px;">
-                    <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,177,79,0.15);display:flex;align-items:center;justify-content:center;color:#00B14F;font-size:1.15rem;">
+                    <div style="width:38px;height:38px;border-radius:10px;background:rgba(0,177,79,0.15);display:flex;align-items:center;justify-content:center;color:#00B14F;font-size:1.1rem;">
                         <i class="fas fa-car-side"></i>
                     </div>
                     <div>
-                        <h2 id="modalTitle" style="font-size:1.25rem;font-weight:800;color:var(--text-primary, #ffffff);margin:0;line-height:1.2;">Add New Vehicle</h2>
-                        <p style="font-size:0.75rem;color:var(--text-muted, #94a3b8);margin:3px 0 0;">Fill in vehicle details, rates, and specifications</p>
+                        <h2 id="modalTitle" style="font-size:1.2rem;font-weight:800;color:var(--text-primary, #ffffff);margin:0;line-height:1.2;">Add New Vehicle</h2>
+                        <p style="font-size:0.72rem;color:var(--text-muted, #94a3b8);margin:2px 0 0;">Fill in vehicle details, rates, and specifications</p>
                     </div>
                 </div>
-                <button type="button" onclick="Vehicles.closeModal()" style="width:36px;height:36px;border-radius:10px;background:var(--surface-container, rgba(255,255,255,0.06));border:1px solid var(--border, rgba(255,255,255,0.1));color:var(--text-secondary, #94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#ef4444';" onmouseout="this.style.background='var(--surface-container, rgba(255,255,255,0.06))';this.style.color='var(--text-secondary, #94a3b8)';">
+                <button type="button" onclick="Vehicles.closeModal()" style="width:34px;height:34px;border-radius:8px;background:var(--surface-container, rgba(255,255,255,0.06));border:1px solid var(--border, rgba(255,255,255,0.1));color:var(--text-secondary, #94a3b8);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.95rem;transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#ef4444';" onmouseout="this.style.background='var(--surface-container, rgba(255,255,255,0.06))';this.style.color='var(--text-secondary, #94a3b8)';">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
-            <!-- Form Body -->
-            <form id="vehicleForm" style="padding:22px 24px;display:flex;flex-direction:column;gap:20px;margin:0;">
-                <input type="hidden" id="editId">
-
+            <!-- SCROLLABLE BODY (Scrolls smoothly with mouse wheel, touch swipe, trackpad) -->
+            <div id="vModalScrollBody" style="flex:1 1 auto;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 20px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box;">
                 <!-- VEHICLE PHOTOS -->
                 <div>
                     <label style="display:block;font-size:0.78rem;font-weight:800;color:var(--text-primary, #ffffff);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px;">
@@ -8629,10 +8662,10 @@ input:checked + .ctrl-slider:before {
                     </label>
                     <div id="vPhotoStrip" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;min-height:0;"></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <button type="button" onclick="VehiclePhotos.takePhoto()" style="padding:14px 10px;background:var(--surface-container, rgba(255,255,255,0.05));border:1.5px solid var(--border, rgba(255,255,255,0.1));border-radius:12px;color:var(--text-primary, #ffffff);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background 0.2s;">
+                        <button type="button" onclick="VehiclePhotos.takePhoto()" style="padding:13px 10px;background:var(--surface-container, rgba(255,255,255,0.05));border:1.5px solid var(--border, rgba(255,255,255,0.1));border-radius:12px;color:var(--text-primary, #ffffff);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:background 0.2s;">
                             <i class="fas fa-camera" style="font-size:1rem;color:var(--primary, #00B14F);"></i> Take Photo
                         </button>
-                        <label style="padding:14px 10px;background:var(--surface-container, rgba(255,255,255,0.05));border:1.5px solid var(--border, rgba(255,255,255,0.1));border-radius:12px;color:var(--text-primary, #ffffff);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;transition:background 0.2s;">
+                        <label style="padding:13px 10px;background:var(--surface-container, rgba(255,255,255,0.05));border:1.5px solid var(--border, rgba(255,255,255,0.1));border-radius:12px;color:var(--text-primary, #ffffff);font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;line-height:1.3;transition:background 0.2s;">
                             <i class="fas fa-images" style="font-size:1rem;color:var(--primary, #00B14F);"></i> Upload from Gallery
                             <input type="file" accept="image/*" id="vGalleryPicker" multiple style="display:none;" onchange="VehiclePhotos.onFilePick(this)">
                         </label>
@@ -8640,21 +8673,21 @@ input:checked + .ctrl-slider:before {
                 </div>
 
                 <!-- EXISTING GALLERY (edit mode) -->
-                <div id="vExistingGallery" style="display:none;margin-bottom:6px;">
+                <div id="vExistingGallery" style="display:none;margin-bottom:4px;">
                     <label style="display:block;font-size:0.75rem;color:var(--text-muted, #94a3b8);margin-bottom:6px;font-weight:600;">Manage Existing Images (Arrows to reorder)</label>
                     <div id="vGalleryManager" style="display:flex;gap:10px;overflow-x:auto;padding:10px;background:var(--surface-container, rgba(255,255,255,0.03));border:1px solid var(--border, rgba(255,255,255,0.1));border-radius:12px;min-height:90px;"></div>
                 </div>
 
                 <!-- SECTION 1: BASIC INFORMATION -->
-                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:16px;">
-                    <div style="font-size:0.78rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:14px;">
+                    <div style="font-size:0.78rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
                         <i class="fas fa-info-circle"></i> Basic Information
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:12px;">
                         <!-- Brand -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Brand <span style="color:#ef4444;">*</span></label>
-                            <select id="vBrand" required onchange="Vehicles.updateModels()" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Brand <span style="color:#ef4444;">*</span></label>
+                            <select id="vBrand" required onchange="Vehicles.updateModels()" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="">Select Brand</option>
                                 <option value="Toyota">Toyota</option>
                                 <option value="Mitsubishi">Mitsubishi</option>
@@ -8676,8 +8709,8 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Model -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Model <span style="color:#ef4444;">*</span></label>
-                            <select id="vModel" required list="vModelList" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Model <span style="color:#ef4444;">*</span></label>
+                            <select id="vModel" required list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="">Select Model</option>
                             </select>
                             <datalist id="vModelList"></datalist>
@@ -8685,14 +8718,14 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Plate Number -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Plate Number <span style="color:#ef4444;">*</span></label>
-                            <input type="text" id="vPlate" placeholder="e.g. ABC 1234" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;text-transform:uppercase;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Plate Number <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="vPlate" placeholder="e.g. ABC 1234" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;text-transform:uppercase;">
                         </div>
 
                         <!-- Color -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Color</label>
-                            <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Color</label>
+                            <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                             <datalist id="vColorList">
                                 <option value="White"><option value="Black"><option value="Silver">
                                 <option value="Gray"><option value="Red"><option value="Blue">
@@ -8703,8 +8736,8 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Transmission -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Transmission</label>
-                            <select id="vTrans" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Transmission</label>
+                            <select id="vTrans" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Automatic">Automatic</option>
                                 <option value="Manual">Manual</option>
                             </select>
@@ -8712,8 +8745,8 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Category -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Category</label>
-                            <select id="vType" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Category</label>
+                            <select id="vType" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Sedan">Sedan</option>
                                 <option value="SUV">SUV</option>
                                 <option value="Van">Van</option>
@@ -8726,8 +8759,8 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Fuel Type -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Fuel Type</label>
-                            <select id="vFuel" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Fuel Type</label>
+                            <select id="vFuel" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Gasoline">Gasoline</option>
                                 <option value="Diesel">Diesel</option>
                                 <option value="Hybrid">Hybrid</option>
@@ -8737,8 +8770,8 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Seats -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Seats</label>
-                            <select id="vSeats" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Seats</label>
+                            <select id="vSeats" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="2 Seats">2 Seats</option>
                                 <option value="4 Seats">4 Seats</option>
                                 <option value="5 Seats" selected>5 Seats</option>
@@ -8753,27 +8786,27 @@ input:checked + .ctrl-slider:before {
                 </div>
 
                 <!-- SECTION 2: PRICING & MILEAGE -->
-                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:16px;">
-                    <div style="font-size:0.78rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:14px;">
+                    <div style="font-size:0.78rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
                         <i class="fas fa-tag"></i> Pricing &amp; Mileage Limits
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:12px;">
                         <!-- Year Model -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Year Model</label>
-                            <input type="text" id="vYear" placeholder="e.g. 2023" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" oninput="this.value = this.value.replace(/[^0-9]/g,'').slice(0,4);" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Year Model</label>
+                            <input type="text" id="vYear" placeholder="e.g. 2023" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" oninput="this.value = this.value.replace(/[^0-9]/g,'').slice(0,4);" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Daily Rate -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Daily Rate (₱) <span style="color:#ef4444;">*</span></label>
-                            <input type="number" id="vRate" placeholder="e.g. 2500" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Daily Rate (₱) <span style="color:#ef4444;">*</span></label>
+                            <input type="number" id="vRate" placeholder="e.g. 2500" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Mileage Type -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Mileage Type</label>
-                            <select id="vMileageType" required onchange="document.getElementById('vMileageKmDiv').style.display = this.value === 'limited' ? 'block' : 'none'" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Mileage Type</label>
+                            <select id="vMileageType" required onchange="document.getElementById('vMileageKmDiv').style.display = this.value === 'limited' ? 'block' : 'none'" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="limited">Limited</option>
                                 <option value="unlimited">Unlimited</option>
                             </select>
@@ -8781,22 +8814,22 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Mileage Km/day -->
                         <div id="vMileageKmDiv">
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Limit (km/day)</label>
-                            <input type="number" id="vMileageKm" value="250" placeholder="e.g. 250" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Limit (km/day)</label>
+                            <input type="number" id="vMileageKm" value="250" placeholder="e.g. 250" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
 
                 <!-- SECTION 3: OPERATIONS & MAINTENANCE -->
-                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:16px;">
-                    <div style="font-size:0.78rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:14px;">
+                    <div style="font-size:0.78rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
                         <i class="fas fa-wrench"></i> Operations &amp; Maintenance
                     </div>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px;">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:12px;">
                         <!-- Location -->
                         <div style="grid-column:1 / -1;">
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Location</label>
-                            <select id="vLocation" required style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Location</label>
+                            <select id="vLocation" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Tanauan/Sto. Tomas, Batangas">Tanauan/Sto. Tomas, Batangas</option>
                                 <option value="San Pablo City, Laguna">San Pablo City, Laguna</option>
                             </select>
@@ -8804,8 +8837,8 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Status -->
                         <div style="grid-column:1 / -1;">
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Status</label>
-                            <select id="vStatus" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Status</label>
+                            <select id="vStatus" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Available">Available</option>
                                 <option value="Booked">Booked</option>
                                 <option value="Maintenance">Maintenance</option>
@@ -8816,14 +8849,14 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Odometer -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Odometer (km)</label>
-                            <input type="number" id="vOdometer" placeholder="e.g. 45000" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Odometer (km)</label>
+                            <input type="number" id="vOdometer" placeholder="e.g. 45000" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Fuel Level -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Fuel Level</label>
-                            <select id="vFuelLevel" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Fuel Level</label>
+                            <select id="vFuelLevel" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="Full Tank">Full Tank</option>
                                 <option value="3/4">3/4 Tank</option>
                                 <option value="Half">Half Tank</option>
@@ -8834,54 +8867,54 @@ input:checked + .ctrl-slider:before {
 
                         <!-- Next Service -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">Next Service / PMS Date</label>
-                            <input type="date" id="vNextService" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Next Service / PMS Date</label>
+                            <input type="date" id="vNextService" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- LTO Expiry -->
                         <div>
-                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:6px;">LTO Expiry Date</label>
-                            <input type="date" id="vLtoExpiry" style="width:100%;padding:12px 14px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:12px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">LTO Expiry Date</label>
+                            <input type="date" id="vLtoExpiry" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
 
                 <!-- SECTION 4: GPS TRACKER HARDWARE DEVICE -->
-                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:16px;">
-                    <div style="padding:16px;background:rgba(0,177,79,0.06);border:1.5px dashed rgba(0,177,79,0.35);border-radius:14px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                            <i class="fas fa-satellite-dish" style="color:var(--primary, #00B14F);font-size:1.1rem;"></i>
-                            <span style="font-size:0.82rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;">GPS Tracker Hardware Device</span>
+                <div style="border-top:1px solid var(--border, rgba(255,255,255,0.08));padding-top:14px;">
+                    <div style="padding:14px;background:rgba(0,177,79,0.06);border:1.5px dashed rgba(0,177,79,0.35);border-radius:12px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                            <i class="fas fa-satellite-dish" style="color:var(--primary, #00B14F);font-size:1.05rem;"></i>
+                            <span style="font-size:0.8rem;font-weight:800;color:var(--primary, #00B14F);text-transform:uppercase;letter-spacing:0.5px;">GPS Tracker Hardware Device</span>
                         </div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;">
                             <div>
-                                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary, #94a3b8);margin-bottom:5px;">Tracker Unit / Label</label>
-                                <input type="text" id="vGpsDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%;padding:11px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+                                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary, #94a3b8);margin-bottom:4px;">Tracker Unit / Label</label>
+                                <input type="text" id="vGpsDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
                             </div>
                             <div>
-                                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary, #94a3b8);margin-bottom:5px;">Blynk Auth Token</label>
-                                <input type="text" id="vGpsDeviceToken" placeholder="e.g. 6fub_AeSZfywBab9j..." style="width:100%;padding:11px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;font-family:monospace;box-sizing:border-box;">
+                                <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary, #94a3b8);margin-bottom:4px;">Blynk Auth Token</label>
+                                <input type="text" id="vGpsDeviceToken" placeholder="e.g. 6fub_AeSZfywBab9j..." style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:monospace;box-sizing:border-box;">
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- SECTION 5: ACTION BUTTONS -->
-                <div style="margin-top:10px;padding-top:16px;border-top:1px solid var(--border, rgba(255,255,255,0.08));display:flex;flex-direction:column;gap:10px;">
-                    <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)" style="display:none;width:100%;padding:14px;background:#00B14F;border:none;border-radius:12px;color:#fff;font-size:0.95rem;font-weight:800;cursor:pointer;transition:background 0.2s;">
-                        <i class="fas fa-plus-circle" style="margin-right:6px;"></i> Save &amp; Add Another
+            <!-- PINNED FOOTER (Always visible at the bottom of the card!) -->
+            <div style="flex-shrink:0;padding:14px 20px;border-top:1px solid var(--border, rgba(255,255,255,0.08));background:var(--surface, #1e293b);display:flex;flex-direction:column;gap:8px;">
+                <button type="button" id="saveAddAnotherBtn" onclick="Vehicles.submitForm(true)" style="display:none;width:100%;padding:12px;background:#00B14F;border:none;border-radius:10px;color:#fff;font-size:0.92rem;font-weight:800;cursor:pointer;transition:background 0.2s;">
+                    <i class="fas fa-plus-circle" style="margin-right:6px;"></i> Save &amp; Add Another
+                </button>
+                <div style="display:flex;gap:10px;">
+                    <button type="button" onclick="Vehicles.closeModal()" style="flex:1;padding:12px;background:transparent;border:1.5px solid var(--border);border-radius:10px;color:var(--text-secondary);font-size:0.92rem;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--text-muted)';" onmouseout="this.style.borderColor='var(--border)';">
+                        Cancel
                     </button>
-                    <div style="display:flex;gap:12px;">
-                        <button type="button" onclick="Vehicles.closeModal()" style="flex:1;padding:14px;background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text-secondary);font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--text-muted)';" onmouseout="this.style.borderColor='var(--border)';">
-                            Cancel
-                        </button>
-                        <button type="submit" id="submitBtnText" style="flex:2;padding:14px;background:#00B14F;border:none;border-radius:12px;color:#fff;font-size:0.95rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(0,177,79,0.35);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
-                            Add Vehicle
-                        </button>
-                    </div>
+                    <button type="submit" id="submitBtnText" style="flex:2;padding:12px;background:#00B14F;border:none;border-radius:10px;color:#fff;font-size:0.92rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(0,177,79,0.35);transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                        Add Vehicle
+                    </button>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     </div>
 
 
@@ -13752,7 +13785,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                        document.getElementById('vehicleModal').scrollTop = 0;
+                        document.getElementById('vehicleModal').scrollTop = 0; const _sb2 = document.getElementById('vModalScrollBody'); if (_sb2) _sb2.scrollTop = 0;
 
 
 
