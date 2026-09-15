@@ -8,6 +8,7 @@ from services.extension_service import (
 
 conflict_bp = Blueprint('conflicts', __name__)
 
+@conflict_bp.route('/conflicts/my-affected-bookings', methods=['GET'])
 @conflict_bp.route('/api/conflicts/my-affected-bookings', methods=['GET'])
 def get_my_affected_bookings():
     # Return bookings affected by extension conflicts
@@ -38,6 +39,7 @@ def get_my_affected_bookings():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@conflict_bp.route('/conflicts/<int:conflict_id>/alternatives', methods=['GET'])
 @conflict_bp.route('/api/conflicts/<int:conflict_id>/alternatives', methods=['GET'])
 def get_conflict_alternatives(conflict_id):
     try:
@@ -57,6 +59,7 @@ def get_conflict_alternatives(conflict_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@conflict_bp.route('/conflicts/<int:conflict_id>/select-alternative', methods=['POST'])
 @conflict_bp.route('/api/conflicts/<int:conflict_id>/select-alternative', methods=['POST'])
 def select_alternative(conflict_id):
     try:
@@ -73,6 +76,7 @@ def select_alternative(conflict_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@conflict_bp.route('/conflicts/<int:conflict_id>/refund', methods=['POST'])
 @conflict_bp.route('/api/conflicts/<int:conflict_id>/refund', methods=['POST'])
 def request_conflict_refund(conflict_id):
     try:
