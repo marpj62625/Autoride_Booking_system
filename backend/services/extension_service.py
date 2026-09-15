@@ -84,13 +84,15 @@ def get_alternative_vehicles(conflict_id):
         model = orig_car['model']
         daily_rate = float(orig_car['daily_rate'])
         category = orig_car['vehicle_type']
+        home_loc = orig_car.get('location') or ''
         
+        # Match vehicles at the pickup location, home depot, or across fleet if custom/Others
         cur.execute("""
             SELECT v.* 
             FROM vehicles v
             WHERE v.status = 'Available'
               AND v.id != %s
-              AND v.location = %s
+              AND (v.location = %s OR v.location = %s OR %s LIKE '%%Others%%' OR %s = '')
               AND NOT EXISTS (
                   SELECT 1 FROM bookings b
                   WHERE b.vehicle_id = v.id
@@ -98,7 +100,7 @@ def get_alternative_vehicles(conflict_id):
                     AND b.start_date <= %s
                     AND b.end_date >= %s
               )
-        """, (orig_vehicle_id, pickup_location, end_date, start_date))
+        """, (orig_vehicle_id, pickup_location, home_loc, pickup_location, pickup_location, end_date, start_date))
         available_vehicles = cur.fetchall()
         
         results = []
@@ -114,9 +116,15 @@ def get_alternative_vehicles(conflict_id):
             elif car_category.lower() == category.lower() and (car_brand.lower() == brand.lower() or abs(car_rate - daily_rate) <= (0.05 * daily_rate)):
                 tier = 2
                 tier_label = "Close Match"
-            elif car_category.lower() == category.lower() and abs(car_rate - daily_rate) <= (0.10 * daily_rate):
+            elif car_category.lower() == category.lower() and abs(car_rate - daily_rate) <= (0.15 * daily_rate):
                 tier = 3
                 tier_label = "Alternative"
+            elif car_category.lower() == category.lower() or abs(car_rate - daily_rate) <= (0.25 * daily_rate):
+                tier = 4
+                tier_label = "Fleet Alternative"
+            else:
+                tier = 5
+                tier_label = "Available Option"
                 
             if tier is not None:
                 results.append({
