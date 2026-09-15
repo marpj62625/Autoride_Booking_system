@@ -3162,6 +3162,115 @@ def user_violation_status():
         if 'cur' in locals(): cur.close()
 
 
+
+@app.route('/user/booking-eligibility', methods=['GET'])
+@app.route('/api/user/booking-eligibility', methods=['GET'])
+def user_booking_eligibility():
+    """
+    Checks if a user is eligible to book a vehicle before opening the booking form.
+    Returns HTTP 200 with details so frontend can display the appropriate modal
+    without logging red 4xx network errors in DevTools console.
+    """
+    user_id = request.args.get('user_id', type=int)
+    if not user_id:
+        return jsonify({'eligible': False, 'error': 'user_id required', 'message': 'Please log in to continue.'}), 200
+    try:
+        cur = get_cursor()
+
+        # 1. Check for outstanding balance / unpaid penalty
+        cur.execute("""
+            SELECT id, total_price, balance_amount, penalty_amount
+            FROM bookings
+            WHERE user_id = %s
+              AND balance_amount > 0
+              AND status NOT IN ('Cancelled', 'Rejected')
+              AND payment_status NOT IN ('Refund Pending', 'Refunded', 'Cancelled')
+            ORDER BY id DESC LIMIT 1
+        """, (user_id,))
+        unpaid_bk = cur.fetchone()
+        if unpaid_bk:
+            cur.execute("SELECT value FROM settings WHERE key = 'block_booking_on_unpaid_penalty'")
+            setting_row = cur.fetchone()
+            block_enabled = (setting_row.get('value', 'true').lower() in ('true', '1', 'yes')) if setting_row else True
+            if block_enabled:
+                u_bid = unpaid_bk.get('id') or unpaid_bk.get('booking_id')
+                u_bal = float(unpaid_bk.get('balance_amount') or 0)
+                return jsonify({
+                    'eligible': False,
+                    'reason': 'unpaid_balance',
+                    'has_unpaid_balance': True,
+                    'unpaid_booking_id': u_bid,
+                    'balance_amount': u_bal,
+                    'error': 'Outstanding Balance Required',
+                    'message': f"You have an outstanding balance / unpaid penalty of PHP {u_bal:,.2f} on Booking #{u_bid}. Please settle your balance before booking another vehicle."
+                }), 200
+
+        # 2. Check for violation suspensions or permanent restriction
+        cur.execute("""
+            SELECT violation_strikes, booking_suspension_until,
+                   violation_permanently_restricted, violation_commitment_fee_required
+            FROM users WHERE id = %s
+        """, (user_id,))
+        vrow = cur.fetchone()
+        if vrow:
+            perm = bool(vrow.get('violation_permanently_restricted'))
+            sus_until = vrow.get('booking_suspension_until')
+            if perm:
+                return jsonify({
+                    'eligible': False,
+                    'reason': 'permanently_restricted',
+                    'suspended': True,
+                    'suspension_type': 'permanent',
+                    'error': 'Account Restricted',
+                    'message': 'Your account has been permanently restricted from booking due to repeated payment violations. Please contact support.'
+                }), 200
+            if sus_until:
+                from datetime import timezone as _tz
+                import datetime as _dt_mod
+                now_utc = _dt_mod.datetime.now(_tz.utc)
+                if sus_until.tzinfo is None:
+                    sus_until = sus_until.replace(tzinfo=_tz.utc)
+                if now_utc < sus_until:
+                    return jsonify({
+                        'eligible': False,
+                        'reason': 'temporary_suspension',
+                        'suspended': True,
+                        'suspension_type': 'temporary',
+                        'suspension_until': sus_until.isoformat(),
+                        'error': 'Account Suspended',
+                        'message': f'Your account is temporarily suspended from booking until {sus_until.strftime("%B %d, %Y %I:%M %p")} UTC due to unpaid booking violations.'
+                    }), 200
+                else:
+                    cur.execute("UPDATE users SET booking_suspension_until = NULL WHERE id = %s", (user_id,))
+
+        # 3. Check for active ongoing booking (1 active booking rule)
+        cur.execute("""
+            SELECT id, status FROM bookings
+            WHERE user_id = %s
+              AND status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+            LIMIT 1
+        """, (user_id,))
+        active_bk = cur.fetchone()
+        if active_bk:
+            return jsonify({
+                'eligible': False,
+                'reason': 'active_booking',
+                'active_booking_id': active_bk.get('id'),
+                'error': 'Active Booking Exists',
+                'message': 'You already have an active booking. Please complete or cancel it first.'
+            }), 200
+
+        # All checks passed
+        return jsonify({
+            'eligible': True,
+            'message': 'Eligible to book'
+        }), 200
+    except Exception as e:
+        return jsonify({'eligible': True, 'warning': str(e)}), 200
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/admin/users/<int:user_id>/edit', methods=['PUT'])
 @app.route('/api/admin/users/<int:user_id>/edit', methods=['PUT'])
 def admin_edit_user(user_id):
@@ -4636,13 +4745,14 @@ def book():
                 u_bid = unpaid_bk.get('id') or unpaid_bk.get('booking_id')
                 u_bal = float(unpaid_bk.get('balance_amount') or 0)
                 return jsonify({
+                    "success": False,
                     "error": "Outstanding Balance Required",
                     "message": f"You have an outstanding balance / unpaid penalty of PHP {u_bal:,.2f} on Booking #{u_bid}. Please settle your balance before booking another vehicle.",
                     "unpaid_booking_id": u_bid,
                     "balance_amount": u_bal,
                     "has_unpaid_balance": True,
                     "reason": "unpaid_balance"
-                }), 403
+                }), 200
 
         # ── Violation Suspension Guard ──────────────────────────────────────
         cur.execute("""
@@ -4656,10 +4766,11 @@ def book():
             sus_until = vrow.get('booking_suspension_until')
             if perm:
                 return jsonify({
+                    'success': False,
                     'error': 'Your account has been permanently restricted from booking due to repeated payment violations. Please contact support.',
                     'suspended': True,
                     'suspension_type': 'permanent'
-                }), 403
+                }), 200
             if sus_until:
                 from datetime import timezone as _tz
                 import datetime as _dt_mod
@@ -4668,11 +4779,12 @@ def book():
                     sus_until = sus_until.replace(tzinfo=_tz.utc)
                 if now_utc < sus_until:
                     return jsonify({
+                        'success': False,
                         'error': f'Your account is temporarily suspended from booking until {sus_until.strftime("%B %d, %Y %I:%M %p")} UTC due to unpaid booking violations.',
                         'suspended': True,
                         'suspension_until': sus_until.isoformat(),
                         'suspension_type': 'temporary'
-                    }), 403
+                    }), 200
                 else:
                     # Suspension expired — auto-lift it
                     cur.execute("UPDATE users SET booking_suspension_until = NULL WHERE id = %s", (user_id,))

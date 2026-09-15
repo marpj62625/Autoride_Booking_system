@@ -3438,6 +3438,13 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
   showOverlay('page-vehicle-detail');
   showLoading(true);
 
+  // Silently check booking eligibility in background so status is ready
+  if (currentUser && currentUser.id) {
+    apiCall('/user/booking-eligibility?user_id=' + currentUser.id)
+      .then(function(elig) { window._cachedBookingEligibility = elig; })
+      .catch(function() {});
+  }
+
   // Load ALL units for this brand/model so we can build the dropdowns
   apiCall('/vehicles/units?brand=' + bEnc + '&model=' + mEnc + '&color=all&user_id=' + (currentUser.id || ''))
     .then(function(allUnits) {
@@ -3709,9 +3716,47 @@ function onVdColorChange() {
 
 // STEP 3: Book button tapped on a specific unit
 function selectVehicleUnit(vehicleId) {
-  // 1 booking per account  - hard block if active booking exists
+  if (!currentUser || !currentUser.id) {
+    showToast('Please log in to book a vehicle.', 'error');
+    showPage('page-login');
+    return;
+  }
+
+  // 1. Instant check from cached eligibility
+  if (window._cachedBookingEligibility && !window._cachedBookingEligibility.eligible) {
+    if (window._cachedBookingEligibility.has_unpaid_balance) {
+      showUnpaidBalanceModal(window._cachedBookingEligibility);
+      return;
+    }
+    if (window._cachedBookingEligibility.suspended) {
+      showSuspensionModal(window._cachedBookingEligibility);
+      return;
+    }
+    showToast(window._cachedBookingEligibility.message || 'You cannot book a vehicle at this time.', 'error');
+    return;
+  }
+
+  // 2. Instant check from local cached bookings
+  var unpaidLocal = (_allBookingsData || []).find(function(b) {
+    return parseFloat(b.balance_amount || 0) > 0 &&
+      ['Cancelled', 'Rejected'].indexOf(b.status) === -1 &&
+      ['Refund Pending', 'Refunded', 'Cancelled'].indexOf(b.payment_status) === -1;
+  });
+  if (unpaidLocal) {
+    var uBid = unpaidLocal.id;
+    var uBal = parseFloat(unpaidLocal.balance_amount || 0);
+    showUnpaidBalanceModal({
+      has_unpaid_balance: true,
+      unpaid_booking_id: uBid,
+      balance_amount: uBal,
+      message: 'You have an outstanding balance / unpaid penalty of ' + formatPHP(uBal) + ' on Booking #' + uBid + '. Please settle your balance before booking another vehicle.'
+    });
+    return;
+  }
+
+  // 3. 1 booking per account check
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
-  var hasActiveBooking = _allBookingsData.some(function(b) {
+  var hasActiveBooking = (_allBookingsData || []).some(function(b) {
     return ACTIVE_STATUSES.indexOf(b.status) !== -1;
   });
   if (hasActiveBooking) {
@@ -3719,16 +3764,57 @@ function selectVehicleUnit(vehicleId) {
     return;
   }
 
-  showOverlay('page-vehicle-detail');
-  var svdEl = document.getElementById('vehicleDetailContent');
-  if (svdEl) svdEl.innerHTML = '<div style="height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div>';
-  apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
-    .then(function(v) {
-      currentVehicleDetail = v;
-      openBookingForm(vehicleId);
+  // 4. Real-time server check BEFORE modifying car details screen or opening booking form
+  var bookBtn = document.getElementById('vd-book-btn');
+  var origHtml = bookBtn ? bookBtn.innerHTML : '';
+  if (bookBtn) {
+    bookBtn.disabled = true;
+    bookBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+  }
+
+  apiCall('/user/booking-eligibility?user_id=' + currentUser.id)
+    .then(function(elig) {
+      window._cachedBookingEligibility = elig;
+      if (!elig.eligible) {
+        if (bookBtn) {
+          bookBtn.disabled = false;
+          bookBtn.innerHTML = origHtml;
+        }
+        if (elig.has_unpaid_balance) {
+          showUnpaidBalanceModal(elig);
+        } else if (elig.suspended) {
+          showSuspensionModal(elig);
+        } else {
+          showToast(elig.message || 'You cannot book a vehicle at this time.', 'error');
+        }
+        return;
+      }
+
+      // Eligible! Now load vehicle details and open booking form
+      showOverlay('page-vehicle-detail');
+      var svdEl = document.getElementById('vehicleDetailContent');
+      if (svdEl) svdEl.innerHTML = '<div style="height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div>';
+      apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
+        .then(function(v) {
+          currentVehicleDetail = v;
+          openBookingForm(vehicleId);
+        })
+        .catch(function(err) { showToast(err.message, 'error'); })
+        .finally(function() {
+          showLoading(false);
+          if (bookBtn) {
+            bookBtn.disabled = false;
+            bookBtn.innerHTML = origHtml;
+          }
+        });
     })
-    .catch(function(err) { showToast(err.message, 'error'); })
-    .finally(function() { showLoading(false); });
+    .catch(function(err) {
+      if (bookBtn) {
+        bookBtn.disabled = false;
+        bookBtn.innerHTML = origHtml;
+      }
+      showToast(err.message || 'Unable to check booking eligibility. Please try again.', 'error');
+    });
 }
 
 function toggleFav(vehicleId, btn) {
@@ -3871,6 +3957,20 @@ function autoSetReturnTime() {
 }
 
 function openBookingForm(vehicleId) {
+  // Block immediately if user has unpaid balance or suspension
+  if (window._cachedBookingEligibility && !window._cachedBookingEligibility.eligible) {
+    if (window._cachedBookingEligibility.has_unpaid_balance) {
+      showUnpaidBalanceModal(window._cachedBookingEligibility);
+      closeOverlay('page-booking-form');
+      return;
+    }
+    if (window._cachedBookingEligibility.suspended) {
+      showSuspensionModal(window._cachedBookingEligibility);
+      closeOverlay('page-booking-form');
+      return;
+    }
+  }
+
   // 1 booking per account  - hard block if active booking exists
   var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
   var hasActiveBooking = _allBookingsData.some(function(b) {
@@ -4572,6 +4672,20 @@ function _proceedWithBookingSubmission() {
   showLoading(true);
   apiCall('/book', { method: 'POST', body: JSON.stringify(_pendingBookingPayload) })
     .then(function(data) {
+      if (data && (data.has_unpaid_balance || (data.error && data.error.indexOf('Outstanding Balance') !== -1))) {
+        showUnpaidBalanceModal(data);
+        return;
+      }
+      if (data && data.suspended) {
+        showSuspensionModal(data);
+        return;
+      }
+      if (data && (data.success === false || (data.error && !data.booking_id))) {
+        var errEl = document.getElementById('bfErr');
+        if (errEl) errEl.textContent = data.error || data.message || 'Booking failed.';
+        showToast(data.error || data.message || 'Booking failed.', 'error');
+        return;
+      }
       activeBookingId = data.booking_id;
       BookingSession.clear(); // booking submitted - clear any stale session
       closeOverlay('page-booking-form');

@@ -62,12 +62,13 @@ def book_vehicle():
                 u_bid = unpaid_bk.get('id')
                 u_bal = float(unpaid_bk.get('balance_amount') or 0)
                 return jsonify({
+                    "success": False,
                     "error": "Outstanding Balance Required",
                     "message": f"You have an outstanding balance / unpaid penalty of PHP {u_bal:,.2f} on Booking #{u_bid}. Please settle your balance before booking another vehicle.",
                     "unpaid_booking_id": u_bid,
                     "balance_amount": u_bal,
                     "has_unpaid_balance": True
-                }), 403
+                }), 200
 
         # Security Check: Ensure user has an approved license
         cur.execute("SELECT is_verified FROM users WHERE id = %s", (user_id,))
