@@ -858,7 +858,10 @@ function apiCall(endpoint, options) {
       if (timer) clearTimeout(timer);
       return res.json().then(function(data) {
         if (!res.ok) {
-          if ((res.status === 401 || res.status === 403) && !data.verification_required && !data.reason) {
+          // Only 401 (Unauthorized) clears session.
+          // 403 (Forbidden) is reserved for business rules (penalties, suspensions, verification)
+          // and must NEVER kick the customer to the login screen!
+          if (res.status === 401 && !data.verification_required && !data.reason) {
             Session.clear();
             showPage('page-login');
           }
@@ -4927,6 +4930,19 @@ function showPaymentWaiting(bookingId, amount, method) {
   }
 
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
+  var isBalancePayment = (_pendingPayType === 'Balance' || _pendingPayType === 'Penalty' ||
+    (typeof activeBookingData !== 'undefined' && activeBookingData && (activeBookingData.payment_status === 'Partially Paid' || parseFloat(activeBookingData.balance_amount || 0) > 0)));
+
+  var countdownBoxHtml = isBalancePayment
+    ? '<div style="background:rgba(0,177,79,0.08);border:1.5px solid rgba(0,177,79,0.25);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;">' +
+      '<i class="fas fa-info-circle" style="color:var(--primary);font-size:1.2rem;"></i>' +
+      '<span style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">Awaiting payment confirmation...</span>' +
+      '</div>'
+    : '<div style="background:linear-gradient(135deg,rgba(220,38,38,0.08),rgba(220,38,38,0.04));border:1.5px solid rgba(220,38,38,0.25);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">' +
+      '<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Time remaining to pay</div>' +
+      '<div id="payCountdownDisplay" style="font-size:2rem;font-weight:900;color:var(--primary);font-variant-numeric:tabular-nums;letter-spacing:2px;">30:00</div>' +
+      '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Booking will expire if unpaid</div>' +
+      '</div>';
   el.innerHTML =
     '<div class="page-header">' +
     '<button class="back-btn" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
@@ -4936,11 +4952,7 @@ function showPaymentWaiting(bookingId, amount, method) {
     '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">Complete Payment in ' + methodLabel + '</h3>' +
     '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:12px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there. This page will update automatically.</p>' +
-    '<div style="background:linear-gradient(135deg,rgba(220,38,38,0.08),rgba(220,38,38,0.04));border:1.5px solid rgba(220,38,38,0.25);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">' +
-    '<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Time remaining to pay</div>' +
-    '<div id="payCountdownDisplay" style="font-size:2rem;font-weight:900;color:var(--primary);font-variant-numeric:tabular-nums;letter-spacing:2px;">30:00</div>' +
-    '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Booking will expire if unpaid</div>' +
-    '</div>' +
+    countdownBoxHtml +
     '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
     '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
     '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
@@ -4950,57 +4962,62 @@ function showPaymentWaiting(bookingId, amount, method) {
     '<button class="btn-secondary" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
     '</div>';
 
-  // Start 30-minute countdown timer
-  var _countdownWarned15 = false, _countdownWarned5 = false;
-  var _countdownSeconds = 30 * 60;
-  if (window._pendingPaymentBookingCreatedAt) {
-    var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
-    if (!isNaN(_bkCreatedMs)) {
-      var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
-      var _initialRem = Math.floor((_bkDeadline - Date.now()) / 1000);
-      if (_initialRem > 0 && _initialRem <= 30 * 60) {
-        _countdownSeconds = _initialRem;
+  // Start 30-minute countdown timer (Only for new reservations, NOT for balance/penalty payments)
+  if (window._payCountdownInterval) {
+    clearInterval(window._payCountdownInterval);
+    window._payCountdownInterval = null;
+  }
+  if (!isBalancePayment) {
+    var _countdownWarned15 = false, _countdownWarned5 = false;
+    var _countdownSeconds = 30 * 60;
+    if (window._pendingPaymentBookingCreatedAt) {
+      var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
+      if (!isNaN(_bkCreatedMs)) {
+        var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
+        var _initialRem = Math.floor((_bkDeadline - Date.now()) / 1000);
+        if (_initialRem > 0 && _initialRem <= 30 * 60) {
+          _countdownSeconds = _initialRem;
+        }
       }
     }
-  }
-  var initM = Math.floor(_countdownSeconds / 60);
-  var initS = _countdownSeconds % 60;
-  var cdEl = document.getElementById('payCountdownDisplay');
-  if (cdEl) {
-    cdEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
-    if (_countdownSeconds <= 5 * 60) cdEl.style.color = '#dc2626';
-    else if (_countdownSeconds <= 15 * 60) cdEl.style.color = '#f59e0b';
-  }
-  if (window._payCountdownInterval) clearInterval(window._payCountdownInterval);
-  window._payCountdownInterval = setInterval(function() {
-    _countdownSeconds--;
-    if (_countdownSeconds <= 0) {
-      clearInterval(window._payCountdownInterval);
-      window._payCountdownInterval = null;
-      var cd = document.getElementById('payCountdownDisplay');
-      if (cd) { cd.textContent = '00:00'; cd.style.color = '#dc2626'; }
-      showToast('Payment time expired. Your booking has been cancelled. A violation strike may be applied.', 'error');
-      stopPaymentPolling();
-      closeOverlay('page-payment');
-      return;
-    }
-    var mins = Math.floor(_countdownSeconds / 60);
-    var secs = _countdownSeconds % 60;
+    var initM = Math.floor(_countdownSeconds / 60);
+    var initS = _countdownSeconds % 60;
     var cdEl = document.getElementById('payCountdownDisplay');
     if (cdEl) {
-      cdEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      cdEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
       if (_countdownSeconds <= 5 * 60) cdEl.style.color = '#dc2626';
       else if (_countdownSeconds <= 15 * 60) cdEl.style.color = '#f59e0b';
     }
-    if (!_countdownWarned15 && _countdownSeconds === 15 * 60) {
-      _countdownWarned15 = true;
-      showToast('15 minutes left to complete your payment!', 'warning');
-    }
-    if (!_countdownWarned5 && _countdownSeconds === 5 * 60) {
-      _countdownWarned5 = true;
-      showToast('Only 5 minutes left! Complete payment now to avoid a violation strike.', 'error');
-    }
-  }, 1000);
+    window._payCountdownInterval = setInterval(function() {
+      _countdownSeconds--;
+      if (_countdownSeconds <= 0) {
+        clearInterval(window._payCountdownInterval);
+        window._payCountdownInterval = null;
+        var cd = document.getElementById('payCountdownDisplay');
+        if (cd) { cd.textContent = '00:00'; cd.style.color = '#dc2626'; }
+        showToast('Payment time expired. Your booking has been cancelled. A violation strike may be applied.', 'error');
+        stopPaymentPolling();
+        closeOverlay('page-payment');
+        return;
+      }
+      var mins = Math.floor(_countdownSeconds / 60);
+      var secs = _countdownSeconds % 60;
+      var cdEl = document.getElementById('payCountdownDisplay');
+      if (cdEl) {
+        cdEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+        if (_countdownSeconds <= 5 * 60) cdEl.style.color = '#dc2626';
+        else if (_countdownSeconds <= 15 * 60) cdEl.style.color = '#f59e0b';
+      }
+      if (!_countdownWarned15 && _countdownSeconds === 15 * 60) {
+        _countdownWarned15 = true;
+        showToast('15 minutes left to complete your payment!', 'warning');
+      }
+      if (!_countdownWarned5 && _countdownSeconds === 5 * 60) {
+        _countdownWarned5 = true;
+        showToast('Only 5 minutes left! Complete payment now to avoid a violation strike.', 'error');
+      }
+    }, 1000);
+  }
 
   // Add Capacitor Browser event listeners for automatic detection
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {

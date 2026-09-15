@@ -8710,7 +8710,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Model -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Model <span style="color:#ef4444;">*</span></label>
-                            <select id="vModel" required list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
+                            <select id="vModel" required onchange="Vehicles.applySpecs(this.value)" list="vModelList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
                                 <option value="">Select Model</option>
                             </select>
                             <datalist id="vModelList"></datalist>
@@ -12810,7 +12810,13 @@ input:checked + .ctrl-slider:before {
 
 
 
-            "Isuzu": ["mu-X", "D-MAX", "Traviz"]
+            "Isuzu": ["mu-X", "D-MAX", "Traviz"],
+            "Kia": ["Seltos", "Carnival", "Stonic", "Soluto", "Sportage"],
+            "MG": ["MG 5", "MG ZS", "MG GT", "MG HS"],
+            "Geely": ["Coolray", "Okavango", "Azkarra", "Emgrand"],
+            "Subaru": ["Forester", "XV", "Outback", "WRX"],
+            "Mazda": ["Mazda 2", "Mazda 3", "CX-3", "CX-5", "CX-9", "BT-50"],
+            "Chevrolet": ["Tracker", "Trailblazer", "Colorado", "Suburban"]
 
 
 
@@ -12939,76 +12945,42 @@ input:checked + .ctrl-slider:before {
 
 
         updateModels(selectedModel = null) {
-
-
-
             const brand = document.getElementById('vBrand').value;
-
-
-
+            const modelSelect = document.getElementById('vModel');
             const modelDataList = document.getElementById('vModelList');
+            if (modelDataList) modelDataList.innerHTML = '';
 
+            if (modelSelect) {
+                modelSelect.innerHTML = '<option value="">Select Model</option>';
+                const models = (brand && this.CAR_DATA && this.CAR_DATA[brand]) ? this.CAR_DATA[brand] : [];
 
-
-            modelDataList.innerHTML = '';
-
-
-
-            
-
-
-
-            if (brand && this.CAR_DATA[brand]) {
-
-
-
-                this.CAR_DATA[brand].forEach(m => {
-
-
-
+                models.forEach(m => {
                     const opt = document.createElement('option');
-
-
-
                     opt.value = m;
+                    opt.textContent = m;
+                    modelSelect.appendChild(opt);
 
-
-
-                    modelDataList.appendChild(opt);
-
-
-
+                    if (modelDataList) {
+                        const dOpt = document.createElement('option');
+                        dOpt.value = m;
+                        modelDataList.appendChild(dOpt);
+                    }
                 });
 
-
-
-                if (selectedModel) {
-
-
-
-                    document.getElementById('vModel').value = selectedModel;
-
-
-
-                    this.applySpecs(selectedModel);
-
-
-
+                // If selectedModel exists but is not in predefined list (e.g. custom or older model), preserve it
+                if (selectedModel && !models.includes(selectedModel)) {
+                    const customOpt = document.createElement('option');
+                    customOpt.value = selectedModel;
+                    customOpt.textContent = selectedModel;
+                    modelSelect.appendChild(customOpt);
                 }
 
-
-
+                if (selectedModel) {
+                    modelSelect.value = selectedModel;
+                    this.applySpecs(selectedModel);
+                }
             }
-
-
-
         },
-
-
-
-
-
-
 
         applySpecs(model) {
 
@@ -17707,66 +17679,55 @@ function toggleNewsletterModal(show = true) {
 
 
         async pickup(id) {
+            const b = (this.data && this.data.find(x => x.id == id)) || (this.currentBooking);
+            let collectCash = false;
+            let overrideUnpaid = false;
 
+            if (b && b.payment_status !== 'Paid' && parseFloat(b.balance_amount || b.total_price || 0) > 0) {
+                const bal = parseFloat(b.balance_amount || (b.total_price - (b.amount_paid || 0)));
+                const ans = confirm(
+                    `⚠️ PAYMENT REQUIRED BEFORE PICKUP\n\n` +
+                    `Booking #${id} has an unsettled balance of PHP ${bal.toLocaleString('en-US', { minimumFractionDigits: 2 })}.\n\n` +
+                    `Vehicles cannot be released without full payment.\n\n` +
+                    `• Click "OK" if the customer is paying the remaining balance in CASH right now.\n` +
+                    `• Click "Cancel" if payment is NOT yet collected.`
+                );
+                if (!ans) return;
+                collectCash = true;
+            } else {
+                if (!confirm('Confirm vehicle has been picked up?')) return;
+            }
 
-
-            if (!confirm('Confirm vehicle has been picked up?')) return;
-
-
-
-            showAdminBlockingUI(true);
+            if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(true);
             try {
-
-
-
-                const res = await fetch(`${API_URL}/bookings/${id}/pickup`, { method: 'PUT' });
-
-
+                const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                const adminId = adminUser ? adminUser.id : 0;
+                const res = await fetch(`${API_URL}/bookings/${id}/pickup`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        admin_id: adminId,
+                        collect_balance_cash: collectCash,
+                        override_unpaid: overrideUnpaid
+                    })
+                });
+                const resData = await res.json().catch(() => ({}));
+                if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(false);
 
                 if (res.ok) {
-
-
-
-                    showNotification('Marked as Picked Up!', 'success');
-
-
-
-                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
-
-
-
+                    showNotification(collectCash ? 'Balance collected in cash & vehicle marked as Picked Up!' : 'Marked as Picked Up!', 'success');
+                    const bdm = document.getElementById('bookingDetailsModal');
+                    if (bdm) bdm.style.display = 'none';
+                    if (typeof modalClose === 'function') modalClose();
                     this.refresh();
-
-
-
                 } else {
-
-
-
-                    const data = await res.json();
-
-
-
-                    showNotification(data.error || 'Failed', 'error');
-
-
-
+                    showNotification(resData.error || 'Failed to mark vehicle as picked up', 'error');
                 }
-
-
-
             } catch (err) {
-                showAdminBlockingUI(false); showNotification('Network error', 'error'); }
-
-
-
+                if (typeof showAdminBlockingUI === 'function') showAdminBlockingUI(false);
+                showNotification('Network error: ' + err.message, 'error');
+            }
         },
-
-
-
-
-
-
 
         async complete(id) {
 

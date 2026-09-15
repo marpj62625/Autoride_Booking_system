@@ -858,7 +858,10 @@ function apiCall(endpoint, options) {
       if (timer) clearTimeout(timer);
       return res.json().then(function(data) {
         if (!res.ok) {
-          if ((res.status === 401 || res.status === 403) && !data.verification_required && !data.reason) {
+          // Only 401 (Unauthorized) clears session.
+          // 403 (Forbidden) is reserved for business rules (penalties, suspensions, verification)
+          // and must NEVER kick the customer to the login screen!
+          if (res.status === 401 && !data.verification_required && !data.reason) {
             Session.clear();
             showPage('page-login');
           }
@@ -4928,6 +4931,17 @@ function showPaymentWaiting(bookingId, amount, method) {
   }
 
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
+  var isBalancePayment = (_pendingPayType === 'Balance' || _pendingPayType === 'Penalty' || (typeof activeBookingData !== 'undefined' && activeBookingData && (activeBookingData.payment_status === 'Partially Paid' || parseFloat(activeBookingData.balance_amount || 0) > 0)));
+  var timerOrStatusHtml = isBalancePayment
+    ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<i class="fas fa-info-circle" style="color:var(--primary);font-size:1rem;"></i>' +
+      '<span style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);">Awaiting payment confirmation...</span>' +
+      '</div>'
+    : '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<i class="fas fa-clock" style="color:#d97706;font-size:1rem;"></i>' +
+      '<span style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);">Time left to pay:</span>' +
+      '<span id="payCountdownDisplay" style="font-size:1.2rem;font-weight:900;color:#d97706;font-variant-numeric:tabular-nums;">30:00</span>' +
+      '</div>';
   el.innerHTML =
     '<div class="page-header">' +
     '<button class="back-btn" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')"><i class="fas fa-arrow-left"></i></button>' +
@@ -4940,11 +4954,7 @@ function showPaymentWaiting(bookingId, amount, method) {
     '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
     '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
     '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
-    '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;">' +
-    '<i class="fas fa-clock" style="color:#d97706;font-size:1rem;"></i>' +
-    '<span style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);">Time left to pay:</span>' +
-    '<span id="payCountdownDisplay" style="font-size:1.2rem;font-weight:900;color:#d97706;font-variant-numeric:tabular-nums;">30:00</span>' +
-    '</div>' +
+    timerOrStatusHtml +
     '</div>' +
     '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\', false)">' +
     '<i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>' +
@@ -4981,63 +4991,65 @@ function showPaymentWaiting(bookingId, amount, method) {
     autoCheckPaymentStatus(bookingId, amount, method);
   }, 2500);
 
-  // --- 30-minute payment countdown timer ---
-  var payDeadlineMs = 30 * 60 * 1000;
-  var payStartTime = Date.now();
-  if (window._pendingPaymentBookingCreatedAt) {
-    var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
-    if (!isNaN(_bkCreatedMs)) {
-      var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
-      var _initialRem = _bkDeadline - Date.now();
-      if (_initialRem > 0 && _initialRem <= 30 * 60 * 1000) {
-        payDeadlineMs = _initialRem;
-      }
-    }
-  }
+  // --- 30-minute payment countdown timer (Only for new reservations, NOT for balance/penalty payments) ---
   if (window._payCountdownInterval) {
     clearInterval(window._payCountdownInterval);
     window._payCountdownInterval = null;
   }
-  var countdownEl = document.getElementById('payCountdownDisplay');
-  if (countdownEl) {
-    var initM = Math.floor(payDeadlineMs / 60000);
-    var initS = Math.floor((payDeadlineMs % 60000) / 1000);
-    countdownEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
-    if (payDeadlineMs <= 5 * 60 * 1000) {
-      countdownEl.style.color = '#dc2626';
-    } else if (payDeadlineMs <= 15 * 60 * 1000) {
-      countdownEl.style.color = '#ea580c';
-    }
-  }
-  window._payCountdownInterval = setInterval(function() {
-    var elapsed = Date.now() - payStartTime;
-    var remaining = payDeadlineMs - elapsed;
-    if (remaining <= 0) {
-      clearInterval(window._payCountdownInterval);
-      window._payCountdownInterval = null;
-      stopPaymentPolling();
-      showToast('Payment window expired. Your booking has been cancelled due to non-payment. A violation has been recorded.', 'error', 6000);
-      return;
-    }
-    var mins = Math.floor(remaining / 60000);
-    var secs = Math.floor((remaining % 60000) / 1000);
-    var display = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
-    if (countdownEl) {
-      countdownEl.textContent = display;
-      if (remaining <= 5 * 60 * 1000) {
-        countdownEl.style.color = '#dc2626';
-        countdownEl.style.fontWeight = '900';
-        if (remaining > (5 * 60 * 1000 - 2500)) {
-          showToast('Only 5 minutes left to complete your payment!', 'error', 4000);
-        }
-      } else if (remaining <= 15 * 60 * 1000) {
-        countdownEl.style.color = '#f59e0b';
-        if (remaining > (15 * 60 * 1000 - 2500)) {
-          showToast('15 minutes remaining to complete your payment.', 'warning', 3500);
+  if (!isBalancePayment) {
+    var payDeadlineMs = 30 * 60 * 1000;
+    var payStartTime = Date.now();
+    if (window._pendingPaymentBookingCreatedAt) {
+      var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
+      if (!isNaN(_bkCreatedMs)) {
+        var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
+        var _initialRem = _bkDeadline - Date.now();
+        if (_initialRem > 0 && _initialRem <= 30 * 60 * 1000) {
+          payDeadlineMs = _initialRem;
         }
       }
     }
-  }, 1000);
+    var countdownEl = document.getElementById('payCountdownDisplay');
+    if (countdownEl) {
+      var initM = Math.floor(payDeadlineMs / 60000);
+      var initS = Math.floor((payDeadlineMs % 60000) / 1000);
+      countdownEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
+      if (payDeadlineMs <= 5 * 60 * 1000) {
+        countdownEl.style.color = '#dc2626';
+      } else if (payDeadlineMs <= 15 * 60 * 1000) {
+        countdownEl.style.color = '#ea580c';
+      }
+    }
+    window._payCountdownInterval = setInterval(function() {
+      var elapsed = Date.now() - payStartTime;
+      var remaining = payDeadlineMs - elapsed;
+      if (remaining <= 0) {
+        clearInterval(window._payCountdownInterval);
+        window._payCountdownInterval = null;
+        stopPaymentPolling();
+        showToast('Payment window expired. Your booking has been cancelled due to non-payment. A violation has been recorded.', 'error', 6000);
+        return;
+      }
+      var mins = Math.floor(remaining / 60000);
+      var secs = Math.floor((remaining % 60000) / 1000);
+      var display = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      if (countdownEl) {
+        countdownEl.textContent = display;
+        if (remaining <= 5 * 60 * 1000) {
+          countdownEl.style.color = '#dc2626';
+          countdownEl.style.fontWeight = '900';
+          if (remaining > (5 * 60 * 1000 - 2500)) {
+            showToast('Only 5 minutes left to complete your payment!', 'error', 4000);
+          }
+        } else if (remaining <= 15 * 60 * 1000) {
+          countdownEl.style.color = '#f59e0b';
+          if (remaining > (15 * 60 * 1000 - 2500)) {
+            showToast('15 minutes remaining to complete your payment.', 'warning', 3500);
+          }
+        }
+      }
+    }, 1000);
+  }
 }
 
 function stopPaymentPolling() {

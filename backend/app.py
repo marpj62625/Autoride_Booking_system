@@ -4640,7 +4640,8 @@ def book():
                     "message": f"You have an outstanding balance / unpaid penalty of PHP {u_bal:,.2f} on Booking #{u_bid}. Please settle your balance before booking another vehicle.",
                     "unpaid_booking_id": u_bid,
                     "balance_amount": u_bal,
-                    "has_unpaid_balance": True
+                    "has_unpaid_balance": True,
+                    "reason": "unpaid_balance"
                 }), 403
 
         # ── Violation Suspension Guard ──────────────────────────────────────
@@ -6906,6 +6907,28 @@ def submit_inspection():
         # Auto-update booking and vehicle status based on inspection type
         vehicle_id = bk['vehicle_id']
         if inspection_type == 'pickup':
+            cur.execute("SELECT payment_status, balance_amount, total_price, amount_paid FROM bookings WHERE id = %s", (booking_id,))
+            bp = cur.fetchone()
+            if bp:
+                b_bal = float(bp.get('balance_amount') if bp.get('balance_amount') is not None else max(0.0, float(bp.get('total_price') or 0) - float(bp.get('amount_paid') or 0)))
+                if bp.get('payment_status') != 'Paid' and b_bal > 0:
+                    allow_override = (request.is_json and request.json.get('override_unpaid', False)) or (request.form.get('override_unpaid') in ('true', '1'))
+                    collect_cash = (request.is_json and request.json.get('collect_balance_cash', False)) or (request.form.get('collect_balance_cash') in ('true', '1'))
+                    if collect_cash:
+                        cur.execute("""
+                            INSERT INTO payments (booking_id, amount, method, reference_number, status)
+                            VALUES (%s, %s, 'Cash (Over the counter)', %s, 'Completed')
+                        """, (booking_id, b_bal, f"CASH-INSPECT-{booking_id}"))
+                        new_amt = float(bp.get('amount_paid') or 0) + b_bal
+                        cur.execute("""
+                            UPDATE bookings SET payment_status = 'Paid', amount_paid = %s, balance_amount = 0 WHERE id = %s
+                        """, (new_amt, booking_id))
+                    elif not allow_override:
+                        return jsonify({
+                            'error': f"Cannot complete pickup inspection. Booking #{booking_id} has an unsettled balance of PHP {b_bal:,.2f}. Full payment must be collected before vehicle handover.",
+                            'requires_payment': True,
+                            'balance_amount': b_bal
+                        }), 400
             cur.execute("UPDATE bookings SET status = 'Picked Up' WHERE id = %s", (booking_id,))
             if vehicle_id:
                 cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (vehicle_id,))
@@ -7683,18 +7706,62 @@ def admin_cancel_booking(booking_id):
 @app.route('/bookings/<int:booking_id>/pickup', methods=['PUT'])
 @app.route('/api/bookings/<int:booking_id>/pickup', methods=['PUT'])
 def pickup_booking(booking_id):
-
-    """Mark a booking as Picked Up."""
-
+    """Mark a booking as Picked Up. Enforces full payment or cash settlement at handover."""
     try:
+        data = request.get_json(silent=True) or {}
+        admin_id = data.get('admin_id') or request.args.get('admin_id', 0)
+        collect_cash = data.get('collect_balance_cash', False)
+        override_unpaid = data.get('override_unpaid', False)
 
         cur = get_cursor()
 
-        cur.execute("UPDATE bookings SET status='Picked Up' WHERE id=%s", (booking_id,))
+        cur.execute("""
+            SELECT id, user_id, vehicle_id, total_price, amount_paid, balance_amount,
+                   payment_status, payment_type, status, start_date, end_date
+            FROM bookings WHERE id = %s
+        """, (booking_id,))
+        b_data = cur.fetchone()
+        if not b_data:
+            return jsonify({"error": "Booking not found"}), 404
+
+        tot = float(b_data.get('total_price') or 0)
+        amt_paid = float(b_data.get('amount_paid') or 0)
+        bal = float(b_data.get('balance_amount') if b_data.get('balance_amount') is not None else max(0.0, tot - amt_paid))
+        pay_stat = b_data.get('payment_status') or 'Unpaid'
+
+        # Payment validation: vehicle cannot be released without full payment or cash collection
+        if pay_stat != 'Paid' and bal > 0:
+            if collect_cash:
+                cur.execute("""
+                    INSERT INTO payments (booking_id, amount, method, reference_number, status)
+                    VALUES (%s, %s, 'Cash (Over the counter)', %s, 'Completed')
+                """, (booking_id, bal, f"CASH-PICKUP-{booking_id}"))
+                new_amt_paid = amt_paid + bal
+                cur.execute("""
+                    UPDATE bookings
+                    SET payment_status = 'Paid',
+                        amount_paid = %s,
+                        balance_amount = 0,
+                        status = 'Picked Up'
+                    WHERE id = %s
+                """, (new_amt_paid, booking_id))
+            elif override_unpaid:
+                cur.execute("UPDATE bookings SET status='Picked Up' WHERE id=%s", (booking_id,))
+            else:
+                return jsonify({
+                    "error": f"Cannot release vehicle. Booking #{booking_id} has an unsettled balance of PHP {bal:,.2f}. Full payment must be collected before vehicle handover.",
+                    "balance_amount": bal,
+                    "payment_status": pay_stat,
+                    "requires_payment": True
+                }), 400
+        else:
+            cur.execute("UPDATE bookings SET status='Picked Up' WHERE id=%s", (booking_id,))
+
+        # Update vehicle status to Rented
+        if b_data.get('vehicle_id'):
+            cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (b_data['vehicle_id'],))
 
         commit_db()
-
-        
 
         cur.execute(
             """SELECT b.user_id, v.brand, v.model, b.end_date
@@ -7703,50 +7770,38 @@ def pickup_booking(booking_id):
                WHERE b.id = %s""",
             (booking_id,)
         )
+        notif_row = cur.fetchone()
+        if notif_row:
+            try:
+                notification_service.notify_user(
+                    notif_row['user_id'],
+                    "Vehicle Picked Up",
+                    f"Drive safely! Booking #{booking_id} for {notif_row['brand']} {notif_row['model']} is now active. Return by {notif_row['end_date']}.",
+                    'booking_picked_up'
+                )
+            except Exception:
+                pass
 
-        b_data = cur.fetchone()
-
-        if b_data:
-            notification_service.notify_user(
-                b_data['user_id'],
-                "Vehicle Picked Up",
-                f"Drive safely! Booking #{booking_id} for {b_data['brand']} {b_data['model']} is now active. Return by {b_data['end_date']}.",
-                'booking_picked_up'
-
+        try:
+            log_activity(
+                admin_id=admin_id,
+                admin_name="Administrator",
+                action='PICKUP_VEHICLE',
+                target_type='BOOKING',
+                target_id=str(booking_id),
+                details=f"Marked booking #{booking_id} as Picked Up" + (" (Collected remaining balance in Cash)" if collect_cash else "")
             )
+        except Exception:
+            pass
 
-            
-
-        # Log activity
-
-        log_activity(
-
-            admin_id=request.args.get('admin_id', 0),
-
-            admin_name="Administrator",
-
-            action='PICKUP_VEHICLE',
-
-            target_type='BOOKING',
-
-            target_id=str(booking_id),
-
-            details=f"Marked booking #{booking_id} as Picked Up"
-
-        )
-
-            
-
-        return jsonify({"message": "Vehicle marked as Picked Up", "booking_id": booking_id}), 200
-
+        return jsonify({
+            "message": "Vehicle marked as Picked Up" + (" with cash payment collected." if collect_cash else "."),
+            "booking_id": booking_id
+        }), 200
     except Exception as e:
-
         return jsonify({"error": str(e)}), 500
-
     finally:
-
         if 'cur' in locals():
-
             cur.close()
 
 
