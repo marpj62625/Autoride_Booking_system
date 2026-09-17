@@ -494,13 +494,13 @@ def payment_cancel():
         </a>
         <small>If the window does not close automatically, tap the button above or close this browser tab.</small>
         <script>
-            function returnToApp() {
-                try { window.close(); } catch(e) {}
+            function returnToApp() {{
+                try {{ window.close(); }} catch(e) {{}}
                 window.location.href = 'com.autoride.customer://payment-cancel?booking_id={booking_id}';
-                setTimeout(function() {
-                    try { window.history.back(); } catch(e) {}
-                }, 1200);
-            }
+                setTimeout(function() {{
+                    try {{ window.history.back(); }} catch(e) {{}}
+                }}, 1200);
+            }}
             // Auto-redirect back to app after 1.5 seconds
             setTimeout(returnToApp, 1500);
         </script>
