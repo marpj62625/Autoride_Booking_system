@@ -10,7 +10,7 @@ def send_notification(user_id, subject, message):
     """Sends notification to user via Email and SMS."""
     try:
         cur = get_cursor()
-        cur.execute("SELECT email, phone, full_name FROM users WHERE user_id = %s", (user_id,))
+        cur.execute("SELECT email, phone, full_name FROM users WHERE id = %s", (user_id,))
         user = cur.fetchone()
         if not user:
             return False
@@ -372,7 +372,7 @@ class FCM_Service:
             from psycopg.rows import dict_row
             conn = psycopg.connect(conninfo=SUPABASE_DB_URL, autocommit=True, prepare_threshold=None)
             cur = conn.cursor(row_factory=dict_row)
-            cur.execute("SELECT fcm_token FROM users WHERE user_id = %s", (user_id,))
+            cur.execute("SELECT fcm_token FROM users WHERE id = %s", (user_id,))
 
             row = cur.fetchone()
             cur.close()

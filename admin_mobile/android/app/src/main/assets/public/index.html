@@ -10723,8 +10723,7 @@ input:checked + .ctrl-slider:before {
                 window.Capacitor.Plugins.App.exitApp();
             } else {
                 location.reload();
-
-
+            }
         },
 
 
@@ -15896,114 +15895,71 @@ function toggleNewsletterModal(show = true) {
 
         _filter: 'all',
 
+        updateOverviewCounts(bookingsList, stats) {
+            let total = 0;
+            let confirmed = 0;
+            let pending = 0;
+            let cancelled = 0;
 
+            if (Array.isArray(bookingsList) && bookingsList.length > 0) {
+                total = bookingsList.length;
+                bookingsList.forEach(b => {
+                    const s = (b && b.status ? b.status : '').toLowerCase().trim();
+                    if (s === 'confirmed' || s === 'approved' || s === 'picked up' || s === 'ongoing') {
+                        confirmed++;
+                    } else if (s === 'pending') {
+                        pending++;
+                    } else if (s === 'cancelled' || s === 'rejected') {
+                        cancelled++;
+                    }
+                });
+            } else if (stats) {
+                const breakdown = stats.bookingsByStatus || {};
+                total = stats.total_bookings || 0;
+                confirmed = (breakdown['confirmed'] || 0) + (breakdown['approved'] || 0) + (breakdown['picked up'] || 0) + (breakdown['ongoing'] || 0);
+                pending = breakdown['pending'] || 0;
+                cancelled = (breakdown['cancelled'] || 0) + (breakdown['rejected'] || 0);
+            }
+
+            const elTotal = document.getElementById('bookTotal');
+            const elConfirmed = document.getElementById('bookConfirmed');
+            const elPending = document.getElementById('bookPending');
+            const elCancelled = document.getElementById('bookCancelled');
+
+            if (elTotal) elTotal.textContent = total;
+            if (elConfirmed) elConfirmed.textContent = confirmed;
+            if (elPending) elPending.textContent = pending;
+            if (elCancelled) elCancelled.textContent = cancelled;
+        },
 
         async refresh() {
-
-
-
             const list = document.getElementById('bookingsList');
             showSkeleton('bookingsList', 'table');
 
-
-
             if (!list.innerHTML.trim() || list.innerHTML.includes('Loading bookings')) {
-
-
-
                 list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-muted);">Loading bookings...</div>';
-
-
-
             }
 
-
-
             try {
-
-
-
                 // Fetch Stats and List in parallel
-
-
-
                 const user = adminAuth.getUser();
-
-
-
                 const adminId = user ? user.id : '';
 
-
-
-
-
-
-
                 const [statsRes, listRes] = await Promise.all([
-
-
-
-                    fetch(`${API_URL}/admin/stats?admin_id=${adminId}`),
-
-
-
+                    fetch(`${API_URL}/admin/stats?admin_id=${adminId}&period=all`),
                     fetch(`${API_URL}/bookings?admin_id=${adminId}`)
-
-
-
                 ]);
 
-
-
-
-
-
-
-                // Update booking counts from stats
-
-
-
+                let statsData = null;
                 if (statsRes.ok) {
-
-
-
-                    const stats = await statsRes.json();
-
-
-
-                    const breakdown = stats.bookingsByStatus || {};
-
-
-
-                    document.getElementById('bookTotal').textContent = stats.total_bookings || 0;
-
-
-
-                    document.getElementById('bookConfirmed').textContent = (breakdown['confirmed'] || 0) + (breakdown['approved'] || 0);
-
-
-
-                    document.getElementById('bookPending').textContent = breakdown['pending'] || 0;
-
-
-
-                    document.getElementById('bookCancelled').textContent = (breakdown['cancelled'] || 0) + (breakdown['rejected'] || 0);
-
-
-
+                    try { statsData = await statsRes.json(); } catch(e) {}
                 }
 
-
-
-
-
-
-
                 if (!listRes.ok) throw new Error(`Server error: ${listRes.status}`);
-
-
-
                 this.data = await listRes.json();
+
+                // Always update the overview count cards from the actual bookings list
+                this.updateOverviewCounts(this.data, statsData);
 
 
 

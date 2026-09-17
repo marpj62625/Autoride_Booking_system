@@ -463,27 +463,47 @@ def payment_cancel():
     if client == 'web':
         return redirect(f'{APP_BASE_URL}/?payment=cancelled&booking_id={booking_id or ""}')
     return f'''
+    <!DOCTYPE html>
     <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Payment Cancelled</title>
         <style>
-            body {{ font-family: -apple-system, sans-serif; background: #0a0a0a; color: white;
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                   background: #0a0a0a; color: white;
                    display: flex; align-items: center; justify-content: center; min-height: 100vh;
-                   flex-direction: column; gap: 16px; padding: 20px; text-align: center; }}
-            .icon {{ font-size: 4rem; }}
-            h2 {{ font-size: 1.5rem; font-weight: 800; color: #f87171; }}
-            p {{ color: #94a3b8; font-size: 0.9rem; }}
-            a {{ background: #1e293b; color: white; padding: 14px 28px; border-radius: 12px;
-                 text-decoration: none; font-weight: 700; display: inline-block; margin-top: 10px;
-                 border: 1px solid rgba(255,255,255,0.1); }}
+                   flex-direction: column; gap: 16px; padding: 24px; text-align: center; box-sizing: border-box; }}
+            .icon {{ width: 72px; height: 72px; border-radius: 50%; background: rgba(239,68,68,0.15);
+                     color: #f87171; display: flex; align-items: center; justify-content: center;
+                     font-size: 2.2rem; font-weight: 800; margin: 0 auto; }}
+            h2 {{ font-size: 1.5rem; font-weight: 800; color: #f87171; margin: 0; }}
+            p {{ color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin: 0; max-width: 320px; }}
+            .btn {{ background: #1e293b; color: white; padding: 14px 28px; border-radius: 12px;
+                    text-decoration: none; font-weight: 700; display: inline-block; margin-top: 10px;
+                    border: 1px solid rgba(255,255,255,0.15); font-size: 1rem; cursor: pointer; }}
+            .btn:active {{ transform: scale(0.98); }}
+            small {{ color: #64748b; font-size: 0.8rem; margin-top: 8px; display: block; }}
         </style>
     </head>
     <body>
-        <div class="icon">?</div>
+        <div class="icon">✕</div>
         <h2>Payment Cancelled</h2>
-        <p>Your booking #{booking_id} is still pending.</p>
-        <p>You can try again from the app.</p>
-        <a href="javascript:window.close()">Return to App</a>
+        <p>Your booking #{booking_id} is still pending. You can try again or change payment method in the app.</p>
+        <a href="com.autoride.customer://payment-cancel?booking_id={booking_id}" class="btn" id="returnBtn" onclick="returnToApp()">
+            &#8592; Return to App
+        </a>
+        <small>If the window does not close automatically, tap the button above or close this browser tab.</small>
+        <script>
+            function returnToApp() {
+                try { window.close(); } catch(e) {}
+                window.location.href = 'com.autoride.customer://payment-cancel?booking_id={booking_id}';
+                setTimeout(function() {
+                    try { window.history.back(); } catch(e) {}
+                }, 1200);
+            }
+            // Auto-redirect back to app after 1.5 seconds
+            setTimeout(returnToApp, 1500);
+        </script>
     </body>
     </html>
     ''', 200

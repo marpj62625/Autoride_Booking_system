@@ -155,20 +155,102 @@ function formatLicenseNumberInput(value) {
 
 
 /**
- * Validates a file for upload: must be JPEG or PNG and ? 5 MB.
- * Property 7: File validation  -  format and size.
+ * Compresses an image file client-side using an HTML5 Canvas to prevent payload errors.
+ * Fits within maxWidth/maxHeight and outputs JPEG blob.
+ * @param {File|Blob} file
+ * @param {number} maxWidth
+ * @param {number} maxHeight
+ * @param {number} quality
+ * @returns {Promise<File>}
+ */
+function compressImageFile(file, maxWidth, maxHeight, quality) {
+  maxWidth = maxWidth || 1200;
+  maxHeight = maxHeight || 1200;
+  quality = quality || 0.82;
+
+  if (!file || !file.type || !file.type.startsWith('image/')) {
+    return Promise.resolve(file);
+  }
+
+  // If already under 350KB and is jpeg/png, no compression needed
+  if (file.size && file.size < 350 * 1024) {
+    return Promise.resolve(file);
+  }
+
+  return new Promise(function(resolve) {
+    try {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          try {
+            var width = img.width;
+            var height = img.height;
+
+            if (width > maxWidth || height > maxHeight) {
+              if (width > height) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxHeight) / height);
+                maxHeight = maxHeight;
+                height = Math.round((height * maxHeight) / img.height);
+              }
+            }
+
+            var canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(function(blob) {
+              if (blob && blob.size < file.size) {
+                var fileName = (file.name || 'photo.jpg').replace(/\.[^/.]+$/, '.jpg');
+                var compressedFile = new File([blob], fileName, { type: 'image/jpeg' });
+                console.log('[ImageCompress] Compressed from ' + Math.round(file.size/1024) + 'KB down to ' + Math.round(compressedFile.size/1024) + 'KB');
+                resolve(compressedFile);
+              } else {
+                resolve(file); // Keep original if blob conversion didn't reduce size
+              }
+            }, 'image/jpeg', quality);
+          } catch(canvasErr) {
+            console.warn('[ImageCompress] Canvas compression error:', canvasErr);
+            resolve(file);
+          }
+        };
+        img.onerror = function() {
+          resolve(file);
+        };
+        img.src = e.target.result;
+      };
+      reader.onerror = function() {
+        resolve(file);
+      };
+      reader.readAsDataURL(file);
+    } catch(err) {
+      console.warn('[ImageCompress] Compression setup error:', err);
+      resolve(file);
+    }
+  });
+}
+if (typeof window !== 'undefined') window.compressImageFile = compressImageFile;
+
+/**
+ * Validates a file for upload: must be an image and <= 15 MB before compression.
  * @param {{ type: string, size: number }} file
  * @returns {string|null} Error message string, or null if valid.
  */
 function validateUploadFile(file) {
   if (!file) return 'No file selected.';
-  const allowedTypes = ['image/jpeg', 'image/png'];
-  if (!allowedTypes.includes(file.type)) {
-    return 'Only JPEG and PNG images are accepted.';
+  var type = (file.type || '').toLowerCase();
+  var isImage = type.indexOf('image/') === 0 || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || '');
+  if (!isImage) {
+    return 'Only image files (JPG, PNG, WebP) are accepted.';
   }
-  const maxSize = 5 * 1024 * 1024; // 5 MB
-  if (file.size > maxSize) {
-    return 'File size must not exceed 5 MB.';
+  var maxRawSize = 15 * 1024 * 1024; // 15 MB raw camera limit before client compression
+  if (file.size > maxRawSize) {
+    return 'Image file is too large (over 15 MB). Please select a smaller photo.';
   }
   return null;
 }

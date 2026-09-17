@@ -185,6 +185,14 @@ var PushNotifications = {
       // Add event listeners
       pushPlugin.addListener('registration', function(token) {
         console.log('Push notifications enabled successfully');
+        var tokenVal = (token && token.value) || (typeof token === 'string' ? token : null);
+        if (tokenVal) {
+          PushNotifications.currentToken = tokenVal;
+          window._fcmToken = tokenVal;
+          try { localStorage.setItem('fcm_token', tokenVal); } catch(e) {}
+          console.log('[FCM] Device token registered:', tokenVal.substring(0, 15) + '...');
+          PushNotifications.sendTokenToServer(tokenVal);
+        }
       });
 
 
@@ -900,19 +908,25 @@ function uploadFile(endpoint, formData, timeoutMs) {
       .then(function(res) {
         if (timer) clearTimeout(timer);
         return res.text().then(function(text) {
+          if (res.status === 413) {
+            var sizeErr = new Error('Image file is too large. Please select a smaller photo.');
+            sizeErr.status = 413;
+            throw sizeErr;
+          }
           var data;
-          try { data = JSON.parse(text); } catch(e) {
-            var parseErr = new Error('Server error (status ' + res.status + ')');
+          try { 
+            data = JSON.parse(text); 
+          } catch(e) {
+            var parseErr = new Error(
+              res.status === 413
+                ? 'Image file is too large. Please select a smaller photo.'
+                : (res.status >= 500 ? 'Server error (' + res.status + ')' : 'Network error (invalid response ' + res.status + ')')
+            );
             parseErr.status = res.status;
             throw parseErr;
           }
           if (!res.ok) {
-            if (res.status === 413) {
-              var sizeErr = new Error('File is too large. Please use a smaller image (max ~4MB).');
-              sizeErr.status = 413;
-              throw sizeErr;
-            }
-            var err = new Error(data.error || 'Upload failed');
+            var err = new Error(data.error || data.message || 'Upload failed');
             err.status = res.status;
             throw err;
           }
@@ -921,7 +935,7 @@ function uploadFile(endpoint, formData, timeoutMs) {
       })
       .catch(function(err) {
         if (timer) clearTimeout(timer);
-        // If it's a known server error, don't retry
+        // If it's a known server error (including 413 size error), don't retry and preserve error message
         if (err.status && err.status !== 0) throw err;
         // If it's abort (timeout) or network error, retry once
         if (attempt < 2) {
@@ -934,7 +948,9 @@ function uploadFile(endpoint, formData, timeoutMs) {
         var netErr = new Error(
           isTimeout
             ? 'Upload timed out. Please check your connection and try again.'
-            : 'Network error during upload. Please try again.'
+            : (err.message && err.message.indexOf('too large') !== -1 
+                ? err.message 
+                : 'Network error during upload. Please try again.')
         );
         netErr.status = 0;
         throw netErr;
@@ -1307,7 +1323,23 @@ function closeOverlay(id) {
   el.style.zIndex = '';
   if (id === 'page-gps-map') stopGpsPolling();
   if (id === 'page-livechat') LiveChat.stopPolling();
-  if (id === 'page-payment') stopPaymentPolling();
+  if (id === 'page-payment') {
+    stopPaymentPolling();
+    // Also clean up any lingering booking-flow overlays so they don't block bottom navigation
+    ['page-booking-form', 'page-vehicle-detail', 'page-vehicle-units', 'page-color-selection'].forEach(function(overlayId) {
+      var ov = document.getElementById(overlayId);
+      if (ov) {
+        ov.classList.remove('active');
+        ov.style.display = 'none';
+        ov.style.zIndex = '';
+      }
+    });
+    // Ensure loading overlay and click pointer-events are completely freed
+    _loadingCount = 0;
+    var loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    document.body.style.pointerEvents = '';
+  }
   if (id === 'page-booking-detail') {
     if (window._detailPayCountdownInterval) {
       clearInterval(window._detailPayCountdownInterval);
@@ -1315,14 +1347,22 @@ function closeOverlay(id) {
     }
   }
 
-  // Restore bottom navigation if no active overlay remains
-  var anyActive = document.querySelector('.overlay-page.active');
-  if (!anyActive) {
+  // Restore pointer events if no loading is active
+  if (_loadingCount <= 0) {
+    document.body.style.pointerEvents = '';
+  }
+
+  // Restore bottom navigation if no visible active overlay remains
+  var activeOverlays = Array.from(document.querySelectorAll('.overlay-page.active')).filter(function(ov) {
+    return ov.style.display !== 'none';
+  });
+  if (activeOverlays.length === 0) {
     var nav = document.getElementById('bottomNav');
     var isAuth = document.querySelector('.auth-page.active');
     if (nav && !isAuth) {
       nav.classList.remove('hidden');
       nav.classList.remove('auth-hidden');
+      nav.style.display = '';
     }
   }
 }
@@ -1720,7 +1760,7 @@ function handleBackButton() {
       window.Capacitor.Plugins.App.addListener('backButton', function() {
         handleBackButton();
       });
-      // Deep link handler - fires when PayMongo success page redirects back
+      // Deep link handler - fires when PayMongo redirects back
       window.Capacitor.Plugins.App.addListener('appUrlOpen', function(event) {
         var url = event.url || '';
         // com.autoride.customer://payment-success?booking_id=123
@@ -1736,6 +1776,17 @@ function handleBackButton() {
             // Auto-check payment status
             checkPaymentStatus(bookingId, 0, 'online');
           }
+        } else if (url.indexOf('payment-cancel') !== -1) {
+          // Deep link when user cancels payment on PayMongo checkout
+          if (window.Capacitor.Plugins.Browser) {
+            window.Capacitor.Plugins.Browser.close().catch(function() {});
+          }
+          var match = url.match(/booking_id=(\d+)/);
+          var bookingId = match ? parseInt(match[1]) : (window._pendingPaymentBookingId || 0);
+          var amount = window._pendingPaymentAmount || 0;
+          var method = window._pendingPaymentMethod || 'online';
+          stopPaymentPolling();
+          showPaymentFailed(bookingId, amount, method, 'Payment was cancelled. You can try again when you are ready.');
         }
       });
       // Foreground resumption - check status when app returns from background (user finished checkout and switched back)
@@ -4902,20 +4953,25 @@ function pickPaymentProof() {
 // Helper to open PayMongo checkout inside native In-App Browser or same-tab on web
 function openPaymongoCheckout(checkoutUrl, bookingId, amount, method, onFinishCallback) {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
+    var browser = window.Capacitor.Plugins.Browser;
     try {
-      window.Capacitor.Plugins.Browser.removeAllListeners().catch(function() {});
-      window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
-        console.log('[PayMongo] In-app browser closed by user');
-        if (typeof onFinishCallback === 'function') {
-          onFinishCallback();
-        } else if (bookingId) {
-          checkPaymentStatus(bookingId, amount, method);
-        }
-      });
+      if (typeof browser.removeAllListeners === 'function') {
+        browser.removeAllListeners().catch(function() {});
+      }
+      if (typeof browser.addListener === 'function') {
+        browser.addListener('browserFinished', function() {
+          console.log('[PayMongo] In-app browser closed by user');
+          if (typeof onFinishCallback === 'function') {
+            onFinishCallback();
+          } else if (bookingId) {
+            checkPaymentStatus(bookingId, amount, method);
+          }
+        });
+      }
     } catch (e) {
       console.warn('[PayMongo] Browser listener setup error:', e);
     }
-    window.Capacitor.Plugins.Browser.open({
+    browser.open({
       url: checkoutUrl,
       presentationStyle: 'popover',
       toolbarColor: '#0f172a'
@@ -5133,25 +5189,32 @@ function showPaymentWaiting(bookingId, amount, method) {
     }, 1000);
   }
 
-  // Add Capacitor Browser event listeners for automatic detection
+  // Add Capacitor Browser event listeners for automatic detection (if supported)
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
-    // Auto-check when user closes the browser (back button or done)
-    window.Capacitor.Plugins.Browser.addListener('browserFinished', function() {
-      console.log('Browser closed, auto-checking payment status for booking #' + bookingId);
-      autoCheckPaymentStatus(bookingId, amount, method);
-    }).then(function(listener) {
-      window._browserFinishedListener = listener;
-    }).catch(function() {});
+    var browserPlugin = window.Capacitor.Plugins.Browser;
+    if (typeof browserPlugin.addListener === 'function') {
+      try {
+        // Auto-check when user closes the browser (back button or done)
+        browserPlugin.addListener('browserFinished', function() {
+          console.log('Browser closed, auto-checking payment status for booking #' + bookingId);
+          autoCheckPaymentStatus(bookingId, amount, method);
+        }).then(function(listener) {
+          window._browserFinishedListener = listener;
+        }).catch(function() {});
 
-    // Also check when browser navigates to success URL
-    window.Capacitor.Plugins.Browser.addListener('browserPageLoaded', function() {
-      // Poll quickly after each page load in the browser
-      setTimeout(function() {
-        autoCheckPaymentStatus(bookingId, amount, method);
-      }, 1500);
-    }).then(function(listener) {
-      window._browserPageLoadedListener = listener;
-    }).catch(function() {});
+        // Also check when browser navigates to success URL
+        browserPlugin.addListener('browserPageLoaded', function() {
+          // Poll quickly after each page load in the browser
+          setTimeout(function() {
+            autoCheckPaymentStatus(bookingId, amount, method);
+          }, 1500);
+        }).then(function(listener) {
+          window._browserPageLoadedListener = listener;
+        }).catch(function() {});
+      } catch(e) {
+        console.warn('Browser addListener error:', e);
+      }
+    }
   }
 
   window._pendingPaymentBookingId = bookingId;
@@ -5304,6 +5367,12 @@ function checkPaymentStatus(bookingId, amount, method) {
 }
 
 function showPaymentFailed(bookingId, amount, method, message) {
+  // Ensure loading overlay and click pointer-events are immediately restored
+  _loadingCount = 0;
+  var loadingOverlay = document.getElementById('loadingOverlay');
+  if (loadingOverlay) loadingOverlay.style.display = 'none';
+  document.body.style.pointerEvents = '';
+
   var el = document.getElementById('paymentContent');
   if (!el) return;
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : method === 'card' ? 'Card' : 'Online';
@@ -5353,8 +5422,12 @@ function retryPayment(bookingId, amount, method) {
     .then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        openPaymongoCheckout(data.checkout_url, bId, amt, method);
-        showPaymentWaiting(bId, amt, method);
+        try {
+          openPaymongoCheckout(data.checkout_url, bId, amt, method);
+          showPaymentWaiting(bId, amt, method);
+        } catch(e) {
+          console.error('[retryPayment] Failed to open checkout or waiting page:', e);
+        }
       } else {
         var errMsg = data.error || 'Failed to create payment. Please try again.';
         showPaymentFailed(bId, amt, method, errMsg);
@@ -9020,13 +9093,29 @@ function handleProfilePicSelected(e) {
   if (!file) return;
   var errValidation = validateUploadFile(file);
   if (errValidation) { showToast(errValidation, 'error'); return; }
-  profilePicBlob = file;
-  var preview = document.getElementById('profilePicPreview');
-  if (preview) {
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = 'block';
-  }
-  showToast('Profile photo selected! Click Save Changes to update.', 'success');
+  
+  showToast('Processing photo...', 'info');
+  var compressPromise = typeof compressImage === 'function'
+    ? compressImage(file, 800, 800, 0.7)
+    : Promise.resolve(file);
+
+  compressPromise.then(function(compressed) {
+    profilePicBlob = compressed;
+    var preview = document.getElementById('profilePicPreview');
+    if (preview) {
+      preview.src = URL.createObjectURL(compressed);
+      preview.style.display = 'block';
+    }
+    showToast('Profile photo ready! Click Save Changes to update.', 'success');
+  }).catch(function() {
+    profilePicBlob = file;
+    var preview = document.getElementById('profilePicPreview');
+    if (preview) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    }
+    showToast('Profile photo selected! Click Save Changes to update.', 'success');
+  });
 }
 
 function pickProfilePicture() {
@@ -9044,10 +9133,12 @@ function pickProfilePicture() {
     }).then(function(image) {
       return fetch(image.webPath).then(function(res) { return res.blob(); }).then(function(blob) {
         var file = new File([blob], 'selfie_avatar.jpg', { type: 'image/jpeg' });
-        profilePicBlob = file;
+        return typeof compressImage === 'function' ? compressImage(file, 800, 800, 0.7) : Promise.resolve(file);
+      }).then(function(compressed) {
+        profilePicBlob = compressed;
         var preview = document.getElementById('profilePicPreview');
         if (preview) {
-          preview.src = URL.createObjectURL(file);
+          preview.src = URL.createObjectURL(compressed);
           preview.style.display = 'block';
         }
         showToast('Live selfie captured! Click Save Changes to update.', 'success');
@@ -9127,18 +9218,25 @@ function doUpdateProfile() {
     showToast('Please take a live selfie or upload a profile picture.', 'warning');
     return;
   }
-  var fd = new FormData();
-  fd.append('user_id', currentUser.id);
-  fd.append('first_name', firstName);
-  fd.append('middle_name', middleName);
-  fd.append('last_name', lastName);
-  fd.append('phone', phone);
-  if (email) fd.append('email', email);
-  if (profilePicBlob) fd.append('profile_picture', profilePicBlob, 'avatar.jpg');
   var saveBtn = document.querySelector('button[onclick="doUpdateProfile()"]');
   var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
   showLoading(true);
-  uploadFile('/update-profile', fd)
+
+  var picPromise = (profilePicBlob && typeof compressImage === 'function')
+    ? compressImage(profilePicBlob, 800, 800, 0.7)
+    : Promise.resolve(profilePicBlob);
+
+  picPromise.then(function(finalPic) {
+    var fd = new FormData();
+    fd.append('user_id', currentUser.id);
+    fd.append('first_name', firstName);
+    fd.append('middle_name', middleName);
+    fd.append('last_name', lastName);
+    fd.append('phone', phone);
+    if (email) fd.append('email', email);
+    if (finalPic) fd.append('profile_picture', finalPic, 'avatar.jpg');
+    return uploadFile('/update-profile', fd);
+  })
     .then(function() {
       currentUser.fullName = name;
       if (email) currentUser.email = email;
@@ -10526,14 +10624,22 @@ document.addEventListener('deviceready', function() {
 // Re-register FCM token when user logs in (call this after successful login)
 function initializePushForUser() {
   try {
-    if (currentUser.id && PushNotifications.currentToken) {
-      console.log('Re-registering FCM token for logged in user: ' + currentUser.id);
-      PushNotifications.sendTokenToServer(PushNotifications.currentToken);
-    } else if (currentUser.id) {
+    var storedToken = (typeof PushNotifications !== 'undefined' && PushNotifications && PushNotifications.currentToken) ||
+      window._fcmToken ||
+      localStorage.getItem('fcm_token');
+    if (currentUser && currentUser.id && storedToken) {
+      console.log('Registering FCM token for logged in user: ' + currentUser.id);
+      if (typeof PushNotifications !== 'undefined' && PushNotifications) PushNotifications.currentToken = storedToken;
+      window._fcmToken = storedToken;
+      if (typeof PushNotifications !== 'undefined' && PushNotifications) PushNotifications.sendTokenToServer(storedToken);
+      else saveFcmToken(storedToken);
+    } else if (currentUser && currentUser.id) {
       console.log('User logged in, initializing push notifications...');
-      PushNotifications.init().catch(function(error) {
-        console.log('Push init after login failed (normal without Firebase): ' + error);
-      });
+      if (typeof PushNotifications !== 'undefined' && PushNotifications) {
+        PushNotifications.init().catch(function(error) {
+          console.log('Push init after login failed: ' + error);
+        });
+      }
     }
   } catch (error) {
     console.log('Push initialization for user failed safely: ' + error);
