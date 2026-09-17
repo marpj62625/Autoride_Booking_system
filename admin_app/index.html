@@ -80,18 +80,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        if (typeof Chart !== 'undefined') {
-            Chart.defaults.animation = {
-                duration: 1200,
-                easing: 'easeOutQuart'
-            };
-            Chart.defaults.transitions = Chart.defaults.transitions || {};
-            Chart.defaults.transitions.resize = {
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
-                }
-            };
+        if (typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.animation) {
+            Chart.defaults.animation.duration = 1000;
+            Chart.defaults.animation.easing = 'easeOutQuart';
         }
     </script>
     <script src="js/anime.min.js"></script>
@@ -24551,8 +24542,7 @@ function toggleNewsletterModal(show = true) {
 
 
                 options: { responsive: true, maintainAspectRatio: false,
-                    animation: { duration: 1200, easing: 'easeOutQuart' },
-                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
 
 
 
@@ -24658,7 +24648,6 @@ function toggleNewsletterModal(show = true) {
 
                 options: { responsive: true, maintainAspectRatio: false,
                     animation: { duration: 1000, easing: 'easeOutQuart' },
-                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
 
 
 
@@ -24807,8 +24796,7 @@ function toggleNewsletterModal(show = true) {
 
 
                     maintainAspectRatio: false,
-                    animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
-                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutCirc' } } },
+                    animation: { duration: 1000, easing: 'easeOutCirc' },
 
 
 
@@ -26825,8 +26813,7 @@ function toggleNewsletterModal(show = true) {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    animation: { duration: 1200, easing: 'easeOutQuart' },
-                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
                     plugins: { legend: { display: false } }, scales: defaultScales
                 }
             });
@@ -26863,7 +26850,6 @@ function toggleNewsletterModal(show = true) {
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     animation: { duration: 1000, easing: 'easeOutQuart' },
-                    transitions: { resize: { animation: { duration: 800, easing: 'easeOutQuart' } } },
                     plugins: { legend: { display: false } }, scales: defaultScales
                 }
             });
@@ -26885,7 +26871,7 @@ function toggleNewsletterModal(show = true) {
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false, cutout: '75%',
-                    animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
+                    animation: { duration: 1000, easing: 'easeOutCirc' },
                     plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { weight: '600', size: 11 }, padding: 20, usePointStyle: true } } }
                 }
             });
@@ -26909,8 +26895,7 @@ function toggleNewsletterModal(show = true) {
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
-                        animation: { animateRotate: true, animateScale: true, duration: 1200, easing: 'easeOutCirc' },
-                        transitions: { resize: { animation: { duration: 800, easing: 'easeOutCirc' } } },
+                        animation: { duration: 1000, easing: 'easeOutCirc' },
                         plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 }, padding: 10, usePointStyle: true } } }
                     }
                 });
