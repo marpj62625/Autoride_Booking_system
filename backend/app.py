@@ -748,6 +748,13 @@ def migrate_settings_v2():
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) DEFAULT 0.00")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_redeemed INT DEFAULT 0")
         cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS points_earned INT DEFAULT 0")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS destination VARCHAR(255) DEFAULT ''")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS rental_purpose VARCHAR(255) DEFAULT ''")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_fee NUMERIC(10,2) DEFAULT 0.00")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_fee_percent NUMERIC(5,2) DEFAULT 0.00")
+        cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'Cash'")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_regular_customer BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS regular_customer_manual BOOLEAN DEFAULT FALSE")
 
         # 2. Ensure new keys exist with default values
         new_configs = [
@@ -756,7 +763,14 @@ def migrate_settings_v2():
             ('long_term_discount_percent', '10', 'Long-term discount percentage'),
             ('loyalty_points_spend_ratio', '100', 'Spend amount in PHP required to earn 1 loyalty point'),
             ('loyalty_points_value', '0.1', 'Discount value in PHP of 1 loyalty point'),
-            ('loyalty_max_discount_percent', '50', 'Maximum percentage of booking cost that can be covered by loyalty points discount')
+            ('loyalty_max_discount_percent', '50', 'Maximum percentage of booking cost that can be covered by loyalty points discount'),
+            ('regular_customer_min_bookings', '3', 'Minimum completed bookings required to automatically qualify as a Regular Customer'),
+            ('regular_customer_auto_qualify', 'true', 'Enable automatic Regular Customer qualification based on completed bookings'),
+            ('regular_customer_downpayment_exempt', 'true', 'Exempt Regular Customers from the 20% downpayment requirement (allow ₱0 downpayment)'),
+            ('payment_fee_card_percent', '3.5', 'Surcharge percentage for Credit/Debit Card Terminal payments'),
+            ('payment_fee_card_label', 'Card Terminal Fee', 'Display label for Card Terminal fee surcharge'),
+            ('payment_fee_ewallet_percent', '0', 'Surcharge percentage for GCash/Maya e-wallet payments'),
+            ('payment_fee_cash_percent', '0', 'Surcharge percentage for Cash payments')
         ]
 
         for key, val, desc in new_configs:
@@ -2331,9 +2345,9 @@ def login():
                 "profile_picture": user.get('profile_picture'),
 
                 "license_image_url": user.get('license_image_url'),
-
-                "phone": user.get('phone')
-
+                "phone": user.get('phone'),
+                "is_regular_customer": bool(user.get('is_regular_customer', False)),
+                "regular_customer_manual": bool(user.get('regular_customer_manual', False))
             }), 200
 
         else:
@@ -2476,13 +2490,31 @@ def check_verify_status():
         # Force read from primary (not replica) to avoid stale reads after admin approval
         cur.execute("SET TRANSACTION READ WRITE")
 
-        cur.execute("SELECT is_verified, license_image_url, force_logout_at FROM users WHERE id = %s", (user_id,))
+        cur.execute("SELECT is_verified, license_image_url, force_logout_at, is_regular_customer, regular_customer_manual FROM users WHERE id = %s", (user_id,))
 
         user = cur.fetchone()
 
         if not user: return jsonify({"error": "User not found"}), 404
 
         result = dict(user)
+        # Check auto-qualification for regular customer
+        is_reg = bool(result.get('is_regular_customer'))
+        if not is_reg:
+            try:
+                cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify')")
+                st_map = {r['key']: r['value'] for r in cur.fetchall()}
+                if st_map.get('regular_customer_auto_qualify', 'true').lower() == 'true':
+                    threshold = int(st_map.get('regular_customer_min_bookings', 3))
+                    cur.execute("SELECT COUNT(*) as cnt FROM bookings WHERE user_id = %s AND status = 'Completed'", (user_id,))
+                    row_cnt = cur.fetchone()
+                    if row_cnt and row_cnt['cnt'] >= threshold:
+                        cur.execute("UPDATE users SET is_regular_customer = TRUE WHERE id = %s", (user_id,))
+                        commit_db()
+                        is_reg = True
+            except Exception as e_auto:
+                print(f"[WARN] check_verify_status auto-qualify check: {e_auto}")
+        result['is_regular_customer'] = is_reg
+        result['regular_customer_manual'] = bool(result.get('regular_customer_manual'))
         if result.get('force_logout_at'):
             result['force_logout_at'] = result['force_logout_at'].isoformat()
         return jsonify(result), 200
@@ -2724,12 +2756,20 @@ def admin_users_list():
     """Full user list with all fields for admin management."""
     try:
         cur = get_cursor()
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify')")
+        reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
+        min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
+        auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
+
         cur.execute("""
-            SELECT id, full_name, email, phone, is_verified, is_frozen,
-                   freeze_reason, loyalty_points, created_at,
-                   profile_picture, auth_provider
-            FROM users
-            ORDER BY created_at DESC
+            SELECT u.id, u.full_name, u.email, u.phone, u.is_verified, u.is_frozen,
+                   u.freeze_reason, u.loyalty_points, u.created_at,
+                   u.profile_picture, u.auth_provider,
+                   COALESCE(u.is_regular_customer, false) AS is_regular_customer,
+                   COALESCE(u.regular_customer_manual, false) AS regular_customer_manual,
+                   (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_bookings
+            FROM users u
+            ORDER BY u.created_at DESC
         """)
         users = cur.fetchall()
         result = []
@@ -2738,6 +2778,13 @@ def admin_users_list():
             d['is_verified'] = int(d.get('is_verified') or 0)
             d['is_frozen'] = bool(d.get('is_frozen'))
             d['loyalty_points'] = int(d.get('loyalty_points') or 0)
+            completed = int(d.get('completed_bookings') or 0)
+            d['completed_bookings'] = completed
+            
+            is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
+            d['is_regular_customer'] = is_reg
+            d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+            
             if d.get('created_at'):
                 d['created_at'] = str(d['created_at'])
             result.append(d)
@@ -2756,7 +2803,9 @@ def admin_user_detail(user_id):
             SELECT id, full_name, email, phone, is_verified, is_frozen,
                    freeze_reason, loyalty_points, created_at,
                    profile_picture, auth_provider, province, municipality, barangay,
-                   license_image_url, license_number, license_expiry, license_type
+                   license_image_url, license_number, license_expiry, license_type,
+                   COALESCE(is_regular_customer, false) AS is_regular_customer,
+                   COALESCE(regular_customer_manual, false) AS regular_customer_manual
             FROM users WHERE id = %s
         """, (user_id,))
         user = cur.fetchone()
@@ -2773,13 +2822,61 @@ def admin_user_detail(user_id):
         # Booking stats
         cur.execute("SELECT COUNT(*) as total FROM bookings WHERE user_id = %s", (user_id,))
         d['total_bookings'] = (cur.fetchone() or {}).get('total', 0)
-        cur.execute("SELECT COUNT(*) as completed FROM bookings WHERE user_id = %s AND status = 'Completed'", (user_id,))
-        d['completed_bookings'] = (cur.fetchone() or {}).get('completed', 0)
-        cur.execute("SELECT COALESCE(SUM(total_price),0) as spent FROM bookings WHERE user_id = %s AND status = 'Completed'", (user_id,))
+        cur.execute("SELECT COUNT(*) as completed FROM bookings WHERE user_id = %s AND LOWER(status) = 'completed'", (user_id,))
+        completed = (cur.fetchone() or {}).get('completed', 0)
+        d['completed_bookings'] = completed
+        cur.execute("SELECT COALESCE(SUM(total_price),0) as spent FROM bookings WHERE user_id = %s AND LOWER(status) = 'completed'", (user_id,))
         d['total_spent'] = float((cur.fetchone() or {}).get('spent', 0))
+
+        # Check qualification rule
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify')")
+        reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
+        min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
+        auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
+
+        is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
+        d['is_regular_customer'] = is_reg
+        d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+
         return jsonify(d), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/admin/users/<int:user_id>/toggle-regular-customer', methods=['POST'])
+@app.route('/api/admin/users/<int:user_id>/toggle-regular-customer', methods=['POST'])
+def admin_toggle_regular_customer(user_id):
+    """Toggle or set manual regular customer status for a user."""
+    data = request.get_json(silent=True) or {}
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, is_regular_customer, regular_customer_manual FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        if 'is_regular' in data:
+            new_val = bool(data['is_regular'])
+        else:
+            new_val = not bool(user.get('regular_customer_manual'))
+        
+        cur.execute(
+            "UPDATE users SET regular_customer_manual = %s, is_regular_customer = %s WHERE id = %s",
+            (new_val, new_val, user_id)
+        )
+        commit_db()
+        return jsonify({
+            "message": f"User {'marked' if new_val else 'unmarked'} as Regular Customer.",
+            "is_regular_customer": new_val,
+            "regular_customer_manual": new_val
+        }), 200
+    except Exception as e:
+        if 'cur' in locals():
+            try: get_db().rollback()
+            except Exception: pass
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 @app.route('/admin/users/<int:user_id>/freeze', methods=['POST'])
@@ -4957,6 +5054,8 @@ def book():
 
 
         # New fields
+        destination = (data.get('destination') or '').strip()
+        rental_purpose = (data.get('rental_purpose') or data.get('purpose_of_rental') or '').strip()
         addons = ",".join(data.get('addons', []))
         base_price = data.get('base_price')
         addon_price = data.get('addon_price')
@@ -4966,6 +5065,46 @@ def book():
         points_redeemed = int(data.get('points_redeemed', 0) or 0)
         points_earned = int(data.get('points_earned', 0) or 0)
         delivery_fee = float(data.get('delivery_fee', 0.00) or 0.00)
+
+        # Check Regular Customer Status for Downpayment Exemption
+        cur.execute("""
+            SELECT u.is_regular_customer, u.regular_customer_manual,
+                   (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_count
+            FROM users u WHERE u.id = %s
+        """, (user_id,))
+        user_reg_info = cur.fetchone()
+        
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify', 'regular_customer_downpayment_exempt')")
+        reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
+        min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
+        auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
+        dp_exempt_enabled = reg_settings.get('regular_customer_downpayment_exempt', 'true').lower() == 'true'
+        
+        is_user_regular = False
+        if user_reg_info:
+            if user_reg_info.get('regular_customer_manual'):
+                is_user_regular = True
+            elif auto_qual and int(user_reg_info.get('completed_count', 0) or 0) >= min_bk:
+                is_user_regular = True
+            if is_user_regular and not user_reg_info.get('is_regular_customer'):
+                cur.execute("UPDATE users SET is_regular_customer = TRUE WHERE id = %s", (user_id,))
+
+        req_pay_type = data.get('payment_type', 'Full')
+        if is_user_regular and dp_exempt_enabled and req_pay_type in ('Pay on Pickup', 'Regular Customer', 'Downpayment Exempt', '0_dp'):
+            payment_type = 'Pay on Pickup'
+            payment_status = 'Pending Payment'
+            amount_paid = 0.00
+            balance_amount = float(total_price or 0)
+        elif req_pay_type == 'Downpayment':
+            payment_type = 'Downpayment'
+            payment_status = 'Downpayment unpaid'
+            amount_paid = 0.00
+            balance_amount = float(total_price or 0)
+        else:
+            payment_type = req_pay_type
+            payment_status = 'Pending Payment'
+            amount_paid = 0.00
+            balance_amount = float(total_price or 0)
 
         # Validate points
         if points_redeemed > 0:
@@ -4980,14 +5119,16 @@ def book():
                 base_price, addon_price, tax_amount, total_price, status,
                 pickup_province, pickup_municipality, pickup_barangay,
                 return_province, return_municipality, return_barangay,
-                start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned
+                start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned,
+                destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
               base_price, addon_price, tax_amount, total_price,
               pickup_province, pickup_municipality, pickup_barangay,
               return_province, return_municipality, return_barangay,
-              pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned))
+              pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned,
+              destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount))
 
         booking_id = cur.fetchone()['id']
 
@@ -6761,6 +6902,70 @@ def approve_booking(booking_id):
         if 'cur' in locals():
 
             cur.close()
+
+
+@app.route('/bookings/<int:booking_id>/mark-paid', methods=['POST'])
+@app.route('/admin/bookings/<int:booking_id>/mark-paid', methods=['POST'])
+@app.route('/api/bookings/<int:booking_id>/mark-paid', methods=['POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/mark-paid', methods=['POST'])
+def mark_booking_paid(booking_id):
+    """Mark a booking as Fully Paid with support for payment method surcharge (e.g. Card Terminal 3.5%)."""
+    data = request.get_json(silent=True) or {}
+    payment_method = (data.get('payment_method') or 'Cash (Over the counter)').strip()
+    payment_fee = float(data.get('payment_fee', 0.0) or 0.0)
+    payment_fee_percent = float(data.get('payment_fee_percent', 0.0) or 0.0)
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT total_price, amount_paid, balance_amount, status, payment_status FROM bookings WHERE id = %s", (booking_id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": "Booking not found"}), 404
+
+        current_total = float(b['total_price'] or 0)
+        current_paid = float(b['amount_paid'] or 0)
+        balance = max(0.0, current_total - current_paid)
+
+        new_total = current_total + payment_fee
+        new_paid = current_paid + balance + payment_fee
+
+        cur.execute("""
+            UPDATE bookings
+            SET payment_status = 'Paid',
+                payment_method = %s,
+                payment_fee = %s,
+                payment_fee_percent = %s,
+                total_price = %s,
+                amount_paid = %s,
+                balance_amount = 0.00
+            WHERE id = %s
+        """, (payment_method, payment_fee, payment_fee_percent, new_total, new_paid, booking_id))
+
+        # Insert a payment record for the collected balance
+        try:
+            cur.execute("""
+                INSERT INTO payments (booking_id, amount, method, reference_number, status)
+                VALUES (%s, %s, %s, %s, 'Completed')
+            """, (booking_id, balance + payment_fee, payment_method, f"PAID-{booking_id}"))
+        except Exception:
+            pass
+
+        commit_db()
+        return jsonify({
+            "message": "Booking marked as Fully Paid.",
+            "booking_id": booking_id,
+            "total_price": new_total,
+            "amount_paid": new_paid,
+            "payment_fee": payment_fee,
+            "payment_method": payment_method
+        }), 200
+    except Exception as e:
+        if 'cur' in locals():
+            try: get_db().rollback()
+            except Exception: pass
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
 
 
 
@@ -12027,6 +12232,11 @@ def get_public_settings():
             'extension_conflict_deadline_hours',
             'max_booking_duration_days',
             'enable_newsletter',
+            'regular_customer_min_bookings',
+            'regular_customer_auto_qualify',
+            'regular_customer_downpayment_exempt',
+            'payment_fee_card_percent',
+            'payment_fee_card_label',
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))
@@ -12263,7 +12473,10 @@ def get_full_profile():
         cur.execute(
             """SELECT user_id, user_id AS id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points, password,
-                      license_number, license_expiry, license_type
+                      license_number, license_expiry, license_type,
+                      COALESCE(is_regular_customer, false) AS is_regular_customer,
+                      COALESCE(regular_customer_manual, false) AS regular_customer_manual,
+                      (SELECT COUNT(*) FROM bookings WHERE user_id = users.id AND LOWER(status) = 'completed') AS completed_bookings
                FROM users WHERE user_id = %s OR id = %s""",
             (user_id_int, user_id_int)
         )
@@ -12275,6 +12488,19 @@ def get_full_profile():
         d.pop('password', None)
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
+        completed = int(d.get('completed_bookings') or 0)
+        d['completed_bookings'] = completed
+
+        # Check regular qualification
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify')")
+        reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
+        min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
+        auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
+
+        is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
+        d['is_regular_customer'] = is_reg
+        d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+
         if d.get('license_expiry'):
             d['license_expiry'] = str(d['license_expiry'])
         return jsonify(d), 200
@@ -12294,7 +12520,10 @@ def get_user_by_id(user_id):
         cur.execute(
             """SELECT id, full_name, email, phone, profile_picture, license_image_url,
                       is_verified, loyalty_points,
-                      license_number, license_expiry, license_type
+                      license_number, license_expiry, license_type,
+                      COALESCE(is_regular_customer, false) AS is_regular_customer,
+                      COALESCE(regular_customer_manual, false) AS regular_customer_manual,
+                      (SELECT COUNT(*) FROM bookings WHERE user_id = users.id AND LOWER(status) = 'completed') AS completed_bookings
                FROM users WHERE id = %s""",
             (user_id,)
         )
@@ -12304,6 +12533,19 @@ def get_user_by_id(user_id):
         d = dict(user)
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
         d['is_verified'] = int(d.get('is_verified') or 0)
+        completed = int(d.get('completed_bookings') or 0)
+        d['completed_bookings'] = completed
+
+        # Check regular qualification
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify')")
+        reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
+        min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
+        auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
+
+        is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
+        d['is_regular_customer'] = is_reg
+        d['regular_customer_manual'] = bool(d.get('regular_customer_manual'))
+
         # Add profile_picture_url alias for consistency
         d['profile_picture_url'] = d.get('profile_picture')
         # Add name alias for consistency
@@ -14791,11 +15033,33 @@ def get_fleet_bookings():
     try:
         cur = get_cursor()
         cur.execute("""
-            SELECT b.id, b.vehicle_id, b.start_date, b.end_date, b.status, v.brand, v.model, v.plate_number
+            SELECT 
+                b.id, b.vehicle_id, b.user_id,
+                b.start_date, b.end_date, b.start_time, b.end_time,
+                b.status, b.rental_type, b.pickup_location, b.service_type,
+                b.base_price, b.total_price, b.amount_paid, b.balance_amount,
+                b.payment_type, b.payment_status,
+                COALESCE(b.payment_fee, 0.00) AS payment_fee,
+                COALESCE(b.payment_fee_percent, 0.00) AS payment_fee_percent,
+                COALESCE(b.payment_method, 'Cash') AS payment_method,
+                COALESCE(b.destination, '') AS destination,
+                COALESCE(b.rental_purpose, '') AS rental_purpose,
+                v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
+                v.daily_rate, v.status AS vehicle_status, v.location AS vehicle_location, v.vehicle_image,
+                COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name), 'Customer') AS customer_name,
+                COALESCE(u.phone, '') AS customer_phone,
+                COALESCE(u.email, '') AS customer_email,
+                COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), 'N/A') AS customer_address,
+                COALESCE(ld.emergency_contact_name, '') AS emergency_contact_name,
+                COALESCE(ld.emergency_contact_phone, '') AS emergency_contact_phone,
+                COALESCE(ld.emergency_contact_relationship, '') AS emergency_contact_relationship
             FROM bookings b
             JOIN vehicles v ON b.vehicle_id = v.id
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN license_details ld ON u.id = ld.user_id
             WHERE b.start_date <= %s AND b.end_date >= %s
-              AND b.status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND LOWER(b.status) IN ('pending', 'confirmed', 'approved', 'picked up', 'ongoing', 'completed')
+            ORDER BY b.start_date ASC
         """, (end, start))
         rows = cur.fetchall()
         
@@ -14804,6 +15068,12 @@ def get_fleet_bookings():
             d = dict(r)
             d['start_date'] = str(d['start_date'])
             d['end_date'] = str(d['end_date'])
+            d['total_price'] = float(d['total_price'] or 0)
+            d['amount_paid'] = float(d['amount_paid'] or 0)
+            d['balance_amount'] = float(d['balance_amount'] or 0)
+            d['payment_fee'] = float(d['payment_fee'] or 0)
+            d['payment_fee_percent'] = float(d['payment_fee_percent'] or 0)
+            d['daily_rate'] = float(d['daily_rate'] or 0)
             result.append(d)
         return jsonify(result), 200
     except Exception as e:

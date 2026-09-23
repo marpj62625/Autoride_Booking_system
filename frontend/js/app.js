@@ -1505,6 +1505,8 @@ function initApp() {
           if (v.profile_picture) currentUser.profile_picture = v.profile_picture;
           if (v.license_image_url || v.license_image) currentUser.license_image_url = v.license_image_url || v.license_image;
           if (v.phone) currentUser.phone = v.phone;
+          currentUser.is_regular_customer = v.is_regular_customer !== undefined ? Boolean(v.is_regular_customer) : Boolean(user.is_regular_customer);
+          currentUser.regular_customer_manual = v.regular_customer_manual !== undefined ? Boolean(v.regular_customer_manual) : Boolean(user.regular_customer_manual);
           Session.save(currentUser);
           startBgSessionPolling();
 
@@ -4082,11 +4084,32 @@ function openBookingForm(vehicleId) {
       '</div>';
   }).join('');
 
+  var isRegular = Boolean(currentUser && (currentUser.is_regular_customer || currentUser.regular_customer_manual));
+
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Regular Customer VIP Banner
+    (isRegular ? 
+    '<div class="card" style="background:linear-gradient(135deg, rgba(234,179,8,0.14), rgba(245,158,11,0.06));border:1.5px solid rgba(234,179,8,0.45);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;">' +
+        '<div style="width:40px;height:40px;border-radius:50%;background:#eab308;color:#000;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;box-shadow:0 2px 8px rgba(234,179,8,0.35);">' +
+          '<i class="fas fa-crown"></i>' +
+        '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-weight:800;font-size:0.95rem;color:#b45309;display:flex;align-items:center;gap:6px;">' +
+            '<span>VIP Regular Customer Privilege</span>' +
+            '<span style="background:#eab308;color:#000;font-size:0.65rem;padding:2px 6px;border-radius:10px;font-weight:800;">₱0 DOWNPAYMENT</span>' +
+          '</div>' +
+          '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">' +
+            'As a recognized regular customer, you are exempt from downpayment. You may reserve this vehicle with <strong>₱0 today</strong> and pay on vehicle pickup!' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' : '') +
 
     // Availability Calendar
     '<div class="card" id="webAvailCalCard">' +
@@ -4120,6 +4143,22 @@ function openBookingForm(vehicleId) {
     '</select>' +
     '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-info-circle"></i> Return time is auto-set to 24 hrs after pickup</small>' +
     '</div>' +
+    '</div>' +
+
+    // Destination & Purpose of Rental
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-map-marked-alt" style="color:var(--primary);margin-right:8px;"></i>Trip & Rental Purpose</h4>' +
+    '<div class="form-group"><label>Destination (San Dadalhin) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<input type="text" id="bfDestination" placeholder="e.g., Baguio City, Tagaytay, Metro Manila, Batangas..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<span class="field-error" id="bfDestErr"></span></div>' +
+    '<div class="form-group"><label>Purpose of Rental (Layunin ng Pag-arkila) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<select id="bfRentalPurpose" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<option value="Personal / Family Trip">Personal / Family Trip</option>' +
+    '<option value="Vacation / Out of Town Tour">Vacation / Out of Town Tour</option>' +
+    '<option value="Business / Work">Business / Work</option>' +
+    '<option value="Airport Transfer / Flight Pickup">Airport Transfer / Flight Pickup</option>' +
+    '<option value="Special Event / Wedding / Birthday">Special Event / Wedding / Birthday</option>' +
+    '<option value="Other">Other</option>' +
+    '</select></div>' +
     '</div>' +
 
     // Pickup or Delivery
@@ -4165,11 +4204,19 @@ function openBookingForm(vehicleId) {
     addonsHtml + '</div>' +
 
     // Payment Type
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Payment Type</h4>' +
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Payment Option</h4>' +
+    (isRegular ? 
+    '<div class="toggle-group" style="display:flex;gap:6px;flex-wrap:wrap;">' +
+    '<button id="btnPickupPay" class="active" onclick="setPaymentType(\'Pay on Pickup\')" style="flex:1;min-width:140px;"><i class="fas fa-crown" style="color:#eab308;margin-right:4px;"></i> Pay on Pickup (₱0 DP)</button>' +
+    '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')" style="flex:1;min-width:130px;">20% Downpayment</button>' +
+    '<button id="btnFull" onclick="setPaymentType(\'Full\')" style="flex:1;min-width:110px;">Full Payment</button>' +
+    '</div><input type="hidden" id="bfPaymentType" value="Pay on Pickup">'
+    :
     '<div class="toggle-group">' +
-    '<button id="btnFull" class="active" onclick="setPaymentType(\'Full\')">Full Payment</button>' +
-    '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
-    '</div><input type="hidden" id="bfPaymentType" value="Full"></div>' +
+    '<button id="btnDown" class="active" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
+    '<button id="btnFull" onclick="setPaymentType(\'Full\')">Full Payment</button>' +
+    '</div><input type="hidden" id="bfPaymentType" value="Downpayment">') +
+    '</div>' +
 
     // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
@@ -4292,8 +4339,10 @@ function setPaymentType(type) {
   if (el) el.value = type;
   var bf = document.getElementById('btnFull');
   var bd = document.getElementById('btnDown');
+  var bp = document.getElementById('btnPickupPay');
   if (bf) bf.classList.toggle('active', type === 'Full');
   if (bd) bd.classList.toggle('active', type === 'Downpayment');
+  if (bp) bp.classList.toggle('active', type === 'Pay on Pickup');
   updateBookingPrice();
 }
 
@@ -4422,7 +4471,7 @@ function updateBookingPrice() {
   );
   var payTypeEl = document.getElementById('bfPaymentType');
   var payType = payTypeEl ? payTypeEl.value : 'Full';
-  var nowDue = payType === 'Downpayment' ? result.downpaymentAmount : result.total;
+  var nowDue = payType === 'Pay on Pickup' ? 0 : (payType === 'Downpayment' ? result.downpaymentAmount : result.total);
   var el = document.getElementById('priceBreakdown');
   if (!el) return;
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
@@ -4438,8 +4487,13 @@ function updateBookingPrice() {
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
     (serviceType === 'delivery' ? '<div class="price-row"><span>Delivery Fee</span><span>' + (result.deliveryFee > 0 ? formatPHP(result.deliveryFee) : 'Free') + '</span></div>' : '') +
     '<div class="price-row total" style="margin-top:4px;"><span>Total</span><span>' + formatPHP(result.total) + '</span></div>' +
-    (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
-    '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' : '') +
+    (payType === 'Pay on Pickup' ? 
+      '<div class="price-row" style="color:#eab308;font-weight:800;"><span><i class="fas fa-crown"></i> Due Now (VIP Regular Privilege)</span><span>PHP 0.00</span></div>' +
+      '<div class="price-row" style="color:var(--text-secondary);font-weight:600;"><span>Balance Due on Pickup</span><span>' + formatPHP(result.total) + '</span></div>'
+    : payType === 'Downpayment' ? 
+      '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
+      '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' 
+    : '') +
     '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
 
   if (window.anime) {
@@ -4465,10 +4519,13 @@ function submitBooking() {
   var startEl = document.getElementById('bfStartDate');
   var endEl = document.getElementById('bfEndDate');
   var pickupEl = document.getElementById('bfPickupTime');
+  var destEl = document.getElementById('bfDestination');
+  var purposeEl = document.getElementById('bfRentalPurpose');
   
   clearInlineError(startEl);
   clearInlineError(endEl);
   clearInlineError(pickupEl);
+  if (destEl) clearInlineError(destEl);
 
   var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
@@ -4482,6 +4539,16 @@ function submitBooking() {
     } else {
       showInlineError(endEl, dateCheck.error);
     }
+    return;
+  }
+
+  var destination = destEl ? destEl.value.trim() : '';
+  var rentalPurpose = purposeEl ? purposeEl.value.trim() : 'Personal / Family Trip';
+  if (!destination) {
+    if (destEl) showInlineError(destEl, 'Please enter your destination (San Dadalhin)');
+    var bfErr = document.getElementById('bfErr');
+    if (bfErr) bfErr.textContent = 'Please specify where you will take the vehicle (Destination).';
+    showToast('Please enter your destination.', 'error');
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
@@ -4548,6 +4615,8 @@ function submitBooking() {
     addon_price: result.addonPrice,
     total_price: result.total,
     payment_type: payType,
+    destination: destination,
+    rental_purpose: rentalPurpose,
     applied_coupon_id: null,
     discount_amount: result.longTermDiscount,
     points_redeemed: pts,
@@ -4761,6 +4830,35 @@ function _proceedWithBookingSubmission() {
 
 // PAYMENT - PayMongo Integration
 function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
+  if (payType === 'Pay on Pickup') {
+    var el = document.getElementById('paymentContent');
+    if (!el) return;
+    var tot = priceResult ? (priceResult.total || 0) : 0;
+    el.innerHTML =
+      '<div class="page-header">' +
+      '<button class="back-btn" onclick="closeOverlay(\'page-payment\'); navTo(\'bookings\');"><i class="fas fa-arrow-left"></i></button>' +
+      '<h2>Booking Confirmed</h2></div>' +
+      '<div class="scroll-content" style="padding-bottom:100px; text-align:center;">' +
+      '<div class="card" style="padding:28px 20px;">' +
+      '<div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#eab308,#ca8a04); color:#fff; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 16px; box-shadow:0 8px 24px rgba(234,179,8,0.4);">' +
+      '<i class="fas fa-crown"></i>' +
+      '</div>' +
+      '<h3 style="font-weight:800; font-size:1.3rem; margin-bottom:8px; color:var(--text-primary);">Booking #' + bookingId + ' Placed!</h3>' +
+      '<span style="background:rgba(234,179,8,0.18); color:#b45309; padding:4px 14px; border-radius:20px; font-weight:800; font-size:0.75rem; border:1px solid rgba(234,179,8,0.4); display:inline-block; margin-bottom:16px;">VIP REGULAR CUSTOMER PRIVILEGE</span>' +
+      '<p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.5; margin-bottom:20px;">' +
+      'No downpayment was required for this reservation. You can settle the full rental balance of <strong>' + formatPHP(tot) + '</strong> when you pick up your vehicle.' +
+      '</p>' +
+      '<div style="background:var(--bg-input); border-radius:var(--radius-sm); padding:16px; text-align:left; margin-bottom:20px;">' +
+      '<div class="price-row"><span>Total Rental Amount</span><span style="font-weight:700;">' + formatPHP(tot) + '</span></div>' +
+      '<div class="price-row" style="color:#eab308; font-weight:700;"><span>Due Today (Downpayment)</span><span>₱0.00</span></div>' +
+      '<div class="price-row" style="color:var(--text-primary); font-weight:800; border-top:1px solid var(--border); margin-top:8px; padding-top:8px;"><span>Balance Due on Pickup</span><span>' + formatPHP(tot) + '</span></div>' +
+      '</div>' +
+      '<button class="btn-primary" onclick="closeOverlay(\'page-payment\'); navTo(\'bookings\');" style="width:100%;"><i class="fas fa-calendar-check" style="margin-right:8px;"></i> View My Bookings</button>' +
+      '</div></div>';
+    showOverlay('page-payment');
+    return;
+  }
+
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
   if (!el) return;
@@ -5693,6 +5791,11 @@ function renderBookingsList(data) {
         '</div>' +
       '</div>' +
 
+      (b.destination ? 
+      '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-map-marker-alt" style="color:var(--primary);font-size:0.8rem;"></i> <span>Destination: <strong style="color:var(--text-primary);">' + b.destination + '</strong></span>' +
+      '</div>' : '') +
+
       '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
 
       /* Footer row: payment badge + price */
@@ -6082,8 +6185,8 @@ function renderBookingDetail(b) {
         '</div>';
       })() +
 
-      // Info grid: customer / vehicle / rental period
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
+      // Info grid: customer / vehicle / rental period / destination / purpose
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;margin-bottom:16px;">' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
           '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
@@ -6096,6 +6199,16 @@ function renderBookingDetail(b) {
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
           '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' ' + (b.start_time || '06:00') + ' to ' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '06:00') + '</div>' +
         '</div>' +
+        (b.destination ? 
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Destination</div>' +
+          '<div style="font-size:0.9rem;font-weight:700;color:var(--primary);"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>' + b.destination + '</div>' +
+        '</div>' : '') +
+        (b.rental_purpose ? 
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Purpose</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + b.rental_purpose + '</div>' +
+        '</div>' : '') +
       '</div>' +
 
       // Status grid: payment status / payment method / total price / booking status
@@ -6129,6 +6242,11 @@ function renderBookingDetail(b) {
           '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Amount Paid:</span>' +
           '<strong style="font-size:0.9rem;color:#16a34a;">' + formatPHP(b.amount_paid || 0) + '</strong>' +
         '</div>' +
+        (b.payment_fee && parseFloat(b.payment_fee) > 0 ? 
+        '<div>' +
+          '<span style="font-size:0.65rem;color:#d97706;font-weight:700;text-transform:uppercase;margin-right:6px;">' + (b.payment_method || 'Terminal') + ' Fee (' + (b.payment_fee_percent || 3.5) + '%):</span>' +
+          '<strong style="font-size:0.9rem;color:#d97706;">+' + formatPHP(b.payment_fee) + '</strong>' +
+        '</div>' : '') +
         '<div>' +
           '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Balance Due:</span>' +
           '<strong style="font-size:0.9rem;color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#16a34a')) + ';">' + 

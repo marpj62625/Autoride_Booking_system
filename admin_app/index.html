@@ -6912,6 +6912,62 @@
         </div>
     </div>
 
+    <!-- FLEET CALENDAR FLOATING HOVER TOOLTIP -->
+    <div id="fleetTooltip" style="display:none; position:fixed; z-index:999999; pointer-events:none; max-width:330px; transition:opacity 0.12s ease;"></div>
+
+    <!-- FLEET VEHICLE DETAILS MODAL (MOBILE & CLICK) -->
+    <div id="fleetVehicleModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none;" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 22px; border-radius: 20px; max-width: 440px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-car" style="color:#00B14F;"></i> Vehicle Details
+                </h3>
+                <button onclick="document.getElementById('fleetVehicleModal').style.display='none';modalClose();" style="background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="fleetVehicleModalBody"></div>
+        </div>
+    </div>
+
+    <!-- FLEET BOOKING QUICK DETAILS MODAL (EXCEL-STYLED FOR MOBILE) -->
+    <div id="fleetBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none;" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }">
+        <div class="modal-content" style="background: #ffffe1; color: #000000; padding: 20px; border-radius: 12px; max-width: 440px; border: 2px solid #222; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.35);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #999;">
+                <div style="font-weight: 900; font-size: 1rem; color: #000; display:flex; align-items:center; gap:6px;">
+                    <i class="fas fa-file-invoice" style="color:#ca8a04;"></i> Quick Booking Summary
+                </div>
+                <button onclick="document.getElementById('fleetBookingModal').style.display='none';modalClose();" style="background: rgba(0,0,0,0.08); border: 1px solid #666; color: #000; font-size: 1rem; padding: 4px 8px; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="fleetBookingModalBody" style="font-family: Arial, sans-serif; font-size: 0.85rem; line-height: 1.5;"></div>
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed #666; display: flex; gap: 8px;">
+                <button id="btnOpenFullBooking" class="btn-premium" style="flex: 1; padding: 10px; background: #00B14F; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">
+                    <i class="fas fa-external-link-alt" style="margin-right: 4px;"></i> View Full Booking
+                </button>
+                <button onclick="document.getElementById('fleetBookingModal').style.display='none';modalClose();" style="padding: 10px 16px; background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.85rem;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MARK FULLY PAID & BALANCE COLLECTION MODAL (WITH PAYMENT FEE) -->
+    <div id="bookingMarkPaidModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display:none;" onclick="if(event.target === this) { this.style.display='none'; modalClose(); }">
+        <div class="modal-content" style="background: white; color: #0f172a; padding: 24px; border-radius: 20px; max-width: 460px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e2e8f0;">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-cash-register" style="color:#10b981;"></i> Collect Remaining Balance
+                </h3>
+                <button onclick="document.getElementById('bookingMarkPaidModal').style.display='none';modalClose();" style="background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="markPaidModalBody"></div>
+        </div>
+    </div>
+
 <!-- BOOKING DETAILS MODAL -->
 
 
@@ -14614,8 +14670,8 @@ async edit(id) { this.openModal(id); }
             let bodyHtml = "";
             this.vehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.2s;">`;
-                // Sticky Vehicle Cell
-                rowHtml += `<td style="padding: 12px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.3; min-width: 150px; width: 150px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                // Sticky Vehicle Cell with hover on web, click modal on mobile
+                rowHtml += `<td onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})" style="padding: 12px; border: 1px solid var(--border); font-weight: 700; background: var(--surface-solid); position: sticky; left: 0; z-index: 5; box-shadow: 2px 0 5px rgba(0,0,0,0.05); border-right: 2px solid var(--border); color: var(--text-main); line-height: 1.3; min-width: 150px; width: 150px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;">
                     <div style="font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.brand} ${v.model}">${v.brand} ${v.model}</div>
                     <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">${v.plate_number || 'No Plate'}</span>
                 </td>`;
@@ -14657,7 +14713,8 @@ async edit(id) { this.openModal(id); }
                         };
                         const style = statusStyles[activeBooking.status?.toLowerCase()] || { bg: 'rgba(148, 163, 184, 0.15)', text: 'var(--text-main)', border: 'var(--border)', label: 'B' };
                         
-                        rowHtml += `<td onclick="Bookings.view(${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border); min-width: 36px; width: 36px; max-width: 36px;" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
+                        rowHtml += `<td onmouseenter="FleetCalendar.showBookingTooltip(event, ${activeBooking.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleBookingClick(event, ${activeBooking.id})" style="padding: 0; border: 1px solid var(--border); text-align: center; background: ${style.bg}; cursor: pointer; font-weight: 800; color: ${style.text}; border-right: 1px solid var(--border); min-width: 36px; width: 36px; max-width: 36px; position: relative;" title="Booking #${activeBooking.id}: ${activeBooking.customer_name || 'Customer'} (Status: ${activeBooking.status})">
+                            <div style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-top: 6px solid #ef4444; border-left: 6px solid transparent; z-index: 2; pointer-events: none;"></div>
                             <div style="font-size: 0.65rem; padding: 4px; display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; box-sizing: border-box;">${style.label}</div>
                         </td>`;
                     } else {
@@ -14679,6 +14736,206 @@ async edit(id) { this.openModal(id); }
             if (scrollContainer) {
                 scrollContainer.scrollLeft = 0;
             }
+        },
+
+        hideTooltip() {
+            const tip = document.getElementById('fleetTooltip');
+            if (tip) tip.style.display = 'none';
+        },
+
+        positionTooltip(e, tip) {
+            tip.style.display = 'block';
+            const rect = tip.getBoundingClientRect();
+            let x = e.clientX + 16;
+            let y = e.clientY + 12;
+            if (x + rect.width > window.innerWidth - 12) {
+                x = e.clientX - rect.width - 12;
+            }
+            if (y + rect.height > window.innerHeight - 12) {
+                y = window.innerHeight - rect.height - 12;
+            }
+            tip.style.left = `${Math.max(10, x)}px`;
+            tip.style.top = `${Math.max(10, y)}px`;
+        },
+
+        showVehicleTooltip(e, vId) {
+            if (window.innerWidth <= 768) return;
+            const v = (this.vehicles || []).find(x => x.id == vId);
+            if (!v) return;
+            const tip = document.getElementById('fleetTooltip');
+            if (!tip) return;
+            
+            const imgHtml = v.vehicle_image ? `<img src="${v.vehicle_image}" style="width:100%;height:105px;object-fit:cover;border-radius:8px;margin-bottom:8px;display:block;">` : '';
+            tip.innerHTML = `
+                <div style="background:#0f172a;color:#f8fafc;padding:12px 14px;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,0.45);border:1px solid #334155;font-size:0.75rem;line-height:1.4;">
+                    ${imgHtml}
+                    <div style="font-size:0.92rem;font-weight:900;color:#ffffff;margin-bottom:2px;">${v.brand} ${v.model}</div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                        <span style="background:rgba(0,177,79,0.2);color:#00B14F;border:1px solid rgba(0,177,79,0.4);padding:2px 7px;border-radius:4px;font-weight:800;font-size:0.65rem;">${v.plate_number || 'NO PLATE'}</span>
+                        <span style="background:#1e293b;color:#94a3b8;padding:2px 7px;border-radius:4px;font-size:0.65rem;font-weight:700;">${v.vehicle_type || 'Vehicle'}</span>
+                        <span style="margin-left:auto;font-size:0.65rem;font-weight:800;color:${v.status === 'Available' ? '#10b981' : v.status === 'Maintenance' ? '#ef4444' : '#f59e0b'};">${(v.status||'Available').toUpperCase()}</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;border-top:1px solid #1e293b;padding-top:6px;color:#cbd5e1;">
+                        <div><span style="color:#64748b;font-size:0.65rem;">Transmission:</span><br><b>${v.transmission || 'Auto'}</b></div>
+                        <div><span style="color:#64748b;font-size:0.65rem;">Fuel Type:</span><br><b>${v.fuel_type || 'Gasoline'}</b></div>
+                        <div><span style="color:#64748b;font-size:0.65rem;">Seats:</span><br><b>${v.seats || 5} Seats</b></div>
+                        <div><span style="color:#64748b;font-size:0.65rem;">Daily Rate:</span><br><b style="color:#00B14F;">₱${parseFloat(v.daily_rate||0).toLocaleString()}/day</b></div>
+                    </div>
+                    <div style="margin-top:6px;border-top:1px solid #1e293b;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="color:#64748b;font-size:0.65rem;">Location:</span>
+                        <span style="font-weight:700;color:#f8fafc;font-size:0.72rem;">${v.location || 'Main Depot'}</span>
+                    </div>
+                </div>
+            `;
+            this.positionTooltip(e, tip);
+        },
+
+        showBookingTooltip(e, bId) {
+            if (window.innerWidth <= 768) return;
+            const b = (this.bookings || []).find(x => x.id == bId);
+            if (!b) return;
+            const tip = document.getElementById('fleetTooltip');
+            if (!tip) return;
+            
+            const rate = parseFloat(b.total_price || 0);
+            const dp = parseFloat(b.amount_paid || 0);
+            const bal = parseFloat(b.balance_amount !== undefined ? b.balance_amount : Math.max(0, rate - dp));
+            const fee = parseFloat(b.payment_fee || 0);
+            const feePct = parseFloat(b.payment_fee_percent || 0);
+            const totalWithFee = rate + fee;
+
+            const sDate = b.start_date ? new Date(b.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+            const eDate = b.end_date ? new Date(b.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+            const sTime = b.start_time || '06:00';
+            const eTime = b.end_time || '06:00';
+
+            tip.innerHTML = `
+                <div style="background:#ffffe1;color:#000000;padding:12px 14px;border:1.5px solid #222222;box-shadow:3px 3px 10px rgba(0,0,0,0.35);font-family:Arial, Helvetica, sans-serif;font-size:0.75rem;line-height:1.45;min-width:240px;max-width:320px;">
+                    <div style="font-weight:bold;margin-bottom:6px;border-bottom:1px dashed #555;padding-bottom:5px;">
+                        ${rate >= 1000 ? (rate / 1000) + 'k' : '₱' + rate.toLocaleString()}<br>
+                        ${dp > 0 ? `-${dp.toLocaleString()}<br>` : '0 DP<br>'}
+                        ${bal.toLocaleString()} balance<br>
+                        ${fee > 0 ? `${fee.toLocaleString()} ${feePct}%<br>` : ''}
+                        Total ${totalWithFee.toLocaleString()}
+                    </div>
+                    <div>
+                        <b>Name:</b> ${b.customer_name || 'Customer'}<br>
+                        <b>Contact no:</b> ${b.customer_phone || 'N/A'}<br>
+                        <b>Complete Address:</b> ${b.customer_address || 'N/A'}<br>
+                        <b>Emergency contact person:</b> ${b.emergency_contact_name || 'N/A'}<br>
+                        <b>Contact no:</b> ${b.emergency_contact_phone || 'N/A'}<br>
+                        <b>Unit needed:</b> ${b.brand || ''} ${b.model || ''} ${b.plate_number ? '(' + b.plate_number + ')' : ''}<br>
+                        <b>Date of pick up:</b> ${sDate}<br>
+                        <b>Date of return:</b> ${eDate}<br>
+                        <b>Time of pick up:</b> ${sTime}<br>
+                        <b>Time of return:</b> ${eTime}<br>
+                        <b>Destination:</b> ${b.destination || 'N/A'}<br>
+                        <b>Purpose of Rental:</b> ${b.rental_purpose || 'N/A'}
+                    </div>
+                </div>
+            `;
+            this.positionTooltip(e, tip);
+        },
+
+        handleVehicleClick(e, vId) {
+            this.hideTooltip();
+            const v = (this.vehicles || []).find(x => x.id == vId);
+            if (!v) return;
+            this.openVehicleModal(v);
+        },
+
+        openVehicleModal(v) {
+            const body = document.getElementById('fleetVehicleModalBody');
+            if (!body) return;
+            const imgHtml = v.vehicle_image ? `<img src="${v.vehicle_image}" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px;">` : '';
+            body.innerHTML = `
+                ${imgHtml}
+                <div style="font-size:1.15rem;font-weight:900;color:#0f172a;margin-bottom:4px;">${v.brand} ${v.model}</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+                    <span style="background:rgba(0,177,79,0.15);color:#00B14F;border:1px solid rgba(0,177,79,0.3);padding:3px 8px;border-radius:6px;font-weight:800;font-size:0.75rem;">${v.plate_number || 'NO PLATE'}</span>
+                    <span style="background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${v.vehicle_type || 'Vehicle'}</span>
+                    <span style="background:${v.status === 'Available' ? '#dcfce7' : v.status === 'Maintenance' ? '#fee2e2' : '#fef3c7'};color:${v.status === 'Available' ? '#15803d' : v.status === 'Maintenance' ? '#b91c1c' : '#b45309'};padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:800;margin-left:auto;">${(v.status||'Available').toUpperCase()}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:12px;font-size:0.8rem;">
+                    <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Transmission</span><br><b style="color:#0f172a;">${v.transmission || 'Automatic'}</b></div>
+                    <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Fuel Type</span><br><b style="color:#0f172a;">${v.fuel_type || 'Gasoline'}</b></div>
+                    <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Seating Capacity</span><br><b style="color:#0f172a;">${v.seats || 5} Seats</b></div>
+                    <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Daily Rental Rate</span><br><b style="color:#00B14F;font-size:0.95rem;">₱${parseFloat(v.daily_rate||0).toLocaleString()}/day</b></div>
+                </div>
+                <div style="background:#f8fafc;padding:10px 12px;border-radius:10px;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;">
+                    <span style="color:#64748b;font-weight:700;"><i class="fas fa-map-marker-alt" style="color:#ef4444;margin-right:6px;"></i>Current Depot / Location:</span>
+                    <strong style="color:#0f172a;">${v.location || 'Main Depot'}</strong>
+                </div>
+            `;
+            const m = document.getElementById('fleetVehicleModal');
+            m.style.display = 'flex';
+            if (typeof modalOpen === 'function') modalOpen();
+        },
+
+        handleBookingClick(e, bId) {
+            this.hideTooltip();
+            if (window.innerWidth <= 768) {
+                this.openBookingQuickModal(bId);
+            } else {
+                Bookings.view(bId);
+            }
+        },
+
+        openBookingQuickModal(bId) {
+            const b = (this.bookings || []).find(x => x.id == bId);
+            if (!b) {
+                Bookings.view(bId);
+                return;
+            }
+            const body = document.getElementById('fleetBookingModalBody');
+            if (!body) return;
+            
+            const rate = parseFloat(b.total_price || 0);
+            const dp = parseFloat(b.amount_paid || 0);
+            const bal = parseFloat(b.balance_amount !== undefined ? b.balance_amount : Math.max(0, rate - dp));
+            const fee = parseFloat(b.payment_fee || 0);
+            const feePct = parseFloat(b.payment_fee_percent || 0);
+            const totalWithFee = rate + fee;
+
+            const sDate = b.start_date ? new Date(b.start_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+            const eDate = b.end_date ? new Date(b.end_date).toLocaleDateString('en-PH', {month:'short', day:'numeric', year:'numeric'}) : 'N/A';
+            const sTime = b.start_time || '06:00';
+            const eTime = b.end_time || '06:00';
+
+            body.innerHTML = `
+                <div style="font-weight:bold;margin-bottom:8px;border-bottom:1px dashed #444;padding-bottom:6px;font-size:0.9rem;">
+                    ${rate >= 1000 ? (rate / 1000) + 'k' : '₱' + rate.toLocaleString()}<br>
+                    ${dp > 0 ? `-${dp.toLocaleString()}<br>` : '0 DP<br>'}
+                    ${bal.toLocaleString()} balance<br>
+                    ${fee > 0 ? `${fee.toLocaleString()} ${feePct}%<br>` : ''}
+                    Total ${totalWithFee.toLocaleString()}
+                </div>
+                <div>
+                    <b>Name:</b> ${b.customer_name || 'Customer'}<br>
+                    <b>Contact no:</b> ${b.customer_phone || 'N/A'}<br>
+                    <b>Complete Address:</b> ${b.customer_address || 'N/A'}<br>
+                    <b>Emergency contact person:</b> ${b.emergency_contact_name || 'N/A'}<br>
+                    <b>Contact no:</b> ${b.emergency_contact_phone || 'N/A'}<br>
+                    <b>Unit needed:</b> ${b.brand || ''} ${b.model || ''} ${b.plate_number ? '(' + b.plate_number + ')' : ''}<br>
+                    <b>Date of pick up:</b> ${sDate}<br>
+                    <b>Date of return:</b> ${eDate}<br>
+                    <b>Time of pick up:</b> ${sTime}<br>
+                    <b>Time of return:</b> ${eTime}<br>
+                    <b>Destination:</b> ${b.destination || 'N/A'}<br>
+                    <b>Purpose of Rental:</b> ${b.rental_purpose || 'N/A'}
+                </div>
+            `;
+            const btn = document.getElementById('btnOpenFullBooking');
+            if (btn) {
+                btn.onclick = () => {
+                    document.getElementById('fleetBookingModal').style.display = 'none';
+                    if (typeof modalClose === 'function') modalClose();
+                    Bookings.view(bId);
+                };
+            }
+            const m = document.getElementById('fleetBookingModal');
+            m.style.display = 'flex';
+            if (typeof modalOpen === 'function') modalOpen();
         }
     };
 
@@ -16912,6 +17169,8 @@ function toggleNewsletterModal(show = true) {
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:4px;"><i class="fas fa-calendar-times" style="color:#ef4444;"></i>Return</div><div style="font-weight:700;font-size:0.9rem;color:#0f172a;">${fmtDate(b.end_date)} ${b.end_time || '06:00'}</div></div>
                     </div>
                     ${b.pickup_location ? `<div style="padding-top:10px;border-top:1px solid #e2e8f0;display:flex;align-items:flex-start;gap:6px;"><i class="fas fa-map-marker-alt" style="color:#ef4444;margin-top:2px;font-size:0.8rem;"></i><div style="font-size:0.82rem;color:#374151;">${b.pickup_location}</div></div>` : ''}
+                    ${b.destination ? `<div style="padding-top:8px;border-top:1px dashed #e2e8f0;margin-top:8px;display:flex;align-items:flex-start;gap:6px;"><i class="fas fa-location-arrow" style="color:#2563eb;margin-top:2px;font-size:0.8rem;"></i><div style="font-size:0.82rem;color:#374151;"><b>Destination:</b> ${b.destination}</div></div>` : ''}
+                    ${b.rental_purpose ? `<div style="padding-top:6px;display:flex;align-items:flex-start;gap:6px;"><i class="fas fa-bullseye" style="color:#8b5cf6;margin-top:2px;font-size:0.8rem;"></i><div style="font-size:0.82rem;color:#374151;"><b>Purpose:</b> ${b.rental_purpose}</div></div>` : ''}
                 </div>
                 <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #e2e8f0;">
                     <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-receipt" style="color:#00B14F;"></i>Price Breakdown</div>
@@ -16919,6 +17178,8 @@ function toggleNewsletterModal(show = true) {
                     ${addonRows}
                     ${parseFloat(b.insurance_price||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#374151;">Insurance${b.insurance_type ? ' ('+b.insurance_type+')' : ''}</span><span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.insurance_price)}</span></div>` : ''}
                     ${parseFloat(b.discount_amount||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#16a34a;"><i class="fas fa-tag" style="margin-right:4px;"></i>Discount</span><span style="font-size:0.82rem;font-weight:600;color:#16a34a;">-${fmtMoney(b.discount_amount)}</span></div>` : ''}
+
+                    ${parseFloat(b.payment_fee||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#d97706;"><i class="fas fa-percentage" style="margin-right:4px;"></i>${b.payment_method || 'Payment'} Fee (${b.payment_fee_percent || 3.5}%)</span><span style="font-size:0.82rem;font-weight:600;color:#d97706;">+${fmtMoney(b.payment_fee)}</span></div>` : ''}
 
                     ${parseFloat(b.penalty_amount||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#ef4444;"><i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i>Penalties</span><span style="font-size:0.82rem;font-weight:600;color:#ef4444;">${fmtMoney(b.penalty_amount)}</span></div>` : ''}
 
@@ -17216,11 +17477,13 @@ function toggleNewsletterModal(show = true) {
 
 
         async markPaid(id) {
-        if (typeof anime !== 'undefined') {
-            const btn = (window.event && (window.event.currentTarget || window.event.target));
-            if (btn) anime({ targets: btn, scale: [1, 0.92, 1], duration: 250, easing: 'easeOutBack' });
-        }
-        const b = (this.data || []).find(x => x.id == id);
+            if (typeof anime !== 'undefined') {
+                const btn = (window.event && (window.event.currentTarget || window.event.target));
+                if (btn) anime({ targets: btn, scale: [1, 0.92, 1], duration: 250, easing: 'easeOutBack' });
+            }
+            const b = (this.data || []).find(x => x.id == id);
+            if (!b) return;
+
             if (b && b.start_date) {
                 try {
                     const dStr = String(b.start_date).split('T')[0];
@@ -17238,25 +17501,161 @@ function toggleNewsletterModal(show = true) {
                 } catch(e) {}
             }
 
-            const total = parseFloat(b ? b.total_price || 0 : 0);
-            const paid = parseFloat(b ? b.amount_paid || 0 : 0);
+            const total = parseFloat(b.total_price || 0);
+            const paid = parseFloat(b.amount_paid || 0);
             const balance = Math.max(0, total - paid);
-            const balanceFmt = '₱' + balance.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
-            const custName = b ? (b.full_name || b.client_name || 'Customer') : 'Customer';
+            const custName = b.full_name || b.client_name || b.customer_name || 'Customer';
 
-            if (!confirm(`📌 CONFIRM PHYSICAL COUNTER CHECK-IN:\n\nIs ${custName} physically present at the counter right now?\n\nHave you collected the remaining balance of ${balanceFmt} in CASH over the counter?`)) return;
+            // Get card terminal fee setting (default 3.5%)
+            let cardFeePct = 3.5;
+            try {
+                if (typeof Settings !== 'undefined' && Settings._allData) {
+                    const found = Settings._allData.find(s => s.key === 'payment_fee_card_percent');
+                    if (found && found.value) cardFeePct = parseFloat(found.value) || 3.5;
+                }
+            } catch(e) {}
+
+            const body = document.getElementById('markPaidModalBody');
+            if (!body) return;
+
+            window._currentMarkPaidBooking = { id: id, balance: balance, cardFeePct: cardFeePct, baseTotal: total };
+
+            body.innerHTML = `
+                <div style="background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:14px;font-size:0.85rem;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="color:#64748b;">Booking:</span>
+                        <strong style="color:#0f172a;">#${b.id} - ${b.car || 'Vehicle'}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="color:#64748b;">Customer:</span>
+                        <strong style="color:#0f172a;">${custName}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;">
+                        <span style="color:#64748b;">Current Balance:</span>
+                        <strong style="color:#ef4444;font-size:0.95rem;">${fmtMoney(balance)}</strong>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:0.75rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Select Payment Method</label>
+                    <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+                        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #00B14F;border-radius:10px;background:rgba(0,177,79,0.05);cursor:pointer;" id="labelMethod_cash">
+                            <input type="radio" name="markPaidMethod" value="Cash (Over the counter)" checked onchange="Bookings.updateMarkPaidCalc()" style="accent-color:#00B14F;">
+                            <div style="flex:1;">
+                                <div style="font-weight:700;font-size:0.85rem;color:#0f172a;">💵 Cash (Over the counter)</div>
+                                <div style="font-size:0.7rem;color:#64748b;">Standard counter settlement (0% fee)</div>
+                            </div>
+                        </label>
+
+                        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;background:#ffffff;cursor:pointer;" id="labelMethod_card">
+                            <input type="radio" name="markPaidMethod" value="Card Terminal" onchange="Bookings.updateMarkPaidCalc()" style="accent-color:#00B14F;">
+                            <div style="flex:1;">
+                                <div style="font-weight:700;font-size:0.85rem;color:#0f172a;">💳 Card Terminal / POS Terminal</div>
+                                <div style="font-size:0.7rem;color:#64748b;">Includes <b>${cardFeePct}%</b> card terminal fee</div>
+                            </div>
+                        </label>
+
+                        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;background:#ffffff;cursor:pointer;" id="labelMethod_online">
+                            <input type="radio" name="markPaidMethod" value="GCash / Maya (Counter QR)" onchange="Bookings.updateMarkPaidCalc()" style="accent-color:#00B14F;">
+                            <div style="flex:1;">
+                                <div style="font-weight:700;font-size:0.85rem;color:#0f172a;">📱 E-Wallet / Counter QR</div>
+                                <div style="font-size:0.7rem;color:#64748b;">GCash or Maya QR settlement (0% fee)</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div style="background:#f1f5f9;padding:12px;border-radius:12px;margin-bottom:16px;font-size:0.85rem;" id="markPaidCalcContainer">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                        <span style="color:#475569;">Remaining Balance:</span>
+                        <span style="font-weight:600;color:#0f172a;">${fmtMoney(balance)}</span>
+                    </div>
+                    <div id="markPaidFeeRow" style="display:none;justify-content:space-between;margin-bottom:4px;color:#d97706;">
+                        <span>Card Terminal Fee (${cardFeePct}%):</span>
+                        <span id="markPaidFeeAmount" style="font-weight:700;">+₱0.00</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid #cbd5e1;font-weight:800;font-size:1rem;color:#0f172a;">
+                        <span>Total Amount to Collect:</span>
+                        <span id="markPaidTotalCollect" style="color:#10b981;font-weight:900;">${fmtMoney(balance)}</span>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;">
+                    <button onclick="Bookings.submitMarkPaid()" class="btn-premium" style="flex:1;padding:12px;background:#10b981;color:white;border:none;border-radius:10px;font-weight:800;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fas fa-check-circle"></i> Confirm & Mark Paid
+                    </button>
+                    <button onclick="document.getElementById('bookingMarkPaidModal').style.display='none';modalClose();" class="btn-outline" style="padding:12px 18px;border:1px solid #cbd5e1;background:white;color:#475569;border-radius:10px;font-weight:700;cursor:pointer;">
+                        Cancel
+                    </button>
+                </div>
+            `;
+
+            const m = document.getElementById('bookingMarkPaidModal');
+            m.style.display = 'flex';
+            if (typeof modalOpen === 'function') modalOpen();
+        },
+
+        updateMarkPaidCalc() {
+            const cur = window._currentMarkPaidBooking;
+            if (!cur) return;
+            const radios = document.querySelectorAll('input[name="markPaidMethod"]');
+            let selectedMethod = 'Cash (Over the counter)';
+            radios.forEach(r => { if (r.checked) selectedMethod = r.value; });
+
+            const isCard = selectedMethod === 'Card Terminal';
+            const fee = isCard ? Math.round(cur.balance * (cur.cardFeePct / 100) * 100) / 100 : 0;
+            const total = cur.balance + fee;
+
+            const feeRow = document.getElementById('markPaidFeeRow');
+            const feeAmount = document.getElementById('markPaidFeeAmount');
+            const totalCollect = document.getElementById('markPaidTotalCollect');
+
+            if (feeRow && feeAmount && totalCollect) {
+                if (isCard) {
+                    feeRow.style.display = 'flex';
+                    feeAmount.textContent = '+' + fmtMoney(fee);
+                } else {
+                    feeRow.style.display = 'none';
+                }
+                totalCollect.textContent = fmtMoney(total);
+            }
+        },
+
+        async submitMarkPaid() {
+            const cur = window._currentMarkPaidBooking;
+            if (!cur) return;
+
+            const radios = document.querySelectorAll('input[name="markPaidMethod"]');
+            let selectedMethod = 'Cash (Over the counter)';
+            radios.forEach(r => { if (r.checked) selectedMethod = r.value; });
+
+            const isCard = selectedMethod === 'Card Terminal';
+            const fee = isCard ? Math.round(cur.balance * (cur.cardFeePct / 100) * 100) / 100 : 0;
+            const feePct = isCard ? cur.cardFeePct : 0;
 
             try {
-                const res = await fetch(`${API_BASE}/api/admin/bookings/${id}/mark-paid`, { method: 'POST' });
+                const res = await fetch(`${API_BASE}/api/admin/bookings/${cur.id}/mark-paid`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        payment_method: selectedMethod,
+                        payment_fee: fee,
+                        payment_fee_percent: feePct
+                    })
+                });
+                const data = await res.json();
                 if (res.ok) {
-                    showNotification('Booking marked as Fully Paid! Counter check-in confirmed.', 'success');
-                    document.getElementById('bookingDetailsModal').style.display = 'none'; modalClose();
+                    showNotification('Booking marked as Fully Paid!', 'success');
+                    document.getElementById('bookingMarkPaidModal').style.display = 'none';
+                    document.getElementById('bookingDetailsModal').style.display = 'none';
+                    if (typeof modalClose === 'function') modalClose();
                     this.refresh();
                 } else {
-                    const data = await res.json().catch(() => ({}));
-                    showNotification(data.error || 'Failed to update payment', 'error');
+                    showNotification(data.error || 'Failed to record payment', 'error');
                 }
-            } catch (err) { showNotification('Network error', 'error'); }
+            } catch(err) {
+                showNotification('Network error recording payment', 'error');
+            }
         },
 
 
@@ -25662,8 +26061,11 @@ function toggleNewsletterModal(show = true) {
                     shortTitle: 'Rentals',
                     icon: 'fa-car-side',
                     color: '#10b981',
-                    desc: 'Mileage allowances, max rental duration, low fuel alert, and rental terms',
-                    keys: ['mileage_limit', 'max_booking_duration_days', 'low_fuel_alert_threshold', 'refuel_full_tank_price', 'rental_terms'],
+                    desc: 'Mileage allowances, max rental duration, low fuel alert, rental terms, and regular customer VIP downpayment exemption',
+                    keys: [
+                        'mileage_limit', 'max_booking_duration_days', 'low_fuel_alert_threshold', 'refuel_full_tank_price', 'rental_terms',
+                        'regular_customer_min_bookings', 'regular_customer_auto_qualify', 'regular_customer_downpayment_exempt'
+                    ],
                     settings: []
                 },
                 cancellation: {
@@ -25710,18 +26112,22 @@ function toggleNewsletterModal(show = true) {
                     settings: []
                 },
                 payment: {
-                    title: 'PayMongo Payment Gateway',
+                    title: 'Payment Gateway & Payment Fees',
                     shortTitle: 'Payment',
                     icon: 'fa-credit-card',
                     color: '#00c389',
-                    desc: 'Payment mode (Sandbox / Production), API credentials, and webhook secret',
+                    desc: 'PayMongo mode, API keys, webhook secret, and terminal/POS payment surcharge fee rates',
                     keys: [
                         'paymongo_mode',
                         'paymongo_test_public_key',
                         'paymongo_test_secret_key',
                         'paymongo_live_public_key',
                         'paymongo_live_secret_key',
-                        'paymongo_webhook_secret'
+                        'paymongo_webhook_secret',
+                        'payment_fee_card_percent',
+                        'payment_fee_card_label',
+                        'payment_fee_ewallet_percent',
+                        'payment_fee_cash_percent'
                     ],
                     settings: []
                 },
@@ -25841,7 +26247,9 @@ function toggleNewsletterModal(show = true) {
                 'violation_warning_15min_enabled',
                 'violation_warning_5min_enabled',
                 'late_return_auto_apply_enabled',
-                'block_booking_on_unpaid_penalty'
+                'block_booking_on_unpaid_penalty',
+                'regular_customer_auto_qualify',
+                'regular_customer_downpayment_exempt'
             ];
             const isBool = booleanKeys.includes(s.key);
 
@@ -25852,7 +26260,8 @@ function toggleNewsletterModal(show = true) {
                 'violation_max_strikes', 'violation_1st_suspension_hours', 'violation_2nd_suspension_days',
                 'violation_commitment_fee_amount', 'violation_auto_reset_clean_days',
                 'late_return_grace_period_mins', 'late_return_hourly_rate', 'late_return_fixed_base_fee',
-                'late_return_max_penalty_cap', 'cleaning_fee_standard', 'refuel_price_per_liter'
+                'late_return_max_penalty_cap', 'cleaning_fee_standard', 'refuel_price_per_liter',
+                'regular_customer_min_bookings', 'payment_fee_card_percent', 'payment_fee_ewallet_percent', 'payment_fee_cash_percent'
             ];
             const isNumeric = numericKeys.includes(s.key);
 
@@ -25999,6 +26408,10 @@ function toggleNewsletterModal(show = true) {
                     'late_return_max_penalty_cap':       { min: 0,    max: 50000, step: 100, suffix: 'PHP' },
                     'cleaning_fee_standard':             { min: 0,    max: 10000, step: 50,  suffix: 'PHP' },
                     'refuel_price_per_liter':            { min: 1,    max: 300,  step: 1,    suffix: 'PHP/L' },
+                    'regular_customer_min_bookings':     { min: 1,    max: 100,  step: 1,    suffix: 'bookings' },
+                    'payment_fee_card_percent':          { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
+                    'payment_fee_ewallet_percent':       { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
+                    'payment_fee_cash_percent':          { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
                 };
                 const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
                 return `
@@ -30056,7 +30469,9 @@ function toggleNewsletterModal(show = true) {
                     ? `<span style="background:rgba(251,146,60,0.15);color:#fb923c;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(251,146,60,0.3);"><i class="fas fa-exclamation-triangle" style="font-size:0.55rem;margin-right:2px;"></i>${u.violation_strikes} STRIKE${(u.violation_strikes || 0) !== 1 ? 'S' : ''}</span>`
                     : '';
 
-
+                const regularBadge = u.is_regular_customer
+                    ? `<span style="background:rgba(234,179,8,0.18);color:#eab308;padding:3px 8px;border-radius:20px;font-size:0.6rem;font-weight:800;margin-left:4px;border:1px solid rgba(234,179,8,0.4);"><i class="fas fa-crown" style="font-size:0.55rem;margin-right:2px;"></i>REGULAR VIP</span>`
+                    : '';
 
                 const avatar = u.full_name ? u.full_name.charAt(0).toUpperCase() : '?';
 
@@ -30130,7 +30545,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}</div>
+                        <div style="margin-top:5px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">${verifiedBadge}${frozenBadge}${violationBadge}${regularBadge}</div>
 
 
 
@@ -30569,10 +30984,8 @@ function toggleNewsletterModal(show = true) {
 
 
                     <span style="color:${verifiedColor};font-size:0.7rem;font-weight:800;background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:20px;">${verifiedLabel}</span>
-
-
-
                     <span style="color:${frozenColor};font-size:0.7rem;font-weight:800;background:rgba(255,255,255,0.05);padding:4px 10px;border-radius:20px;">${frozenLabel}</span>
+                    ${u.is_regular_customer ? `<span style="color:#eab308;font-size:0.7rem;font-weight:800;background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);padding:4px 10px;border-radius:20px;"><i class="fas fa-crown" style="margin-right:4px;"></i>VIP Regular</span>` : ''}
 
 
 
@@ -30869,16 +31282,25 @@ function toggleNewsletterModal(show = true) {
 
 
                 <button onclick="UserMgmt.resetPassword(${u.id})" style="width:100%;padding:12px;background:rgba(0,177,79,0.15);border:1px solid var(--primary);border-radius:10px;color:var(--primary-light);font-weight:700;font-size:0.85rem;">Reset Password</button>
-
-
-
             </div>
 
-
-
-
-
-
+            <!-- Regular Customer / VIP Privileges -->
+            <div style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;border:1px solid ${u.is_regular_customer ? 'rgba(234,179,8,0.35)' : 'rgba(255,255,255,0.06)'};">
+                <div style="font-size:0.7rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+                    <span><i class="fas fa-crown" style="margin-right:6px;color:#eab308;"></i>Regular Customer (VIP)</span>
+                    <span style="padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:800;background:${u.is_regular_customer ? 'rgba(234,179,8,0.2)' : 'rgba(255,255,255,0.05)'};color:${u.is_regular_customer ? '#eab308' : 'var(--text-muted)'};border:1px solid ${u.is_regular_customer ? 'rgba(234,179,8,0.4)' : 'rgba(255,255,255,0.1)'};">
+                        ${u.is_regular_customer ? '★ VIP REGULAR' : 'STANDARD'}
+                    </span>
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.45;margin-bottom:12px;">
+                    ${u.is_regular_customer ? 
+                        `<span style="color:#fde047;font-weight:700;"><i class="fas fa-check-circle" style="color:#eab308;margin-right:4px;"></i>Exempt from Downpayment:</span> This customer can book with ₱0 downpayment (Pay on Pickup). Qualified via ${u.regular_customer_manual ? 'Super Admin manual override' : (u.completed_bookings || 0) + ' completed bookings'}.` 
+                        : `Customer currently requires the standard downpayment upon booking. Completed bookings: <strong style="color:white;">${u.completed_bookings || 0}</strong>.`}
+                </div>
+                <button onclick="UserMgmt.toggleRegularCustomer(${u.id}, ${!!u.is_regular_customer})" style="width:100%;padding:11px;background:${u.is_regular_customer ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.15)'};border:1px solid ${u.is_regular_customer ? 'rgba(239,68,68,0.3)' : 'rgba(234,179,8,0.4)'};border-radius:10px;color:${u.is_regular_customer ? '#f87171' : '#eab308'};font-weight:800;font-size:0.82rem;cursor:pointer;">
+                    <i class="fas fa-${u.is_regular_customer ? 'user-minus' : 'crown'}" style="margin-right:6px;"></i> ${u.is_regular_customer ? 'Revoke Regular Customer Status' : 'Mark as Regular Customer (VIP)'}
+                </button>
+            </div>
 
             <!-- Violation / Strike Record & Account Standing -->
             <div id="umViolationSection_${u.id}" style="background:rgba(0,0,0,0.2);border-radius:14px;padding:14px;margin-bottom:16px;">
@@ -31258,16 +31680,26 @@ function toggleNewsletterModal(show = true) {
 
 
             } catch (e) { alert(e.message); }
-
-
-
         },
 
-
-
-
-
-
+        async toggleRegularCustomer(userId, currentStatus) {
+            const confirmMsg = currentStatus 
+                ? 'Revoke Regular Customer (VIP) status? The customer will no longer be exempt from downpayment.'
+                : 'Mark this user as a Regular Customer (VIP)? They will be exempt from downpayment (₱0 DP upon booking).';
+            if (!confirm(confirmMsg)) return;
+            try {
+                const res = await apiFetch(`admin/users/${userId}/toggle-regular-customer`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ is_regular: !currentStatus })
+                });
+                const d = await res.json();
+                if (!res.ok) throw new Error(d.error || 'Failed to update customer status');
+                showNotification(d.message || 'Customer VIP status updated', 'success');
+                this.refresh();
+                this.openModal(userId);
+            } catch (e) { alert(e.message); }
+        },
 
         async toggleFreeze(userId, currentlyFrozen) {
         if (typeof anime !== 'undefined') {

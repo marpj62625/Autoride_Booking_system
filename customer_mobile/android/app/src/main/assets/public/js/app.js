@@ -1505,6 +1505,8 @@ function initApp() {
           if (v.profile_picture) currentUser.profile_picture = v.profile_picture;
           if (v.license_image_url || v.license_image) currentUser.license_image_url = v.license_image_url || v.license_image;
           if (v.phone) currentUser.phone = v.phone;
+          currentUser.is_regular_customer = v.is_regular_customer !== undefined ? Boolean(v.is_regular_customer) : Boolean(user.is_regular_customer);
+          currentUser.regular_customer_manual = v.regular_customer_manual !== undefined ? Boolean(v.regular_customer_manual) : Boolean(user.regular_customer_manual);
           Session.save(currentUser);
           startBgSessionPolling();
 
@@ -1518,15 +1520,15 @@ function initApp() {
                 banner.id = 'violationBanner';
                 banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:8888;background:#dc2626;color:#fff;padding:10px 16px;font-size:0.8rem;text-align:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
                 if (vs.permanently_restricted) {
-                  banner.innerHTML = '<i class="fas fa-ban"></i> <strong>Account Restricted:</strong> You are permanently banned from booking. <a style="color:#fff;text-decoration:underline;" onclick="showSuspensionModal(' + JSON.stringify(vs) + ')">Details</a> <i class="fas fa-times" style="margin-left:8px;cursor:pointer;" onclick="this.closest(\'#violationBanner\').remove()"></i>';
+                  banner.innerHTML = '<i class="fas fa-ban"></i> <strong>Account Restricted:</strong> You are permanently banned from booking. <a style="color:#fff;text-decoration:underline;cursor:pointer;" onclick="showSuspensionModal(' + JSON.stringify(vs) + ')">Details</a>';
                 } else {
                   var suspUntil = vs.suspension_until ? new Date(vs.suspension_until).toLocaleDateString('en-PH', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : 'further notice';
-                  banner.innerHTML = '<i class="fas fa-clock"></i> <strong>Booking Suspended</strong> until ' + suspUntil + '. <a style="color:#fff;text-decoration:underline;" onclick="showSuspensionModal(' + JSON.stringify(vs) + ')">Details</a> <i class="fas fa-times" style="margin-left:8px;cursor:pointer;" onclick="document.getElementById(\'violationBanner\').remove()"></i>';
+                  banner.innerHTML = '<i class="fas fa-clock"></i> <strong>Booking Suspended</strong> until ' + suspUntil + '. <a style="color:#fff;text-decoration:underline;cursor:pointer;" onclick="showSuspensionModal(' + JSON.stringify(vs) + ')">Details</a> <i class="fas fa-times" style="margin-left:8px;cursor:pointer;" onclick="document.getElementById(\'violationBanner\').remove()"></i>';
                 }
                 document.body.prepend(banner);
               }
             }
-          }).catch(function() { /* silently ignore */ });
+          }).catch(function() {});
         }).catch(function() {
           startBgSessionPolling();
         });
@@ -1541,7 +1543,7 @@ function initApp() {
       // Register FCM token if already available from native layer
       if (window._fcmToken) saveFcmToken(window._fcmToken);
 
-      // Check query parameters for PayMongo return
+      // Check query parameters for PayMongo return on Web
       if (typeof window !== 'undefined' && window.location.search) {
         var urlParams = new URLSearchParams(window.location.search);
         var paymentStatus = urlParams.get('payment');
@@ -1549,6 +1551,7 @@ function initApp() {
         if (paymentStatus === 'success' && bId) {
           window.history.replaceState({}, document.title, window.location.pathname);
           showToast('Verifying payment for booking #' + bId + '...', 'info');
+          // Actively verify and confirm booking status in DB
           apiCall('/paymongo/status/' + bId)
             .then(function(res) {
               showToast('Payment successful! Your booking is confirmed.', 'success');
@@ -4081,11 +4084,32 @@ function openBookingForm(vehicleId) {
       '</div>';
   }).join('');
 
+  var isRegular = Boolean(currentUser && (currentUser.is_regular_customer || currentUser.regular_customer_manual));
+
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
     '<h2>Book ' + (bookingFormVehicle ? bookingFormVehicle.brand + ' ' + bookingFormVehicle.model : '') + '</h2>' +
     '</div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
+
+    // Regular Customer VIP Banner
+    (isRegular ? 
+    '<div class="card" style="background:linear-gradient(135deg, rgba(234,179,8,0.14), rgba(245,158,11,0.06));border:1.5px solid rgba(234,179,8,0.45);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;">' +
+        '<div style="width:40px;height:40px;border-radius:50%;background:#eab308;color:#000;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;box-shadow:0 2px 8px rgba(234,179,8,0.35);">' +
+          '<i class="fas fa-crown"></i>' +
+        '</div>' +
+        '<div style="flex:1;">' +
+          '<div style="font-weight:800;font-size:0.95rem;color:#b45309;display:flex;align-items:center;gap:6px;">' +
+            '<span>VIP Regular Customer Privilege</span>' +
+            '<span style="background:#eab308;color:#000;font-size:0.65rem;padding:2px 6px;border-radius:10px;font-weight:800;">₱0 DOWNPAYMENT</span>' +
+          '</div>' +
+          '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">' +
+            'As a recognized regular customer, you are exempt from downpayment. You may reserve this vehicle with <strong>₱0 today</strong> and pay on vehicle pickup!' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' : '') +
 
     // Availability Calendar
     '<div class="card" id="webAvailCalCard">' +
@@ -4119,6 +4143,22 @@ function openBookingForm(vehicleId) {
     '</select>' +
     '<small style="color:var(--text-muted);font-size:0.72rem;margin-top:4px;display:block;"><i class="fas fa-info-circle"></i> Return time is auto-set to 24 hrs after pickup</small>' +
     '</div>' +
+    '</div>' +
+
+    // Destination & Purpose of Rental
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-map-marked-alt" style="color:var(--primary);margin-right:8px;"></i>Trip & Rental Purpose</h4>' +
+    '<div class="form-group"><label>Destination (San Dadalhin) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<input type="text" id="bfDestination" placeholder="e.g., Baguio City, Tagaytay, Metro Manila, Batangas..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<span class="field-error" id="bfDestErr"></span></div>' +
+    '<div class="form-group"><label>Purpose of Rental (Layunin ng Pag-arkila) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
+    '<select id="bfRentalPurpose" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<option value="Personal / Family Trip">Personal / Family Trip</option>' +
+    '<option value="Vacation / Out of Town Tour">Vacation / Out of Town Tour</option>' +
+    '<option value="Business / Work">Business / Work</option>' +
+    '<option value="Airport Transfer / Flight Pickup">Airport Transfer / Flight Pickup</option>' +
+    '<option value="Special Event / Wedding / Birthday">Special Event / Wedding / Birthday</option>' +
+    '<option value="Other">Other</option>' +
+    '</select></div>' +
     '</div>' +
 
     // Pickup or Delivery
@@ -4164,11 +4204,19 @@ function openBookingForm(vehicleId) {
     addonsHtml + '</div>' +
 
     // Payment Type
-    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Payment Type</h4>' +
+    '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Payment Option</h4>' +
+    (isRegular ? 
+    '<div class="toggle-group" style="display:flex;gap:6px;flex-wrap:wrap;">' +
+    '<button id="btnPickupPay" class="active" onclick="setPaymentType(\'Pay on Pickup\')" style="flex:1;min-width:140px;"><i class="fas fa-crown" style="color:#eab308;margin-right:4px;"></i> Pay on Pickup (₱0 DP)</button>' +
+    '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')" style="flex:1;min-width:130px;">20% Downpayment</button>' +
+    '<button id="btnFull" onclick="setPaymentType(\'Full\')" style="flex:1;min-width:110px;">Full Payment</button>' +
+    '</div><input type="hidden" id="bfPaymentType" value="Pay on Pickup">'
+    :
     '<div class="toggle-group">' +
-    '<button id="btnFull" class="active" onclick="setPaymentType(\'Full\')">Full Payment</button>' +
-    '<button id="btnDown" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
-    '</div><input type="hidden" id="bfPaymentType" value="Full"></div>' +
+    '<button id="btnDown" class="active" onclick="setPaymentType(\'Downpayment\')">20% Downpayment</button>' +
+    '<button id="btnFull" onclick="setPaymentType(\'Full\')">Full Payment</button>' +
+    '</div><input type="hidden" id="bfPaymentType" value="Downpayment">') +
+    '</div>' +
 
     // Loyalty Points
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Loyalty Points</h4>' +
@@ -4291,8 +4339,10 @@ function setPaymentType(type) {
   if (el) el.value = type;
   var bf = document.getElementById('btnFull');
   var bd = document.getElementById('btnDown');
+  var bp = document.getElementById('btnPickupPay');
   if (bf) bf.classList.toggle('active', type === 'Full');
   if (bd) bd.classList.toggle('active', type === 'Downpayment');
+  if (bp) bp.classList.toggle('active', type === 'Pay on Pickup');
   updateBookingPrice();
 }
 
@@ -4421,7 +4471,7 @@ function updateBookingPrice() {
   );
   var payTypeEl = document.getElementById('bfPaymentType');
   var payType = payTypeEl ? payTypeEl.value : 'Full';
-  var nowDue = payType === 'Downpayment' ? result.downpaymentAmount : result.total;
+  var nowDue = payType === 'Pay on Pickup' ? 0 : (payType === 'Downpayment' ? result.downpaymentAmount : result.total);
   var el = document.getElementById('priceBreakdown');
   if (!el) return;
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
@@ -4437,8 +4487,13 @@ function updateBookingPrice() {
     (result.pointsDiscount > 0 ? '<div class="price-row" style="color:var(--success);"><span><i class="fas fa-star"></i> Points Discount</span><span>-' + formatPHP(result.pointsDiscount) + '</span></div>' : '') +
     (serviceType === 'delivery' ? '<div class="price-row"><span>Delivery Fee</span><span>' + (result.deliveryFee > 0 ? formatPHP(result.deliveryFee) : 'Free') + '</span></div>' : '') +
     '<div class="price-row total" style="margin-top:4px;"><span>Total</span><span>' + formatPHP(result.total) + '</span></div>' +
-    (payType === 'Downpayment' ? '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
-    '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' : '') +
+    (payType === 'Pay on Pickup' ? 
+      '<div class="price-row" style="color:#eab308;font-weight:800;"><span><i class="fas fa-crown"></i> Due Now (VIP Regular Privilege)</span><span>PHP 0.00</span></div>' +
+      '<div class="price-row" style="color:var(--text-secondary);font-weight:600;"><span>Balance Due on Pickup</span><span>' + formatPHP(result.total) + '</span></div>'
+    : payType === 'Downpayment' ? 
+      '<div class="price-row" style="color:var(--primary);font-weight:700;"><span>Due Now (20% Downpayment)</span><span>' + formatPHP(nowDue) + '</span></div>' +
+      '<div class="price-row" style="color:var(--text-secondary);"><span>Remaining Balance (80%)</span><span>' + formatPHP(result.balanceAmount) + '</span></div>' 
+    : '') +
     '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><i class="fas fa-star" style="color:#ffc107;"></i> You will earn <strong>' + result.pointsEarned + ' loyalty points</strong> from this booking</div>';
 
   if (window.anime) {
@@ -4464,10 +4519,13 @@ function submitBooking() {
   var startEl = document.getElementById('bfStartDate');
   var endEl = document.getElementById('bfEndDate');
   var pickupEl = document.getElementById('bfPickupTime');
+  var destEl = document.getElementById('bfDestination');
+  var purposeEl = document.getElementById('bfRentalPurpose');
   
   clearInlineError(startEl);
   clearInlineError(endEl);
   clearInlineError(pickupEl);
+  if (destEl) clearInlineError(destEl);
 
   var dateCheck = validateDateRange(start, end, pickupTime);
   if (!dateCheck.valid) {
@@ -4481,6 +4539,16 @@ function submitBooking() {
     } else {
       showInlineError(endEl, dateCheck.error);
     }
+    return;
+  }
+
+  var destination = destEl ? destEl.value.trim() : '';
+  var rentalPurpose = purposeEl ? purposeEl.value.trim() : 'Personal / Family Trip';
+  if (!destination) {
+    if (destEl) showInlineError(destEl, 'Please enter your destination (San Dadalhin)');
+    var bfErr = document.getElementById('bfErr');
+    if (bfErr) bfErr.textContent = 'Please specify where you will take the vehicle (Destination).';
+    showToast('Please enter your destination.', 'error');
     return;
   }
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
@@ -4547,6 +4615,8 @@ function submitBooking() {
     addon_price: result.addonPrice,
     total_price: result.total,
     payment_type: payType,
+    destination: destination,
+    rental_purpose: rentalPurpose,
     applied_coupon_id: null,
     discount_amount: result.longTermDiscount,
     points_redeemed: pts,
@@ -4744,26 +4814,51 @@ function _proceedWithBookingSubmission() {
       openPaymentScreen(data.booking_id, _pendingPriceResult, _pendingPayType);
     })
     .catch(function(err) {
-      var errEl = document.getElementById('bfErr');
       if (err && err.data && (err.data.has_unpaid_balance || (err.data.error && err.data.error.indexOf('Outstanding Balance') !== -1))) {
         showUnpaidBalanceModal(err.data);
-        return;
-      }
-      // Handle suspension/violation errors specifically
-      if (err && err.data && err.data.suspended) {
+      } else if (err && err.data && err.data.suspended) {
         showSuspensionModal(err.data);
-        return;
-      } else if (err && err.status === 403 && err.message && (err.message.indexOf('suspended') !== -1 || err.message.indexOf('restricted') !== -1 || err.message.indexOf('violation') !== -1)) {
+      } else if (err && err.status === 403 && err.message && err.message.toLowerCase().indexOf('suspend') !== -1) {
         showSuspensionModal({ suspension_type: 'temporary', message: err.message });
-        return;
+      } else {
+        var errEl = document.getElementById('bfErr');
+        if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
       }
-      if (errEl) errEl.textContent = err.message || 'Booking failed. Please try again.';
     })
     .finally(function() { showLoading(false); restoreBtn(); });
 }
 
 // PAYMENT - PayMongo Integration
 function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
+  if (payType === 'Pay on Pickup') {
+    var el = document.getElementById('paymentContent');
+    if (!el) return;
+    var tot = priceResult ? (priceResult.total || 0) : 0;
+    el.innerHTML =
+      '<div class="page-header">' +
+      '<button class="back-btn" onclick="closeOverlay(\'page-payment\'); navTo(\'bookings\');"><i class="fas fa-arrow-left"></i></button>' +
+      '<h2>Booking Confirmed</h2></div>' +
+      '<div class="scroll-content" style="padding-bottom:100px; text-align:center;">' +
+      '<div class="card" style="padding:28px 20px;">' +
+      '<div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#eab308,#ca8a04); color:#fff; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 16px; box-shadow:0 8px 24px rgba(234,179,8,0.4);">' +
+      '<i class="fas fa-crown"></i>' +
+      '</div>' +
+      '<h3 style="font-weight:800; font-size:1.3rem; margin-bottom:8px; color:var(--text-primary);">Booking #' + bookingId + ' Placed!</h3>' +
+      '<span style="background:rgba(234,179,8,0.18); color:#b45309; padding:4px 14px; border-radius:20px; font-weight:800; font-size:0.75rem; border:1px solid rgba(234,179,8,0.4); display:inline-block; margin-bottom:16px;">VIP REGULAR CUSTOMER PRIVILEGE</span>' +
+      '<p style="color:var(--text-secondary); font-size:0.88rem; line-height:1.5; margin-bottom:20px;">' +
+      'No downpayment was required for this reservation. You can settle the full rental balance of <strong>' + formatPHP(tot) + '</strong> when you pick up your vehicle.' +
+      '</p>' +
+      '<div style="background:var(--bg-input); border-radius:var(--radius-sm); padding:16px; text-align:left; margin-bottom:20px;">' +
+      '<div class="price-row"><span>Total Rental Amount</span><span style="font-weight:700;">' + formatPHP(tot) + '</span></div>' +
+      '<div class="price-row" style="color:#eab308; font-weight:700;"><span>Due Today (Downpayment)</span><span>₱0.00</span></div>' +
+      '<div class="price-row" style="color:var(--text-primary); font-weight:800; border-top:1px solid var(--border); margin-top:8px; padding-top:8px;"><span>Balance Due on Pickup</span><span>' + formatPHP(tot) + '</span></div>' +
+      '</div>' +
+      '<button class="btn-primary" onclick="closeOverlay(\'page-payment\'); navTo(\'bookings\');" style="width:100%;"><i class="fas fa-calendar-check" style="margin-right:8px;"></i> View My Bookings</button>' +
+      '</div></div>';
+    showOverlay('page-payment');
+    return;
+  }
+
   var nowDue = payType === 'Downpayment' ? priceResult.downpaymentAmount : priceResult.total;
   var el = document.getElementById('paymentContent');
   if (!el) return;
@@ -4857,6 +4952,8 @@ function openPaymentScreen(bookingId, priceResult, payType, isExistingBooking) {
     '<i class="fas fa-mobile-alt"></i> Pay 20% Deposit via GCash (' + formatPHP(nowDue) + ')</button>' +
     '<button class="btn-secondary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="directPayMethod(\'maya\',' + bookingId + ',' + nowDue + ')">' +
     '<i class="fas fa-credit-card"></i> Pay 20% Deposit via Maya / Card (' + formatPHP(nowDue) + ')</button>' +
+    '</div>' +
+
     '<span class="field-error" id="payErrOnline" style="display:none;margin-bottom:12px;text-align:center;"></span>' +
     '</div>';
 
@@ -4950,7 +5047,8 @@ function pickPaymentProof() {
   input.click();
 }
 
-// Helper to open PayMongo checkout inside native In-App Browser or same-tab on web
+// Helper to open PayMongo checkout securely and seamlessly
+var _paymongoWindow = null;
 function openPaymongoCheckout(checkoutUrl, bookingId, amount, method, onFinishCallback) {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     var browser = window.Capacitor.Plugins.Browser;
@@ -4968,19 +5066,37 @@ function openPaymongoCheckout(checkoutUrl, bookingId, amount, method, onFinishCa
           }
         });
       }
-    } catch (e) {
+    } catch(e) {
       console.warn('[PayMongo] Browser listener setup error:', e);
     }
-    browser.open({
-      url: checkoutUrl,
-      presentationStyle: 'popover',
-      toolbarColor: '#0f172a'
-    }).catch(function(err) {
-      console.error('[PayMongo] In-app browser failed to open, using location href:', err);
-      window.location.href = checkoutUrl;
-    });
+    browser.open({ url: checkoutUrl, presentationStyle: 'popover', toolbarColor: '#0f172a' })
+      .catch(function(err) {
+        console.error('[PayMongo] In-app browser failed to open, using location href:', err);
+        window.location.href = checkoutUrl;
+      });
   } else {
-    window.location.href = checkoutUrl;
+    // On Web: Open checkout in a centered popup window so the main Autoride app tab remains active and keeps polling
+    var w = 550;
+    var h = 750;
+    var left = Math.max(0, (window.screen.width / 2) - (w / 2));
+    var top = Math.max(0, (window.screen.height / 2) - (h / 2));
+    try {
+      _paymongoWindow = window.open(
+        checkoutUrl,
+        'PayMongoCheckout',
+        'toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=' + w + ',height=' + h + ',top=' + top + ',left=' + left
+      );
+    } catch (e) {
+      _paymongoWindow = null;
+    }
+    
+    // Fallback to same-tab redirect if popup is blocked
+    if (!_paymongoWindow || _paymongoWindow.closed || typeof _paymongoWindow.closed === 'undefined') {
+      console.log('[PayMongo] Popup window unavailable, redirecting in same tab');
+      window.location.href = checkoutUrl;
+    } else {
+      try { _paymongoWindow.focus(); } catch(e) {}
+    }
   }
 }
 window.openPaymongoCheckout = openPaymongoCheckout;
@@ -5044,11 +5160,11 @@ function submitPayment(bookingId, amount) {
       amount: amt,
       method: method,
       payment_type: paymentTypeForPaymongo,
-      client: 'mobile',
+      client: 'web',
       description: 'Autoride Booking #' + bId,
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
       customer_email: (currentUser && currentUser.email) || '',
-      customer_phone: (currentUser && (currentUser.phone || currentUser.phone_number)) || ''
+      customer_phone: (currentUser && currentUser.phone) || ''
     })
   })
     .then(function(data) {
@@ -5100,18 +5216,16 @@ function showPaymentWaiting(bookingId, amount, method) {
   }
 
   var methodLabel = method === 'gcash' ? 'GCash' : method === 'maya' ? 'Maya' : 'Card';
-  var isBalancePayment = (_pendingPayType === 'Balance' || _pendingPayType === 'Penalty' ||
-    (typeof activeBookingData !== 'undefined' && activeBookingData && (activeBookingData.payment_status === 'Partially Paid' || parseFloat(activeBookingData.balance_amount || 0) > 0)));
-
-  var countdownBoxHtml = isBalancePayment
-    ? '<div style="background:rgba(0,177,79,0.08);border:1.5px solid rgba(0,177,79,0.25);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:10px;">' +
-      '<i class="fas fa-info-circle" style="color:var(--primary);font-size:1.2rem;"></i>' +
-      '<span style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">Awaiting payment confirmation...</span>' +
+  var isBalancePayment = (_pendingPayType === 'Balance' || _pendingPayType === 'Penalty' || (typeof activeBookingData !== 'undefined' && activeBookingData && (activeBookingData.payment_status === 'Partially Paid' || parseFloat(activeBookingData.balance_amount || 0) > 0)));
+  var timerOrStatusHtml = isBalancePayment
+    ? '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<i class="fas fa-info-circle" style="color:var(--primary);font-size:1rem;"></i>' +
+      '<span style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);">Awaiting payment confirmation...</span>' +
       '</div>'
-    : '<div style="background:linear-gradient(135deg,rgba(220,38,38,0.08),rgba(220,38,38,0.04));border:1.5px solid rgba(220,38,38,0.25);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">' +
-      '<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Time remaining to pay</div>' +
-      '<div id="payCountdownDisplay" style="font-size:2rem;font-weight:900;color:var(--primary);font-variant-numeric:tabular-nums;letter-spacing:2px;">30:00</div>' +
-      '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Booking will expire if unpaid</div>' +
+    : '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<i class="fas fa-clock" style="color:#d97706;font-size:1rem;"></i>' +
+      '<span style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);">Time left to pay:</span>' +
+      '<span id="payCountdownDisplay" style="font-size:1.2rem;font-weight:900;color:#d97706;font-variant-numeric:tabular-nums;">30:00</span>' +
       '</div>';
   el.innerHTML =
     '<div class="page-header">' +
@@ -5121,73 +5235,16 @@ function showPaymentWaiting(bookingId, amount, method) {
     '<div style="width:80px;height:80px;border-radius:50%;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">' +
     '<i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--primary);"></i></div>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">Complete Payment in ' + methodLabel + '</h3>' +
-    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:12px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there. This page will update automatically.</p>' +
-    countdownBoxHtml +
+    '<p style="color:var(--text-secondary);font-size:0.875rem;margin-bottom:24px;">A ' + methodLabel + ' payment page has been opened.<br>Complete your payment there. This page will update automatically.</p>' +
     '<div style="background:var(--bg-card);border-radius:var(--radius-sm);padding:16px;margin-bottom:24px;">' +
     '<div style="font-size:0.75rem;color:var(--text-secondary);">Amount to Pay</div>' +
     '<div style="font-size:1.5rem;font-weight:900;color:var(--primary);">' + formatPHP(amount) + '</div>' +
+    timerOrStatusHtml +
     '</div>' +
     '<button class="btn-primary" style="margin-bottom:12px;" onclick="checkPaymentStatus(' + bookingId + ',' + amount + ',\'' + method + '\', false)">' +
     '<i class="fas fa-check-circle"></i> I\'ve Completed Payment</button>' +
     '<button class="btn-secondary" onclick="stopPaymentPolling();closeOverlay(\'page-payment\')" style="width:100%;">Cancel</button>' +
     '</div>';
-
-  // Start 30-minute countdown timer (Only for new reservations, NOT for balance/penalty payments)
-  if (window._payCountdownInterval) {
-    clearInterval(window._payCountdownInterval);
-    window._payCountdownInterval = null;
-  }
-  if (!isBalancePayment) {
-    var _countdownWarned15 = false, _countdownWarned5 = false;
-    var _countdownSeconds = 30 * 60;
-    if (window._pendingPaymentBookingCreatedAt) {
-      var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
-      if (!isNaN(_bkCreatedMs)) {
-        var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
-        var _initialRem = Math.floor((_bkDeadline - Date.now()) / 1000);
-        if (_initialRem > 0 && _initialRem <= 30 * 60) {
-          _countdownSeconds = _initialRem;
-        }
-      }
-    }
-    var initM = Math.floor(_countdownSeconds / 60);
-    var initS = _countdownSeconds % 60;
-    var cdEl = document.getElementById('payCountdownDisplay');
-    if (cdEl) {
-      cdEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
-      if (_countdownSeconds <= 5 * 60) cdEl.style.color = '#dc2626';
-      else if (_countdownSeconds <= 15 * 60) cdEl.style.color = '#f59e0b';
-    }
-    window._payCountdownInterval = setInterval(function() {
-      _countdownSeconds--;
-      if (_countdownSeconds <= 0) {
-        clearInterval(window._payCountdownInterval);
-        window._payCountdownInterval = null;
-        var cd = document.getElementById('payCountdownDisplay');
-        if (cd) { cd.textContent = '00:00'; cd.style.color = '#dc2626'; }
-        showToast('Payment time expired. Your booking has been cancelled. A violation strike may be applied.', 'error');
-        stopPaymentPolling();
-        closeOverlay('page-payment');
-        return;
-      }
-      var mins = Math.floor(_countdownSeconds / 60);
-      var secs = _countdownSeconds % 60;
-      var cdEl = document.getElementById('payCountdownDisplay');
-      if (cdEl) {
-        cdEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
-        if (_countdownSeconds <= 5 * 60) cdEl.style.color = '#dc2626';
-        else if (_countdownSeconds <= 15 * 60) cdEl.style.color = '#f59e0b';
-      }
-      if (!_countdownWarned15 && _countdownSeconds === 15 * 60) {
-        _countdownWarned15 = true;
-        showToast('15 minutes left to complete your payment!', 'warning');
-      }
-      if (!_countdownWarned5 && _countdownSeconds === 5 * 60) {
-        _countdownWarned5 = true;
-        showToast('Only 5 minutes left! Complete payment now to avoid a violation strike.', 'error');
-      }
-    }, 1000);
-  }
 
   // Add Capacitor Browser event listeners for automatic detection (if supported)
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
@@ -5225,6 +5282,66 @@ function showPaymentWaiting(bookingId, amount, method) {
   _paymentPollInterval = setInterval(function() {
     autoCheckPaymentStatus(bookingId, amount, method);
   }, 2500);
+
+  // --- 30-minute payment countdown timer (Only for new reservations, NOT for balance/penalty payments) ---
+  if (window._payCountdownInterval) {
+    clearInterval(window._payCountdownInterval);
+    window._payCountdownInterval = null;
+  }
+  if (!isBalancePayment) {
+    var payDeadlineMs = 30 * 60 * 1000;
+    var payStartTime = Date.now();
+    if (window._pendingPaymentBookingCreatedAt) {
+      var _bkCreatedMs = parseBookingDateMs(window._pendingPaymentBookingCreatedAt);
+      if (!isNaN(_bkCreatedMs)) {
+        var _bkDeadline = _bkCreatedMs + (30 * 60 * 1000);
+        var _initialRem = _bkDeadline - Date.now();
+        if (_initialRem > 0 && _initialRem <= 30 * 60 * 1000) {
+          payDeadlineMs = _initialRem;
+        }
+      }
+    }
+    var countdownEl = document.getElementById('payCountdownDisplay');
+    if (countdownEl) {
+      var initM = Math.floor(payDeadlineMs / 60000);
+      var initS = Math.floor((payDeadlineMs % 60000) / 1000);
+      countdownEl.textContent = (initM < 10 ? '0' : '') + initM + ':' + (initS < 10 ? '0' : '') + initS;
+      if (payDeadlineMs <= 5 * 60 * 1000) {
+        countdownEl.style.color = '#dc2626';
+      } else if (payDeadlineMs <= 15 * 60 * 1000) {
+        countdownEl.style.color = '#ea580c';
+      }
+    }
+    window._payCountdownInterval = setInterval(function() {
+      var elapsed = Date.now() - payStartTime;
+      var remaining = payDeadlineMs - elapsed;
+      if (remaining <= 0) {
+        clearInterval(window._payCountdownInterval);
+        window._payCountdownInterval = null;
+        stopPaymentPolling();
+        showToast('Payment window expired. Your booking has been cancelled due to non-payment. A violation has been recorded.', 'error', 6000);
+        return;
+      }
+      var mins = Math.floor(remaining / 60000);
+      var secs = Math.floor((remaining % 60000) / 1000);
+      var display = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      if (countdownEl) {
+        countdownEl.textContent = display;
+        if (remaining <= 5 * 60 * 1000) {
+          countdownEl.style.color = '#dc2626';
+          countdownEl.style.fontWeight = '900';
+          if (remaining > (5 * 60 * 1000 - 2500)) {
+            showToast('Only 5 minutes left to complete your payment!', 'error', 4000);
+          }
+        } else if (remaining <= 15 * 60 * 1000) {
+          countdownEl.style.color = '#f59e0b';
+          if (remaining > (15 * 60 * 1000 - 2500)) {
+            showToast('15 minutes remaining to complete your payment.', 'warning', 3500);
+          }
+        }
+      }
+    }, 1000);
+  }
 }
 
 function stopPaymentPolling() {
@@ -5236,6 +5353,10 @@ function stopPaymentPolling() {
   if (window._payCountdownInterval) {
     clearInterval(window._payCountdownInterval);
     window._payCountdownInterval = null;
+  }
+  if (_paymongoWindow && !_paymongoWindow.closed) {
+    try { _paymongoWindow.close(); } catch(e) {}
+    _paymongoWindow = null;
   }
   window._pendingPaymentBookingId = null;
   // Clean up browser event listeners
@@ -5254,7 +5375,7 @@ function showSuspensionModal(data) {
   var msg, title;
   if (isPermanent) {
     title = 'Account Permanently Restricted';
-    msg = 'Your account has been permanently restricted from making bookings due to repeated unpaid booking violations. Please contact us at support for assistance.';
+    msg = 'Your account has been permanently restricted from making bookings due to repeated unpaid booking violations. Please contact us for assistance.';
   } else {
     title = 'Account Temporarily Suspended';
     var until = '';
@@ -5279,7 +5400,6 @@ function showSuspensionModal(data) {
     '<p style=\"font-size:0.875rem;color:var(--text-secondary,#666);line-height:1.5;margin-bottom:20px;\">' + msg + '</p>' +
     '<button class=\"btn-primary\" onclick=\"var el=document.getElementById(\'suspensionOverlay\');if(el)el.remove();\" style=\"width:100%;\">OK, I understand</button>' +
     '</div>';
-  // Remove any existing
   var existing = document.getElementById('suspensionOverlay');
   if (existing) existing.remove();
   document.body.appendChild(overlay);
@@ -5295,7 +5415,11 @@ function autoCheckPaymentStatus(bookingId, amount, method) {
       _paymentCheckInProgress = false;
       if (data.paid) {
         stopPaymentPolling();
-        // Close in-app browser if still open
+        // Close in-app browser or popup window if still open
+        if (_paymongoWindow && !_paymongoWindow.closed) {
+          try { _paymongoWindow.close(); } catch(e) {}
+          _paymongoWindow = null;
+        }
         if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
           window.Capacitor.Plugins.Browser.close().catch(function() {});
         }
@@ -5314,7 +5438,7 @@ function autoCheckPaymentStatus(bookingId, amount, method) {
     .catch(function() { _paymentCheckInProgress = false; });
 }
 
-// Auto-check payment status when the customer resumes the mobile app
+// Auto-check payment status when the customer switches back to this tab/window
 if (typeof window !== 'undefined') {
   window.addEventListener('focus', function() {
     if (window._pendingPaymentBookingId) {
@@ -5327,18 +5451,17 @@ if (typeof window !== 'undefined') {
         autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
       }
     });
-    document.addEventListener('resume', function() {
-      if (window._pendingPaymentBookingId) {
-        autoCheckPaymentStatus(window._pendingPaymentBookingId, window._pendingPaymentAmount, window._pendingPaymentMethod);
-      }
-    });
   }
 }
 
 function checkPaymentStatus(bookingId, amount, method) {
   showLoading(true);
   stopPaymentPolling();
-  // Close in-app browser if still open
+  // Close in-app browser or popup window if still open
+  if (_paymongoWindow && !_paymongoWindow.closed) {
+    try { _paymongoWindow.close(); } catch(e) {}
+    _paymongoWindow = null;
+  }
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser) {
     window.Capacitor.Plugins.Browser.close().catch(function() {});
   }
@@ -5413,7 +5536,7 @@ function retryPayment(bookingId, amount, method) {
       amount: amt,
       method: method,
       payment_type: paymentTypeForPaymongo,
-      client: 'mobile',
+      client: 'web',
       description: 'Autoride Booking #' + bId,
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
       customer_email: (currentUser && currentUser.email) || ''
@@ -5667,6 +5790,11 @@ function renderBookingsList(data) {
           '<div style="display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span>' + endFmt + '</span><i class="fas fa-chevron-right" style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0;"></i></div>' +
         '</div>' +
       '</div>' +
+
+      (b.destination ? 
+      '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+        '<i class="fas fa-map-marker-alt" style="color:var(--primary);font-size:0.8rem;"></i> <span>Destination: <strong style="color:var(--text-primary);">' + b.destination + '</strong></span>' +
+      '</div>' : '') +
 
       '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
 
@@ -6057,8 +6185,8 @@ function renderBookingDetail(b) {
         '</div>';
       })() +
 
-      // Info grid: customer / vehicle / rental period
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">' +
+      // Info grid: customer / vehicle / rental period / destination / purpose
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;margin-bottom:16px;">' +
         '<div>' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
           '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
@@ -6071,6 +6199,16 @@ function renderBookingDetail(b) {
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
           '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' ' + (b.start_time || '06:00') + ' to ' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '06:00') + '</div>' +
         '</div>' +
+        (b.destination ? 
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Destination</div>' +
+          '<div style="font-size:0.9rem;font-weight:700;color:var(--primary);"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>' + b.destination + '</div>' +
+        '</div>' : '') +
+        (b.rental_purpose ? 
+        '<div>' +
+          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Purpose</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + b.rental_purpose + '</div>' +
+        '</div>' : '') +
       '</div>' +
 
       // Status grid: payment status / payment method / total price / booking status
@@ -6104,6 +6242,11 @@ function renderBookingDetail(b) {
           '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Amount Paid:</span>' +
           '<strong style="font-size:0.9rem;color:#16a34a;">' + formatPHP(b.amount_paid || 0) + '</strong>' +
         '</div>' +
+        (b.payment_fee && parseFloat(b.payment_fee) > 0 ? 
+        '<div>' +
+          '<span style="font-size:0.65rem;color:#d97706;font-weight:700;text-transform:uppercase;margin-right:6px;">' + (b.payment_method || 'Terminal') + ' Fee (' + (b.payment_fee_percent || 3.5) + '%):</span>' +
+          '<strong style="font-size:0.9rem;color:#d97706;">+' + formatPHP(b.payment_fee) + '</strong>' +
+        '</div>' : '') +
         '<div>' +
           '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Balance Due:</span>' +
           '<strong style="font-size:0.9rem;color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#16a34a')) + ';">' + 
@@ -6824,7 +6967,7 @@ function submitExtension(bookingId) {
         booking_id: bId,
         amount: extAmt,
         method: method,
-        client: 'mobile',
+        client: 'web',
         description: 'Booking #' + bId + ' extension (' + days + ' day' + (days !== 1 ? 's' : '') + ')',
         customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
         customer_email: (currentUser && currentUser.email) || '',
@@ -6833,11 +6976,7 @@ function submitExtension(bookingId) {
     }).then(function(data) {
       showLoading(false);
       if (data.checkout_url) {
-        openPaymongoCheckout(data.checkout_url, bId, extAmt, method, function() {
-          if (typeof _checkExtensionPaymentStatus === 'function') {
-            _checkExtensionPaymentStatus(bId, data.link_id);
-          }
-        });
+        openPaymongoCheckout(data.checkout_url, bId, extAmt, method);
         _showExtPaymentWaiting(bId, newEnd, extAmt, methodLabel, days, data.link_id);
       } else {
         var errMsg = data.error || 'Failed to create payment. Please try again.';
@@ -7404,7 +7543,7 @@ function submitBalancePayment(method, bookingId, amount) {
       amount: amt,
       method: method,
       payment_type: 'Balance',
-      client: 'mobile',
+      client: 'web',
       description: 'Autoride Booking #' + bId + ' Balance Payment',
       customer_name: (currentUser && (currentUser.fullName || currentUser.full_name)) || '',
       customer_email: (currentUser && currentUser.email) || ''
