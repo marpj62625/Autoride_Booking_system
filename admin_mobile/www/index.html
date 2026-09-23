@@ -9925,6 +9925,16 @@ input:checked + .ctrl-slider:before {
 
 
 <script>
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     function showInlineError(el, message) {
         if (!el) return;
         el.style.borderColor = '#dc2626';
@@ -21064,7 +21074,8 @@ function toggleNewsletterModal(show = true) {
                     container.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;">Failed to load trip history logs.</div>';
                 }
             } catch (err) {
-                container.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444;">Connection error: ${err.message || err}</div>`;
+                console.error("GPS trip history error:", err);
+                container.innerHTML = `<div style="text-align:center;padding:24px;color:#ef4444;">Failed to load trip history: ${escapeHtml(err.message || String(err))}</div>`;
             }
         },
 
