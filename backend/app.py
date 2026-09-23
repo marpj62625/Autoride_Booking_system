@@ -12207,6 +12207,8 @@ def get_activity_logs():
 
 @app.route('/public/settings', methods=['GET'])
 @app.route('/api/public/settings', methods=['GET'])
+@app.route('/public-settings', methods=['GET'])
+@app.route('/api/public-settings', methods=['GET'])
 def get_public_settings():
 
     """Returns non-sensitive system settings for the customer app."""
