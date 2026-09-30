@@ -8818,14 +8818,14 @@ input:checked + .ctrl-slider:before {
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Seats</label>
                             <select id="vSeats" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;appearance:auto;box-sizing:border-box;">
-                                <option value="2 Seats">2 Seats</option>
-                                <option value="4 Seats">4 Seats</option>
-                                <option value="5 Seats" selected>5 Seats</option>
-                                <option value="7 Seats">7 Seats</option>
-                                <option value="8 Seats">8 Seats</option>
-                                <option value="10 Seats">10 Seats</option>
-                                <option value="12 Seats">12 Seats</option>
-                                <option value="15 Seats">15 Seats</option>
+                                <option value="2">2 Seats</option>
+                                <option value="4">4 Seats</option>
+                                <option value="5" selected>5 Seats</option>
+                                <option value="7">7 Seats</option>
+                                <option value="8">8 Seats</option>
+                                <option value="10">10 Seats</option>
+                                <option value="12">12 Seats</option>
+                                <option value="15">15 Seats</option>
                             </select>
                         </div>
                     </div>
@@ -13666,18 +13666,14 @@ input:checked + .ctrl-slider:before {
 
             formData.append('fuel_type', document.getElementById('vFuel').value);
 
-
-
-            formData.append('seats', document.getElementById('vSeats').value);
-
-
+            const seatsRaw = document.getElementById('vSeats').value;
+            formData.append('seats', parseInt(seatsRaw) || 5);
 
             formData.append('location', document.getElementById('vLocation').value);
 
-
-
             formData.append('status', document.getElementById('vStatus').value);
-            formData.append('daily_rate', document.getElementById('vRate').value);
+            const rateRaw = document.getElementById('vRate').value;
+            formData.append('daily_rate', parseFloat(String(rateRaw).replace(/[^0-9.]/g, '')) || 0);
             formData.append('year_model', document.getElementById('vYear').value || '');
             formData.append('mileage_type', document.getElementById('vMileageType').value);
             formData.append('mileage_km_per_day', document.getElementById('vMileageKm').value || 250);

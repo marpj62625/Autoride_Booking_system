@@ -11152,6 +11152,22 @@ def add_vehicle():
         gps_device_token = (data.get('gps_device_token') or '').strip() or None
         gps_device_name = (data.get('gps_device_name') or '').strip() or None
 
+        # Sanitize seats & daily_rate
+        seats_raw = data.get('seats')
+        seats = None
+        if seats_raw is not None and str(seats_raw).strip():
+            digits = ''.join(c for c in str(seats_raw) if c.isdigit())
+            seats = int(digits) if digits else None
+
+        daily_rate_raw = data.get('daily_rate')
+        daily_rate = None
+        if daily_rate_raw is not None and str(daily_rate_raw).strip():
+            dr_str = str(daily_rate_raw).replace('PHP', '').replace('Php', '').replace('₱', '').replace('/day', '').replace('/DAY', '').replace(',', '').strip()
+            try:
+                daily_rate = float(dr_str)
+            except Exception:
+                daily_rate = None
+
         # Handle image upload if file provided
         vehicle_image = data.get('vehicle_image', '')
         if 'gallery' in request.files:
@@ -11168,8 +11184,8 @@ def add_vehicle():
         cur.execute(
             "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
-             data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
-             data.get('status', 'Available'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
+             data.get('transmission'), data.get('fuel_type'), seats, data.get('location'),
+             data.get('status', 'Available'), daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
              odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name)
         )
         new_id = cur.fetchone()['id']
@@ -11195,7 +11211,9 @@ def add_vehicle():
 
 
 @app.route('/vehicles/<int:vehicle_id>', methods=['PUT'])
+@app.route('/vehicles/<int:vehicle_id>/', methods=['PUT'])
 @app.route('/api/vehicles/<int:vehicle_id>', methods=['PUT'])
+@app.route('/api/vehicles/<int:vehicle_id>/', methods=['PUT'])
 def update_vehicle(vehicle_id):
     # Support both JSON and FormData
     if request.is_json:
@@ -11226,6 +11244,22 @@ def update_vehicle(vehicle_id):
         gps_device_token = (data.get('gps_device_token') or '').strip() or None
         gps_device_name = (data.get('gps_device_name') or '').strip() or None
 
+        # Sanitize seats & daily_rate
+        seats_raw = data.get('seats')
+        seats = None
+        if seats_raw is not None and str(seats_raw).strip():
+            digits = ''.join(c for c in str(seats_raw) if c.isdigit())
+            seats = int(digits) if digits else None
+
+        daily_rate_raw = data.get('daily_rate')
+        daily_rate = None
+        if daily_rate_raw is not None and str(daily_rate_raw).strip():
+            dr_str = str(daily_rate_raw).replace('PHP', '').replace('Php', '').replace('₱', '').replace('/day', '').replace('/DAY', '').replace(',', '').strip()
+            try:
+                daily_rate = float(dr_str)
+            except Exception:
+                daily_rate = None
+
         # Fetch existing vehicle_image from DB so it's preserved if no new photo is uploaded
         cur.execute("SELECT vehicle_image FROM vehicles WHERE id = %s", (vehicle_id,))
         existing = cur.fetchone()
@@ -11251,8 +11285,8 @@ def update_vehicle(vehicle_id):
         cur.execute(
             "UPDATE vehicles SET brand=%s, model=%s, plate_number=%s, vehicle_type=%s, transmission=%s, fuel_type=%s, seats=%s, location=%s, status=%s, daily_rate=%s, vehicle_image=%s, color=%s, mileage_type=%s, mileage_km_per_day=%s, year_model=%s, odometer=%s, fuel_level=%s, next_service_schedule=%s, lto_expiry_date=%s, gps_device_token=%s, gps_device_name=%s WHERE id=%s",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
-             data.get('transmission'), data.get('fuel_type'), data.get('seats'), data.get('location'),
-             data.get('status'), data.get('daily_rate'), vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
+             data.get('transmission'), data.get('fuel_type'), seats, data.get('location'),
+             data.get('status'), daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model,
              odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name, vehicle_id)
         )
         commit_db()
