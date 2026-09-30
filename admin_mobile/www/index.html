@@ -30224,7 +30224,10 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                this._all = data;
+                this._all = (data || []).filter(u => {
+                    const r = (u.role || '').toLowerCase();
+                    return !['admin', 'super_admin', 'superadmin', 'staff'].includes(r);
+                });
 
 
 

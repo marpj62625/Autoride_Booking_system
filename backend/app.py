@@ -2697,6 +2697,7 @@ def admin_list_users():
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
                 WHERE u.is_verified = 1
+                  AND COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
                 ORDER BY u.id DESC
             """)
         else:
@@ -2713,6 +2714,7 @@ def admin_list_users():
                        u.is_verified
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
+                WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
                 ORDER BY u.id DESC
             """)
 
@@ -2762,13 +2764,14 @@ def admin_users_list():
         auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
 
         cur.execute("""
-            SELECT u.id, u.full_name, u.email, u.phone, u.is_verified, u.is_frozen,
+            SELECT u.id, u.full_name, u.email, u.phone, u.role, u.is_verified, u.is_frozen,
                    u.freeze_reason, u.loyalty_points, u.created_at,
                    u.profile_picture, u.auth_provider,
                    COALESCE(u.is_regular_customer, false) AS is_regular_customer,
                    COALESCE(u.regular_customer_manual, false) AS regular_customer_manual,
                    (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_bookings
             FROM users u
+            WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
             ORDER BY u.created_at DESC
         """)
         users = cur.fetchall()
@@ -3449,7 +3452,9 @@ def admin_export_users():
         cur.execute("""
             SELECT id, full_name, email, phone, is_verified, is_frozen,
                    loyalty_points, created_at
-            FROM users ORDER BY created_at DESC
+            FROM users 
+            WHERE COALESCE(role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
+            ORDER BY created_at DESC
         """)
         users = cur.fetchall()
         output = io.StringIO()
