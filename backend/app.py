@@ -2769,7 +2769,9 @@ def admin_users_list():
                    u.profile_picture, u.auth_provider,
                    COALESCE(u.is_regular_customer, false) AS is_regular_customer,
                    COALESCE(u.regular_customer_manual, false) AS regular_customer_manual,
-                   (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_bookings
+                   (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_bookings,
+                   (SELECT COUNT(*) FROM bookings WHERE user_id = u.id) AS total_bookings,
+                   (SELECT COALESCE(SUM(total_price), 0) FROM bookings WHERE user_id = u.id AND (LOWER(status) = 'completed' OR payment_status IN ('Paid', 'Fully Paid'))) AS total_spent
             FROM users u
             WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
             ORDER BY u.created_at DESC
@@ -2783,6 +2785,8 @@ def admin_users_list():
             d['loyalty_points'] = int(d.get('loyalty_points') or 0)
             completed = int(d.get('completed_bookings') or 0)
             d['completed_bookings'] = completed
+            d['total_bookings'] = int(d.get('total_bookings') or 0)
+            d['total_spent'] = float(d.get('total_spent') or 0)
             
             is_reg = bool(d.get('regular_customer_manual')) or (auto_qual and completed >= min_bk)
             d['is_regular_customer'] = is_reg
@@ -2828,7 +2832,7 @@ def admin_user_detail(user_id):
         cur.execute("SELECT COUNT(*) as completed FROM bookings WHERE user_id = %s AND LOWER(status) = 'completed'", (user_id,))
         completed = (cur.fetchone() or {}).get('completed', 0)
         d['completed_bookings'] = completed
-        cur.execute("SELECT COALESCE(SUM(total_price),0) as spent FROM bookings WHERE user_id = %s AND LOWER(status) = 'completed'", (user_id,))
+        cur.execute("SELECT COALESCE(SUM(total_price),0) as spent FROM bookings WHERE user_id = %s AND (LOWER(status) = 'completed' OR payment_status IN ('Paid', 'Fully Paid'))", (user_id,))
         d['total_spent'] = float((cur.fetchone() or {}).get('spent', 0))
 
         # Check qualification rule
@@ -8800,7 +8804,7 @@ def get_detailed_stats():
         cur.execute(rev_query, tuple(rev_params))
         basic_stats = cur.fetchone()
         
-        # 2. Daily Revenue (Last 30 days)
+        # 2. Daily Revenue
         trend_query = """
             SELECT 
                 TO_CHAR(b.start_date, 'YYYY-MM-DD') as day,
@@ -8808,10 +8812,11 @@ def get_detailed_stats():
                 COUNT(b.id) as booking_count
             FROM bookings b
             JOIN vehicles v ON b.vehicle_id = v.id
-            WHERE b.start_date >= CURRENT_DATE - INTERVAL '30 days' 
-              AND (b.status != 'Cancelled' OR (b.status = 'Cancelled' AND COALESCE(b.amount_paid, 0) > COALESCE(b.refund_amount, 0)))
+            WHERE (b.status != 'Cancelled' OR (b.status = 'Cancelled' AND COALESCE(b.amount_paid, 0) > COALESCE(b.refund_amount, 0)))
         """
         trend_params = []
+        if not date_from and not date_to:
+            trend_query += " AND b.start_date >= CURRENT_DATE - INTERVAL '90 days'"
         trend_query, trend_params = apply_filters(trend_query, trend_params, 'b', 'v', skip_status=False)
         trend_query += " GROUP BY day ORDER BY day ASC"
         cur.execute(trend_query, tuple(trend_params))

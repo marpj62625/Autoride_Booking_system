@@ -7841,11 +7841,11 @@ input:checked + .ctrl-slider:before {
 
 
 
-                    <button onclick="Reports.setFilter('month',this)" class="rpt-filter-btn active-filter" style="padding:6px 12px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:white;font-size:0.72rem;font-weight:700;cursor:pointer;">Month</button>
+                    <button onclick="Reports.setFilter('month',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Month</button>
 
 
 
-                    <button onclick="Reports.setFilter('year',this)" class="rpt-filter-btn" style="padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface-container);color:var(--text-secondary);font-size:0.72rem;font-weight:700;cursor:pointer;">Year</button>
+                    <button onclick="Reports.setFilter('year',this)" class="rpt-filter-btn active-filter" style="padding:6px 12px;border-radius:20px;border:1px solid var(--primary);background:var(--primary);color:white;font-size:0.72rem;font-weight:700;cursor:pointer;">Year</button>
 
 
 
@@ -15992,25 +15992,10 @@ function toggleNewsletterModal(show = true) {
 
 
                 const now = new Date();
-
-
-
-                const to = now.toISOString().split('T')[0];
-
-
-
-                const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-
-
-
+                const from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+                const to = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
                 document.getElementById('rptDateFrom').value = from;
-
-
-
                 document.getElementById('rptDateTo').value = to;
-
-
-
                 Reports.refresh();
 
 
@@ -24752,49 +24737,15 @@ function toggleNewsletterModal(show = true) {
 
 
             const now = new Date();
-
-
-
-            const to = now.toISOString().split('T')[0];
-
-
-
-            let from;
-
-
-
+            let from, to;
             if (period === 'day') {
-
-
-
-                from = to;
-
-
-
+                from = to = now.toISOString().split('T')[0];
             } else if (period === 'month') {
-
-
-
-                const d = new Date(now); d.setDate(1);
-
-
-
-                from = d.toISOString().split('T')[0];
-
-
-
+                from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                to = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
             } else {
-
-
-
-                const d = new Date(now); d.setMonth(0); d.setDate(1);
-
-
-
-                from = d.toISOString().split('T')[0];
-
-
-
+                from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+                to = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
             }
 
 
@@ -30559,6 +30510,7 @@ function toggleNewsletterModal(show = true) {
 
 
                         <div style="font-size:0.68rem;color:var(--amber);font-weight:700;"><i class="fas fa-star" style="font-size:0.58rem;"></i> ${u.loyalty_points || 0} pts</div>
+                        <div style="font-size:0.68rem;color:var(--primary);font-weight:700;"><i class="fas fa-wallet" style="font-size:0.58rem;"></i> ₱${(u.total_spent || 0).toLocaleString()}</div>
 
 
 
