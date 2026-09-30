@@ -11715,7 +11715,7 @@ def get_admin_stats_v2():
                 date_filter += " AND b.start_date::date <= %s::date"
                 params.append(date_to)
 
-        rev_q = "SELECT SUM(total_price) as rev FROM bookings b WHERE b.payment_status = 'Paid'" + date_filter
+        rev_q = "SELECT SUM(total_price) as rev FROM bookings b WHERE b.payment_status IN ('Paid', 'Fully Paid')" + date_filter
         book_q = "SELECT COUNT(*) as count FROM bookings b WHERE 1=1" + date_filter
         v_q = "SELECT COUNT(*) as count FROM vehicles WHERE status = 'Available'"
 
@@ -11748,7 +11748,7 @@ def get_admin_stats_v2():
             # Group by month for yearly view
             trend_q = f"""
                 SELECT TO_CHAR(b.start_date, 'Mon') as day, EXTRACT(MONTH FROM b.start_date) as m_num,
-                       SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
+                       SUM(CASE WHEN b.payment_status IN ('Paid', 'Fully Paid') THEN b.total_price ELSE 0 END) as amount
                 FROM bookings b
                 WHERE 1=1 {date_filter} {loc_clause}
                 GROUP BY day, m_num
@@ -11759,7 +11759,7 @@ def get_admin_stats_v2():
             trend_q = f"""
                 SELECT TO_CHAR(b.start_date, 'Mon DD') as day,
                        EXTRACT(DOY FROM b.start_date) as hr,
-                       SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
+                       SUM(CASE WHEN b.payment_status IN ('Paid', 'Fully Paid') THEN b.total_price ELSE 0 END) as amount
                 FROM bookings b
                 WHERE 1=1 {date_filter} {loc_clause}
                 GROUP BY day, hr
@@ -11769,7 +11769,7 @@ def get_admin_stats_v2():
             # Group by day for this month or custom date range
             trend_q = f"""
                 SELECT TO_CHAR(b.start_date, 'YYYY-MM-DD') as day,
-                       SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END) as amount
+                       SUM(CASE WHEN b.payment_status IN ('Paid', 'Fully Paid') THEN b.total_price ELSE 0 END) as amount
                 FROM bookings b
                 WHERE 1=1 {date_filter} {loc_clause}
                 GROUP BY day
@@ -11809,7 +11809,7 @@ def get_admin_stats_v2():
             top_q = f"""
                 SELECT v.brand, v.model, v.plate_number,
                        COUNT(b.id) as booking_count,
-                       COALESCE(SUM(CASE WHEN b.payment_status = 'Paid' THEN b.total_price ELSE 0 END), 0) as revenue
+                       COALESCE(SUM(CASE WHEN b.payment_status IN ('Paid', 'Fully Paid') THEN b.total_price ELSE 0 END), 0) as revenue
                 FROM vehicles v
                 JOIN bookings b ON b.vehicle_id = v.id
                 WHERE 1=1 {date_filter} {veh_loc_clause}
