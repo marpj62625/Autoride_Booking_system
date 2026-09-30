@@ -779,7 +779,9 @@ def check_and_update_unpaid_paymongo_bookings(user_id=None):
                     payment_status = 'Expired',
                     cancellation_reason = 'Reservation deposit expired (not paid within 30 minutes)'
                 WHERE (status IN ('Pending', 'pending', 'Pending Payment') OR payment_status IN ('Unpaid', 'Pending Payment', 'Downpayment unpaid'))
-                  AND payment_status NOT IN ('Paid', 'Partially Paid', 'Refunded', 'Cancelled')
+                  AND payment_status NOT IN ('Paid', 'Fully Paid', 'Partially Paid', 'Deposit Paid', 'Refunded', 'Cancelled')
+                  AND status NOT IN ('Confirmed', 'Approved', 'Picked Up', 'Ongoing', 'Completed')
+                  AND (payment_type NOT IN ('Pay on Pickup', 'Regular Customer', 'Downpayment Exempt') OR payment_type IS NULL)
                   AND created_at < NOW() - INTERVAL '30 minutes'
                 RETURNING id, vehicle_id, user_id
             """)
