@@ -2752,6 +2752,27 @@ def admin_list_users():
 
 # ??? ADMIN USER MANAGEMENT ENDPOINTS ???????????????????????????????????????
 
+def mask_email(email: str) -> str:
+    """
+    Data Privacy Act of 2012 (RA 10173) Dynamic Redaction.
+    Automatically masks customer personal email addresses before delivering to API responses.
+    Example: 'guamilsanchez@gmail.com' -> 'gu********ez@gmail.com'
+    """
+    if not email or '@' not in email:
+        return email or ''
+    if '*' in email:
+        return email
+    parts = email.split('@')
+    user_part, domain_part = parts[0], parts[1]
+    if len(user_part) <= 2:
+        masked_user = user_part[0] + '*'
+    elif len(user_part) <= 5:
+        masked_user = user_part[0] + ('*' * (len(user_part) - 2)) + user_part[-1]
+    else:
+        masked_user = user_part[:2] + ('*' * max(3, len(user_part) - 4)) + user_part[-2:]
+    return f"{masked_user}@{domain_part}"
+
+
 @app.route('/admin/users/list', methods=['GET'])
 @app.route('/api/admin/users/list', methods=['GET'])
 def admin_users_list():
@@ -2780,6 +2801,7 @@ def admin_users_list():
         result = []
         for u in users:
             d = dict(u)
+            d['email'] = mask_email(d.get('email'))
             d['is_verified'] = int(d.get('is_verified') or 0)
             d['is_frozen'] = bool(d.get('is_frozen'))
             d['loyalty_points'] = int(d.get('loyalty_points') or 0)
@@ -2819,6 +2841,7 @@ def admin_user_detail(user_id):
         if not user:
             return jsonify({"error": "User not found"}), 404
         d = dict(user)
+        d['email'] = mask_email(d.get('email'))
         d['is_verified'] = int(d.get('is_verified') or 0)
         d['is_frozen'] = bool(d.get('is_frozen'))
         d['loyalty_points'] = int(d.get('loyalty_points') or 0)
