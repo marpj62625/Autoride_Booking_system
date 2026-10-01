@@ -25962,8 +25962,8 @@ function toggleNewsletterModal(show = true) {
                     shortTitle: 'Safety',
                     icon: 'fa-user-shield',
                     color: '#8b5cf6',
-                    desc: 'Driver license verification and emergency contact rules',
-                    keys: ['require_license_verification', 'require_emergency_contact'],
+                    desc: 'Driver license verification, emergency contact, and live selfie rules',
+                    keys: ['require_license_verification', 'require_emergency_contact', 'require_live_selfie'],
                     settings: []
                 },
                                 penalties: {
@@ -26184,6 +26184,7 @@ function toggleNewsletterModal(show = true) {
             const booleanKeys = [
                 'require_license_verification',
                 'require_emergency_contact',
+                'require_live_selfie',
                 'ai_assistant_enabled',
                 'ai_assistant_autoreply_enabled',
                 'chat_faq_enabled',
@@ -26241,6 +26242,20 @@ function toggleNewsletterModal(show = true) {
                         <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
                             <option value="true" ${isReq ? 'selected' : ''}>✅ Required (Mandatory Before Booking)</option>
                             <option value="false" ${!isReq ? 'selected' : ''}>⚪ Optional</option>
+                        </select>
+                    </div>
+                `;
+            }
+
+            // 2b. Live Selfie requirement dropdown
+            if (s.key === 'require_live_selfie') {
+                const isReq = val === 'true';
+                return `
+                    <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || 'Require Live Selfie / Profile Picture'}</label>
+                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="true" ${isReq ? 'selected' : ''}>📸 Mandatory (Live Selfie / Profile Picture Required)</option>
+                            <option value="false" ${!isReq ? 'selected' : ''}>📝 Fill-up Info Only (Name & Phone Number Only, No Selfie Required)</option>
                         </select>
                     </div>
                 `;

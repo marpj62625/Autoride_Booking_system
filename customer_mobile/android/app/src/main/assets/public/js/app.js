@@ -114,7 +114,8 @@ var appSettings = {
   loyalty_points_spend_ratio: '100',
   loyalty_points_value: '0.1',
   loyalty_max_discount_percent: '50',
-  max_booking_duration_days: '730'
+  max_booking_duration_days: '730',
+  require_live_selfie: 'true'
 };
 var servicedLocations = [
   { id: 1, name: 'San Pablo City, Laguna', province: 'Laguna', municipality: 'San Pablo City', barangay: '', delivery_fee: 0 },
@@ -4736,7 +4737,8 @@ function confirmAndBook() {
   var isVerified = currentUser && (parseInt(currentUser.isVerified, 10) === 2 || parseInt(currentUser.is_verified, 10) === 2);
 
   if (!isVerified) {
-    var hasProfilePic = Boolean(currentUser && (currentUser.profile_picture || (currentUser._profileData && currentUser._profileData.profile_picture)));
+    var requireSelfie = (appSettings.require_live_selfie !== 'false' && appSettings.require_live_selfie !== false);
+    var hasProfilePic = !requireSelfie || Boolean(currentUser && (currentUser.profile_picture || (currentUser._profileData && currentUser._profileData.profile_picture)));
     var licDetails = (currentUser && currentUser._licenseDetails) || window._userLicenseData || {};
     var hasLicenseFront = Boolean(
       (currentUser && (currentUser.license_front_url || currentUser.license_image_url)) ||
@@ -8253,8 +8255,11 @@ function getMissingProfileFields(profile) {
   if (!phone || phone.replace(/\D/g, '').length < 10) {
     missing.push('Phone Number');
   }
-  if (!pic || pic === 'null' || pic === 'undefined') {
-    missing.push('Profile Picture');
+  var requireSelfie = (appSettings.require_live_selfie !== 'false' && appSettings.require_live_selfie !== false);
+  if (requireSelfie) {
+    if (!pic || pic === 'null' || pic === 'undefined') {
+      missing.push('Profile Picture');
+    }
   }
   return missing;
 }
@@ -9300,6 +9305,13 @@ function pickProfilePicture() {
 function showRequirementGuardModal() {
   var existing = document.getElementById('requirementGuardModal');
   if (existing) existing.remove();
+  var requireSelfie = (appSettings.require_live_selfie !== 'false' && appSettings.require_live_selfie !== false);
+  var descText = requireSelfie
+    ? 'To prevent fraudulent bookings, you must complete your <strong>Live Camera Selfie</strong>, <strong>Phone Number</strong>, and <strong>Driver\'s License</strong> before reserving a vehicle.'
+    : 'To prevent fraudulent bookings, you must complete your <strong>Profile Information</strong>, <strong>Phone Number</strong>, and <strong>Driver\'s License</strong> before reserving a vehicle.';
+  var btnText = requireSelfie
+    ? '<i class="fas fa-camera" style="margin-right:6px;"></i> Complete Profile & Selfie Now'
+    : '<i class="fas fa-user-check" style="margin-right:6px;"></i> Complete Profile Now';
   var modal = document.createElement('div');
   modal.id = 'requirementGuardModal';
   modal.className = 'modal-backdrop active';
@@ -9309,10 +9321,10 @@ function showRequirementGuardModal() {
     '<div style="width:60px;height:60px;background:rgba(245,158,11,0.15);color:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.8rem;"><i class="fas fa-id-card"></i></div>' +
     '<h3 style="font-size:1.2rem;font-weight:800;margin-bottom:8px;color:var(--text-main);">Verification Required</h3>' +
     '<p style="font-size:0.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:20px;">' +
-    'To prevent fraudulent bookings, you must complete your <strong>Live Camera Selfie</strong>, <strong>Phone Number</strong>, and <strong>Driver\'s License</strong> before reserving a vehicle.' +
+    descText +
     '</p>' +
     '<button class="btn-primary" style="width:100%;padding:12px;font-weight:800;background:#00B14F;" onclick="document.getElementById(\'requirementGuardModal\').remove();closeOverlay(\'page-booking-form\');showOverlay(\'page-profile\');Profile.showTab(\'license\');">' +
-    '<i class="fas fa-camera" style="margin-right:6px;"></i> Complete Profile & Selfie Now</button>' +
+    btnText + '</button>' +
     '<button class="btn-secondary" style="width:100%;margin-top:8px;padding:10px;" onclick="document.getElementById(\'requirementGuardModal\').remove()">Cancel</button>' +
     '</div>';
   document.body.appendChild(modal);
@@ -9352,8 +9364,9 @@ function doUpdateProfile() {
   if (email && !isGmailAddress(email)) {
     showInlineError(emailErrEl, 'Only @gmail.com emails are allowed.'); return;
   }
+  var requireSelfie = (appSettings.require_live_selfie !== 'false' && appSettings.require_live_selfie !== false);
   var hasPic = Boolean(profilePicBlob || (currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined'));
-  if (!hasPic) {
+  if (requireSelfie && !hasPic) {
     showToast('Please take a live selfie or upload a profile picture.', 'warning');
     return;
   }

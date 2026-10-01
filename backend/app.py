@@ -811,6 +811,16 @@ def migrate_settings_v2():
             ON CONFLICT (key) DO NOTHING
         """)
 
+        # 4c. Insert Verification policy settings (license, emergency contact, live selfie)
+        cur.execute("""
+            INSERT INTO settings (key, value, description)
+            VALUES 
+                ('require_license_verification', 'true', 'Require approved driver license before booking approval'),
+                ('require_emergency_contact', 'true', 'Require emergency contact details before booking'),
+                ('require_live_selfie', 'true', 'Require live selfie or profile picture before license upload and booking')
+            ON CONFLICT (key) DO NOTHING
+        """)
+
 
         # 5. Create vehicle_expenses table
         cur.execute("""
@@ -2541,6 +2551,11 @@ def upload_license():
     if not u_profile:
         return jsonify({'error': 'User not found'}), 404
 
+    # Check whether Super Admin requires live selfie / profile picture
+    cur.execute("SELECT value FROM settings WHERE key = 'require_live_selfie'")
+    req_selfie_row = cur.fetchone()
+    req_selfie = (req_selfie_row.get('value', 'true') if req_selfie_row else 'true').lower() == 'true'
+
     missing_fields = []
     p_name = (u_profile.get('first_name') or u_profile.get('full_name') or '').strip()
     p_phone = (u_profile.get('phone') or '').strip()
@@ -2550,7 +2565,7 @@ def upload_license():
         missing_fields.append('Full Name')
     if not p_phone or len(p_phone) < 10:
         missing_fields.append('Phone Number')
-    if not p_pic or p_pic in ('null', 'undefined'):
+    if req_selfie and (not p_pic or p_pic in ('null', 'undefined')):
         missing_fields.append('Profile Picture')
 
     if missing_fields:
@@ -12298,6 +12313,7 @@ def get_public_settings():
             'low_fuel_alert_threshold',
             'require_license_verification',
             'require_emergency_contact',
+            'require_live_selfie',
             'extension_conflict_deadline_hours',
             'max_booking_duration_days',
             'enable_newsletter',
@@ -12974,6 +12990,11 @@ def save_license_details():
         if not u_profile:
             return jsonify({'error': 'User not found'}), 404
 
+        # Check whether Super Admin requires live selfie / profile picture
+        cur.execute("SELECT value FROM settings WHERE key = 'require_live_selfie'")
+        req_selfie_row = cur.fetchone()
+        req_selfie = (req_selfie_row.get('value', 'true') if req_selfie_row else 'true').lower() == 'true'
+
         missing_fields = []
         p_name = (u_profile.get('first_name') or u_profile.get('full_name') or '').strip()
         p_phone = (u_profile.get('phone') or '').strip()
@@ -12983,7 +13004,7 @@ def save_license_details():
             missing_fields.append('Full Name')
         if not p_phone or len(p_phone) < 10:
             missing_fields.append('Phone Number')
-        if not p_pic or p_pic in ('null', 'undefined'):
+        if req_selfie and (not p_pic or p_pic in ('null', 'undefined')):
             missing_fields.append('Profile Picture')
 
         if missing_fields:
