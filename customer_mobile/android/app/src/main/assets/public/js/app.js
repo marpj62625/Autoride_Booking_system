@@ -1424,6 +1424,25 @@ function loadAddonSettings() {
     });
 }
 
+function loadInsuranceSettings() {
+  return apiCall('/insurance-options')
+    .then(function(options) {
+      if (Array.isArray(options) && options.length > 0) {
+        INSURANCE_OPTIONS = options.map(function(ins) {
+          return {
+            id: ins.id,
+            type: ins.name,
+            pricePerDay: parseFloat(ins.price_per_day || 0),
+            desc: ins.description || ''
+          };
+        });
+      }
+    })
+    .catch(function(err) {
+      console.error('Failed to load insurance options dynamically:', err);
+    });
+}
+
 // STARTUP - run immediately when script loads, also on events as fallback
 var _appInitialized = false;
 function initApp() {
@@ -1431,6 +1450,7 @@ function initApp() {
   _appInitialized = true;
   
   loadAddonSettings();
+  loadInsuranceSettings();
 
   // Initialize Google Auth as early as possible on cold start
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
@@ -4038,7 +4058,8 @@ function openBookingForm(vehicleId) {
 
   bookingFormVehicle = currentVehicleDetail;
   selectedAddons = [];
-  selectedInsurance = { type: 'Basic Protection', price: 0, pricePerDay: 0 };
+  var defaultIns = (Array.isArray(INSURANCE_OPTIONS) && INSURANCE_OPTIONS.length > 0) ? INSURANCE_OPTIONS[0] : { type: 'Basic Protection', pricePerDay: 0, desc: '' };
+  selectedInsurance = { type: defaultIns.type, price: 0, pricePerDay: defaultIns.pricePerDay };
   var today = new Date().toISOString().split('T')[0];
   var maxBookingDays = parseInt(appSettings.max_booking_duration_days) || 730;
   var maxBookingDateObj = new Date();
@@ -4069,14 +4090,14 @@ function openBookingForm(vehicleId) {
     return '<option value="' + loc.name + '">' + loc.name + ' (Delivery: ' + feeText + ')</option>';
   }).join('');
 
-  var insuranceHtml = INSURANCE_OPTIONS.map(function(ins, i) {
+  var insuranceHtml = (Array.isArray(INSURANCE_OPTIONS) && INSURANCE_OPTIONS.length > 0) ? INSURANCE_OPTIONS.map(function(ins, i) {
     var priceLabel = ins.pricePerDay === 0 ? 'Included (₱0)' : '₱' + ins.pricePerDay.toLocaleString() + '/day';
     return '<div class="option-card' + (i === 0 ? ' selected' : '') + '" onclick="selectInsuranceOpt(' + i + ',this)">' +
       '<input type="radio" name="insurance"' + (i === 0 ? ' checked' : '') + '>' +
       '<div><strong>' + ins.type + '</strong> <span style="color:var(--primary);font-weight:700;">' + priceLabel + '</span>' +
-      '<br><small style="color:var(--text-secondary);">' + ins.desc + '</small></div>' +
+      '<br><small style="color:var(--text-secondary);">' + (ins.desc || '') + '</small></div>' +
       '</div>';
-  }).join('');
+  }).join('') : '<p style="color:var(--text-secondary);font-size:0.85rem;">No insurance options configured.</p>';
 
   var addonsHtml = ADDON_OPTIONS.map(function(addon, i) {
     return '<div class="option-card" id="addon_' + i + '" onclick="toggleAddon(' + i + ',this)">' +
@@ -4290,6 +4311,7 @@ function onPickupLocationChange() {
 
 function selectInsuranceOpt(idx, el) {
   var ins = INSURANCE_OPTIONS[idx];
+  if (!ins) return;
   var days = getBookingDays();
   selectedInsurance = { type: ins.type, pricePerDay: ins.pricePerDay, price: ins.pricePerDay * days };
   var cards = document.querySelectorAll('#bookingFormContent .option-card');

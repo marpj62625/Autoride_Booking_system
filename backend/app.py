@@ -1654,6 +1654,38 @@ def migrate_staff_permissions_and_requests():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_insurance_options():
+    """Ensures insurance_options table exists and has default coverage tiers."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS insurance_options (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                price_per_day NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+                description TEXT,
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
+        cur.execute("SELECT COUNT(*) as cnt FROM insurance_options")
+        row = cur.fetchone()
+        if not row or int(row['cnt']) == 0:
+            cur.execute("""
+                INSERT INTO insurance_options (name, price_per_day, description, is_active)
+                VALUES
+                    ('Basic Protection', 0.00, 'Standard passenger and third-party liability.', TRUE),
+                    ('Standard Protection', 500.00, 'Collision Damage Waiver (CDW) with ₱10k deductible.', TRUE),
+                    ('Premium Protection', 1200.00, 'Full coverage, zero deductible, and roadside assistance.', TRUE)
+            """)
+        commit_db()
+        print("[MIGRATION] migrate_insurance_options completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_insurance_options error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
     try:
         with app.app_context():
@@ -1665,6 +1697,7 @@ if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
             migrate_chat_faq_and_ai_controls()
             migrate_staff_permissions_and_requests()
             migrate_vehicle_gps_logs()
+            migrate_insurance_options()
     except Exception as _e:
         print(f"[STARTUP ERROR] {_e}")
 
@@ -14831,6 +14864,190 @@ def delete_addon(addon_id):
         cur.execute("DELETE FROM addons WHERE id = %s", (addon_id,))
         commit_db()
         return jsonify({'message': 'Addon deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+# ── INSURANCE OPTIONS CRUD ENDPOINTS ──
+@app.route('/insurance-options', methods=['GET'])
+@app.route('/api/insurance-options', methods=['GET'])
+def get_insurance_options():
+    """Fetch all available insurance packages from database."""
+    try:
+        cur = get_cursor()
+        include_inactive = request.args.get('all', 'false').lower() == 'true'
+        if include_inactive:
+            cur.execute("SELECT id, name, price_per_day, description, is_active FROM insurance_options ORDER BY price_per_day ASC")
+        else:
+            cur.execute("SELECT id, name, price_per_day, description, is_active FROM insurance_options WHERE is_active = TRUE ORDER BY price_per_day ASC")
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['price_per_day'] = float(d['price_per_day'])
+            d['is_active'] = bool(d.get('is_active', True))
+            result.append(d)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/insurance-options', methods=['POST'])
+@app.route('/api/insurance-options', methods=['POST'])
+def create_insurance_option():
+    """Create a new insurance package. Super Admin / Admin validation."""
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    price = data.get('price_per_day')
+    desc = data.get('description', '').strip()
+    admin_id = data.get('admin_id')
+
+    if not name or price is None or not admin_id:
+        return jsonify({'error': 'Name, price per day, and admin_id are required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, role FROM users WHERE id = %s", (admin_id,))
+        user = cur.fetchone()
+        if not user or user.get('role', '').lower().replace(' ', '_') not in ('super_admin', 'superadmin', 'admin'):
+            return jsonify({'error': 'Unauthorized. Admin privileges required.'}), 403
+
+        cur.execute("""
+            INSERT INTO insurance_options (name, price_per_day, description, is_active)
+            VALUES (%s, %s, %s, TRUE) RETURNING id
+        """, (name, float(price), desc))
+        ins_id = cur.fetchone()['id']
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=user['full_name'],
+            action='CREATE_INSURANCE_PACKAGE',
+            target_type='INSURANCE',
+            target_id=str(ins_id),
+            details=f"Created insurance package: {name} (₱{float(price):,.2f}/day)"
+        )
+        return jsonify({'message': 'Insurance package created successfully', 'id': ins_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/insurance-options/<int:ins_id>', methods=['GET'])
+@app.route('/api/insurance-options/<int:ins_id>', methods=['GET'])
+def get_single_insurance_option(ins_id):
+    """Fetch single insurance package detail."""
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, name, price_per_day, description, is_active FROM insurance_options WHERE id = %s", (ins_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'error': 'Insurance package not found'}), 404
+        return jsonify({
+            'id': row['id'],
+            'name': row['name'],
+            'price_per_day': float(row['price_per_day']),
+            'description': row['description'],
+            'is_active': bool(row['is_active'])
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/insurance-options/<int:ins_id>', methods=['PUT'])
+@app.route('/api/insurance-options/<int:ins_id>', methods=['PUT'])
+def update_insurance_option(ins_id):
+    """Update an insurance package."""
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip() if data.get('name') is not None else None
+    price = data.get('price_per_day')
+    desc = data.get('description', '').strip() if data.get('description') is not None else None
+    is_active = data.get('is_active')
+    admin_id = data.get('admin_id')
+
+    if not admin_id:
+        return jsonify({'error': 'admin_id is required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, role FROM users WHERE id = %s", (admin_id,))
+        user = cur.fetchone()
+        if not user or user.get('role', '').lower().replace(' ', '_') not in ('super_admin', 'superadmin', 'admin'):
+            return jsonify({'error': 'Unauthorized. Admin privileges required.'}), 403
+
+        updates = []
+        params = []
+        if name:
+            updates.append("name = %s")
+            params.append(name)
+        if price is not None:
+            updates.append("price_per_day = %s")
+            params.append(float(price))
+        if desc is not None:
+            updates.append("description = %s")
+            params.append(desc)
+        if is_active is not None:
+            updates.append("is_active = %s")
+            params.append(bool(is_active))
+
+        if not updates:
+            return jsonify({'error': 'No fields to update.'}), 400
+
+        updates.append("updated_at = NOW()")
+        params.append(ins_id)
+        cur.execute(f"UPDATE insurance_options SET {', '.join(updates)} WHERE id = %s", tuple(params))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=user['full_name'],
+            action='UPDATE_INSURANCE_PACKAGE',
+            target_type='INSURANCE',
+            target_id=str(ins_id),
+            details=f"Updated insurance package ID: {ins_id}"
+        )
+        return jsonify({'message': 'Insurance package updated successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/insurance-options/<int:ins_id>', methods=['DELETE'])
+@app.route('/api/insurance-options/<int:ins_id>', methods=['DELETE'])
+def delete_insurance_option(ins_id):
+    """Delete an insurance package."""
+    data = request.get_json(silent=True) or {}
+    admin_id = data.get('admin_id') or request.args.get('admin_id')
+
+    if not admin_id:
+        return jsonify({'error': 'admin_id is required.'}), 400
+
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, full_name, role FROM users WHERE id = %s", (admin_id,))
+        user = cur.fetchone()
+        if not user or user.get('role', '').lower().replace(' ', '_') not in ('super_admin', 'superadmin', 'admin'):
+            return jsonify({'error': 'Unauthorized. Admin privileges required.'}), 403
+
+        cur.execute("SELECT name FROM insurance_options WHERE id = %s", (ins_id,))
+        existing = cur.fetchone()
+
+        cur.execute("DELETE FROM insurance_options WHERE id = %s", (ins_id,))
+        commit_db()
+
+        log_activity(
+            admin_id=admin_id,
+            admin_name=user['full_name'],
+            action='DELETE_INSURANCE_PACKAGE',
+            target_type='INSURANCE',
+            target_id=str(ins_id),
+            details=f"Deleted insurance package: {existing['name'] if existing else ins_id}"
+        )
+        return jsonify({'message': 'Insurance package deleted successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
