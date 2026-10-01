@@ -30489,7 +30489,10 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px;">
+                            ${(u.email || '').includes('*') ? `<i class="fas fa-user-shield" style="color:#00B14F;font-size:0.65rem;" title="Data Privacy Act (RA 10173) Protected"></i>` : `<i class="fas fa-envelope" style="font-size:0.65rem;"></i>`}
+                            <span>${u.email}</span>
+                        </div>
 
 
 
@@ -30924,7 +30927,9 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                <div style="font-size:0.8rem;color:var(--text-muted);">${u.email}</div>
+                <div style="font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;">
+                    ${(u.email || '').includes('*') ? `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,177,79,0.1);color:#00B14F;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;border:1px solid rgba(0,177,79,0.2);"><i class="fas fa-user-shield"></i> ${u.email} <span style="font-size:0.65rem;color:var(--text-muted);font-weight:600;">(RA 10173 Protected)</span></span>` : `<span>${u.email}</span>`}
+                </div>
 
 
 
