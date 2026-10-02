@@ -4107,6 +4107,11 @@ function openBookingForm(vehicleId) {
   }).join('');
 
   var isRegular = Boolean(currentUser && (currentUser.is_regular_customer || currentUser.regular_customer_manual));
+  var isDriverEnabled = (appSettings.driver_service_enabled !== 'false');
+  var driverDailyWage = parseFloat(appSettings.driver_daily_wage) || 755;
+  var driverShiftHours = parseFloat(appSettings.driver_shift_hours) || 8;
+  var driverOtRate = parseFloat(appSettings.driver_overtime_rate) || 95;
+  var driverMealsNotice = appSettings.driver_meals_lodging_policy || 'Renter shoulders driver meals & lodging for out-of-town/overnight trips';
 
   el.innerHTML = '<div class="page-header">' +
     '<button class="back-btn" onclick="console.log(\'[DEBUG] Back button clicked\'); closeOverlay(\'page-booking-form\'); console.log(\'[DEBUG] Booking form closed\'); if(currentVehicleDetail){console.log(\'[DEBUG] Re-opening vehicle detail:\', currentVehicleDetail.brand, currentVehicleDetail.model); openVehicleUnits(encodeURIComponent(currentVehicleDetail.brand), encodeURIComponent(currentVehicleDetail.model), \'all\'); console.log(\'[DEBUG] Vehicle detail re-opened\');} else {console.log(\'[DEBUG] No vehicle detail data in memory!\');}"><i class="fas fa-arrow-left"></i></button>' +
@@ -4214,17 +4219,19 @@ function openBookingForm(vehicleId) {
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Rental Type</h4>' +
     '<div class="toggle-group">' +
     '<button id="btnSelfDrive" class="active" onclick="setRentalType(\'Self-Drive\')">Self-Drive</button>' +
-    '<button id="btnWithDriver" onclick="setRentalType(\'With Driver\')">With Driver</button>' +
+    (isDriverEnabled ? '<button id="btnWithDriver" onclick="setRentalType(\'With Driver\')">With Driver</button>' : '') +
     '</div><input type="hidden" id="bfRentalType" value="Self-Drive">' +
+    (isDriverEnabled ? 
     '<div id="driverPolicyNotice" style="display:none;margin-top:12px;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);border-radius:var(--radius-sm);padding:12px;font-size:0.82rem;line-height:1.5;">' +
     '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;"><i class="fas fa-id-badge" style="margin-right:6px;"></i>Professional Chauffeur Service</div>' +
     '<ul style="margin:0;padding-left:18px;color:var(--text-secondary);">' +
-    '<li><strong>Standard Driver Wage:</strong> ₱755 / day (₱755 &times; rental days)</li>' +
-    '<li><strong>Duty Shift:</strong> 8 hours per day standard shift</li>' +
-    '<li><strong>Overtime (OT):</strong> ₱95 / hour for hours exceeding 8 hrs/day</li>' +
-    '<li><strong>Meals & Lodging:</strong> Renter shoulders driver meals & lodging for out-of-town/overnight trips</li>' +
+    '<li><strong>Standard Driver Wage:</strong> ₱' + driverDailyWage.toLocaleString() + ' / day (₱' + driverDailyWage.toLocaleString() + ' &times; rental days)</li>' +
+    '<li><strong>Duty Shift:</strong> ' + driverShiftHours + ' hours per day standard shift</li>' +
+    '<li><strong>Overtime (OT):</strong> ₱' + driverOtRate.toLocaleString() + ' / hour for hours exceeding ' + driverShiftHours + ' hrs/day</li>' +
+    '<li><strong>Meals & Lodging:</strong> ' + driverMealsNotice + '</li>' +
     '<li><strong>OT Settlement:</strong> Paid directly in cash to driver or charged upon vehicle return</li>' +
-    '</ul></div></div>' +
+    '</ul></div>' : '') +
+    '</div>' +
 
     // Insurance
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;">Preferred Insurance Coverage</h4>' +
@@ -4500,7 +4507,8 @@ function updateBookingPrice() {
 
   var rentalTypeEl = document.getElementById('bfRentalType');
   var rentalType = rentalTypeEl ? rentalTypeEl.value : 'Self-Drive';
-  var driverFee = (rentalType === 'With Driver') ? (755 * days) : 0;
+  var driverDailyWage = parseFloat(appSettings.driver_daily_wage) || 755;
+  var driverFee = (rentalType === 'With Driver') ? (driverDailyWage * days) : 0;
 
   var result = calculateBookingPrice(
     v.daily_rate, start, end, selectedAddons, insPrice,
@@ -4516,7 +4524,7 @@ function updateBookingPrice() {
   el.innerHTML = '<h4 style="font-weight:700;margin-bottom:14px;">Price Breakdown</h4>' +
     '<div class="price-row"><span>Base Rate (' + result.days + ' days - ' + formatPHP(v.daily_rate) + ')</span><span>' + formatPHP(result.basePrice) + '</span></div>' +
     // Professional Driver
-    (result.driverFee > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-user-tie" style="color:var(--primary);margin-right:6px;"></i>Professional Driver (' + result.days + ' day' + (result.days > 1 ? 's' : '') + ' - PHP 755/day)</span><span>' + formatPHP(result.driverFee) + '</span></div>' : '') +
+    (result.driverFee > 0 ? '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-user-tie" style="color:var(--primary);margin-right:6px;"></i>Professional Driver (' + result.days + ' day' + (result.days > 1 ? 's' : '') + ' - PHP ' + driverDailyWage.toLocaleString() + '/day)</span><span>' + formatPHP(result.driverFee) + '</span></div>' : '') +
     // Individual add-ons
     (selectedAddons.length > 0 ? selectedAddons.map(function(a) {
       return '<div class="price-row" style="padding-left:12px;color:var(--text-secondary);"><span><i class="fas fa-check" style="color:var(--success);margin-right:6px;"></i>' + a.name + ' (' + result.days + ' days - PHP ' + a.pricePerDay + ')</span><span>' + formatPHP(a.price) + '</span></div>';
@@ -4606,7 +4614,8 @@ function submitBooking() {
 
   var rentalType = document.getElementById('bfRentalType') ? document.getElementById('bfRentalType').value : 'Self-Drive';
   var bDays = getBookingDays();
-  var driverFee = (rentalType === 'With Driver') ? (755 * bDays) : 0;
+  var driverDailyWage = parseFloat(appSettings.driver_daily_wage) || 755;
+  var driverFee = (rentalType === 'With Driver') ? (driverDailyWage * bDays) : 0;
 
   var result = calculateBookingPrice(
     bookingFormVehicle.daily_rate, start, end, selectedAddons, selectedInsurance.price,
@@ -5027,7 +5036,8 @@ function togglePaymentAddon(idx, bookingId) {
   var cpPct = couponData ? couponData.discount_percent : 0;
   var pts = parseInt(document.getElementById('bfPoints') ? document.getElementById('bfPoints').value : 0) || 0;
   
-  var dFee = (_pendingBookingPayload && _pendingBookingPayload.rental_type === 'With Driver') ? (755 * days) : 0;
+  var driverDailyWage = parseFloat(appSettings.driver_daily_wage) || 755;
+  var dFee = (_pendingBookingPayload && _pendingBookingPayload.rental_type === 'With Driver') ? (driverDailyWage * days) : 0;
   _pendingPriceResult = calculateBookingPrice(
     v.daily_rate, _pendingBookingPayload.start_date, _pendingBookingPayload.end_date, selectedAddons, selectedInsurance.price,
     parseInt(appSettings.long_term_discount_days) || 7,
@@ -5645,7 +5655,7 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
     '<div class="receipt-row"><span>Booking ID</span><strong>#' + bookingId + '</strong></div>' +
     '<div class="receipt-row"><span>Vehicle</span><strong>' + (receipt.brand || vehicle.brand || '') + ' ' + (receipt.model || vehicle.model || '') + '</strong></div>' +
     (receipt.start_date ? '<div class="receipt-row"><span>Rental Period</span><strong>' + receipt.start_date + ' – ' + receipt.end_date + '</strong></div>' : '') +
-    '<div class="receipt-row"><span>Rental Type</span><strong>' + (isWithDriver ? 'With Professional Driver (₱755/day)' : 'Self-Drive') + '</strong></div>' +
+    '<div class="receipt-row"><span>Rental Type</span><strong>' + (isWithDriver ? 'With Professional Driver (₱' + (parseFloat(appSettings.driver_daily_wage) || 755).toLocaleString() + '/day)' : 'Self-Drive') + '</strong></div>' +
     '<div class="receipt-row"><span>Insurance</span><strong>' + insText + '</strong></div>' +
     '<div class="receipt-row"><span>Add-ons</span><strong>' + addonsText + '</strong></div>' +
     '<div class="receipt-row"><span>Payment Method</span><strong>' + (method || receipt.method || 'GCash') + '</strong></div>' +
@@ -6269,7 +6279,7 @@ function renderBookingDetail(b) {
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Driver Wage & OT</div>' +
           '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + 
             (parseFloat(b.driver_fee || 0) > 0 ? 'Base: ' + formatPHP(b.driver_fee) : '') + 
-            (parseFloat(b.driver_ot_hours || 0) > 0 ? ' | OT (' + b.driver_ot_hours + 'h): ' + formatPHP(b.driver_ot_amount || (b.driver_ot_hours * 95)) + (b.driver_ot_collection_method === 'direct_cash' ? ' (Cash to Driver)' : ' (Charged)') : '') + 
+            (parseFloat(b.driver_ot_hours || 0) > 0 ? ' | OT (' + b.driver_ot_hours + 'h): ' + formatPHP(b.driver_ot_amount || (b.driver_ot_hours * (parseFloat(b.driver_ot_rate) || 95))) + (b.driver_ot_collection_method === 'direct_cash' ? ' (Cash to Driver)' : ' (Charged)') : '') + 
           '</div>' +
         '</div>' : '') +
       '</div>' +

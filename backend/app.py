@@ -1687,7 +1687,7 @@ def migrate_insurance_options():
         if 'cur' in locals(): cur.close()
 
 def migrate_driver_wage_policy():
-    """Ensure driver wage and overtime columns exist in bookings table."""
+    """Ensure driver wage and overtime columns exist in bookings table and seed settings."""
     try:
         cur = get_cursor()
         cur.execute("""
@@ -1698,6 +1698,16 @@ def migrate_driver_wage_policy():
             ADD COLUMN IF NOT EXISTS driver_ot_amount NUMERIC(10,2) DEFAULT 0.00,
             ADD COLUMN IF NOT EXISTS driver_ot_collection_method VARCHAR(50) DEFAULT 'direct_cash',
             ADD COLUMN IF NOT EXISTS driver_ot_notes TEXT;
+        """)
+        cur.execute("""
+            INSERT INTO settings (key, value, description)
+            VALUES 
+                ('driver_service_enabled', 'true', 'Enable Chauffeur / With Driver Service option for customers'),
+                ('driver_daily_wage', '755', 'Standard Daily Driver Wage in PHP (per day)'),
+                ('driver_shift_hours', '8', 'Standard Driver Shift Duty Hours per day'),
+                ('driver_overtime_rate', '95', 'Driver Overtime (OT) Hourly Rate in PHP (per hour)'),
+                ('driver_meals_lodging_policy', 'Renter shoulders driver meals & lodging for out-of-town/overnight trips', 'Driver Meals & Lodging Policy Notice displayed during booking')
+            ON CONFLICT (key) DO NOTHING;
         """)
         commit_db()
         print("[MIGRATION] migrate_driver_wage_policy completed successfully")
@@ -7496,6 +7506,13 @@ def submit_inspection():
                     ot_hrs = float(str(raw_ot_hours).strip())
                     if ot_hrs > 0:
                         ot_rate = 95.0
+                        try:
+                            cur.execute("SELECT value FROM settings WHERE key = 'driver_overtime_rate' LIMIT 1")
+                            _ot_row = cur.fetchone()
+                            if _ot_row and _ot_row.get('value'):
+                                ot_rate = float(_ot_row['value'])
+                        except Exception:
+                            ot_rate = 95.0
                         ot_amount = ot_hrs * ot_rate
                         applied_driver_ot = ot_amount
 
@@ -12449,6 +12466,11 @@ def get_public_settings():
             'regular_customer_downpayment_exempt',
             'payment_fee_card_percent',
             'payment_fee_card_label',
+            'driver_service_enabled',
+            'driver_daily_wage',
+            'driver_shift_hours',
+            'driver_overtime_rate',
+            'driver_meals_lodging_policy',
         ]
 
         cur.execute("SELECT key, value FROM settings WHERE key = ANY(%s)", (public_keys,))

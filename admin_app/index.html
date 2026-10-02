@@ -9363,8 +9363,8 @@ input:checked + .ctrl-slider:before {
                         </span>
                     </div>
 
-                    <p style="font-size: 0.74rem; color: #166534; margin: 0 0 12px 0; line-height: 1.35;">
-                        Base driver wage is <strong>₱755 / day</strong> (<span id="inspectDriverBaseWageSummary">₱755 × 1 day</span>). Overtime duty exceeding 8 hrs/day is billed at <strong>₱95 / hour</strong>.
+                    <p id="inspectDriverOTPolicyNote" style="font-size: 0.74rem; color: #166534; margin: 0 0 12px 0; line-height: 1.35;">
+                        Base driver wage is <strong id="inspectDriverDailyWageText">₱755 / day</strong> (<span id="inspectDriverBaseWageSummary">₱755 × 1 day</span>). Overtime duty exceeding <span id="inspectDriverShiftText">8 hrs/day</span> is billed at <strong id="inspectDriverOTRateSummary">₱95 / hour</strong>.
                     </p>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
@@ -9376,7 +9376,7 @@ input:checked + .ctrl-slider:before {
                             </div>
                         </div>
                         <div>
-                            <label style="display: block; font-size: 0.68rem; font-weight: 800; color: #14532d; text-transform: uppercase; margin-bottom: 4px;">OT Amount (₱95/hr)</label>
+                            <label id="inspectDriverOTRateLabel" style="display: block; font-size: 0.68rem; font-weight: 800; color: #14532d; text-transform: uppercase; margin-bottom: 4px;">OT Amount (₱95/hr)</label>
                             <div style="position: relative; display: flex; align-items: center;">
                                 <span style="position: absolute; left: 10px; font-weight: 800; font-size: 0.85rem; color: #15803d;">₱</span>
                                 <input type="text" id="inspectDriverOTAmount" readonly value="0.00" style="width: 100%; padding: 10px 10px 10px 24px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; font-size: 0.95rem; font-weight: 900; color: #15803d; outline: none;">
@@ -17491,8 +17491,8 @@ function toggleNewsletterModal(show = true) {
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#374151;">Base Rental</span><span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.base_price)}</span></div>
                     ${addonRows}
                     ${parseFloat(b.insurance_price||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#374151;">Insurance${b.insurance_type ? ' ('+b.insurance_type+')' : ''}</span><span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.insurance_price)}</span></div>` : ''}
-                    ${b.rental_type === 'With Driver' || parseFloat(b.driver_fee||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#374151;"><i class="fas fa-user-tie" style="color:#2563eb;margin-right:4px;"></i>Professional Driver (₱755/day)</span><span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.driver_fee || 755)}</span></div>` : ''}
-                    ${parseFloat(b.driver_ot_hours||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#d97706;"><i class="fas fa-business-time" style="margin-right:4px;"></i>Driver OT (${b.driver_ot_hours} hrs @ ₱95/hr) <small>(${b.driver_ot_collection_method === 'company_charge' ? 'Charged' : 'Direct Cash'})</small></span><span style="font-size:0.82rem;font-weight:600;color:#d97706;">+${fmtMoney(b.driver_ot_amount || (parseFloat(b.driver_ot_hours)*95))}</span></div>` : ''}
+                    ${b.rental_type === 'With Driver' || parseFloat(b.driver_fee||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#374151;"><i class="fas fa-user-tie" style="color:#2563eb;margin-right:4px;"></i>Professional Driver</span><span style="font-size:0.82rem;font-weight:600;color:#374151;">${fmtMoney(b.driver_fee || 755)}</span></div>` : ''}
+                    ${parseFloat(b.driver_ot_hours||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#d97706;"><i class="fas fa-business-time" style="margin-right:4px;"></i>Driver OT (${b.driver_ot_hours} hrs @ ₱${parseFloat(b.driver_ot_rate)||95}/hr) <small>(${b.driver_ot_collection_method === 'company_charge' ? 'Charged' : 'Direct Cash'})</small></span><span style="font-size:0.82rem;font-weight:600;color:#d97706;">+${fmtMoney(b.driver_ot_amount || (parseFloat(b.driver_ot_hours)*(parseFloat(b.driver_ot_rate)||95)))}</span></div>` : ''}
                     ${parseFloat(b.discount_amount||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#16a34a;"><i class="fas fa-tag" style="margin-right:4px;"></i>Discount</span><span style="font-size:0.82rem;font-weight:600;color:#16a34a;">-${fmtMoney(b.discount_amount)}</span></div>` : ''}
 
                     ${parseFloat(b.payment_fee||0)>0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;"><span style="font-size:0.82rem;color:#d97706;"><i class="fas fa-percentage" style="margin-right:4px;"></i>${b.payment_method || 'Payment'} Fee (${b.payment_fee_percent || 3.5}%)</span><span style="font-size:0.82rem;font-weight:600;color:#d97706;">+${fmtMoney(b.payment_fee)}</span></div>` : ''}
@@ -26351,6 +26351,21 @@ function toggleNewsletterModal(show = true) {
                     ],
                     settings: []
                 },
+                driver_policy: {
+                    title: 'Driver Wage & Overtime (OT) Policy',
+                    shortTitle: 'Driver & OT',
+                    icon: 'fa-user-tie',
+                    color: '#0d9488',
+                    desc: 'Chauffeur daily wage, standard duty shift hours, hourly overtime rate, service availability, and meals & lodging notice',
+                    keys: [
+                        'driver_service_enabled',
+                        'driver_daily_wage',
+                        'driver_shift_hours',
+                        'driver_overtime_rate',
+                        'driver_meals_lodging_policy'
+                    ],
+                    settings: []
+                },
                 cancellation: {
                     title: 'Cancellations & Refunds',
                     shortTitle: 'Cancellations',
@@ -26518,7 +26533,7 @@ function toggleNewsletterModal(show = true) {
         },
 
         renderField(s) {
-            const isTextarea = ['rental_terms', 'ai_assistant_greeting', 'ai_assistant_fallback'].includes(s.key);
+            const isTextarea = ['rental_terms', 'ai_assistant_greeting', 'ai_assistant_fallback', 'driver_meals_lodging_policy'].includes(s.key);
             const booleanKeys = [
                 'require_license_verification',
                 'require_emergency_contact',
@@ -26533,7 +26548,8 @@ function toggleNewsletterModal(show = true) {
                 'late_return_auto_apply_enabled',
                 'block_booking_on_unpaid_penalty',
                 'regular_customer_auto_qualify',
-                'regular_customer_downpayment_exempt'
+                'regular_customer_downpayment_exempt',
+                'driver_service_enabled'
             ];
             const isBool = booleanKeys.includes(s.key);
 
@@ -26545,7 +26561,8 @@ function toggleNewsletterModal(show = true) {
                 'violation_commitment_fee_amount', 'violation_auto_reset_clean_days',
                 'late_return_grace_period_mins', 'late_return_hourly_rate', 'late_return_fixed_base_fee',
                 'late_return_max_penalty_cap', 'cleaning_fee_standard', 'refuel_price_per_liter',
-                'regular_customer_min_bookings', 'payment_fee_card_percent', 'payment_fee_ewallet_percent', 'payment_fee_cash_percent'
+                'regular_customer_min_bookings', 'payment_fee_card_percent', 'payment_fee_ewallet_percent', 'payment_fee_cash_percent',
+                'driver_daily_wage', 'driver_shift_hours', 'driver_overtime_rate'
             ];
             const isNumeric = numericKeys.includes(s.key);
 
@@ -26710,6 +26727,9 @@ function toggleNewsletterModal(show = true) {
                     'payment_fee_card_percent':          { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
                     'payment_fee_ewallet_percent':       { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
                     'payment_fee_cash_percent':          { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
+                    'driver_daily_wage':                 { min: 100,  max: 10000, step: 5,   suffix: 'PHP/day' },
+                    'driver_shift_hours':                { min: 1,    max: 24,   step: 1,    suffix: 'hrs/day' },
+                    'driver_overtime_rate':              { min: 0,    max: 1000, step: 5,    suffix: 'PHP/hr' },
                 };
                 const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
                 return `
@@ -28625,10 +28645,27 @@ function toggleNewsletterModal(show = true) {
                     let s = new Date(b.start_date);
                     let e = new Date(b.end_date);
                     let days = Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24)));
+                    let sWage = 755, sShift = 8, sOt = 95;
+                    if (typeof Settings !== 'undefined' && Settings._allData) {
+                        const wItem = Settings._allData.find(x => x.key === 'driver_daily_wage');
+                        if (wItem && !isNaN(parseFloat(wItem.value))) sWage = parseFloat(wItem.value);
+                        const shItem = Settings._allData.find(x => x.key === 'driver_shift_hours');
+                        if (shItem && !isNaN(parseFloat(shItem.value))) sShift = parseFloat(shItem.value);
+                        const otItem = Settings._allData.find(x => x.key === 'driver_overtime_rate');
+                        if (otItem && !isNaN(parseFloat(otItem.value))) sOt = parseFloat(otItem.value);
+                    }
+                    const baseDaily = document.getElementById('inspectDriverDailyWageText');
+                    if (baseDaily) baseDaily.textContent = `₱${sWage.toLocaleString()} / day`;
                     const baseSumm = document.getElementById('inspectDriverBaseWageSummary');
-                    if (baseSumm) baseSumm.textContent = `₱755 × ${days} day${days > 1 ? 's' : ''} = ₱${(755 * days).toLocaleString()}`;
+                    if (baseSumm) baseSumm.textContent = `₱${sWage.toLocaleString()} × ${days} day${days > 1 ? 's' : ''} = ₱${(sWage * days).toLocaleString()}`;
                     const shiftBadge = document.getElementById('inspectDriverShiftBadge');
-                    if (shiftBadge) shiftBadge.textContent = `Standard Duty: ${days * 8} hrs (${days}d × 8h)`;
+                    if (shiftBadge) shiftBadge.textContent = `Standard Duty: ${days * sShift} hrs (${days}d × ${sShift}h)`;
+                    const shiftText = document.getElementById('inspectDriverShiftText');
+                    if (shiftText) shiftText.textContent = `${sShift} hrs/day`;
+                    const otRateSummary = document.getElementById('inspectDriverOTRateSummary');
+                    if (otRateSummary) otRateSummary.textContent = `₱${sOt.toLocaleString()} / hour`;
+                    const otRateLabel = document.getElementById('inspectDriverOTRateLabel');
+                    if (otRateLabel) otRateLabel.textContent = `OT Amount (₱${sOt.toLocaleString()}/hr)`;
                     const otHoursInput = document.getElementById('inspectDriverOTHours');
                     if (otHoursInput) {
                         otHoursInput.value = b.driver_ot_hours || 0;
@@ -28661,7 +28698,12 @@ function toggleNewsletterModal(show = true) {
             const amtEl = document.getElementById('inspectDriverOTAmount');
             if (!hoursEl || !amtEl) return;
             const hrs = parseFloat(hoursEl.value) || 0;
-            const amt = Math.max(0, hrs * 95);
+            let sOt = 95;
+            if (typeof Settings !== 'undefined' && Settings._allData) {
+                const otItem = Settings._allData.find(x => x.key === 'driver_overtime_rate');
+                if (otItem && !isNaN(parseFloat(otItem.value))) sOt = parseFloat(otItem.value);
+            }
+            const amt = Math.max(0, hrs * sOt);
             amtEl.value = amt.toLocaleString('en-PH', {minimumFractionDigits: 2});
         },
 
@@ -29191,14 +29233,14 @@ function toggleNewsletterModal(show = true) {
                     <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">${b.rental_type||''}</div>
                     ${b.rental_type === 'With Driver' ? `
                         <div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.75rem;color:#86efac;display:flex;justify-content:space-between;">
-                            <span>Chauffeur Driver Wage (₱755/day):</span>
+                            <span>Chauffeur Driver Wage:</span>
                             <strong>₱${fmt(b.driver_fee || 755)}</strong>
                         </div>
                     ` : ''}
                     ${b.driver_ot_hours && parseFloat(b.driver_ot_hours) > 0 ? `
                         <div style="margin-top:4px;font-size:0.75rem;color:#facc15;display:flex;justify-content:space-between;">
-                            <span>Driver OT (${b.driver_ot_hours} hrs @ ₱95/hr):</span>
-                            <strong>₱${fmt(b.driver_ot_amount || (parseFloat(b.driver_ot_hours)*95))} <span style="font-size:0.68rem;opacity:0.8;">(${b.driver_ot_collection_method === 'company_charge' ? 'Charged' : 'Cash to Driver'})</span></strong>
+                            <span>Driver OT (${b.driver_ot_hours} hrs @ ₱${parseFloat(b.driver_ot_rate)||95}/hr):</span>
+                            <strong>₱${fmt(b.driver_ot_amount || (parseFloat(b.driver_ot_hours)*(parseFloat(b.driver_ot_rate)||95)))} <span style="font-size:0.68rem;opacity:0.8;">(${b.driver_ot_collection_method === 'company_charge' ? 'Charged' : 'Cash to Driver'})</span></strong>
                         </div>
                     ` : ''}
 

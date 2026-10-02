@@ -122,11 +122,20 @@ def book_vehicle():
         driver_fee = float(data.get('driver_fee', 0.0) or 0.0)
         if rental_type == 'With Driver' and driver_fee <= 0:
             try:
+                daily_wage = 755.0
+                try:
+                    cur.execute("SELECT value FROM settings WHERE key = 'driver_daily_wage' LIMIT 1")
+                    _w_row = cur.fetchone()
+                    if _w_row and _w_row.get('value'):
+                        daily_wage = float(_w_row['value'])
+                except Exception:
+                    daily_wage = 755.0
+
                 from datetime import datetime as _dt
                 _s = _dt.strptime(str(start_date)[:10], '%Y-%m-%d').date()
                 _e = _dt.strptime(str(end_date)[:10], '%Y-%m-%d').date()
                 _days = max(1, (_e - _s).days)
-                driver_fee = float(755.0 * _days)
+                driver_fee = float(daily_wage * _days)
             except Exception:
                 driver_fee = 755.0
 
