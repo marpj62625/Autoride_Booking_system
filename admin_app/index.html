@@ -15453,6 +15453,7 @@ async edit(id) { this.openModal(id); }
                         <b>Name:</b> ${b.customer_name || 'Customer'}<br>
                         <b>Contact no:</b> ${b.customer_phone || 'N/A'}<br>
                         <b>Complete Address:</b> ${b.customer_address || 'N/A'}<br>
+                        ${(b.emergency_contact_name || b.emergency_name) ? `<b>Emergency Contact:</b> ${b.emergency_contact_name || b.emergency_name}${b.emergency_contact_phone || b.emergency_phone ? ' (' + (b.emergency_contact_phone || b.emergency_phone) + ')' : ''}<br>` : ''}
                         <b>Unit needed:</b> ${b.brand || ''} ${b.model || ''} ${b.plate_number ? '(' + b.plate_number + ')' : ''}<br>
                         <b>Date:</b> ${sDate} to ${eDate}<br>
                         <b>Time:</b> ${sTime} to ${eTime}<br>
@@ -18077,8 +18078,20 @@ function toggleNewsletterModal(show = true) {
                             </button>
                         </div>
                         <div style="font-weight:800;font-size:0.88rem;color:#0f172a;margin-bottom:2px;">${b.customer_name||'N/A'}</div>
+                        ${(b.customer_phone || b.phone) ? `
+                        <div style="font-size:0.75rem;color:#475569;margin-top:2px;">
+                            <i class="fas fa-phone-alt" style="color:#00B14F;font-size:0.65rem;margin-right:4px;"></i>${b.customer_phone || b.phone}
+                        </div>` : ''}
+                        ${(b.customer_address && b.customer_address !== 'N/A') ? `
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:2px;line-height:1.3;">
+                            <i class="fas fa-map-marker-alt" style="color:#ef4444;font-size:0.65rem;margin-right:4px;"></i>${b.customer_address}
+                        </div>` : ''}
+                        ${(b.emergency_contact_name || b.emergency_name) ? `
+                        <div style="font-size:0.72rem;color:#8b5cf6;margin-top:3px;font-weight:600;">
+                            <i class="fas fa-user-shield" style="font-size:0.65rem;margin-right:4px;"></i>ICE: ${b.emergency_contact_name || b.emergency_name} ${(b.emergency_contact_phone || b.emergency_phone) ? '(' + (b.emergency_contact_phone || b.emergency_phone) + ')' : ''}
+                        </div>` : ''}
                         ${(b.customer_email || b.email) ? `
-                        <div style="font-size:0.72rem;color:#64748b;word-break:break-all;display:inline-flex;align-items:center;gap:4px;">
+                        <div style="font-size:0.72rem;color:#64748b;word-break:break-all;display:inline-flex;align-items:center;gap:4px;margin-top:3px;">
                             <i class="fas fa-user-shield" style="color:#00B14F;font-size:0.65rem;" title="Data Privacy Act (RA 10173) Protected"></i>
                             <span>${maskEmail(b.customer_email || b.email)}</span>
                         </div>` : ''}

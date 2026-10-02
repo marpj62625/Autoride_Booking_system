@@ -6679,6 +6679,8 @@ def get_all_bookings():
         query = """
 
             SELECT b.id, b.user_id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email,
+                   COALESCE(u.phone, b.customer_phone, '') AS customer_phone,
+                   COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), b.customer_address, 'N/A') AS customer_address,
 
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    v.plate_number,
@@ -6707,9 +6709,9 @@ def get_all_bookings():
                    ld.license_class,
                    ld.license_front_url,
                    ld.license_back_url,
-                   ld.emergency_contact_name,
-                   ld.emergency_contact_phone,
-                   ld.emergency_contact_relationship,
+                   COALESCE(ld.emergency_contact_name, b.emergency_name, '') AS emergency_contact_name,
+                   COALESCE(ld.emergency_contact_phone, b.emergency_phone, '') AS emergency_contact_phone,
+                   COALESCE(ld.emergency_contact_relationship, b.emergency_rel, '') AS emergency_contact_relationship,
                    COALESCE(b.is_archived, FALSE) AS is_archived,
                    CAST(b.archived_at AS TEXT) AS archived_at,
                    b.archived_by,
@@ -15522,13 +15524,13 @@ def get_fleet_bookings():
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
                 v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
                 v.daily_rate, v.status AS vehicle_status, v.location AS vehicle_location, v.vehicle_image,
-                COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name), b.customer_name, 'Customer') AS customer_name,
-                COALESCE(u.phone, '') AS customer_phone,
+                COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), 'Customer') AS customer_name,
+                COALESCE(NULLIF(TRIM(u.phone), ''), NULLIF(TRIM(b.customer_phone), ''), 'N/A') AS customer_phone,
                 COALESCE(u.email, '') AS customer_email,
-                COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), 'N/A') AS customer_address,
-                COALESCE(ld.emergency_contact_name, '') AS emergency_contact_name,
-                COALESCE(ld.emergency_contact_phone, '') AS emergency_contact_phone,
-                COALESCE(ld.emergency_contact_relationship, '') AS emergency_contact_relationship
+                COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), NULLIF(TRIM(b.customer_address), ''), 'N/A') AS customer_address,
+                COALESCE(NULLIF(TRIM(ld.emergency_contact_name), ''), NULLIF(TRIM(b.emergency_name), ''), '') AS emergency_contact_name,
+                COALESCE(NULLIF(TRIM(ld.emergency_contact_phone), ''), NULLIF(TRIM(b.emergency_phone), ''), '') AS emergency_contact_phone,
+                COALESCE(NULLIF(TRIM(ld.emergency_contact_relationship), ''), NULLIF(TRIM(b.emergency_rel), ''), '') AS emergency_contact_relationship
             FROM bookings b
             JOIN vehicles v ON b.vehicle_id = v.id
             LEFT JOIN users u ON b.user_id = u.id
