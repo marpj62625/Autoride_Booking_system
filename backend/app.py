@@ -230,7 +230,7 @@ def check_approaching_return_deadlines():
         cur.execute("""
             SELECT COALESCE(b.booking_id, b.id) AS id, b.user_id, b.vehicle_id, b.start_date, b.end_date, b.start_time, b.end_time,
                    b.status, b.total_price,
-                   COALESCE(u.full_name, 'Customer') AS customer_name,
+                   COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name,
                    COALESCE(v.name, CONCAT(v.brand, ' ', v.model), 'Vehicle') AS vehicle_name,
                    v.plate_number
             FROM bookings b
@@ -6678,7 +6678,7 @@ def get_all_bookings():
 
         query = """
 
-            SELECT b.id, b.user_id, u.full_name AS customer_name, u.email AS customer_email,
+            SELECT b.id, b.user_id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email,
 
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    v.plate_number,
@@ -6782,7 +6782,7 @@ def get_single_booking(booking_id):
     try:
         cur = get_cursor()
         cur.execute("""
-            SELECT b.*, u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
+            SELECT b.*, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
                    v.brand, v.model, v.plate_number, v.vehicle_image,
                    d.full_name AS driver_name, d.contact_info AS driver_phone
             FROM bookings b
@@ -6840,7 +6840,7 @@ def get_cancelled_bookings():
         
         # Get cancelled bookings with pagination
         query = f"""
-            SELECT b.id, u.full_name AS customer_name, b.user_id,
+            SELECT b.id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, b.user_id,
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    b.start_date, b.end_date, b.total_price, b.status,
                    b.created_at AS booking_date,
@@ -9821,7 +9821,7 @@ def get_archived_bookings():
         total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
 
         query = f"""
-            SELECT b.id, b.user_id, u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
+            SELECT b.id, b.user_id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    v.plate_number, v.vehicle_image,
                    b.start_date, b.end_date, b.start_time, b.end_time,
@@ -10277,7 +10277,7 @@ def export_maintenance_data(data_type):
         data = []
         if data_type == 'archived_bookings':
             cur.execute("""
-                SELECT b.id, b.user_id, u.full_name AS customer_name, u.email AS customer_email,
+                SELECT b.id, b.user_id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email,
                        CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                        b.start_date, b.end_date, b.total_price, b.status, b.payment_status,
                        b.pickup_location, b.rental_type, b.addons,
@@ -15522,7 +15522,7 @@ def get_fleet_bookings():
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
                 v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
                 v.daily_rate, v.status AS vehicle_status, v.location AS vehicle_location, v.vehicle_image,
-                COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name), 'Customer') AS customer_name,
+                COALESCE(u.full_name, CONCAT(u.first_name, ' ', u.last_name), b.customer_name, 'Customer') AS customer_name,
                 COALESCE(u.phone, '') AS customer_phone,
                 COALESCE(u.email, '') AS customer_email,
                 COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), 'N/A') AS customer_address,
