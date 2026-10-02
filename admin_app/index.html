@@ -13512,6 +13512,7 @@ input:checked + .ctrl-slider:before {
 
 
         render() { this._render(this.data); },
+        renderVehicles() { this.applyFilters(); },
 
 
 
@@ -13659,12 +13660,18 @@ input:checked + .ctrl-slider:before {
                     if (typeof showNotification === 'function') showNotification(`Status changed to ${newStatus}`, 'success');
                     const v = this.data.find(x => x.id == id);
                     if (v) v.status = newStatus;
-                    this.renderVehicles();
+                    this.applyFilters();
                 } else {
-                    if (typeof showNotification === 'function') showNotification('Failed to update status', 'error');
+                    let errMsg = 'Failed to update status';
+                    try {
+                        const errData = await res.json();
+                        if (errData && errData.error) errMsg = errData.error;
+                    } catch(e) {}
+                    if (typeof showNotification === 'function') showNotification(errMsg, 'error');
                     this.refresh();
                 }
             } catch (err) {
+                console.error("quickChangeStatus error:", err);
                 if (typeof showNotification === 'function') showNotification('Network error updating status', 'error');
                 this.refresh();
             }

@@ -11500,8 +11500,12 @@ def update_vehicle(vehicle_id):
         if 'cur' in locals(): cur.close()
 
 
-@app.route('/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT'])
-@app.route('/api/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT'])
+@app.route('/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
 def update_vehicle_status(vehicle_id):
     data = request.json or request.form
     new_status = data.get('status')
