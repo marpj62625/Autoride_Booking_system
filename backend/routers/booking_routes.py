@@ -119,6 +119,17 @@ def book_vehicle():
                 "message": "Ang sasakyan ay mayroon nang booking sa napiling mga petsa. Mangyaring pumili ng ibang petsa o ibang sasakyan."
             }), 400
 
+        driver_fee = float(data.get('driver_fee', 0.0) or 0.0)
+        if rental_type == 'With Driver' and driver_fee <= 0:
+            try:
+                from datetime import datetime as _dt
+                _s = _dt.strptime(str(start_date)[:10], '%Y-%m-%d').date()
+                _e = _dt.strptime(str(end_date)[:10], '%Y-%m-%d').date()
+                _days = max(1, (_e - _s).days)
+                driver_fee = float(755.0 * _days)
+            except Exception:
+                driver_fee = 755.0
+
         payment_type = data.get('payment_type', 'Full')
         if payment_type == 'Downpayment':
             amount_paid = float(total_price) * 0.20
@@ -136,8 +147,9 @@ def book_vehicle():
                 status, payment_type, amount_paid, balance_amount,
                 start_time, end_time, service_type,
                 pickup_province, pickup_municipality, pickup_barangay,
-                return_province, return_municipality, return_barangay
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                return_province, return_municipality, return_barangay,
+                driver_fee
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             user_id, vehicle_id, start_date, end_date,
@@ -147,7 +159,8 @@ def book_vehicle():
             'Pending', payment_type, amount_paid, balance_amount,
             start_time, end_time, service_type,
             pickup_province, pickup_municipality, pickup_barangay,
-            return_province, return_municipality, return_barangay
+            return_province, return_municipality, return_barangay,
+            driver_fee
         ))
 
         booking_data = cur.fetchone()

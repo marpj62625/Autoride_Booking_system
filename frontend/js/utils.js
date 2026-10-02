@@ -361,7 +361,8 @@ function calculateBookingPrice(
   longTermDiscountPercent,
   couponPercent,
   pointsRedeemed,
-  deliveryFee
+  deliveryFee,
+  driverFee = 0
 ) {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -375,12 +376,13 @@ function calculateBookingPrice(
     : 0;
 
   const insPrice = Number(insurancePrice) || 0;
+  const drvFee = Number(driverFee) || 0;
 
   const ltDays = Number(longTermDiscountDays) || 7;
   const ltPercent = Number(longTermDiscountPercent) || 10;
   const longTermDiscount = days >= ltDays ? basePrice * (ltPercent / 100) : 0;
 
-  const subtotal = basePrice + addonPrice + insPrice - longTermDiscount;
+  const subtotal = basePrice + addonPrice + insPrice + drvFee - longTermDiscount;
 
   const cpPercent = Number(couponPercent) || 0;
   const couponDiscount = subtotal * (cpPercent / 100);
@@ -409,6 +411,7 @@ function calculateBookingPrice(
     basePrice,
     addonPrice,
     insurancePrice: insPrice,
+    driverFee: drvFee,
     longTermDiscount,
     couponDiscount,
     pointsDiscount,

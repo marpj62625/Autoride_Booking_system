@@ -1686,6 +1686,26 @@ def migrate_insurance_options():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_driver_wage_policy():
+    """Ensure driver wage and overtime columns exist in bookings table."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            ALTER TABLE bookings
+            ADD COLUMN IF NOT EXISTS driver_fee NUMERIC(10,2) DEFAULT 0.00,
+            ADD COLUMN IF NOT EXISTS driver_ot_hours NUMERIC(10,2) DEFAULT 0.00,
+            ADD COLUMN IF NOT EXISTS driver_ot_rate NUMERIC(10,2) DEFAULT 95.00,
+            ADD COLUMN IF NOT EXISTS driver_ot_amount NUMERIC(10,2) DEFAULT 0.00,
+            ADD COLUMN IF NOT EXISTS driver_ot_collection_method VARCHAR(50) DEFAULT 'direct_cash',
+            ADD COLUMN IF NOT EXISTS driver_ot_notes TEXT;
+        """)
+        commit_db()
+        print("[MIGRATION] migrate_driver_wage_policy completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_driver_wage_policy error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
     try:
         with app.app_context():
@@ -1698,6 +1718,7 @@ if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
             migrate_staff_permissions_and_requests()
             migrate_vehicle_gps_logs()
             migrate_insurance_options()
+            migrate_driver_wage_policy()
     except Exception as _e:
         print(f"[STARTUP ERROR] {_e}")
 
@@ -5193,6 +5214,10 @@ def book():
             if not user_pts or int(user_pts['loyalty_points'] or 0) < points_redeemed:
                 return jsonify({"error": "Insufficient loyalty points"}), 400
 
+        driver_fee = float(data.get('driver_fee', 0.00) or 0.00)
+        if rental_type == 'With Driver' and driver_fee <= 0:
+            driver_fee = float(755.0 * max(1, booking_days))
+
         cur.execute("""
             INSERT INTO bookings (
                 user_id, vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
@@ -5200,15 +5225,17 @@ def book():
                 pickup_province, pickup_municipality, pickup_barangay,
                 return_province, return_municipality, return_barangay,
                 start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned,
-                destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount
+                destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
+                driver_fee
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
               base_price, addon_price, tax_amount, total_price,
               pickup_province, pickup_municipality, pickup_barangay,
               return_province, return_municipality, return_barangay,
               pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned,
-              destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount))
+              destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
+              driver_fee))
 
         booking_id = cur.fetchone()['id']
 
@@ -5491,6 +5518,8 @@ def user_bookings():
             SELECT b.id, b.user_id, b.vehicle_id, b.start_date, b.end_date,
                    b.start_time, b.end_time,
                    b.pickup_location, b.rental_type, b.addons, b.insurance_type, b.insurance_price,
+                   b.driver_fee, b.driver_ot_hours, b.driver_ot_rate, b.driver_ot_amount,
+                   b.driver_ot_collection_method, b.driver_ot_notes,
                    b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
                    b.payment_type, b.amount_paid,
                    CASE WHEN b.status IN ('Cancelled', 'Rejected') THEN 0.00 ELSE b.balance_amount END AS balance_amount,
@@ -6633,6 +6662,8 @@ def get_all_bookings():
                    b.payment_status, b.base_price, b.addon_price, b.insurance_price,
                    b.insurance_type, b.discount_amount, b.payment_type,
                    b.amount_paid, b.balance_amount,
+                   b.driver_fee, b.driver_ot_hours, b.driver_ot_rate, b.driver_ot_amount,
+                   b.driver_ot_collection_method, b.driver_ot_notes,
 
                    b.pickup_location, b.rental_type, b.addons,
                    b.start_time, b.end_time,
@@ -7452,6 +7483,66 @@ def submit_inspection():
             except Exception as _fe:
                 print(f"[submit_inspection] Refuel fee error: {_fe}")
 
+        # ── Driver Overtime Policy Processing (Return Inspection) ──
+        applied_driver_ot = 0.0
+        driver_ot_collection = 'direct_cash'
+        if inspection_type == 'return':
+            try:
+                raw_ot_hours = request.form.get('driver_ot_hours')
+                driver_ot_collection = request.form.get('driver_ot_collection_method') or 'direct_cash'
+                driver_ot_notes = (request.form.get('driver_ot_notes') or '').strip()
+
+                if raw_ot_hours is not None and str(raw_ot_hours).strip() != '':
+                    ot_hrs = float(str(raw_ot_hours).strip())
+                    if ot_hrs > 0:
+                        ot_rate = 95.0
+                        ot_amount = ot_hrs * ot_rate
+                        applied_driver_ot = ot_amount
+
+                        cur.execute("""
+                            UPDATE bookings
+                            SET driver_ot_hours = %s,
+                                driver_ot_rate = %s,
+                                driver_ot_amount = %s,
+                                driver_ot_collection_method = %s,
+                                driver_ot_notes = %s
+                            WHERE id = %s
+                        """, (ot_hrs, ot_rate, ot_amount, driver_ot_collection, driver_ot_notes, booking_id))
+
+                        if driver_ot_collection == 'company_charge':
+                            cur.execute("CREATE TABLE IF NOT EXISTS booking_penalties (id SERIAL PRIMARY KEY, booking_id INT, charge_type VARCHAR(50), penalty_type VARCHAR(50), amount DECIMAL(10,2) DEFAULT 0, notes TEXT, description TEXT, created_by INT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);")
+                            cur.execute("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS penalty_amount DECIMAL(10,2) DEFAULT 0")
+                            ot_desc = f"Driver Overtime: {ot_hrs:g} hrs @ ₱{ot_rate:,.2f}/hr"
+                            if driver_ot_notes:
+                                ot_desc += f" - {driver_ot_notes}"
+                            cur.execute("""
+                                INSERT INTO booking_penalties (booking_id, charge_type, penalty_type, amount, notes, description, created_by)
+                                VALUES (%s, 'driver_ot', 'driver_ot', %s, %s, %s, %s)
+                            """, (booking_id, ot_amount, ot_desc, ot_desc, inspector_id))
+
+                            # Recalculate total penalties and balance
+                            cur.execute("SELECT COALESCE(SUM(amount), 0) as total FROM booking_penalties WHERE booking_id = %s", (booking_id,))
+                            total_penalty = cur.fetchone()['total']
+
+                            cur.execute("SELECT total_price, amount_paid, user_id FROM bookings WHERE id = %s", (booking_id,))
+                            b_row = cur.fetchone()
+                            if b_row:
+                                new_balance = float(b_row['total_price'] or 0) + float(total_penalty) - float(b_row['amount_paid'] or 0)
+                                p_status = 'Unpaid'
+                                if new_balance <= 0:
+                                    p_status = 'Paid'
+                                    new_balance = 0.0
+                                elif float(b_row['amount_paid'] or 0) > 0:
+                                    p_status = 'Partially Paid'
+
+                                cur.execute("""
+                                    UPDATE bookings
+                                    SET penalty_amount = %s, balance_amount = %s, payment_status = %s
+                                    WHERE id = %s
+                                """, (float(total_penalty), new_balance, p_status, booking_id))
+            except Exception as _ote:
+                print(f"[submit_inspection] Driver OT fee error: {_ote}")
+
         # ── Auto-update Vehicle Master Odometer and Fuel Level ──
         distance_driven = None
         if vehicle_id:
@@ -7560,6 +7651,9 @@ def submit_inspection():
             res_payload["distance_driven"] = distance_driven
         if applied_fuel_charge > 0:
             res_payload["fuel_charge"] = applied_fuel_charge
+        if applied_driver_ot > 0:
+            res_payload["driver_ot_amount"] = applied_driver_ot
+            res_payload["driver_ot_collection_method"] = driver_ot_collection
 
         return jsonify(res_payload), 201
 
