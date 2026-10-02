@@ -1716,6 +1716,21 @@ def migrate_driver_wage_policy():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_calendar_color():
+    """Ensure calendar_color column exists in bookings table."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            ALTER TABLE bookings
+            ADD COLUMN IF NOT EXISTS calendar_color VARCHAR(30);
+        """)
+        commit_db()
+        print("[MIGRATION] migrate_calendar_color completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_calendar_color error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
     try:
         with app.app_context():
@@ -1729,6 +1744,7 @@ if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
             migrate_vehicle_gps_logs()
             migrate_insurance_options()
             migrate_driver_wage_policy()
+            migrate_calendar_color()
     except Exception as _e:
         print(f"[STARTUP ERROR] {_e}")
 
@@ -15465,6 +15481,8 @@ def get_fleet_bookings():
                 COALESCE(b.payment_fee, 0.00) AS payment_fee,
                 COALESCE(b.payment_fee_percent, 0.00) AS payment_fee_percent,
                 COALESCE(b.payment_method, 'Cash') AS payment_method,
+                COALESCE(b.driver_fee, 0.00) AS driver_fee,
+                COALESCE(b.calendar_color, '') AS calendar_color,
                 COALESCE(b.destination, '') AS destination,
                 COALESCE(b.rental_purpose, '') AS rental_purpose,
                 v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
@@ -15497,10 +15515,101 @@ def get_fleet_bookings():
             d['payment_fee'] = float(d['payment_fee'] or 0)
             d['payment_fee_percent'] = float(d['payment_fee_percent'] or 0)
             d['daily_rate'] = float(d['daily_rate'] or 0)
+            d['driver_fee'] = float(d.get('driver_fee') or 0)
+            d['calendar_color'] = str(d.get('calendar_color') or '').strip()
             result.append(d)
         return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+@app.route('/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
+@app.route('/api/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
+def update_booking_quick_pricing(booking_id):
+    """Allows admin to update pricing, amount paid, payment status, and calendar color directly from Fleet Calendar."""
+    data = request.json or {}
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT id, user_id, total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color FROM bookings WHERE id = %s", (booking_id,))
+        b = cur.fetchone()
+        if not b:
+            return jsonify({"error": "Booking not found"}), 404
+
+        total_price = float(data.get('total_price') if data.get('total_price') is not None else (b['total_price'] or 0.0))
+        amount_paid = float(data.get('amount_paid') if data.get('amount_paid') is not None else (b['amount_paid'] or 0.0))
+        
+        if data.get('balance_amount') is not None:
+            balance_amount = float(data.get('balance_amount'))
+        else:
+            balance_amount = max(0.0, total_price - amount_paid)
+
+        payment_status = data.get('payment_status')
+        if not payment_status:
+            if balance_amount <= 0 and total_price > 0:
+                payment_status = 'Paid'
+            elif amount_paid > 0 and balance_amount > 0:
+                payment_status = 'Partially Paid'
+            else:
+                payment_status = b.get('payment_status') or 'Unpaid'
+
+        payment_method = data.get('payment_method') or b.get('payment_method') or 'Cash'
+        calendar_color = data.get('calendar_color') if 'calendar_color' in data else (b.get('calendar_color') or '')
+        calendar_color = str(calendar_color or '').strip()
+        apply_to_customer = data.get('apply_to_customer', False)
+
+        cur.execute("""
+            UPDATE bookings
+            SET total_price = %s,
+                amount_paid = %s,
+                balance_amount = %s,
+                payment_status = %s,
+                payment_method = %s,
+                calendar_color = %s
+            WHERE id = %s
+        """, (total_price, amount_paid, balance_amount, payment_status, payment_method, calendar_color, booking_id))
+
+        if apply_to_customer and b.get('user_id') and calendar_color:
+            cur.execute("""
+                UPDATE bookings
+                SET calendar_color = %s
+                WHERE user_id = %s
+            """, (calendar_color, b['user_id']))
+
+        commit_db()
+
+        requester_id = data.get('requester_id')
+        try:
+            admin_name = 'Admin'
+            if requester_id:
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (requester_id,))
+                u_row = cur.fetchone()
+                if u_row: admin_name = u_row['full_name']
+            log_activity(
+                admin_id=requester_id or 1,
+                admin_name=admin_name,
+                action='UPDATE_BOOKING_PRICING',
+                target_type='BOOKING',
+                target_id=booking_id,
+                details=f"Updated Booking #{booking_id}: Total ₱{total_price:,.2f}, Paid ₱{amount_paid:,.2f}, Bal ₱{balance_amount:,.2f}, Status: {payment_status}, Color: {calendar_color or 'default'}"
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            "message": "Pricing and color updated successfully",
+            "booking": {
+                "id": booking_id,
+                "total_price": total_price,
+                "amount_paid": amount_paid,
+                "balance_amount": balance_amount,
+                "payment_status": payment_status,
+                "payment_method": payment_method,
+                "calendar_color": calendar_color
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
     finally:
         if 'cur' in locals(): cur.close()
 
