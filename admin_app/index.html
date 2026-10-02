@@ -10164,6 +10164,21 @@ input:checked + .ctrl-slider:before {
             .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Data Privacy Act of 2012 (RA 10173) Dynamic Redaction
+     * Automatically masks personal email addresses to protect customer PII.
+     */
+    function maskEmail(email) {
+        if (!email || typeof email !== 'string' || !email.includes('@')) return email || '';
+        if (email.includes('*')) return email;
+        const parts = email.split('@');
+        const u = parts[0], d = parts[1];
+        if (u.length <= 2) return u[0] + '*@' + d;
+        if (u.length <= 5) return u[0] + '*'.repeat(u.length - 2) + u[u.length - 1] + '@' + d;
+        return u.substring(0, 2) + '*'.repeat(Math.max(3, u.length - 4)) + u.substring(u.length - 2) + '@' + d;
+    }
+    window.maskEmail = maskEmail;
+
     function showInlineError(el, message) {
         if (!el) return;
         el.style.borderColor = '#dc2626';
@@ -16520,7 +16535,11 @@ They will be safely secluded from operational queues to keep query latency fast.
                         <td style="padding: 12px 10px; font-size: 0.8rem; font-weight: 800; color: #8b5cf6;">#${b.id}</td>
                         <td style="padding: 12px 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main);">
                             <div>${b.customer_name || 'N/A'}</div>
-                            <div style="font-size: 0.72rem; color: var(--text-muted);">${b.customer_email || ''}</div>
+                            ${b.customer_email ? `
+                            <div style="font-size: 0.72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fas fa-user-shield" style="color: #00B14F; font-size: 0.65rem;" title="Data Privacy Act (RA 10173) Protected"></i>
+                                <span>${maskEmail(b.customer_email)}</span>
+                            </div>` : ''}
                         </td>
                         <td style="padding: 12px 10px; font-size: 0.85rem; color: var(--text-secondary);">${b.car || b.vehicle || 'N/A'}</td>
                         <td style="padding: 12px 10px; font-size: 0.78rem; color: var(--text-secondary);">${startDateStr} - ${endDateStr}</td>
@@ -17989,7 +18008,11 @@ function toggleNewsletterModal(show = true) {
                             </button>
                         </div>
                         <div style="font-weight:800;font-size:0.88rem;color:#0f172a;margin-bottom:2px;">${b.customer_name||'N/A'}</div>
-                        <div style="font-size:0.72rem;color:#64748b;word-break:break-all;">${b.customer_email||''}</div>
+                        ${(b.customer_email || b.email) ? `
+                        <div style="font-size:0.72rem;color:#64748b;word-break:break-all;display:inline-flex;align-items:center;gap:4px;">
+                            <i class="fas fa-user-shield" style="color:#00B14F;font-size:0.65rem;" title="Data Privacy Act (RA 10173) Protected"></i>
+                            <span>${maskEmail(b.customer_email || b.email)}</span>
+                        </div>` : ''}
                     </div>
                     <div style="background:#f8fafc;border-radius:12px;padding:12px;border:1px solid #e2e8f0;">
                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
@@ -20807,7 +20830,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.email || 'No Email'}</p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${v.email ? `<i class="fas fa-user-shield" style="color: #00B14F; font-size: 0.65rem; margin-right: 4px;" title="RA 10173 Protected"></i>${maskEmail(v.email)}` : 'No Email'}</p>
 
 
 
@@ -33834,7 +33857,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                                '<div class="ac-inbox-preview">' + _esc(u.email || '') + '</div>' +
+                                '<div class="ac-inbox-preview">' + _esc(maskEmail(u.email || '')) + '</div>' +
 
 
 
