@@ -65,6 +65,14 @@
       "dest": "/api/index.py"
     },
     {
+      "src": "/insurance-options",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/insurance-options/(.*)",
+      "dest": "/api/index.py"
+    },
+    {
       "src": "/admin_mobile/(.*)",
       "dest": "/admin_mobile/www/$1"
     },

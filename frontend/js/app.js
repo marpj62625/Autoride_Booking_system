@@ -1425,7 +1425,7 @@ function loadAddonSettings() {
 }
 
 function loadInsuranceSettings() {
-  return apiCall('/insurance-options')
+  return apiCall('/api/insurance-options')
     .then(function(options) {
       if (Array.isArray(options) && options.length > 0) {
         INSURANCE_OPTIONS = options.map(function(ins) {
