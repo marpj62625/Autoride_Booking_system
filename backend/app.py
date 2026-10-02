@@ -11518,6 +11518,37 @@ def update_vehicle_status(vehicle_id):
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/vehicles/<int:vehicle_id>/rate', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/vehicles/<int:vehicle_id>/rate/', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/<int:vehicle_id>/rate', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/vehicles/<int:vehicle_id>/rate/', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/rate', methods=['PATCH', 'PUT', 'POST'])
+@app.route('/api/admin/vehicles/<int:vehicle_id>/rate/', methods=['PATCH', 'PUT', 'POST'])
+def update_vehicle_rate(vehicle_id):
+    data = request.get_json(silent=True) or request.form or {}
+    raw_rate = data.get('daily_rate')
+    if raw_rate is None:
+        return jsonify({"error": "daily_rate is required"}), 400
+    
+    try:
+        dr_str = str(raw_rate).replace('PHP', '').replace('Php', '').replace('₱', '').replace('/day', '').replace('/DAY', '').replace(',', '').strip()
+        daily_rate = float(dr_str)
+        if daily_rate < 0:
+            return jsonify({"error": "Daily rate must be non-negative"}), 400
+        
+        cur = get_cursor()
+        cur.execute("UPDATE vehicles SET daily_rate = %s WHERE id = %s", (daily_rate, vehicle_id))
+        commit_db()
+        return jsonify({"message": "Vehicle daily rate updated successfully", "daily_rate": daily_rate}), 200
+    except ValueError:
+        return jsonify({"error": "Invalid rate value"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+
 
 @app.route('/vehicles/<int:vehicle_id>', methods=['DELETE'])
 @app.route('/vehicles/<int:vehicle_id>/', methods=['DELETE'])

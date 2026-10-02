@@ -15150,7 +15150,7 @@ async edit(id) { this.openModal(id); }
             // 2-Tier Header:
             // Row 1: Day of Week (SUN, MON, TUE, WED, THU, FRI, SAT)
             // Left sticky cell spans 2 rows
-            let row1Html = `<th rowspan="2" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 175px; width: 175px; max-width: 175px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
+            let row1Html = `<th rowspan="2" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
                     <span>VEHICLE / UNIT</span>
@@ -15230,12 +15230,19 @@ async edit(id) { this.openModal(id); }
             filteredVehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
                 
-                // Sticky Vehicle Cell (Green Box matching Excel reference)
+                // Sticky Vehicle Cell (Green Box matching Excel reference with live daily rate & quick edit icon)
                 rowHtml += `<td onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
-                    style="padding: 6px 10px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); min-width: 175px; width: 175px; max-width: 175px; cursor: pointer; vertical-align: middle;">
-                    <div style="background: #15803d; color: white; padding: 6px 10px; border-radius: 8px; font-weight: 800; font-size: 0.74rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center;">
-                        <div style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.3px;">${v.brand} ${v.model}</div>
-                        <div style="font-size: 0.65rem; color: #bbf7d0; font-weight: 700; letter-spacing: 0.5px;">${v.plate_number || 'NO PLATE'}</div>
+                    style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); min-width: 180px; width: 180px; max-width: 180px; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
+                    <div style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
+                         onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                         onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
+                        <div style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px;">${v.brand} ${v.model}</div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 3px;">
+                            <span style="font-size: 0.62rem; color: #bbf7d0; font-weight: 700; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${v.plate_number || 'NO PLATE'}</span>
+                            <span style="font-size: 0.62rem; color: #fef08a; font-weight: 800; background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 4px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;" title="Daily Rental Rate">
+                                ₱${parseFloat(v.daily_rate||0).toLocaleString()}/d <i class="fas fa-edit" style="font-size: 0.55rem; opacity: 0.85;"></i>
+                            </span>
+                        </div>
                     </div>
                 </td>`;
 
@@ -15435,29 +15442,122 @@ async edit(id) { this.openModal(id); }
         openVehicleModal(v) {
             const body = document.getElementById('fleetVehicleModalBody');
             if (!body) return;
-            const imgHtml = v.vehicle_image ? `<img src="${v.vehicle_image}" style="width:100%;height:160px;object-fit:cover;border-radius:12px;margin-bottom:12px;">` : '';
+            const imgHtml = v.vehicle_image ? `<img src="${v.vehicle_image}" style="width:100%;height:155px;object-fit:cover;border-radius:12px;margin-bottom:12px;">` : '';
+            const curRate = parseFloat(v.daily_rate || 0);
+
             body.innerHTML = `
                 ${imgHtml}
                 <div style="font-size:1.15rem;font-weight:900;color:#0f172a;margin-bottom:4px;">${v.brand} ${v.model}</div>
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
                     <span style="background:rgba(0,177,79,0.15);color:#00B14F;border:1px solid rgba(0,177,79,0.3);padding:3px 8px;border-radius:6px;font-weight:800;font-size:0.75rem;">${v.plate_number || 'NO PLATE'}</span>
                     <span style="background:#f1f5f9;color:#475569;padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:700;">${v.vehicle_type || 'Vehicle'}</span>
                     <span style="background:${v.status === 'Available' ? '#dcfce7' : v.status === 'Maintenance' ? '#fee2e2' : '#fef3c7'};color:${v.status === 'Available' ? '#15803d' : v.status === 'Maintenance' ? '#b91c1c' : '#b45309'};padding:3px 8px;border-radius:6px;font-size:0.75rem;font-weight:800;margin-left:auto;">${(v.status||'Available').toUpperCase()}</span>
                 </div>
+
+                <!-- DIRECT DAILY RATE / PRICING MANAGER -->
+                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 14px; padding: 14px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,177,79,0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="font-size: 0.74rem; font-weight: 800; color: #166534; text-transform: uppercase; margin: 0; display:flex; align-items:center; gap:5px;">
+                            <i class="fas fa-tags" style="color: #16a34a;"></i> Edit Vehicle Daily Rate (₱/Day)
+                        </label>
+                        <span style="font-size: 0.68rem; font-weight: 700; color: #15803d; background: rgba(34,197,94,0.18); padding: 2px 7px; border-radius: 6px;">Current: ₱${curRate.toLocaleString()}</span>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                        <div style="position: relative; flex: 1;">
+                            <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #64748b; font-size: 0.95rem;">₱</span>
+                            <input type="number" id="fleetVehicleRateInput" value="${curRate}" step="50" min="0"
+                                   style="width: 100%; padding: 9px 10px 9px 26px; font-size: 1rem; font-weight: 900; color: #0f172a; background: white; border: 1.5px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
+                        </div>
+                        <button type="button" id="btnSaveFleetVehicleRate" onclick="FleetCalendar.saveVehicleDailyRate(${v.id})"
+                                style="padding: 10px 15px; background: #00B14F; color: white; border: none; border-radius: 8px; font-weight: 800; font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 6px rgba(0,177,79,0.3); white-space: nowrap;">
+                            <i class="fas fa-save"></i> Save Rate
+                        </button>
+                    </div>
+
+                    <!-- Quick Adjust Buttons -->
+                    <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 0.65rem; color: #64748b; font-weight: 700;">Quick Adjust:</span>
+                        <button type="button" onclick="FleetCalendar.adjustVehicleRateInput(-200)" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 700; background: white; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; color: #475569;">-₱200</button>
+                        <button type="button" onclick="FleetCalendar.adjustVehicleRateInput(-100)" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 700; background: white; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; color: #475569;">-₱100</button>
+                        <button type="button" onclick="FleetCalendar.adjustVehicleRateInput(100)" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 700; background: white; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; color: #475569;">+₱100</button>
+                        <button type="button" onclick="FleetCalendar.adjustVehicleRateInput(200)" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 700; background: white; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; color: #475569;">+₱200</button>
+                        <button type="button" onclick="FleetCalendar.adjustVehicleRateInput(500)" style="padding: 2px 7px; font-size: 0.66rem; font-weight: 700; background: white; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; color: #475569;">+₱500</button>
+                    </div>
+                </div>
+
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f8fafc;padding:12px;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:12px;font-size:0.8rem;">
                     <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Transmission</span><br><b style="color:#0f172a;">${v.transmission || 'Automatic'}</b></div>
                     <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Fuel Type</span><br><b style="color:#0f172a;">${v.fuel_type || 'Gasoline'}</b></div>
                     <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Seating Capacity</span><br><b style="color:#0f172a;">${v.seats || 5} Seats</b></div>
-                    <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Daily Rental Rate</span><br><b style="color:#00B14F;font-size:0.95rem;">₱${parseFloat(v.daily_rate||0).toLocaleString()}/day</b></div>
-                </div>
-                <div style="background:#f8fafc;padding:10px 12px;border-radius:10px;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;font-size:0.8rem;">
-                    <span style="color:#64748b;font-weight:700;"><i class="fas fa-map-marker-alt" style="color:#ef4444;margin-right:6px;"></i>Current Depot / Location:</span>
-                    <strong style="color:#0f172a;">${v.location || 'Main Depot'}</strong>
+                    <div><span style="color:#64748b;font-size:0.7rem;text-transform:uppercase;font-weight:700;">Location / Depot</span><br><b style="color:#0f172a;">${v.location || 'Main Depot'}</b></div>
                 </div>
             `;
             const m = document.getElementById('fleetVehicleModal');
             m.style.display = 'flex';
             if (typeof modalOpen === 'function') modalOpen();
+        },
+
+        adjustVehicleRateInput(delta) {
+            const inp = document.getElementById('fleetVehicleRateInput');
+            if (!inp) return;
+            const current = parseFloat(inp.value || 0);
+            inp.value = Math.max(0, current + delta);
+        },
+
+        async saveVehicleDailyRate(vId) {
+            const inp = document.getElementById('fleetVehicleRateInput');
+            if (!inp) return;
+            const newRate = parseFloat(inp.value || 0);
+            if (isNaN(newRate) || newRate < 0) {
+                showNotification('Please enter a valid rate', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnSaveFleetVehicleRate');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/vehicles/${vId}/rate`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ daily_rate: newRate })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to update vehicle rate');
+                }
+
+                // Update local vehicle state in calendar and global Vehicles array if present
+                const v = (this.vehicles || []).find(x => x.id == vId);
+                if (v) v.daily_rate = newRate;
+                if (typeof Vehicles !== 'undefined' && Vehicles.data) {
+                    const gV = Vehicles.data.find(x => x.id == vId);
+                    if (gV) gV.daily_rate = newRate;
+                }
+
+                showNotification(`Vehicle daily rate updated to ₱${newRate.toLocaleString()}/day!`, 'success');
+
+                const m = document.getElementById('fleetVehicleModal');
+                if (m) {
+                    m.style.display = 'none';
+                    if (typeof modalClose === 'function') modalClose();
+                }
+
+                // Re-render the calendar to display updated rate badge immediately
+                this.render();
+            } catch (err) {
+                console.error("Save vehicle rate error:", err);
+                showNotification(err.message || 'Error updating vehicle rate', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fas fa-save"></i> Save Rate`;
+                }
+            }
         },
 
         // Open the Working Pricing & Dispatch Modal directly on click
