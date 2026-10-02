@@ -17839,9 +17839,78 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        view(id) {
-            const b = this.data.find(x => x.id == id) || (typeof PastBookings !== "undefined" && PastBookings.data.find(x => x.id == id)) || (typeof ArchivedBookings !== "undefined" && ArchivedBookings.data.find(x => x.id == id));
-            if (!b) { console.error('Booking not found:', id); return; }
+        async view(id) {
+            let b = (this.data && this.data.find(x => x.id == id || x.booking_id == id)) 
+                 || (typeof FleetCalendar !== 'undefined' && FleetCalendar.bookings && FleetCalendar.bookings.find(x => x.id == id || x.booking_id == id)) 
+                 || (typeof PastBookings !== "undefined" && PastBookings.data && PastBookings.data.find(x => x.id == id || x.booking_id == id)) 
+                 || (typeof ArchivedBookings !== "undefined" && ArchivedBookings.data && ArchivedBookings.data.find(x => x.id == id || x.booking_id == id));
+
+            if (!b) {
+                const modal = document.getElementById('bookingDetailsModal');
+                const content = document.getElementById('bookingDetailContent');
+                if (modal && content) {
+                    content.innerHTML = `
+                        <div style="text-align:center;padding:45px 20px;">
+                            <i class="fas fa-circle-notch fa-spin" style="font-size:2.2rem;color:#00B14F;margin-bottom:12px;"></i>
+                            <div style="font-size:0.95rem;font-weight:800;color:#0f172a;">Loading Booking Details...</div>
+                            <div style="font-size:0.75rem;color:#64748b;margin-top:4px;">Retrieving Booking #${id}</div>
+                        </div>`;
+                    modal.style.display = 'flex';
+                    if (typeof modalOpen === 'function') modalOpen();
+                }
+
+                try {
+                    const token = localStorage.getItem('token') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.token : null);
+                    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                    const res = await fetch(`${API_BASE}/api/admin/bookings/${id}`, { credentials: 'omit', headers });
+                    if (res.ok) {
+                        const data = await res.json();
+                        b = (data && data.booking) ? data.booking : data;
+                    }
+                } catch(e) {
+                    console.warn('Single booking fetch error:', e);
+                }
+
+                if (!b) {
+                    try {
+                        const token = localStorage.getItem('token') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.token : null);
+                        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                        const res = await fetch(`${API_BASE}/api/admin/bookings`, { credentials: 'omit', headers });
+                        if (res.ok) {
+                            const all = await res.json();
+                            if (Array.isArray(all)) {
+                                this.data = all;
+                                b = all.find(x => x.id == id || x.booking_id == id);
+                            }
+                        }
+                    } catch(e) {
+                        console.warn('All bookings fallback fetch error:', e);
+                    }
+                }
+            }
+
+            if (!b) { 
+                console.error('Booking not found:', id); 
+                const content = document.getElementById('bookingDetailContent');
+                if (content) {
+                    content.innerHTML = `
+                        <div style="text-align:center;padding:30px 20px;color:#ef4444;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:2rem;margin-bottom:10px;"></i>
+                            <div style="font-size:0.95rem;font-weight:800;">Booking #${id} Not Found</div>
+                            <div style="font-size:0.78rem;color:#64748b;margin-top:4px;">This booking record could not be loaded or may have been removed.</div>
+                            <button onclick="document.getElementById('bookingDetailsModal').style.display='none';if(typeof modalClose==='function')modalClose();" style="margin-top:16px;padding:8px 16px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;color:#334155;">Close</button>
+                        </div>`;
+                }
+                return; 
+            }
+
+            if (!b.id && b.booking_id) b.id = b.booking_id;
+            this.currentBooking = b;
+
+            // Normalize vehicle/car string
+            if (!b.car) {
+                b.car = (b.brand || b.model) ? `${b.brand || ''} ${b.model || ''} (${b.plate_number || 'N/A'})`.trim() : (b.vehicle || 'N/A');
+            }
 
             const fmtDate = d => d ? new Date(d).toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}) : 'N/A';
             const fmtMoney = v => '₱' + parseFloat(v||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -18125,7 +18194,11 @@ function toggleNewsletterModal(show = true) {
             setTimeout(() => { Bookings.loadPenalties(b.id); }, 50);
         },
         async triggerRefund(id) {
-            const b = this.data.find(x => x.id == id) || (typeof PastBookings !== "undefined" && PastBookings.data.find(x => x.id == id)) || (typeof ArchivedBookings !== "undefined" && ArchivedBookings.data.find(x => x.id == id));
+            const b = (this.data && this.data.find(x => x.id == id || x.booking_id == id)) 
+                 || (typeof FleetCalendar !== 'undefined' && FleetCalendar.bookings && FleetCalendar.bookings.find(x => x.id == id || x.booking_id == id)) 
+                 || (typeof PastBookings !== "undefined" && PastBookings.data && PastBookings.data.find(x => x.id == id || x.booking_id == id)) 
+                 || (typeof ArchivedBookings !== "undefined" && ArchivedBookings.data && ArchivedBookings.data.find(x => x.id == id || x.booking_id == id))
+                 || this.currentBooking;
             const ps = b ? b.payment_status : 'Paid';
             if (!confirm(`Trigger refund for Booking #${id}?\n\nThis will calculate the refund based on cancellation time vs pickup date (cancellation policy).\n\nCurrent status: ${ps}`)) return;
             try {
@@ -24324,10 +24397,12 @@ function toggleNewsletterModal(show = true) {
 
 
     window.AdminChatWithUser = async function(bookingId, directUserId, directUserName) {
-        // Find user info from Bookings.data, PastBookings.data, or ArchivedBookings.data
-        const b = (typeof Bookings !== 'undefined' && Bookings.data ? Bookings.data.find(x => x.id === bookingId) : null)
-            || (typeof PastBookings !== 'undefined' && PastBookings.data ? PastBookings.data.find(x => x.id === bookingId) : null)
-            || (typeof ArchivedBookings !== 'undefined' && ArchivedBookings.data ? ArchivedBookings.data.find(x => x.id === bookingId) : null);
+        // Find user info from Bookings.data, FleetCalendar.bookings, PastBookings.data, or ArchivedBookings.data
+        const b = (typeof Bookings !== 'undefined' && Bookings.data ? Bookings.data.find(x => x.id == bookingId) : null)
+            || (typeof FleetCalendar !== 'undefined' && FleetCalendar.bookings ? FleetCalendar.bookings.find(x => x.id == bookingId) : null)
+            || (typeof PastBookings !== 'undefined' && PastBookings.data ? PastBookings.data.find(x => x.id == bookingId) : null)
+            || (typeof ArchivedBookings !== 'undefined' && ArchivedBookings.data ? ArchivedBookings.data.find(x => x.id == bookingId) : null)
+            || (typeof Bookings !== 'undefined' && Bookings.currentBooking ? Bookings.currentBooking : null);
 
         let userId = directUserId || (b ? (b.user_id || b.customer_id) : null);
         let name = directUserName || (b ? (b.customer_name || b.user_name || "Customer") : "Customer");
