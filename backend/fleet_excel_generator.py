@@ -10,6 +10,7 @@ import calendar
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.comments import Comment
 
 # Default palette for bookings if no custom calendar_color is set
 BOOKING_PALETTE = [
@@ -357,6 +358,51 @@ def generate_fleet_excel(vehicles, bookings, start_date=None, end_date=None, is_
                 top_left.fill = bk_fill
                 top_left.alignment = align_booking
                 top_left.border = box_border
+
+                # Attach hover comment note with full booking details (matching ARC Monitoring)
+                c_name = str(bk.get('customer_name') or 'Customer').strip()
+                c_phone = str(bk.get('customer_phone') or 'N/A').strip()
+                c_addr = str(bk.get('customer_address') or 'N/A').strip()
+                c_em_name = str(bk.get('emergency_contact_name') or 'N/A').strip()
+                c_em_phone = str(bk.get('emergency_contact_phone') or 'N/A').strip()
+                c_unit = veh_title
+
+                try:
+                    c_pick_date = bs.strftime('%B %d, %Y')
+                except Exception:
+                    c_pick_date = str(bk.get('start_date') or '')
+
+                try:
+                    c_ret_date = be.strftime('%B %d, %Y')
+                except Exception:
+                    c_ret_date = str(bk.get('end_date') or '')
+
+                c_pick_time = str(bk.get('start_time') or '06:00 AM')
+                c_ret_time = str(bk.get('end_time') or '06:00 AM')
+                c_dest = str(bk.get('destination') or 'N/A')
+                c_purpose = str(bk.get('rental_purpose') or 'Travel / Rental')
+                c_total = f"PHP {float(bk.get('total_price') or 0):,.2f}"
+                c_status = str(bk.get('status') or 'Active').capitalize()
+
+                comment_lines = [
+                    f"Name: {c_name}",
+                    f"Contact no: {c_phone}",
+                    f"Complete Address: {c_addr}",
+                    f"Emergency contact person: {c_em_name}",
+                    f"Contact no: {c_em_phone}",
+                    f"Unit needed: {c_unit}",
+                    f"Date of pick up: {c_pick_date}",
+                    f"Date of return: {c_ret_date}",
+                    f"Time of pick up: {c_pick_time}",
+                    f"Time of return: {c_ret_time}",
+                    f"Destination: {c_dest}",
+                    f"Purpose of Rental: {c_purpose}",
+                    f"Total Amount: {c_total} ({c_status})"
+                ]
+                cell_comment = Comment("\n".join(comment_lines), "Autoride")
+                cell_comment.width = 240
+                cell_comment.height = 190
+                top_left.comment = cell_comment
 
                 # 2. Merge if spanning more than 1 cell
                 if col_end > col_start:
