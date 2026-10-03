@@ -7778,8 +7778,8 @@ input:checked + .ctrl-slider:before {
                         Status Filter
                     </label>
                     <select id="fleetExportStatus" style="width: 100%; padding: 10px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600; cursor: pointer;">
-                        <option value="all">📋 All Statuses (Active, Completed, Cancelled)</option>
-                        <option value="active" selected>🟢 Active &amp; Confirmed (Standard)</option>
+                        <option value="all" selected>📋 All Statuses (Confirmed, Completed, Cancelled, etc.)</option>
+                        <option value="active">🟢 Active &amp; Confirmed (Pending, Confirmed, Picked Up, Completed)</option>
                         <option value="confirmed">Confirmed Only</option>
                         <option value="completed">Completed Only</option>
                         <option value="cancelled">Cancelled Only</option>
@@ -16063,9 +16063,18 @@ async edit(id) { this.openModal(id); }
         },
 
         // --- FLEET EXPORT EXCEL SYSTEM ---
-        openExportModal() {
+        async openExportModal() {
             const modal = document.getElementById('fleetExportModal');
             if (!modal) return;
+
+            // Ensure vehicles are loaded
+            if (!this.vehicles || this.vehicles.length === 0) {
+                try {
+                    let vRes = await fetch(`${API_BASE}/api/vehicles`);
+                    if (vRes.status === 404) vRes = await fetch(`${API_BASE}/vehicles`);
+                    this.vehicles = await vRes.json();
+                } catch(e) {}
+            }
 
             // Populate vehicle filter options
             const vSelect = document.getElementById('fleetExportVehicle');
@@ -16170,7 +16179,7 @@ async edit(id) { this.openModal(id); }
 
             const scope = this._exportScope || 'month';
             const vehicleId = document.getElementById('fleetExportVehicle')?.value || 'all';
-            const statusFilter = document.getElementById('fleetExportStatus')?.value || 'active';
+            const statusFilter = document.getElementById('fleetExportStatus')?.value || 'all';
             const includeList = document.getElementById('fleetExportSheetList')?.checked ?? true;
             const includeMatrix = document.getElementById('fleetExportSheetMatrix')?.checked ?? true;
 
@@ -16227,12 +16236,16 @@ async edit(id) { this.openModal(id); }
                 }
 
                 // Fetch bookings
-                const res = await fetch(url);
+                let res = await fetch(url);
+                if (res.status === 404 || res.status === 405) {
+                    let fallbackUrl = url.replace('/api/admin/', '/admin/');
+                    res = await fetch(fallbackUrl);
+                }
                 if (!res.ok) throw new Error('Failed to retrieve bookings data from server');
                 const rawBookings = await res.json();
                 const bookings = Array.isArray(rawBookings) ? rawBookings : [];
 
-                if (bookings.length === 0 && !includeMatrix) {
+                if (bookings.length === 0) {
                     showNotification('No bookings found for the selected scope/filters.', 'warning');
                     return;
                 }

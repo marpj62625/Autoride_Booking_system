@@ -15545,7 +15545,9 @@ def get_fleet_bookings():
             query += " AND b.start_date <= %s AND b.end_date >= %s"
             params.extend([end, start])
         
-        if status_filter and status_filter.lower() != 'all':
+        if status_filter and status_filter.lower() in ('active', 'active_confirmed'):
+            query += " AND LOWER(b.status) IN ('pending', 'confirmed', 'approved', 'picked up', 'ongoing', 'completed')"
+        elif status_filter and status_filter.lower() not in ('all', ''):
             query += " AND LOWER(b.status) = %s"
             params.append(status_filter.lower())
         else:
