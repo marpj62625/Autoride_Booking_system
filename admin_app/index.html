@@ -7685,6 +7685,137 @@ input:checked + .ctrl-slider:before {
         </div>
     </div>
 
+    <!-- FLEET CALENDAR EXPORT MODAL -->
+    <div id="fleetExportModal" class="premium-modal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) FleetCalendar.closeExportModal(event)">
+        <div class="modal-content" style="max-width: 580px; width: 100%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 22px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 92vh; overflow-y: auto;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(0, 177, 79, 0.15); color: #00B14F; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main);">Export Fleet Schedule</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: var(--text-muted);">Download vehicle bookings &amp; schedule records as Excel (.xlsx)</p>
+                    </div>
+                </div>
+                <button type="button" onclick="FleetCalendar.closeExportModal(event)" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Scope Selection (3 options: All Records, Current Month, Custom Range) -->
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px;">
+                    1. Select Export Scope
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <!-- All Records -->
+                    <div id="fleetExportScopeAllCard" onclick="FleetCalendar.setExportScope('all')" style="cursor: pointer; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; background: var(--surface-container); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <input type="radio" id="fleetExportScopeAll" name="fleetExportScope" value="all" style="accent-color: #00B14F;">
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">📁 All Records</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.3;">Every booking in database</p>
+                    </div>
+
+                    <!-- Current Month -->
+                    <div id="fleetExportScopeMonthCard" onclick="FleetCalendar.setExportScope('month')" style="cursor: pointer; border: 1.5px solid #00B14F; border-radius: 14px; padding: 12px; background: rgba(0, 177, 79, 0.08); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <input type="radio" id="fleetExportScopeMonth" name="fleetExportScope" value="month" checked style="accent-color: #00B14F;">
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">📅 Calendar Month</span>
+                        </div>
+                        <p id="fleetExportCurrentMonthLabel" style="margin: 0; font-size: 0.72rem; color: #00B14F; font-weight: 600; line-height: 1.3;">Active view</p>
+                    </div>
+
+                    <!-- Custom Range -->
+                    <div id="fleetExportScopeCustomCard" onclick="FleetCalendar.setExportScope('custom')" style="cursor: pointer; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; background: var(--surface-container); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <input type="radio" id="fleetExportScopeCustom" name="fleetExportScope" value="custom" style="accent-color: #00B14F;">
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">🗓️ Custom Range</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.3;">Choose specific dates</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Date Range Pickers (shown when 'custom' is selected) -->
+            <div id="fleetExportCustomDatesDiv" style="display: none; margin-bottom: 18px; padding: 14px; background: var(--surface-container); border: 1px dashed var(--border); border-radius: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-size: 0.74rem; font-weight: 800; color: var(--text-main); text-transform: uppercase;">Custom Date Range:</span>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button type="button" onclick="FleetCalendar.setExportPreset('today')" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 6px; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main); cursor: pointer;">Today</button>
+                        <button type="button" onclick="FleetCalendar.setExportPreset('this_week')" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 6px; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main); cursor: pointer;">This Week</button>
+                        <button type="button" onclick="FleetCalendar.setExportPreset('this_month')" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 6px; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main); cursor: pointer;">This Month</button>
+                        <button type="button" onclick="FleetCalendar.setExportPreset('next_month')" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 6px; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main); cursor: pointer;">Next Month</button>
+                        <button type="button" onclick="FleetCalendar.setExportPreset('this_year')" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 6px; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main); cursor: pointer;">This Year</button>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Start Date</label>
+                        <input type="date" id="fleetExportStartDate" style="width: 100%; padding: 9px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">End Date</label>
+                        <input type="date" id="fleetExportEndDate" style="width: 100%; padding: 9px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optional Filters (Vehicle & Status) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label style="display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">
+                        Vehicle Filter
+                    </label>
+                    <select id="fleetExportVehicle" style="width: 100%; padding: 10px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600; cursor: pointer;">
+                        <option value="all">🚗 All Vehicles</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">
+                        Status Filter
+                    </label>
+                    <select id="fleetExportStatus" style="width: 100%; padding: 10px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600; cursor: pointer;">
+                        <option value="all">📋 All Statuses (Active, Completed, Cancelled)</option>
+                        <option value="active" selected>🟢 Active &amp; Confirmed (Standard)</option>
+                        <option value="confirmed">Confirmed Only</option>
+                        <option value="completed">Completed Only</option>
+                        <option value="cancelled">Cancelled Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sheets to Include in Workbook -->
+            <div style="margin-bottom: 22px; padding: 12px 14px; background: var(--surface-container); border-radius: 12px; border: 1px solid var(--border);">
+                <label style="display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px;">
+                    Excel Workbook Sheets
+                </label>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-main); cursor: pointer;">
+                        <input type="checkbox" id="fleetExportSheetList" checked style="accent-color: #00B14F; width: 16px; height: 16px;">
+                        <span><strong>Sheet 1: Bookings Masterlist</strong> (Full customer, vehicle, pricing, and timing details)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-main); cursor: pointer;">
+                        <input type="checkbox" id="fleetExportSheetMatrix" checked style="accent-color: #00B14F; width: 16px; height: 16px;">
+                        <span><strong>Sheet 2: Daily Schedule Timeline Matrix</strong> (Vehicle rows × Day columns overview)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="FleetCalendar.closeExportModal(event)" style="padding: 11px 18px; border: 1px solid var(--border); background: transparent; color: var(--text-main); border-radius: 10px; font-weight: 700; font-size: 0.84rem; cursor: pointer;">
+                    Cancel
+                </button>
+                <button type="button" id="btnExecuteFleetExport" onclick="FleetCalendar.executeExport(this)" style="padding: 11px 22px; background: #00B14F; color: white; border: none; border-radius: 10px; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 10px rgba(0,177,79,0.35);">
+                    <i class="fas fa-file-excel"></i> Download Excel (.xlsx)
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- RECORD EXPENSE MODAL -->
     <div id="recordExpenseModal" class="premium-modal" style="display: none;" onclick="Reports.closeRecordExpenseModalBackdrop(event)">
         <div class="modal-content" style="max-width: 500px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal);">
@@ -9905,6 +10036,9 @@ input:checked + .ctrl-slider:before {
                 <button onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted);">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+                <button type="button" onclick="FleetCalendar.openExportModal()" class="btn-primary" title="Export Fleet Schedule & Bookings to Excel" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #00B14F; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
+                    <i class="fas fa-file-excel"></i> <span>Export Excel</span>
+                </button>
             </div>
         </div>
 
@@ -10738,7 +10872,7 @@ input:checked + .ctrl-slider:before {
             'staffPermissionsSuperModal', 'recordExpenseModal', 'adminChatControlsModal',
             'adminFaqFormModal', 'chartPopupModal', 'newsletterModal',
             'addonsConfigModal', 'insuranceConfigModal', 'locationsConfigModal', 'smtpConfigModal', 'gpsConfigModal',
-            'gpsTripHistoryModal', 'staffRequestPermModal'
+            'gpsTripHistoryModal', 'staffRequestPermModal', 'fleetExportModal'
         ];
         if (e.target && modalBackdropIds.includes(e.target.id)) {
             if (e.target.id === 'umModal') {
@@ -15925,6 +16059,424 @@ async edit(id) { this.openModal(id); }
             this.closeQuickModal();
             if (bId && typeof Bookings !== 'undefined' && Bookings.view) {
                 Bookings.view(bId);
+            }
+        },
+
+        // --- FLEET EXPORT EXCEL SYSTEM ---
+        openExportModal() {
+            const modal = document.getElementById('fleetExportModal');
+            if (!modal) return;
+
+            // Populate vehicle filter options
+            const vSelect = document.getElementById('fleetExportVehicle');
+            if (vSelect) {
+                let vHtml = '<option value="all">🚗 All Vehicles</option>';
+                const vehs = (this.vehicles && this.vehicles.length) ? this.vehicles : [];
+                vehs.forEach(v => {
+                    vHtml += `<option value="${v.id}">${v.brand} ${v.model} (${v.plate_number || 'No Plate'})</option>`;
+                });
+                vSelect.innerHTML = vHtml;
+            }
+
+            // Sync Month Label
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const year = this.currentDate.getFullYear();
+            const month = this.currentDate.getMonth();
+            const monthLabel = document.getElementById('fleetExportCurrentMonthLabel');
+            if (monthLabel) monthLabel.textContent = `${monthNames[month]} ${year}`;
+
+            // Initialize default custom dates
+            const startInp = document.getElementById('fleetExportStartDate');
+            const endInp = document.getElementById('fleetExportEndDate');
+            const startStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+            if (startInp && !startInp.value) startInp.value = startStr;
+            if (endInp && !endInp.value) endInp.value = endStr;
+
+            // Default scope to month
+            this.setExportScope('month');
+
+            modal.style.display = 'flex';
+        },
+
+        closeExportModal(e) {
+            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+            const modal = document.getElementById('fleetExportModal');
+            if (modal) modal.style.display = 'none';
+        },
+
+        setExportScope(scope) {
+            this._exportScope = scope;
+            const scopes = ['all', 'month', 'custom'];
+            scopes.forEach(s => {
+                const card = document.getElementById('fleetExportScope' + s.charAt(0).toUpperCase() + s.slice(1) + 'Card');
+                const radio = document.getElementById('fleetExportScope' + s.charAt(0).toUpperCase() + s.slice(1));
+                const isSelected = (s === scope);
+                if (radio) radio.checked = isSelected;
+                if (card) {
+                    if (isSelected) {
+                        card.style.borderColor = '#00B14F';
+                        card.style.background = 'rgba(0, 177, 79, 0.08)';
+                    } else {
+                        card.style.borderColor = 'var(--border)';
+                        card.style.background = 'var(--surface-container)';
+                    }
+                }
+            });
+
+            const customDiv = document.getElementById('fleetExportCustomDatesDiv');
+            if (customDiv) {
+                customDiv.style.display = (scope === 'custom') ? 'block' : 'none';
+            }
+        },
+
+        setExportPreset(preset) {
+            const today = new Date();
+            let start, end;
+            if (preset === 'today') {
+                start = new Date(today);
+                end = new Date(today);
+            } else if (preset === 'this_week') {
+                const day = today.getDay();
+                start = new Date(today);
+                start.setDate(today.getDate() - day);
+                end = new Date(today);
+                end.setDate(today.getDate() + (6 - day));
+            } else if (preset === 'this_month') {
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            } else if (preset === 'next_month') {
+                start = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+            } else if (preset === 'this_year') {
+                start = new Date(today.getFullYear(), 0, 1);
+                end = new Date(today.getFullYear(), 11, 31);
+            }
+            const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            if (start && end) {
+                const sInp = document.getElementById('fleetExportStartDate');
+                const eInp = document.getElementById('fleetExportEndDate');
+                if (sInp) sInp.value = fmt(start);
+                if (eInp) eInp.value = fmt(end);
+            }
+        },
+
+        async executeExport(btn) {
+            if (typeof XLSX === 'undefined') {
+                showNotification('Excel export library not loaded. Please refresh.', 'error');
+                return;
+            }
+
+            const scope = this._exportScope || 'month';
+            const vehicleId = document.getElementById('fleetExportVehicle')?.value || 'all';
+            const statusFilter = document.getElementById('fleetExportStatus')?.value || 'active';
+            const includeList = document.getElementById('fleetExportSheetList')?.checked ?? true;
+            const includeMatrix = document.getElementById('fleetExportSheetMatrix')?.checked ?? true;
+
+            if (!includeList && !includeMatrix) {
+                showNotification('Please select at least one sheet to export.', 'warning');
+                return;
+            }
+
+            let startStr = '', endStr = '';
+            let dateTitle = '';
+
+            if (scope === 'all') {
+                dateTitle = 'All_Records';
+            } else if (scope === 'month') {
+                const year = this.currentDate.getFullYear();
+                const month = this.currentDate.getMonth();
+                startStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
+                const lastDay = new Date(year, month + 1, 0).getDate();
+                endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                dateTitle = `${year}_${String(month+1).padStart(2,'0')}`;
+            } else if (scope === 'custom') {
+                startStr = document.getElementById('fleetExportStartDate')?.value;
+                endStr = document.getElementById('fleetExportEndDate')?.value;
+                if (!startStr || !endStr) {
+                    showNotification('Please provide both Start and End dates for custom range.', 'warning');
+                    return;
+                }
+                if (startStr > endStr) {
+                    showNotification('Start Date cannot be later than End Date.', 'warning');
+                    return;
+                }
+                dateTitle = `${startStr}_to_${endStr}`;
+            }
+
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing Excel...';
+            }
+
+            try {
+                // Build query URL
+                let url = `${API_BASE}/api/admin/fleet-bookings?`;
+                if (scope === 'all') {
+                    url += 'all=true';
+                } else {
+                    url += `start=${startStr}&end=${endStr}`;
+                }
+                if (statusFilter && statusFilter !== 'all') {
+                    url += `&status=${statusFilter}`;
+                }
+                if (vehicleId && vehicleId !== 'all') {
+                    url += `&vehicle_id=${vehicleId}`;
+                }
+
+                // Fetch bookings
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Failed to retrieve bookings data from server');
+                const rawBookings = await res.json();
+                const bookings = Array.isArray(rawBookings) ? rawBookings : [];
+
+                if (bookings.length === 0 && !includeMatrix) {
+                    showNotification('No bookings found for the selected scope/filters.', 'warning');
+                    return;
+                }
+
+                const wb = XLSX.utils.book_new();
+
+                // -------------------------------------------------------------
+                // 1. SHEET 1: DETAILED BOOKINGS MASTERLIST
+                // -------------------------------------------------------------
+                if (includeList) {
+                    const headers = [
+                        'Booking ID', 'Booking Status', 'Vehicle Brand & Model', 'Plate Number',
+                        'Customer Name', 'Contact Number', 'Customer Email', 'Customer Address',
+                        'Pickup Date', 'Pickup Time', 'Return Date', 'Return Time', 'Total Days',
+                        'Rental Type', 'Service Type', 'Pickup Location', 'Destination', 'Rental Purpose',
+                        'Daily Rate (PHP)', 'Base Price (PHP)', 'Driver Fee (PHP)', 'Payment Fee (PHP)',
+                        'Total Amount (PHP)', 'Amount Paid (PHP)', 'Balance (PHP)',
+                        'Payment Status', 'Payment Method', 'Emergency Contact', 'Emergency Phone', 'Emergency Rel'
+                    ];
+
+                    const rows = [headers];
+
+                    bookings.forEach(b => {
+                        let totalDays = 1;
+                        if (b.start_date && b.end_date) {
+                            const d1 = new Date(b.start_date);
+                            const d2 = new Date(b.end_date);
+                            const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+                            totalDays = Math.max(1, diff);
+                        }
+
+                        const row = [
+                            b.id || '',
+                            (b.status || 'Active').toUpperCase(),
+                            `${b.brand || ''} ${b.model || ''}`.trim(),
+                            b.plate_number || 'N/A',
+                            b.customer_name || 'Customer',
+                            b.customer_phone || 'N/A',
+                            b.customer_email || '',
+                            b.customer_address || 'N/A',
+                            b.start_date || '',
+                            b.start_time || '06:00',
+                            b.end_date || '',
+                            b.end_time || '06:00',
+                            totalDays,
+                            b.rental_type || 'Self Drive',
+                            b.service_type || 'Standard',
+                            b.pickup_location || 'Main Office',
+                            b.destination || 'N/A',
+                            b.rental_purpose || 'N/A',
+                            parseFloat(b.daily_rate || 0),
+                            parseFloat(b.base_price || 0),
+                            parseFloat(b.driver_fee || 0),
+                            parseFloat(b.payment_fee || 0),
+                            parseFloat(b.total_price || 0),
+                            parseFloat(b.amount_paid || 0),
+                            parseFloat(b.balance_amount !== undefined ? b.balance_amount : Math.max(0, (b.total_price || 0) - (b.amount_paid || 0))),
+                            b.payment_status || 'Unpaid',
+                            b.payment_method || 'Cash',
+                            b.emergency_contact_name || '',
+                            b.emergency_contact_phone || '',
+                            b.emergency_contact_relationship || ''
+                        ];
+                        rows.push(row);
+                    });
+
+                    const wsList = XLSX.utils.aoa_to_sheet(rows);
+
+                    // Auto-fit column widths
+                    wsList['!cols'] = [
+                        { wch: 12 }, // ID
+                        { wch: 16 }, // Status
+                        { wch: 24 }, // Vehicle
+                        { wch: 14 }, // Plate
+                        { wch: 24 }, // Customer
+                        { wch: 16 }, // Phone
+                        { wch: 24 }, // Email
+                        { wch: 30 }, // Address
+                        { wch: 14 }, // Start Date
+                        { wch: 12 }, // Start Time
+                        { wch: 14 }, // End Date
+                        { wch: 12 }, // End Time
+                        { wch: 11 }, // Days
+                        { wch: 15 }, // Rental Type
+                        { wch: 15 }, // Service Type
+                        { wch: 22 }, // Location
+                        { wch: 20 }, // Destination
+                        { wch: 20 }, // Purpose
+                        { wch: 15 }, // Daily Rate
+                        { wch: 15 }, // Base Price
+                        { wch: 15 }, // Driver Fee
+                        { wch: 16 }, // Payment Fee
+                        { wch: 18 }, // Total Price
+                        { wch: 18 }, // Amount Paid
+                        { wch: 15 }, // Balance
+                        { wch: 16 }, // Payment Status
+                        { wch: 16 }, // Payment Method
+                        { wch: 22 }, // Emergency Name
+                        { wch: 18 }, // Emergency Phone
+                        { wch: 16 }  // Emergency Rel
+                    ];
+
+                    XLSX.utils.book_append_sheet(wb, wsList, "Bookings Masterlist");
+                }
+
+                // -------------------------------------------------------------
+                // 2. SHEET 2: SCHEDULE TIMELINE MATRIX
+                // -------------------------------------------------------------
+                if (includeMatrix) {
+                    let mStart, mEnd;
+                    if (scope === 'month') {
+                        const year = this.currentDate.getFullYear();
+                        const month = this.currentDate.getMonth();
+                        mStart = new Date(year, month, 1);
+                        mEnd = new Date(year, month + 1, 0);
+                    } else if (scope === 'custom') {
+                        mStart = new Date(startStr);
+                        mEnd = new Date(endStr);
+                    } else {
+                        // Scope All: generate timeline for current month view
+                        const year = this.currentDate.getFullYear();
+                        const month = this.currentDate.getMonth();
+                        mStart = new Date(year, month, 1);
+                        mEnd = new Date(year, month + 1, 0);
+                    }
+
+                    const diffDays = Math.round((mEnd - mStart) / (1000 * 60 * 60 * 24)) + 1;
+                    if (diffDays > 0 && diffDays <= 93) {
+                        const matrixHeaders = ['VEHICLE / UNIT', 'PLATE NO.'];
+                        const colWidths = [{ wch: 26 }, { wch: 14 }];
+
+                        const dayDates = [];
+                        const dayNamesShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+                        for (let i = 0; i < diffDays; i++) {
+                            const curr = new Date(mStart);
+                            curr.setDate(mStart.getDate() + i);
+                            dayDates.push(curr);
+                            const mNum = curr.getMonth() + 1;
+                            const dNum = curr.getDate();
+                            const dow = dayNamesShort[curr.getDay()];
+                            matrixHeaders.push(`${mNum}/${dNum} (${dow})`);
+                            colWidths.push({ wch: 16 });
+                        }
+
+                        const matrixRows = [matrixHeaders];
+
+                        // Vehicles list: either filtered or all
+                        let vehsToRender = (this.vehicles && this.vehicles.length) ? this.vehicles : [];
+                        if (vehicleId && vehicleId !== 'all') {
+                            vehsToRender = vehsToRender.filter(v => String(v.id) === String(vehicleId));
+                        }
+
+                        vehsToRender.forEach(v => {
+                            const row = [`${v.brand} ${v.model}`, v.plate_number || 'N/A'];
+                            dayDates.forEach(dt => {
+                                const dtStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+                                // Check if vehicle has booking covering this date
+                                const matchBooking = bookings.find(b => {
+                                    if (String(b.vehicle_id) !== String(v.id)) return false;
+                                    const bStart = (b.start_date || '').split('T')[0];
+                                    const bEnd = (b.end_date || '').split('T')[0];
+                                    return dtStr >= bStart && dtStr <= bEnd;
+                                });
+
+                                if (matchBooking) {
+                                    row.push(matchBooking.customer_name || `Booking #${matchBooking.id}`);
+                                } else {
+                                    row.push('');
+                                }
+                            });
+                            matrixRows.push(row);
+                        });
+
+                        const wsMatrix = XLSX.utils.aoa_to_sheet(matrixRows);
+                        wsMatrix['!cols'] = colWidths;
+                        XLSX.utils.book_append_sheet(wb, wsMatrix, "Fleet Schedule Matrix");
+                    }
+                }
+
+                // -------------------------------------------------------------
+                // 3. GENERATE & DOWNLOAD EXCEL FILE
+                // -------------------------------------------------------------
+                const filename = `autoride_fleet_${dateTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+                // Try Capacitor Filesystem first (for mobile APK)
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+                if (Filesystem) {
+                    try {
+                        const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                        const resWrite = await Filesystem.writeFile({
+                            path: filename,
+                            data: wboutBase64,
+                            directory: 'DOWNLOADS',
+                            recursive: true
+                        });
+                        showNotification('Excel saved to Downloads: ' + filename, 'success');
+
+                        try {
+                            const { FileOpener } = window.Capacitor?.Plugins || {};
+                            if (FileOpener) {
+                                await FileOpener.open({
+                                    filePath: resWrite.uri,
+                                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                                });
+                            }
+                        } catch (e) { /* ignore opener error */ }
+                    } catch (capErr) {
+                        // Fallback to web download
+                        const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                        const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        showNotification('Excel downloaded successfully!', 'success');
+                    }
+                } else {
+                    // Web browser direct download
+                    const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                    const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showNotification('Excel downloaded: ' + filename, 'success');
+                }
+
+                this.closeExportModal();
+            } catch (err) {
+                console.error("Export error:", err);
+                showNotification('Export error: ' + (err.message || 'Unknown error'), 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml || '<i class="fas fa-file-excel"></i> Download Excel (.xlsx)';
+                }
             }
         }
     };
@@ -31349,9 +31901,7 @@ function toggleNewsletterModal(show = true) {
     window.saveLocation = saveLocation;
     window.resetLocationForm = resetLocationForm;
     window.Vehicles = Vehicles;
-
-
-
+    window.FleetCalendar = FleetCalendar;
     window.Bookings = Bookings;
 
 

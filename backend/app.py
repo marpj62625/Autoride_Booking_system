@@ -15506,9 +15506,12 @@ def get_blocked_dates(vehicle_id):
 def get_fleet_bookings():
     start = request.args.get('start')
     end = request.args.get('end')
+    is_all = request.args.get('all') == 'true' or not (start and end)
+    status_filter = request.args.get('status')
+    vehicle_id = request.args.get('vehicle_id')
     try:
         cur = get_cursor()
-        cur.execute("""
+        query = """
             SELECT 
                 b.id, b.vehicle_id, b.user_id,
                 b.start_date, b.end_date, b.start_time, b.end_time,
@@ -15535,10 +15538,28 @@ def get_fleet_bookings():
             JOIN vehicles v ON b.vehicle_id = v.id
             LEFT JOIN users u ON b.user_id = u.id
             LEFT JOIN license_details ld ON u.id = ld.user_id
-            WHERE b.start_date <= %s AND b.end_date >= %s
-              AND LOWER(b.status) IN ('pending', 'confirmed', 'approved', 'picked up', 'ongoing', 'completed')
-            ORDER BY b.start_date ASC
-        """, (end, start))
+            WHERE 1=1
+        """
+        params = []
+        if not is_all and start and end:
+            query += " AND b.start_date <= %s AND b.end_date >= %s"
+            params.extend([end, start])
+        
+        if status_filter and status_filter.lower() != 'all':
+            query += " AND LOWER(b.status) = %s"
+            params.append(status_filter.lower())
+        else:
+            if not is_all:
+                query += " AND LOWER(b.status) IN ('pending', 'confirmed', 'approved', 'picked up', 'ongoing', 'completed')"
+            else:
+                query += " AND LOWER(b.status) != 'deleted'"
+
+        if vehicle_id and vehicle_id.lower() != 'all':
+            query += " AND b.vehicle_id = %s"
+            params.append(vehicle_id)
+
+        query += " ORDER BY b.start_date ASC"
+        cur.execute(query, tuple(params))
         rows = cur.fetchall()
         
         result = []
