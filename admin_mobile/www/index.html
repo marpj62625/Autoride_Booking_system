@@ -7790,17 +7790,17 @@ input:checked + .ctrl-slider:before {
             <!-- Sheets to Include in Workbook -->
             <div style="margin-bottom: 22px; padding: 12px 14px; background: var(--surface-container); border-radius: 12px; border: 1px solid var(--border);">
                 <label style="display: block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px;">
-                    Excel Workbook Sheets
+                    Excel Workbook Content
                 </label>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-main); cursor: pointer;">
-                        <input type="checkbox" id="fleetExportSheetList" checked style="accent-color: #00B14F; width: 16px; height: 16px;">
-                        <span><strong>Sheet 1: Bookings Masterlist</strong> (Full customer, vehicle, pricing, and timing details)</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-main); cursor: pointer;">
-                        <input type="checkbox" id="fleetExportSheetMatrix" checked style="accent-color: #00B14F; width: 16px; height: 16px;">
-                        <span><strong>Sheet 2: Daily Schedule Timeline Matrix</strong> (Vehicle rows × Day columns overview)</span>
-                    </label>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-main);">
+                        <i class="fas fa-check-circle" style="color: #00B14F;"></i>
+                        <span><strong>Sheet 1: Fleet Monitoring Calendar</strong> (Visual color-coded grid with merged booking blocks per vehicle matching ARC Monitoring)</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-main);">
+                        <i class="fas fa-check-circle" style="color: #00B14F;"></i>
+                        <span><strong>Sheet 2: Bookings Masterlist</strong> (Full customer, vehicle, pricing, and timing details)</span>
+                    </div>
                 </div>
             </div>
 
@@ -16172,21 +16172,9 @@ async edit(id) { this.openModal(id); }
         },
 
         async executeExport(btn) {
-            if (typeof XLSX === 'undefined') {
-                showNotification('Excel export library not loaded. Please refresh.', 'error');
-                return;
-            }
-
             const scope = this._exportScope || 'month';
             const vehicleId = document.getElementById('fleetExportVehicle')?.value || 'all';
             const statusFilter = document.getElementById('fleetExportStatus')?.value || 'all';
-            const includeList = document.getElementById('fleetExportSheetList')?.checked ?? true;
-            const includeMatrix = document.getElementById('fleetExportSheetMatrix')?.checked ?? true;
-
-            if (!includeList && !includeMatrix) {
-                showNotification('Please select at least one sheet to export.', 'warning');
-                return;
-            }
 
             let startStr = '', endStr = '';
             let dateTitle = '';
@@ -16217,12 +16205,12 @@ async edit(id) { this.openModal(id); }
             const origHtml = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing Excel...';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Excel...';
             }
 
             try {
-                // Build query URL
-                let url = `${API_BASE}/api/admin/fleet-bookings?`;
+                // Build query URL for backend Excel generator (with openpyxl visual grid matching ARC Monitoring)
+                let url = `${API_BASE}/api/admin/fleet-calendar/export-excel?`;
                 if (scope === 'all') {
                     url += 'all=true';
                 } else {
@@ -16235,209 +16223,36 @@ async edit(id) { this.openModal(id); }
                     url += `&vehicle_id=${vehicleId}`;
                 }
 
-                // Fetch bookings
                 let res = await fetch(url);
                 if (res.status === 404 || res.status === 405) {
                     let fallbackUrl = url.replace('/api/admin/', '/admin/');
                     res = await fetch(fallbackUrl);
                 }
-                if (!res.ok) throw new Error('Failed to retrieve bookings data from server');
-                const rawBookings = await res.json();
-                const bookings = Array.isArray(rawBookings) ? rawBookings : [];
 
-                if (bookings.length === 0) {
-                    showNotification('No bookings found for the selected scope/filters.', 'warning');
-                    return;
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Failed to generate Excel file from server');
                 }
 
-                const wb = XLSX.utils.book_new();
+                const blob = await res.blob();
+                const filename = `Autoride_Fleet_Monitoring_${dateTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
-                // -------------------------------------------------------------
-                // 1. SHEET 1: DETAILED BOOKINGS MASTERLIST
-                // -------------------------------------------------------------
-                if (includeList) {
-                    const headers = [
-                        'Booking ID', 'Booking Status', 'Vehicle Brand & Model', 'Plate Number',
-                        'Customer Name', 'Contact Number', 'Customer Email', 'Customer Address',
-                        'Pickup Date', 'Pickup Time', 'Return Date', 'Return Time', 'Total Days',
-                        'Rental Type', 'Service Type', 'Pickup Location', 'Destination', 'Rental Purpose',
-                        'Daily Rate (PHP)', 'Base Price (PHP)', 'Driver Fee (PHP)', 'Payment Fee (PHP)',
-                        'Total Amount (PHP)', 'Amount Paid (PHP)', 'Balance (PHP)',
-                        'Payment Status', 'Payment Method', 'Emergency Contact', 'Emergency Phone', 'Emergency Rel'
-                    ];
-
-                    const rows = [headers];
-
-                    bookings.forEach(b => {
-                        let totalDays = 1;
-                        if (b.start_date && b.end_date) {
-                            const d1 = new Date(b.start_date);
-                            const d2 = new Date(b.end_date);
-                            const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-                            totalDays = Math.max(1, diff);
-                        }
-
-                        const row = [
-                            b.id || '',
-                            (b.status || 'Active').toUpperCase(),
-                            `${b.brand || ''} ${b.model || ''}`.trim(),
-                            b.plate_number || 'N/A',
-                            b.customer_name || 'Customer',
-                            b.customer_phone || 'N/A',
-                            b.customer_email || '',
-                            b.customer_address || 'N/A',
-                            b.start_date || '',
-                            b.start_time || '06:00',
-                            b.end_date || '',
-                            b.end_time || '06:00',
-                            totalDays,
-                            b.rental_type || 'Self Drive',
-                            b.service_type || 'Standard',
-                            b.pickup_location || 'Main Office',
-                            b.destination || 'N/A',
-                            b.rental_purpose || 'N/A',
-                            parseFloat(b.daily_rate || 0),
-                            parseFloat(b.base_price || 0),
-                            parseFloat(b.driver_fee || 0),
-                            parseFloat(b.payment_fee || 0),
-                            parseFloat(b.total_price || 0),
-                            parseFloat(b.amount_paid || 0),
-                            parseFloat(b.balance_amount !== undefined ? b.balance_amount : Math.max(0, (b.total_price || 0) - (b.amount_paid || 0))),
-                            b.payment_status || 'Unpaid',
-                            b.payment_method || 'Cash',
-                            b.emergency_contact_name || '',
-                            b.emergency_contact_phone || '',
-                            b.emergency_contact_relationship || ''
-                        ];
-                        rows.push(row);
-                    });
-
-                    const wsList = XLSX.utils.aoa_to_sheet(rows);
-
-                    // Auto-fit column widths
-                    wsList['!cols'] = [
-                        { wch: 12 }, // ID
-                        { wch: 16 }, // Status
-                        { wch: 24 }, // Vehicle
-                        { wch: 14 }, // Plate
-                        { wch: 24 }, // Customer
-                        { wch: 16 }, // Phone
-                        { wch: 24 }, // Email
-                        { wch: 30 }, // Address
-                        { wch: 14 }, // Start Date
-                        { wch: 12 }, // Start Time
-                        { wch: 14 }, // End Date
-                        { wch: 12 }, // End Time
-                        { wch: 11 }, // Days
-                        { wch: 15 }, // Rental Type
-                        { wch: 15 }, // Service Type
-                        { wch: 22 }, // Location
-                        { wch: 20 }, // Destination
-                        { wch: 20 }, // Purpose
-                        { wch: 15 }, // Daily Rate
-                        { wch: 15 }, // Base Price
-                        { wch: 15 }, // Driver Fee
-                        { wch: 16 }, // Payment Fee
-                        { wch: 18 }, // Total Price
-                        { wch: 18 }, // Amount Paid
-                        { wch: 15 }, // Balance
-                        { wch: 16 }, // Payment Status
-                        { wch: 16 }, // Payment Method
-                        { wch: 22 }, // Emergency Name
-                        { wch: 18 }, // Emergency Phone
-                        { wch: 16 }  // Emergency Rel
-                    ];
-
-                    XLSX.utils.book_append_sheet(wb, wsList, "Bookings Masterlist");
-                }
-
-                // -------------------------------------------------------------
-                // 2. SHEET 2: SCHEDULE TIMELINE MATRIX
-                // -------------------------------------------------------------
-                if (includeMatrix) {
-                    let mStart, mEnd;
-                    if (scope === 'month') {
-                        const year = this.currentDate.getFullYear();
-                        const month = this.currentDate.getMonth();
-                        mStart = new Date(year, month, 1);
-                        mEnd = new Date(year, month + 1, 0);
-                    } else if (scope === 'custom') {
-                        mStart = new Date(startStr);
-                        mEnd = new Date(endStr);
-                    } else {
-                        // Scope All: generate timeline for current month view
-                        const year = this.currentDate.getFullYear();
-                        const month = this.currentDate.getMonth();
-                        mStart = new Date(year, month, 1);
-                        mEnd = new Date(year, month + 1, 0);
-                    }
-
-                    const diffDays = Math.round((mEnd - mStart) / (1000 * 60 * 60 * 24)) + 1;
-                    if (diffDays > 0 && diffDays <= 93) {
-                        const matrixHeaders = ['VEHICLE / UNIT', 'PLATE NO.'];
-                        const colWidths = [{ wch: 26 }, { wch: 14 }];
-
-                        const dayDates = [];
-                        const dayNamesShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-                        for (let i = 0; i < diffDays; i++) {
-                            const curr = new Date(mStart);
-                            curr.setDate(mStart.getDate() + i);
-                            dayDates.push(curr);
-                            const mNum = curr.getMonth() + 1;
-                            const dNum = curr.getDate();
-                            const dow = dayNamesShort[curr.getDay()];
-                            matrixHeaders.push(`${mNum}/${dNum} (${dow})`);
-                            colWidths.push({ wch: 16 });
-                        }
-
-                        const matrixRows = [matrixHeaders];
-
-                        // Vehicles list: either filtered or all
-                        let vehsToRender = (this.vehicles && this.vehicles.length) ? this.vehicles : [];
-                        if (vehicleId && vehicleId !== 'all') {
-                            vehsToRender = vehsToRender.filter(v => String(v.id) === String(vehicleId));
-                        }
-
-                        vehsToRender.forEach(v => {
-                            const row = [`${v.brand} ${v.model}`, v.plate_number || 'N/A'];
-                            dayDates.forEach(dt => {
-                                const dtStr = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-                                // Check if vehicle has booking covering this date
-                                const matchBooking = bookings.find(b => {
-                                    if (String(b.vehicle_id) !== String(v.id)) return false;
-                                    const bStart = (b.start_date || '').split('T')[0];
-                                    const bEnd = (b.end_date || '').split('T')[0];
-                                    return dtStr >= bStart && dtStr <= bEnd;
-                                });
-
-                                if (matchBooking) {
-                                    row.push(matchBooking.customer_name || `Booking #${matchBooking.id}`);
-                                } else {
-                                    row.push('');
-                                }
-                            });
-                            matrixRows.push(row);
-                        });
-
-                        const wsMatrix = XLSX.utils.aoa_to_sheet(matrixRows);
-                        wsMatrix['!cols'] = colWidths;
-                        XLSX.utils.book_append_sheet(wb, wsMatrix, "Fleet Schedule Matrix");
-                    }
-                }
-
-                // -------------------------------------------------------------
-                // 3. GENERATE & DOWNLOAD EXCEL FILE
-                // -------------------------------------------------------------
-                const filename = `autoride_fleet_${dateTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-                // Try Capacitor Filesystem first (for mobile APK)
+                // Handle mobile Capacitor app vs web browser
                 const { Filesystem } = window.Capacitor?.Plugins || {};
                 if (Filesystem) {
                     try {
-                        const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+                        const reader = new FileReader();
+                        const base64Data = await new Promise((resolve, reject) => {
+                            reader.onloadend = () => {
+                                const b64 = reader.result.split(',')[1];
+                                resolve(b64);
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(blob);
+                        });
                         const resWrite = await Filesystem.writeFile({
                             path: filename,
-                            data: wboutBase64,
+                            data: base64Data,
                             directory: 'DOWNLOADS',
                             recursive: true
                         });
@@ -16451,34 +16266,28 @@ async edit(id) { this.openModal(id); }
                                     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                                 });
                             }
-                        } catch (e) { /* ignore opener error */ }
+                        } catch (e) { /* ignore */ }
                     } catch (capErr) {
-                        // Fallback to web download
-                        const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                        const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                        const url = URL.createObjectURL(blob);
+                        const dlUrl = URL.createObjectURL(blob);
                         const a = document.createElement('a');
-                        a.href = url;
+                        a.href = dlUrl;
                         a.download = filename;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
+                        setTimeout(() => URL.revokeObjectURL(dlUrl), 3000);
                         showNotification('Excel downloaded successfully!', 'success');
                     }
                 } else {
-                    // Web browser direct download
-                    const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                    const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                    const url = URL.createObjectURL(blob);
+                    const dlUrl = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
+                    a.href = dlUrl;
                     a.download = filename;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    showNotification('Excel downloaded: ' + filename, 'success');
+                    setTimeout(() => URL.revokeObjectURL(dlUrl), 3000);
+                    showNotification('Excel downloaded successfully!', 'success');
                 }
 
                 this.closeExportModal();

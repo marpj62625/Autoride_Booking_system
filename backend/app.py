@@ -15584,6 +15584,101 @@ def get_fleet_bookings():
     finally:
         if 'cur' in locals(): cur.close()
 
+@app.route('/admin/fleet-calendar/export-excel', methods=['GET'])
+@app.route('/api/admin/fleet-calendar/export-excel', methods=['GET'])
+def export_fleet_calendar_excel():
+    start = request.args.get('start')
+    end = request.args.get('end')
+    is_all = request.args.get('all') == 'true' or not (start and end)
+    status_filter = request.args.get('status')
+    vehicle_id = request.args.get('vehicle_id')
+    try:
+        cur = get_cursor()
+        
+        # 1. Fetch all active vehicles for the left column
+        cur.execute("SELECT id, brand, model, plate_number, status FROM vehicles ORDER BY id ASC")
+        v_rows = cur.fetchall()
+        vehicles = [dict(v) for v in v_rows]
+        
+        # 2. Fetch bookings matching filter
+        query = """
+            SELECT 
+                b.id, b.vehicle_id, b.user_id,
+                b.start_date, b.end_date, b.start_time, b.end_time,
+                b.status, b.rental_type, b.pickup_location, b.service_type,
+                b.base_price, b.total_price, b.amount_paid, b.balance_amount,
+                b.payment_type, b.payment_status,
+                COALESCE(b.payment_fee, 0.00) AS payment_fee,
+                COALESCE(b.payment_fee_percent, 0.00) AS payment_fee_percent,
+                COALESCE(b.payment_method, 'Cash') AS payment_method,
+                COALESCE(b.driver_fee, 0.00) AS driver_fee,
+                COALESCE(b.calendar_color, '') AS calendar_color,
+                COALESCE(b.destination, '') AS destination,
+                COALESCE(b.rental_purpose, '') AS rental_purpose,
+                v.brand, v.model, v.plate_number, v.vehicle_type, v.transmission, v.fuel_type, v.seats,
+                v.daily_rate, v.status AS vehicle_status, v.location AS vehicle_location,
+                COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), 'Customer') AS customer_name,
+                COALESCE(NULLIF(TRIM(u.phone), ''), NULLIF(TRIM(b.customer_phone), ''), 'N/A') AS customer_phone,
+                COALESCE(u.email, '') AS customer_email,
+                COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), NULLIF(TRIM(b.customer_address), ''), 'N/A') AS customer_address,
+                COALESCE(NULLIF(TRIM(ld.emergency_contact_name), ''), NULLIF(TRIM(b.emergency_name), ''), '') AS emergency_contact_name,
+                COALESCE(NULLIF(TRIM(ld.emergency_contact_phone), ''), NULLIF(TRIM(b.emergency_phone), ''), '') AS emergency_contact_phone
+            FROM bookings b
+            JOIN vehicles v ON b.vehicle_id = v.id
+            LEFT JOIN users u ON b.user_id = u.id
+            LEFT JOIN license_details ld ON u.id = ld.user_id
+            WHERE 1=1
+        """
+        params = []
+        if not is_all and start and end:
+            query += " AND b.start_date <= %s AND b.end_date >= %s"
+            params.extend([end, start])
+        
+        if status_filter and status_filter.lower() in ('active', 'active_confirmed'):
+            query += " AND LOWER(b.status) IN ('pending', 'confirmed', 'approved', 'picked up', 'ongoing', 'completed')"
+        elif status_filter and status_filter.lower() not in ('all', ''):
+            query += " AND LOWER(b.status) = %s"
+            params.append(status_filter.lower())
+        else:
+            if not is_all:
+                query += " AND LOWER(b.status) IN ('pending', 'confirmed', 'approved', 'picked up', 'ongoing', 'completed')"
+            else:
+                query += " AND LOWER(b.status) != 'deleted'"
+
+        if vehicle_id and vehicle_id.lower() != 'all':
+            query += " AND b.vehicle_id = %s"
+            params.append(vehicle_id)
+
+        query += " ORDER BY b.start_date ASC"
+        cur.execute(query, tuple(params))
+        b_rows = cur.fetchall()
+        bookings = [dict(r) for r in b_rows]
+        
+        # 3. Generate Excel file
+        from fleet_excel_generator import generate_fleet_excel
+        excel_io = generate_fleet_excel(vehicles, bookings, start_date=start, end_date=end, is_all=is_all)
+        
+        # Filename
+        if is_all:
+            filename = "Autoride_Fleet_Monitoring_All_Records.xlsx"
+        elif start and end:
+            filename = f"Autoride_Fleet_Monitoring_{start}_to_{end}.xlsx"
+        else:
+            filename = f"Autoride_Fleet_Monitoring_{datetime.date.today().strftime('%Y-%m')}.xlsx"
+            
+        return send_file(
+            excel_io,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        print(f"Error exporting fleet calendar excel: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 @app.route('/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
 @app.route('/api/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
 def update_booking_quick_pricing(booking_id):
