@@ -11,3 +11,5 @@ gunicorn
 fpdf2
 python-dotenv
 bcrypt==4.2.1
+openpyxl
+
