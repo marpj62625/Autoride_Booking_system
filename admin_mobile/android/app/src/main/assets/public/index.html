@@ -4482,11 +4482,11 @@
 
 
 
-        <a href="javascript:void(0);" class="drawer-item" data-tab="verifications" onclick="navTo('verifications')"><i class="fas fa-user-check"></i> User Verifications</a>
+        <a href="javascript:void(0);" class="drawer-item" data-tab="verifications" onclick="navTo('verifications')"><i class="fas fa-user-check"></i> Renter Verification</a>
 
 
 
-        <a href="javascript:void(0);" class="drawer-item" data-tab="users" onclick="navTo('users')"><i class="fas fa-users"></i> User Management</a>
+        <a href="javascript:void(0);" class="drawer-item" data-tab="users" onclick="navTo('users')"><i class="fas fa-users"></i> Renter Management</a>
 
 
 
@@ -6531,7 +6531,7 @@
 
 
 
-            <h1 class="page-title" style="margin: 0;">Verifications</h1>
+            <h1 class="page-title" style="margin: 0;">Renter Verification</h1>
 
 
 
@@ -9786,7 +9786,7 @@ input:checked + .ctrl-slider:before {
 
     <!-- Header: title row -->
     <div style="margin-bottom:14px;">
-        <h1 class="page-title" style="margin:0 0 10px 0; font-size:1.6rem; color:#0f172a; font-weight:900;">User Management</h1>
+        <h1 class="page-title" style="margin:0 0 10px 0; font-size:1.6rem; color:#0f172a; font-weight:900;">Renter Management</h1>
         <div style="display:flex; gap:8px;">
             <button onclick="UserMgmt.openBroadcastModal()" style="background:#00B14F; border:none; color:#ffffff; padding:10px 18px; border-radius:12px; font-size:0.82rem; font-weight:800; display:flex; align-items:center; gap:8px; cursor:pointer; flex:1; justify-content:center; box-shadow:0 2px 8px rgba(0,177,79,0.3);">
                 <i class="fas fa-bullhorn"></i> Broadcast
@@ -9855,7 +9855,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-    <div id="umList"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading users...</div></div>
+    <div id="umList"><div style="text-align:center; padding:40px; color:var(--text-muted);">Loading renters...</div></div>
 
 
 
@@ -9877,7 +9877,7 @@ input:checked + .ctrl-slider:before {
 
         <div id="umModalCard" style="width:100%; max-width:680px; background:var(--surface-solid); border-radius:24px; padding:24px; max-height:90vh; overflow-y:auto; margin:auto; box-shadow:var(--shadow-modal); border:1px solid var(--border);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="font-size:1.15rem; font-weight:800; color:var(--text-main); margin:0;">User Details</h2>
+                <h2 style="font-size:1.15rem; font-weight:800; color:var(--text-main); margin:0;">Renter Details</h2>
                 <button onclick="UserMgmt.closeModal()" style="background:rgba(0,0,0,0.04); border:1px solid var(--border); color:var(--text-main); width:36px; height:36px; border-radius:10px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="fas fa-times"></i></button>
             </div>
 
@@ -32023,7 +32023,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No users found</div>';
+                el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No renters found</div>';
 
 
 
@@ -32213,7 +32213,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            document.getElementById('pushNotifRecipient').textContent = '📢 ALL REGISTERED USERS';
+            document.getElementById('pushNotifRecipient').textContent = '📢 ALL REGISTERED RENTERS';
 
 
 
@@ -32241,7 +32241,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            document.getElementById('pushNotifRecipient').textContent = `🔔 ${userName} (User ID: ${userId})`;
+            document.getElementById('pushNotifRecipient').textContent = `🔔 ${userName} (Renter ID: ${userId})`;
 
 
 
@@ -33022,7 +33022,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            if (!confirm('Reset this user\'s password?')) return;
+            if (!confirm('Reset this renter\'s password?')) return;
 
 
 
@@ -33072,7 +33072,7 @@ function toggleNewsletterModal(show = true) {
         async toggleRegularCustomer(userId, currentStatus) {
             const confirmMsg = currentStatus 
                 ? 'Revoke Regular Customer (VIP) status? The customer will no longer be exempt from downpayment.'
-                : 'Mark this user as a Regular Customer (VIP)? They will be exempt from downpayment (₱0 DP upon booking).';
+                : 'Mark this renter as a Regular Customer (VIP)? They will be exempt from downpayment (₱0 DP upon booking).';
             if (!confirm(confirmMsg)) return;
             try {
                 const res = await apiFetch(`admin/users/${userId}/toggle-regular-customer`, {
@@ -33322,7 +33322,7 @@ function toggleNewsletterModal(show = true) {
         },
 
         async resetViolations(userId) {
-            if (!confirm('Are you sure you want to reset violation strikes and lift all suspensions for this user?')) return;
+            if (!confirm('Are you sure you want to reset violation strikes and lift all suspensions for this renter?')) return;
             const note = prompt('Optional note for resetting violations:', 'Admin reset strikes');
             const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser && adminAuth.getUser()) ? adminAuth.getUser() : null;
             try {
@@ -33349,7 +33349,7 @@ function toggleNewsletterModal(show = true) {
         },
 
         async blacklistUser(userId) {
-            if (!confirm('Permanently restrict this user from booking?')) return;
+            if (!confirm('Permanently restrict this renter from booking?')) return;
             try {
                 const res = await apiFetch(`admin/users/${userId}/violations/blacklist`, {
                     method: 'POST',
@@ -33357,11 +33357,11 @@ function toggleNewsletterModal(show = true) {
                     body: JSON.stringify({ blacklist: true })
                 });
                 const d = await res.json();
-                if (!res.ok) throw new Error(d.error || 'Failed to ban user');
+                if (!res.ok) throw new Error(d.error || 'Failed to ban renter');
                 if (typeof showNotification === 'function') {
-                    showNotification(d.message || 'User blacklisted from booking', 'success');
+                    showNotification(d.message || 'Renter blacklisted from booking', 'success');
                 } else {
-                    alert(d.message || 'User blacklisted from booking');
+                    alert(d.message || 'Renter blacklisted from booking');
                 }
                 this.openModal(userId);
                 this.refresh();
@@ -33371,7 +33371,7 @@ function toggleNewsletterModal(show = true) {
         },
 
         async liftBlacklist(userId) {
-            if (!confirm('Lift permanent booking restriction for this user?')) return;
+            if (!confirm('Lift permanent booking restriction for this renter?')) return;
             try {
                 const res = await apiFetch(`admin/users/${userId}/violations/blacklist`, {
                     method: 'POST',
