@@ -4485,17 +4485,25 @@ def get_all_gps_locations():
                 location_filter = adm['assigned_location']
 
         query = """
-            SELECT id, 
-                   COALESCE(NULLIF(name, ''), CONCAT(brand, ' ', model), 'Vehicle #' || id) AS name,
-                   plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status
-            FROM vehicles
+            SELECT v.id, 
+                   COALESCE(NULLIF(v.name, ''), CONCAT(v.brand, ' ', v.model), 'Vehicle #' || v.id) AS name,
+                   v.plate_number, v.latitude, v.longitude, v.last_gps_update, v.last_address, v.gps_status, 
+                   v.gps_device_token, v.gps_device_name, v.gps_server, v.status,
+                   b.gps_tracking_consent, b.customer_name, b.status AS current_booking_status
+            FROM vehicles v
+            LEFT JOIN LATERAL (
+                SELECT gps_tracking_consent, customer_name, status
+                FROM bookings
+                WHERE vehicle_id = v.id AND status IN ('Picked Up', 'Confirmed')
+                ORDER BY id DESC LIMIT 1
+            ) b ON TRUE
         """
         params = []
         if location_filter:
-            query += " WHERE location = %s "
+            query += " WHERE v.location = %s "
             params.append(location_filter)
 
-        query += " ORDER BY id ASC"
+        query += " ORDER BY v.id ASC"
         cur.execute(query, tuple(params))
         locations = cur.fetchall()
 
@@ -4505,11 +4513,49 @@ def get_all_gps_locations():
             if d.get('last_gps_update'):
                 d['last_gps_update_iso'] = d['last_gps_update'].isoformat()
                 d['last_gps_update_str'] = str(d['last_gps_update'])
+            
+            # Check if renter opted out of tracking during their active rental
+            privacy_requested = (d.get('gps_tracking_consent') is False) and (d.get('current_booking_status') in ['Picked Up', 'Confirmed'])
+            d['privacy_requested'] = bool(privacy_requested)
+            d['privacy_renter'] = d.get('customer_name') if privacy_requested else None
             results.append(d)
 
         return jsonify(results), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+
+
+@app.route('/gps-privacy-status', methods=['GET'])
+@app.route('/api/gps-privacy-status', methods=['GET'])
+def get_gps_privacy_status():
+    """Returns mapping of vehicles currently under an active rental whose renter requested privacy."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT v.id, v.brand, v.model, v.plate_number, v.gps_device_name,
+                   b.gps_tracking_consent, b.customer_name, b.status AS booking_status
+            FROM vehicles v
+            INNER JOIN bookings b ON b.vehicle_id = v.id AND b.status IN ('Picked Up', 'Confirmed')
+            WHERE b.gps_tracking_consent = FALSE
+            ORDER BY b.id DESC
+        """)
+        rows = cur.fetchall()
+        privacy_map = {}
+        for r in rows:
+            privacy_map[str(r['id'])] = {
+                "privacy_requested": True,
+                "customer_name": r.get('customer_name') or "Renter",
+                "brand": r.get('brand'),
+                "model": r.get('model'),
+                "plate_number": r.get('plate_number'),
+                "gps_device_name": r.get('gps_device_name')
+            }
+        return jsonify(privacy_map), 200
+    except Exception as e:
+        return jsonify({}), 200
     finally:
         if 'cur' in locals():
             cur.close()
@@ -5244,6 +5290,12 @@ def book():
         if rental_type == 'With Driver' and driver_fee <= 0:
             driver_fee = float(755.0 * max(1, booking_days))
 
+        raw_gps_consent = data.get('gps_tracking_consent', True)
+        if isinstance(raw_gps_consent, str):
+            gps_tracking_consent = raw_gps_consent.lower() not in ['false', '0', 'no', 'off']
+        else:
+            gps_tracking_consent = bool(raw_gps_consent) if raw_gps_consent is not None else True
+
         cur.execute("""
             INSERT INTO bookings (
                 user_id, vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
@@ -5252,16 +5304,16 @@ def book():
                 return_province, return_municipality, return_barangay,
                 start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned,
                 destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
-                driver_fee
+                driver_fee, gps_tracking_consent
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
         """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
               base_price, addon_price, tax_amount, total_price,
               pickup_province, pickup_municipality, pickup_barangay,
               return_province, return_municipality, return_barangay,
               pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned,
               destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
-              driver_fee))
+              driver_fee, gps_tracking_consent))
 
         booking_id = cur.fetchone()['id']
 

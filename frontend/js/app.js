@@ -4767,6 +4767,15 @@ function showRentalAgreement(payload, result, payType) {
     '<li>Full rental balance must be completed prior to vehicle handover</li>' +
     '</ul>' +
     '</div>' +
+    '<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;">' +
+    '<label style="display:flex;align-items:flex-start;gap:10px;font-size:0.875rem;cursor:pointer;margin:0;">' +
+    '<input type="checkbox" id="gpsTrackingOptIn" checked style="margin-top:3px;accent-color:var(--primary);width:18px;height:18px;">' +
+    '<div>' +
+    '<span style="font-weight:700;color:var(--text-main);display:block;">Allow real-time GPS tracking during rental</span>' +
+    '<span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;line-height:1.4;">Uncheck if you wish to request location privacy (live telemetry will be encrypted/masked for the admin).</span>' +
+    '</div>' +
+    '</label>' +
+    '</div>' +
     '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;font-size:0.875rem;cursor:pointer;">' +
     '<input type="checkbox" id="agreeCheck" style="margin-top:2px;accent-color:var(--primary);width:18px;height:18px;">' +
     '<span>I have read and agree to the Autoride Rental Agreement and Policies.</span>' +
@@ -4784,6 +4793,11 @@ function confirmAndBook() {
   if (!agreeCheck || !agreeCheck.checked) {
     showToast('Please read and agree to the rental terms first.', 'error');
     return;
+  }
+
+  var gpsOpt = document.getElementById('gpsTrackingOptIn');
+  if (typeof _pendingBookingPayload !== 'undefined' && _pendingBookingPayload) {
+    _pendingBookingPayload.gps_tracking_consent = gpsOpt ? gpsOpt.checked : true;
   }
 
   // Check verification status:
