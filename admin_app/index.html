@@ -26,8 +26,6 @@
     <link rel="icon" type="image/png" href="Autoride-logo.png">
     <link rel="apple-touch-icon" href="Autoride-logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -8707,182 +8705,31 @@ input:checked + .ctrl-slider:before {
 
 
     <!-- GPS TRACKING TAB -->
-    <style id="gpsFleetMapStyles">
-    .gps-viewmode-btn {
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 800;
-        border: 1.5px solid var(--border);
-        background: var(--surface-card);
-        color: var(--text-main);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        transition: all 0.2s ease;
-    }
-    .gps-viewmode-btn.active {
-        background: #00B14F;
-        color: #ffffff !important;
-        border-color: #00B14F;
-        box-shadow: 0 2px 8px rgba(0, 177, 79, 0.35);
-    }
-    .gps-viewmode-btn.active i {
-        color: #ffffff !important;
-    }
 
-    /* Custom Marker Pins matching Yi Tracker / Screenshot style */
-    .leaflet-div-icon.gps-custom-icon {
-        background: transparent !important;
-        border: none !important;
-    }
-    .gps-car-pin {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        transform: translate(-50%, -100%);
-        cursor: pointer;
-        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-        width: max-content;
-    }
-    .gps-car-pin:hover, .gps-car-pin.selected {
-        transform: translate(-50%, -105%) scale(1.12);
-        z-index: 9999 !important;
-    }
-    .gps-pin-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: #ffffff;
-        border: 3px solid #1e88e5;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        box-sizing: border-box;
-    }
-    .gps-pin-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        background: #f1f5f9;
-    }
-    .gps-pin-avatar.online {
-        border-color: #00B14F;
-    }
-    .gps-pin-avatar.online::after {
-        content: '';
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        width: 10px;
-        height: 10px;
-        background: #00B14F;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        box-shadow: 0 0 6px #00B14F;
-        animation: gpsPulse 2s infinite;
-    }
-    .gps-pin-pointer {
-        width: 0;
-        height: 0;
-        border-left: 7px solid transparent;
-        border-right: 7px solid transparent;
-        border-top: 8px solid #1e88e5;
-        margin-top: -1px;
-    }
-    .gps-pin-avatar.online + .gps-pin-pointer {
-        border-top-color: #00B14F;
-    }
-    .gps-pin-badge {
-        background: #1e88e5;
-        color: #ffffff;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.3px;
-        padding: 3px 9px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-        white-space: nowrap;
-        margin-top: 2px;
-        border: 1px solid rgba(255,255,255,0.4);
-        text-transform: uppercase;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    .gps-pin-badge.online {
-        background: #00B14F;
-    }
 
-    @keyframes gpsPulse {
-        0% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0.7); }
-        70% { box-shadow: 0 0 0 8px rgba(0, 177, 79, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(0, 177, 79, 0); }
-    }
-
-    /* Floating Controls inside Leaflet Map */
-    .gps-floating-glass {
-        background: rgba(15, 23, 42, 0.85);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 12px;
-        color: #ffffff;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    }
-
-    .gps-leaflet-popup .leaflet-popup-content-wrapper {
-        background: var(--surface-card, #ffffff);
-        color: var(--text-main, #0f172a);
-        border-radius: 16px;
-        padding: 6px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-        border: 1px solid var(--border, #e2e8f0);
-    }
-    .gps-leaflet-popup .leaflet-popup-tip {
-        background: var(--surface-card, #ffffff);
-    }
-    </style>
 
     <div id="gps" class="tab-content" style="display: none;">
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                <h1 class="page-title" style="margin:0;">GPS Tracking</h1>
-                <!-- View Mode Switcher -->
-                <div style="display:inline-flex;background:var(--surface-container, rgba(0,0,0,0.05));padding:4px;border-radius:24px;border:1.5px solid var(--border);gap:4px;">
-                    <button id="gpsModeAllBtn" type="button" class="gps-viewmode-btn active" onclick="GPS.setViewMode('all')">
-                        <i class="fas fa-layer-group" style="color:#00B14F;"></i> View All Fleet (<span id="gpsFleetCountBadge">0</span>)
-                    </button>
-                    <button id="gpsModeSingleBtn" type="button" class="gps-viewmode-btn" onclick="GPS.setViewMode('single')">
-                        <i class="fas fa-car"></i> Single Vehicle
-                    </button>
-                </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-                <span id="gpsStatusBadge" style="font-size:0.65rem;padding:5px 12px;background:rgba(0,177,79,0.12);color:var(--success);border-radius:20px;font-weight:800;border:1.5px solid currentColor;display:inline-flex;align-items:center;gap:6px;">
-                    <span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;box-shadow:0 0 6px currentColor;"></span>
-                    LIVE MULTI-TRACKER
-                </span>
-            </div>
+
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+            <h1 class="page-title" style="margin:0;">GPS Tracking</h1>
+            <span id="gpsStatusBadge" style="font-size:0.6rem;padding:4px 10px;background:rgba(0,177,79,0.1);color:var(--success);border-radius:20px;font-weight:800;border:1px solid currentColor;">LIVE</span>
         </div>
 
-        <!-- FLEET STATUS / VEHICLE SELECTOR CARD -->
-        <div class="stat-card" style="padding: 16px 20px; margin-bottom: 16px; border-left: 4px solid var(--primary); background: var(--surface-card); border-radius: 14px; border: 1px solid var(--border);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+        <!-- LAST KNOWN LOCATION & FLEET STATUS CARD -->
+        <div class="stat-card" style="padding: 18px 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); background: var(--surface-card); border-radius: 14px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                     <span style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;">Vehicle Fleet:</span>
                     <select id="gpsVehicleSelect" onchange="GPS.onVehicleSelect(this.value)" style="padding: 8px 14px; background: var(--surface-container, var(--surface-card)); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text-main); font-weight: 700; font-size: 0.88rem; outline: none; cursor: pointer;">
                         <option value="">Loading vehicles...</option>
                     </select>
-                    <span id="gpsDeviceLabel" style="font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; background: rgba(var(--primary-rgb, 0,177,79),0.08); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600;">Tracker: Multi-Device Mode</span>
+                    <span id="gpsDeviceLabel" style="font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; background: rgba(var(--primary-rgb, 0,177,79),0.08); border: 1px solid var(--border); color: var(--text-muted); font-weight: 600;">Tracker: Loading...</span>
                 </div>
                 <div id="gpsStatusPill" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3);">
                     <span id="gpsPillDot" style="width: 8px; height: 8px; border-radius: 50%; background: #00B14F; display: inline-block;"></span>
-                    <span id="gpsPillText">FLEET RADAR ACTIVE</span>
+                    <span id="gpsPillText">CHECKING STATUS...</span>
                 </div>
             </div>
 
@@ -8893,9 +8740,9 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-map-marker-alt" style="color: var(--primary); font-size: 1.2rem;"></i>
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Recorded Location / Hub</div>
-                        <div id="gpsLastAddressText" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); line-height: 1.35; margin-top: 2px;">Showing all fleet devices across region</div>
-                        <div id="gpsCoordsText" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">19 Vehicles Plotted</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Recorded Last Location</div>
+                        <div id="gpsLastAddressText" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); line-height: 1.35; margin-top: 2px;">Searching recorded location...</div>
+                        <div id="gpsCoordsText" style="font-family: monospace; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Lat: --, Lng: --</div>
                     </div>
                 </div>
 
@@ -8905,71 +8752,42 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-history" style="color: #3b82f6; font-size: 1.15rem;"></i>
                     </div>
                     <div>
-                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Fleet Signal Status</div>
-                        <div id="gpsLastTimeElapsed" style="font-size: 0.95rem; font-weight: 700; color: #3b82f6; margin-top: 2px;">Multi-Device Active</div>
-                        <div id="gpsLastTimeExact" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Click any vehicle pin to inspect</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Last Seen / Ping</div>
+                        <div id="gpsLastTimeElapsed" style="font-size: 0.95rem; font-weight: 700; color: #3b82f6; margin-top: 2px;">--</div>
+                        <div id="gpsLastTimeExact" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">--</div>
                     </div>
                 </div>
 
                 <!-- Quick Action Buttons -->
                 <div style="display: flex; gap: 8px; justify-content: flex-start; flex-wrap: wrap;">
-                    <button type="button" onclick="GPS.fitAllFleet()" class="btn-premium" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <i class="fas fa-compress-arrows-alt"></i> Fit All Fleet
-                    </button>
-                    <button type="button" onclick="GPS.openGoogleMaps()" class="btn-premium" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <button type="button" onclick="GPS.openGoogleMaps()" class="btn-premium" style="flex: 1; min-width: 140px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
                         <i class="fas fa-location-arrow"></i> Google Maps
                     </button>
-                    <button type="button" onclick="GPS.openTripHistoryModal()" style="flex: 1; min-width: 120px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <i class="fas fa-route"></i> History
+                    <button type="button" onclick="GPS.openTripHistoryModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text-main); border: 1px solid var(--border); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fas fa-route"></i> Trip History
                     </button>
-                    <button type="button" onclick="GPS.openConfigModal()" style="flex: 1; min-width: 120px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <i class="fas fa-satellite-dish"></i> Hardware
+                    <button type="button" onclick="GPS.openConfigModal()" style="flex: 1; min-width: 130px; padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <i class="fas fa-satellite-dish"></i> GPS Device
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- INTERACTIVE FLEET MAP CARD -->
-        <div class="chart-card" style="padding:0;overflow:hidden;height:calc(100vh - 220px);min-height:520px;position:relative;margin-bottom:0;border-radius:18px;border:1.5px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,0.06);">
-            <!-- Native Leaflet Map Container -->
-            <div id="gpsLeafletMap" style="width:100%;height:100%;min-height:520px;z-index:1;"></div>
-
-            <!-- Optional Blynk Fallback iframe (hidden by default unless user toggles) -->
-            <iframe id="blynkMapFrame" src="about:blank" data-src="https://car-rental-inlaguna.vercel.app/" loading="lazy" style="display:none;width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
-
-            <!-- Top-Left Floating Badge: Fleet Status -->
-            <div class="gps-floating-glass" style="position:absolute;top:14px;left:14px;z-index:500;padding:8px 14px;display:flex;align-items:center;gap:10px;">
-                <span id="gpsFloatingBeacon" style="width:10px;height:10px;background:#00B14F;border-radius:50%;box-shadow:0 0 8px #00B14F;display:inline-block;animation:gpsPulse 1.8s infinite;"></span>
-                <div>
-                    <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.3px;color:#ffffff;" id="gpsFloatingTitle">ALL FLEET RADAR</div>
-                    <div style="font-size:0.65rem;color:#94a3b8;margin-top:1px;" id="gpsFloatingSub">Active devices plotted on map</div>
-                </div>
+        <div class="chart-card" style="padding:0;overflow:hidden;height:calc(100vh - 210px);min-height:460px;position:relative;margin-bottom:0;">
+            <iframe id="blynkMapFrame" src="about:blank" data-src="https://car-rental-inlaguna.vercel.app/" loading="lazy" style="width:100%;height:100%;border:none;" allow="geolocation" allowfullscreen></iframe>
+            <div style="position:absolute;top:14px;right:14px;z-index:10;background:rgba(15,23,42,0.8);backdrop-filter:blur(5px);border-radius:10px;padding:7px 14px;display:flex;align-items:center;gap:8px;">
+                <span style="width:8px;height:8px;background:#00B14F;border-radius:50%;animation:pulse 1.5s infinite;display:inline-block;"></span>
+                <span style="font-size:0.72rem;font-weight:700;color:white;">Live Tracker</span>
             </div>
-
-            <!-- Top-Right Floating Controls: Layers & Map Type -->
-            <div class="gps-floating-glass" style="position:absolute;top:14px;right:14px;z-index:500;display:flex;gap:6px;padding:5px;">
-                <button type="button" onclick="GPS.setMapLayer('voyager')" id="layerVoyagerBtn" style="background:#00B14F;border:none;color:#fff;padding:6px 10px;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;" title="Street Map">
-                    <i class="fas fa-map"></i> Streets
+            <div style="position:absolute;bottom:14px;right:14px;z-index:10;display:flex;gap:8px;">
+                <button onclick="GPS.refresh()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:9px 14px;border-radius:10px;font-size:0.75rem;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <button type="button" onclick="GPS.setMapLayer('satellite')" id="layerSatBtn" style="background:transparent;border:none;color:#cbd5e1;padding:6px 10px;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;" title="Satellite Imagery">
-                    <i class="fas fa-satellite"></i> Satellite
-                </button>
-                <button type="button" onclick="GPS.setMapLayer('dark')" id="layerDarkBtn" style="background:transparent;border:none;color:#cbd5e1;padding:6px 10px;border-radius:8px;font-size:0.72rem;font-weight:700;cursor:pointer;" title="Dark Mode">
-                    <i class="fas fa-moon"></i> Dark
+                <button onclick="GPS.openMap()" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.15);color:white;padding:9px 14px;border-radius:10px;font-size:0.75rem;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-external-link-alt"></i> Full Map
                 </button>
             </div>
-
-            <!-- Bottom-Right Floating Controls: Fit All & Refresh -->
-            <div style="position:absolute;bottom:16px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-                <button type="button" onclick="GPS.fitAllFleet()" class="gps-floating-glass" style="padding:10px 16px;border-radius:12px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                    <i class="fas fa-compress-arrows-alt" style="color:#00B14F;"></i> Fit All Fleet
-                </button>
-                <button type="button" onclick="GPS.refresh()" class="gps-floating-glass" style="padding:10px 16px;border-radius:12px;font-size:0.78rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                    <i class="fas fa-sync-alt" style="color:#38bdf8;"></i> Refresh GPS
-                </button>
-            </div>
-        </div>
-    </div>
+        </div>    </div>
 
 
 
@@ -17598,10 +17416,10 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            if (tabId === 'gps' && typeof GPS !== 'undefined') {
-                GPS.startLive();
-                setTimeout(() => { if (GPS.map) GPS.map.invalidateSize(); }, 250);
-            }
+            if (tabId === 'gps' && typeof GPS !== 'undefined') GPS.startLive();
+
+
+
             else if (typeof GPS !== 'undefined') GPS.stopLive();
 
 
@@ -22321,7 +22139,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        // --- GPS MODULE (Leaflet Multi-Device Fleet Radar + Blynk IoT + Hardware Tracker Integration) ---
+        // --- GPS MODULE (Blynk IoT + Multi-Device Fleet Assignment + Persistent DB Recording) ---
     const GPS = {
         lat: null,
         lng: null,
@@ -22332,88 +22150,14 @@ function toggleNewsletterModal(show = true) {
         fleetVehicles: [],
         _lastGeoLookupTime: 0,
         _lastSavedCoords: null,
-        viewMode: 'all', // 'all' (multi-device) or 'single'
-        map: null,
-        markers: {},
-        tileLayers: {},
-        activeLayerName: 'voyager',
 
         async init() {
-            this.initMap();
+            const frame = document.getElementById('blynkMapFrame');
+            if (frame && (!frame.src || frame.src === 'about:blank' || frame.src.endsWith('about:blank'))) {
+                frame.src = frame.getAttribute('data-src') || 'https://car-rental-inlaguna.vercel.app/';
+            }
             await this.loadFleetVehicles();
             await this.loadLastKnownLocationFromDB();
-            this.renderFleetMarkers();
-            if (this.viewMode === 'all') {
-                setTimeout(() => this.fitAllFleet(), 300);
-            }
-        },
-
-        initMap() {
-            const mapContainer = document.getElementById('gpsLeafletMap');
-            if (!mapContainer) return;
-            if (typeof L === 'undefined') {
-                setTimeout(() => this.initMap(), 150);
-                return;
-            }
-
-            if (this.map) {
-                setTimeout(() => {
-                    if (this.map) this.map.invalidateSize();
-                }, 200);
-                return;
-            }
-
-            // Create Leaflet map centered at Laguna / San Pablo
-            this.map = L.map('gpsLeafletMap', {
-                zoomControl: false,
-                attributionControl: false
-            }).setView([14.1500, 121.2500], 11);
-
-            L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
-
-            // Tile layers
-            this.tileLayers = {
-                voyager: L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19,
-                    subdomains: 'abcd'
-                }),
-                satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    maxZoom: 19
-                }),
-                dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19,
-                    subdomains: 'abcd'
-                })
-            };
-
-            this.tileLayers[this.activeLayerName].addTo(this.map);
-
-            setTimeout(() => {
-                if (this.map) this.map.invalidateSize();
-            }, 300);
-        },
-
-        setMapLayer(layerName) {
-            if (!this.map || !this.tileLayers[layerName]) return;
-            Object.values(this.tileLayers).forEach(layer => {
-                if (this.map.hasLayer(layer)) this.map.removeLayer(layer);
-            });
-            this.tileLayers[layerName].addTo(this.map);
-            this.activeLayerName = layerName;
-
-            ['Voyager', 'Sat', 'Dark'].forEach(k => {
-                const btn = document.getElementById(`layer${k}Btn`);
-                if (btn) {
-                    btn.style.background = 'transparent';
-                    btn.style.color = '#cbd5e1';
-                }
-            });
-            const activeKey = layerName === 'voyager' ? 'Voyager' : (layerName === 'satellite' ? 'Sat' : 'Dark');
-            const activeBtn = document.getElementById(`layer${activeKey}Btn`);
-            if (activeBtn) {
-                activeBtn.style.background = '#00B14F';
-                activeBtn.style.color = '#ffffff';
-            }
         },
 
         async loadFleetVehicles() {
@@ -22442,10 +22186,7 @@ function toggleNewsletterModal(show = true) {
                                 return {
                                     id: v.id,
                                     name: v.name || `${v.brand || ''} ${v.model || ''}`.trim() || `Vehicle #${v.id}`,
-                                    brand: v.brand,
-                                    model: v.model,
                                     plate_number: v.plate_number,
-                                    vehicle_image: v.vehicle_image || exist.vehicle_image,
                                     latitude: exist.latitude || v.latitude,
                                     longitude: exist.longitude || v.longitude,
                                     last_address: exist.last_address || v.last_address,
@@ -22460,10 +22201,6 @@ function toggleNewsletterModal(show = true) {
                     }
                 } catch (e) {}
             }
-
-            // Update badge count
-            const countBadge = document.getElementById('gpsFleetCountBadge');
-            if (countBadge) countBadge.textContent = this.fleetVehicles.length;
 
             const select = document.getElementById('gpsVehicleSelect');
             if (select && this.fleetVehicles.length > 0) {
@@ -22481,213 +22218,22 @@ function toggleNewsletterModal(show = true) {
             this._updateHeaderDeviceLabel();
         },
 
-        renderFleetMarkers() {
-            if (!this.map || typeof L === 'undefined') return;
-
-            // Remove existing markers
-            Object.values(this.markers).forEach(m => {
-                try { this.map.removeLayer(m); } catch (e) {}
-            });
-            this.markers = {};
-
-            let validCount = 0;
-            this.fleetVehicles.forEach(v => {
-                if (!v.latitude || !v.longitude) return;
-                const lat = parseFloat(v.latitude);
-                const lng = parseFloat(v.longitude);
-                if (isNaN(lat) || isNaN(lng)) return;
-
-                validCount++;
-
-                // Online calculation (within 30 mins or status is 'online')
-                const isOnline = v.gps_status === 'online' || (v.last_gps_update && (Date.now() - new Date(v.last_gps_update).getTime()) < 30 * 60 * 1000);
-
-                // Format badge like the screenshot: "08·BRV_NID 2724"
-                const idPrefix = v.id < 10 ? '0' + v.id : String(v.id);
-                const rawModel = (v.model || v.brand || 'CAR').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                const shortModel = rawModel.length > 6 ? rawModel.substring(0, 6) : rawModel;
-                const cleanPlate = (v.plate_number || 'NO-PLATE').trim().toUpperCase();
-                const badgeText = `${idPrefix}·${shortModel}_${cleanPlate}`;
-
-                const carImg = v.vehicle_image || 'https://cdn-icons-png.flaticon.com/512/744/744465.png';
-
-                const iconHtml = `
-                    <div class="gps-car-pin ${isOnline ? 'online' : 'offline'} ${v.id === this.selectedVehicleId ? 'selected' : ''}" id="gpsMarkerPin_${v.id}" onclick="GPS.onMarkerPinClick(${v.id})">
-                        <div class="gps-pin-avatar ${isOnline ? 'online' : ''}">
-                            <img src="${carImg}" alt="${escapeHtml(v.name || 'Car')}" onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/744/744465.png';">
-                        </div>
-                        <div class="gps-pin-pointer"></div>
-                        <div class="gps-pin-badge ${isOnline ? 'online' : ''}">
-                            ${escapeHtml(badgeText)}
-                        </div>
-                    </div>
-                `;
-
-                const customIcon = L.divIcon({
-                    html: iconHtml,
-                    className: 'gps-custom-icon',
-                    iconSize: [120, 75],
-                    iconAnchor: [60, 75],
-                    popupAnchor: [0, -78]
-                });
-
-                const marker = L.marker([lat, lng], { icon: customIcon }).addTo(this.map);
-
-                // Interactive Popup
-                const popupContent = `
-                    <div style="min-width:230px;padding:4px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-                            <img src="${carImg}" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1.5px solid #cbd5e1;background:#f8fafc;" onerror="this.onerror=null;this.src='https://cdn-icons-png.flaticon.com/512/744/744465.png';">
-                            <div>
-                                <div style="font-weight:900;font-size:0.95rem;color:#0f172a;line-height:1.2;">${escapeHtml(v.name || 'Vehicle')}</div>
-                                <div style="font-size:0.78rem;font-weight:800;color:#1e88e5;margin-top:2px;">${escapeHtml(v.plate_number || 'No Plate')}</div>
-                            </div>
-                        </div>
-                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;margin-bottom:10px;">
-                            <div style="font-size:0.72rem;color:#64748b;font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:3px;">
-                                <i class="fas fa-map-marker-alt" style="color:#00B14F;"></i> ${escapeHtml(v.last_address || 'Recorded Coordinates')}
-                            </div>
-                            <div style="font-size:0.68rem;color:#94a3b8;font-family:monospace;">
-                                ${lat.toFixed(6)}, ${lng.toFixed(6)}
-                            </div>
-                            <div style="font-size:0.7rem;font-weight:800;margin-top:4px;display:flex;align-items:center;gap:5px;color:${isOnline ? '#00B14F' : '#f59e0b'};">
-                                <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>
-                                ${isOnline ? 'Online • Moving / Active' : 'Parked • Last Recorded Ping'}
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <button type="button" onclick="GPS.selectAndFocusVehicle(${v.id})" style="flex:1;background:#00B14F;color:#ffffff;border:none;border-radius:8px;padding:7px;font-size:0.75rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
-                                <i class="fas fa-crosshairs"></i> Focus
-                            </button>
-                            <button type="button" onclick="GPS.openGoogleMapsForCoords(${lat}, ${lng})" style="flex:1;background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:7px;font-size:0.75rem;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
-                                <i class="fas fa-directions" style="color:#1e88e5;"></i> Navigate
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                marker.bindPopup(popupContent, { className: 'gps-leaflet-popup' });
-                this.markers[v.id] = marker;
-            });
-
-            // Update subtext
-            const subText = document.getElementById('gpsFloatingSub');
-            if (subText) subText.textContent = `${validCount} devices plotted on map`;
-        },
-
-        fitAllFleet() {
-            if (!this.map) return;
-            const coords = [];
-            this.fleetVehicles.forEach(v => {
-                if (v.latitude && v.longitude) {
-                    const lat = parseFloat(v.latitude);
-                    const lng = parseFloat(v.longitude);
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        coords.push([lat, lng]);
-                    }
-                }
-            });
-
-            if (coords.length > 0) {
-                this.map.fitBounds(coords, {
-                    padding: [50, 50],
-                    maxZoom: 15
-                });
-            } else {
-                this.map.setView([14.1500, 121.2500], 11);
-            }
-        },
-
-        setViewMode(mode) {
-            this.viewMode = mode;
-            const allBtn = document.getElementById('gpsModeAllBtn');
-            const singleBtn = document.getElementById('gpsModeSingleBtn');
-            const floatingTitle = document.getElementById('gpsFloatingTitle');
-            const floatingSub = document.getElementById('gpsFloatingSub');
-            const statusPillText = document.getElementById('gpsPillText');
-
-            if (mode === 'all') {
-                if (allBtn) allBtn.classList.add('active');
-                if (singleBtn) singleBtn.classList.remove('active');
-                if (floatingTitle) floatingTitle.textContent = 'ALL FLEET RADAR';
-                if (floatingSub) floatingSub.textContent = `${this.fleetVehicles.length} active devices plotted on map`;
-                if (statusPillText) statusPillText.textContent = 'FLEET RADAR ACTIVE';
-
-                // Reset pin selection styling
-                document.querySelectorAll('.gps-car-pin').forEach(el => el.classList.remove('selected'));
-
-                this.fitAllFleet();
-            } else {
-                if (singleBtn) singleBtn.classList.add('active');
-                if (allBtn) allBtn.classList.remove('active');
-                if (statusPillText) statusPillText.textContent = 'SINGLE VEHICLE FOCUS';
-
-                const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
-                if (currentVeh) {
-                    this.onVehicleSelect(currentVeh.id);
-                }
-            }
-        },
-
-        onMarkerPinClick(vehicleId) {
-            this.selectedVehicleId = vehicleId;
-            const sel = document.getElementById('gpsVehicleSelect');
-            if (sel) sel.value = vehicleId;
-            const veh = this.fleetVehicles.find(v => v.id === vehicleId);
-            if (veh) {
-                this._updateCardWithData(veh);
-                this._updateHeaderDeviceLabel();
-            }
-            // Highlight selected pin
-            document.querySelectorAll('.gps-car-pin').forEach(el => el.classList.remove('selected'));
-            const pin = document.getElementById(`gpsMarkerPin_${vehicleId}`);
-            if (pin) pin.classList.add('selected');
-        },
-
-        selectAndFocusVehicle(vehicleId) {
-            this.selectedVehicleId = vehicleId;
-            this.setViewMode('single');
-            const sel = document.getElementById('gpsVehicleSelect');
-            if (sel) sel.value = vehicleId;
-
-            const veh = this.fleetVehicles.find(v => v.id === vehicleId);
-            if (veh && veh.latitude && veh.longitude && this.map) {
-                const lat = parseFloat(veh.latitude);
-                const lng = parseFloat(veh.longitude);
-                this.map.flyTo([lat, lng], 16, { duration: 1.2 });
-                if (this.markers[vehicleId]) {
-                    this.markers[vehicleId].openPopup();
-                }
-                this._updateCardWithData(veh);
-            }
-        },
-
-        openGoogleMapsForCoords(lat, lng) {
-            window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
-        },
-
         _updateHeaderDeviceLabel() {
             const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
             const labelEl = document.getElementById('gpsDeviceLabel');
-            if (labelEl) {
-                if (this.viewMode === 'all') {
-                    labelEl.textContent = `Fleet: ${this.fleetVehicles.length} Units Tracked`;
+            if (labelEl && currentVeh) {
+                if (currentVeh.gps_device_name) {
+                    labelEl.textContent = `Tracker: ${currentVeh.gps_device_name}`;
+                    labelEl.style.color = 'var(--text-main)';
+                    labelEl.style.borderColor = 'var(--border)';
+                } else if (currentVeh.gps_device_token) {
+                    labelEl.textContent = 'Tracker: Linked';
                     labelEl.style.color = 'var(--primary)';
                     labelEl.style.borderColor = 'rgba(0,177,79,0.3)';
-                } else if (currentVeh) {
-                    if (currentVeh.gps_device_name) {
-                        labelEl.textContent = `Tracker: ${currentVeh.gps_device_name}`;
-                        labelEl.style.color = 'var(--text-main)';
-                        labelEl.style.borderColor = 'var(--border)';
-                    } else if (currentVeh.gps_device_token) {
-                        labelEl.textContent = 'Tracker: Linked';
-                        labelEl.style.color = 'var(--primary)';
-                        labelEl.style.borderColor = 'rgba(0,177,79,0.3)';
-                    } else {
-                        labelEl.textContent = 'Tracker: Unassigned';
-                        labelEl.style.color = '#f59e0b';
-                        labelEl.style.borderColor = 'rgba(245,158,11,0.3)';
-                    }
+                } else {
+                    labelEl.textContent = 'Tracker: Unassigned';
+                    labelEl.style.color = '#f59e0b';
+                    labelEl.style.borderColor = 'rgba(245,158,11,0.3)';
                 }
             }
         },
@@ -22695,18 +22241,6 @@ function toggleNewsletterModal(show = true) {
         onVehicleSelect(vehicleId) {
             this.selectedVehicleId = parseInt(vehicleId, 10);
             this._updateHeaderDeviceLabel();
-            const veh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId);
-            if (veh) {
-                this._updateCardWithData(veh);
-                if (this.viewMode === 'single' && veh.latitude && veh.longitude && this.map) {
-                    const lat = parseFloat(veh.latitude);
-                    const lng = parseFloat(veh.longitude);
-                    this.map.flyTo([lat, lng], 16, { duration: 1.2 });
-                    if (this.markers[veh.id]) {
-                        this.markers[veh.id].openPopup();
-                    }
-                }
-            }
             this.refresh();
         },
 
@@ -22726,7 +22260,6 @@ function toggleNewsletterModal(show = true) {
                     if (veh) {
                         this._updateCardWithData(veh);
                     }
-                    this.renderFleetMarkers();
                 }
             } catch (e) {
                 console.error('[GPS] loadLastKnownLocationFromDB error:', e);
@@ -22766,20 +22299,20 @@ function toggleNewsletterModal(show = true) {
                 if (elapsedEl) elapsedEl.textContent = elapsedStr;
                 if (exactEl) exactEl.textContent = dt.toLocaleString();
 
-                const isRecentlyOnline = elapsedMin < 30;
+                const isRecentlyOnline = elapsedMin < 5;
                 if (pill && pillDot && pillText) {
                     if (isRecentlyOnline) {
                         pill.style.background = 'rgba(0, 177, 79, 0.12)';
                         pill.style.borderColor = 'rgba(0, 177, 79, 0.3)';
                         pill.style.color = 'var(--primary)';
                         pillDot.style.background = '#00B14F';
-                        pillText.textContent = this.viewMode === 'all' ? 'FLEET RADAR ACTIVE' : 'LIVE • MOVING / IDLE';
+                        pillText.textContent = 'LIVE • MOVING / IDLE';
                     } else {
                         pill.style.background = 'rgba(245, 158, 11, 0.12)';
                         pill.style.borderColor = 'rgba(245, 158, 11, 0.3)';
                         pill.style.color = '#f59e0b';
                         pillDot.style.background = '#f59e0b';
-                        pillText.textContent = this.viewMode === 'all' ? 'FLEET RADAR ACTIVE' : 'LAST KNOWN • PARKED';
+                        pillText.textContent = 'LAST KNOWN • PARKED / OFFLINE';
                     }
                 }
             } else {
@@ -22818,9 +22351,6 @@ function toggleNewsletterModal(show = true) {
         },
 
         async refresh() {
-            // Re-fetch all fleet vehicles
-            await this.loadLastKnownLocationFromDB();
-
             const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
             const token = currentVeh?.gps_device_token;
             const server = currentVeh?.gps_server || 'sgp1.blynk.cloud';
@@ -22828,6 +22358,8 @@ function toggleNewsletterModal(show = true) {
             this._updateHeaderDeviceLabel();
 
             if (!token) {
+                this._showNoDevice();
+                this.loadLastKnownLocationFromDB();
                 return;
             }
 
@@ -22835,7 +22367,11 @@ function toggleNewsletterModal(show = true) {
                 const res = await fetch(
                     `https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&_=${Date.now()}`
                 );
-                if (!res.ok) return;
+                if (!res.ok) {
+                    this._showOffline('Device offline');
+                    this.loadLastKnownLocationFromDB();
+                    return;
+                }
 
                 const data = await res.json();
                 const now = Date.now();
@@ -22849,7 +22385,9 @@ function toggleNewsletterModal(show = true) {
 
                 const badge = document.getElementById('gpsStatusBadge');
                 if (isOnline && !isEncrypted) {
-                    if (badge) { badge.textContent = 'LIVE MULTI-TRACKER'; badge.style.color = 'var(--success)'; }
+                    if (badge) { badge.textContent = 'LIVE'; badge.style.color = 'var(--success)'; }
+                } else {
+                    if (badge) { badge.textContent = 'OFFLINE'; badge.style.color = '#f59e0b'; }
                 }
 
                 if (!isEncrypted) {
@@ -22859,12 +22397,14 @@ function toggleNewsletterModal(show = true) {
                         this.lat = lat;
                         this.lng = lng;
 
+                        // Reverse geocode if 60s elapsed
                         if (now - this._lastGeoLookupTime > 60000 || !this.currentAddress) {
                             this._lastGeoLookupTime = now;
                             const addr = await this.reverseGeocode(lat, lng);
                             if (addr) this.currentAddress = addr;
                         }
 
+                        // Auto-persist to database for selected vehicle
                         const vehId = this.selectedVehicleId || (currentVeh ? currentVeh.id : 12);
                         if (vehId) {
                             try {
@@ -22882,19 +22422,25 @@ function toggleNewsletterModal(show = true) {
                             } catch (e) {}
                         }
 
-                        // Update currentVeh in fleetVehicles
-                        const vObj = this.fleetVehicles.find(x => x.id === vehId);
-                        if (vObj) {
-                            vObj.latitude = lat;
-                            vObj.longitude = lng;
-                            vObj.last_address = this.currentAddress;
-                            vObj.last_gps_update = new Date().toISOString();
-                            vObj.gps_status = isOnline ? 'online' : 'offline';
-                        }
-                        this.renderFleetMarkers();
+                        // Update UI Card
+                        this._updateCardWithData({
+                            id: vehId,
+                            latitude: lat,
+                            longitude: lng,
+                            last_address: this.currentAddress,
+                            last_gps_update: new Date().toISOString(),
+                            gps_status: isOnline ? 'online' : 'offline'
+                        });
+                        return;
                     }
                 }
-            } catch (e) {}
+
+                this.loadLastKnownLocationFromDB();
+
+            } catch (e) {
+                this._showOffline('Connection error');
+                this.loadLastKnownLocationFromDB();
+            }
         },
 
         _showNoDevice() {
@@ -22902,6 +22448,16 @@ function toggleNewsletterModal(show = true) {
             if (badge) {
                 badge.textContent = 'NO TRACKER LINKED';
                 badge.style.color = '#94a3b8';
+            }
+            const pill = document.getElementById('gpsStatusPill');
+            const pillDot = document.getElementById('gpsPillDot');
+            const pillText = document.getElementById('gpsPillText');
+            if (pill && pillDot && pillText) {
+                pill.style.background = 'rgba(148, 163, 184, 0.12)';
+                pill.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+                pill.style.color = '#94a3b8';
+                pillDot.style.background = '#94a3b8';
+                pillText.innerHTML = 'NO TRACKER LINKED &bull; <a href="javascript:void(0)" onclick="GPS.openConfigModal()" style="color:var(--primary);font-weight:700;text-decoration:underline;">+ Assign</a>';
             }
         },
 
@@ -23010,88 +22566,114 @@ function toggleNewsletterModal(show = true) {
 
         toggleTokenVisibility() {
             const input = document.getElementById('gpsConfigToken');
-            const icon = document.getElementById('gpsTokenEyeIcon');
-            if (!input) return;
-            if (input.type === 'password') {
-                input.type = 'text';
-                if (icon) icon.className = 'fas fa-eye-slash';
-            } else {
-                input.type = 'password';
-                if (icon) icon.className = 'fas fa-eye';
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
             }
         },
 
-        onConfigVehicleChange(vehId) {
-            const veh = this.fleetVehicles.find(v => v.id == vehId);
+        async onConfigVehicleChange(vehicleId) {
+            if (!vehicleId) return;
+            const veh = this.fleetVehicles.find(v => v.id == vehicleId);
             const tokenInput = document.getElementById('gpsConfigToken');
-            const nameInput = document.getElementById('gpsConfigDevName');
-            const serverSel = document.getElementById('gpsConfigServer');
+            const nameInput = document.getElementById('gpsConfigDeviceName');
+            const serverInput = document.getElementById('gpsConfigServer');
             const statusBox = document.getElementById('gpsTestStatusBox');
-
             if (statusBox) statusBox.style.display = 'none';
 
-            if (tokenInput) tokenInput.value = (veh && veh.gps_device_token) ? veh.gps_device_token : '';
-            if (nameInput) nameInput.value = (veh && veh.gps_device_name) ? veh.gps_device_name : '';
-            if (serverSel) serverSel.value = (veh && veh.gps_server) ? veh.gps_server : 'sgp1.blynk.cloud';
+            if (veh) {
+                if (tokenInput) tokenInput.value = veh.gps_device_token || '';
+                if (nameInput) nameInput.value = veh.gps_device_name || '';
+                if (serverInput) serverInput.value = veh.gps_server || 'sgp1.blynk.cloud';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/vehicles/${vehicleId}/gps-config`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (tokenInput) tokenInput.value = data.gps_device_token || '';
+                    if (nameInput) nameInput.value = data.gps_device_name || '';
+                    if (serverInput) serverInput.value = data.gps_server || 'sgp1.blynk.cloud';
+                }
+            } catch (e) {}
         },
 
-        async testGpsConnection() {
-            const token = document.getElementById('gpsConfigToken')?.value?.trim();
-            const server = document.getElementById('gpsConfigServer')?.value || 'sgp1.blynk.cloud';
+        async testDeviceConnection() {
+            const token = (document.getElementById('gpsConfigToken')?.value || '').trim();
+            const server = (document.getElementById('gpsConfigServer')?.value || 'sgp1.blynk.cloud').trim();
             const statusBox = document.getElementById('gpsTestStatusBox');
+            const btn = document.getElementById('gpsTestBtn');
 
             if (!token) {
                 if (statusBox) {
                     statusBox.style.display = 'block';
                     statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
-                    statusBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
                     statusBox.style.color = '#ef4444';
-                    statusBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter an Auth Token first.';
+                    statusBox.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter a Blynk Auth Token to test.';
                 }
                 return;
             }
 
-            if (statusBox) {
-                statusBox.style.display = 'block';
-                statusBox.style.background = 'rgba(59, 130, 246, 0.12)';
-                statusBox.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-                statusBox.style.color = '#3b82f6';
-                statusBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pinging Blynk cloud server...';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
             }
 
             try {
-                const res = await fetch(`https://${server}/external/api/isHardwareConnected?token=${token}`);
-                const isConnected = await res.json();
-
-                if (isConnected === true) {
-                    statusBox.style.background = 'rgba(0, 177, 79, 0.12)';
-                    statusBox.style.borderColor = 'rgba(0, 177, 79, 0.3)';
-                    statusBox.style.color = 'var(--primary)';
-                    statusBox.innerHTML = '<i class="fas fa-check-circle"></i> <strong>Device Connected & Online!</strong> Hardware is actively communicating with Blynk cloud.';
+                const res = await fetch(`https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&_=${Date.now()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const hasSignal = data.v4 !== undefined || (data.v1 && data.v1 !== '0');
+                    if (statusBox) {
+                        statusBox.style.display = 'block';
+                        statusBox.style.background = 'rgba(0, 177, 79, 0.12)';
+                        statusBox.style.border = '1px solid rgba(0, 177, 79, 0.3)';
+                        statusBox.style.color = 'var(--primary)';
+                        statusBox.innerHTML = `
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Token Valid &amp; Connected! ${hasSignal ? '(Online / Signal Received)' : '(Token OK, waiting for GPS fix)'}</span>
+                            </div>
+                            ${data.v1 && data.v2 ? `<div style="font-size:0.72rem;font-family:monospace;margin-top:4px;color:var(--text-secondary);">Lat: ${data.v1}, Lng: ${data.v2}</div>` : ''}
+                        `;
+                    }
                 } else {
-                    statusBox.style.background = 'rgba(245, 158, 11, 0.12)';
-                    statusBox.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-                    statusBox.style.color = '#f59e0b';
-                    statusBox.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <strong>Device Token Valid but Hardware Offline.</strong> Token is recognized, but ESP32/GPS is not actively powered or connected to Wi-Fi/GSM.';
+                    if (statusBox) {
+                        statusBox.style.display = 'block';
+                        statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
+                        statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                        statusBox.style.color = '#ef4444';
+                        statusBox.innerHTML = `<i class="fas fa-times-circle"></i> Connection Failed (HTTP ${res.status}). Verify the Blynk Token and Server.`;
+                    }
                 }
             } catch (err) {
                 if (statusBox) {
+                    statusBox.style.display = 'block';
                     statusBox.style.background = 'rgba(239, 68, 68, 0.12)';
-                    statusBox.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    statusBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
                     statusBox.style.color = '#ef4444';
-                    statusBox.innerHTML = '<i class="fas fa-times-circle"></i> <strong>Connection Failed.</strong> Could not reach Blynk server or invalid token. Error: ' + err.message;
+                    statusBox.innerHTML = `<i class="fas fa-times-circle"></i> Connection error: ${err.message || err}`;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
                 }
             }
         },
 
-        async saveGpsConfig() {
-            const vehId = document.getElementById('gpsConfigVehicleSelect')?.value;
-            const token = document.getElementById('gpsConfigToken')?.value?.trim();
-            const name = document.getElementById('gpsConfigDevName')?.value?.trim();
-            const server = document.getElementById('gpsConfigServer')?.value || 'sgp1.blynk.cloud';
-            const btn = document.getElementById('gpsSaveConfigBtn');
+        async saveDeviceConfig() {
+            const sel = document.getElementById('gpsConfigVehicleSelect');
+            const vehId = sel ? parseInt(sel.value, 10) : null;
+            if (!vehId) {
+                alert('Please select a vehicle.');
+                return;
+            }
 
-            if (!vehId) { alert('Please select a vehicle.'); return; }
+            const token = (document.getElementById('gpsConfigToken')?.value || '').trim();
+            const name = (document.getElementById('gpsConfigDeviceName')?.value || '').trim();
+            const server = (document.getElementById('gpsConfigServer')?.value || 'sgp1.blynk.cloud').trim();
+            const btn = document.getElementById('gpsSaveConfigBtn');
 
             if (btn) {
                 btn.disabled = true;
@@ -23099,19 +22681,30 @@ function toggleNewsletterModal(show = true) {
             }
 
             try {
-                const res = await fetch(`${API_BASE}/api/vehicles/${vehId}/gps-config`, {
-                    method: 'POST',
+                const res = await fetch(`${API_BASE}/api/admin/vehicles/${vehId}/gps-config`, {
+                    method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        gps_device_token: token || null,
-                        gps_device_name: name || null,
+                        gps_device_token: token,
+                        gps_device_name: name,
                         gps_server: server
                     })
                 });
 
                 if (res.ok) {
-                    await this.loadFleetVehicles();
-                    this.onVehicleSelect(vehId);
+                    const veh = this.fleetVehicles.find(v => v.id === vehId);
+                    if (veh) {
+                        veh.gps_device_token = token;
+                        veh.gps_device_name = name;
+                        veh.gps_server = server;
+                    }
+
+                    this._updateHeaderDeviceLabel();
+
+                    if (this.selectedVehicleId === vehId) {
+                        this.refresh();
+                    }
+
                     this.closeConfigModal();
                     if (typeof showToast === 'function') {
                         showToast('GPS device configuration saved successfully!', 'success');
@@ -23130,14 +22723,6 @@ function toggleNewsletterModal(show = true) {
                     btn.innerHTML = '<i class="fas fa-check"></i> Save Device';
                 }
             }
-        },
-
-        testDeviceConnection() {
-            return this.testGpsConnection();
-        },
-
-        saveDeviceConfig() {
-            return this.saveGpsConfig();
         },
 
         startLive() {

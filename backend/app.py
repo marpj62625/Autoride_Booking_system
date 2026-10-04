@@ -4487,8 +4487,7 @@ def get_all_gps_locations():
         query = """
             SELECT id, 
                    COALESCE(NULLIF(name, ''), CONCAT(brand, ' ', model), 'Vehicle #' || id) AS name,
-                   plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status,
-                   vehicle_image, brand, model
+                   plate_number, latitude, longitude, last_gps_update, last_address, gps_status, gps_device_token, gps_device_name, gps_server, status
             FROM vehicles
         """
         params = []
