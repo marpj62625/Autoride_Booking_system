@@ -1769,6 +1769,16 @@
 
 
 
+        /* Fleet calendar: compact sticky vehicle column on phones */
+        @media (max-width: 600px) {
+            .fc-vcol { min-width: 96px !important; width: 96px !important; max-width: 96px !important; padding: 4px !important; }
+            .fc-vhead-text { display: none; }
+            .fc-vbox { padding: 4px 5px !important; border-radius: 6px !important; }
+            .fc-vname { font-size: 0.6rem !important; }
+            .fc-vmeta { flex-direction: column; align-items: flex-start !important; gap: 1px !important; margin-top: 2px !important; }
+            .fc-vmeta span { font-size: 0.54rem !important; padding: 0 3px !important; max-width: 100%; }
+            .fc-vedit { display: none; }
+        }
         .bottom-nav {
 
 
@@ -15437,10 +15447,10 @@ async edit(id) { this.openModal(id); }
             // 2-Tier Header:
             // Row 1: Day of Week (SUN, MON, TUE, WED, THU, FRI, SAT)
             // Left sticky cell spans 2 rows
-            let row1Html = `<th rowspan="2" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
+            let row1Html = `<th rowspan="2" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
-                    <span>VEHICLE / UNIT</span>
+                    <span class="fc-vhead-text">VEHICLE / UNIT</span>
                 </div>
             </th>`;
 
@@ -15518,16 +15528,16 @@ async edit(id) { this.openModal(id); }
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
                 
                 // Sticky Vehicle Cell (Green Box matching Excel reference with live daily rate & quick edit icon)
-                rowHtml += `<td onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
+                rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
                     style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); min-width: 180px; width: 180px; max-width: 180px; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
-                    <div style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
+                    <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
                          onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
                          onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.12)';">
-                        <div style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px;">${v.brand} ${v.model}</div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 3px;">
+                        <div class="fc-vname" style="font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: 0.2px;">${v.brand} ${v.model}</div>
+                        <div class="fc-vmeta" style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 3px;">
                             <span style="font-size: 0.62rem; color: #bbf7d0; font-weight: 700; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${v.plate_number || 'NO PLATE'}</span>
                             <span style="font-size: 0.62rem; color: #fef08a; font-weight: 800; background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 4px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;" title="Daily Rental Rate">
-                                ₱${parseFloat(v.daily_rate||0).toLocaleString()}/d <i class="fas fa-edit" style="font-size: 0.55rem; opacity: 0.85;"></i>
+                                ₱${parseFloat(v.daily_rate||0).toLocaleString()}/d <i class="fas fa-edit fc-vedit" style="font-size: 0.55rem; opacity: 0.85;"></i>
                             </span>
                         </div>
                     </div>
