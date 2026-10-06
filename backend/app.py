@@ -16350,9 +16350,15 @@ def test_send_smtp_email():
         except Exception:
             diag['token_response'] = token_res.text
         
-        # Test unified send
-        send_ok = send_email_notifications(target, "Diagnostic Test from Autoride", "This is a diagnostic email from Autoride System.")
+        # Test unified send with detailed diagnostic capture
+        diag_logs = []
+        import io
+        import contextlib
+        log_stream = io.StringIO()
+        with contextlib.redirect_stdout(log_stream):
+            send_ok = send_email_notifications(target, "Diagnostic Test from Autoride", "This is a diagnostic email from Autoride System.")
         diag['unified_send_result'] = send_ok
+        diag['stdout_logs'] = log_stream.getvalue()
         
         return jsonify(diag), 200
     except Exception as e:
