@@ -1873,6 +1873,8 @@ def send_email_notifications(to_email, subject, body, is_html=False, trace_callb
 
     _trace(f"[EMAIL_ENTRY] to={to_email}, subject={subject}")
 
+    import requests
+
     try:
         cur = get_cursor()
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
