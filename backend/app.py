@@ -1865,7 +1865,7 @@ def is_gmail(email: str) -> bool:
 def send_email_notifications(to_email, subject, body, is_html=False):
     """
     Sends email notifications. Uses the linked Google OAuth Gmail API if configured,
-    otherwise falls back to standard SMTP configuration from environment variables.
+    otherwise falls back to standard SMTP configuration from database settings or environment variables.
     """
     try:
         cur = get_cursor()
@@ -1877,88 +1877,137 @@ def send_email_notifications(to_email, subject, body, is_html=False):
         email_row = cur.fetchone()
         sender_email = email_row['value'] if email_row else None
         
-        if refresh_token and sender_email:
-            # Send via Google Gmail API
-            import requests
-            import time
-            import base64
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
-            
-            # Refresh access token
-            token_url = "https://oauth2.googleapis.com/token"
-            refresh_data = {
-                'client_id': GOOGLE_CLIENT_ID,
-                'client_secret': GOOGLE_CLIENT_SECRET,
-                'refresh_token': refresh_token,
-                'grant_type': 'refresh_token'
-            }
-            res = requests.post(token_url, data=refresh_data)
-            tokens = res.json()
-            access_token = tokens.get('access_token')
-            
-            if access_token:
-                # Update temporary token and expiry in settings for faster subsequent lookups
-                expires_in = tokens.get('expires_in', 3600)
-                expiry_ts = int(time.time()) + int(expires_in)
-                cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_access_token'", (access_token,))
-                cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_token_expiry'", (str(expiry_ts),))
-                commit_db()
+        cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_access_token'")
+        at_row = cur.fetchone()
+        cached_access_token = at_row['value'] if at_row else None
 
-                # Construct raw RFC 2822 email payload
-                if is_html:
-                    msg = MIMEMultipart('alternative')
-                    msg['Subject'] = subject
-                    msg['From'] = f"Autoride System <{sender_email}>"
-                    msg['To'] = to_email
-                    msg.attach(MIMEText(body, 'html', 'utf-8'))
-                else:
-                    msg = MIMEText(body)
-                    msg['Subject'] = subject
-                    msg['From'] = f"Autoride System <{sender_email}>"
-                    msg['To'] = to_email
-                    
-                raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
-                
-                # Post to Google Gmail API send endpoint
-                api_url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
-                headers = {
-                    'Authorization': f"Bearer {access_token}",
-                    'Content-Type': 'application/json'
-                }
-                send_res = requests.post(api_url, headers=headers, json={"raw": raw_msg})
-                if send_res.status_code == 200:
-                    print(f"[OAUTH_EMAIL] Sent successfully from {sender_email} to {to_email}")
-                    return True
-                else:
-                    print(f"[OAUTH_EMAIL] Failed via API ({send_res.status_code}): {send_res.text}")
-                    
-        # Fallback to standard SMTP if OAuth email is not set or failed
-        print(f"[SMTP_EMAIL] Falling back to standard SMTP from {EMAIL_USER}")
+        cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_token_expiry'")
+        exp_row = cur.fetchone()
+        try:
+            token_expiry = int(exp_row['value']) if exp_row and exp_row['value'] else 0
+        except Exception:
+            token_expiry = 0
+            
+        import time
+        now = int(time.time())
+        access_token = None
+
+        if refresh_token and sender_email:
+            # 1. Check if cached token is still valid (with 60-second safety margin)
+            if cached_access_token and token_expiry > (now + 60):
+                access_token = cached_access_token
+            else:
+                # Refresh access token using Google OAuth API
+                import requests
+                secret = os.environ.get('GOOGLE_CLIENT_SECRET', GOOGLE_CLIENT_SECRET or '')
+                if secret:
+                    token_url = "https://oauth2.googleapis.com/token"
+                    refresh_data = {
+                        'client_id': GOOGLE_CLIENT_ID,
+                        'client_secret': secret,
+                        'refresh_token': refresh_token,
+                        'grant_type': 'refresh_token'
+                    }
+                    try:
+                        res = requests.post(token_url, data=refresh_data, timeout=10)
+                        if res.status_code == 200:
+                            tokens = res.json()
+                            access_token = tokens.get('access_token')
+                            expires_in = tokens.get('expires_in', 3600)
+                            expiry_ts = now + int(expires_in)
+                            cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_access_token'", (access_token,))
+                            cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_token_expiry'", (str(expiry_ts),))
+                            commit_db()
+                        else:
+                            print(f"[OAUTH_EMAIL] Token refresh failed ({res.status_code}): {res.text}")
+                    except Exception as ref_err:
+                        print(f"[OAUTH_EMAIL] Token refresh error: {ref_err}")
+
+            if access_token:
+                import base64
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+                try:
+                    if is_html:
+                        msg = MIMEMultipart('alternative')
+                        msg['Subject'] = subject
+                        msg['From'] = f"Autoride System <{sender_email}>"
+                        msg['To'] = to_email
+                        msg.attach(MIMEText(body, 'html', 'utf-8'))
+                    else:
+                        msg = MIMEText(body)
+                        msg['Subject'] = subject
+                        msg['From'] = f"Autoride System <{sender_email}>"
+                        msg['To'] = to_email
+                        
+                    raw_msg = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+                    api_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+                    headers = {
+                        'Authorization': f"Bearer {access_token}",
+                        'Content-Type': 'application/json'
+                    }
+                    send_res = requests.post(api_url, headers=headers, json={"raw": raw_msg}, timeout=15)
+                    if send_res.status_code == 200:
+                        print(f"[OAUTH_EMAIL] Sent successfully via Gmail API from {sender_email} to {to_email}")
+                        return True
+                    else:
+                        print(f"[OAUTH_EMAIL] Failed via Gmail API ({send_res.status_code}): {send_res.text}")
+                except Exception as api_err:
+                    print(f"[OAUTH_EMAIL] API send exception: {api_err}")
+
+        # 2. Fallback to standard SMTP (from DB settings or config.py)
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('smtp_user', 'smtp_pass', 'smtp_server', 'smtp_port')")
+        db_smtp = {r['key']: r['value'] for r in cur.fetchall()}
+        
+        smtp_user = db_smtp.get('smtp_user') or EMAIL_USER
+        smtp_pass = (db_smtp.get('smtp_pass') or EMAIL_PASS or '').replace(' ', '')
+        smtp_host = db_smtp.get('smtp_server') or SMTP_SERVER or 'smtp.gmail.com'
+        smtp_port = int(db_smtp.get('smtp_port') or SMTP_PORT or 587)
+        
+        print(f"[SMTP_EMAIL] Attempting SMTP fallback from {smtp_user} using host {smtp_host}")
+        
+        if not smtp_user or not smtp_pass:
+            print("[SMTP_EMAIL] No valid SMTP credentials available.")
+            return False
+
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        
         if is_html:
-            from email.mime.multipart import MIMEMultipart
-            from email.mime.text import MIMEText as MIMETextPart
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
-            msg['From'] = EMAIL_USER
+            msg['From'] = f"Autoride System <{smtp_user}>"
             msg['To'] = to_email
-            msg.attach(MIMETextPart(body, 'html', 'utf-8'))
+            msg.attach(MIMEText(body, 'html', 'utf-8'))
         else:
             msg = MIMEText(body)
             msg['Subject'] = subject
-            msg['From'] = EMAIL_USER
+            msg['From'] = f"Autoride System <{smtp_user}>"
             msg['To'] = to_email
-            
-        smtp_port = int(SMTP_PORT) if SMTP_PORT else 587
-        with smtplib.SMTP(SMTP_SERVER, smtp_port) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(EMAIL_USER, EMAIL_PASS)
-            server.send_message(msg)
-            print(f"[SMTP_EMAIL] Sent successfully via SMTP from {EMAIL_USER} to {to_email}")
-            return True
-            
+
+        # Try Port 587 STARTTLS first
+        try:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=12) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+                print(f"[SMTP_EMAIL] Sent successfully via TLS from {smtp_user} to {to_email}")
+                return True
+        except Exception as tls_err:
+            print(f"[SMTP_EMAIL] TLS {smtp_port} failed: {tls_err}, trying SSL 465 fallback...")
+            try:
+                with smtplib.SMTP_SSL(smtp_host, 465, timeout=12) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+                    print(f"[SMTP_EMAIL] Sent successfully via SSL 465 from {smtp_user} to {to_email}")
+                    return True
+            except Exception as ssl_err:
+                print(f"[SMTP_EMAIL] SSL 465 also failed: {ssl_err}")
+                return False
+                
     except Exception as e:
         print(f"[EMAIL_ERROR] Failed sending email: {e}")
         return False
@@ -2323,24 +2372,36 @@ def user_forgot_password():
         temp_chars = string.ascii_letters + string.digits
         temp_password = ''.join(random.choice(temp_chars) for _ in range(8))
         
-        # Hash temporary password
-        hashed_pw = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Send temporary password via email FIRST before touching the database
+        subject = "Autoride Password Reset"
+        message = (
+            f"Hello {user.get('full_name') or 'Valued Customer'},\n\n"
+            f"We received a request to reset your password for your Autoride account ({email}).\n\n"
+            f"Your new temporary password is:\n"
+            f"----------------------------------------\n"
+            f"{temp_password}\n"
+            f"----------------------------------------\n\n"
+            f"Please use this temporary password to log in and change your password in your Profile Settings immediately.\n\n"
+            f"If you did not request this, please secure your account immediately.\n\n"
+            f"Best regards,\nAutoride Car Rental Support"
+        )
         
-        # Update user's password in database
+        try:
+            email_sent = send_email_notifications(email, subject, message)
+        except Exception as e_err:
+            print(f"[FORGOT_PW] Email sending exception: {e_err}")
+            email_sent = False
+            
+        if not email_sent:
+            return jsonify({
+                'error': 'Failed to send password reset email. The system email delivery service could not deliver the email. Please contact the administrator to re-link Gmail SMTP.'
+            }), 500
+
+        # Hash temporary password and update database ONLY AFTER email was confirmed sent!
+        hashed_pw = bcrypt.hashpw(temp_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_pw, user['id']))
         commit_db()
         
-        # Send temporary password via email using notifications.py SMTP logic
-        try:
-            from notifications import send_notification
-            subject = "Autoride Password Reset"
-            message = f"Hello {user['full_name']},\n\nWe received a request to reset your password. Your new temporary password is:\n\n{temp_password}\n\nPlease use this temporary password to log in and change your password in your Profile Settings immediately."
-            send_notification(user['id'], subject, message)
-            print(f"Forgot password email sent to {email}")
-        except Exception as email_err:
-            print(f"Failed to send forgot password email: {email_err}")
-            return jsonify({'error': 'Failed to send temporary password email. Please try again later.'}), 500
-            
         return jsonify({'message': "Temporary password sent successfully! Please check your email inbox. (If you don't see it, check your Spam folder and click 'Report not spam')"}), 200
         
     except Exception as e:
@@ -16162,7 +16223,7 @@ def smtp_oauth_callback():
 @app.route('/admin/smtp/status', methods=['GET'])
 @app.route('/api/admin/smtp/status', methods=['GET'])
 def get_smtp_oauth_status():
-    """Returns the email address of the currently linked Gmail account, if any."""
+    """Returns the email address of the currently linked Gmail account, if any, and tests token validity."""
     try:
         cur = get_cursor()
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_email'")
@@ -16171,14 +16232,44 @@ def get_smtp_oauth_status():
         
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
         rt_row = cur.fetchone()
-        is_linked = bool(email and rt_row and rt_row['value'])
+        refresh_token = rt_row['value'] if rt_row else ''
+        is_linked = bool(email and refresh_token)
         
         secret = os.environ.get('GOOGLE_CLIENT_SECRET', GOOGLE_CLIENT_SECRET or '')
         secret_mask = f"len={len(secret)}, start={secret[:3]}...{secret[-3:]}" if secret else "NOT_SET"
         
+        is_valid = False
+        token_error = ""
+        if is_linked and secret and refresh_token:
+            import requests
+            try:
+                res = requests.post("https://oauth2.googleapis.com/token", data={
+                    'client_id': GOOGLE_CLIENT_ID,
+                    'client_secret': secret,
+                    'refresh_token': refresh_token,
+                    'grant_type': 'refresh_token'
+                }, timeout=5)
+                if res.status_code == 200:
+                    is_valid = True
+                else:
+                    err_json = res.json() if res.headers.get('content-type', '').startswith('application/json') else {}
+                    token_error = err_json.get('error_description') or err_json.get('error') or "Expired or revoked by Google"
+            except Exception as ex:
+                token_error = str(ex)
+        
+        # Check manual SMTP
+        cur.execute("SELECT key, value FROM settings WHERE key IN ('smtp_user', 'smtp_pass')")
+        db_smtp = {r['key']: r['value'] for r in cur.fetchall()}
+        smtp_user = db_smtp.get('smtp_user') or EMAIL_USER or ""
+        has_smtp_pass = bool(db_smtp.get('smtp_pass') or EMAIL_PASS)
+        
         return jsonify({
             "is_linked": is_linked,
+            "is_valid": is_valid,
             "email": email if is_linked else "",
+            "token_error": token_error,
+            "has_manual_smtp": bool(smtp_user and has_smtp_pass),
+            "manual_smtp_user": smtp_user,
             "client_secret_diag": secret_mask
         }), 200
     except Exception as e:
@@ -16198,6 +16289,33 @@ def disconnect_smtp_oauth():
         return jsonify({"message": "Gmail account disconnected successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/smtp/manual-save', methods=['POST'])
+@app.route('/api/admin/smtp/manual-save', methods=['POST'])
+def save_manual_smtp():
+    """Saves manual Gmail App Password or SMTP credentials to settings table."""
+    data = request.get_json(silent=True) or {}
+    smtp_user = (data.get('email') or data.get('smtp_user') or '').strip()
+    smtp_pass = (data.get('app_password') or data.get('smtp_pass') or '').strip().replace(' ', '')
+    
+    if not smtp_user or not smtp_pass:
+        return jsonify({'error': 'Email address and App Password are required', 'success': False}), 400
+        
+    try:
+        cur = get_cursor()
+        for k, v in [('smtp_user', smtp_user), ('smtp_pass', smtp_pass)]:
+            cur.execute("""
+                INSERT INTO settings (key, value)
+                VALUES (%s, %s)
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+            """, (k, v))
+        commit_db()
+        return jsonify({'message': 'Manual SMTP credentials saved successfully', 'success': True}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals(): cur.close()
 

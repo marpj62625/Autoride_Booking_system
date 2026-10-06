@@ -23,10 +23,14 @@ def send_notification(user_id, subject, message):
         if email:
             try:
                 from app import send_email_notifications
-                send_email_notifications(email, subject, message)
+                sent = send_email_notifications(email, subject, message)
+                if not sent:
+                    print(f"FAILED TO SEND EMAIL VIA UNIFIED SENDER: delivery returned False for {email}")
+                    return False
                 print(f"DEBUG: Unified Email sent to {email}")
             except Exception as e:
                 print(f"FAILED TO SEND EMAIL VIA UNIFIED SENDER: {e}")
+                return False
 
         return True
     except Exception as e:
