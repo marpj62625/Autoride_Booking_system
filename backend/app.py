@@ -1862,11 +1862,15 @@ def is_gmail(email: str) -> bool:
 
     return email.lower().endswith('@gmail.com')
 
-def send_email_notifications(to_email, subject, body, is_html=False):
+def send_email_notifications(to_email, subject, body, is_html=False, trace_callback=None):
     """
     Sends email notifications. Uses the linked Google OAuth Gmail API if configured,
     otherwise falls back to standard SMTP configuration from database settings or environment variables.
     """
+    def _trace(m):
+        if trace_callback: trace_callback(m)
+        print(m)
+
     try:
         cur = get_cursor()
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
@@ -1894,8 +1898,10 @@ def send_email_notifications(to_email, subject, body, is_html=False):
 
         if refresh_token and sender_email:
             # 1. Check if cached token is still valid (with 60-second safety margin)
+            _trace(f"[OAUTH_EMAIL] cached_token={bool(cached_access_token)}, expiry={token_expiry}, now={now}")
             if cached_access_token and token_expiry > (now + 60):
                 access_token = cached_access_token
+                _trace("[OAUTH_EMAIL] Using cached access token")
             else:
                 # Refresh access token using Google OAuth API
                 import requests
@@ -1918,11 +1924,15 @@ def send_email_notifications(to_email, subject, body, is_html=False):
                             cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_access_token'", (access_token,))
                             cur.execute("UPDATE settings SET value = %s WHERE key = 'smtp_oauth_token_expiry'", (str(expiry_ts),))
                             commit_db()
+                            _trace(f"[OAUTH_EMAIL] Refreshed access token successfully, expires_in={expires_in}")
                         else:
-                            print(f"[OAUTH_EMAIL] Token refresh failed ({res.status_code}): {res.text}")
+                            _trace(f"[OAUTH_EMAIL] Token refresh failed ({res.status_code}): {res.text}")
                     except Exception as ref_err:
-                        print(f"[OAUTH_EMAIL] Token refresh error: {ref_err}")
+                        _trace(f"[OAUTH_EMAIL] Token refresh error: {ref_err}")
+                else:
+                    _trace("[OAUTH_EMAIL] No GOOGLE_CLIENT_SECRET available for token refresh")
 
+            _trace(f"[OAUTH_EMAIL] Final access_token available: {bool(access_token)}")
             if access_token:
                 import base64
                 from email.mime.text import MIMEText
@@ -1947,13 +1957,14 @@ def send_email_notifications(to_email, subject, body, is_html=False):
                         'Content-Type': 'application/json'
                     }
                     send_res = requests.post(api_url, headers=headers, json={"raw": raw_msg}, timeout=15)
+                    diag_info = f"Gmail API Status: {send_res.status_code}, Body: {send_res.text[:300]}"
+                    _trace(f"[OAUTH_EMAIL] {diag_info}")
                     if send_res.status_code == 200:
-                        print(f"[OAUTH_EMAIL] Sent successfully via Gmail API from {sender_email} to {to_email}")
                         return True
                     else:
-                        print(f"[OAUTH_EMAIL] Failed via Gmail API ({send_res.status_code}): {send_res.text}")
+                        _trace(f"[OAUTH_EMAIL] Failed via Gmail API ({send_res.status_code}): {send_res.text}")
                 except Exception as api_err:
-                    print(f"[OAUTH_EMAIL] API send exception: {api_err}")
+                    _trace(f"[OAUTH_EMAIL] API send exception: {api_err}")
 
         # 2. Fallback to standard SMTP (from DB settings or config.py)
         cur.execute("SELECT key, value FROM settings WHERE key IN ('smtp_user', 'smtp_pass', 'smtp_server', 'smtp_port')")
@@ -16350,15 +16361,15 @@ def test_send_smtp_email():
         except Exception:
             diag['token_response'] = token_res.text
         
-        # Test unified send with detailed diagnostic capture
-        diag_logs = []
-        import io
-        import contextlib
-        log_stream = io.StringIO()
-        with contextlib.redirect_stdout(log_stream):
-            send_ok = send_email_notifications(target, "Diagnostic Test from Autoride", "This is a diagnostic email from Autoride System.")
+        # Test unified send with explicit trace
+        traces = []
+        def log_trace(msg):
+            traces.append(str(msg))
+            print(msg)
+            
+        send_ok = send_email_notifications(target, "Diagnostic Test from Autoride", "This is a diagnostic email from Autoride System.", trace_callback=log_trace)
         diag['unified_send_result'] = send_ok
-        diag['stdout_logs'] = log_stream.getvalue()
+        diag['traces'] = traces
         
         return jsonify(diag), 200
     except Exception as e:
