@@ -1871,6 +1871,8 @@ def send_email_notifications(to_email, subject, body, is_html=False, trace_callb
         if trace_callback: trace_callback(m)
         print(m)
 
+    _trace(f"[EMAIL_ENTRY] to={to_email}, subject={subject}")
+
     try:
         cur = get_cursor()
         cur.execute("SELECT value FROM settings WHERE key = 'smtp_oauth_refresh_token'")
@@ -2016,11 +2018,12 @@ def send_email_notifications(to_email, subject, body, is_html=False, trace_callb
                     print(f"[SMTP_EMAIL] Sent successfully via SSL 465 from {smtp_user} to {to_email}")
                     return True
             except Exception as ssl_err:
-                print(f"[SMTP_EMAIL] SSL 465 also failed: {ssl_err}")
+                _trace(f"[SMTP_EMAIL] SSL 465 also failed: {ssl_err}")
                 return False
                 
     except Exception as e:
-        print(f"[EMAIL_ERROR] Failed sending email: {e}")
+        import traceback as _tb
+        _trace(f"[EMAIL_ERROR] Failed sending email: {e} -> {_tb.format_exc()[-500:]}")
         return False
     finally:
         if 'cur' in locals(): cur.close()
