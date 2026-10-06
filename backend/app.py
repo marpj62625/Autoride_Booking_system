@@ -16202,6 +16202,48 @@ def disconnect_smtp_oauth():
         if 'cur' in locals(): cur.close()
 
 
+@app.route('/admin/smtp/test-send', methods=['GET', 'POST'])
+@app.route('/api/admin/smtp/test-send', methods=['GET', 'POST'])
+def test_send_smtp_email():
+    """Diagnostic endpoint to test email sending and see exact failure points."""
+    target = request.args.get('email') or (request.get_json(silent=True) or {}).get('email') or 'ashongbalatong6@gmail.com'
+    diag = {}
+    try:
+        cur = get_cursor()
+        cur.execute("SELECT key, value FROM settings WHERE key LIKE 'smtp_oauth%'")
+        settings_map = {r['key']: r['value'] for r in cur.fetchall()}
+        diag['oauth_email'] = settings_map.get('smtp_oauth_email')
+        diag['has_refresh_token'] = bool(settings_map.get('smtp_oauth_refresh_token'))
+        
+        # Test token refresh
+        import requests
+        secret = os.environ.get('GOOGLE_CLIENT_SECRET', GOOGLE_CLIENT_SECRET or '')
+        diag['has_client_secret'] = bool(secret)
+        
+        token_res = requests.post("https://oauth2.googleapis.com/token", data={
+            'client_id': GOOGLE_CLIENT_ID,
+            'client_secret': secret,
+            'refresh_token': settings_map.get('smtp_oauth_refresh_token'),
+            'grant_type': 'refresh_token'
+        })
+        diag['token_status'] = token_res.status_code
+        try:
+            diag['token_response'] = token_res.json()
+        except Exception:
+            diag['token_response'] = token_res.text
+        
+        # Test unified send
+        send_ok = send_email_notifications(target, "Diagnostic Test from Autoride", "This is a diagnostic email from Autoride System.")
+        diag['unified_send_result'] = send_ok
+        
+        return jsonify(diag), 200
+    except Exception as e:
+        diag['error'] = str(e)
+        return jsonify(diag), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
 
 
 # ==================== DYNAMIC STAFF PERMISSIONS & REQUESTS ====================
