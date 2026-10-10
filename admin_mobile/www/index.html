@@ -19126,10 +19126,15 @@ function toggleNewsletterModal(show = true) {
             const dStr = String(b.start_date).split('T')[0];
             const parts = dStr.split('-').map(Number);
             if (parts.length < 3 || isNaN(parts[0])) return null;
-            const pt = b.start_time || b.pickup_time || '06:00';
-            const timeParts = String(pt).split(':').map(Number);
-            const h = isNaN(timeParts[0]) ? 0 : timeParts[0];
-            const m = isNaN(timeParts[1]) ? 0 : timeParts[1];
+            let pt = String(b.start_time || b.pickup_time || '06:00').trim().toLowerCase();
+            const isPM = pt.includes('pm');
+            const isAM = pt.includes('am');
+            pt = pt.replace(/[apm\s]/g, '');
+            const timeParts = pt.split(':').map(Number);
+            let h = isNaN(timeParts[0]) ? 6 : timeParts[0];
+            let m = isNaN(timeParts[1]) ? 0 : timeParts[1];
+            if (isPM && h < 12) h += 12;
+            if (isAM && h === 12) h = 0;
             return new Date(parts[0], parts[1] - 1, parts[2], h, m, 0);
         },
 
@@ -19149,7 +19154,13 @@ function toggleNewsletterModal(show = true) {
         },
 
         getPickupInspectAction(b) {
-            const isPaid = b.payment_status === 'Paid';
+            const ps = (b && b.payment_status ? String(b.payment_status).trim().toLowerCase() : '');
+            const bal = parseFloat((b && b.balance_amount) || 0);
+            const amtPaid = parseFloat((b && b.amount_paid) || 0);
+            const tot = parseFloat((b && b.total_price) || 0);
+            const isPaid = ['paid', 'fully paid', 'fully-paid', 'completed'].includes(ps) ||
+                           (amtPaid >= tot && tot > 0) ||
+                           (bal <= 0 && amtPaid > 0);
             const isReady = this.isPickupInspectReady(b);
             const pDt = this.getPickupDateTime(b);
             const allowFrom = pDt ? new Date(pDt.getTime() - 60 * 60 * 1000) : null;

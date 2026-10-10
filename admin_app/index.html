@@ -18103,7 +18103,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                                (b.payment_status === 'Paid' ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
+                                ((['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim())) ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
 
 
 
@@ -18472,7 +18472,7 @@ function toggleNewsletterModal(show = true) {
                 actionBtns += `<button onclick="Bookings.cancel(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-ban"></i>Cancel</button>`;
             }
             // Trigger Refund button for cancelled bookings with paid status
-            if (st === 'cancelled' && b.payment_status === 'Paid') {
+            if (st === 'cancelled' && ['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim())) {
                 actionBtns += `<button onclick="Bookings.triggerRefund(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-undo"></i>Trigger Refund</button>`;
             }
 
@@ -18641,7 +18641,7 @@ function toggleNewsletterModal(show = true) {
                     <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-credit-card" style="color:#3b82f6;"></i>Payment</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Method</div><div style="font-size:0.85rem;font-weight:700;color:#0f172a;">${b.payment_method||'N/A'}</div></div>
-                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div><div style="font-size:0.82rem;font-weight:700;color:${b.payment_status==='Paid'?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div></div>
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div><div style="font-size:0.82rem;font-weight:700;color:${['paid','fully paid'].includes((b.payment_status||'').toLowerCase().trim())?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div></div>
                     </div>
                     ${parseFloat(b.amount_paid||0)>0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>${parseFloat(b.balance_amount||0)>0?`<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>`:''}</div>` : ''}
                     ${b.reference_number ? `<div style="padding-top:8px;border-top:1px solid #f1f5f9;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Reference #</div><div style="font-size:0.78rem;font-weight:600;color:#0f172a;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;">${b.reference_number}</div></div>` : ''}
@@ -19126,10 +19126,15 @@ function toggleNewsletterModal(show = true) {
             const dStr = String(b.start_date).split('T')[0];
             const parts = dStr.split('-').map(Number);
             if (parts.length < 3 || isNaN(parts[0])) return null;
-            const pt = b.start_time || b.pickup_time || '06:00';
-            const timeParts = String(pt).split(':').map(Number);
-            const h = isNaN(timeParts[0]) ? 0 : timeParts[0];
-            const m = isNaN(timeParts[1]) ? 0 : timeParts[1];
+            let pt = String(b.start_time || b.pickup_time || '06:00').trim().toLowerCase();
+            const isPM = pt.includes('pm');
+            const isAM = pt.includes('am');
+            pt = pt.replace(/[apm\s]/g, '');
+            const timeParts = pt.split(':').map(Number);
+            let h = isNaN(timeParts[0]) ? 6 : timeParts[0];
+            let m = isNaN(timeParts[1]) ? 0 : timeParts[1];
+            if (isPM && h < 12) h += 12;
+            if (isAM && h === 12) h = 0;
             return new Date(parts[0], parts[1] - 1, parts[2], h, m, 0);
         },
 
@@ -19149,7 +19154,13 @@ function toggleNewsletterModal(show = true) {
         },
 
         getPickupInspectAction(b) {
-            const isPaid = b.payment_status === 'Paid';
+            const ps = (b && b.payment_status ? String(b.payment_status).trim().toLowerCase() : '');
+            const bal = parseFloat((b && b.balance_amount) || 0);
+            const amtPaid = parseFloat((b && b.amount_paid) || 0);
+            const tot = parseFloat((b && b.total_price) || 0);
+            const isPaid = ['paid', 'fully paid', 'fully-paid', 'completed'].includes(ps) ||
+                           (amtPaid >= tot && tot > 0) ||
+                           (bal <= 0 && amtPaid > 0);
             const isReady = this.isPickupInspectReady(b);
             const pDt = this.getPickupDateTime(b);
             const allowFrom = pDt ? new Date(pDt.getTime() - 60 * 60 * 1000) : null;
@@ -19486,7 +19497,7 @@ function toggleNewsletterModal(show = true) {
             let collectCash = false;
             let overrideUnpaid = false;
 
-            if (b && b.payment_status !== 'Paid' && parseFloat(b.balance_amount || b.total_price || 0) > 0) {
+            if (b && !['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim()) && parseFloat(b.balance_amount || b.total_price || 0) > 0) {
                 const bal = parseFloat(b.balance_amount || (b.total_price - (b.amount_paid || 0)));
                 const ans = confirm(
                     `⚠️ PAYMENT REQUIRED BEFORE PICKUP\n\n` +
