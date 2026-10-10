@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 15:06:00
-Feature: Freeze horizontal scrollbar at bottom of Fleet Calendar viewport and lock desktop overflow
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 15:30:00
+Feature: 2-Month continuous fleet calendar view (e.g. October & November) with view toggle and cross-month Gantt bars
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main

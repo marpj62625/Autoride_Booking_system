@@ -10054,8 +10054,13 @@ input:checked + .ctrl-slider:before {
                 </button>
                 <div style="display: flex; gap: 4px; align-items: center; background: var(--surface-solid); padding: 3px 6px; border-radius: 10px; border: 1px solid var(--border);">
                     <button onclick="FleetCalendar.prevMonth()" class="btn-primary" style="padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; background: var(--primary); border: none; color: white;"><i class="fas fa-chevron-left"></i></button>
-                    <span id="fleetCalendarMonthLabel" style="font-weight: 800; font-size: 0.88rem; min-width: 130px; text-align: center; color: var(--text-main);"></span>
+                    <span id="fleetCalendarMonthLabel" style="font-weight: 800; font-size: 0.85rem; min-width: 190px; text-align: center; color: var(--text-main);"></span>
                     <button onclick="FleetCalendar.nextMonth()" class="btn-primary" style="padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; background: var(--primary); border: none; color: white;"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <!-- View Mode: 2 Months (Default) / 1 Month -->
+                <div style="display: inline-flex; background: var(--surface-solid); padding: 2px; border-radius: 8px; border: 1px solid var(--border); gap: 2px;">
+                    <button type="button" id="fcView2MonthsBtn" onclick="FleetCalendar.setViewMonths(2)" title="View 2 consecutive months in one screen" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 800; border-radius: 6px; border: none; cursor: pointer; background: #00B14F; color: white;">2 Months</button>
+                    <button type="button" id="fcView1MonthBtn" onclick="FleetCalendar.setViewMonths(1)" title="View single month" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: var(--text-muted);">1 Month</button>
                 </div>
                 <button onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted);">
                     <i class="fas fa-sync-alt"></i>
@@ -10082,6 +10087,9 @@ input:checked + .ctrl-slider:before {
         <div id="fleetCalendarScrollContainer" style="overflow: auto; max-height: calc(100vh - 270px); min-height: 250px; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
             <table style="width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 800px; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
                 <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
+                    <tr id="fleetCalendarMonthRow" style="height: 28px; background: var(--surface-solid);">
+                        <!-- Month banners: Month 1 & Month 2 injected via JS -->
+                    </tr>
                     <tr id="fleetCalendarDaysOfWeekRow" style="height: 38px; background: var(--surface-solid);">
                         <!-- Days of week: TUE, WED, THU... injected via JS -->
                     </tr>
@@ -15381,6 +15389,8 @@ async edit(id) { this.openModal(id); }
     // ==================== FLEET CALENDAR ====================
     const FleetCalendar = {
         currentDate: new Date(),
+        viewMonths: 2,
+        _shouldScrollToToday: false,
         bookings: [],
         blackouts: [],
         vehicles: [],
@@ -15408,7 +15418,6 @@ async edit(id) { this.openModal(id); }
         getBookingColor(booking) {
             if (booking.calendar_color && booking.calendar_color.trim()) {
                 const hex = booking.calendar_color.trim();
-                // Compute readable text color based on luminance
                 let r = 0, g = 0, b = 0;
                 if (hex.startsWith('#') && hex.length === 7) {
                     r = parseInt(hex.substring(1, 3), 16);
@@ -15424,7 +15433,6 @@ async edit(id) { this.openModal(id); }
                 return { bg: hex, text: textColor, border: lum > 160 ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.3)' };
             }
 
-            // Consistent hash per customer name or user ID: repeat bookings get identical color
             const key = (booking.customer_name || (booking.user_id ? 'user_' + booking.user_id : 'booking_' + booking.id)).toLowerCase().trim();
             let hash = 0;
             for (let i = 0; i < key.length; i++) {
@@ -15443,14 +15451,29 @@ async edit(id) { this.openModal(id); }
             if (!isNaN(parts[0])) return parts[0] >= 12 ? 'PM' : 'AM';
             return defaultHalf;
         },
+
+        setViewMonths(num) {
+            this.viewMonths = (num === 1) ? 1 : 2;
+            this.refresh();
+        },
         
         async refresh() {
             try {
-                const year = this.currentDate.getFullYear();
-                const month = this.currentDate.getMonth();
-                const startStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
-                const lastDay = new Date(year, month + 1, 0).getDate();
-                const endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                const year1 = this.currentDate.getFullYear();
+                const month1 = this.currentDate.getMonth();
+                const startStr = `${year1}-${String(month1+1).padStart(2,'0')}-01`;
+                
+                let endStr;
+                if (this.viewMonths === 2) {
+                    const m2Date = new Date(year1, month1 + 1, 1);
+                    const year2 = m2Date.getFullYear();
+                    const month2 = m2Date.getMonth();
+                    const lastDayM2 = new Date(year2, month2 + 1, 0).getDate();
+                    endStr = `${year2}-${String(month2+1).padStart(2,'0')}-${String(lastDayM2).padStart(2,'0')}`;
+                } else {
+                    const lastDay = new Date(year1, month1 + 1, 0).getDate();
+                    endStr = `${year1}-${String(month1+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                }
                 
                 // Fetch vehicles, fleet bookings and blackouts
                 const [vRes, cRes, bRes] = await Promise.all([
@@ -15475,76 +15498,206 @@ async edit(id) { this.openModal(id); }
 
         goToToday() {
             this.currentDate = new Date();
+            this._shouldScrollToToday = true;
             this.refresh();
         },
         
         prevMonth() {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+            this._shouldScrollToToday = false;
             this.refresh();
         },
         
         nextMonth() {
             this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+            this._shouldScrollToToday = false;
             this.refresh();
         },
         
         render() {
-            const year = this.currentDate.getFullYear();
-            const month = this.currentDate.getMonth();
+            const year1 = this.currentDate.getFullYear();
+            const month1 = this.currentDate.getMonth();
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            const labelEl = document.getElementById('fleetCalendarMonthLabel');
-            if (labelEl) labelEl.textContent = `${monthNames[month]} ${year}`;
-            
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
             const dayNamesShort = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             const today = new Date();
-            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-            
-            // 2-Tier Header:
-            // Row 1: Day Name & Number (Colspan 2 for AM and PM, frozen at top: 0)
-            // Left sticky cell spans 2 rows (frozen at top: 0, left: 0, z-index: 35)
-            let row1Html = `<th rowspan="2" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; top: 0; z-index: 35; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
+
+            const isTwoMonths = (this.viewMonths === 2);
+            const m2Date = new Date(year1, month1 + 1, 1);
+            const year2 = m2Date.getFullYear();
+            const month2 = m2Date.getMonth();
+
+            const daysInMonth1 = new Date(year1, month1 + 1, 0).getDate();
+            const daysInMonth2 = new Date(year2, month2 + 1, 0).getDate();
+
+            // Sync Toolbar Month Label
+            const labelEl = document.getElementById('fleetCalendarMonthLabel');
+            if (labelEl) {
+                if (isTwoMonths) {
+                    if (year1 === year2) {
+                        labelEl.textContent = `${monthNames[month1]} & ${monthNames[month2]} ${year1}`;
+                    } else {
+                        labelEl.textContent = `${monthNames[month1]} ${year1} & ${monthNames[month2]} ${year2}`;
+                    }
+                } else {
+                    labelEl.textContent = `${monthNames[month1]} ${year1}`;
+                }
+            }
+
+            // Sync View Mode Buttons
+            const btn2 = document.getElementById('fcView2MonthsBtn');
+            const btn1 = document.getElementById('fcView1MonthBtn');
+            if (btn2 && btn1) {
+                if (isTwoMonths) {
+                    btn2.style.background = '#00B14F';
+                    btn2.style.color = '#ffffff';
+                    btn2.style.fontWeight = '800';
+                    btn1.style.background = 'transparent';
+                    btn1.style.color = 'var(--text-muted)';
+                    btn1.style.fontWeight = '700';
+                } else {
+                    btn1.style.background = '#00B14F';
+                    btn1.style.color = '#ffffff';
+                    btn1.style.fontWeight = '800';
+                    btn2.style.background = 'transparent';
+                    btn2.style.color = 'var(--text-muted)';
+                    btn2.style.fontWeight = '700';
+                }
+            }
+
+            // Build array of months
+            const monthsList = [
+                {
+                    year: year1,
+                    month: month1,
+                    daysCount: daysInMonth1,
+                    name: monthNames[month1],
+                    isCurrent: (today.getFullYear() === year1 && today.getMonth() === month1)
+                }
+            ];
+            if (isTwoMonths) {
+                monthsList.push({
+                    year: year2,
+                    month: month2,
+                    daysCount: daysInMonth2,
+                    name: monthNames[month2],
+                    isCurrent: (today.getFullYear() === year2 && today.getMonth() === month2)
+                });
+            }
+
+            // Flatten all days
+            const allDays = [];
+            monthsList.forEach((mObj, mIdx) => {
+                for (let d = 1; d <= mObj.daysCount; d++) {
+                    const dayDate = new Date(mObj.year, mObj.month, d);
+                    const dayOfWeek = dayDate.getDay();
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                    const isToday = mObj.isCurrent && (today.getDate() === d);
+                    const isLastDayOfFirstMonth = (isTwoMonths && mIdx === 0 && d === mObj.daysCount);
+
+                    allDays.push({
+                        year: mObj.year,
+                        month: mObj.month,
+                        day: d,
+                        monthIdx: mIdx,
+                        monthName: mObj.name,
+                        dayOfWeek,
+                        dayName: dayNamesShort[dayOfWeek],
+                        isWeekend,
+                        isToday,
+                        isLastDayOfFirstMonth,
+                        dateKey: `${mObj.year}-${String(mObj.month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+                    });
+                }
+            });
+
+            const totalSlots = allDays.length * 2;
+            const calStart = new Date(year1, month1, 1, 0, 0, 0);
+            const calEnd = isTwoMonths
+                ? new Date(year2, month2, daysInMonth2, 23, 59, 59)
+                : new Date(year1, month1, daysInMonth1, 23, 59, 59);
+
+            // Tier 1 (Month Row): Sticky top: 0
+            // Vehicle cell spans 3 rows (or 2 if 1 month)
+            const headerRowSpan = isTwoMonths ? 3 : 2;
+
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
                     <span class="fc-vhead-text">VEHICLE / UNIT</span>
                 </div>
             </th>`;
 
-            // Row 2: Sub-columns for AM and PM (frozen at top: 38px, z-index: 20)
-            let row2Html = '';
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dayDate = new Date(year, month, d);
-                const dayOfWeek = dayDate.getDay();
-                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-                const isToday = isCurrentMonth && today.getDate() === d;
-                
-                const dowBg = isToday ? '#dcfce7' : (isWeekend ? '#fee2e2' : 'var(--surface-solid)');
-                const dowColor = isToday ? '#15803d' : (isWeekend ? '#ef4444' : 'var(--text-muted)');
-                const dateBg = isToday ? '#bbf7d0' : (isWeekend ? '#fef2f2' : 'var(--surface-solid)');
-                const dateColor = isToday ? '#15803d' : 'var(--text-main)';
-
-                row1Html += `<th colspan="2" style="padding: 4px 2px; border: 1px solid var(--border); text-align: center; background: ${dowBg}; position: sticky; top: 0; z-index: 20;">
-                    <div style="font-weight: 800; font-size: 0.62rem; color: ${dowColor}; text-transform: uppercase;">${dayNamesShort[dayOfWeek]}</div>
-                    <div style="font-weight: 900; font-size: 0.82rem; color: ${dateColor}; line-height: 1.1;">${d}</div>
+            if (isTwoMonths) {
+                // Month 1 Header (Authoritative Autoride Green)
+                monthRowHtml += `<th colspan="${daysInMonth1 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); border-right: 3px solid #009240; text-align: center; background: linear-gradient(135deg, #15803d, #00B14F); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">
+                    <div style="display:inline-flex; align-items:center; gap:8px;">
+                        <i class="fas fa-calendar-alt" style="font-size: 0.75rem;"></i>
+                        <span>${monthNames[month1]} ${year1}</span>
+                        <span style="background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 800;">${daysInMonth1} DAYS</span>
+                    </div>
                 </th>`;
 
-                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: 38px; z-index: 20;">AM</th>`;
-                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: 38px; z-index: 20;">PM</th>`;
+                // Month 2 Header (Crisp Blue)
+                monthRowHtml += `<th colspan="${daysInMonth2 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); text-align: center; background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">
+                    <div style="display:inline-flex; align-items:center; gap:8px;">
+                        <i class="fas fa-calendar-check" style="font-size: 0.75rem;"></i>
+                        <span>${monthNames[month2]} ${year2}</span>
+                        <span style="background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 800;">${daysInMonth2} DAYS</span>
+                    </div>
+                </th>`;
+            }
+
+            // Tier 2 (Days Row): Sticky top: isTwoMonths ? '28px' : '0'
+            const daysTopOffset = isTwoMonths ? '28px' : '0';
+            let daysRowHtml = '';
+            if (!isTwoMonths) {
+                daysRowHtml += monthRowHtml;
+                monthRowHtml = '';
+            }
+
+            // Tier 3 (AM/PM Row): Sticky top: isTwoMonths ? '66px' : '38px'
+            const ampmTopOffset = isTwoMonths ? '66px' : '38px';
+            let ampmRowHtml = '';
+
+            allDays.forEach(day => {
+                const dowBg = day.isToday ? '#dcfce7' : (day.isWeekend ? '#fee2e2' : 'var(--surface-solid)');
+                const dowColor = day.isToday ? '#15803d' : (day.isWeekend ? '#ef4444' : 'var(--text-muted)');
+                const dateBg = day.isToday ? '#bbf7d0' : (day.isWeekend ? '#fef2f2' : 'var(--surface-solid)');
+                const dateColor = day.isToday ? '#15803d' : 'var(--text-main)';
+                const dividerStyle = day.isLastDayOfFirstMonth ? 'border-right: 3px solid #009240 !important;' : '';
+
+                daysRowHtml += `<th colspan="2" class="${day.isToday ? 'fc-today-col' : ''}" style="padding: 4px 2px; border: 1px solid var(--border); ${dividerStyle} text-align: center; background: ${dowBg}; position: sticky; top: ${daysTopOffset}; z-index: 22;">
+                    <div style="font-weight: 800; font-size: 0.62rem; color: ${dowColor}; text-transform: uppercase;">${day.dayName}</div>
+                    <div style="font-weight: 900; font-size: 0.82rem; color: ${dateColor}; line-height: 1.1;">${day.day}</div>
+                </th>`;
+
+                ampmRowHtml += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">AM</th>`;
+                ampmRowHtml += `<th style="padding: 2px; border: 1px solid var(--border); ${dividerStyle} border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">PM</th>`;
+            });
+
+            const monthRowEl = document.getElementById('fleetCalendarMonthRow');
+            if (monthRowEl) {
+                if (isTwoMonths) {
+                    monthRowEl.style.display = '';
+                    monthRowEl.innerHTML = monthRowHtml;
+                } else {
+                    monthRowEl.style.display = 'none';
+                    monthRowEl.innerHTML = '';
+                }
             }
 
             const daysOfWeekEl = document.getElementById('fleetCalendarDaysOfWeekRow');
-            if (daysOfWeekEl) daysOfWeekEl.innerHTML = row1Html;
+            if (daysOfWeekEl) daysOfWeekEl.innerHTML = daysRowHtml;
+
             const headerRowEl = document.getElementById('fleetCalendarHeaderRow');
-            if (headerRowEl) headerRowEl.innerHTML = row2Html;
-            
+            if (headerRowEl) headerRowEl.innerHTML = ampmRowHtml;
+
             // Filter vehicles and calculate stats
             let filteredVehicles = this.vehicles || [];
             if (this.searchQuery) {
                 filteredVehicles = filteredVehicles.filter(v => {
                     const matchVeh = (v.brand + ' ' + v.model + ' ' + (v.plate_number || '')).toLowerCase().includes(this.searchQuery);
                     if (matchVeh) return true;
-                    // Check if vehicle has any booking matching search in this month
                     return (this.bookings || []).some(b => {
                         if (String(b.vehicle_id) !== String(v.id)) return false;
                         return (b.customer_name || '').toLowerCase().includes(this.searchQuery) ||
@@ -15553,46 +15706,50 @@ async edit(id) { this.openModal(id); }
                 });
             }
 
-            // Calculate active bookings count & utilization in this month
-            const monthStart = new Date(year, month, 1, 0, 0, 0);
-            const monthEnd = new Date(year, month, daysInMonth, 23, 59, 59);
-            const monthBookings = (this.bookings || []).filter(b => {
+            // Calculate active bookings count & utilization in this period
+            const periodBookings = (this.bookings || []).filter(b => {
                 const s = new Date(b.start_date);
                 const e = new Date(b.end_date);
-                return s <= monthEnd && e >= monthStart && b.status !== 'cancelled' && b.status !== 'rejected';
+                return s <= calEnd && e >= calStart && b.status !== 'cancelled' && b.status !== 'rejected';
             });
 
             const statCountEl = document.getElementById('fleetStatBookingsCount');
             if (statCountEl) {
-                statCountEl.innerHTML = `<i class="fas fa-bookmark" style="color: #00B14F; margin-right: 4px;"></i><strong>${monthBookings.length}</strong> Active Bookings`;
+                statCountEl.innerHTML = `<i class="fas fa-bookmark" style="color: #00B14F; margin-right: 4px;"></i><strong>${periodBookings.length}</strong> Active Bookings ${isTwoMonths ? '(2 Months)' : ''}`;
             }
 
             let totalBookedDays = 0;
-            monthBookings.forEach(b => {
+            periodBookings.forEach(b => {
                 const s = new Date(b.start_date);
                 const e = new Date(b.end_date);
-                const sClamped = Math.max(monthStart.getTime(), s.getTime());
-                const eClamped = Math.min(monthEnd.getTime(), e.getTime());
+                const sClamped = Math.max(calStart.getTime(), s.getTime());
+                const eClamped = Math.min(calEnd.getTime(), e.getTime());
                 const days = Math.max(1, Math.round((eClamped - sClamped) / (1000 * 60 * 60 * 24)) + 1);
                 totalBookedDays += days;
             });
-            const totalPossibleVehicleDays = Math.max(1, (this.vehicles || []).length * daysInMonth);
+            const totalPeriodDays = allDays.length;
+            const totalPossibleVehicleDays = Math.max(1, (this.vehicles || []).length * totalPeriodDays);
             const utilizationPct = Math.min(100, Math.round((totalBookedDays / totalPossibleVehicleDays) * 100));
             const statUtilEl = document.getElementById('fleetStatUtilization');
             if (statUtilEl) {
                 statUtilEl.innerHTML = `<i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>${utilizationPct}%</strong>`;
             }
 
-            const totalSlots = daysInMonth * 2;
-            const mStart = new Date(year, month, 1, 0, 0, 0);
-            const mEnd = new Date(year, month, daysInMonth, 23, 59, 59);
+            // Build fast lookup map from date string YYYY-MM-DD to day index in allDays
+            const dayIndexMap = {};
+            allDays.forEach((d, idx) => {
+                dayIndexMap[d.dateKey] = idx;
+            });
+            const calStartKey = allDays[0].dateKey;
+            const calEndKey = allDays[allDays.length - 1].dateKey;
+            const lastSlotOfMonth1 = isTwoMonths ? (daysInMonth1 * 2 - 1) : -1;
 
             // Render Body Rows (Gantt Schedule with Colspan - AM & PM slots)
             let bodyHtml = "";
             filteredVehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
                 
-                // Sticky Vehicle Cell (Green Box matching Excel reference with live daily rate & quick edit icon)
+                // Sticky Vehicle Cell
                 rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
                     style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); min-width: 180px; width: 180px; max-width: 180px; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
                     <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
@@ -15616,29 +15773,33 @@ async edit(id) { this.openModal(id); }
                 }).map(bk => {
                     const sStr = String(bk.start_date || '').split('T')[0];
                     const eStr = String(bk.end_date || '').split('T')[0];
-                    const sParts = sStr.split('-').map(Number);
-                    const eParts = eStr.split('-').map(Number);
-                    if (sParts.length < 3 || eParts.length < 3) return null;
-
-                    const bStart = new Date(sParts[0], sParts[1] - 1, sParts[2]);
-                    const bEnd = new Date(eParts[0], eParts[1] - 1, eParts[2]);
-                    if (bEnd < mStart || bStart > mEnd) return null;
+                    if (!sStr || !eStr) return null;
+                    if (eStr < calStartKey || sStr > calEndKey) return null;
 
                     let startSlot = 0;
-                    if (bStart >= mStart) {
-                        const half = FleetCalendar.getTimeHalf(bk.start_time, 'AM');
-                        startSlot = (bStart.getDate() - 1) * 2 + (half === 'PM' ? 1 : 0);
+                    if (sStr >= calStartKey) {
+                        const dIdx = dayIndexMap[sStr];
+                        if (dIdx !== undefined) {
+                            const half = FleetCalendar.getTimeHalf(bk.start_time, 'AM');
+                            startSlot = dIdx * 2 + (half === 'PM' ? 1 : 0);
+                        }
                     }
+
                     let endSlot = totalSlots - 1;
-                    if (bEnd <= mEnd) {
-                        const half = FleetCalendar.getTimeHalf(bk.end_time, 'PM');
-                        endSlot = (bEnd.getDate() - 1) * 2 + (half === 'PM' ? 1 : 0);
+                    if (eStr <= calEndKey) {
+                        const dIdx = dayIndexMap[eStr];
+                        if (dIdx !== undefined) {
+                            const half = FleetCalendar.getTimeHalf(bk.end_time, 'PM');
+                            endSlot = dIdx * 2 + (half === 'PM' ? 1 : 0);
+                        }
                     }
+
                     if (endSlot < startSlot) endSlot = startSlot;
+                    startSlot = Math.max(0, Math.min(totalSlots - 1, startSlot));
+                    endSlot = Math.max(0, Math.min(totalSlots - 1, endSlot));
                     return { booking: bk, startSlot, endSlot };
                 }).filter(Boolean);
 
-                // Sort by startSlot
                 vBookings.sort((a, b) => a.startSlot - b.startSlot);
 
                 // Calculate blackout slot ranges
@@ -15649,30 +15810,34 @@ async edit(id) { this.openModal(id); }
                 }).map(bo => {
                     const sStr = String(bo.start_date || '').split('T')[0];
                     const eStr = String(bo.end_date || '').split('T')[0];
-                    const sParts = sStr.split('-').map(Number);
-                    const eParts = eStr.split('-').map(Number);
-                    if (sParts.length < 3 || eParts.length < 3) return null;
-
-                    const bStart = new Date(sParts[0], sParts[1] - 1, sParts[2]);
-                    const bEnd = new Date(eParts[0], eParts[1] - 1, eParts[2]);
-                    if (bEnd < mStart || bStart > mEnd) return null;
+                    if (!sStr || !eStr) return null;
+                    if (eStr < calStartKey || sStr > calEndKey) return null;
 
                     let startSlot = 0;
-                    if (bStart >= mStart) startSlot = (bStart.getDate() - 1) * 2;
+                    if (sStr >= calStartKey) {
+                        const dIdx = dayIndexMap[sStr];
+                        if (dIdx !== undefined) startSlot = dIdx * 2;
+                    }
+
                     let endSlot = totalSlots - 1;
-                    if (bEnd <= mEnd) endSlot = (bEnd.getDate() - 1) * 2 + 1;
+                    if (eStr <= calEndKey) {
+                        const dIdx = dayIndexMap[eStr];
+                        if (dIdx !== undefined) endSlot = dIdx * 2 + 1;
+                    }
+
                     if (endSlot < startSlot) endSlot = startSlot;
+                    startSlot = Math.max(0, Math.min(totalSlots - 1, startSlot));
+                    endSlot = Math.max(0, Math.min(totalSlots - 1, endSlot));
                     return { blackout: bo, startSlot, endSlot };
                 }).filter(Boolean);
 
                 // Render slots 0 to totalSlots - 1
                 let s = 0;
                 while (s < totalSlots) {
-                    const d = Math.floor(s / 2) + 1;
+                    const dayIdx = Math.floor(s / 2);
                     const half = (s % 2 === 0) ? 'AM' : 'PM';
-                    const dayDate = new Date(year, month, d);
-                    const dow = dayDate.getDay();
-                    const isWeekend = (dow === 0 || dow === 6);
+                    const dayObj = allDays[dayIdx];
+                    const isWeekend = dayObj ? dayObj.isWeekend : false;
 
                     // 1. Check booking covering slot s
                     const bkItem = vBookings.find(item => item.startSlot <= s && s <= item.endSlot);
@@ -15685,11 +15850,14 @@ async edit(id) { this.openModal(id); }
                         const paid = parseFloat(bk.amount_paid || 0);
                         const bal = parseFloat(bk.balance_amount !== undefined ? bk.balance_amount : Math.max(0, rate - paid));
 
+                        const cellEndSlot = s + spanSlots - 1;
+                        const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
+
                         rowHtml += `<td colspan="${spanSlots}"
                             onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
                             onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
                             onmouseleave="FleetCalendar.hideTooltip()"
-                            style="padding: 2px 3px; border: 1px solid rgba(0,0,0,0.12); cursor: pointer; vertical-align: middle; height: 54px;">
+                            style="padding: 2px 3px; border: 1px solid rgba(0,0,0,0.12); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px;">
                             <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 4px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
                                  onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
                                  onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
@@ -15714,7 +15882,9 @@ async edit(id) { this.openModal(id); }
                     const boItem = vBlackouts.find(item => item.startSlot <= s && s <= item.endSlot);
                     if (boItem) {
                         const spanSlots = Math.min(boItem.endSlot - s + 1, totalSlots - s);
-                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 28px; height: 54px;" title="Blackout Blocked">
+                        const cellEndSlot = s + spanSlots - 1;
+                        const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
+                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 28px; height: 54px;" title="Blackout Blocked">
                             <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.58rem; font-weight: 800; padding: 1px 3px; border-radius: 4px;">OFF</span>
                         </td>`;
                         s += spanSlots;
@@ -15722,7 +15892,10 @@ async edit(id) { this.openModal(id); }
                     }
 
                     // 3. Empty slot
-                    const borderRight = (half === 'AM') ? '1px dashed var(--border)' : '1.5px solid var(--border)';
+                    let borderRight = (half === 'AM') ? '1px dashed var(--border)' : '1.5px solid var(--border)';
+                    if (s === lastSlotOfMonth1) {
+                        borderRight = '3px solid #009240 !important';
+                    }
                     rowHtml += `<td style="padding: 0; border: 1px solid var(--border); border-right: ${borderRight}; text-align: center; min-width: 28px; width: 28px; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
                     s++;
                 }
@@ -15739,14 +15912,28 @@ async edit(id) { this.openModal(id); }
             if (bodyEl) bodyEl.innerHTML = bodyHtml;
 
             const scrollContainer = document.getElementById('fleetCalendarScrollContainer');
-            if (scrollContainer && !scrollContainer._hasHScrollWheel) {
-                scrollContainer._hasHScrollWheel = true;
-                scrollContainer.addEventListener('wheel', function(e) {
-                    if (e.shiftKey) {
-                        e.preventDefault();
-                        scrollContainer.scrollLeft += (e.deltaY || e.deltaX);
-                    }
-                }, { passive: false });
+            if (scrollContainer) {
+                if (!scrollContainer._hasHScrollWheel) {
+                    scrollContainer._hasHScrollWheel = true;
+                    scrollContainer.addEventListener('wheel', function(e) {
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            scrollContainer.scrollLeft += (e.deltaY || e.deltaX);
+                        }
+                    }, { passive: false });
+                }
+
+                // If requested to scroll to today
+                if (this._shouldScrollToToday) {
+                    this._shouldScrollToToday = false;
+                    setTimeout(() => {
+                        const todayCell = document.querySelector('.fc-today-col');
+                        if (todayCell) {
+                            const offset = todayCell.offsetLeft - 240;
+                            scrollContainer.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+                        }
+                    }, 50);
+                }
             }
         },
 
@@ -16216,14 +16403,32 @@ async edit(id) { this.openModal(id); }
             const year = this.currentDate.getFullYear();
             const month = this.currentDate.getMonth();
             const monthLabel = document.getElementById('fleetExportCurrentMonthLabel');
-            if (monthLabel) monthLabel.textContent = `${monthNames[month]} ${year}`;
+            if (monthLabel) {
+                if (this.viewMonths === 2) {
+                    const m2 = new Date(year, month + 1, 1);
+                    const y2 = m2.getFullYear();
+                    const m2Idx = m2.getMonth();
+                    monthLabel.textContent = `${monthNames[month]} & ${monthNames[m2Idx]} ${y2 === year ? year : year + ' / ' + y2}`;
+                } else {
+                    monthLabel.textContent = `${monthNames[month]} ${year}`;
+                }
+            }
 
             // Initialize default custom dates
             const startInp = document.getElementById('fleetExportStartDate');
             const endInp = document.getElementById('fleetExportEndDate');
             const startStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
-            const lastDay = new Date(year, month + 1, 0).getDate();
-            const endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+            let endStr;
+            if (this.viewMonths === 2) {
+                const m2 = new Date(year, month + 1, 1);
+                const y2 = m2.getFullYear();
+                const m2Idx = m2.getMonth();
+                const lastDayM2 = new Date(y2, m2Idx + 1, 0).getDate();
+                endStr = `${y2}-${String(m2Idx+1).padStart(2,'0')}-${String(lastDayM2).padStart(2,'0')}`;
+            } else {
+                const lastDay = new Date(year, month + 1, 0).getDate();
+                endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+            }
             if (startInp && !startInp.value) startInp.value = startStr;
             if (endInp && !endInp.value) endInp.value = endStr;
 

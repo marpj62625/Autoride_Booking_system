@@ -1118,9 +1118,32 @@
 
 
             border-bottom: 1px solid var(--border);
+        }
 
+        .drawer-close-btn {
+            position: absolute;
+            right: 14px;
+            top: 18px;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.04);
+            color: var(--text-main);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
 
-
+        .drawer-close-btn:hover {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+            color: #ffffff !important;
+            transform: scale(1.05);
         }
 
 
@@ -4437,11 +4460,13 @@
 
 <div class="side-drawer" id="sideDrawer">
 
-
-
-    <div class="drawer-header">
-
-
+    <div class="drawer-header" style="position: relative;">
+        <button type="button" onclick="toggleDrawer(false)" class="drawer-close-btn" title="Close Sidebar"
+                style="position: absolute; right: 14px; top: 18px; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.04); color: var(--text-main); font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; z-index: 10;"
+                onmouseover="this.style.background='var(--border)';"
+                onmouseout="this.style.background='rgba(0,0,0,0.04)';">
+            <i class="fas fa-times"></i>
+        </button>
 
         <div class="logo-wrap" style="margin-bottom: 10px;">
 
@@ -4532,33 +4557,23 @@
 
             <a href="javascript:void(0);" class="drawer-item" onclick="adminAuth.logout()" style="color: #ef4444;"><i class="fas fa-sign-out-alt"></i> Logout</a>
 
+            <a href="javascript:void(0);" class="drawer-item" onclick="toggleDrawer(false)" style="color: var(--text-muted); font-size: 0.8rem; border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 10px;">
+                <i class="fas fa-chevron-left"></i> Close Sidebar
+            </a>
+
 
 
         </div>
 
-
-
     </div>
-
-
 
 </div>
 
-
-
-
-
-
-
 <header class="mobile-header">
-
-
 
     <div class="header-left">
 
-
-
-        <button class="menu-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
+        <button class="menu-btn" onclick="toggleDrawer()" id="sidebarToggleBtn" title="Toggle Sidebar Navigation" aria-label="Toggle Navigation Menu"><i class="fas fa-bars"></i></button>
 
 
 
@@ -10039,8 +10054,13 @@ input:checked + .ctrl-slider:before {
                 </button>
                 <div style="display: flex; gap: 4px; align-items: center; background: var(--surface-solid); padding: 3px 6px; border-radius: 10px; border: 1px solid var(--border);">
                     <button onclick="FleetCalendar.prevMonth()" class="btn-primary" style="padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; background: var(--primary); border: none; color: white;"><i class="fas fa-chevron-left"></i></button>
-                    <span id="fleetCalendarMonthLabel" style="font-weight: 800; font-size: 0.88rem; min-width: 130px; text-align: center; color: var(--text-main);"></span>
+                    <span id="fleetCalendarMonthLabel" style="font-weight: 800; font-size: 0.85rem; min-width: 190px; text-align: center; color: var(--text-main);"></span>
                     <button onclick="FleetCalendar.nextMonth()" class="btn-primary" style="padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; background: var(--primary); border: none; color: white;"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <!-- View Mode: 2 Months (Default) / 1 Month -->
+                <div style="display: inline-flex; background: var(--surface-solid); padding: 2px; border-radius: 8px; border: 1px solid var(--border); gap: 2px;">
+                    <button type="button" id="fcView2MonthsBtn" onclick="FleetCalendar.setViewMonths(2)" title="View 2 consecutive months in one screen" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 800; border-radius: 6px; border: none; cursor: pointer; background: #00B14F; color: white;">2 Months</button>
+                    <button type="button" id="fcView1MonthBtn" onclick="FleetCalendar.setViewMonths(1)" title="View single month" style="padding: 5px 9px; font-size: 0.74rem; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; background: transparent; color: var(--text-muted);">1 Month</button>
                 </div>
                 <button onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted);">
                     <i class="fas fa-sync-alt"></i>
@@ -10064,13 +10084,16 @@ input:checked + .ctrl-slider:before {
             </div>
         </div>
         
-        <div id="fleetCalendarScrollContainer" style="overflow-x: auto; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+        <div id="fleetCalendarScrollContainer" style="overflow: auto; max-height: calc(100vh - 270px); min-height: 250px; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
             <table style="width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 800px; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
-                <thead>
-                    <tr id="fleetCalendarDaysOfWeekRow" style="background: var(--surface-solid);">
+                <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
+                    <tr id="fleetCalendarMonthRow" style="height: 28px; background: var(--surface-solid);">
+                        <!-- Month banners: Month 1 & Month 2 injected via JS -->
+                    </tr>
+                    <tr id="fleetCalendarDaysOfWeekRow" style="height: 38px; background: var(--surface-solid);">
                         <!-- Days of week: TUE, WED, THU... injected via JS -->
                     </tr>
-                    <tr id="fleetCalendarHeaderRow" style="background: var(--surface-solid); border-bottom: 2px solid var(--border);">
+                    <tr id="fleetCalendarHeaderRow" style="height: 24px; background: var(--surface-solid); border-bottom: 2px solid var(--border);">
                         <!-- Dates: 1, 2, 3... injected via JS -->
                     </tr>
                 </thead>
@@ -15244,82 +15267,114 @@ async edit(id) { this.openModal(id); }
 
 
     function toggleDrawer(show) {
-
-
-
         const drawer = document.getElementById('sideDrawer');
-
-
-
         const overlay = document.getElementById('drawerOverlay');
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
+        if (!drawer) return;
 
+        const isDesktop = (window.innerWidth >= 769);
 
+        if (isDesktop) {
+            // Desktop mode: dock or collapse sidebar
+            const isCurrentlyCollapsed = document.body.classList.contains('sidebar-collapsed');
+            const shouldCollapse = (show !== undefined) ? !show : !isCurrentlyCollapsed;
 
-        if (show) {
-
-
-
-            overlay.style.display = 'block';
-
-
-
-            setTimeout(() => {
-
-
-
-                overlay.style.opacity = '1';
-
-
-
-                drawer.style.left = '0';
-
-
-
-            }, 10);
-
-
-
+            if (shouldCollapse) {
+                document.body.classList.add('sidebar-collapsed');
+                drawer.classList.remove('open');
+                drawer.style.left = '';
+                if (toggleBtn) {
+                    toggleBtn.setAttribute('title', 'Open Sidebar Navigation');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
+                try { localStorage.setItem('autoride_sidebar_collapsed', 'true'); } catch(e){}
+            } else {
+                document.body.classList.remove('sidebar-collapsed');
+                drawer.classList.add('open');
+                drawer.style.left = '';
+                if (toggleBtn) {
+                    toggleBtn.setAttribute('title', 'Close Sidebar Navigation');
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                }
+                try { localStorage.setItem('autoride_sidebar_collapsed', 'false'); } catch(e){}
+            }
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+            }
         } else {
+            // Mobile mode: overlay drawer
+            document.body.classList.remove('sidebar-collapsed');
+            const isOpen = (drawer.style.left === '0px' || drawer.classList.contains('open'));
+            const shouldOpen = (show !== undefined) ? !!show : !isOpen;
 
-
-
-            drawer.style.left = '-280px';
-
-
-
-            overlay.style.opacity = '0';
-
-
-
-            setTimeout(() => overlay.style.display = 'none', 300);
-
-
-
+            if (shouldOpen) {
+                drawer.classList.add('open');
+                drawer.style.left = '0px';
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => { if (overlay) overlay.style.opacity = '1'; }, 10);
+                }
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                drawer.classList.remove('open');
+                drawer.style.left = '-280px';
+                if (overlay) {
+                    overlay.style.display = 'none';
+                    setTimeout(() => { if (overlay) overlay.style.display = 'none'; }, 280);
+                }
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+            }
         }
-
-
-
     }
 
+    // Keyboard shortcut (Escape key closes drawer/sidebar)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && typeof toggleDrawer === 'function') {
+            if (window.innerWidth >= 769) {
+                if (!document.body.classList.contains('sidebar-collapsed')) {
+                    toggleDrawer(false);
+                }
+            } else {
+                const drawer = document.getElementById('sideDrawer');
+                if (drawer && (drawer.style.left === '0px' || drawer.classList.contains('open'))) {
+                    toggleDrawer(false);
+                }
+            }
+        }
+    });
 
+    // Window resize handler: clean up state transitions
+    window.addEventListener('resize', function() {
+        const drawer = document.getElementById('sideDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        if (window.innerWidth < 769) {
+            document.body.classList.remove('sidebar-collapsed');
+        } else {
+            if (drawer) drawer.style.left = '';
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+            }
+        }
+    });
 
-
-
-
+    // Restore desktop sidebar preference
+    try {
+        if (window.innerWidth >= 769 && localStorage.getItem('autoride_sidebar_collapsed') === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    } catch(e){}
 
     function navTo(tabId) {
-
-
-
         switchTab(tabId);
-
-
-
-        toggleDrawer(false);
-
-
-
+        // On mobile, close drawer overlay so user sees the page content.
+        // On desktop, keep sidebar in current state so admin can navigate smoothly.
+        if (window.innerWidth < 769) {
+            toggleDrawer(false);
+        }
     }
+
 
 
 
@@ -15335,6 +15390,8 @@ async edit(id) { this.openModal(id); }
     // ==================== FLEET CALENDAR ====================
     const FleetCalendar = {
         currentDate: new Date(),
+        viewMonths: 2,
+        _shouldScrollToToday: false,
         bookings: [],
         blackouts: [],
         vehicles: [],
@@ -15362,7 +15419,6 @@ async edit(id) { this.openModal(id); }
         getBookingColor(booking) {
             if (booking.calendar_color && booking.calendar_color.trim()) {
                 const hex = booking.calendar_color.trim();
-                // Compute readable text color based on luminance
                 let r = 0, g = 0, b = 0;
                 if (hex.startsWith('#') && hex.length === 7) {
                     r = parseInt(hex.substring(1, 3), 16);
@@ -15378,7 +15434,6 @@ async edit(id) { this.openModal(id); }
                 return { bg: hex, text: textColor, border: lum > 160 ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.3)' };
             }
 
-            // Consistent hash per customer name or user ID: repeat bookings get identical color
             const key = (booking.customer_name || (booking.user_id ? 'user_' + booking.user_id : 'booking_' + booking.id)).toLowerCase().trim();
             let hash = 0;
             for (let i = 0; i < key.length; i++) {
@@ -15387,14 +15442,39 @@ async edit(id) { this.openModal(id); }
             }
             return this.paletteColors[Math.abs(hash) % this.paletteColors.length];
         },
+
+        getTimeHalf(timeStr, defaultHalf = 'AM') {
+            if (!timeStr) return defaultHalf;
+            let s = String(timeStr).trim().toLowerCase();
+            if (s.includes('am')) return 'AM';
+            if (s.includes('pm')) return 'PM';
+            const parts = s.split(':').map(Number);
+            if (!isNaN(parts[0])) return parts[0] >= 12 ? 'PM' : 'AM';
+            return defaultHalf;
+        },
+
+        setViewMonths(num) {
+            this.viewMonths = (num === 1) ? 1 : 2;
+            this.refresh();
+        },
         
         async refresh() {
             try {
-                const year = this.currentDate.getFullYear();
-                const month = this.currentDate.getMonth();
-                const startStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
-                const lastDay = new Date(year, month + 1, 0).getDate();
-                const endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                const year1 = this.currentDate.getFullYear();
+                const month1 = this.currentDate.getMonth();
+                const startStr = `${year1}-${String(month1+1).padStart(2,'0')}-01`;
+                
+                let endStr;
+                if (this.viewMonths === 2) {
+                    const m2Date = new Date(year1, month1 + 1, 1);
+                    const year2 = m2Date.getFullYear();
+                    const month2 = m2Date.getMonth();
+                    const lastDayM2 = new Date(year2, month2 + 1, 0).getDate();
+                    endStr = `${year2}-${String(month2+1).padStart(2,'0')}-${String(lastDayM2).padStart(2,'0')}`;
+                } else {
+                    const lastDay = new Date(year1, month1 + 1, 0).getDate();
+                    endStr = `${year1}-${String(month1+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+                }
                 
                 // Fetch vehicles, fleet bookings and blackouts
                 const [vRes, cRes, bRes] = await Promise.all([
@@ -15419,71 +15499,206 @@ async edit(id) { this.openModal(id); }
 
         goToToday() {
             this.currentDate = new Date();
+            this._shouldScrollToToday = true;
             this.refresh();
         },
         
         prevMonth() {
             this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+            this._shouldScrollToToday = false;
             this.refresh();
         },
         
         nextMonth() {
             this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+            this._shouldScrollToToday = false;
             this.refresh();
         },
         
         render() {
-            const year = this.currentDate.getFullYear();
-            const month = this.currentDate.getMonth();
+            const year1 = this.currentDate.getFullYear();
+            const month1 = this.currentDate.getMonth();
             const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            const labelEl = document.getElementById('fleetCalendarMonthLabel');
-            if (labelEl) labelEl.textContent = `${monthNames[month]} ${year}`;
-            
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
             const dayNamesShort = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
             const today = new Date();
-            const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-            
-            // 2-Tier Header:
-            // Row 1: Day of Week (SUN, MON, TUE, WED, THU, FRI, SAT)
-            // Left sticky cell spans 2 rows
-            let row1Html = `<th rowspan="2" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
+
+            const isTwoMonths = (this.viewMonths === 2);
+            const m2Date = new Date(year1, month1 + 1, 1);
+            const year2 = m2Date.getFullYear();
+            const month2 = m2Date.getMonth();
+
+            const daysInMonth1 = new Date(year1, month1 + 1, 0).getDate();
+            const daysInMonth2 = new Date(year2, month2 + 1, 0).getDate();
+
+            // Sync Toolbar Month Label
+            const labelEl = document.getElementById('fleetCalendarMonthLabel');
+            if (labelEl) {
+                if (isTwoMonths) {
+                    if (year1 === year2) {
+                        labelEl.textContent = `${monthNames[month1]} & ${monthNames[month2]} ${year1}`;
+                    } else {
+                        labelEl.textContent = `${monthNames[month1]} ${year1} & ${monthNames[month2]} ${year2}`;
+                    }
+                } else {
+                    labelEl.textContent = `${monthNames[month1]} ${year1}`;
+                }
+            }
+
+            // Sync View Mode Buttons
+            const btn2 = document.getElementById('fcView2MonthsBtn');
+            const btn1 = document.getElementById('fcView1MonthBtn');
+            if (btn2 && btn1) {
+                if (isTwoMonths) {
+                    btn2.style.background = '#00B14F';
+                    btn2.style.color = '#ffffff';
+                    btn2.style.fontWeight = '800';
+                    btn1.style.background = 'transparent';
+                    btn1.style.color = 'var(--text-muted)';
+                    btn1.style.fontWeight = '700';
+                } else {
+                    btn1.style.background = '#00B14F';
+                    btn1.style.color = '#ffffff';
+                    btn1.style.fontWeight = '800';
+                    btn2.style.background = 'transparent';
+                    btn2.style.color = 'var(--text-muted)';
+                    btn2.style.fontWeight = '700';
+                }
+            }
+
+            // Build array of months
+            const monthsList = [
+                {
+                    year: year1,
+                    month: month1,
+                    daysCount: daysInMonth1,
+                    name: monthNames[month1],
+                    isCurrent: (today.getFullYear() === year1 && today.getMonth() === month1)
+                }
+            ];
+            if (isTwoMonths) {
+                monthsList.push({
+                    year: year2,
+                    month: month2,
+                    daysCount: daysInMonth2,
+                    name: monthNames[month2],
+                    isCurrent: (today.getFullYear() === year2 && today.getMonth() === month2)
+                });
+            }
+
+            // Flatten all days
+            const allDays = [];
+            monthsList.forEach((mObj, mIdx) => {
+                for (let d = 1; d <= mObj.daysCount; d++) {
+                    const dayDate = new Date(mObj.year, mObj.month, d);
+                    const dayOfWeek = dayDate.getDay();
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                    const isToday = mObj.isCurrent && (today.getDate() === d);
+                    const isLastDayOfFirstMonth = (isTwoMonths && mIdx === 0 && d === mObj.daysCount);
+
+                    allDays.push({
+                        year: mObj.year,
+                        month: mObj.month,
+                        day: d,
+                        monthIdx: mIdx,
+                        monthName: mObj.name,
+                        dayOfWeek,
+                        dayName: dayNamesShort[dayOfWeek],
+                        isWeekend,
+                        isToday,
+                        isLastDayOfFirstMonth,
+                        dateKey: `${mObj.year}-${String(mObj.month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+                    });
+                }
+            });
+
+            const totalSlots = allDays.length * 2;
+            const calStart = new Date(year1, month1, 1, 0, 0, 0);
+            const calEnd = isTwoMonths
+                ? new Date(year2, month2, daysInMonth2, 23, 59, 59)
+                : new Date(year1, month1, daysInMonth1, 23, 59, 59);
+
+            // Tier 1 (Month Row): Sticky top: 0
+            // Vehicle cell spans 3 rows (or 2 if 1 month)
+            const headerRowSpan = isTwoMonths ? 3 : 2;
+
+            let monthRowHtml = `<th rowspan="${headerRowSpan}" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; top: 0; z-index: 40; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
                     <span class="fc-vhead-text">VEHICLE / UNIT</span>
                 </div>
             </th>`;
 
-            // Row 2: Day Numbers (1, 2, 3...)
-            let row2Html = '';
+            if (isTwoMonths) {
+                // Month 1 Header (Authoritative Autoride Green)
+                monthRowHtml += `<th colspan="${daysInMonth1 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); border-right: 3px solid #009240; text-align: center; background: linear-gradient(135deg, #15803d, #00B14F); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">
+                    <div style="display:inline-flex; align-items:center; gap:8px;">
+                        <i class="fas fa-calendar-alt" style="font-size: 0.75rem;"></i>
+                        <span>${monthNames[month1]} ${year1}</span>
+                        <span style="background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 800;">${daysInMonth1} DAYS</span>
+                    </div>
+                </th>`;
 
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dayDate = new Date(year, month, d);
-                const dayOfWeek = dayDate.getDay();
-                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-                const isToday = isCurrentMonth && today.getDate() === d;
-                
-                const dowBg = isToday ? 'rgba(0,177,79,0.18)' : (isWeekend ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface-solid)');
-                const dowColor = isToday ? '#00B14F' : (isWeekend ? '#ef4444' : 'var(--text-muted)');
-                row1Html += `<th style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; font-weight: 800; font-size: 0.65rem; min-width: 48px; width: 48px; background: ${dowBg}; color: ${dowColor}; text-transform: uppercase;">${dayNamesShort[dayOfWeek]}</th>`;
+                // Month 2 Header (Crisp Blue)
+                monthRowHtml += `<th colspan="${daysInMonth2 * 2}" style="padding: 6px 12px; border: 1px solid var(--border); text-align: center; background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #ffffff; position: sticky; top: 0; z-index: 25; font-size: 0.78rem; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">
+                    <div style="display:inline-flex; align-items:center; gap:8px;">
+                        <i class="fas fa-calendar-check" style="font-size: 0.75rem;"></i>
+                        <span>${monthNames[month2]} ${year2}</span>
+                        <span style="background: rgba(255,255,255,0.25); padding: 1px 7px; border-radius: 10px; font-size: 0.65rem; font-weight: 800;">${daysInMonth2} DAYS</span>
+                    </div>
+                </th>`;
+            }
 
-                const dateBg = isToday ? 'rgba(0,177,79,0.22)' : (isWeekend ? 'rgba(239, 68, 68, 0.04)' : 'var(--surface-solid)');
-                const dateColor = isToday ? '#00B14F' : 'var(--text-main)';
-                row2Html += `<th style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; font-weight: 900; font-size: 0.8rem; min-width: 48px; width: 48px; background: ${dateBg}; color: ${dateColor};">${d}</th>`;
+            // Tier 2 (Days Row): Sticky top: isTwoMonths ? '28px' : '0'
+            const daysTopOffset = isTwoMonths ? '28px' : '0';
+            let daysRowHtml = '';
+            if (!isTwoMonths) {
+                daysRowHtml += monthRowHtml;
+                monthRowHtml = '';
+            }
+
+            // Tier 3 (AM/PM Row): Sticky top: isTwoMonths ? '66px' : '38px'
+            const ampmTopOffset = isTwoMonths ? '66px' : '38px';
+            let ampmRowHtml = '';
+
+            allDays.forEach(day => {
+                const dowBg = day.isToday ? '#dcfce7' : (day.isWeekend ? '#fee2e2' : 'var(--surface-solid)');
+                const dowColor = day.isToday ? '#15803d' : (day.isWeekend ? '#ef4444' : 'var(--text-muted)');
+                const dateBg = day.isToday ? '#bbf7d0' : (day.isWeekend ? '#fef2f2' : 'var(--surface-solid)');
+                const dateColor = day.isToday ? '#15803d' : 'var(--text-main)';
+                const dividerStyle = day.isLastDayOfFirstMonth ? 'border-right: 3px solid #009240 !important;' : '';
+
+                daysRowHtml += `<th colspan="2" class="${day.isToday ? 'fc-today-col' : ''}" style="padding: 4px 2px; border: 1px solid var(--border); ${dividerStyle} text-align: center; background: ${dowBg}; position: sticky; top: ${daysTopOffset}; z-index: 22;">
+                    <div style="font-weight: 800; font-size: 0.62rem; color: ${dowColor}; text-transform: uppercase;">${day.dayName}</div>
+                    <div style="font-weight: 900; font-size: 0.82rem; color: ${dateColor}; line-height: 1.1;">${day.day}</div>
+                </th>`;
+
+                ampmRowHtml += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">AM</th>`;
+                ampmRowHtml += `<th style="padding: 2px; border: 1px solid var(--border); ${dividerStyle} border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${day.isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: ${ampmTopOffset}; z-index: 22;">PM</th>`;
+            });
+
+            const monthRowEl = document.getElementById('fleetCalendarMonthRow');
+            if (monthRowEl) {
+                if (isTwoMonths) {
+                    monthRowEl.style.display = '';
+                    monthRowEl.innerHTML = monthRowHtml;
+                } else {
+                    monthRowEl.style.display = 'none';
+                    monthRowEl.innerHTML = '';
+                }
             }
 
             const daysOfWeekEl = document.getElementById('fleetCalendarDaysOfWeekRow');
-            if (daysOfWeekEl) daysOfWeekEl.innerHTML = row1Html;
+            if (daysOfWeekEl) daysOfWeekEl.innerHTML = daysRowHtml;
+
             const headerRowEl = document.getElementById('fleetCalendarHeaderRow');
-            if (headerRowEl) headerRowEl.innerHTML = row2Html;
-            
+            if (headerRowEl) headerRowEl.innerHTML = ampmRowHtml;
+
             // Filter vehicles and calculate stats
             let filteredVehicles = this.vehicles || [];
             if (this.searchQuery) {
                 filteredVehicles = filteredVehicles.filter(v => {
                     const matchVeh = (v.brand + ' ' + v.model + ' ' + (v.plate_number || '')).toLowerCase().includes(this.searchQuery);
                     if (matchVeh) return true;
-                    // Check if vehicle has any booking matching search in this month
                     return (this.bookings || []).some(b => {
                         if (String(b.vehicle_id) !== String(v.id)) return false;
                         return (b.customer_name || '').toLowerCase().includes(this.searchQuery) ||
@@ -15492,42 +15707,50 @@ async edit(id) { this.openModal(id); }
                 });
             }
 
-            // Calculate active bookings count & utilization in this month
-            const monthStart = new Date(year, month, 1, 0, 0, 0);
-            const monthEnd = new Date(year, month, daysInMonth, 23, 59, 59);
-            const monthBookings = (this.bookings || []).filter(b => {
+            // Calculate active bookings count & utilization in this period
+            const periodBookings = (this.bookings || []).filter(b => {
                 const s = new Date(b.start_date);
                 const e = new Date(b.end_date);
-                return s <= monthEnd && e >= monthStart && b.status !== 'cancelled' && b.status !== 'rejected';
+                return s <= calEnd && e >= calStart && b.status !== 'cancelled' && b.status !== 'rejected';
             });
 
             const statCountEl = document.getElementById('fleetStatBookingsCount');
             if (statCountEl) {
-                statCountEl.innerHTML = `<i class="fas fa-bookmark" style="color: #00B14F; margin-right: 4px;"></i><strong>${monthBookings.length}</strong> Active Bookings`;
+                statCountEl.innerHTML = `<i class="fas fa-bookmark" style="color: #00B14F; margin-right: 4px;"></i><strong>${periodBookings.length}</strong> Active Bookings ${isTwoMonths ? '(2 Months)' : ''}`;
             }
 
             let totalBookedDays = 0;
-            monthBookings.forEach(b => {
+            periodBookings.forEach(b => {
                 const s = new Date(b.start_date);
                 const e = new Date(b.end_date);
-                const sClamped = Math.max(monthStart.getTime(), s.getTime());
-                const eClamped = Math.min(monthEnd.getTime(), e.getTime());
+                const sClamped = Math.max(calStart.getTime(), s.getTime());
+                const eClamped = Math.min(calEnd.getTime(), e.getTime());
                 const days = Math.max(1, Math.round((eClamped - sClamped) / (1000 * 60 * 60 * 24)) + 1);
                 totalBookedDays += days;
             });
-            const totalPossibleVehicleDays = Math.max(1, (this.vehicles || []).length * daysInMonth);
+            const totalPeriodDays = allDays.length;
+            const totalPossibleVehicleDays = Math.max(1, (this.vehicles || []).length * totalPeriodDays);
             const utilizationPct = Math.min(100, Math.round((totalBookedDays / totalPossibleVehicleDays) * 100));
             const statUtilEl = document.getElementById('fleetStatUtilization');
             if (statUtilEl) {
                 statUtilEl.innerHTML = `<i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>${utilizationPct}%</strong>`;
             }
 
-            // Render Body Rows (Gantt Schedule with Colspan)
+            // Build fast lookup map from date string YYYY-MM-DD to day index in allDays
+            const dayIndexMap = {};
+            allDays.forEach((d, idx) => {
+                dayIndexMap[d.dateKey] = idx;
+            });
+            const calStartKey = allDays[0].dateKey;
+            const calEndKey = allDays[allDays.length - 1].dateKey;
+            const lastSlotOfMonth1 = isTwoMonths ? (daysInMonth1 * 2 - 1) : -1;
+
+            // Render Body Rows (Gantt Schedule with Colspan - AM & PM slots)
             let bodyHtml = "";
             filteredVehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
                 
-                // Sticky Vehicle Cell (Green Box matching Excel reference with live daily rate & quick edit icon)
+                // Sticky Vehicle Cell
                 rowHtml += `<td class="fc-vcol" onmouseenter="FleetCalendar.showVehicleTooltip(event, ${v.id})" onmouseleave="FleetCalendar.hideTooltip()" onclick="FleetCalendar.handleVehicleClick(event, ${v.id})"
                     style="padding: 6px 8px; border: 1px solid var(--border); background: var(--surface-solid); position: sticky; left: 0; z-index: 10; box-shadow: 2px 0 5px rgba(0,0,0,0.06); border-right: 2px solid var(--border); min-width: 180px; width: 180px; max-width: 180px; cursor: pointer; vertical-align: middle;" title="Click to view details or change vehicle daily rate">
                     <div class="fc-vbox" style="background: #15803d; color: white; padding: 5px 8px; border-radius: 8px; font-weight: 800; font-size: 0.72rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3); line-height: 1.25; box-shadow: 0 2px 4px rgba(0,0,0,0.12); display: flex; flex-direction: column; justify-content: center; transition: transform 0.15s, box-shadow 0.15s;"
@@ -15543,84 +15766,139 @@ async edit(id) { this.openModal(id); }
                     </div>
                 </td>`;
 
-                // Render day cells with multi-day booking spans
-                let d = 1;
-                while (d <= daysInMonth) {
-                    const targetDate = new Date(year, month, d, 0, 0, 0);
+                // Calculate slot ranges for all active bookings of vehicle v
+                const vBookings = (this.bookings || []).filter(bk => {
+                    if (String(bk.vehicle_id) !== String(v.id)) return false;
+                    if (bk.status === 'cancelled' || bk.status === 'rejected') return false;
+                    return true;
+                }).map(bk => {
+                    const sStr = String(bk.start_date || '').split('T')[0];
+                    const eStr = String(bk.end_date || '').split('T')[0];
+                    if (!sStr || !eStr) return null;
+                    if (eStr < calStartKey || sStr > calEndKey) return null;
 
-                    // Check blackout
-                    const isBlackout = (this.blackouts || []).some(b => {
-                        const start = new Date(b.start_date);
-                        const end = new Date(b.end_date);
-                        start.setHours(0,0,0,0);
-                        end.setHours(23,59,59,999);
-                        const isAffected = !b.affected_vehicles || b.affected_vehicles === 'all' || (b.affected_vehicles && b.affected_vehicles.split(',').map(s => s.trim()).includes(String(v.id)));
-                        return isAffected && targetDate >= start && targetDate <= end;
-                    });
-
-                    // Check active booking covering this day
-                    const activeBooking = (this.bookings || []).find(bk => {
-                        if (String(bk.vehicle_id) !== String(v.id)) return false;
-                        if (bk.status === 'cancelled' || bk.status === 'rejected') return false;
-                        const start = new Date(bk.start_date);
-                        const end = new Date(bk.end_date);
-                        start.setHours(0,0,0,0);
-                        end.setHours(23,59,59,999);
-                        return targetDate >= start && targetDate <= end;
-                    });
-
-                    if (isBlackout) {
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 48px; width: 48px; height: 54px;" title="Blackout Blocked">
-                            <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.6rem; font-weight: 800; padding: 2px 4px; border-radius: 4px;">OFF</span>
-                        </td>`;
-                        d++;
-                    } else if (activeBooking) {
-                        // Multi-day booking: calculate span days in the current month
-                        const bEnd = new Date(activeBooking.end_date);
-                        bEnd.setHours(23,59,59,999);
-                        
-                        let endDayInMonth = daysInMonth;
-                        if (bEnd.getFullYear() === year && bEnd.getMonth() === month) {
-                            endDayInMonth = Math.min(daysInMonth, bEnd.getDate());
-                        } else if (bEnd < targetDate) {
-                            endDayInMonth = d;
+                    let startSlot = 0;
+                    if (sStr >= calStartKey) {
+                        const dIdx = dayIndexMap[sStr];
+                        if (dIdx !== undefined) {
+                            const half = FleetCalendar.getTimeHalf(bk.start_time, 'AM');
+                            startSlot = dIdx * 2 + (half === 'PM' ? 1 : 0);
                         }
+                    }
 
-                        const spanDays = Math.max(1, endDayInMonth - d + 1);
-                        const color = this.getBookingColor(activeBooking);
-                        const custName = (activeBooking.customer_name || 'Customer').toUpperCase();
-                        const rate = parseFloat(activeBooking.total_price || 0);
-                        const paid = parseFloat(activeBooking.amount_paid || 0);
-                        const bal = parseFloat(activeBooking.balance_amount !== undefined ? activeBooking.balance_amount : Math.max(0, rate - paid));
+                    let endSlot = totalSlots - 1;
+                    if (eStr <= calEndKey) {
+                        const dIdx = dayIndexMap[eStr];
+                        if (dIdx !== undefined) {
+                            const half = FleetCalendar.getTimeHalf(bk.end_time, 'PM');
+                            endSlot = dIdx * 2 + (half === 'PM' ? 1 : 0);
+                        }
+                    }
 
-                        rowHtml += `<td colspan="${spanDays}"
-                            onclick="FleetCalendar.openBookingQuickModal(${activeBooking.id})"
-                            onmouseenter="FleetCalendar.showBookingTooltip(event, ${activeBooking.id})"
+                    if (endSlot < startSlot) endSlot = startSlot;
+                    startSlot = Math.max(0, Math.min(totalSlots - 1, startSlot));
+                    endSlot = Math.max(0, Math.min(totalSlots - 1, endSlot));
+                    return { booking: bk, startSlot, endSlot };
+                }).filter(Boolean);
+
+                vBookings.sort((a, b) => a.startSlot - b.startSlot);
+
+                // Calculate blackout slot ranges
+                const vBlackouts = (this.blackouts || []).filter(bo => {
+                    const isAff = !bo.affected_vehicles || bo.affected_vehicles === 'all' || 
+                                  bo.affected_vehicles.split(',').map(s => s.trim()).includes(String(v.id));
+                    return isAff;
+                }).map(bo => {
+                    const sStr = String(bo.start_date || '').split('T')[0];
+                    const eStr = String(bo.end_date || '').split('T')[0];
+                    if (!sStr || !eStr) return null;
+                    if (eStr < calStartKey || sStr > calEndKey) return null;
+
+                    let startSlot = 0;
+                    if (sStr >= calStartKey) {
+                        const dIdx = dayIndexMap[sStr];
+                        if (dIdx !== undefined) startSlot = dIdx * 2;
+                    }
+
+                    let endSlot = totalSlots - 1;
+                    if (eStr <= calEndKey) {
+                        const dIdx = dayIndexMap[eStr];
+                        if (dIdx !== undefined) endSlot = dIdx * 2 + 1;
+                    }
+
+                    if (endSlot < startSlot) endSlot = startSlot;
+                    startSlot = Math.max(0, Math.min(totalSlots - 1, startSlot));
+                    endSlot = Math.max(0, Math.min(totalSlots - 1, endSlot));
+                    return { blackout: bo, startSlot, endSlot };
+                }).filter(Boolean);
+
+                // Render slots 0 to totalSlots - 1
+                let s = 0;
+                while (s < totalSlots) {
+                    const dayIdx = Math.floor(s / 2);
+                    const half = (s % 2 === 0) ? 'AM' : 'PM';
+                    const dayObj = allDays[dayIdx];
+                    const isWeekend = dayObj ? dayObj.isWeekend : false;
+
+                    // 1. Check booking covering slot s
+                    const bkItem = vBookings.find(item => item.startSlot <= s && s <= item.endSlot);
+                    if (bkItem) {
+                        const bk = bkItem.booking;
+                        const spanSlots = Math.min(bkItem.endSlot - s + 1, totalSlots - s);
+                        const color = this.getBookingColor(bk);
+                        const custName = (bk.customer_name || 'Customer').toUpperCase();
+                        const rate = parseFloat(bk.total_price || 0);
+                        const paid = parseFloat(bk.amount_paid || 0);
+                        const bal = parseFloat(bk.balance_amount !== undefined ? bk.balance_amount : Math.max(0, rate - paid));
+
+                        const cellEndSlot = s + spanSlots - 1;
+                        const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
+
+                        rowHtml += `<td colspan="${spanSlots}"
+                            onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
+                            onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
                             onmouseleave="FleetCalendar.hideTooltip()"
-                            style="padding: 3px 4px; border: 1px solid rgba(0,0,0,0.12); cursor: pointer; vertical-align: middle; height: 54px;">
-                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 6px 9px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
+                            style="padding: 2px 3px; border: 1px solid rgba(0,0,0,0.12); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} cursor: pointer; vertical-align: middle; height: 54px;">
+                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 4px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
                                  onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
                                  onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
-                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; font-weight: 900; letter-spacing: 0.3px;">
-                                    <i class="fas fa-user" style="font-size: 0.65rem; margin-right: 4px; opacity: 0.85;"></i>${custName}
+                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.76rem'}; font-weight: 900; letter-spacing: 0.2px;">
+                                    <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
                                 </div>
-                                <div style="font-size: 0.65rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 5px; margin-top: 2px;">
+                                <div style="font-size: 0.62rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden;">
                                     <span>₱${Math.round(rate).toLocaleString()}</span>
-                                    ${bal > 0 
-                                        ? `<span style="background: #ef4444; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 800;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
-                                        : `<span style="background: #16a34a; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 800;">PAID</span>`
+                                    ${spanSlots > 1 ? (bal > 0 
+                                        ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
+                                        : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">PAID</span>`) : ''
                                     }
                                 </div>
                             </div>
                         </td>`;
 
-                        d += spanDays;
-                    } else {
-                        const dayOfWeek = targetDate.getDay();
-                        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; min-width: 48px; width: 48px; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
-                        d++;
+                        s += spanSlots;
+                        continue;
                     }
+
+                    // 2. Check blackout covering slot s
+                    const boItem = vBlackouts.find(item => item.startSlot <= s && s <= item.endSlot);
+                    if (boItem) {
+                        const spanSlots = Math.min(boItem.endSlot - s + 1, totalSlots - s);
+                        const cellEndSlot = s + spanSlots - 1;
+                        const hasMonthDivider = (cellEndSlot === lastSlotOfMonth1);
+                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); ${hasMonthDivider ? 'border-right: 3px solid #009240 !important;' : ''} text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 28px; height: 54px;" title="Blackout Blocked">
+                            <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.58rem; font-weight: 800; padding: 1px 3px; border-radius: 4px;">OFF</span>
+                        </td>`;
+                        s += spanSlots;
+                        continue;
+                    }
+
+                    // 3. Empty slot
+                    let borderRight = (half === 'AM') ? '1px dashed var(--border)' : '1.5px solid var(--border)';
+                    if (s === lastSlotOfMonth1) {
+                        borderRight = '3px solid #009240 !important';
+                    }
+                    rowHtml += `<td style="padding: 0; border: 1px solid var(--border); border-right: ${borderRight}; text-align: center; min-width: 28px; width: 28px; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
+                    s++;
                 }
 
                 rowHtml += `</tr>`;
@@ -15628,11 +15906,36 @@ async edit(id) { this.openModal(id); }
             });
 
             if (filteredVehicles.length === 0) {
-                bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem;">No vehicles or bookings matching "${this.searchQuery}"</td></tr>`;
+                bodyHtml = `<tr><td colspan="${totalSlots + 1}" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem;">No vehicles or bookings matching "${this.searchQuery}"</td></tr>`;
             }
             
             const bodyEl = document.getElementById('fleetCalendarBody');
             if (bodyEl) bodyEl.innerHTML = bodyHtml;
+
+            const scrollContainer = document.getElementById('fleetCalendarScrollContainer');
+            if (scrollContainer) {
+                if (!scrollContainer._hasHScrollWheel) {
+                    scrollContainer._hasHScrollWheel = true;
+                    scrollContainer.addEventListener('wheel', function(e) {
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            scrollContainer.scrollLeft += (e.deltaY || e.deltaX);
+                        }
+                    }, { passive: false });
+                }
+
+                // If requested to scroll to today
+                if (this._shouldScrollToToday) {
+                    this._shouldScrollToToday = false;
+                    setTimeout(() => {
+                        const todayCell = document.querySelector('.fc-today-col');
+                        if (todayCell) {
+                            const offset = todayCell.offsetLeft - 240;
+                            scrollContainer.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+                        }
+                    }, 50);
+                }
+            }
         },
 
         hideTooltip() {
@@ -16101,14 +16404,32 @@ async edit(id) { this.openModal(id); }
             const year = this.currentDate.getFullYear();
             const month = this.currentDate.getMonth();
             const monthLabel = document.getElementById('fleetExportCurrentMonthLabel');
-            if (monthLabel) monthLabel.textContent = `${monthNames[month]} ${year}`;
+            if (monthLabel) {
+                if (this.viewMonths === 2) {
+                    const m2 = new Date(year, month + 1, 1);
+                    const y2 = m2.getFullYear();
+                    const m2Idx = m2.getMonth();
+                    monthLabel.textContent = `${monthNames[month]} & ${monthNames[m2Idx]} ${y2 === year ? year : year + ' / ' + y2}`;
+                } else {
+                    monthLabel.textContent = `${monthNames[month]} ${year}`;
+                }
+            }
 
             // Initialize default custom dates
             const startInp = document.getElementById('fleetExportStartDate');
             const endInp = document.getElementById('fleetExportEndDate');
             const startStr = `${year}-${String(month+1).padStart(2,'0')}-01`;
-            const lastDay = new Date(year, month + 1, 0).getDate();
-            const endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+            let endStr;
+            if (this.viewMonths === 2) {
+                const m2 = new Date(year, month + 1, 1);
+                const y2 = m2.getFullYear();
+                const m2Idx = m2.getMonth();
+                const lastDayM2 = new Date(y2, m2Idx + 1, 0).getDate();
+                endStr = `${y2}-${String(m2Idx+1).padStart(2,'0')}-${String(lastDayM2).padStart(2,'0')}`;
+            } else {
+                const lastDay = new Date(year, month + 1, 0).getDate();
+                endStr = `${year}-${String(month+1).padStart(2,'0')}-${String(lastDay).padStart(2,'0')}`;
+            }
             if (startInp && !startInp.value) startInp.value = startStr;
             if (endInp && !endInp.value) endInp.value = endStr;
 
@@ -16745,7 +17066,9 @@ async edit(id) { this.openModal(id); }
         }
     };
 
-    window.closeDrawer = window.closeDrawer || function() {};
+    window.closeDrawer = function() {
+        if (typeof toggleDrawer === 'function') toggleDrawer(false);
+    };
 
     
     // ==========================================
@@ -17302,6 +17625,14 @@ function toggleNewsletterModal(show = true) {
             const target = document.getElementById(tabId);
             if (target) {
                 target.style.display = 'block';
+                const mainContentEl = document.querySelector('.main-content');
+                if (mainContentEl) {
+                    if (tabId === 'fleet-calendar' && window.innerWidth >= 769) {
+                        mainContentEl.style.overflowY = 'hidden';
+                    } else {
+                        mainContentEl.style.overflowY = '';
+                    }
+                }
                 if (window.anime) {
                     anime({
                         targets: target,
@@ -19126,10 +19457,15 @@ function toggleNewsletterModal(show = true) {
             const dStr = String(b.start_date).split('T')[0];
             const parts = dStr.split('-').map(Number);
             if (parts.length < 3 || isNaN(parts[0])) return null;
-            const pt = b.start_time || b.pickup_time || '06:00';
-            const timeParts = String(pt).split(':').map(Number);
-            const h = isNaN(timeParts[0]) ? 0 : timeParts[0];
-            const m = isNaN(timeParts[1]) ? 0 : timeParts[1];
+            let pt = String(b.start_time || b.pickup_time || '06:00').trim().toLowerCase();
+            const isPM = pt.includes('pm');
+            const isAM = pt.includes('am');
+            pt = pt.replace(/[apm\s]/g, '');
+            const timeParts = pt.split(':').map(Number);
+            let h = isNaN(timeParts[0]) ? 6 : timeParts[0];
+            let m = isNaN(timeParts[1]) ? 0 : timeParts[1];
+            if (isPM && h < 12) h += 12;
+            if (isAM && h === 12) h = 0;
             return new Date(parts[0], parts[1] - 1, parts[2], h, m, 0);
         },
 
@@ -19149,7 +19485,13 @@ function toggleNewsletterModal(show = true) {
         },
 
         getPickupInspectAction(b) {
-            const isPaid = b.payment_status === 'Paid';
+            const ps = (b && b.payment_status ? String(b.payment_status).trim().toLowerCase() : '');
+            const bal = parseFloat((b && b.balance_amount) || 0);
+            const amtPaid = parseFloat((b && b.amount_paid) || 0);
+            const tot = parseFloat((b && b.total_price) || 0);
+            const isPaid = ['paid', 'fully paid', 'fully-paid', 'completed'].includes(ps) ||
+                           (amtPaid >= tot && tot > 0) ||
+                           (bal <= 0 && amtPaid > 0);
             const isReady = this.isPickupInspectReady(b);
             const pDt = this.getPickupDateTime(b);
             const allowFrom = pDt ? new Date(pDt.getTime() - 60 * 60 * 1000) : null;
@@ -36093,113 +36435,29 @@ function toggleNewsletterModal(show = true) {
             const res = await fetch(API_BASE + '/api/admin/smtp/status');
             const data = await res.json();
             
-            let statusHtml = '';
-            if (data.is_linked && data.is_valid) {
-                statusHtml = `<span style="color:#00B14F;"><i class="fas fa-check-circle"></i> Google OAuth Active</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span>`;
+            if (data.is_linked) {
+                if (statusDetail) statusDetail.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check-circle"></i> Connected</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span>`;
                 if (label) label.textContent = `Connected as ${data.email}`;
-            } else if (data.is_linked && !data.is_valid) {
-                statusHtml = `<span style="color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Token Expired / Needs Re-auth</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span><br><span style="font-size:0.75rem;color:#ef4444;">Google test token expired. Please click Re-Authorize below or enter an App Password.</span>`;
-                if (label) label.textContent = `Email Token Expired (${data.email})`;
-            } else if (data.has_manual_smtp) {
-                statusHtml = `<span style="color:#00B14F;"><i class="fas fa-key"></i> Gmail App Password Active</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.manual_smtp_user || 'Configured'}</span>`;
-                if (label) label.textContent = `SMTP Active (${data.manual_smtp_user || 'App Password'})`;
-            } else {
-                statusHtml = `<span style="color:var(--text-muted);"><i class="fas fa-times-circle"></i> Not Configured</span><br><span style="font-size:0.75rem;color:var(--text-muted);">Connect Gmail or enter App Password below</span>`;
-                if (label) label.textContent = "Click to configure notification email";
-            }
-            if (statusDetail) statusDetail.innerHTML = statusHtml;
-
-            if (actionsDiv) {
-                actionsDiv.innerHTML = `
-                    <div style="display:flex;flex-direction:column;gap:8px;">
-                        <button onclick="connectSmtpGmail()" class="btn-premium" style="width:100%;padding:11px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;background:var(--primary);border-color:var(--primary);cursor:pointer;">
-                            <i class="fab fa-google"></i> ${data.is_linked && !data.is_valid ? 'Re-Authorize Gmail Account' : (data.is_linked ? 'Reconnect Gmail' : 'Connect Gmail Account')}
+                if (actionsDiv) {
+                    actionsDiv.innerHTML = `
+                        <button onclick="disconnectSmtpGmail()" class="btn-premium" style="background:#dc2626;border-color:#dc2626;width:100%;padding:12px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;">
+                            <i class="fas fa-unlink"></i> Disconnect Gmail Account
                         </button>
-                        ${data.is_linked ? `
-                            <button onclick="disconnectSmtpGmail()" class="btn-premium" style="background:transparent;border:1px solid #ef4444;width:100%;padding:8px;font-size:0.8rem;font-weight:600;color:#ef4444;border-radius:8px;cursor:pointer;">
-                                <i class="fas fa-unlink"></i> Disconnect Google OAuth
-                            </button>
-                        ` : ''}
-                    </div>
-
-                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                        <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
-                            <i class="fas fa-shield-alt" style="color:var(--primary);"></i> Permanent Option: Gmail App Password
-                        </div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
-                            Generate a 16-character password in Google Account (Security &gt; 2-Step Verification &gt; App Passwords) for 100% reliable, never-expiring email sending.
-                        </div>
-                        <div style="display:flex;flex-direction:column;gap:8px;">
-                            <input id="manualSmtpEmail" type="email" placeholder="Your Gmail address (e.g. yourname@gmail.com)" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.manual_smtp_user || (data.email || '')}">
-                            <input id="manualSmtpPass" type="password" placeholder="16-character Gmail App Password" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;">
-                            <button onclick="saveManualSmtpSettings()" class="btn-premium" style="width:100%;padding:10px;font-size:0.8rem;font-weight:700;background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--text-main);border-radius:8px;cursor:pointer;">
-                                <i class="fas fa-save"></i> Save Gmail App Password
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-                        <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);margin-bottom:6px;">
-                            <i class="fas fa-paper-plane" style="color:var(--primary);"></i> Test Email Sending
-                        </div>
-                        <div style="display:flex;gap:6px;">
-                            <input id="testEmailRecipient" type="email" placeholder="Enter recipient email..." style="flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.email || ''}">
-                            <button onclick="sendTestNotificationEmail()" class="btn-premium" style="padding:8px 14px;font-size:0.8rem;font-weight:700;background:var(--primary);color:white;border-radius:8px;cursor:pointer;">
-                                Test Send
-                            </button>
-                        </div>
-                        <div id="testEmailFeedback" style="font-size:0.75rem;margin-top:6px;"></div>
-                    </div>
-                `;
+                    `;
+                }
+            } else {
+                if (statusDetail) statusDetail.innerHTML = `<span style="color:var(--text-muted);"><i class="fas fa-times-circle"></i> Not Connected</span>`;
+                if (label) label.textContent = "Click to configure notification email";
+                if (actionsDiv) {
+                    actionsDiv.innerHTML = `
+                        <button onclick="connectSmtpGmail()" class="btn-premium" style="width:100%;padding:12px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;background:var(--primary);border-color:var(--primary);">
+                            <i class="fab fa-google"></i> Connect Gmail Account
+                        </button>
+                    `;
+                }
             }
         } catch (e) {
             if (statusDetail) statusDetail.textContent = "Error loading status";
-        }
-    }
-
-    async function saveManualSmtpSettings() {
-        const email = document.getElementById('manualSmtpEmail')?.value?.trim();
-        const appPass = document.getElementById('manualSmtpPass')?.value?.trim();
-        if (!email || !appPass) {
-            alert('Please provide both your Gmail address and 16-character App Password.');
-            return;
-        }
-        try {
-            const res = await fetch(API_BASE + '/api/admin/smtp/manual-save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, app_password: appPass })
-            });
-            const d = await res.json();
-            if (res.ok && d.success) {
-                alert('Gmail App Password saved and verified successfully!');
-                loadSmtpStatus();
-            } else {
-                alert('Failed to save App Password: ' + (d.error || 'Unknown error'));
-            }
-        } catch (e) {
-            alert('Error saving App Password: ' + e.message);
-        }
-    }
-
-    async function sendTestNotificationEmail() {
-        const recipient = document.getElementById('testEmailRecipient')?.value?.trim();
-        const fb = document.getElementById('testEmailFeedback');
-        if (!recipient) {
-            alert('Please enter a recipient email.');
-            return;
-        }
-        if (fb) fb.innerHTML = '<span style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Sending test email...</span>';
-        try {
-            const res = await fetch(API_BASE + '/api/admin/smtp/test-send?email=' + encodeURIComponent(recipient));
-            const d = await res.json();
-            if (res.ok && d.success) {
-                if (fb) fb.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check"></i> ${d.message}</span>`;
-            } else {
-                if (fb) fb.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-times"></i> ${d.error || 'Failed to send'}</span>`;
-            }
-        } catch (e) {
-            if (fb) fb.innerHTML = `<span style="color:#ef4444;">Error: ${e.message}</span>`;
         }
     }
 
@@ -36245,8 +36503,6 @@ function toggleNewsletterModal(show = true) {
     window.connectSmtpGmail = connectSmtpGmail;
     window.disconnectSmtpGmail = disconnectSmtpGmail;
     window.loadSmtpStatus = loadSmtpStatus;
-    window.saveManualSmtpSettings = saveManualSmtpSettings;
-    window.sendTestNotificationEmail = sendTestNotificationEmail;
 
     // Load status after init
     setTimeout(function() {
