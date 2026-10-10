@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 14:46:00
-Feature: Remove floating menu button pill, keep burger menu in header for clean dashboard
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 15:06:00
+Feature: Freeze horizontal scrollbar at bottom of Fleet Calendar viewport and lock desktop overflow
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main

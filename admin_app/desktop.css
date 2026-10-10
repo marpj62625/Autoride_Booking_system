@@ -391,3 +391,69 @@
         box-shadow: 0 0 0 2px rgba(0, 177, 79, 0.2) !important;
     }
 }
+
+/* =================================================================
+   FLEET CALENDAR VIEWPORT-DOCK (769px+)
+   Freezes top day headers AND bottom horizontal scrollbar in viewport
+   ================================================================= */
+@media (min-width: 769px) {
+    #fleet-calendar.tab-content[style*="display: block"],
+    #fleet-calendar.tab-content[style*="display:block"] {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 12px 20px 8px !important;
+        height: calc(100vh - 72px) !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+    #fleet-calendar.tab-content > .stat-card {
+        padding: 14px 18px 8px !important;
+        margin-bottom: 0 !important;
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 0 !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+    #fleet-calendar .stat-card > div:first-child {
+        flex-shrink: 0 !important;
+        margin-bottom: 10px !important;
+    }
+    #fleet-calendar .stat-card > div:nth-child(2) {
+        flex-shrink: 0 !important;
+        margin-bottom: 10px !important;
+    }
+    #fleetCalendarScrollContainer {
+        flex: 1 !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: auto !important;
+        position: relative !important;
+    }
+    /* Frozen Horizontal Scrollbar: bold, prominent and permanently visible at bottom of view field */
+    #fleetCalendarScrollContainer::-webkit-scrollbar {
+        width: 8px !important;
+        height: 14px !important;
+    }
+    #fleetCalendarScrollContainer::-webkit-scrollbar-track {
+        background: var(--surface-container, #f1f5f9) !important;
+        border-radius: 6px !important;
+    }
+    #fleetCalendarScrollContainer::-webkit-scrollbar-thumb {
+        background: #00B14F !important;
+        border-radius: 6px !important;
+        border: 2px solid var(--surface-container, #f1f5f9) !important;
+    }
+    #fleetCalendarScrollContainer::-webkit-scrollbar-thumb:hover {
+        background: #009240 !important;
+    }
+    [data-theme="dark"] #fleetCalendarScrollContainer::-webkit-scrollbar-track {
+        background: #27272a !important;
+    }
+    [data-theme="dark"] #fleetCalendarScrollContainer::-webkit-scrollbar-thumb {
+        background: #00B14F !important;
+        border-color: #27272a !important;
+    }
+}

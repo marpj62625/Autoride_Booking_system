@@ -10079,7 +10079,7 @@ input:checked + .ctrl-slider:before {
             </div>
         </div>
         
-        <div id="fleetCalendarScrollContainer" style="overflow: auto; max-height: calc(100vh - 210px); min-height: 480px; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+        <div id="fleetCalendarScrollContainer" style="overflow: auto; max-height: calc(100vh - 270px); min-height: 250px; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
             <table style="width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 800px; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
                 <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
                     <tr id="fleetCalendarDaysOfWeekRow" style="height: 38px; background: var(--surface-solid);">
@@ -15737,6 +15737,17 @@ async edit(id) { this.openModal(id); }
             
             const bodyEl = document.getElementById('fleetCalendarBody');
             if (bodyEl) bodyEl.innerHTML = bodyHtml;
+
+            const scrollContainer = document.getElementById('fleetCalendarScrollContainer');
+            if (scrollContainer && !scrollContainer._hasHScrollWheel) {
+                scrollContainer._hasHScrollWheel = true;
+                scrollContainer.addEventListener('wheel', function(e) {
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        scrollContainer.scrollLeft += (e.deltaY || e.deltaX);
+                    }
+                }, { passive: false });
+            }
         },
 
         hideTooltip() {
@@ -17408,6 +17419,14 @@ function toggleNewsletterModal(show = true) {
             const target = document.getElementById(tabId);
             if (target) {
                 target.style.display = 'block';
+                const mainContentEl = document.querySelector('.main-content');
+                if (mainContentEl) {
+                    if (tabId === 'fleet-calendar' && window.innerWidth >= 769) {
+                        mainContentEl.style.overflowY = 'hidden';
+                    } else {
+                        mainContentEl.style.overflowY = '';
+                    }
+                }
                 if (window.anime) {
                     anime({
                         targets: target,
