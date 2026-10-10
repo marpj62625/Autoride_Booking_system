@@ -1118,9 +1118,36 @@
 
 
             border-bottom: 1px solid var(--border);
+        }
 
+        .drawer-close-btn {
+            position: absolute;
+            right: 14px;
+            top: 18px;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.04);
+            color: var(--text-main);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
 
+        .drawer-close-btn:hover {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+            color: #ffffff !important;
+            transform: scale(1.05);
+        }
 
+        .sidebar-reopen-pill {
+            display: none;
         }
 
 
@@ -4544,27 +4571,18 @@
 
 
 
-    </div>
-
-
-
 </div>
 
-
-
-
-
-
+<!-- Floating Reopen Sidebar Button (Desktop when collapsed) -->
+<button type="button" id="sidebarReopenPill" class="sidebar-reopen-pill" onclick="toggleDrawer(true)" title="Open Sidebar Navigation" aria-label="Open Sidebar Navigation">
+    <i class="fas fa-chevron-right"></i> <span>Menu</span>
+</button>
 
 <header class="mobile-header">
 
-
-
     <div class="header-left">
 
-
-
-        <button class="menu-btn" onclick="toggleDrawer(true)"><i class="fas fa-bars"></i></button>
+        <button class="menu-btn" onclick="toggleDrawer()" id="sidebarToggleBtn" title="Toggle Sidebar Navigation" aria-label="Toggle Navigation Menu"><i class="fas fa-bars"></i></button>
 
 
 
@@ -15252,54 +15270,112 @@ async edit(id) { this.openModal(id); }
     function toggleDrawer(show) {
         const drawer = document.getElementById('sideDrawer');
         const overlay = document.getElementById('drawerOverlay');
+        const toggleBtn = document.getElementById('sidebarToggleBtn');
         if (!drawer) return;
 
-        const isOpen = (drawer.style.left === '0px' || drawer.classList.contains('open'));
-        const shouldOpen = (show !== undefined) ? !!show : !isOpen;
+        const isDesktop = (window.innerWidth >= 769);
 
-        if (shouldOpen) {
-            drawer.classList.add('open');
-            if (overlay) {
-                overlay.style.display = 'block';
-                setTimeout(() => overlay.style.opacity = '1', 10);
+        if (isDesktop) {
+            // Desktop mode: dock or collapse sidebar
+            const isCurrentlyCollapsed = document.body.classList.contains('sidebar-collapsed');
+            const shouldCollapse = (show !== undefined) ? !show : !isCurrentlyCollapsed;
+
+            if (shouldCollapse) {
+                document.body.classList.add('sidebar-collapsed');
+                drawer.classList.remove('open');
+                drawer.style.left = '';
+                if (toggleBtn) {
+                    toggleBtn.setAttribute('title', 'Open Sidebar Navigation');
+                    toggleBtn.setAttribute('aria-expanded', 'false');
+                }
+                try { localStorage.setItem('autoride_sidebar_collapsed', 'true'); } catch(e){}
+            } else {
+                document.body.classList.remove('sidebar-collapsed');
+                drawer.classList.add('open');
+                drawer.style.left = '';
+                if (toggleBtn) {
+                    toggleBtn.setAttribute('title', 'Close Sidebar Navigation');
+                    toggleBtn.setAttribute('aria-expanded', 'true');
+                }
+                try { localStorage.setItem('autoride_sidebar_collapsed', 'false'); } catch(e){}
             }
-            drawer.style.left = '0px';
-        } else {
-            drawer.classList.remove('open');
-            drawer.style.left = '-280px';
             if (overlay) {
+                overlay.style.display = 'none';
                 overlay.style.opacity = '0';
-                setTimeout(() => overlay.style.display = 'none', 300);
+            }
+        } else {
+            // Mobile mode: overlay drawer
+            document.body.classList.remove('sidebar-collapsed');
+            const isOpen = (drawer.style.left === '0px' || drawer.classList.contains('open'));
+            const shouldOpen = (show !== undefined) ? !!show : !isOpen;
+
+            if (shouldOpen) {
+                drawer.classList.add('open');
+                drawer.style.left = '0px';
+                if (overlay) {
+                    overlay.style.display = 'block';
+                    setTimeout(() => { if (overlay) overlay.style.opacity = '1'; }, 10);
+                }
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                drawer.classList.remove('open');
+                drawer.style.left = '-280px';
+                if (overlay) {
+                    overlay.style.display = 'none';
+                    setTimeout(() => { if (overlay) overlay.style.display = 'none'; }, 280);
+                }
+                if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
             }
         }
     }
 
-    // Close drawer when pressing Escape key
+    // Keyboard shortcut (Escape key closes drawer/sidebar)
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && typeof toggleDrawer === 'function') {
-            toggleDrawer(false);
+            if (window.innerWidth >= 769) {
+                if (!document.body.classList.contains('sidebar-collapsed')) {
+                    toggleDrawer(false);
+                }
+            } else {
+                const drawer = document.getElementById('sideDrawer');
+                if (drawer && (drawer.style.left === '0px' || drawer.classList.contains('open'))) {
+                    toggleDrawer(false);
+                }
+            }
         }
     });
 
+    // Window resize handler: clean up state transitions
+    window.addEventListener('resize', function() {
+        const drawer = document.getElementById('sideDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        if (window.innerWidth < 769) {
+            document.body.classList.remove('sidebar-collapsed');
+        } else {
+            if (drawer) drawer.style.left = '';
+            if (overlay) {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+            }
+        }
+    });
 
-
-
-
-
+    // Restore desktop sidebar preference
+    try {
+        if (window.innerWidth >= 769 && localStorage.getItem('autoride_sidebar_collapsed') === 'true') {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    } catch(e){}
 
     function navTo(tabId) {
-
-
-
         switchTab(tabId);
-
-
-
-        toggleDrawer(false);
-
-
-
+        // On mobile, close drawer overlay so user sees the page content.
+        // On desktop, keep sidebar in current state so admin can navigate smoothly.
+        if (window.innerWidth < 769) {
+            toggleDrawer(false);
+        }
     }
+
 
 
 
@@ -16783,7 +16859,9 @@ async edit(id) { this.openModal(id); }
         }
     };
 
-    window.closeDrawer = window.closeDrawer || function() {};
+    window.closeDrawer = function() {
+        if (typeof toggleDrawer === 'function') toggleDrawer(false);
+    };
 
     
     // ==========================================
