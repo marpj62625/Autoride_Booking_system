@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 13:25:00
-Feature: Collapsible and reopenable admin sidebar for desktop and mobile with toggle button and reopen pill
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 14:40:00
+Feature: Fix missing closing div for sideDrawer resolving white screen; restore 100% full working layout
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main
