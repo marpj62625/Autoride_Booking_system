@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 15:30:00
-Feature: 2-Month continuous fleet calendar view (e.g. October & November) with view toggle and cross-month Gantt bars
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 16:20:00
+Feature: Fleet Calendar Excel Import with Smart Renter Account Matching, Conflict Detection, and 1-Click Sync
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main

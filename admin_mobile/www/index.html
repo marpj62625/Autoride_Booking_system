@@ -7841,6 +7841,148 @@ input:checked + .ctrl-slider:before {
         </div>
     </div>
 
+    <!-- FLEET IMPORT EXCEL MODAL WITH SMART RENTER MATCHING -->
+    <div id="fleetImportModal" class="premium-modal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); padding: 16px; box-sizing: border-box; align-items: center; justify-content: center;" onclick="if(event.target === this) FleetCalendar.closeImportModal(event)">
+        <div class="modal-content" style="max-width: 980px; width: 100%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 22px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 42px; height: 42px; border-radius: 12px; background: rgba(15, 118, 110, 0.15); color: #0f766e; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                        <i class="fas fa-file-import"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main);">Import Fleet Bookings &amp; Smart Renter Matching</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 0.76rem; color: var(--text-muted);">Import Excel schedule sheets (e.g. ARC Monitoring grid or tabular list) and auto-link to renter accounts.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="FleetCalendar.closeImportModal(event)" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Body Container -->
+            <div style="flex: 1; overflow-y: auto; padding-right: 4px;">
+                <!-- Step 1: Upload Dropzone & Instructions -->
+                <div id="fcImportUploadZone" style="margin-bottom: 16px;">
+                    <div id="fcImportDropBox" style="border: 2px dashed #00B14F; border-radius: 16px; padding: 26px 20px; text-align: center; background: rgba(0, 177, 79, 0.03); cursor: pointer; transition: all 0.2s;"
+                         onclick="document.getElementById('fcImportFileInput').click()"
+                         ondragover="event.preventDefault(); this.style.background='rgba(0,177,79,0.08)';"
+                         ondragleave="this.style.background='rgba(0,177,79,0.03)';"
+                         ondrop="event.preventDefault(); this.style.background='rgba(0,177,79,0.03)'; FleetCalendar.handleImportDrop(event);">
+                        <input type="file" id="fcImportFileInput" accept=".xlsx, .xls" style="display: none;" onchange="FleetCalendar.handleImportFileSelect(this.files[0])">
+                        <div id="fcImportDropPrompt">
+                            <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(0,177,79,0.12); color: #00B14F; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 10px;">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h4 style="margin: 0 0 4px; font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Click or Drag &amp; Drop Excel File Here</h4>
+                            <p style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Supports ARC-MONITORING Gantt schedule grid or standard tabular booking sheets (.xlsx, .xls)</p>
+                        </div>
+                        <div id="fcImportLoadingState" style="display: none; padding: 12px 0;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2.2rem; color: #00B14F; margin-bottom: 12px; display: inline-block;"></i>
+                            <h4 style="margin: 0 0 4px; font-size: 0.95rem; font-weight: 800; color: var(--text-main);">Analyzing &amp; Matching Renters...</h4>
+                            <p id="fcImportLoadingFileName" style="margin: 0; font-size: 0.78rem; color: var(--text-muted);">Extracting dates, vehicles, and customer accounts</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; background: rgba(0,177,79,0.1); color: #15803d; font-weight: 700; border: 1px solid rgba(0,177,79,0.25);">
+                                <i class="fas fa-check-circle"></i> ARC-MONITORING Calendar Grid Format
+                            </span>
+                            <span style="font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; background: rgba(59,130,246,0.1); color: #1d4ed8; font-weight: 700; border: 1px solid rgba(59,130,246,0.25);">
+                                <i class="fas fa-check-circle"></i> Standard Tabular Bookings List
+                            </span>
+                        </div>
+                        <button type="button" onclick="FleetCalendar.downloadImportTemplate()" class="btn-secondary" style="padding: 6px 12px; font-size: 0.74rem; font-weight: 700; border-radius: 8px; cursor: pointer; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main); display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-download" style="color: #00B14F;"></i> Download Sample Template
+                        </button>
+                    </div>
+
+                    <!-- Matching & Auto-link Options -->
+                    <div style="background: var(--surface-container); padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); margin-top: 12px; display: flex; gap: 16px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 7px; font-size: 0.76rem; font-weight: 700; color: var(--text-main); cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="fcImportAutoMatch" checked style="accent-color: #00B14F;">
+                            <span>Smart-match customer names to existing renter accounts</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 7px; font-size: 0.76rem; font-weight: 700; color: var(--text-main); cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="fcImportAutoCreate" checked style="accent-color: #00B14F;">
+                            <span>Auto-create Renter Profile for new customers (enables repeat booking tracking)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 7px; font-size: 0.76rem; font-weight: 700; color: var(--text-main); cursor: pointer; margin: 0;">
+                            <input type="checkbox" id="fcImportSkipConflicts" checked onchange="FleetCalendar.toggleSkipConflicts(this.checked)" style="accent-color: #ef4444;">
+                            <span>Auto-unselect date conflicts</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Step 2: Live Preview Section -->
+                <div id="fcImportPreviewSection" style="display: none; margin-top: 14px;">
+                    <!-- Summary Stats Bar -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 12px;">
+                        <div style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; text-align: center;">
+                            <div style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Total Detected</div>
+                            <div id="fcPrevTotal" style="font-size: 1.15rem; font-weight: 900; color: var(--text-main);">0</div>
+                        </div>
+                        <div style="background: rgba(0,177,79,0.06); border: 1px solid rgba(0,177,79,0.25); border-radius: 10px; padding: 8px 12px; text-align: center;">
+                            <div style="font-size: 0.68rem; color: #15803d; font-weight: 700; text-transform: uppercase;">Cars Matched</div>
+                            <div id="fcPrevVehicles" style="font-size: 1.15rem; font-weight: 900; color: #15803d;">0</div>
+                        </div>
+                        <div style="background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.25); border-radius: 10px; padding: 8px 12px; text-align: center;">
+                            <div style="font-size: 0.68rem; color: #1d4ed8; font-weight: 700; text-transform: uppercase;">Matched Accounts</div>
+                            <div id="fcPrevExistingRenters" style="font-size: 1.15rem; font-weight: 900; color: #1d4ed8;">0</div>
+                        </div>
+                        <div style="background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.25); border-radius: 10px; padding: 8px 12px; text-align: center;">
+                            <div style="font-size: 0.68rem; color: #b45309; font-weight: 700; text-transform: uppercase;">New Profiles</div>
+                            <div id="fcPrevNewRenters" style="font-size: 1.15rem; font-weight: 900; color: #b45309;">0</div>
+                        </div>
+                        <div style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.25); border-radius: 10px; padding: 8px 12px; text-align: center;">
+                            <div style="font-size: 0.68rem; color: #dc2626; font-weight: 700; text-transform: uppercase;">Conflicts</div>
+                            <div id="fcPrevConflicts" style="font-size: 1.15rem; font-weight: 900; color: #dc2626;">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Table -->
+                    <div style="border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface-solid);">
+                        <div style="max-height: 380px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.74rem; color: var(--text-main);">
+                                <thead style="position: sticky; top: 0; background: var(--surface-container); z-index: 5; border-bottom: 2px solid var(--border);">
+                                    <tr>
+                                        <th style="padding: 8px 10px; text-align: center; width: 36px;">
+                                            <input type="checkbox" id="fcImportSelectAll" checked onchange="FleetCalendar.toggleSelectAllImport(this.checked)" style="accent-color: #00B14F;">
+                                        </th>
+                                        <th style="padding: 8px 10px; text-align: left;">Vehicle / Car</th>
+                                        <th style="padding: 8px 10px; text-align: left;">Customer &amp; Account Status</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Dates &amp; Duration</th>
+                                        <th style="padding: 8px 10px; text-align: right;">Total Price</th>
+                                        <th style="padding: 8px 10px; text-align: center;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fcImportPreviewTableBody">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap; gap: 10px;">
+                <button type="button" onclick="FleetCalendar.closeImportModal(event)" class="btn-secondary" style="padding: 9px 16px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-main);">
+                    Cancel
+                </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" id="fcImportResetBtn" onclick="FleetCalendar.resetImport()" class="btn-secondary" style="display: none; padding: 9px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; background: var(--surface-container); border: 1px solid var(--border); color: var(--text-muted);">
+                        Choose Another File
+                    </button>
+                    <button type="button" id="fcConfirmImportBtn" onclick="FleetCalendar.confirmImport()" class="btn-primary" style="display: none; padding: 9px 20px; border-radius: 10px; font-size: 0.82rem; font-weight: 800; cursor: pointer; background: #00B14F; border: none; color: white; display: inline-flex; align-items: center; gap: 7px; box-shadow: 0 2px 8px rgba(0,177,79,0.35);">
+                        <i class="fas fa-check-circle"></i> <span>Confirm &amp; Sync to Fleet Calendar (<span id="fcConfirmCount">0</span>)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- RECORD EXPENSE MODAL -->
     <div id="recordExpenseModal" class="premium-modal" style="display: none;" onclick="Reports.closeRecordExpenseModalBackdrop(event)">
         <div class="modal-content" style="max-width: 500px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal);">
@@ -10068,6 +10210,9 @@ input:checked + .ctrl-slider:before {
                 <button type="button" onclick="FleetCalendar.openExportModal()" class="btn-primary" title="Export Fleet Schedule & Bookings to Excel" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #00B14F; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
                     <i class="fas fa-file-excel"></i> <span>Export Excel</span>
                 </button>
+                <button type="button" onclick="FleetCalendar.openImportModal()" class="btn-primary" title="Import Fleet Schedule & Bookings from Excel" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #0f766e; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(15,118,110,0.3);">
+                    <i class="fas fa-file-import"></i> <span>Import Excel</span>
+                </button>
             </div>
         </div>
 
@@ -10904,7 +11049,7 @@ input:checked + .ctrl-slider:before {
             'staffPermissionsSuperModal', 'recordExpenseModal', 'adminChatControlsModal',
             'adminFaqFormModal', 'chartPopupModal', 'newsletterModal',
             'addonsConfigModal', 'insuranceConfigModal', 'locationsConfigModal', 'smtpConfigModal', 'gpsConfigModal',
-            'gpsTripHistoryModal', 'staffRequestPermModal', 'fleetExportModal'
+            'gpsTripHistoryModal', 'staffRequestPermModal', 'fleetExportModal', 'fleetImportModal'
         ];
         if (e.target && modalBackdropIds.includes(e.target.id)) {
             if (e.target.id === 'umModal') {
@@ -16628,6 +16773,397 @@ async edit(id) { this.openModal(id); }
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = origHtml || '<i class="fas fa-file-excel"></i> Download Excel (.xlsx)';
+                }
+            }
+        },
+
+        // --- FLEET EXCEL IMPORT SYSTEM WITH SMART RENTER MATCHING ---
+        _pendingImportRecords: [],
+
+        openImportModal() {
+            const modal = document.getElementById('fleetImportModal');
+            if (!modal) return;
+            this.resetImport();
+            modal.style.display = 'flex';
+        },
+
+        closeImportModal(e) {
+            if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+            const modal = document.getElementById('fleetImportModal');
+            if (modal) modal.style.display = 'none';
+        },
+
+        resetImport() {
+            this._pendingImportRecords = [];
+            const fileInput = document.getElementById('fcImportFileInput');
+            if (fileInput) fileInput.value = '';
+
+            const promptEl = document.getElementById('fcImportDropPrompt');
+            if (promptEl) promptEl.style.display = 'block';
+
+            const loadingEl = document.getElementById('fcImportLoadingState');
+            if (loadingEl) loadingEl.style.display = 'none';
+
+            const uploadZone = document.getElementById('fcImportUploadZone');
+            if (uploadZone) uploadZone.style.display = 'block';
+
+            const previewSection = document.getElementById('fcImportPreviewSection');
+            if (previewSection) previewSection.style.display = 'none';
+
+            const resetBtn = document.getElementById('fcImportResetBtn');
+            if (resetBtn) resetBtn.style.display = 'none';
+
+            const confirmBtn = document.getElementById('fcConfirmImportBtn');
+            if (confirmBtn) confirmBtn.style.display = 'none';
+
+            const countEl = document.getElementById('fcConfirmCount');
+            if (countEl) countEl.textContent = '0';
+        },
+
+        async downloadImportTemplate() {
+            try {
+                let url = `${API_BASE}/api/admin/fleet-calendar/template-download`;
+                let res = await fetch(url);
+                if (res.status === 404 || res.status === 405) {
+                    url = `${API_BASE}/admin/fleet-calendar/template-download`;
+                    res = await fetch(url);
+                }
+                if (!res.ok) throw new Error('Failed to download template');
+                const blob = await res.blob();
+                const filename = 'Autoride_Fleet_Bookings_Template.xlsx';
+
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+                if (Filesystem) {
+                    const reader = new FileReader();
+                    const base64Data = await new Promise((resolve, reject) => {
+                        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    await Filesystem.writeFile({
+                        path: filename,
+                        data: base64Data,
+                        directory: 'DOWNLOADS',
+                        recursive: true
+                    });
+                    showNotification('Template saved to Downloads: ' + filename, 'success');
+                } else {
+                    const dlUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = dlUrl;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(dlUrl), 3000);
+                    showNotification('Sample template downloaded!', 'success');
+                }
+            } catch (err) {
+                console.error("Template download error:", err);
+                showNotification('Error downloading template: ' + (err.message || 'Server error'), 'error');
+            }
+        },
+
+        handleImportDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                this.handleImportFileSelect(e.dataTransfer.files[0]);
+            }
+        },
+
+        async handleImportFileSelect(file) {
+            if (!file) return;
+            const validExts = ['.xlsx', '.xls'];
+            const fileName = (file.name || '').toLowerCase();
+            const isValid = validExts.some(ext => fileName.endsWith(ext));
+            if (!isValid) {
+                showNotification('Please select a valid Excel file (.xlsx or .xls)', 'warning');
+                return;
+            }
+
+            const promptEl = document.getElementById('fcImportDropPrompt');
+            if (promptEl) promptEl.style.display = 'none';
+
+            const loadingEl = document.getElementById('fcImportLoadingState');
+            if (loadingEl) loadingEl.style.display = 'block';
+
+            const nameEl = document.getElementById('fcImportLoadingFileName');
+            if (nameEl) nameEl.textContent = `Analyzing "${file.name}"... Matching vehicles & customer profiles`;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const autoCreate = document.getElementById('fcImportAutoCreate')?.checked ?? true;
+                formData.append('auto_create_renters', autoCreate ? 'true' : 'false');
+
+                let url = `${API_BASE}/api/admin/fleet-calendar/import-preview`;
+                let res = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.status === 404 || res.status === 405) {
+                    url = `${API_BASE}/admin/fleet-calendar/import-preview`;
+                    res = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Failed to process Excel file');
+                }
+
+                const data = await res.json();
+                const records = data.records || [];
+                if (records.length === 0) {
+                    throw new Error('No valid bookings found in this file. Please verify sheet format.');
+                }
+
+                const skipConflicts = document.getElementById('fcImportSkipConflicts')?.checked ?? true;
+                records.forEach(r => {
+                    r._selected = !(skipConflicts && r.is_conflict);
+                });
+                this._pendingImportRecords = records;
+
+                // Summary badges
+                const summary = data.summary || {};
+                const prevTotal = document.getElementById('fcPrevTotal');
+                if (prevTotal) prevTotal.textContent = summary.total_records || records.length;
+                const prevVehicles = document.getElementById('fcPrevVehicles');
+                if (prevVehicles) prevVehicles.textContent = summary.cars_matched || 0;
+                const prevExistingRenters = document.getElementById('fcPrevExistingRenters');
+                if (prevExistingRenters) prevExistingRenters.textContent = summary.existing_renters_matched || 0;
+                const prevNewRenters = document.getElementById('fcPrevNewRenters');
+                if (prevNewRenters) prevNewRenters.textContent = summary.new_renters_to_create || 0;
+                const prevConflicts = document.getElementById('fcPrevConflicts');
+                if (prevConflicts) prevConflicts.textContent = summary.conflicts || 0;
+
+                this.renderImportPreviewTable();
+
+                const uploadZone = document.getElementById('fcImportUploadZone');
+                if (uploadZone) uploadZone.style.display = 'none';
+
+                const previewSection = document.getElementById('fcImportPreviewSection');
+                if (previewSection) previewSection.style.display = 'block';
+
+                const resetBtn = document.getElementById('fcImportResetBtn');
+                if (resetBtn) resetBtn.style.display = 'inline-block';
+
+                const confirmBtn = document.getElementById('fcConfirmImportBtn');
+                if (confirmBtn) confirmBtn.style.display = 'inline-flex';
+
+                this._updateImportConfirmCount();
+
+                showNotification(`Found ${records.length} bookings! (${summary.existing_renters_matched} matched existing renter accounts, ${summary.new_renters_to_create} new profiles ready)`, 'success');
+            } catch (err) {
+                console.error("Excel import error:", err);
+                showNotification(err.message || 'Failed to parse Excel file', 'error');
+                this.resetImport();
+            }
+        },
+
+        renderImportPreviewTable() {
+            const tbody = document.getElementById('fcImportPreviewTableBody');
+            if (!tbody) return;
+
+            const records = this._pendingImportRecords || [];
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="padding: 24px; text-align: center; color: var(--text-muted);">No records found.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            records.forEach((rec, idx) => {
+                const isSelected = rec._selected ? 'checked' : '';
+                const rowBg = rec.is_conflict ? 'rgba(239, 68, 68, 0.05)' : 'transparent';
+
+                let renterBadge = '';
+                if (rec.user_match_status === 'existing_user') {
+                    renterBadge = `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; background: rgba(59,130,246,0.12); color: #1d4ed8; border: 1px solid rgba(59,130,246,0.25);">
+                        <i class="fas fa-user-check"></i> Account Matched (ID #${rec.matched_user_id})
+                    </span>`;
+                } else if (rec.user_match_status === 'repeat_in_excel') {
+                    renterBadge = `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; background: rgba(245,158,11,0.12); color: #b45309; border: 1px solid rgba(245,158,11,0.25);">
+                        <i class="fas fa-users"></i> Repeat Renter in File
+                    </span>`;
+                } else {
+                    renterBadge = `<span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; background: rgba(107,114,128,0.12); color: var(--text-muted); border: 1px solid rgba(107,114,128,0.2);">
+                        <i class="fas fa-user-plus"></i> New Profile will be Created
+                    </span>`;
+                }
+
+                let vehHtml = '';
+                if (rec.vehicle_id) {
+                    vehHtml = `<div style="font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${rec.calendar_color || '#00B14F'};"></span>
+                        ${escapeHtml(rec.vehicle_name || 'Vehicle')}
+                    </div>
+                    <div style="font-size: 0.68rem; color: var(--text-muted);">Plate: <strong>${escapeHtml(rec.plate_number || 'N/A')}</strong></div>`;
+                } else {
+                    vehHtml = `<div style="color: #dc2626; font-weight: 700;"><i class="fas fa-exclamation-triangle"></i> Car Not Found</div>
+                    <div style="font-size: 0.68rem; color: var(--text-muted);">${escapeHtml(rec.raw_vehicle_name || 'Unknown')}</div>`;
+                }
+
+                let statusBadge = '';
+                if (rec.is_conflict) {
+                    statusBadge = `<span style="padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; background: rgba(239,68,68,0.12); color: #dc2626; border: 1px solid rgba(239,68,68,0.3);" title="${escapeHtml(rec.conflict_reason || '')}">
+                        ⚠️ ${escapeHtml(rec.conflict_reason || 'Conflict')}
+                    </span>`;
+                } else {
+                    statusBadge = `<span style="padding: 2px 8px; border-radius: 6px; font-size: 0.65rem; font-weight: 700; background: rgba(0,177,79,0.1); color: #15803d; border: 1px solid rgba(0,177,79,0.25);">
+                        ✅ Ready
+                    </span>`;
+                }
+
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border); background: ${rowBg};">
+                        <td style="padding: 8px 10px; text-align: center;">
+                            <input type="checkbox" ${isSelected} onchange="FleetCalendar.toggleImportRow(${idx}, this.checked)" style="accent-color: #00B14F;">
+                        </td>
+                        <td style="padding: 8px 10px;">${vehHtml}</td>
+                        <td style="padding: 8px 10px;">
+                            <div style="font-weight: 700; color: var(--text-main);">${escapeHtml(rec.customer_name || 'Renter')}</div>
+                            <div style="margin-top: 3px;">${renterBadge}</div>
+                        </td>
+                        <td style="padding: 8px 10px; text-align: center;">
+                            <div style="font-weight: 700; color: var(--text-main); font-family: monospace;">${rec.start_date} &rarr; ${rec.end_date}</div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted);">${rec.total_days || 1} ${(rec.total_days === 1 ? 'day' : 'days')}</div>
+                        </td>
+                        <td style="padding: 8px 10px; text-align: right;">
+                            <div style="font-weight: 700; color: #00B14F;">₱${Number(rec.total_price || 0).toLocaleString()}</div>
+                            <div style="font-size: 0.65rem; color: var(--text-muted);">${escapeHtml(rec.payment_status || 'paid')}</div>
+                        </td>
+                        <td style="padding: 8px 10px; text-align: center;">${statusBadge}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        },
+
+        toggleSkipConflicts(skip) {
+            (this._pendingImportRecords || []).forEach(r => {
+                if (r.is_conflict) {
+                    r._selected = !skip;
+                }
+            });
+            this.renderImportPreviewTable();
+            this._updateImportConfirmCount();
+        },
+
+        toggleSelectAllImport(checked) {
+            const skipConflicts = document.getElementById('fcImportSkipConflicts')?.checked ?? true;
+            (this._pendingImportRecords || []).forEach(r => {
+                if (skipConflicts && r.is_conflict) {
+                    r._selected = false;
+                } else {
+                    r._selected = checked;
+                }
+            });
+            this.renderImportPreviewTable();
+            this._updateImportConfirmCount();
+        },
+
+        toggleImportRow(idx, checked) {
+            if (this._pendingImportRecords && this._pendingImportRecords[idx]) {
+                this._pendingImportRecords[idx]._selected = checked;
+            }
+            this._updateImportConfirmCount();
+        },
+
+        _updateImportConfirmCount() {
+            const selected = (this._pendingImportRecords || []).filter(r => r._selected && r.vehicle_id);
+            const countEl = document.getElementById('fcConfirmCount');
+            if (countEl) countEl.textContent = selected.length;
+        },
+
+        async confirmImport() {
+            const selectedRecords = (this._pendingImportRecords || []).filter(r => r._selected);
+            if (selectedRecords.length === 0) {
+                showNotification('Please select at least 1 booking to import.', 'warning');
+                return;
+            }
+
+            const unassignedCars = selectedRecords.filter(r => !r.vehicle_id);
+            if (unassignedCars.length > 0) {
+                showNotification(`Warning: ${unassignedCars.length} selected row(s) do not match any vehicle in your fleet and will be skipped.`, 'warning');
+            }
+
+            const validToImport = selectedRecords.filter(r => r.vehicle_id);
+            if (validToImport.length === 0) {
+                showNotification('None of the selected records have a matching vehicle in the fleet.', 'error');
+                return;
+            }
+
+            const autoCreate = document.getElementById('fcImportAutoCreate')?.checked ?? true;
+            const btn = document.getElementById('fcConfirmImportBtn');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing to Calendar...';
+            }
+
+            try {
+                let currentUserId = 1;
+                try {
+                    const storedUser = localStorage.getItem('autoride_user');
+                    if (storedUser) {
+                        const parsed = JSON.parse(storedUser);
+                        if (parsed && parsed.id) currentUserId = parsed.id;
+                    }
+                } catch(e) {}
+
+                let url = `${API_BASE}/api/admin/fleet-calendar/import-confirm`;
+                let res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        records: validToImport,
+                        auto_create_renters: autoCreate,
+                        requester_id: currentUserId
+                    })
+                });
+                if (res.status === 404 || res.status === 405) {
+                    url = `${API_BASE}/admin/fleet-calendar/import-confirm`;
+                    res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            records: validToImport,
+                            auto_create_renters: autoCreate,
+                            requester_id: currentUserId
+                        })
+                    });
+                }
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Failed to import bookings into database');
+                }
+
+                const result = await res.json();
+                showNotification(
+                    result.message || `Successfully synced ${result.imported_bookings || validToImport.length} bookings!`,
+                    'success'
+                );
+
+                this.closeImportModal();
+
+                // Instantly refresh Fleet Calendar to display all newly imported Gantt bars
+                if (typeof this.refresh === 'function') {
+                    this.refresh();
+                } else if (typeof this.loadBookingsAndRender === 'function') {
+                    this.loadBookingsAndRender();
+                }
+            } catch (err) {
+                console.error("Import confirm error:", err);
+                showNotification(err.message || 'Import failed', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml || '<i class="fas fa-check-circle"></i> Confirm & Sync';
                 }
             }
         }

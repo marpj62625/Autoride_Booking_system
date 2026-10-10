@@ -15808,6 +15808,114 @@ def export_fleet_calendar_excel():
         if 'cur' in locals(): cur.close()
 
 
+# ==================== FLEET CALENDAR EXCEL IMPORT & SMART RENTER MATCHING ====================
+@app.route('/admin/fleet-calendar/import-preview', methods=['POST'])
+@app.route('/api/admin/fleet-calendar/import-preview', methods=['POST'])
+def import_fleet_calendar_preview():
+    """
+    Parses an uploaded Excel file (.xlsx) and matches vehicles and renter accounts.
+    Returns preview summary with conflicts, matched vehicles, and matched renters.
+    """
+    try:
+        import fleet_import
+        cur = get_cursor()
+
+        if 'file' in request.files:
+            file_obj = request.files['file']
+            if not file_obj or file_obj.filename == '':
+                return jsonify({'error': 'No file uploaded'}), 400
+            raw_records = fleet_import.parse_fleet_excel_file(file_obj)
+        elif request.is_json and 'records' in request.json:
+            raw_records = request.json['records']
+        else:
+            return jsonify({'error': 'Please upload an Excel file (.xlsx)'}), 400
+
+        if not raw_records:
+            return jsonify({
+                'error': 'No booking records could be extracted from this Excel file. Please ensure it follows the Autoride Monitoring grid format or standard booking list format.'
+            }), 400
+
+        result = fleet_import.match_and_validate_import_records(raw_records, cur)
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error previewing fleet calendar excel import: {e}")
+        return jsonify({'error': f"Failed to parse Excel file: {str(e)}"}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/fleet-calendar/import-confirm', methods=['POST'])
+@app.route('/api/admin/fleet-calendar/import-confirm', methods=['POST'])
+def confirm_fleet_calendar_import():
+    """
+    Imports the verified records into the database with smart renter linking.
+    """
+    data = request.json or {}
+    records = data.get('records') or []
+    auto_create_renters = data.get('auto_create_renters', True)
+    requester_id = data.get('requester_id', 1)
+
+    if not records:
+        return jsonify({'error': 'No records selected for import'}), 400
+
+    try:
+        import fleet_import
+        cur = get_cursor()
+
+        res = fleet_import.execute_import_to_database(
+            records_to_import=records,
+            auto_create_renters=auto_create_renters,
+            cur=cur,
+            commit_fn=commit_db,
+            admin_id=requester_id
+        )
+
+        try:
+            admin_name = 'Admin'
+            if requester_id:
+                cur.execute("SELECT full_name FROM users WHERE id = %s", (requester_id,))
+                u_row = cur.fetchone()
+                if u_row: admin_name = u_row['full_name']
+            log_activity(
+                admin_id=requester_id or 1,
+                admin_name=admin_name,
+                action='IMPORT_FLEET_BOOKINGS_EXCEL',
+                target_type='FLEET_CALENDAR',
+                target_id=0,
+                details=f"Imported {res['imported_bookings']} bookings from Excel ({res['created_renters']} renter accounts auto-created)"
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            'message': f"Successfully imported {res['imported_bookings']} bookings! ({res['created_renters']} new renter profiles created)",
+            'imported_bookings': res['imported_bookings'],
+            'created_renters': res['created_renters']
+        }), 200
+    except Exception as e:
+        print(f"Error importing fleet calendar bookings: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cur' in locals(): cur.close()
+
+
+@app.route('/admin/fleet-calendar/template-download', methods=['GET'])
+@app.route('/api/admin/fleet-calendar/template-download', methods=['GET'])
+def download_fleet_calendar_template():
+    """Generates and serves a clean Excel template for importing bookings."""
+    try:
+        import fleet_import
+        buf = fleet_import.create_sample_excel_template()
+        return send_file(
+            buf,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='Autoride_Fleet_Bookings_Template.xlsx'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
 @app.route('/api/admin/bookings/<int:booking_id>/quick-pricing', methods=['PUT', 'POST'])
 def update_booking_quick_pricing(booking_id):
