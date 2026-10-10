@@ -15387,6 +15387,16 @@ async edit(id) { this.openModal(id); }
             }
             return this.paletteColors[Math.abs(hash) % this.paletteColors.length];
         },
+
+        getTimeHalf(timeStr, defaultHalf = 'AM') {
+            if (!timeStr) return defaultHalf;
+            let s = String(timeStr).trim().toLowerCase();
+            if (s.includes('am')) return 'AM';
+            if (s.includes('pm')) return 'PM';
+            const parts = s.split(':').map(Number);
+            if (!isNaN(parts[0])) return parts[0] >= 12 ? 'PM' : 'AM';
+            return defaultHalf;
+        },
         
         async refresh() {
             try {
@@ -15445,7 +15455,7 @@ async edit(id) { this.openModal(id); }
             const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
             
             // 2-Tier Header:
-            // Row 1: Day of Week (SUN, MON, TUE, WED, THU, FRI, SAT)
+            // Row 1: Day Name & Number (Colspan 2 for AM and PM)
             // Left sticky cell spans 2 rows
             let row1Html = `<th rowspan="2" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
                 <div style="display:flex; align-items:center; gap:6px;">
@@ -15454,7 +15464,7 @@ async edit(id) { this.openModal(id); }
                 </div>
             </th>`;
 
-            // Row 2: Day Numbers (1, 2, 3...)
+            // Row 2: Sub-columns for AM and PM
             let row2Html = '';
 
             for (let d = 1; d <= daysInMonth; d++) {
@@ -15465,11 +15475,16 @@ async edit(id) { this.openModal(id); }
                 
                 const dowBg = isToday ? 'rgba(0,177,79,0.18)' : (isWeekend ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface-solid)');
                 const dowColor = isToday ? '#00B14F' : (isWeekend ? '#ef4444' : 'var(--text-muted)');
-                row1Html += `<th style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; font-weight: 800; font-size: 0.65rem; min-width: 48px; width: 48px; background: ${dowBg}; color: ${dowColor}; text-transform: uppercase;">${dayNamesShort[dayOfWeek]}</th>`;
-
                 const dateBg = isToday ? 'rgba(0,177,79,0.22)' : (isWeekend ? 'rgba(239, 68, 68, 0.04)' : 'var(--surface-solid)');
                 const dateColor = isToday ? '#00B14F' : 'var(--text-main)';
-                row2Html += `<th style="padding: 6px 2px; border: 1px solid var(--border); text-align: center; font-weight: 900; font-size: 0.8rem; min-width: 48px; width: 48px; background: ${dateBg}; color: ${dateColor};">${d}</th>`;
+
+                row1Html += `<th colspan="2" style="padding: 4px 2px; border: 1px solid var(--border); text-align: center; background: ${dowBg};">
+                    <div style="font-weight: 800; font-size: 0.62rem; color: ${dowColor}; text-transform: uppercase;">${dayNamesShort[dayOfWeek]}</div>
+                    <div style="font-weight: 900; font-size: 0.82rem; color: ${dateColor}; line-height: 1.1;">${d}</div>
+                </th>`;
+
+                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#00B14F' : 'var(--text-muted)'};">AM</th>`;
+                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#00B14F' : 'var(--text-muted)'};">PM</th>`;
             }
 
             const daysOfWeekEl = document.getElementById('fleetCalendarDaysOfWeekRow');
@@ -15522,7 +15537,11 @@ async edit(id) { this.openModal(id); }
                 statUtilEl.innerHTML = `<i class="fas fa-chart-pie" style="color: #3b82f6; margin-right: 4px;"></i>Utilization: <strong>${utilizationPct}%</strong>`;
             }
 
-            // Render Body Rows (Gantt Schedule with Colspan)
+            const totalSlots = daysInMonth * 2;
+            const mStart = new Date(year, month, 1, 0, 0, 0);
+            const mEnd = new Date(year, month, daysInMonth, 23, 59, 59);
+
+            // Render Body Rows (Gantt Schedule with Colspan - AM & PM slots)
             let bodyHtml = "";
             filteredVehicles.forEach(v => {
                 let rowHtml = `<tr style="border-bottom: 1px solid var(--border); transition: background 0.15s; height: 54px;">`;
@@ -15543,84 +15562,123 @@ async edit(id) { this.openModal(id); }
                     </div>
                 </td>`;
 
-                // Render day cells with multi-day booking spans
-                let d = 1;
-                while (d <= daysInMonth) {
-                    const targetDate = new Date(year, month, d, 0, 0, 0);
+                // Calculate slot ranges for all active bookings of vehicle v
+                const vBookings = (this.bookings || []).filter(bk => {
+                    if (String(bk.vehicle_id) !== String(v.id)) return false;
+                    if (bk.status === 'cancelled' || bk.status === 'rejected') return false;
+                    return true;
+                }).map(bk => {
+                    const sStr = String(bk.start_date || '').split('T')[0];
+                    const eStr = String(bk.end_date || '').split('T')[0];
+                    const sParts = sStr.split('-').map(Number);
+                    const eParts = eStr.split('-').map(Number);
+                    if (sParts.length < 3 || eParts.length < 3) return null;
 
-                    // Check blackout
-                    const isBlackout = (this.blackouts || []).some(b => {
-                        const start = new Date(b.start_date);
-                        const end = new Date(b.end_date);
-                        start.setHours(0,0,0,0);
-                        end.setHours(23,59,59,999);
-                        const isAffected = !b.affected_vehicles || b.affected_vehicles === 'all' || (b.affected_vehicles && b.affected_vehicles.split(',').map(s => s.trim()).includes(String(v.id)));
-                        return isAffected && targetDate >= start && targetDate <= end;
-                    });
+                    const bStart = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+                    const bEnd = new Date(eParts[0], eParts[1] - 1, eParts[2]);
+                    if (bEnd < mStart || bStart > mEnd) return null;
 
-                    // Check active booking covering this day
-                    const activeBooking = (this.bookings || []).find(bk => {
-                        if (String(bk.vehicle_id) !== String(v.id)) return false;
-                        if (bk.status === 'cancelled' || bk.status === 'rejected') return false;
-                        const start = new Date(bk.start_date);
-                        const end = new Date(bk.end_date);
-                        start.setHours(0,0,0,0);
-                        end.setHours(23,59,59,999);
-                        return targetDate >= start && targetDate <= end;
-                    });
+                    let startSlot = 0;
+                    if (bStart >= mStart) {
+                        const half = FleetCalendar.getTimeHalf(bk.start_time, 'AM');
+                        startSlot = (bStart.getDate() - 1) * 2 + (half === 'PM' ? 1 : 0);
+                    }
+                    let endSlot = totalSlots - 1;
+                    if (bEnd <= mEnd) {
+                        const half = FleetCalendar.getTimeHalf(bk.end_time, 'PM');
+                        endSlot = (bEnd.getDate() - 1) * 2 + (half === 'PM' ? 1 : 0);
+                    }
+                    if (endSlot < startSlot) endSlot = startSlot;
+                    return { booking: bk, startSlot, endSlot };
+                }).filter(Boolean);
 
-                    if (isBlackout) {
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 48px; width: 48px; height: 54px;" title="Blackout Blocked">
-                            <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.6rem; font-weight: 800; padding: 2px 4px; border-radius: 4px;">OFF</span>
-                        </td>`;
-                        d++;
-                    } else if (activeBooking) {
-                        // Multi-day booking: calculate span days in the current month
-                        const bEnd = new Date(activeBooking.end_date);
-                        bEnd.setHours(23,59,59,999);
-                        
-                        let endDayInMonth = daysInMonth;
-                        if (bEnd.getFullYear() === year && bEnd.getMonth() === month) {
-                            endDayInMonth = Math.min(daysInMonth, bEnd.getDate());
-                        } else if (bEnd < targetDate) {
-                            endDayInMonth = d;
-                        }
+                // Sort by startSlot
+                vBookings.sort((a, b) => a.startSlot - b.startSlot);
 
-                        const spanDays = Math.max(1, endDayInMonth - d + 1);
-                        const color = this.getBookingColor(activeBooking);
-                        const custName = (activeBooking.customer_name || 'Customer').toUpperCase();
-                        const rate = parseFloat(activeBooking.total_price || 0);
-                        const paid = parseFloat(activeBooking.amount_paid || 0);
-                        const bal = parseFloat(activeBooking.balance_amount !== undefined ? activeBooking.balance_amount : Math.max(0, rate - paid));
+                // Calculate blackout slot ranges
+                const vBlackouts = (this.blackouts || []).filter(bo => {
+                    const isAff = !bo.affected_vehicles || bo.affected_vehicles === 'all' || 
+                                  bo.affected_vehicles.split(',').map(s => s.trim()).includes(String(v.id));
+                    return isAff;
+                }).map(bo => {
+                    const sStr = String(bo.start_date || '').split('T')[0];
+                    const eStr = String(bo.end_date || '').split('T')[0];
+                    const sParts = sStr.split('-').map(Number);
+                    const eParts = eStr.split('-').map(Number);
+                    if (sParts.length < 3 || eParts.length < 3) return null;
 
-                        rowHtml += `<td colspan="${spanDays}"
-                            onclick="FleetCalendar.openBookingQuickModal(${activeBooking.id})"
-                            onmouseenter="FleetCalendar.showBookingTooltip(event, ${activeBooking.id})"
+                    const bStart = new Date(sParts[0], sParts[1] - 1, sParts[2]);
+                    const bEnd = new Date(eParts[0], eParts[1] - 1, eParts[2]);
+                    if (bEnd < mStart || bStart > mEnd) return null;
+
+                    let startSlot = 0;
+                    if (bStart >= mStart) startSlot = (bStart.getDate() - 1) * 2;
+                    let endSlot = totalSlots - 1;
+                    if (bEnd <= mEnd) endSlot = (bEnd.getDate() - 1) * 2 + 1;
+                    if (endSlot < startSlot) endSlot = startSlot;
+                    return { blackout: bo, startSlot, endSlot };
+                }).filter(Boolean);
+
+                // Render slots 0 to totalSlots - 1
+                let s = 0;
+                while (s < totalSlots) {
+                    const d = Math.floor(s / 2) + 1;
+                    const half = (s % 2 === 0) ? 'AM' : 'PM';
+                    const dayDate = new Date(year, month, d);
+                    const dow = dayDate.getDay();
+                    const isWeekend = (dow === 0 || dow === 6);
+
+                    // 1. Check booking covering slot s
+                    const bkItem = vBookings.find(item => item.startSlot <= s && s <= item.endSlot);
+                    if (bkItem) {
+                        const bk = bkItem.booking;
+                        const spanSlots = Math.min(bkItem.endSlot - s + 1, totalSlots - s);
+                        const color = this.getBookingColor(bk);
+                        const custName = (bk.customer_name || 'Customer').toUpperCase();
+                        const rate = parseFloat(bk.total_price || 0);
+                        const paid = parseFloat(bk.amount_paid || 0);
+                        const bal = parseFloat(bk.balance_amount !== undefined ? bk.balance_amount : Math.max(0, rate - paid));
+
+                        rowHtml += `<td colspan="${spanSlots}"
+                            onclick="FleetCalendar.openBookingQuickModal(${bk.id})"
+                            onmouseenter="FleetCalendar.showBookingTooltip(event, ${bk.id})"
                             onmouseleave="FleetCalendar.hideTooltip()"
-                            style="padding: 3px 4px; border: 1px solid rgba(0,0,0,0.12); cursor: pointer; vertical-align: middle; height: 54px;">
-                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 6px 9px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
+                            style="padding: 2px 3px; border: 1px solid rgba(0,0,0,0.12); cursor: pointer; vertical-align: middle; height: 54px;">
+                            <div style="background: ${color.bg}; color: ${color.text}; border: 1.5px solid ${color.border}; border-radius: 8px; padding: 4px 6px; font-weight: 800; line-height: 1.25; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: calc(100% - 2px); display: flex; flex-direction: column; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; transition: transform 0.15s, box-shadow 0.15s;"
                                  onmouseover="this.style.transform='scale(1.01)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.18)';"
                                  onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.1)';">
-                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; font-weight: 900; letter-spacing: 0.3px;">
-                                    <i class="fas fa-user" style="font-size: 0.65rem; margin-right: 4px; opacity: 0.85;"></i>${custName}
+                                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: ${spanSlots === 1 ? '0.62rem' : '0.76rem'}; font-weight: 900; letter-spacing: 0.2px;">
+                                    <i class="fas fa-user" style="font-size: 0.6rem; margin-right: 3px; opacity: 0.85;"></i>${custName}
                                 </div>
-                                <div style="font-size: 0.65rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 5px; margin-top: 2px;">
+                                <div style="font-size: 0.62rem; font-weight: 800; opacity: 0.95; display: flex; align-items: center; gap: 4px; margin-top: 1px; overflow: hidden;">
                                     <span>₱${Math.round(rate).toLocaleString()}</span>
-                                    ${bal > 0 
-                                        ? `<span style="background: #ef4444; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 800;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
-                                        : `<span style="background: #16a34a; color: white; padding: 1px 5px; border-radius: 4px; font-size: 0.58rem; font-weight: 800;">PAID</span>`
+                                    ${spanSlots > 1 ? (bal > 0 
+                                        ? `<span style="background: #ef4444; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">Bal: ₱${Math.round(bal).toLocaleString()}</span>` 
+                                        : `<span style="background: #16a34a; color: white; padding: 1px 4px; border-radius: 4px; font-size: 0.55rem; font-weight: 800;">PAID</span>`) : ''
                                     }
                                 </div>
                             </div>
                         </td>`;
 
-                        d += spanDays;
-                    } else {
-                        const dayOfWeek = targetDate.getDay();
-                        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-                        rowHtml += `<td style="padding: 0; border: 1px solid var(--border); text-align: center; min-width: 48px; width: 48px; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
-                        d++;
+                        s += spanSlots;
+                        continue;
                     }
+
+                    // 2. Check blackout covering slot s
+                    const boItem = vBlackouts.find(item => item.startSlot <= s && s <= item.endSlot);
+                    if (boItem) {
+                        const spanSlots = Math.min(boItem.endSlot - s + 1, totalSlots - s);
+                        rowHtml += `<td colspan="${spanSlots}" style="padding: 0; border: 1px solid var(--border); text-align: center; background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.15) 5px, rgba(239, 68, 68, 0.28) 5px, rgba(239, 68, 68, 0.28) 10px); min-width: 28px; height: 54px;" title="Blackout Blocked">
+                            <span style="background: rgba(239,68,68,0.2); color: #dc2626; font-size: 0.58rem; font-weight: 800; padding: 1px 3px; border-radius: 4px;">OFF</span>
+                        </td>`;
+                        s += spanSlots;
+                        continue;
+                    }
+
+                    // 3. Empty slot
+                    const borderRight = (half === 'AM') ? '1px dashed var(--border)' : '1.5px solid var(--border)';
+                    rowHtml += `<td style="padding: 0; border: 1px solid var(--border); border-right: ${borderRight}; text-align: center; min-width: 28px; width: 28px; height: 54px; background: ${isWeekend ? 'rgba(0,0,0,0.015)' : 'transparent'};"></td>`;
+                    s++;
                 }
 
                 rowHtml += `</tr>`;
@@ -15628,7 +15686,7 @@ async edit(id) { this.openModal(id); }
             });
 
             if (filteredVehicles.length === 0) {
-                bodyHtml = `<tr><td colspan="${daysInMonth + 1}" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem;">No vehicles or bookings matching "${this.searchQuery}"</td></tr>`;
+                bodyHtml = `<tr><td colspan="${totalSlots + 1}" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.88rem;">No vehicles or bookings matching "${this.searchQuery}"</td></tr>`;
             }
             
             const bodyEl = document.getElementById('fleetCalendarBody');

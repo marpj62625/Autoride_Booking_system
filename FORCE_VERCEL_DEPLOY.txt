@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 12:15:00
-Fix pickup inspect button blocking bookings marked as 'Fully Paid'
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 12:32:00
+Feature: Fleet calendar AM and PM half-day split per day
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main
