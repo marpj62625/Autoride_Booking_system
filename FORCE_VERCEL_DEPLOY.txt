@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 14:40:00
-Feature: Fix missing closing div for sideDrawer resolving white screen; restore 100% full working layout
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 14:46:00
+Feature: Remove floating menu button pill, keep burger menu in header for clean dashboard
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main
