@@ -10064,13 +10064,13 @@ input:checked + .ctrl-slider:before {
             </div>
         </div>
         
-        <div id="fleetCalendarScrollContainer" style="overflow-x: auto; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+        <div id="fleetCalendarScrollContainer" style="overflow: auto; max-height: calc(100vh - 210px); min-height: 480px; background: var(--surface-solid); border-radius: 12px; border: 1px solid var(--border); box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
             <table style="width: max-content; table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 800px; font-size: 0.78rem; color: var(--text-main);" id="fleetCalendarTable">
-                <thead>
-                    <tr id="fleetCalendarDaysOfWeekRow" style="background: var(--surface-solid);">
+                <thead style="position: sticky; top: 0; z-index: 25; background: var(--surface-solid);">
+                    <tr id="fleetCalendarDaysOfWeekRow" style="height: 38px; background: var(--surface-solid);">
                         <!-- Days of week: TUE, WED, THU... injected via JS -->
                     </tr>
-                    <tr id="fleetCalendarHeaderRow" style="background: var(--surface-solid); border-bottom: 2px solid var(--border);">
+                    <tr id="fleetCalendarHeaderRow" style="height: 24px; background: var(--surface-solid); border-bottom: 2px solid var(--border);">
                         <!-- Dates: 1, 2, 3... injected via JS -->
                     </tr>
                 </thead>
@@ -15455,16 +15455,16 @@ async edit(id) { this.openModal(id); }
             const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
             
             // 2-Tier Header:
-            // Row 1: Day Name & Number (Colspan 2 for AM and PM)
-            // Left sticky cell spans 2 rows
-            let row1Html = `<th rowspan="2" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; z-index: 20; border-right: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
+            // Row 1: Day Name & Number (Colspan 2 for AM and PM, frozen at top: 0)
+            // Left sticky cell spans 2 rows (frozen at top: 0, left: 0, z-index: 35)
+            let row1Html = `<th rowspan="2" class="fc-vcol fc-vhead" style="padding: 10px 12px; border: 1px solid var(--border); text-align: left; background: var(--surface-solid); font-weight: 800; min-width: 180px; width: 180px; max-width: 180px; position: sticky; left: 0; top: 0; z-index: 35; border-right: 2px solid var(--border); border-bottom: 2px solid var(--border); color: var(--text-main); font-size: 0.8rem; vertical-align: middle;">
                 <div style="display:flex; align-items:center; gap:6px;">
                     <i class="fas fa-car-side" style="color:#00B14F;"></i>
                     <span class="fc-vhead-text">VEHICLE / UNIT</span>
                 </div>
             </th>`;
 
-            // Row 2: Sub-columns for AM and PM
+            // Row 2: Sub-columns for AM and PM (frozen at top: 38px, z-index: 20)
             let row2Html = '';
 
             for (let d = 1; d <= daysInMonth; d++) {
@@ -15473,18 +15473,18 @@ async edit(id) { this.openModal(id); }
                 const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
                 const isToday = isCurrentMonth && today.getDate() === d;
                 
-                const dowBg = isToday ? 'rgba(0,177,79,0.18)' : (isWeekend ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface-solid)');
-                const dowColor = isToday ? '#00B14F' : (isWeekend ? '#ef4444' : 'var(--text-muted)');
-                const dateBg = isToday ? 'rgba(0,177,79,0.22)' : (isWeekend ? 'rgba(239, 68, 68, 0.04)' : 'var(--surface-solid)');
-                const dateColor = isToday ? '#00B14F' : 'var(--text-main)';
+                const dowBg = isToday ? '#dcfce7' : (isWeekend ? '#fee2e2' : 'var(--surface-solid)');
+                const dowColor = isToday ? '#15803d' : (isWeekend ? '#ef4444' : 'var(--text-muted)');
+                const dateBg = isToday ? '#bbf7d0' : (isWeekend ? '#fef2f2' : 'var(--surface-solid)');
+                const dateColor = isToday ? '#15803d' : 'var(--text-main)';
 
-                row1Html += `<th colspan="2" style="padding: 4px 2px; border: 1px solid var(--border); text-align: center; background: ${dowBg};">
+                row1Html += `<th colspan="2" style="padding: 4px 2px; border: 1px solid var(--border); text-align: center; background: ${dowBg}; position: sticky; top: 0; z-index: 20;">
                     <div style="font-weight: 800; font-size: 0.62rem; color: ${dowColor}; text-transform: uppercase;">${dayNamesShort[dayOfWeek]}</div>
                     <div style="font-weight: 900; font-size: 0.82rem; color: ${dateColor}; line-height: 1.1;">${d}</div>
                 </th>`;
 
-                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#00B14F' : 'var(--text-muted)'};">AM</th>`;
-                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#00B14F' : 'var(--text-muted)'};">PM</th>`;
+                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-right: 1px dashed var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: 38px; z-index: 20;">AM</th>`;
+                row2Html += `<th style="padding: 2px; border: 1px solid var(--border); border-bottom: 2px solid var(--border); text-align: center; font-weight: 800; font-size: 0.58rem; min-width: 28px; width: 28px; background: ${dateBg}; color: ${isToday ? '#15803d' : 'var(--text-muted)'}; position: sticky; top: 38px; z-index: 20;">PM</th>`;
             }
 
             const daysOfWeekEl = document.getElementById('fleetCalendarDaysOfWeekRow');

@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 12:32:00
-Feature: Fleet calendar AM and PM half-day split per day
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 12:45:00
+Feature: Frozen sticky days and AM/PM headers in Fleet Calendar during vertical scroll
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main
