@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 12:45:00
-Feature: Frozen sticky days and AM/PM headers in Fleet Calendar during vertical scroll
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 12:50:00
+Feature: Add close (X) button, collapse menu link, and Escape key handler to admin sidebar
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main
