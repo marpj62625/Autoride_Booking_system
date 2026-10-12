@@ -1,5 +1,16 @@
 # Trigger Vercel Rebuild
 import os
+from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+    _env_root = Path(__file__).resolve().parent.parent / '.env'
+    if _env_root.exists():
+        load_dotenv(dotenv_path=_env_root)
+    else:
+        load_dotenv()
+except Exception:
+    pass
 
 # Supabase PostgreSQL Configuration - Using port 6543 (Transaction Mode Pooler)
 SUPABASE_DB_URL = os.getenv(

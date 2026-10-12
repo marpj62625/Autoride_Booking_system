@@ -269,13 +269,19 @@ def check_approaching_return_deadlines():
             if hasattr(s_date, 'date'): s_date = s_date.date()
             if hasattr(e_date, 'date'): e_date = e_date.date()
 
-            e_time_str = bk.get('end_time') or '18:00'
+            e_time_str = bk.get('end_time')
+            eh, em = 18, 0
             if hasattr(e_time_str, 'strftime'):
                 e_time_str = e_time_str.strftime('%H:%M')
-            try:
-                eh, em = map(int, str(e_time_str)[:5].split(':'))
-            except Exception:
-                eh, em = 18, 0
+            if e_time_str:
+                raw_str = str(e_time_str).strip().upper()
+                for fmt in ('%H:%M', '%H:%M:%S', '%I:%M %p', '%I:%M%p', '%I:%M:%S %p'):
+                    try:
+                        pt = datetime.strptime(raw_str, fmt).time()
+                        eh, em = pt.hour, pt.minute
+                        break
+                    except ValueError:
+                        continue
 
             return_dt = datetime(e_date.year, e_date.month, e_date.day, eh, em, tzinfo=PH)
             return_time_formatted = return_dt.strftime("%I:%M %p")
@@ -534,6 +540,39 @@ def check_no_show_bookings():
                 release_connection(conn)
     except Exception as ns_err:
         print("[NoShowCheck] error:", ns_err)
+
+
+def verify_admin_access():
+    """
+    Backward-compatible admin authentication check:
+    1. Validates Authorization Bearer token against ADMIN_API_KEY / SECRET_KEY
+    2. Validates X-Admin-Key header against ADMIN_API_KEY / SECRET_KEY
+    3. Validates admin_id against active admin / super_admin records in the users table
+    """
+    auth = request.headers.get('Authorization', '')
+    admin_secret = os.environ.get('ADMIN_API_KEY') or getattr(app, 'secret_key', None) or os.environ.get('SECRET_KEY', '')
+    if auth.startswith('Bearer '):
+        token = auth.split(' ', 1)[1]
+        if token and token == admin_secret:
+            return True, None
+
+    admin_key = request.headers.get('X-Admin-Key')
+    if admin_key and admin_key == admin_secret:
+        return True, None
+
+    data = request.get_json(silent=True) or {}
+    admin_id = data.get('admin_id') or request.args.get('admin_id') or request.headers.get('X-Admin-Id')
+    if admin_id:
+        try:
+            cur = get_cursor()
+            cur.execute("SELECT id, role FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
+            row = cur.fetchone()
+            if row:
+                return True, None
+        except Exception:
+            pass
+
+    return False, (jsonify({"error": "Unauthorized: Admin authentication required"}), 401)
 
 
 @app.route('/cron/tick', methods=['GET', 'POST'])
@@ -3085,6 +3124,9 @@ def admin_toggle_regular_customer(user_id):
 @app.route('/api/admin/users/<int:user_id>/freeze', methods=['POST'])
 def admin_freeze_user(user_id):
     """Freeze or unfreeze a user account."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or {}
     freeze = data.get('freeze', True)
     reason = data.get('reason', '')
@@ -5241,171 +5283,159 @@ def book():
 
             
 
-        # Find first available unit in this category for the given dates
+        # Find first available unit in this category for the given dates with transactional row lock
+        conn = get_db()
+        with conn.transaction():
+            cur.execute("""
+                SELECT id FROM vehicles 
+                WHERE brand = %s AND model = %s 
+                AND status NOT IN ('Maintenance', 'Repair', 'Service', 'Sold')
+                AND id NOT IN (
+                    SELECT vehicle_id FROM bookings 
+                    WHERE status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+                    AND (start_date <= %s AND end_date >= %s)
+                )
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+            """, (category['brand'], category['model'], end_date, start_date))
 
-        cur.execute("""
-
-            SELECT id FROM vehicles 
-
-            WHERE brand = %s AND model = %s 
-
-            AND status NOT IN ('Maintenance', 'Repair', 'Service', 'Sold')
-
-            AND id NOT IN (
-
-                SELECT vehicle_id FROM bookings 
-
-                WHERE status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
-
-                AND (start_date <= %s AND end_date >= %s)
-
-            )
-
-            LIMIT 1
-
-        """, (category['brand'], category['model'], end_date, start_date))
-
-        
-
-        available_unit = cur.fetchone()
-
-        if not available_unit:
-
-            return jsonify({"error": "No units available for this model on the selected dates."}), 400
+            available_unit = cur.fetchone()
+            if not available_unit:
+                return jsonify({"error": "No units available for this model on the selected dates."}), 400
 
             
 
-        # Use the actual available unit ID for the booking
+            # Use the actual available unit ID for the booking
 
-        final_vehicle_id = available_unit['id']
-
-
-
-        # Granular locations
-
-        pickup_province = data.get('pickup_province')
-
-        pickup_municipality = data.get('pickup_municipality')
-
-        pickup_barangay = data.get('pickup_barangay')
-
-        return_province = data.get('return_province')
-
-        return_municipality = data.get('return_municipality')
-
-        return_barangay = data.get('return_barangay')
-
-        pickup_time = data.get('pickup_time', '06:00')
-
-        return_time = data.get('return_time', '06:00')
-
-        service_type = data.get('service_type', 'pickup')
+            final_vehicle_id = available_unit['id']
 
 
 
-        # New fields
-        destination = (data.get('destination') or '').strip()
-        rental_purpose = (data.get('rental_purpose') or data.get('purpose_of_rental') or '').strip()
-        addons = ",".join(data.get('addons', []))
-        base_price = data.get('base_price')
-        addon_price = data.get('addon_price')
-        tax_amount = data.get('tax_amount')
-        total_price = data.get('total_price')
+            # Granular locations
 
-        points_redeemed = int(data.get('points_redeemed', 0) or 0)
-        points_earned = int(data.get('points_earned', 0) or 0)
-        delivery_fee = float(data.get('delivery_fee', 0.00) or 0.00)
+            pickup_province = data.get('pickup_province')
 
-        # Check Regular Customer Status for Downpayment Exemption
-        cur.execute("""
-            SELECT u.is_regular_customer, u.regular_customer_manual,
-                   (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_count
-            FROM users u WHERE u.id = %s
-        """, (user_id,))
-        user_reg_info = cur.fetchone()
+            pickup_municipality = data.get('pickup_municipality')
+
+            pickup_barangay = data.get('pickup_barangay')
+
+            return_province = data.get('return_province')
+
+            return_municipality = data.get('return_municipality')
+
+            return_barangay = data.get('return_barangay')
+
+            pickup_time = data.get('pickup_time', '06:00')
+
+            return_time = data.get('return_time', '06:00')
+
+            service_type = data.get('service_type', 'pickup')
+
+
+
+            # New fields
+            destination = (data.get('destination') or '').strip()
+            rental_purpose = (data.get('rental_purpose') or data.get('purpose_of_rental') or '').strip()
+            addons = ",".join(data.get('addons', []))
+            base_price = data.get('base_price')
+            addon_price = data.get('addon_price')
+            tax_amount = data.get('tax_amount')
+            total_price = data.get('total_price')
+
+            points_redeemed = int(data.get('points_redeemed', 0) or 0)
+            points_earned = int(data.get('points_earned', 0) or 0)
+            delivery_fee = float(data.get('delivery_fee', 0.00) or 0.00)
+
+            # Check Regular Customer Status for Downpayment Exemption
+            cur.execute("""
+                SELECT u.is_regular_customer, u.regular_customer_manual,
+                       (SELECT COUNT(*) FROM bookings WHERE user_id = u.id AND LOWER(status) = 'completed') AS completed_count
+                FROM users u WHERE u.id = %s
+            """, (user_id,))
+            user_reg_info = cur.fetchone()
         
-        cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify', 'regular_customer_downpayment_exempt')")
-        reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
-        min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
-        auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
-        dp_exempt_enabled = reg_settings.get('regular_customer_downpayment_exempt', 'true').lower() == 'true'
+            cur.execute("SELECT key, value FROM settings WHERE key IN ('regular_customer_min_bookings', 'regular_customer_auto_qualify', 'regular_customer_downpayment_exempt')")
+            reg_settings = {s['key']: s['value'] for s in cur.fetchall()}
+            min_bk = int(reg_settings.get('regular_customer_min_bookings', '3') or 3)
+            auto_qual = reg_settings.get('regular_customer_auto_qualify', 'true').lower() == 'true'
+            dp_exempt_enabled = reg_settings.get('regular_customer_downpayment_exempt', 'true').lower() == 'true'
         
-        is_user_regular = False
-        if user_reg_info:
-            if user_reg_info.get('regular_customer_manual'):
-                is_user_regular = True
-            elif auto_qual and int(user_reg_info.get('completed_count', 0) or 0) >= min_bk:
-                is_user_regular = True
-            if is_user_regular and not user_reg_info.get('is_regular_customer'):
-                cur.execute("UPDATE users SET is_regular_customer = TRUE WHERE id = %s", (user_id,))
+            is_user_regular = False
+            if user_reg_info:
+                if user_reg_info.get('regular_customer_manual'):
+                    is_user_regular = True
+                elif auto_qual and int(user_reg_info.get('completed_count', 0) or 0) >= min_bk:
+                    is_user_regular = True
+                if is_user_regular and not user_reg_info.get('is_regular_customer'):
+                    cur.execute("UPDATE users SET is_regular_customer = TRUE WHERE id = %s", (user_id,))
 
-        req_pay_type = data.get('payment_type', 'Full')
-        if is_user_regular and dp_exempt_enabled and req_pay_type in ('Pay on Pickup', 'Regular Customer', 'Downpayment Exempt', '0_dp'):
-            payment_type = 'Pay on Pickup'
-            payment_status = 'Pending Payment'
-            amount_paid = 0.00
-            balance_amount = float(total_price or 0)
-        elif req_pay_type == 'Downpayment':
-            payment_type = 'Downpayment'
-            payment_status = 'Downpayment unpaid'
-            amount_paid = 0.00
-            balance_amount = float(total_price or 0)
-        else:
-            payment_type = req_pay_type
-            payment_status = 'Pending Payment'
-            amount_paid = 0.00
-            balance_amount = float(total_price or 0)
+            req_pay_type = data.get('payment_type', 'Full')
+            if is_user_regular and dp_exempt_enabled and req_pay_type in ('Pay on Pickup', 'Regular Customer', 'Downpayment Exempt', '0_dp'):
+                payment_type = 'Pay on Pickup'
+                payment_status = 'Pending Payment'
+                amount_paid = 0.00
+                balance_amount = float(total_price or 0)
+            elif req_pay_type == 'Downpayment':
+                payment_type = 'Downpayment'
+                payment_status = 'Downpayment unpaid'
+                amount_paid = 0.00
+                balance_amount = float(total_price or 0)
+            else:
+                payment_type = req_pay_type
+                payment_status = 'Pending Payment'
+                amount_paid = 0.00
+                balance_amount = float(total_price or 0)
 
-        # Validate points
-        if points_redeemed > 0:
-            cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_id,))
-            user_pts = cur.fetchone()
-            if not user_pts or int(user_pts['loyalty_points'] or 0) < points_redeemed:
-                return jsonify({"error": "Insufficient loyalty points"}), 400
+            # Validate points
+            if points_redeemed > 0:
+                cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_id,))
+                user_pts = cur.fetchone()
+                if not user_pts or int(user_pts['loyalty_points'] or 0) < points_redeemed:
+                    return jsonify({"error": "Insufficient loyalty points"}), 400
 
-        driver_fee = float(data.get('driver_fee', 0.00) or 0.00)
-        if rental_type == 'With Driver' and driver_fee <= 0:
-            driver_fee = float(755.0 * max(1, booking_days))
+            driver_fee = float(data.get('driver_fee', 0.00) or 0.00)
+            if rental_type == 'With Driver' and driver_fee <= 0:
+                driver_fee = float(755.0 * max(1, booking_days))
 
-        raw_gps_consent = data.get('gps_tracking_consent', True)
-        if isinstance(raw_gps_consent, str):
-            gps_tracking_consent = raw_gps_consent.lower() not in ['false', '0', 'no', 'off']
-        else:
-            gps_tracking_consent = bool(raw_gps_consent) if raw_gps_consent is not None else True
+            raw_gps_consent = data.get('gps_tracking_consent', True)
+            if isinstance(raw_gps_consent, str):
+                gps_tracking_consent = raw_gps_consent.lower() not in ['false', '0', 'no', 'off']
+            else:
+                gps_tracking_consent = bool(raw_gps_consent) if raw_gps_consent is not None else True
 
-        cur.execute("""
-            INSERT INTO bookings (
-                user_id, vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
-                base_price, addon_price, tax_amount, total_price, status,
-                pickup_province, pickup_municipality, pickup_barangay,
-                return_province, return_municipality, return_barangay,
-                start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned,
-                destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
-                driver_fee, gps_tracking_consent
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
-        """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
-              base_price, addon_price, tax_amount, total_price,
-              pickup_province, pickup_municipality, pickup_barangay,
-              return_province, return_municipality, return_barangay,
-              pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned,
-              destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
-              driver_fee, gps_tracking_consent))
+            cur.execute("""
+                INSERT INTO bookings (
+                    user_id, vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
+                    base_price, addon_price, tax_amount, total_price, status,
+                    pickup_province, pickup_municipality, pickup_barangay,
+                    return_province, return_municipality, return_barangay,
+                    start_time, end_time, service_type, delivery_fee, points_redeemed, points_earned,
+                    destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
+                    driver_fee, gps_tracking_consent
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'Pending', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id
+            """, (user_id, final_vehicle_id, start_date, end_date, pickup_location, rental_type, addons, 
+                  base_price, addon_price, tax_amount, total_price,
+                  pickup_province, pickup_municipality, pickup_barangay,
+                  return_province, return_municipality, return_barangay,
+                  pickup_time, return_time, service_type, delivery_fee, points_redeemed, points_earned,
+                  destination, rental_purpose, payment_type, payment_status, amount_paid, balance_amount,
+                  driver_fee, gps_tracking_consent))
 
-        booking_id = cur.fetchone()['id']
+            booking_id = cur.fetchone()['id']
 
-        # Deduct loyalty points immediately
-        if points_redeemed > 0:
-            cur.execute("UPDATE users SET loyalty_points = loyalty_points - %s WHERE id = %s", (points_redeemed, user_id))
-
-        
-
+            # Deduct loyalty points immediately
+            if points_redeemed > 0:
+                cur.execute("UPDATE users SET loyalty_points = loyalty_points - %s WHERE id = %s", (points_redeemed, user_id))
 
         
 
-        # Update vehicle status to 'Booked'
 
-        cur.execute("UPDATE vehicles SET status = 'Booked' WHERE id = %s", (final_vehicle_id,))
+        
+
+            # Update vehicle status to 'Booked'
+
+            cur.execute("UPDATE vehicles SET status = 'Booked' WHERE id = %s", (final_vehicle_id,))
 
 
         
@@ -10292,6 +10322,9 @@ def get_maintenance_stats():
 @app.route('/api/admin/maintenance/cleanup-logs', methods=['POST'])
 def cleanup_activity_logs():
     """Admin endpoint to clean up audit activity logs older than N days."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.json or {}
     days = max(7, data.get('older_than_days', 30))
     admin_name = (data.get('admin_name') or 'Admin').strip()
@@ -10299,7 +10332,7 @@ def cleanup_activity_logs():
 
     try:
         cur = get_cursor()
-        cur.execute(f"DELETE FROM activity_logs WHERE created_at < NOW() - INTERVAL '{days} days'")
+        cur.execute("DELETE FROM activity_logs WHERE created_at < NOW() - (%s * INTERVAL '1 day')", (int(days),))
         deleted_count = cur.rowcount
         commit_db()
 
@@ -10327,6 +10360,9 @@ def cleanup_activity_logs():
 @app.route('/api/admin/maintenance/cleanup-notifications', methods=['POST'])
 def cleanup_notifications():
     """Admin endpoint to purge read notifications older than N days."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.json or {}
     days = max(7, data.get('older_than_days', 30))
     only_read = data.get('only_read', True)
@@ -10335,8 +10371,10 @@ def cleanup_notifications():
 
     try:
         cur = get_cursor()
-        read_clause = "AND is_read = TRUE" if only_read else ""
-        cur.execute(f"DELETE FROM notifications WHERE created_at < NOW() - INTERVAL '{days} days' {read_clause}")
+        if only_read:
+            cur.execute("DELETE FROM notifications WHERE created_at < NOW() - (%s * INTERVAL '1 day') AND is_read = TRUE", (int(days),))
+        else:
+            cur.execute("DELETE FROM notifications WHERE created_at < NOW() - (%s * INTERVAL '1 day')", (int(days),))
         deleted_count = cur.rowcount
         commit_db()
 
@@ -10364,6 +10402,9 @@ def cleanup_notifications():
 @app.route('/api/admin/maintenance/cleanup-chats', methods=['POST'])
 def cleanup_chat_messages():
     """Admin endpoint to archive/clean support chats older than N days."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.json or {}
     days = max(14, data.get('older_than_days', 60))
     admin_name = (data.get('admin_name') or 'Admin').strip()
@@ -10371,7 +10412,7 @@ def cleanup_chat_messages():
 
     try:
         cur = get_cursor()
-        cur.execute(f"DELETE FROM chat_messages WHERE created_at < NOW() - INTERVAL '{days} days'")
+        cur.execute("DELETE FROM chat_messages WHERE created_at < NOW() - (%s * INTERVAL '1 day')", (int(days),))
         deleted_count = cur.rowcount
         commit_db()
 
