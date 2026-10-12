@@ -544,11 +544,16 @@ def execute_import_to_database(records_to_import, auto_create_renters, cur, comm
                 user_id = new_users_batch[norm_cust]
             else:
                 # Create customer profile in users table
+                # Note: full_name is GENERATED ALWAYS in PostgreSQL, so we insert first_name and last_name
+                parts = cust_name.strip().split(maxsplit=1)
+                first_name = parts[0] if parts else 'Customer'
+                last_name = parts[1] if len(parts) > 1 else ''
+
                 cur.execute("""
-                    INSERT INTO users (full_name, phone, email, role, is_verified, created_at)
-                    VALUES (%s, %s, %s, 'customer', 2, NOW())
+                    INSERT INTO users (first_name, last_name, phone, email, role, is_verified, created_at)
+                    VALUES (%s, %s, %s, %s, 'customer', 2, NOW())
                     RETURNING id
-                """, (cust_name, r.get('customer_phone') or None, r.get('customer_email') or None))
+                """, (first_name, last_name, r.get('customer_phone') or None, r.get('customer_email') or None))
                 row = cur.fetchone()
                 if row:
                     user_id = row['id']
@@ -573,20 +578,20 @@ def execute_import_to_database(records_to_import, auto_create_renters, cur, comm
 
         cur.execute("""
             INSERT INTO bookings (
-                vehicle_id, user_id, customer_name, customer_phone, customer_email,
+                vehicle_id, user_id, customer_name, customer_phone,
                 start_date, end_date, start_time, end_time,
                 total_price, base_price, amount_paid, balance_amount,
                 status, payment_status, payment_method, service_type, rental_type,
                 calendar_color, pickup_location, destination, created_at
             ) VALUES (
-                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s,
                 %s, %s, '09:00', '17:00',
                 %s, %s, %s, %s,
                 %s, %s, 'Cash', 'self-drive', 'daily',
                 %s, 'Office / Garage', 'Local Tour', NOW()
             ) RETURNING id
         """, (
-            vehicle_id, user_id, cust_name, r.get('customer_phone') or 'N/A', r.get('customer_email') or '',
+            vehicle_id, user_id, cust_name, r.get('customer_phone') or 'N/A',
             start_date, end_date,
             total_price, total_price, amount_paid, balance,
             status, payment_status,
