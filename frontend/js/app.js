@@ -2223,19 +2223,70 @@ function doGoogleLogin() {
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
+// Helper to guarantee Google Identity Services (GSI) script is loaded even on slow networks
+function ensureGoogleApiLoaded(timeoutMs) {
+  timeoutMs = timeoutMs || 8000;
+  return new Promise(function(resolve, reject) {
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+      return resolve(google);
+    }
+
+    var startTime = Date.now();
+    var existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (!existingScript) {
+      console.log('[GoogleAuth] Dynamically injecting Google GSI script...');
+      var script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    var checkInterval = setInterval(function() {
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+        clearInterval(checkInterval);
+        return resolve(google);
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        clearInterval(checkInterval);
+        return reject(new Error('Google Sign-In service took too long to load. Please check your internet connection.'));
+      }
+    }, 100);
+  });
+}
+
 function _doGoogleOAuth2Popup(clientId) {
-  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-    console.error('[GoogleAuth] Google API client library not found on page.');
-    showToast('Google Sign-In not available. Please try again.', 'error');
-    window._googleLoginInProgress = false;
+  // If already loaded, trigger immediately to avoid browser popup blockers
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+    _launchGoogleTokenClient(clientId);
     return;
   }
 
+  // If still downloading over mobile data or slow internet, inform user and wait
+  showToast('Connecting to Google Sign-In, please wait...', 'info');
+  showLoading(true);
+
+  ensureGoogleApiLoaded(8000)
+    .then(function() {
+      showLoading(false);
+      _launchGoogleTokenClient(clientId);
+    })
+    .catch(function(err) {
+      showLoading(false);
+      window._googleLoginInProgress = false;
+      console.error('[GoogleAuth] Failed to load Google library:', err);
+      showToast('Google Sign-In is temporarily unavailable. Please check your internet connection or refresh.', 'error');
+    });
+}
+
+function _launchGoogleTokenClient(clientId) {
   window._googleOAuthCallback = function(tokenResponse) {
     window._googleLoginInProgress = false;
     if (tokenResponse.error) {
       console.error('[GoogleAuth] tokenResponse contains error:', tokenResponse.error);
-      showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+      if (tokenResponse.error !== 'popup_closed_by_user') {
+        showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+      }
       return;
     }
     console.log('[GoogleAuth] OAuth2 popup tokenResponse received. Access Token prefix:', tokenResponse.access_token ? tokenResponse.access_token.substring(0, 10) : 'None');
@@ -2299,6 +2350,7 @@ function _finishGoogleLogin(idToken, email, name) {
   showLoading(true);
   return apiCall('/auth/google', {
     method: 'POST',
+    timeout: 30000,
     body: JSON.stringify({ id_token: idToken, email: email, name: name })
   })
     .then(function(data) {

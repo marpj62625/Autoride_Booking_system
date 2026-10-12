@@ -1425,7 +1425,7 @@ function loadAddonSettings() {
 }
 
 function loadInsuranceSettings() {
-  return apiCall('/insurance-options')
+  return apiCall('/api/insurance-options')
     .then(function(options) {
       if (Array.isArray(options) && options.length > 0) {
         INSURANCE_OPTIONS = options.map(function(ins) {
@@ -2223,19 +2223,70 @@ function doGoogleLogin() {
   _doGoogleOAuth2Popup(GOOGLE_CLIENT_ID);
 }
 
+// Helper to guarantee Google Identity Services (GSI) script is loaded even on slow networks
+function ensureGoogleApiLoaded(timeoutMs) {
+  timeoutMs = timeoutMs || 8000;
+  return new Promise(function(resolve, reject) {
+    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+      return resolve(google);
+    }
+
+    var startTime = Date.now();
+    var existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (!existingScript) {
+      console.log('[GoogleAuth] Dynamically injecting Google GSI script...');
+      var script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    var checkInterval = setInterval(function() {
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+        clearInterval(checkInterval);
+        return resolve(google);
+      }
+      if (Date.now() - startTime > timeoutMs) {
+        clearInterval(checkInterval);
+        return reject(new Error('Google Sign-In service took too long to load. Please check your internet connection.'));
+      }
+    }, 100);
+  });
+}
+
 function _doGoogleOAuth2Popup(clientId) {
-  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-    console.error('[GoogleAuth] Google API client library not found on page.');
-    showToast('Google Sign-In not available. Please try again.', 'error');
-    window._googleLoginInProgress = false;
+  // If already loaded, trigger immediately to avoid browser popup blockers
+  if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+    _launchGoogleTokenClient(clientId);
     return;
   }
 
+  // If still downloading over mobile data or slow internet, inform user and wait
+  showToast('Connecting to Google Sign-In, please wait...', 'info');
+  showLoading(true);
+
+  ensureGoogleApiLoaded(8000)
+    .then(function() {
+      showLoading(false);
+      _launchGoogleTokenClient(clientId);
+    })
+    .catch(function(err) {
+      showLoading(false);
+      window._googleLoginInProgress = false;
+      console.error('[GoogleAuth] Failed to load Google library:', err);
+      showToast('Google Sign-In is temporarily unavailable. Please check your internet connection or refresh.', 'error');
+    });
+}
+
+function _launchGoogleTokenClient(clientId) {
   window._googleOAuthCallback = function(tokenResponse) {
     window._googleLoginInProgress = false;
     if (tokenResponse.error) {
       console.error('[GoogleAuth] tokenResponse contains error:', tokenResponse.error);
-      showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+      if (tokenResponse.error !== 'popup_closed_by_user') {
+        showToast('Google Sign-In failed: ' + tokenResponse.error, 'error');
+      }
       return;
     }
     console.log('[GoogleAuth] OAuth2 popup tokenResponse received. Access Token prefix:', tokenResponse.access_token ? tokenResponse.access_token.substring(0, 10) : 'None');
@@ -2299,6 +2350,7 @@ function _finishGoogleLogin(idToken, email, name) {
   showLoading(true);
   return apiCall('/auth/google', {
     method: 'POST',
+    timeout: 30000,
     body: JSON.stringify({ id_token: idToken, email: email, name: name })
   })
     .then(function(data) {
@@ -4767,6 +4819,15 @@ function showRentalAgreement(payload, result, payType) {
     '<li>Full rental balance must be completed prior to vehicle handover</li>' +
     '</ul>' +
     '</div>' +
+    '<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;">' +
+    '<label style="display:flex;align-items:flex-start;gap:10px;font-size:0.875rem;cursor:pointer;margin:0;">' +
+    '<input type="checkbox" id="gpsTrackingOptIn" checked style="margin-top:3px;accent-color:var(--primary);width:18px;height:18px;">' +
+    '<div>' +
+    '<span style="font-weight:700;color:var(--text-main);display:block;">Allow real-time GPS tracking during rental</span>' +
+    '<span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;line-height:1.4;">Uncheck if you wish to request location privacy (live telemetry will be encrypted/masked for the admin).</span>' +
+    '</div>' +
+    '</label>' +
+    '</div>' +
     '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;font-size:0.875rem;cursor:pointer;">' +
     '<input type="checkbox" id="agreeCheck" style="margin-top:2px;accent-color:var(--primary);width:18px;height:18px;">' +
     '<span>I have read and agree to the Autoride Rental Agreement and Policies.</span>' +
@@ -4784,6 +4845,11 @@ function confirmAndBook() {
   if (!agreeCheck || !agreeCheck.checked) {
     showToast('Please read and agree to the rental terms first.', 'error');
     return;
+  }
+
+  var gpsOpt = document.getElementById('gpsTrackingOptIn');
+  if (typeof _pendingBookingPayload !== 'undefined' && _pendingBookingPayload) {
+    _pendingBookingPayload.gps_tracking_consent = gpsOpt ? gpsOpt.checked : true;
   }
 
   // Check verification status:

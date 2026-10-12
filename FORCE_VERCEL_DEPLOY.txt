@@ -1,4 +1,4 @@
-FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-10 16:20:00
-Feature: Fleet Calendar Excel Import with Smart Renter Account Matching, Conflict Detection, and 1-Click Sync
+FORCE DEPLOYMENT TRIGGER - TIMESTAMP: 2026-10-12 16:10:00
+Feature: Resilient Google Sign-In with head preconnect, dynamic GSI auto-loader, and extended timeout for mobile data and varying networks
 Repository: github.com/marpj62625/Autoride_Booking_system.git
 Branch: main

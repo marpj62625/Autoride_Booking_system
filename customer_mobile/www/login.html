@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="config.js"></script>
+    <link rel="preconnect" href="https://accounts.google.com">
+    <link rel="preconnect" href="https://www.googleapis.com">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -425,23 +427,55 @@
         // GSI calls window.onGoogleLibraryLoad when ready
         window.onGoogleLibraryLoad = function() { initGoogleTokenClient(); };
 
+        function ensureGoogleApiLoaded(timeoutMs) {
+            timeoutMs = timeoutMs || 8000;
+            return new Promise(function(resolve, reject) {
+                if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                    return resolve(google);
+                }
+                var startTime = Date.now();
+                var checkInterval = setInterval(function() {
+                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                        clearInterval(checkInterval);
+                        return resolve(google);
+                    }
+                    if (Date.now() - startTime > timeoutMs) {
+                        clearInterval(checkInterval);
+                        return reject(new Error('Google Sign-In service took too long to load.'));
+                    }
+                }, 100);
+            });
+        }
+
         function doGoogleLogin() {
             var btn = document.getElementById('btnGoogleLogin');
-            // If Google API not loaded yet, show error
-            if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-                showMessage('Google Sign-In is not available. Please refresh the page and try again.', true);
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                _launchLoginFlow();
                 return;
             }
-            // Re-init client if somehow not done yet
-            if (!_googleTokenClient) initGoogleTokenClient();
-            if (!_googleTokenClient) {
-                showMessage('Google Sign-In failed to initialize. Please refresh and try again.', true);
-                return;
+
+            showMessage('Connecting to Google Sign-In, please wait...');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Connecting...'; }
+
+            ensureGoogleApiLoaded(8000)
+                .then(function() {
+                    _launchLoginFlow();
+                })
+                .catch(function(err) {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google'; }
+                    showMessage('Google Sign-In is temporarily unavailable. Please check your internet connection or refresh.', true);
+                });
+
+            function _launchLoginFlow() {
+                if (!_googleTokenClient) initGoogleTokenClient();
+                if (!_googleTokenClient) {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Continue with Google'; }
+                    showMessage('Google Sign-In failed to initialize. Please refresh and try again.', true);
+                    return;
+                }
+                if (btn) { btn.disabled = true; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Signing in...'; }
+                _googleTokenClient.requestAccessToken({ prompt: 'select_account' });
             }
-            // Disable button to prevent double-clicks
-            if (btn) { btn.disabled = true; btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:20px;height:20px;"> Signing in...'; }
-            // This MUST be called synchronously from user click for popup to not be blocked
-            _googleTokenClient.requestAccessToken({ prompt: 'select_account' });
         }
 
         // ---- Forgot Password Functions ----
