@@ -27825,450 +27825,62 @@ function toggleNewsletterModal(show = true) {
                     });
                 }
             }
-            const data = this._rawData;
-
-
-
-            if (!data) { showNotification('No data to export', 'error'); return; }
-
-
-
-
-
-
-
-            const totalRev = data.totalRevenue || 0;
-
-
-
-            const totalBook = data.totalBookings || 0;
-
-
-
-
-
-
-
-            const rows = [];
-
-
-
-            rows.push(['Autoride Sales Report']);
-
-
-
-            rows.push(['Generated:', new Date().toLocaleString()]);
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Summary']);
-
-
-
-            rows.push(['Total Revenue (PHP)', totalRev]);
-
-
-
-            rows.push(['Total Expenses (PHP)', data.totalExpenses || 0]);
-
-
-
-            rows.push(['Net Profit (PHP)', data.netProfit || 0]);
-
-
-
-            rows.push(['Total Bookings', totalBook]);
-
-
-
-            rows.push(['Average Revenue per Booking (PHP)', totalBook > 0 ? Math.floor(totalRev / totalBook) : 0]);
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Top Vehicles by Revenue']);
-
-
-
-            rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
-
-
-
-            (data.topVehicles || []).forEach((c, i) => {
-
-
-
-                rows.push([i + 1, c.brand + " " + c.model, c.booking_count, c.revenue || 0]);
-
-
-
-            });
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Revenue Trend']);
-
-
-
-            rows.push(['Date', 'Revenue (PHP)']);
-
-
-
-            (data.revenueTrend || []).forEach(t => {
-
-
-
-                rows.push([t.day || t.label || '', t.amount || 0]);
-
-
-
-            });
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Expenses & Maintenance Log']);
-
-
-
-            rows.push(['Date', 'Vehicle', 'Type', 'Amount (PHP)', 'Description', 'Recorded By']);
-
-
-
-            (this._expensesData || []).forEach(e => {
-
-
-
-                rows.push([e.expense_date, `${e.brand} ${e.model} (${e.plate_number || 'N/A'})`, e.expense_type, e.amount || 0, e.description || '', e.recorder_name || '']);
-
-
-
-            });
-
-
-
-
-
-
-
-            // Generate real Excel file using SheetJS
-
-
 
             try {
+                showNotification('Generating Executive Excel report with interactive charts...', 'success');
+                const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
+                const from = document.getElementById('rptDateFrom') ? document.getElementById('rptDateFrom').value : '';
+                const to = document.getElementById('rptDateTo') ? document.getElementById('rptDateTo').value : '';
+                const filter = this._filter || 'year';
+                const adminId = user.id || '';
 
+                const url = `${API_BASE}/api/admin/reports/export-excel?filter=${filter}&date_from=${from}&date_to=${to}&admin_id=${adminId}`;
+                const filename = `Autoride_Executive_Report_${from || 'all'}_to_${to || 'all'}.xlsx`;
 
-
-                if (typeof XLSX === 'undefined') {
-
-
-
-                    throw new Error('Excel library not loaded');
-
-
-
+                const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`Server returned status ${res.status}`);
                 }
+                const blob = await res.blob();
 
-
-
-                
-
-
-
-                const wb = XLSX.utils.book_new();
-
-
-
-                const ws = XLSX.utils.aoa_to_sheet(rows);
-
-
-
-                XLSX.utils.book_append_sheet(wb, ws, "Report");
-
-
-
-                
-
-
-
-                // Write as base64
-
-
-
-                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-
-
-
-                const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
-
-
-
-
-
-
-
-                // ?? Try Capacitor Filesystem (Android native download) ??
-
-
-
+                // Check for Capacitor Mobile download
                 const { Filesystem } = window.Capacitor?.Plugins || {};
-
-
-
                 if (Filesystem) {
-
-
-
                     try {
-
-
-
-                        // Write to Downloads directory
-
-
-
-                        const result = await Filesystem.writeFile({
-
-
-
-                            path: filename,
-
-
-
-                            data: wboutBase64,
-
-
-
-                            directory: 'DOWNLOADS',
-
-
-
-                            recursive: true
-
-
-
-                        });
-
-
-
-                        showNotification('Excel saved to Downloads: ' + filename, 'success');
-
-
-
-
-
-
-
-                        // Try to open it with a file viewer
-
-
-
-                        try {
-
-
-
-                            const { FileOpener } = window.Capacitor?.Plugins || {};
-
-
-
-                            if (FileOpener) {
-
-
-
-                                await FileOpener.open({
-
-
-
-                                    filePath: result.uri,
-
-
-
-                                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
-
-
-                                });
-
-
-
-                            }
-
-
-
-                        } catch (openErr) {
-
-
-
-                            // FileOpener not available � that's OK, file is still saved
-
-
-
-                        }
-
-
-
-                        return;
-
-
-
-                    } catch (fsErr) {
-
-
-
-                        console.warn('Downloads directory failed, trying Documents:', fsErr);
-
-
-
-                        // Fallback to Documents directory
-
-
-
-                        try {
-
-
-
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = async () => {
+                            const base64data = reader.result.split(',')[1];
                             const result = await Filesystem.writeFile({
-
-
-
                                 path: filename,
-
-
-
-                                data: wboutBase64,
-
-
-
-                                directory: 'DOCUMENTS',
-
-
-
+                                data: base64data,
+                                directory: 'DOWNLOADS',
                                 recursive: true
-
-
-
                             });
-
-
-
-                            showNotification('Excel saved to Documents: ' + filename, 'success');
-
-
-
-                            return;
-
-
-
-                        } catch (docErr) {
-
-
-
-                            console.warn('Documents also failed, using browser download:', docErr);
-
-
-
-                        }
-
-
-
+                            showNotification('Excel saved to Downloads: ' + filename, 'success');
+                        };
+                        return;
+                    } catch (mErr) {
+                        console.warn('Mobile download failed, falling back to browser download:', mErr);
                     }
-
-
-
                 }
 
-
-
-
-
-
-
-                // ?? Browser / web fallback: trigger download via blob URL ??
-
-
-
-                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-
-
-
-                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-
-
-                const url = URL.createObjectURL(blob);
-
-
-
+                // Standard Web Browser download
+                const downloadUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-
-
-
-                a.href = url;
-
-
-
+                a.href = downloadUrl;
                 a.download = filename;
-
-
-
                 document.body.appendChild(a);
-
-
-
                 a.click();
-
-
-
                 document.body.removeChild(a);
-
-
-
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-
-
-                showNotification('Excel file downloaded!', 'success');
-
-
-
-
-
-
+                setTimeout(() => URL.revokeObjectURL(downloadUrl), 5000);
+                showNotification('Executive Excel report with charts downloaded!', 'success');
 
             } catch (err) {
-
-
-
                 console.error('Excel export failed:', err);
-
-
-
                 showNotification('Export failed: ' + err.message, 'error');
-
-
-
             }
-
-
-
         },
-
-
-
     };
 
 
