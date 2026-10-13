@@ -9131,6 +9131,7 @@ def get_detailed_stats():
     date_to = request.args.get('date_to')
     status_filter = request.args.get('status')
     vehicle_type = request.args.get('vehicle_type')
+    filter_period = request.args.get('filter')
 
     try:
         cur = get_cursor()
@@ -9175,10 +9176,22 @@ def get_detailed_stats():
         cur.execute(rev_query, tuple(rev_params))
         basic_stats = cur.fetchone()
         
-        # 2. Daily Revenue
-        trend_query = """
+        # 2. Revenue Trend (Daily vs Monthly Aggregation)
+        is_year_view = (filter_period == 'year')
+        if not is_year_view and date_from and date_to:
+            try:
+                d_from = datetime.datetime.strptime(date_from, '%Y-%m-%d').date()
+                d_to = datetime.datetime.strptime(date_to, '%Y-%m-%d').date()
+                if (d_to - d_from).days > 90:
+                    is_year_view = True
+            except Exception:
+                pass
+
+        date_format = 'YYYY-MM' if is_year_view else 'YYYY-MM-DD'
+
+        trend_query = f"""
             SELECT 
-                TO_CHAR(b.start_date, 'YYYY-MM-DD') as day,
+                TO_CHAR(b.start_date, '{date_format}') as day,
                 SUM(CASE WHEN b.status = 'Cancelled' THEN (COALESCE(b.amount_paid, 0) - COALESCE(b.refund_amount, 0)) ELSE b.total_price END) as amount,
                 COUNT(b.id) as booking_count
             FROM bookings b
@@ -9191,7 +9204,32 @@ def get_detailed_stats():
         trend_query, trend_params = apply_filters(trend_query, trend_params, 'b', 'v', skip_status=False)
         trend_query += " GROUP BY day ORDER BY day ASC"
         cur.execute(trend_query, tuple(trend_params))
-        revenue_trend = cur.fetchall()
+        raw_trend = cur.fetchall()
+
+        if is_year_view:
+            target_year = date_from[:4] if date_from else str(datetime.date.today().year)
+            month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+            trend_map = {r['day']: r for r in raw_trend}
+            revenue_trend = []
+            for idx, m_num in enumerate(['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']):
+                m_key = f"{target_year}-{m_num}"
+                if m_key in trend_map:
+                    row = trend_map[m_key]
+                    revenue_trend.append({
+                        "day": m_key,
+                        "label": month_names[idx],
+                        "amount": float(row.get('amount') or 0),
+                        "booking_count": int(row.get('booking_count') or 0)
+                    })
+                else:
+                    revenue_trend.append({
+                        "day": m_key,
+                        "label": month_names[idx],
+                        "amount": 0.0,
+                        "booking_count": 0
+                    })
+        else:
+            revenue_trend = [{"day": r.get('day'), "amount": float(r.get('amount') or 0), "booking_count": int(r.get('booking_count') or 0)} for r in raw_trend]
         
         # 3. Fleet Distribution
         # For fleet, we don't have bookings 'b', just 'v'

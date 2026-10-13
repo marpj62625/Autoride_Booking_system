@@ -18242,10 +18242,10 @@ function toggleNewsletterModal(show = true) {
 
 
                 const now = new Date();
-                const from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-                const to = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
-                document.getElementById('rptDateFrom').value = from;
-                document.getElementById('rptDateTo').value = to;
+                const y = now.getFullYear();
+                document.getElementById('rptDateFrom').value = `${y}-01-01`;
+                document.getElementById('rptDateTo').value = `${y}-12-31`;
+                Reports._filter = 'year';
                 Reports.refresh();
 
 
@@ -27037,7 +27037,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        _filter: 'month',
+        _filter: 'year',
 
 
 
@@ -27094,15 +27094,19 @@ function toggleNewsletterModal(show = true) {
 
 
             const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
             let from, to;
             if (period === 'day') {
-                from = to = now.toISOString().split('T')[0];
+                from = to = `${y}-${m}-${d}`;
             } else if (period === 'month') {
-                from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-                to = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+                from = `${y}-${m}-01`;
+                to = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
             } else {
-                from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-                to = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+                from = `${y}-01-01`;
+                to = `${y}-12-31`;
             }
 
 
@@ -27190,7 +27194,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+                    labels: trend.map(t => t.label || (t.day ? (t.day.length === 7 ? t.day : t.day.split('-').slice(1).join('/')) : '')),
 
 
 
@@ -27315,7 +27319,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+                    labels: trend.map(t => t.label || (t.day ? (t.day.length === 7 ? t.day : t.day.split('-').slice(1).join('/')) : '')),
 
 
 
