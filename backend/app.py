@@ -9718,6 +9718,16 @@ def export_reports_excel():
             ])
 
         for ws in [ws_dash, ws_data, ws_bks, ws_exp]:
+            # Page Orientation & Print Setup (Landscape A4 with Auto-Fit)
+            ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+            ws.page_setup.paperSize = ws.PAPERSIZE_A4
+            ws.sheet_properties.pageSetUpPr.fitToPage = True
+            ws.page_setup.fitToWidth = 1
+            if ws == ws_dash:
+                ws.page_setup.fitToHeight = 1
+            else:
+                ws.page_setup.fitToHeight = 0
+
             for col in ws.columns:
                 max_len = 0
                 for cell in col:
