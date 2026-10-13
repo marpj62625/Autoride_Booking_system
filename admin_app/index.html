@@ -27834,13 +27834,54 @@ function toggleNewsletterModal(show = true) {
                 const filter = this._filter || 'year';
                 const adminId = user.id || '';
 
-                const url = `${API_BASE}/api/admin/reports/export-excel?filter=${filter}&date_from=${from}&date_to=${to}&admin_id=${adminId}`;
-                const filename = `Autoride_Executive_Report_${from || 'all'}_to_${to || 'all'}.xlsx`;
+                // Determine clean indicator filename
+                let filename = 'AutoRide_Report.xlsx';
+                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                if (from && to) {
+                    if (from === to) {
+                        filename = `AutoRide_DAILY_Report_${from}.xlsx`;
+                    } else {
+                        const pFrom = from.split('-').map(Number);
+                        const pTo = to.split('-').map(Number);
+                        if (filter === 'month' || (pFrom[0] === pTo[0] && pFrom[1] === pTo[1] && pFrom[2] === 1 && pTo[2] >= 28)) {
+                            const mName = monthNames[pFrom[1] - 1] || 'Month';
+                            const mm = String(pFrom[1]).padStart(2, '0');
+                            filename = `AutoRide_MONTHLY_Report_${pFrom[0]}_${mm}_${mName}.xlsx`;
+                        } else if (filter === 'year' || (pFrom[0] === pTo[0] && pFrom[1] === 1 && pFrom[2] === 1 && pTo[1] === 12 && pTo[2] === 31)) {
+                            filename = `AutoRide_ANNUAL_Report_${pFrom[0]}.xlsx`;
+                        } else {
+                            filename = `AutoRide_CUSTOM_Report_${from}_to_${to}.xlsx`;
+                        }
+                    }
+                } else if (filter === 'year') {
+                    filename = `AutoRide_ANNUAL_Report_${new Date().getFullYear()}.xlsx`;
+                } else if (filter === 'month') {
+                    const d = new Date();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    filename = `AutoRide_MONTHLY_Report_${d.getFullYear()}_${mm}_${monthNames[d.getMonth()]}.xlsx`;
+                } else if (filter === 'day') {
+                    const d = new Date();
+                    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    filename = `AutoRide_DAILY_Report_${todayStr}.xlsx`;
+                } else {
+                    filename = `AutoRide_ALL_TIME_Report.xlsx`;
+                }
 
                 const res = await fetch(url);
                 if (!res.ok) {
                     throw new Error(`Server returned status ${res.status}`);
                 }
+
+                // If backend provided filename in Content-Disposition header, use it
+                try {
+                    const cd = res.headers && res.headers.get('content-disposition');
+                    if (cd) {
+                        const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) {
+                            filename = match[1].replace(/['"]/g, '').trim();
+                        }
+                    }
+                } catch (_) {}
                 const blob = await res.blob();
 
                 // Check for Capacitor Mobile download

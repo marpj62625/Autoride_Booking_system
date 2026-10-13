@@ -9486,6 +9486,48 @@ def export_reports_excel():
         cur.execute(exp_list_query, tuple(exp_list_params))
         expenses_list = cur.fetchall()
 
+        # Determine friendly report title and filename based on filter/dates
+        d_from = None
+        d_to = None
+        try:
+            if date_from:
+                d_from = datetime.strptime(date_from, "%Y-%m-%d").date()
+            if date_to:
+                d_to = datetime.strptime(date_to, "%Y-%m-%d").date()
+        except Exception:
+            d_from, d_to = None, None
+
+        if d_from and d_to:
+            if d_from == d_to:
+                report_title = f"AUTORIDE SYSTEM - DAILY REPORT ({d_from.strftime('%B %d, %Y').upper()})"
+                report_filename = f"AutoRide_DAILY_Report_{d_from.strftime('%Y-%m-%d')}.xlsx"
+            elif filter_period == 'month' or (d_from.year == d_to.year and d_from.month == d_to.month and d_from.day == 1 and d_to.day >= 28):
+                m_name = d_from.strftime('%B')
+                report_title = f"AUTORIDE SYSTEM - MONTHLY REPORT ({m_name.upper()} {d_from.year})"
+                report_filename = f"AutoRide_MONTHLY_Report_{d_from.year}_{d_from.strftime('%m')}_{m_name}.xlsx"
+            elif filter_period == 'year' or (d_from.year == d_to.year and d_from.month == 1 and d_from.day == 1 and d_to.month == 12 and d_to.day == 31):
+                report_title = f"AUTORIDE SYSTEM - ANNUAL REPORT ({d_from.year})"
+                report_filename = f"AutoRide_ANNUAL_Report_{d_from.year}.xlsx"
+            else:
+                report_title = f"AUTORIDE SYSTEM - CUSTOM PERIOD REPORT ({d_from.strftime('%b %d, %Y').upper()} TO {d_to.strftime('%b %d, %Y').upper()})"
+                report_filename = f"AutoRide_CUSTOM_Report_{d_from.strftime('%Y-%m-%d')}_to_{d_to.strftime('%Y-%m-%d')}.xlsx"
+        elif filter_period == 'year':
+            yr = datetime.now().year
+            report_title = f"AUTORIDE SYSTEM - ANNUAL REPORT ({yr})"
+            report_filename = f"AutoRide_ANNUAL_Report_{yr}.xlsx"
+        elif filter_period == 'month':
+            now_dt = datetime.now()
+            m_name = now_dt.strftime('%B')
+            report_title = f"AUTORIDE SYSTEM - MONTHLY REPORT ({m_name.upper()} {now_dt.year})"
+            report_filename = f"AutoRide_MONTHLY_Report_{now_dt.year}_{now_dt.strftime('%m')}_{m_name}.xlsx"
+        elif filter_period == 'day':
+            now_dt = datetime.now()
+            report_title = f"AUTORIDE SYSTEM - DAILY REPORT ({now_dt.strftime('%B %d, %Y').upper()})"
+            report_filename = f"AutoRide_DAILY_Report_{now_dt.strftime('%Y-%m-%d')}.xlsx"
+        else:
+            report_title = "AUTORIDE SYSTEM - ALL-TIME EXECUTIVE PERFORMANCE REPORT"
+            report_filename = "AutoRide_ALL_TIME_Report.xlsx"
+
         # BUILD WORKBOOK
         wb = openpyxl.Workbook()
 
@@ -9495,7 +9537,7 @@ def export_reports_excel():
         ws_dash.views.sheetView[0].showGridLines = True
 
         # Header Title Banner
-        ws_dash["A1"] = "AUTORIDE SYSTEM — EXECUTIVE PERFORMANCE REPORT"
+        ws_dash["A1"] = report_title
         ws_dash["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
         ws_dash["A1"].fill = PatternFill(start_color="00B14F", end_color="00B14F", fill_type="solid")
         ws_dash["A1"].alignment = Alignment(horizontal="center", vertical="center")
@@ -9646,13 +9688,14 @@ def export_reports_excel():
         wb.save(out)
         out.seek(0)
 
-        filename = f"Autoride_Report_{date_from}_to_{date_to}.xlsx" if (date_from and date_to) else "Autoride_Report.xlsx"
-        return send_file(
+        resp = send_file(
             out,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=filename
+            download_name=report_filename
         )
+        resp.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+        return resp
 
     except Exception as e:
         print(f"Error generating Excel report: {e}")
