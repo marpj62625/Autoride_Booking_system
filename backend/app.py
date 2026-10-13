@@ -9579,30 +9579,19 @@ def export_reports_excel():
         ws_dash.title = "Executive Summary"
         ws_dash.views.sheetView[0].showGridLines = True
 
-        # Row Heights for Polish
-        ws_dash.row_dimensions[1].height = 24
-        ws_dash.row_dimensions[2].height = 24
-        ws_dash.row_dimensions[3].height = 20
-        ws_dash.row_dimensions[4].height = 10
-        ws_dash.row_dimensions[5].height = 22
-        ws_dash.row_dimensions[6].height = 28
-        ws_dash.row_dimensions[7].height = 20
-        ws_dash.row_dimensions[8].height = 12
-        ws_dash.row_dimensions[25].height = 14
-
-        # Header Title Banner (Merged A1:L2)
-        ws_dash.merge_cells("A1:L2")
+        # Header Title Banner
         ws_dash["A1"] = report_title
         ws_dash["A1"].font = Font(name="Calibri", size=15, bold=True, color="FFFFFF")
         ws_dash["A1"].fill = PatternFill(start_color="00B14F", end_color="00B14F", fill_type="solid")
         ws_dash["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_dash.merge_cells("A1:L2")
 
-        # Subtitle Banner (Merged A3:L3)
-        ws_dash.merge_cells("A3:L3")
+        # Subtitle Banner
         date_subtitle = f"Period: {date_from or 'All Time'} to {date_to or 'Present'} | Generated: {datetime.now().strftime('%b %d, %Y %I:%M %p')}"
         ws_dash["A3"] = date_subtitle
         ws_dash["A3"].font = Font(name="Calibri", size=10, italic=True, color="64748B")
         ws_dash["A3"].alignment = Alignment(horizontal="center", vertical="center")
+        ws_dash.merge_cells("A3:L3")
 
         # 4 Symmetrical Horizontal KPI Cards across Columns A to L (Rows 5-7)
         margin_pct = (net_profit / total_revenue * 100) if total_revenue > 0 else 0.0
@@ -9647,33 +9636,29 @@ def export_reports_excel():
             col_start_letter = get_column_letter(c_start)
             col_end_letter = get_column_letter(c_end)
 
-            for r in range(5, 8):
-                for c in range(c_start, c_end + 1):
-                    cell = ws_dash.cell(row=r, column=c)
-                    cell.border = thin_border
-                    if r == 5:
-                        cell.fill = card_header_fill
-                    else:
-                        cell.fill = card_body_fill
-
-            ws_dash.merge_cells(f"{col_start_letter}5:{col_end_letter}5")
-            ws_dash.merge_cells(f"{col_start_letter}6:{col_end_letter}6")
-            ws_dash.merge_cells(f"{col_start_letter}7:{col_end_letter}7")
-
             top_cell = ws_dash[f"{col_start_letter}5"]
             top_cell.value = card["title"]
             top_cell.font = Font(name="Calibri", size=9, bold=True, color="FFFFFF")
+            top_cell.fill = card_header_fill
             top_cell.alignment = Alignment(horizontal="center", vertical="center")
+            top_cell.border = thin_border
+            ws_dash.merge_cells(f"{col_start_letter}5:{col_end_letter}5")
 
             val_cell = ws_dash[f"{col_start_letter}6"]
             val_cell.value = card["value"]
-            val_cell.font = Font(name="Calibri", size=13, bold=True, color=card["val_color"])
+            val_cell.font = Font(name="Calibri", size=14, bold=True, color=card["val_color"])
+            val_cell.fill = card_body_fill
             val_cell.alignment = Alignment(horizontal="center", vertical="center")
+            val_cell.border = thin_border
+            ws_dash.merge_cells(f"{col_start_letter}6:{col_end_letter}6")
 
             sub_cell = ws_dash[f"{col_start_letter}7"]
             sub_cell.value = card["sub"]
             sub_cell.font = Font(name="Calibri", size=8, italic=True, color="64748B")
+            sub_cell.fill = card_body_fill
             sub_cell.alignment = Alignment(horizontal="center", vertical="center")
+            sub_cell.border = thin_border
+            ws_dash.merge_cells(f"{col_start_letter}7:{col_end_letter}7")
 
         # Sheet 2: Data Sources for Charts
         ws_data = wb.create_sheet(title="Chart_Data")
@@ -9823,15 +9808,13 @@ def export_reports_excel():
             # Page Orientation & Print Setup (Landscape A4 with Auto-Fit)
             ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
             ws.page_setup.paperSize = ws.PAPERSIZE_A4
-            ws.sheet_properties.pageSetUpPr.fitToPage = True
             ws.page_setup.fitToWidth = 1
+            ws.page_setup.fitToHeight = 0
             if ws == ws_dash:
-                ws.page_setup.fitToHeight = 1
                 for c_idx in range(1, 13):
                     col_letter = get_column_letter(c_idx)
                     ws.column_dimensions[col_letter].width = 14
             else:
-                ws.page_setup.fitToHeight = 0
                 for col in ws.columns:
                     max_len = 0
                     for cell in col:
