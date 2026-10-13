@@ -5356,6 +5356,11 @@ def book():
 
             points_redeemed = int(data.get('points_redeemed', 0) or 0)
             points_earned = int(data.get('points_earned', 0) or 0)
+            if not points_earned and total_price:
+                try:
+                    points_earned = int(float(total_price) / 100)
+                except Exception:
+                    points_earned = 0
             delivery_fee = float(data.get('delivery_fee', 0.00) or 0.00)
 
             # Check Regular Customer Status for Downpayment Exemption
@@ -8513,7 +8518,7 @@ def complete_booking(booking_id):
 
         cur = get_cursor()
 
-        cur.execute("SELECT user_id, points_earned, status FROM bookings WHERE id=%s", (booking_id,))
+        cur.execute("SELECT user_id, points_earned, total_price, status FROM bookings WHERE id=%s", (booking_id,))
         b_info = cur.fetchone()
         
         if not b_info:
@@ -8528,6 +8533,12 @@ def complete_booking(booking_id):
             
             # Award points
             earned = int(b_info.get('points_earned', 0) or 0)
+            if earned <= 0 and b_info.get('total_price'):
+                try:
+                    earned = int(float(b_info['total_price']) / 100)
+                    cur.execute("UPDATE bookings SET points_earned=%s WHERE id=%s", (earned, booking_id))
+                except Exception:
+                    earned = 0
             if earned > 0:
                 cur.execute("UPDATE users SET loyalty_points = loyalty_points + %s WHERE id = %s", (earned, b_info['user_id']))
                 
