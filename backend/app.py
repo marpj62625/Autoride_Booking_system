@@ -1782,6 +1782,37 @@ def migrate_calendar_color():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_masked_users_view():
+    """Ensures masked_users view exists in database for privacy-safe inspection."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE OR REPLACE VIEW masked_users AS
+            SELECT 
+                id,
+                full_name,
+                CASE 
+                    WHEN email IS NULL OR email = '' THEN email
+                    WHEN LENGTH(SPLIT_PART(email, '@', 1)) <= 3 THEN CONCAT(LEFT(SPLIT_PART(email, '@', 1), 1), '***@', SPLIT_PART(email, '@', 2))
+                    ELSE CONCAT(LEFT(SPLIT_PART(email, '@', 1), 2), '*********', RIGHT(SPLIT_PART(email, '@', 1), 2), '@', SPLIT_PART(email, '@', 2))
+                END AS email,
+                phone,
+                role,
+                is_verified,
+                is_email_verified,
+                is_frozen,
+                is_regular_customer,
+                loyalty_points,
+                created_at
+            FROM users;
+        """)
+        commit_db()
+        print("[MIGRATION] migrate_masked_users_view completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_masked_users_view error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
     try:
         with app.app_context():
@@ -1796,6 +1827,7 @@ if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
             migrate_insurance_options()
             migrate_driver_wage_policy()
             migrate_calendar_color()
+            migrate_masked_users_view()
     except Exception as _e:
         print(f"[STARTUP ERROR] {_e}")
 
