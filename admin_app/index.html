@@ -27867,6 +27867,7 @@ function toggleNewsletterModal(show = true) {
                     filename = `AutoRide_ALL_TIME_Report.xlsx`;
                 }
 
+                const url = `${API_BASE}/api/admin/reports/export-excel?filter=${filter}&date_from=${from}&date_to=${to}&admin_id=${adminId}`;
                 const res = await fetch(url);
                 if (!res.ok) {
                     throw new Error(`Server returned status ${res.status}`);
