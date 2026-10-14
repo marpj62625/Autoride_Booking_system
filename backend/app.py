@@ -36,13 +36,26 @@ ALLOWED_IMAGE_MIMES = {
     'image/webp', 'image/heic', 'image/heif', 'image/bmp'
 }
 
+DANGEROUS_EXTENSIONS = {
+    'php', 'php3', 'php4', 'php5', 'phtml', 'html', 'htm', 'js',
+    'exe', 'bat', 'cmd', 'sh', 'bash', 'py', 'pl', 'cgi', 'svg',
+    'asp', 'aspx', 'jsp', 'jar', 'vbs', 'ps1', 'dll', 'bin'
+}
+
 def is_allowed_image(file_storage):
-    """Return True if the FileStorage object is an allowed image type."""
+    """Return True if the FileStorage object is a genuine, safe allowed image type."""
     if not file_storage or not file_storage.filename:
         return False
-    ext = file_storage.filename.rsplit('.', 1)[-1].lower() if '.' in file_storage.filename else ''
+    filename = file_storage.filename.strip()
+    if '.' not in filename:
+        return False
+    ext = filename.rsplit('.', 1)[-1].lower()
+    if ext in DANGEROUS_EXTENSIONS or ext not in ALLOWED_IMAGE_EXTENSIONS:
+        return False
     mime = (file_storage.content_type or '').lower().split(';')[0].strip()
-    return ext in ALLOWED_IMAGE_EXTENSIONS or mime in ALLOWED_IMAGE_MIMES
+    if mime and mime not in ALLOWED_IMAGE_MIMES and mime != 'application/octet-stream':
+        return False
+    return True
 
 def reject_non_image(file_storage, field_name='file'):
     """Return a 400 JSON error if the file is not an allowed image, else None."""
@@ -542,13 +555,12 @@ def check_no_show_bookings():
         print("[NoShowCheck] error:", ns_err)
 
 
-def verify_admin_access():
+def verify_admin_access(super_admin_only=False):
     """
-    Backward-compatible admin authentication check:
+    Secure admin authentication check:
     1. Validates Authorization Bearer token against ADMIN_API_KEY / SECRET_KEY
     2. Validates X-Admin-Key header against ADMIN_API_KEY / SECRET_KEY
-    3. Validates admin_id against active admin / super_admin records in the users table
-    4. Migration Fallback: Validates Origin/Referer from authorized web domains or local Capacitor mobile apps, ensuring legacy installed mobile APKs are not disrupted during migration.
+    3. Validates admin_id / requester_id against active admin / super_admin records in the users table
     """
     auth = request.headers.get('Authorization', '')
     admin_secret = os.environ.get('ADMIN_API_KEY') or getattr(app, 'secret_key', None) or os.environ.get('SECRET_KEY', '')
@@ -562,27 +574,27 @@ def verify_admin_access():
         return True, None
 
     data = request.get_json(silent=True) or {}
-    admin_id = data.get('admin_id') or request.args.get('admin_id') or request.headers.get('X-Admin-Id')
+    admin_id = (
+        data.get('admin_id') or data.get('requester_id') or
+        request.args.get('admin_id') or request.args.get('requester_id') or
+        request.headers.get('X-Admin-Id') or request.headers.get('X-User-Id')
+    )
     if admin_id:
         try:
             cur = get_cursor()
-            cur.execute("SELECT id, role FROM users WHERE id = %s AND role IN ('admin', 'super_admin')", (admin_id,))
+            cur.execute("SELECT id, role, full_name FROM users WHERE id = %s", (admin_id,))
             row = cur.fetchone()
             if row:
-                return True, None
-        except Exception:
-            pass
-
-    # Legacy installed mobile app & trusted origin fallback
-    ref = (request.headers.get('Referer') or '').lower()
-    orig = (request.headers.get('Origin') or '').lower()
-    ua = (request.headers.get('User-Agent') or '').lower()
-    if (
-        'vercel.app' in ref or 'vercel.app' in orig or
-        'autoride' in ref or 'autoride' in orig or
-        'localhost' in orig or 'capacitor' in orig or 'capacitor' in ua
-    ):
-        return True, None
+                role = (row.get('role') or '').lower().replace(' ', '_')
+                allowed_roles = ('super_admin', 'superadmin') if super_admin_only else ('admin', 'super_admin', 'superadmin')
+                if role in allowed_roles:
+                    return True, None
+                elif super_admin_only:
+                    return False, (jsonify({"error": "Unauthorized: Super Admin privileges required"}), 403)
+                else:
+                    return False, (jsonify({"error": "Unauthorized: Admin privileges required"}), 403)
+        except Exception as e:
+            print(f"DEBUG verify_admin_access error: {e}")
 
     return False, (jsonify({"error": "Unauthorized: Admin authentication required"}), 401)
 
@@ -2619,8 +2631,11 @@ def login():
 @app.route('/admin/verify-action', methods=['POST'])
 @app.route('/api/admin/verify-action', methods=['POST'])
 def admin_verify_user():
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
-    data = request.json
+    data = request.json or {}
 
     user_id = data.get('user_id')
 
@@ -3700,6 +3715,9 @@ def admin_set_loyalty(user_id):
 @app.route('/api/admin/users/<int:user_id>/reset-password', methods=['POST'])
 def admin_reset_password(user_id):
     """Reset user password to a new value."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or {}
     new_password = data.get('new_password', '').strip()
     if len(new_password) < 8:
@@ -3718,8 +3736,18 @@ def admin_reset_password(user_id):
 @app.route('/api/admin/users/<int:user_id>', methods=['DELETE'])
 def admin_delete_user(user_id):
     """Permanently delete a user account."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     try:
         cur = get_cursor()
+        cur.execute("SELECT role FROM users WHERE id = %s", (user_id,))
+        target = cur.fetchone()
+        if not target:
+            return jsonify({"error": "User not found"}), 404
+        if (target.get('role') or '').lower().replace(' ', '_') in ('super_admin', 'superadmin'):
+            return jsonify({"error": "Super Admin accounts cannot be deleted."}), 403
+
         cur.execute("DELETE FROM users WHERE id = %s", (user_id,))
         commit_db()
         return jsonify({"message": "User deleted successfully."}), 200
@@ -4453,6 +4481,10 @@ def process_refund():
     Record a manual refund (cash / GCash send-money / etc.) and notify the customer.
     Accepts JSON or multipart (for optional proof screenshot upload).
     """
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
     import datetime as _dtmod
 
     ct = request.content_type or ''
@@ -5380,20 +5412,66 @@ def book():
             # New fields
             destination = (data.get('destination') or '').strip()
             rental_purpose = (data.get('rental_purpose') or data.get('purpose_of_rental') or '').strip()
-            addons = ",".join(data.get('addons', []))
-            base_price = data.get('base_price')
-            addon_price = data.get('addon_price')
-            tax_amount = data.get('tax_amount')
-            total_price = data.get('total_price')
+            # Recalculate and validate pricing server-side to prevent client-side price tampering
+            cur.execute("SELECT daily_rate FROM vehicles WHERE id = %s", (final_vehicle_id,))
+            veh_row = cur.fetchone()
+            daily_rate = float(veh_row['daily_rate']) if veh_row and veh_row.get('daily_rate') else 0.0
+            computed_days = max(1, booking_days)
+            server_base_price = daily_rate * computed_days
 
-            points_redeemed = int(data.get('points_redeemed', 0) or 0)
-            points_earned = int(data.get('points_earned', 0) or 0)
-            if not points_earned and total_price:
+            # Safe addons parsing & computation
+            raw_addons = data.get('addons', [])
+            if isinstance(raw_addons, str):
+                addon_list = [a.strip() for a in raw_addons.split(',') if a.strip()]
+            elif isinstance(raw_addons, list):
+                addon_list = [str(a).strip() for a in raw_addons if a]
+            else:
+                addon_list = []
+            addons = ",".join(addon_list)
+
+            server_addon_price = 0.0
+            if addon_list:
+                for ad in addon_list:
+                    cur.execute("SELECT price_per_day FROM addons WHERE name ILIKE %s OR id::text = %s", (ad, ad))
+                    ad_row = cur.fetchone()
+                    if ad_row and ad_row.get('price_per_day'):
+                        server_addon_price += float(ad_row['price_per_day']) * computed_days
+            if server_addon_price <= 0 and data.get('addon_price'):
                 try:
-                    points_earned = int(float(total_price) / 100)
+                    server_addon_price = max(0.0, float(data.get('addon_price') or 0.0))
                 except Exception:
-                    points_earned = 0
-            delivery_fee = float(data.get('delivery_fee', 0.00) or 0.00)
+                    server_addon_price = 0.0
+
+            driver_fee = float(data.get('driver_fee', 0.00) or 0.00)
+            if rental_type == 'With Driver' and driver_fee <= 0:
+                driver_fee = float(755.0 * computed_days)
+
+            delivery_fee = max(0.0, float(data.get('delivery_fee', 0.00) or 0.00))
+
+            # Validate and cap loyalty points
+            points_redeemed = max(0, int(data.get('points_redeemed', 0) or 0))
+            if points_redeemed > 0:
+                cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_id,))
+                user_pts = cur.fetchone()
+                if not user_pts or int(user_pts['loyalty_points'] or 0) < points_redeemed:
+                    return jsonify({"error": "Insufficient loyalty points"}), 400
+
+            discount = float(points_redeemed)  # 1 point = PHP 1 discount
+
+            tax_amount = 0.0
+            if data.get('tax_amount'):
+                try:
+                    tax_amount = max(0.0, float(data.get('tax_amount') or 0.0))
+                except Exception:
+                    tax_amount = 0.0
+
+            base_price = server_base_price if server_base_price > 0 else float(data.get('base_price') or 0.0)
+            addon_price = server_addon_price
+            server_total = max(0.0, base_price + addon_price + driver_fee + delivery_fee + tax_amount - discount)
+
+            # Prevent price tampering: client total_price cannot be arbitrarily lower than server total
+            total_price = server_total if server_total > 0 else float(data.get('total_price') or 0.0)
+            points_earned = int(total_price / 100)
 
             # Check Regular Customer Status for Downpayment Exemption
             cur.execute("""
@@ -5434,17 +5512,6 @@ def book():
                 payment_status = 'Pending Payment'
                 amount_paid = 0.00
                 balance_amount = float(total_price or 0)
-
-            # Validate points
-            if points_redeemed > 0:
-                cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_id,))
-                user_pts = cur.fetchone()
-                if not user_pts or int(user_pts['loyalty_points'] or 0) < points_redeemed:
-                    return jsonify({"error": "Insufficient loyalty points"}), 400
-
-            driver_fee = float(data.get('driver_fee', 0.00) or 0.00)
-            if rental_type == 'With Driver' and driver_fee <= 0:
-                driver_fee = float(755.0 * max(1, booking_days))
 
             raw_gps_consent = data.get('gps_tracking_consent', True)
             if isinstance(raw_gps_consent, str):
@@ -5549,43 +5616,42 @@ def legacy_payment():
 
         
 
+        try:
+            valid_amount = float(str(amount).replace(',', '').strip())
+            if valid_amount <= 0:
+                return jsonify({"error": "Payment amount must be greater than zero."}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid payment amount."}), 400
+
         filepath = ""
-
         if 'payment_proof' in request.files:
-
             file = request.files['payment_proof']
-
             if file and file.filename:
-
-                filename = secure_filename(file.filename)
-
-                if filename:
-
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-                    file.save(filepath)
-
-                    # Store relative path for db
-
-                    filepath = filename
-
-
+                if not is_allowed_image(file):
+                    return jsonify({"error": "Payment proof must be a valid image file (jpg, png, webp)."}), 400
+                filename = secure_filename(f"proof_{booking_id}_{int(datetime.now().timestamp())}_{file.filename}")
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                filepath = filename
 
         cur = get_cursor()
-
         cur.execute("""
-
             INSERT INTO payments(booking_id, amount, method, reference_number, payment_proof, status)
-
             VALUES(%s, %s, %s, %s, %s, %s)
+        """, (booking_id, valid_amount, method, reference_number, filepath, 'Completed'))
 
-        """, (booking_id, amount, method, reference_number, filepath, 'Completed'))
-
-        
-
-        # Also update booking status
-
-        cur.execute("UPDATE bookings SET status='Confirmed' WHERE id=%s", (booking_id,))
+        # Also update booking status and balances safely
+        cur.execute("""
+            UPDATE bookings
+            SET status = 'Confirmed',
+                amount_paid = COALESCE(amount_paid, 0) + %s,
+                balance_amount = GREATEST(0.0, COALESCE(balance_amount, total_price) - %s),
+                payment_status = CASE 
+                    WHEN (COALESCE(balance_amount, total_price) - %s) <= 0.01 THEN 'Paid'
+                    ELSE 'Partially Paid'
+                END
+            WHERE id = %s
+        """, (valid_amount, valid_amount, valid_amount, booking_id))
 
         
 
@@ -7146,8 +7212,10 @@ def assign_booking_driver(booking_id):
 @app.route('/bookings/<int:booking_id>/approve', methods=['PUT'])
 @app.route('/api/bookings/<int:booking_id>/approve', methods=['PUT'])
 def approve_booking(booking_id):
-
     """Approve a pending booking."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
     try:
 
@@ -8543,8 +8611,10 @@ def pickup_booking(booking_id):
 @app.route('/bookings/<int:booking_id>/complete', methods=['PUT'])
 @app.route('/api/bookings/<int:booking_id>/complete', methods=['PUT'])
 def complete_booking(booking_id):
-
     """Mark a booking as Completed/Returned."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
     try:
 
@@ -10785,6 +10855,10 @@ def batch_archive_bookings():
 @app.route('/api/admin/bookings/<int:id>/permanent', methods=['DELETE'])
 def permanently_delete_booking(id):
     """Permanently delete an archived booking and cascade related dependent logs."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
     data = request.json or {}
     admin_name = (data.get('admin_name') or 'Admin').strip()
     admin_id = data.get('admin_id')
@@ -12328,20 +12402,13 @@ def update_vehicle_rate(vehicle_id):
 @app.route('/api/vehicles/<int:vehicle_id>', methods=['DELETE'])
 @app.route('/api/vehicles/<int:vehicle_id>/', methods=['DELETE'])
 def delete_vehicle(vehicle_id):
-
-
     # Require super_admin to delete vehicles
-    admin_id = request.args.get('admin_id') or (request.get_json(silent=True) or {}).get('admin_id')
+    is_authorized, err_resp = verify_admin_access(super_admin_only=True)
+    if not is_authorized:
+        return err_resp
 
     try:
-
         cur = get_cursor()
-
-        if admin_id:
-            cur.execute("SELECT role FROM users WHERE id = %s", (admin_id,))
-            requester = cur.fetchone()
-            if not requester or requester['role'] not in ['super_admin', 'superadmin']:
-                return jsonify({'error': 'Unauthorized. Only Super Admin can delete vehicles.'}), 403
 
         cur.execute("DELETE FROM vehicle_images WHERE vehicle_id = %s", (vehicle_id,))
 
@@ -13022,8 +13089,16 @@ def handle_admin_settings():
     
 
     elif request.method == 'POST':
+        is_authorized, err_resp = verify_admin_access()
+        if not is_authorized:
+            return err_resp
+
         data = request.json or {}
-        requester_id = data.get('requester_id')
+        requester_id = (
+            data.get('requester_id') or data.get('admin_id') or
+            request.args.get('requester_id') or request.args.get('admin_id') or
+            request.headers.get('X-Admin-Id')
+        )
         updates = data.get('settings', [])
 
         if not updates:
@@ -13036,20 +13111,11 @@ def handle_admin_settings():
                 cur.execute("SELECT id, full_name, role FROM users WHERE id=%s", (requester_id,))
                 user = cur.fetchone()
 
-            # Verify admin privileges: allow super_admin, superadmin, or admin
-            if user:
-                role = (user.get('role') or '').lower().replace(' ', '_')
-                if role not in ('super_admin', 'superadmin', 'admin'):
-                    return jsonify({"error": "Unauthorized. Admin privileges required."}), 403
-            else:
-                # If requester_id not provided or invalid, fallback to an active admin user for auditing
+            if not user:
+                # If bearer token or admin secret was used, find any active admin for the audit log
                 cur.execute("SELECT id, full_name, role FROM users WHERE role ILIKE '%admin%' ORDER BY id ASC LIMIT 1")
-                admin_fallback = cur.fetchone()
-                if admin_fallback:
-                    user = admin_fallback
-                    requester_id = admin_fallback['id']
-                else:
-                    return jsonify({"error": "Unauthorized. Admin only."}), 403
+                user = cur.fetchone() or {'id': 0, 'full_name': 'Super Admin'}
+                requester_id = user['id']
 
             for item in updates:
                 k = item.get('key')
