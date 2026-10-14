@@ -11190,6 +11190,29 @@ input:checked + .ctrl-slider:before {
 
 
 
+
+    // Global fetch interceptor to automatically attach authenticated admin credentials
+    (function() {
+        const _origFetch = window.fetch;
+        window.fetch = async function(resource, init) {
+            init = init || {};
+            try {
+                const adminUser = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
+                if (adminUser && adminUser.id) {
+                    init.headers = init.headers || {};
+                    if (init.headers instanceof Headers) {
+                        if (!init.headers.has('X-Admin-Id')) init.headers.set('X-Admin-Id', String(adminUser.id));
+                    } else if (Array.isArray(init.headers)) {
+                        init.headers.push(['X-Admin-Id', String(adminUser.id)]);
+                    } else {
+                        init.headers['X-Admin-Id'] = init.headers['X-Admin-Id'] || String(adminUser.id);
+                    }
+                }
+            } catch (_) {}
+            return _origFetch(resource, init);
+        };
+    })();
+
     window.apiFetch = async function(path, options = {}) {
 
 
