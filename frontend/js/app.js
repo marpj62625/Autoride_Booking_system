@@ -1157,6 +1157,7 @@ function showPage(id) {
     target.style.display = 'block';
   }
   target.classList.add('active');
+  try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch(e) {}
 
   // Update URL hash for refresh persistence (skip for login/splash/register/otp)
   try {

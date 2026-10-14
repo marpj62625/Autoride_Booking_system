@@ -269,7 +269,13 @@
         .hidden { display:none !important; }
 
 
-        .page { display:none; min-height:100vh; padding-bottom:80px; }
+        .page {
+  display:none;
+  min-height:100vh;
+  padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px) + 24px) !important;
+  box-sizing: border-box;
+  scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px));
+}
 
 
         .page.active { display:block; }
@@ -316,7 +322,7 @@
         /* Bottom Nav */
 
 
-        .bottom-nav { position:fixed; bottom:0; left:0; right:0; height:65px; background:var(--bg-card); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:center; padding:0 5px; padding-bottom:env(safe-area-inset-bottom); z-index:1000; box-shadow:0 -2px 12px rgba(0,0,0,0.08); }
+        .bottom-nav { position:fixed; bottom:0; left:0; right:0; height:calc(65px + env(safe-area-inset-bottom, 0px)); background:var(--bg-card); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:center; padding:0 5px env(safe-area-inset-bottom, 0px); box-sizing:border-box; z-index:1000; box-shadow:0 -2px 12px rgba(0,0,0,0.08); transition:height 0.2s ease, padding 0.2s ease; }
 
 
         .bottom-nav button { background:none; border:none; color:var(--text-muted); display:flex; flex-direction:column; align-items:center; gap:4px; font-size:0.65rem; font-weight:600; flex:1; padding:8px 0; cursor:pointer; transition:color 0.2s; }
@@ -1933,6 +1939,29 @@
 .ticker-pulse {
   animation: countdownTickPulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   display: inline-block;
+}
+
+
+
+/* Customer Mobile Landscape & Compact Screen Adaptability */
+@media (orientation: landscape) and (max-height: 520px) {
+  .bottom-nav {
+    height: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  }
+  .bottom-nav button span {
+    display: none !important;
+  }
+  .bottom-nav button i {
+    font-size: 1.15rem !important;
+  }
+  .page {
+    padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px) + 16px) !important;
+  }
+  .auth-box {
+    padding: 20px 16px !important;
+    margin: 10px auto !important;
+  }
 }
 
 </style>

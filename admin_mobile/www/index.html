@@ -682,69 +682,22 @@
 
 
         .mobile-header {
-
-
-
-            height: 64px;
-
-
-
-            padding: 0 16px;
-
-
-
+            height: calc(64px + env(safe-area-inset-top, 0px));
+            padding: env(safe-area-inset-top, 0px) 16px 0;
             display: flex;
-
-
-
             align-items: center;
-
-
-
             justify-content: space-between;
-
-
-
             position: fixed;
-
-
-
             top: 0;
-
-
-
             left: 0;
-
-
-
             width: 100%;
-
-
-
-            background: rgba(255, 255, 255, 0.92);
-
-
-
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(20px);
-
-
-
             -webkit-backdrop-filter: blur(20px);
-
-
-
-            z-index: 1000;
-
-
-
             border-bottom: 1px solid var(--border);
-
-
-
-            box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(0,0,0,0.04);
-
-
-
+            z-index: 1000;
+            box-sizing: border-box;
+            transition: height 0.2s ease, padding 0.2s ease;
         }
 
 
@@ -1429,29 +1382,16 @@
 
 
         .main-content {
-
-
-
             flex: 1;
-
-
-
-            padding: 80px 16px 88px;
-
-
-
+            padding-top: calc(76px + env(safe-area-inset-top, 0px)) !important;
+            padding-left: calc(16px + env(safe-area-inset-left, 0px)) !important;
+            padding-right: calc(16px + env(safe-area-inset-right, 0px)) !important;
+            padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px) + 24px) !important;
             width: 100%;
-
-
-
+            max-width: 100vw;
+            box-sizing: border-box;
             overflow-y: auto;
-
-
-
             -webkit-overflow-scrolling: touch;
-
-
-
         }
 
 
@@ -1803,74 +1743,84 @@
             .fc-vedit { display: none; }
         }
         .bottom-nav {
-
-
-
             position: fixed;
-
-
-
             bottom: 0;
-
-
-
             left: 0;
-
-
-
             right: 0;
-
-
-
-            height: 68px;
-
-
-
-            background: rgba(255, 255, 255, 0.95);
-
-
-
-            border-top: 1px solid var(--border);
-
-
-
-            display: flex;
-
-
-
-            justify-content: space-around;
-
-
-
-            align-items: center;
-
-
-
-            padding: 0 4px;
-
-
-
-            padding-bottom: env(safe-area-inset-bottom);
-
-
-
-            z-index: 1000;
-
-
-
-            box-shadow: 0 -1px 0 var(--border), 0 -4px 16px rgba(0,0,0,0.06);
-
-
-
+            height: calc(68px + env(safe-area-inset-bottom, 0px));
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(20px);
-
-
-
             -webkit-backdrop-filter: blur(20px);
-
-
-
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 4px env(safe-area-inset-bottom, 0px);
+            box-sizing: border-box;
+            z-index: 1000;
+            transition: height 0.2s ease, padding 0.2s ease;
         }
+
+        /* Universal tab-content responsive layout & scroll anchor offset */
+        .tab-content {
+            scroll-margin-top: calc(76px + env(safe-area-inset-top, 0px));
+            max-width: 100%;
+            box-sizing: border-box;
+            word-wrap: break-word;
+        }
+
+        /* Mobile Landscape & Short Screen Responsiveness */
+        @media (orientation: landscape) and (max-height: 550px) {
+            .mobile-header {
+                height: calc(46px + env(safe-area-inset-top, 0px)) !important;
+                padding: env(safe-area-inset-top, 0px) 12px 0 !important;
+            }
+            .mobile-header .logo-wrap img {
+                width: 24px !important;
+                height: 24px !important;
+            }
+            .mobile-header .logo-wrap span {
+                font-size: 0.9rem !important;
+            }
+            .mobile-header .admin-badge {
+                padding: 1px 6px !important;
+                font-size: 0.65rem !important;
+            }
+            .main-content {
+                padding-top: calc(52px + env(safe-area-inset-top, 0px)) !important;
+                padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px) + 12px) !important;
+                overflow-y: auto !important;
+            }
+            .tab-content {
+                scroll-margin-top: calc(52px + env(safe-area-inset-top, 0px)) !important;
+            }
+            .bottom-nav {
+                height: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+                padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+            }
+            .bottom-nav .nav-item span {
+                display: none !important;
+            }
+            .bottom-nav .nav-item i {
+                font-size: 1.15rem !important;
+            }
+            .page-title {
+                font-size: 1.25rem !important;
+                margin-bottom: 2px !important;
+            }
+            .page-subtitle {
+                display: none !important;
+            }
+            #fleet-calendar {
+                padding: 8px !important;
+            }
+            #fleet-calendar .fc-header {
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+        }
+
+
 
 
 
@@ -7348,7 +7298,7 @@
 
 
     <!-- SMTP OAUTH EMAIL CONFIGURATION MODAL -->
-    <div id="smtpConfigModal" class="premium-modal" style="display: none;" onclick="closeSmtpConfigModalBackdrop(event)">
+    <div id="smtpConfigModal" class="premium-modal" style="display: none; z-index: 999999;" onclick="closeSmtpConfigModalBackdrop(event)">
         <div class="modal-content" style="max-width: 500px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
@@ -10372,13 +10322,23 @@ input:checked + .ctrl-slider:before {
 
 <!-- Admin Login Overlay -->
 <style>
-    /* Prevent default margins and scrolling on body when login overlay is active */
-    html, body {
+    /* Responsive viewport & body setup: only lock scrolling when login overlay is explicitly visible */
+    html {
         margin: 0;
         padding: 0;
-        height: 100%;
         width: 100%;
-        overflow: hidden;
+        min-height: 100%;
+        overflow-x: hidden;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+    body.admin-login-locked {
+        overflow: hidden !important;
     }
     #adminLoginOverlay input::placeholder {
         color: rgba(255, 255, 255, 0.4);
@@ -15488,7 +15448,7 @@ async edit(id) { this.openModal(id); }
                 drawer.classList.remove('open');
                 drawer.style.left = '-280px';
                 if (overlay) {
-                    overlay.style.display = 'none';
+                    overlay.style.opacity = '0';
                     setTimeout(() => { if (overlay) overlay.style.display = 'none'; }, 280);
                 }
                 if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
@@ -15542,7 +15502,6 @@ async edit(id) { this.openModal(id); }
             toggleDrawer(false);
         }
     }
-
 
 
 
@@ -18186,10 +18145,12 @@ function toggleNewsletterModal(show = true) {
                 target.style.display = 'block';
                 const mainContentEl = document.querySelector('.main-content');
                 if (mainContentEl) {
-                    if (tabId === 'fleet-calendar' && window.innerWidth >= 769) {
+                    mainContentEl.scrollTo({ top: 0, behavior: 'instant' });
+                    // Lock overflow ONLY on true desktop monitors (width >= 769 AND height >= 600)
+                    if (tabId === 'fleet-calendar' && window.innerWidth >= 769 && window.innerHeight >= 600) {
                         mainContentEl.style.overflowY = 'hidden';
                     } else {
-                        mainContentEl.style.overflowY = '';
+                        mainContentEl.style.overflowY = 'auto';
                     }
                 }
                 if (window.anime) {
@@ -18266,10 +18227,10 @@ function toggleNewsletterModal(show = true) {
 
 
                 const now = new Date();
-                const from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-                const to = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
-                document.getElementById('rptDateFrom').value = from;
-                document.getElementById('rptDateTo').value = to;
+                const y = now.getFullYear();
+                document.getElementById('rptDateFrom').value = `${y}-01-01`;
+                document.getElementById('rptDateTo').value = `${y}-12-31`;
+                Reports._filter = 'year';
                 Reports.refresh();
 
 
@@ -18993,7 +18954,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                                (b.payment_status === 'Paid' ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
+                                ((['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim())) ? `<span class="pill success" style="font-size: 0.55rem; padding: 2px 8px;">PAID</span>` : '')
 
 
 
@@ -19362,7 +19323,7 @@ function toggleNewsletterModal(show = true) {
                 actionBtns += `<button onclick="Bookings.cancel(${b.id})" style="flex:1;min-width:100px;padding:11px 10px;background:#fff;color:#ef4444;border:1.5px solid #fca5a5;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-ban"></i>Cancel</button>`;
             }
             // Trigger Refund button for cancelled bookings with paid status
-            if (st === 'cancelled' && b.payment_status === 'Paid') {
+            if (st === 'cancelled' && ['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim())) {
                 actionBtns += `<button onclick="Bookings.triggerRefund(${b.id})" style="flex:1;min-width:130px;padding:11px 10px;background:#f59e0b;color:white;border:none;border-radius:10px;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="fas fa-undo"></i>Trigger Refund</button>`;
             }
 
@@ -19531,7 +19492,7 @@ function toggleNewsletterModal(show = true) {
                     <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-credit-card" style="color:#3b82f6;"></i>Payment</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Method</div><div style="font-size:0.85rem;font-weight:700;color:#0f172a;">${b.payment_method||'N/A'}</div></div>
-                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div><div style="font-size:0.82rem;font-weight:700;color:${b.payment_status==='Paid'?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div></div>
+                        <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div><div style="font-size:0.82rem;font-weight:700;color:${['paid','fully paid'].includes((b.payment_status||'').toLowerCase().trim())?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div></div>
                     </div>
                     ${parseFloat(b.amount_paid||0)>0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>${parseFloat(b.balance_amount||0)>0?`<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>`:''}</div>` : ''}
                     ${b.reference_number ? `<div style="padding-top:8px;border-top:1px solid #f1f5f9;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Reference #</div><div style="font-size:0.78rem;font-weight:600;color:#0f172a;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;">${b.reference_number}</div></div>` : ''}
@@ -20387,7 +20348,7 @@ function toggleNewsletterModal(show = true) {
             let collectCash = false;
             let overrideUnpaid = false;
 
-            if (b && b.payment_status !== 'Paid' && parseFloat(b.balance_amount || b.total_price || 0) > 0) {
+            if (b && !['paid', 'fully paid'].includes((b.payment_status || '').toLowerCase().trim()) && parseFloat(b.balance_amount || b.total_price || 0) > 0) {
                 const bal = parseFloat(b.balance_amount || (b.total_price - (b.amount_paid || 0)));
                 const ans = confirm(
                     `⚠️ PAYMENT REQUIRED BEFORE PICKUP\n\n` +
@@ -27061,7 +27022,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-        _filter: 'month',
+        _filter: 'year',
 
 
 
@@ -27118,15 +27079,19 @@ function toggleNewsletterModal(show = true) {
 
 
             const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
             let from, to;
             if (period === 'day') {
-                from = to = now.toISOString().split('T')[0];
+                from = to = `${y}-${m}-${d}`;
             } else if (period === 'month') {
-                from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-                to = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                const lastDay = new Date(y, now.getMonth() + 1, 0).getDate();
+                from = `${y}-${m}-01`;
+                to = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
             } else {
-                from = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-                to = new Date(now.getFullYear(), 11, 31).toISOString().split('T')[0];
+                from = `${y}-01-01`;
+                to = `${y}-12-31`;
             }
 
 
@@ -27214,7 +27179,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+                    labels: trend.map(t => t.label || (t.day ? (t.day.length === 7 ? t.day : t.day.split('-').slice(1).join('/')) : '')),
 
 
 
@@ -27339,7 +27304,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    labels: trend.map(t => t.day ? t.day.split('-').slice(1).join('/') : t.label || ''),
+                    labels: trend.map(t => t.label || (t.day ? (t.day.length === 7 ? t.day : t.day.split('-').slice(1).join('/')) : '')),
 
 
 
@@ -27845,450 +27810,104 @@ function toggleNewsletterModal(show = true) {
                     });
                 }
             }
-            const data = this._rawData;
-
-
-
-            if (!data) { showNotification('No data to export', 'error'); return; }
-
-
-
-
-
-
-
-            const totalRev = data.totalRevenue || 0;
-
-
-
-            const totalBook = data.totalBookings || 0;
-
-
-
-
-
-
-
-            const rows = [];
-
-
-
-            rows.push(['Autoride Sales Report']);
-
-
-
-            rows.push(['Generated:', new Date().toLocaleString()]);
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Summary']);
-
-
-
-            rows.push(['Total Revenue (PHP)', totalRev]);
-
-
-
-            rows.push(['Total Expenses (PHP)', data.totalExpenses || 0]);
-
-
-
-            rows.push(['Net Profit (PHP)', data.netProfit || 0]);
-
-
-
-            rows.push(['Total Bookings', totalBook]);
-
-
-
-            rows.push(['Average Revenue per Booking (PHP)', totalBook > 0 ? Math.floor(totalRev / totalBook) : 0]);
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Top Vehicles by Revenue']);
-
-
-
-            rows.push(['#', 'Vehicle', 'Bookings', 'Revenue (PHP)']);
-
-
-
-            (data.topVehicles || []).forEach((c, i) => {
-
-
-
-                rows.push([i + 1, c.brand + " " + c.model, c.booking_count, c.revenue || 0]);
-
-
-
-            });
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Revenue Trend']);
-
-
-
-            rows.push(['Date', 'Revenue (PHP)']);
-
-
-
-            (data.revenueTrend || []).forEach(t => {
-
-
-
-                rows.push([t.day || t.label || '', t.amount || 0]);
-
-
-
-            });
-
-
-
-            rows.push([]);
-
-
-
-            rows.push(['Expenses & Maintenance Log']);
-
-
-
-            rows.push(['Date', 'Vehicle', 'Type', 'Amount (PHP)', 'Description', 'Recorded By']);
-
-
-
-            (this._expensesData || []).forEach(e => {
-
-
-
-                rows.push([e.expense_date, `${e.brand} ${e.model} (${e.plate_number || 'N/A'})`, e.expense_type, e.amount || 0, e.description || '', e.recorder_name || '']);
-
-
-
-            });
-
-
-
-
-
-
-
-            // Generate real Excel file using SheetJS
-
-
 
             try {
-
-
-
-                if (typeof XLSX === 'undefined') {
-
-
-
-                    throw new Error('Excel library not loaded');
-
-
-
-                }
-
-
-
-                
-
-
-
-                const wb = XLSX.utils.book_new();
-
-
-
-                const ws = XLSX.utils.aoa_to_sheet(rows);
-
-
-
-                XLSX.utils.book_append_sheet(wb, ws, "Report");
-
-
-
-                
-
-
-
-                // Write as base64
-
-
-
-                const wboutBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-
-
-
-                const filename = 'autoride_report_' + new Date().toISOString().split('T')[0] + '.xlsx';
-
-
-
-
-
-
-
-                // ?? Try Capacitor Filesystem (Android native download) ??
-
-
-
-                const { Filesystem } = window.Capacitor?.Plugins || {};
-
-
-
-                if (Filesystem) {
-
-
-
-                    try {
-
-
-
-                        // Write to Downloads directory
-
-
-
-                        const result = await Filesystem.writeFile({
-
-
-
-                            path: filename,
-
-
-
-                            data: wboutBase64,
-
-
-
-                            directory: 'DOWNLOADS',
-
-
-
-                            recursive: true
-
-
-
-                        });
-
-
-
-                        showNotification('Excel saved to Downloads: ' + filename, 'success');
-
-
-
-
-
-
-
-                        // Try to open it with a file viewer
-
-
-
-                        try {
-
-
-
-                            const { FileOpener } = window.Capacitor?.Plugins || {};
-
-
-
-                            if (FileOpener) {
-
-
-
-                                await FileOpener.open({
-
-
-
-                                    filePath: result.uri,
-
-
-
-                                    contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-
-
-
-                                });
-
-
-
-                            }
-
-
-
-                        } catch (openErr) {
-
-
-
-                            // FileOpener not available � that's OK, file is still saved
-
-
-
+                showNotification('Generating Executive Excel report with interactive charts...', 'success');
+                const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser()) || {};
+                const from = document.getElementById('rptDateFrom') ? document.getElementById('rptDateFrom').value : '';
+                const to = document.getElementById('rptDateTo') ? document.getElementById('rptDateTo').value : '';
+                const filter = this._filter || 'year';
+                const adminId = user.id || '';
+
+                // Determine clean indicator filename
+                let filename = 'AutoRide_Report.xlsx';
+                const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                if (from && to) {
+                    if (from === to) {
+                        filename = `AutoRide_DAILY_Report_${from}.xlsx`;
+                    } else {
+                        const pFrom = from.split('-').map(Number);
+                        const pTo = to.split('-').map(Number);
+                        if (filter === 'month' || (pFrom[0] === pTo[0] && pFrom[1] === pTo[1] && pFrom[2] === 1 && pTo[2] >= 28)) {
+                            const mName = monthNames[pFrom[1] - 1] || 'Month';
+                            const mm = String(pFrom[1]).padStart(2, '0');
+                            filename = `AutoRide_MONTHLY_Report_${pFrom[0]}_${mm}_${mName}.xlsx`;
+                        } else if (filter === 'year' || (pFrom[0] === pTo[0] && pFrom[1] === 1 && pFrom[2] === 1 && pTo[1] === 12 && pTo[2] === 31)) {
+                            filename = `AutoRide_ANNUAL_Report_${pFrom[0]}.xlsx`;
+                        } else {
+                            filename = `AutoRide_CUSTOM_Report_${from}_to_${to}.xlsx`;
                         }
-
-
-
-                        return;
-
-
-
-                    } catch (fsErr) {
-
-
-
-                        console.warn('Downloads directory failed, trying Documents:', fsErr);
-
-
-
-                        // Fallback to Documents directory
-
-
-
-                        try {
-
-
-
-                            const result = await Filesystem.writeFile({
-
-
-
-                                path: filename,
-
-
-
-                                data: wboutBase64,
-
-
-
-                                directory: 'DOCUMENTS',
-
-
-
-                                recursive: true
-
-
-
-                            });
-
-
-
-                            showNotification('Excel saved to Documents: ' + filename, 'success');
-
-
-
-                            return;
-
-
-
-                        } catch (docErr) {
-
-
-
-                            console.warn('Documents also failed, using browser download:', docErr);
-
-
-
-                        }
-
-
-
                     }
-
-
-
+                } else if (filter === 'year') {
+                    filename = `AutoRide_ANNUAL_Report_${new Date().getFullYear()}.xlsx`;
+                } else if (filter === 'month') {
+                    const d = new Date();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    filename = `AutoRide_MONTHLY_Report_${d.getFullYear()}_${mm}_${monthNames[d.getMonth()]}.xlsx`;
+                } else if (filter === 'day') {
+                    const d = new Date();
+                    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    filename = `AutoRide_DAILY_Report_${todayStr}.xlsx`;
+                } else {
+                    filename = `AutoRide_ALL_TIME_Report.xlsx`;
                 }
 
+                const url = `${API_BASE}/api/admin/reports/export-excel?filter=${filter}&date_from=${from}&date_to=${to}&admin_id=${adminId}`;
+                const res = await fetch(url);
+                if (!res.ok) {
+                    throw new Error(`Server returned status ${res.status}`);
+                }
 
+                // If backend provided filename in Content-Disposition header, use it
+                try {
+                    const cd = res.headers && res.headers.get('content-disposition');
+                    if (cd) {
+                        const match = cd.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (match && match[1]) {
+                            filename = match[1].replace(/['"]/g, '').trim();
+                        }
+                    }
+                } catch (_) {}
+                const blob = await res.blob();
 
+                // Check for Capacitor Mobile download
+                const { Filesystem } = window.Capacitor?.Plugins || {};
+                if (Filesystem) {
+                    try {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(blob);
+                        reader.onloadend = async () => {
+                            const base64data = reader.result.split(',')[1];
+                            const result = await Filesystem.writeFile({
+                                path: filename,
+                                data: base64data,
+                                directory: 'DOWNLOADS',
+                                recursive: true
+                            });
+                            showNotification('Excel saved to Downloads: ' + filename, 'success');
+                        };
+                        return;
+                    } catch (mErr) {
+                        console.warn('Mobile download failed, falling back to browser download:', mErr);
+                    }
+                }
 
-
-
-
-                // ?? Browser / web fallback: trigger download via blob URL ??
-
-
-
-                const wboutArray = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-
-
-
-                const blob = new Blob([wboutArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-
-
-
-                const url = URL.createObjectURL(blob);
-
-
-
+                // Standard Web Browser download
+                const downloadUrl = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-
-
-
-                a.href = url;
-
-
-
+                a.href = downloadUrl;
                 a.download = filename;
-
-
-
                 document.body.appendChild(a);
-
-
-
                 a.click();
-
-
-
                 document.body.removeChild(a);
-
-
-
-                setTimeout(() => URL.revokeObjectURL(url), 5000);
-
-
-
-                showNotification('Excel file downloaded!', 'success');
-
-
-
-
-
-
+                setTimeout(() => URL.revokeObjectURL(downloadUrl), 5000);
+                showNotification('Executive Excel report with charts downloaded!', 'success');
 
             } catch (err) {
-
-
-
                 console.error('Excel export failed:', err);
-
-
-
                 showNotification('Export failed: ' + err.message, 'error');
-
-
-
             }
-
-
-
         },
-
-
-
     };
 
 
@@ -28557,8 +28176,26 @@ function toggleNewsletterModal(show = true) {
                                 ${g.settings.length} ${g.settings.length === 1 ? 'setting' : 'settings'}
                             </span>
                         </div>
-                        <div class="settings-fields-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-top: 14px;">
+                        <div class="settings-fields-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; margin-top: 14px;">
                 `;
+
+                if (cat === 'email_smtp') {
+                    html += `
+                        <div style="grid-column: 1 / -1; margin-bottom: 8px; padding: 14px 16px; background: rgba(2, 132, 199, 0.08); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                            <div>
+                                <div style="font-size: 0.88rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-satellite-dish" style="color: #0284c7;"></i> System Email Connector & Diagnostics
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;">
+                                    Connect or re-authorize Gmail with 1-click, configure a permanent App Password, and test live email delivery.
+                                </div>
+                            </div>
+                            <button type="button" onclick="toggleSmtpConfigModal()" class="btn-premium" style="padding: 10px 14px; font-size: 0.82rem; font-weight: 700; background: var(--primary); color: white; border-radius: 10px; cursor: pointer; max-width: 100%; white-space: normal; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;">
+                                <i class="fas fa-plug"></i> Open Re-Authorize &amp; Email Tools
+                            </button>
+                        </div>
+                    `;
+                }
 
                 g.settings.forEach(s => {
                     html += this.renderField(s);
@@ -36994,29 +36631,113 @@ function toggleNewsletterModal(show = true) {
             const res = await fetch(API_BASE + '/api/admin/smtp/status');
             const data = await res.json();
             
-            if (data.is_linked) {
-                if (statusDetail) statusDetail.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check-circle"></i> Connected</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span>`;
+            let statusHtml = '';
+            if (data.is_linked && data.is_valid) {
+                statusHtml = `<span style="color:#00B14F;"><i class="fas fa-check-circle"></i> Google OAuth Active</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span>`;
                 if (label) label.textContent = `Connected as ${data.email}`;
-                if (actionsDiv) {
-                    actionsDiv.innerHTML = `
-                        <button onclick="disconnectSmtpGmail()" class="btn-premium" style="background:#dc2626;border-color:#dc2626;width:100%;padding:12px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;">
-                            <i class="fas fa-unlink"></i> Disconnect Gmail Account
-                        </button>
-                    `;
-                }
+            } else if (data.is_linked && !data.is_valid) {
+                statusHtml = `<span style="color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Token Expired / Needs Re-auth</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.email}</span><br><span style="font-size:0.75rem;color:#ef4444;">Google test token expired. Please click Re-Authorize below or enter an App Password.</span>`;
+                if (label) label.textContent = `Email Token Expired (${data.email})`;
+            } else if (data.has_manual_smtp) {
+                statusHtml = `<span style="color:#00B14F;"><i class="fas fa-key"></i> Gmail App Password Active</span><br><span style="font-size:0.8rem;color:var(--text-muted);font-weight:normal;">${data.manual_smtp_user || 'Configured'}</span>`;
+                if (label) label.textContent = `SMTP Active (${data.manual_smtp_user || 'App Password'})`;
             } else {
-                if (statusDetail) statusDetail.innerHTML = `<span style="color:var(--text-muted);"><i class="fas fa-times-circle"></i> Not Connected</span>`;
+                statusHtml = `<span style="color:var(--text-muted);"><i class="fas fa-times-circle"></i> Not Configured</span><br><span style="font-size:0.75rem;color:var(--text-muted);">Connect Gmail or enter App Password below</span>`;
                 if (label) label.textContent = "Click to configure notification email";
-                if (actionsDiv) {
-                    actionsDiv.innerHTML = `
-                        <button onclick="connectSmtpGmail()" class="btn-premium" style="width:100%;padding:12px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;background:var(--primary);border-color:var(--primary);">
-                            <i class="fab fa-google"></i> Connect Gmail Account
+            }
+            if (statusDetail) statusDetail.innerHTML = statusHtml;
+
+            if (actionsDiv) {
+                actionsDiv.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <button onclick="connectSmtpGmail()" class="btn-premium" style="width:100%;padding:11px;font-size:0.85rem;font-weight:700;color:white;border-radius:10px;background:var(--primary);border-color:var(--primary);cursor:pointer;">
+                            <i class="fab fa-google"></i> ${data.is_linked && !data.is_valid ? 'Re-Authorize Gmail Account' : (data.is_linked ? 'Reconnect Gmail' : 'Connect Gmail Account')}
                         </button>
-                    `;
-                }
+                        ${data.is_linked ? `
+                            <button onclick="disconnectSmtpGmail()" class="btn-premium" style="background:transparent;border:1px solid #ef4444;width:100%;padding:8px;font-size:0.8rem;font-weight:600;color:#ef4444;border-radius:8px;cursor:pointer;">
+                                <i class="fas fa-unlink"></i> Disconnect Google OAuth
+                            </button>
+                        ` : ''}
+                    </div>
+
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                        <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                            <i class="fas fa-shield-alt" style="color:var(--primary);"></i> Permanent Option: Gmail App Password
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">
+                            Generate a 16-character password in Google Account (Security &gt; 2-Step Verification &gt; App Passwords) for 100% reliable, never-expiring email sending.
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <input id="manualSmtpEmail" type="email" placeholder="Your Gmail address (e.g. yourname@gmail.com)" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.manual_smtp_user || (data.email || '')}">
+                            <input id="manualSmtpPass" type="password" placeholder="16-character Gmail App Password" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;">
+                            <button onclick="saveManualSmtpSettings()" class="btn-premium" style="width:100%;padding:10px;font-size:0.8rem;font-weight:700;background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--text-main);border-radius:8px;cursor:pointer;">
+                                <i class="fas fa-save"></i> Save Gmail App Password
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                        <div style="font-size:0.8rem;font-weight:700;color:var(--text-main);margin-bottom:6px;">
+                            <i class="fas fa-paper-plane" style="color:var(--primary);"></i> Test Email Sending
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <input id="testEmailRecipient" type="email" placeholder="Enter recipient email..." style="flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.email || ''}">
+                            <button onclick="sendTestNotificationEmail()" class="btn-premium" style="padding:8px 14px;font-size:0.8rem;font-weight:700;background:var(--primary);color:white;border-radius:8px;cursor:pointer;">
+                                Test Send
+                            </button>
+                        </div>
+                        <div id="testEmailFeedback" style="font-size:0.75rem;margin-top:6px;"></div>
+                    </div>
+                `;
             }
         } catch (e) {
             if (statusDetail) statusDetail.textContent = "Error loading status";
+        }
+    }
+
+    async function saveManualSmtpSettings() {
+        const email = document.getElementById('manualSmtpEmail')?.value?.trim();
+        const appPass = document.getElementById('manualSmtpPass')?.value?.trim();
+        if (!email || !appPass) {
+            alert('Please provide both your Gmail address and 16-character App Password.');
+            return;
+        }
+        try {
+            const res = await fetch(API_BASE + '/api/admin/smtp/manual-save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, app_password: appPass })
+            });
+            const d = await res.json();
+            if (res.ok && d.success) {
+                alert('Gmail App Password saved and verified successfully!');
+                loadSmtpStatus();
+            } else {
+                alert('Failed to save App Password: ' + (d.error || 'Unknown error'));
+            }
+        } catch (e) {
+            alert('Error saving App Password: ' + e.message);
+        }
+    }
+
+    async function sendTestNotificationEmail() {
+        const recipient = document.getElementById('testEmailRecipient')?.value?.trim();
+        const fb = document.getElementById('testEmailFeedback');
+        if (!recipient) {
+            alert('Please enter a recipient email.');
+            return;
+        }
+        if (fb) fb.innerHTML = '<span style="color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Sending test email...</span>';
+        try {
+            const res = await fetch(API_BASE + '/api/admin/smtp/test-send?email=' + encodeURIComponent(recipient));
+            const d = await res.json();
+            if (res.ok && d.success) {
+                if (fb) fb.innerHTML = `<span style="color:#00B14F;"><i class="fas fa-check"></i> ${d.message}</span>`;
+            } else {
+                if (fb) fb.innerHTML = `<span style="color:#ef4444;"><i class="fas fa-times"></i> ${d.error || 'Failed to send'}</span>`;
+            }
+        } catch (e) {
+            if (fb) fb.innerHTML = `<span style="color:#ef4444;">Error: ${e.message}</span>`;
         }
     }
 
@@ -37062,6 +36783,8 @@ function toggleNewsletterModal(show = true) {
     window.connectSmtpGmail = connectSmtpGmail;
     window.disconnectSmtpGmail = disconnectSmtpGmail;
     window.loadSmtpStatus = loadSmtpStatus;
+    window.saveManualSmtpSettings = saveManualSmtpSettings;
+    window.sendTestNotificationEmail = sendTestNotificationEmail;
 
     // Load status after init
     setTimeout(function() {
