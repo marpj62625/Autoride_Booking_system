@@ -7296,7 +7296,7 @@ function openRefundDetailsForm(bookingId, refundAmount) {
   modal.id = '_refundDetailsModal';
   modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);';
   modal.innerHTML =
-    '<div style="background:var(--bg-card,#fff);border-radius:24px 24px 0 0;padding:24px;width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">' +
+    '<div style="background:var(--bg-card,#fff);border-radius:24px 24px 0 0;padding:24px 24px calc(24px + env(safe-area-inset-bottom, 0px));width:100%;max-width:480px;box-shadow:0 -8px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">' +
       '<div style="width:36px;height:4px;background:var(--border,#e5e7eb);border-radius:2px;margin:0 auto 20px;"></div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
         '<div style="width:38px;height:38px;background:rgba(245,158,11,0.1);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
