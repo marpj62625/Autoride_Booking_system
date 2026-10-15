@@ -3068,6 +3068,9 @@ function loadHome() {
     checkUnreviewedBookings();
   }
   updateNotifBadge();
+  if (typeof checkFirstTimeTutorial === 'function') {
+    setTimeout(function() { checkFirstTimeTutorial(); }, 600);
+  }
 }
 
 function buildImgUrl(path) {
@@ -11424,3 +11427,146 @@ function _loadWebPenalties(bookingId) {
     })
     .catch(function(err) { console.warn('[penalties] fetch failed:', err); });
 }
+
+
+// ===========================================================================
+// FIRST-TIME USER TUTORIAL (DESIGN 1: SWIPEABLE CARDS)
+// ===========================================================================
+var _tutorialCurrentSlide = 0;
+var _tutorialTotalSlides = 4;
+var _tutTouchStartX = 0;
+var _tutTouchEndX = 0;
+
+function openCustomerTutorial(force) {
+  if (!force && localStorage.getItem('autoride_tutorial_seen')) {
+    return;
+  }
+  var modal = document.getElementById('customerTutorialModal');
+  if (!modal) return;
+  _tutorialCurrentSlide = 0;
+  updateTutorialSlide();
+  modal.style.display = 'flex';
+  
+  // Attach touch swipe listeners
+  var carousel = document.getElementById('tutorialCarousel');
+  if (carousel && !carousel._hasSwipeListeners) {
+    carousel._hasSwipeListeners = true;
+    carousel.addEventListener('touchstart', function(e) {
+      if (e.changedTouches && e.changedTouches[0]) {
+        _tutTouchStartX = e.changedTouches[0].screenX;
+      }
+    }, { passive: true });
+    carousel.addEventListener('touchend', function(e) {
+      if (e.changedTouches && e.changedTouches[0]) {
+        _tutTouchEndX = e.changedTouches[0].screenX;
+        handleTutorialSwipe();
+      }
+    }, { passive: true });
+  }
+}
+
+function handleTutorialSwipe() {
+  var diff = _tutTouchStartX - _tutTouchEndX;
+  if (Math.abs(diff) > 40) {
+    if (diff > 0) {
+      nextTutorialSlide();
+    } else {
+      prevTutorialSlide();
+    }
+  }
+}
+
+function updateTutorialSlide() {
+  var track = document.getElementById('tutorialTrack');
+  var indicator = document.getElementById('tutorialStepIndicator');
+  var prevBtn = document.getElementById('tutPrevBtn');
+  var nextBtn = document.getElementById('tutNextBtn');
+  var dots = document.querySelectorAll('.tut-dot');
+
+  if (track) {
+    track.style.transform = 'translateX(-' + (_tutorialCurrentSlide * 25) + '%)';
+  }
+  if (indicator) {
+    indicator.textContent = 'Step ' + (_tutorialCurrentSlide + 1) + ' of ' + _tutorialTotalSlides;
+  }
+  if (dots && dots.length > 0) {
+    dots.forEach(function(dot, idx) {
+      if (idx === _tutorialCurrentSlide) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  }
+  if (prevBtn) {
+    prevBtn.style.display = _tutorialCurrentSlide === 0 ? 'none' : 'inline-flex';
+  }
+  if (nextBtn) {
+    if (_tutorialCurrentSlide === _tutorialTotalSlides - 1) {
+      nextBtn.innerHTML = '<i class="fas fa-check"></i> <span>Magsimula Na</span>';
+    } else {
+      nextBtn.innerHTML = '<span>Susunod</span> <i class="fas fa-arrow-right"></i>';
+    }
+  }
+}
+
+function nextTutorialSlide() {
+  if (_tutorialCurrentSlide < _tutorialTotalSlides - 1) {
+    _tutorialCurrentSlide++;
+    updateTutorialSlide();
+  } else {
+    finishCustomerTutorial();
+  }
+}
+
+function prevTutorialSlide() {
+  if (_tutorialCurrentSlide > 0) {
+    _tutorialCurrentSlide--;
+    updateTutorialSlide();
+  }
+}
+
+function goToTutorialSlide(idx) {
+  if (idx >= 0 && idx < _tutorialTotalSlides) {
+    _tutorialCurrentSlide = idx;
+    updateTutorialSlide();
+  }
+}
+
+function closeCustomerTutorial() {
+  var modal = document.getElementById('customerTutorialModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function skipCustomerTutorial() {
+  localStorage.setItem('autoride_tutorial_seen', 'true');
+  closeCustomerTutorial();
+  if (typeof showToast === 'function') {
+    showToast('Welcome to Autoride! Puwede mo itong buksan ulit sa More menu.', 'info');
+  }
+}
+
+function finishCustomerTutorial() {
+  localStorage.setItem('autoride_tutorial_seen', 'true');
+  closeCustomerTutorial();
+  if (typeof showToast === 'function') {
+    showToast('Handa ka na mag-rent! Mag-browse at piliin ang iyong sasakyan.', 'success');
+  }
+}
+
+function checkFirstTimeTutorial() {
+  if (currentUser && currentUser.id && window.currentPage === 'page-home') {
+    if (!localStorage.getItem('autoride_tutorial_seen')) {
+      openCustomerTutorial();
+    }
+  }
+}
+
+window.openCustomerTutorial = openCustomerTutorial;
+window.skipCustomerTutorial = skipCustomerTutorial;
+window.finishCustomerTutorial = finishCustomerTutorial;
+window.nextTutorialSlide = nextTutorialSlide;
+window.prevTutorialSlide = prevTutorialSlide;
+window.goToTutorialSlide = goToTutorialSlide;
+window.closeCustomerTutorial = closeCustomerTutorial;
+window.checkFirstTimeTutorial = checkFirstTimeTutorial;
