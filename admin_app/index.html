@@ -24532,66 +24532,16 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            this.applyFilters();
-
-
-
+            this.page = 1;
+            this.refresh(true);
         },
 
-
-
-
-
-
-
         applyFilters() {
-
-
-
-            const q = (document.getElementById('activitySearch')?.value || '').toLowerCase().trim();
-
-
-
-            const f = this._filter;
-
-
-
-            const filtered = this.data.filter(l => {
-
-
-
-                const matchF = f === 'all' || l.action.toLowerCase().includes(f);
-
-
-
-                const matchQ = !q ||
-
-
-
-                    (l.admin_name || '').toLowerCase().includes(q) ||
-
-
-
-                    (l.action     || '').toLowerCase().includes(q) ||
-
-
-
-                    (l.details    || '').toLowerCase().includes(q);
-
-
-
-                return matchF && matchQ;
-
-
-
-            });
-
-
-
-            this._render(filtered);
-
-
-
+            clearTimeout(this._searchTimer);
+            this._searchTimer = setTimeout(() => {
+                this.page = 1;
+                this.refresh(true);
+            }, 300);
         },
 
 
@@ -24775,7 +24725,15 @@ function toggleNewsletterModal(show = true) {
             list.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);">Loading activity logs...</div>';
 
             try {
-                const res = await apiFetch(`admin/activity-logs?page=${this.page}&limit=${this.limit}`);
+                let url = `admin/activity-logs?page=${this.page}&limit=${this.limit}`;
+                if (this._filter && this._filter !== 'all') {
+                    url += `&filter=${encodeURIComponent(this._filter)}`;
+                }
+                const q = (document.getElementById('activitySearch')?.value || '').trim();
+                if (q) {
+                    url += `&q=${encodeURIComponent(q)}`;
+                }
+                const res = await apiFetch(url);
                 const responseData = await res.json();
                 
                 // Check if response is paginated dictionary or legacy array

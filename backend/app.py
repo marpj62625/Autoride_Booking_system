@@ -13589,6 +13589,21 @@ def get_activity_logs():
         cur = get_cursor()
         page = request.args.get('page')
         limit = request.args.get('limit')
+        filter_type = (request.args.get('filter') or request.args.get('action') or '').strip().lower()
+        search_query = (request.args.get('q') or request.args.get('search') or '').strip().lower()
+
+        where_clauses = []
+        params = []
+
+        if filter_type and filter_type != 'all':
+            where_clauses.append("LOWER(action) LIKE %s")
+            params.append(f"%{filter_type}%")
+
+        if search_query:
+            where_clauses.append("(LOWER(admin_name) LIKE %s OR LOWER(action) LIKE %s OR LOWER(COALESCE(details, '')) LIKE %s)")
+            params.extend([f"%{search_query}%", f"%{search_query}%", f"%{search_query}%"])
+
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
         if page:
             page = int(page)
@@ -13596,11 +13611,11 @@ def get_activity_logs():
             offset = (page - 1) * limit
 
             # Get total count
-            cur.execute("SELECT COUNT(*) as total FROM activity_logs")
+            cur.execute(f"SELECT COUNT(*) as total FROM activity_logs {where_sql}", tuple(params))
             total = cur.fetchone()['total']
 
             # Get paginated logs
-            cur.execute("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT %s OFFSET %s", (limit, offset))
+            cur.execute(f"SELECT * FROM activity_logs {where_sql} ORDER BY created_at DESC LIMIT %s OFFSET %s", tuple(params + [limit, offset]))
             logs = cur.fetchall()
 
             return jsonify({
@@ -13608,10 +13623,10 @@ def get_activity_logs():
                 "total": total,
                 "page": page,
                 "limit": limit,
-                "pages": (total + limit - 1) // limit
+                "pages": max(1, (total + limit - 1) // limit)
             }), 200
         else:
-            cur.execute("SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100")
+            cur.execute(f"SELECT * FROM activity_logs {where_sql} ORDER BY created_at DESC LIMIT 100", tuple(params))
             logs = cur.fetchall()
             return jsonify(logs), 200
     except Exception as e:
