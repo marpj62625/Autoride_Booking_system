@@ -1357,6 +1357,7 @@ def migrate_license_details_table():
         """)
         cur.execute("ALTER TABLE license_details ADD COLUMN IF NOT EXISTS id SERIAL;")
         cur.execute("ALTER TABLE license_details ADD COLUMN IF NOT EXISTS license_class VARCHAR(50);")
+        cur.execute("ALTER TABLE license_details ADD COLUMN IF NOT EXISTS address TEXT;")
         commit_db()
     except Exception as e:
         pass
@@ -3067,7 +3068,7 @@ def admin_list_users():
                        COALESCE(ld.license_number, u.license_number) AS license_number,
                        COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
                        COALESCE(ld.license_class, u.license_type) AS license_type,
-                       ld.license_back_url, ld.issuing_country_state, 
+                       ld.license_back_url, COALESCE(ld.address, ld.issuing_country_state) AS address, COALESCE(ld.address, ld.issuing_country_state) AS issuing_country_state, 
                        CAST(ld.date_of_birth AS TEXT) AS date_of_birth, ld.emergency_contact_name, 
                        ld.emergency_contact_phone, ld.emergency_contact_relationship,
                        u.is_verified, CAST(u.created_at AS TEXT) AS created_at
@@ -3085,7 +3086,7 @@ def admin_list_users():
                        COALESCE(ld.license_number, u.license_number) AS license_number,
                        COALESCE(CAST(ld.expiry_date AS TEXT), CAST(u.license_expiry AS TEXT)) AS license_expiry,
                        COALESCE(ld.license_class, u.license_type) AS license_type,
-                       ld.license_back_url, ld.issuing_country_state, 
+                       ld.license_back_url, COALESCE(ld.address, ld.issuing_country_state) AS address, COALESCE(ld.address, ld.issuing_country_state) AS issuing_country_state, 
                        CAST(ld.date_of_birth AS TEXT) AS date_of_birth, ld.emergency_contact_name, 
                        ld.emergency_contact_phone, ld.emergency_contact_relationship,
                        u.is_verified, CAST(u.created_at AS TEXT) AS created_at
@@ -14028,6 +14029,8 @@ def get_booking_license_details(booking_id):
         if details:
             result = dict(details)
             result['user_id'] = user_id
+            if not result.get('address'):
+                result['address'] = result.get('issuing_country_state') or ''
             if result.get('expiry_date') and hasattr(result['expiry_date'], 'strftime'):
                 result['expiry_date'] = result['expiry_date'].strftime('%Y-%m-%d')
             if result.get('date_of_birth') and hasattr(result['date_of_birth'], 'strftime'):
@@ -14093,6 +14096,9 @@ def get_user_license_details(user_id):
         details = cur.fetchone()
         if not details:
             return jsonify({}), 200
+        details = dict(details)
+        if not details.get('address'):
+            details['address'] = details.get('issuing_country_state') or ''
         if details.get('expiry_date') and hasattr(details['expiry_date'], 'strftime'):
             details['expiry_date'] = details['expiry_date'].strftime('%Y-%m-%d')
         if details.get('date_of_birth') and hasattr(details['date_of_birth'], 'strftime'):
@@ -14203,15 +14209,16 @@ def get_license_details():
                 # Get data with strict limits
                 cur.execute("""
                     SELECT user_id, user_id AS id, 
-                           SUBSTRING(full_name, 1, 50) as full_name,
+                           SUBSTRING(full_name, 1, 100) as full_name,
                            date_of_birth::text as date_of_birth, 
-                           SUBSTRING(license_number, 1, 20) as license_number,
+                           SUBSTRING(license_number, 1, 50) as license_number,
                            expiry_date::text as expiry_date,
-                           SUBSTRING(issuing_country_state, 1, 30) as issuing_country_state,
-                           SUBSTRING(license_class, 1, 10) as license_class,
-                           SUBSTRING(emergency_contact_name, 1, 50) as emergency_contact_name,
-                           SUBSTRING(emergency_contact_phone, 1, 15) as emergency_contact_phone,
-                           SUBSTRING(emergency_contact_relationship, 1, 20) as emergency_contact_relationship,
+                           COALESCE(address, issuing_country_state, '') as address,
+                           COALESCE(address, issuing_country_state, '') as issuing_country_state,
+                           SUBSTRING(license_class, 1, 50) as license_class,
+                           SUBSTRING(emergency_contact_name, 1, 100) as emergency_contact_name,
+                           SUBSTRING(emergency_contact_phone, 1, 50) as emergency_contact_phone,
+                           SUBSTRING(emergency_contact_relationship, 1, 50) as emergency_contact_relationship,
                            license_front_url,
                            license_back_url,
                            created_at::text as created_at,
@@ -14224,9 +14231,12 @@ def get_license_details():
                 row = cur.fetchone()
                 if row:
                     data = dict(row)
+                    if not data.get('address'):
+                        data['address'] = data.get('issuing_country_state') or ''
+                    data['issuing_country_state'] = data.get('address') or ''
                     # Ensure all values are safe and handle None dates
                     for key, value in data.items():
-                        if key not in ('license_front_url', 'license_back_url', 'license_image_url') and isinstance(value, str) and len(value) > 100:
+                        if key not in ('license_front_url', 'license_back_url', 'license_image_url', 'address', 'issuing_country_state') and isinstance(value, str) and len(value) > 100:
                             data[key] = value[:97] + "..."
                         elif value is None:
                             data[key] = None
@@ -14358,7 +14368,8 @@ def save_license_details():
         date_of_birth = request.form.get('date_of_birth', '') or None
         license_number = (request.form.get('license_number', '') or '')[:100]
         expiry_date = request.form.get('expiry_date', '') or None
-        issuing_country_state = (request.form.get('issuing_country_state', '') or '')[:100]
+        address = (request.form.get('address', '') or request.form.get('issuing_country_state', '') or '')[:255]
+        issuing_country_state = address[:100]
         license_class = (request.form.get('license_class', '') or '')[:50]
         emergency_contact_name = (request.form.get('emergency_contact_name', '') or '')[:255]
         emergency_contact_phone = (request.form.get('emergency_contact_phone', '') or '')[:50]
@@ -14488,24 +14499,24 @@ def save_license_details():
             cur.execute("""
                 UPDATE license_details SET
                     full_name=%s, date_of_birth=%s, license_number=%s, expiry_date=%s,
-                    issuing_country_state=%s, license_class=%s, emergency_contact_name=%s,
+                    address=%s, issuing_country_state=%s, license_class=%s, emergency_contact_name=%s,
                     emergency_contact_phone=%s, emergency_contact_relationship=%s,
                     license_front_url=%s, license_back_url=%s, updated_at=CURRENT_TIMESTAMP
                 WHERE user_id=%s
             """, (full_name, date_of_birth, license_number, expiry_date, 
-                  issuing_country_state, license_class, emergency_contact_name, 
+                  address, issuing_country_state, license_class, emergency_contact_name, 
                   emergency_contact_phone, emergency_contact_relationship, 
                   front_url, back_url, user_id))
         else:
             cur.execute("""
                 INSERT INTO license_details (
                     user_id, full_name, date_of_birth, license_number, expiry_date,
-                    issuing_country_state, license_class, emergency_contact_name,
+                    address, issuing_country_state, license_class, emergency_contact_name,
                     emergency_contact_phone, emergency_contact_relationship,
                     license_front_url, license_back_url
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (user_id, full_name, date_of_birth, license_number, 
-                  expiry_date, issuing_country_state, license_class, 
+                  expiry_date, address, issuing_country_state, license_class, 
                   emergency_contact_name, emergency_contact_phone, 
                   emergency_contact_relationship, front_url, back_url))
             

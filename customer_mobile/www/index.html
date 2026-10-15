@@ -2226,6 +2226,19 @@
   }
 }
 
+.license-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+@media (max-width: 600px) {
+  .license-grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+}
+
 </style>
 
     <!-- Cropper.js for Driver's License Cropping -->
@@ -3708,10 +3721,10 @@
           <div>
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Country / State</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Date of Birth</div>
 
 
-            <div id="viewLicenseCountry" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseDob" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
 
 
           </div>
@@ -3726,7 +3739,7 @@
         <h5 style="margin-top:0;margin-bottom:8px;">Personal Info</h5>
 
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
 
 
           <div>
@@ -3744,10 +3757,12 @@
           <div>
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Date of Birth</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Complete Address</div>
 
 
-            <div id="viewLicenseDob" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseAddress" style="font-size:0.88rem;font-weight:600;color:var(--text-main);line-height:1.4;">-</div>
+
+            <div id="viewLicenseCountry" style="display:none;"></div>
 
 
           </div>
@@ -3843,7 +3858,7 @@
         </div>
 
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="license-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
 
 
           <div class="form-group" style="margin-bottom:0;">
@@ -3861,73 +3876,10 @@
           <div class="form-group" style="margin-bottom:0;">
 
 
-            <label>Country / State</label>
+            <label>License Class / Category</label>
 
 
-            <select id="editLicenseCountry" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
-
-
-              <option value="">Select Country</option>
-
-
-              <option value="Philippines">Philippines</option>
-
-
-              <option value="United States">United States</option>
-
-
-              <option value="United Kingdom">United Kingdom</option>
-
-
-              <option value="Canada">Canada</option>
-
-
-              <option value="Australia">Australia</option>
-
-
-              <option value="Japan">Japan</option>
-
-
-              <option value="South Korea">South Korea</option>
-
-
-              <option value="Singapore">Singapore</option>
-
-
-              <option value="Malaysia">Malaysia</option>
-
-
-              <option value="Indonesia">Indonesia</option>
-
-
-              <option value="Thailand">Thailand</option>
-
-
-              <option value="Vietnam">Vietnam</option>
-
-
-              <option value="Hong Kong">Hong Kong</option>
-
-
-              <option value="Taiwan">Taiwan</option>
-
-
-              <option value="China">China</option>
-
-
-              <option value="India">India</option>
-
-
-              <option value="UAE">UAE</option>
-
-
-              <option value="Saudi Arabia">Saudi Arabia</option>
-
-
-              <option value="Other">Other</option>
-
-
-            </select>
+            <input type="text" id="editLicenseClass" placeholder="e.g. A, B, B1 (Separate with commas)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
 
           </div>
@@ -3939,10 +3891,12 @@
         <div class="form-group">
 
 
-          <label>License Class / Category</label>
+          <label>Complete Residential Address</label>
 
 
-          <input type="text" id="editLicenseClass" placeholder="e.g. A, B, B1 (Separate with commas)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+          <input type="text" id="editLicenseAddress" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+
+          <input type="hidden" id="editLicenseCountry" value="">
 
 
         </div>

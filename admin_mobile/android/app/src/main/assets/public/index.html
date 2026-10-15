@@ -22868,15 +22868,15 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                            <div>
+                            <div style="grid-column: span 2;">
 
 
 
-                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Country / State</div>
+                                <div style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">Complete Residential Address</div>
 
 
 
-                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${v.issuing_country_state || '-'}</div>
+                                <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);line-height:1.4;word-break:break-word;">${v.address || v.issuing_country_state || '-'}</div>
 
 
 
@@ -34560,11 +34560,11 @@ function toggleNewsletterModal(show = true) {
                         <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">License #:</span> <span style="color:var(--text-main); font-weight:700;">${lData.license_number}</span></div>
                         <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">Expiry:</span> <span style="color:var(--text-main); font-weight:700;">${lData.expiry_date || '-'}</span></div>
                         <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">Class:</span> <span style="color:var(--text-main); font-weight:700;">${lData.license_class || '-'}</span></div>
-                        <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">Country/State:</span> <span style="color:var(--text-main); font-weight:700;">${lData.issuing_country_state || '-'}</span></div>
+                        <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">Date of Birth:</span> <span style="color:var(--text-main); font-weight:700;">${lData.date_of_birth || '-'}</span></div>
                     </div>
-                    <div style="margin-top: 12px; font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px;">
+                    <div style="margin-top: 12px; font-size: 0.85rem; border-top: 1px solid var(--border); padding-top: 12px; display: flex; flex-direction: column; gap: 10px;">
                         <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">Full Name:</span> <span style="color:var(--text-main); font-weight:700;">${lData.full_name || '-'}</span></div>
-                        <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">DOB:</span> <span style="color:var(--text-main); font-weight:700;">${lData.date_of_birth || '-'}</span></div>
+                        <div><span style="color:var(--text-muted); font-size:0.75rem; font-weight:600; display:block; margin-bottom:2px;">Complete Residential Address:</span> <span style="color:var(--text-main); font-weight:700; line-height:1.45; word-break:break-word;">${lData.address || lData.issuing_country_state || '-'}</span></div>
                     </div>
                     <div style="margin-top: 12px; font-size: 0.85rem; padding-top: 12px; border-top: 1px solid var(--border);">
                         <p style="color:var(--text-main); font-weight:800; font-size:0.82rem; margin:0 0 8px 0; display:flex; align-items:center; gap:6px;">

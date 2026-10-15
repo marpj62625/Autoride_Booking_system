@@ -8490,14 +8490,15 @@ var Profile = {
     }
 
     // Validate required fields
+    var addrFieldId = document.getElementById('editLicenseAddress') ? 'editLicenseAddress' : 'editLicenseCountry';
     var fields = {
       'editLicenseNumber': 'License Number',
       'editLicenseExpiry': 'Expiry Date',
-      'editLicenseCountry': 'Country / State',
       'editLicenseClass': 'License Class',
       'editLicenseName': 'Full Name',
       'editLicenseDob': 'Date of Birth'
     };
+    fields[addrFieldId] = 'Complete Residential Address';
     if (typeof appSettings !== 'undefined' && appSettings.require_emergency_contact !== 'false' && appSettings.require_emergency_contact !== false) {
       fields['editLicenseEmName'] = 'Emergency Contact Name';
       fields['editLicenseEmPhone'] = 'Emergency Phone';
@@ -8505,7 +8506,7 @@ var Profile = {
     }
     for (var fid in fields) {
       var el = document.getElementById(fid);
-      var val = (el.value || '').trim();
+      var val = el ? (el.value || '').trim() : '';
       if (!val) {
         if (errEl) errEl.textContent = 'Please fill out all required fields.';
         if (el) {
@@ -8588,7 +8589,10 @@ var Profile = {
       fd.append('user_id', currentUser.id);
       fd.append('license_number', document.getElementById('editLicenseNumber').value.trim());
       fd.append('expiry_date', document.getElementById('editLicenseExpiry').value.trim());
-      fd.append('issuing_country_state', document.getElementById('editLicenseCountry').value.trim());
+      var addrEl = document.getElementById('editLicenseAddress') || document.getElementById('editLicenseCountry');
+      var addrVal = addrEl ? addrEl.value.trim() : '';
+      fd.append('address', addrVal);
+      fd.append('issuing_country_state', addrVal);
       fd.append('license_class', document.getElementById('editLicenseClass').value.trim());
       fd.append('full_name', document.getElementById('editLicenseName').value.trim());
       fd.append('date_of_birth', document.getElementById('editLicenseDob').value.trim());
@@ -8973,13 +8977,19 @@ function loadLicenseDetailsForEdit() {
         console.log('Set expiry date:', el.value);
       }
       
-      // For select dropdowns, try exact match first, then partial match
+      el = document.getElementById('editLicenseAddress');
+      if (el) {
+        el.value = data.address || data.issuing_country_state || '';
+        console.log('Set address:', el.value);
+      }
+
+      // For select dropdowns or hidden fallback, try exact match first, then partial match
       el = document.getElementById('editLicenseCountry');
       if (el) {
-        var countryVal = data.issuing_country_state || '';
+        var countryVal = data.address || data.issuing_country_state || 'Philippines';
         el.value = countryVal;
-        console.log('Set country:', countryVal);
-        if (!el.value && countryVal) {
+        console.log('Set country fallback:', countryVal);
+        if (!el.value && countryVal && el.options) {
           // Try partial match (e.g. "Ph" -> "Philippines")
           for (var i = 0; i < el.options.length; i++) {
             if (el.options[i].value.toLowerCase().startsWith(countryVal.toLowerCase())) {
@@ -9279,9 +9289,15 @@ function loadProfile(callback) {
         console.log('viewLicenseClass element not found');
       }
       
+      el = document.getElementById('viewLicenseAddress');
+      if (el) {
+        el.textContent = licenseData.address || licenseData.issuing_country_state || '-';
+        console.log('License address set to:', el.textContent);
+      }
+      
       el = document.getElementById('viewLicenseCountry');
       if (el) {
-        el.textContent = licenseData.issuing_country_state || '-';
+        el.textContent = licenseData.address || licenseData.issuing_country_state || '-';
         console.log('License country set to:', el.textContent);
       } else {
         console.log('viewLicenseCountry element not found');
