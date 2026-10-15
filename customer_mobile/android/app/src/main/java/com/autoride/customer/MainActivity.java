@@ -68,17 +68,64 @@ public class MainActivity extends BridgeActivity {
                 String js =
                     "(function(){" +
                     "  try{" +
+                    "    if(window._unreviewedBookingActive&&window._currentUnreviewedBooking){" +
+                    "      var rm=document.getElementById('mandatoryReviewModal');" +
+                    "      if(rm&&rm.style.display!=='none'){" +
+                    "        if(typeof showToast==='function')showToast('Please submit your rental rating and feedback before continuing.','info');" +
+                    "        return 'modal_guarded';" +
+                    "      }" +
+                    "    }" +
+                    "    var cm=document.getElementById('cropLicenseModal');" +
+                    "    if(cm&&cm.style.display!=='none'){" +
+                    "      if(typeof closeCropLicenseModal==='function')closeCropLicenseModal();else cm.style.display='none';" +
+                    "      return 'closed_modal';" +
+                    "    }" +
+                    "    var tm=document.getElementById('customerTutorialModal');" +
+                    "    if(tm&&tm.style.display!=='none'){" +
+                    "      if(typeof closeCustomerTutorial==='function')closeCustomerTutorial();else tm.style.display='none';" +
+                    "      return 'closed_modal';" +
+                    "    }" +
+                    "    var pm=document.getElementById('playStoreTestingModal');" +
+                    "    if(pm&&pm.style.display!=='none'){" +
+                    "      if(typeof closePlayStoreTestingModal==='function')closePlayStoreTestingModal();else pm.style.display='none';" +
+                    "      return 'closed_modal';" +
+                    "    }" +
                     "    var m=document.getElementById('rentalAgreementModal');" +
                     "    if(m&&m.parentNode){m.remove();return 'closed_modal';}" +
-                    "    var o=document.querySelectorAll('.overlay-page.active');" +
-                    "    if(o.length>0){var l=o[o.length-1];l.classList.remove('active');l.style.display='none';return 'closed_overlay';}" +
+                    "    var allOv=document.querySelectorAll('.overlay-page.active');" +
+                    "    var visibleOv=[];" +
+                    "    for(var i=0;i<allOv.length;i++){if(allOv[i].style.display!=='none')visibleOv.push(allOv[i]);}" +
+                    "    if(visibleOv.length>0){" +
+                    "      var last=visibleOv[visibleOv.length-1];" +
+                    "      if(typeof closeOverlay==='function'){" +
+                    "        closeOverlay(last.id);" +
+                    "      }else{" +
+                    "        last.classList.remove('active');" +
+                    "        last.style.display='none';" +
+                    "        last.style.zIndex='';" +
+                    "      }" +
+                    "      var rem=0;" +
+                    "      var chk=document.querySelectorAll('.overlay-page.active');" +
+                    "      for(var j=0;j<chk.length;j++){if(chk[j].style.display!=='none')rem++;}" +
+                    "      if(rem===0){" +
+                    "        var nav=document.getElementById('bottomNav');" +
+                    "        var isAuth=document.querySelector('.auth-page.active');" +
+                    "        if(nav&&!isAuth){" +
+                    "          nav.classList.remove('hidden');" +
+                    "          nav.classList.remove('auth-hidden');" +
+                    "          nav.style.display='';" +
+                    "        }" +
+                    "      }" +
+                    "      return 'closed_overlay';" +
+                    "    }" +
                     "    var a=document.querySelectorAll('.auth-page.active');" +
                     "    if(a.length>0){" +
                     "      var id=a[0].id;" +
                     "      if(id==='page-register'||id==='page-otp-verify'||id==='page-phone-login'){" +
                     "        if(typeof showPage==='function')showPage('page-login');return 'went_to_login';" +
                     "      }return 'on_login';" +
-                    "    }return 'on_main';" +
+                    "    }" +
+                    "    return 'on_main';" +
                     "  }catch(e){return 'error';}" +
                     "})()";
 
@@ -90,6 +137,7 @@ public class MainActivity extends BridgeActivity {
                                 case "closed_modal":
                                 case "closed_overlay":
                                 case "went_to_login":
+                                case "modal_guarded":
                                     break;
                                 default:
                                     showExitDialog();

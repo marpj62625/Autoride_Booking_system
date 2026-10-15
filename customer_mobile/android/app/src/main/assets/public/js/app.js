@@ -1355,10 +1355,15 @@ function closeOverlay(id) {
   }
 
   // Restore bottom navigation if no visible active overlay remains
-  var activeOverlays = Array.from(document.querySelectorAll('.overlay-page.active')).filter(function(ov) {
-    return ov.style.display !== 'none';
-  });
-  if (activeOverlays.length === 0) {
+  var ovNodes = document.querySelectorAll('.overlay-page.active');
+  var hasActiveOverlay = false;
+  for (var oi = 0; oi < ovNodes.length; oi++) {
+    if (ovNodes[oi].style.display !== 'none') {
+      hasActiveOverlay = true;
+      break;
+    }
+  }
+  if (!hasActiveOverlay) {
     var nav = document.getElementById('bottomNav');
     var isAuth = document.querySelector('.auth-page.active');
     if (nav && !isAuth) {
@@ -1709,7 +1714,25 @@ function handleBackButton() {
     return;
   }
 
-  // 1. Close any open rental agreement modal
+  // 1. Close any open modals
+  var cropModal = document.getElementById('cropLicenseModal');
+  if (cropModal && cropModal.style.display !== 'none') {
+    if (typeof closeCropLicenseModal === 'function') closeCropLicenseModal();
+    else cropModal.style.display = 'none';
+    return;
+  }
+  var tutModal = document.getElementById('customerTutorialModal');
+  if (tutModal && tutModal.style.display !== 'none') {
+    if (typeof closeCustomerTutorial === 'function') closeCustomerTutorial();
+    else tutModal.style.display = 'none';
+    return;
+  }
+  var playModal = document.getElementById('playStoreTestingModal');
+  if (playModal && playModal.style.display !== 'none') {
+    if (typeof closePlayStoreTestingModal === 'function') closePlayStoreTestingModal();
+    else playModal.style.display = 'none';
+    return;
+  }
   var rentalModal = document.getElementById('rentalAgreementModal');
   if (rentalModal && rentalModal.parentNode) {
     rentalModal.remove();
@@ -1718,9 +1741,12 @@ function handleBackButton() {
 
   // 2. Close any active overlay page (in reverse open order)
   var overlays = document.querySelectorAll('.overlay-page.active');
-  if (overlays.length > 0) {
-    // Close the last opened overlay
-    var last = overlays[overlays.length - 1];
+  var visibleOverlays = [];
+  for (var oi = 0; oi < overlays.length; oi++) {
+    if (overlays[oi].style.display !== 'none') visibleOverlays.push(overlays[oi]);
+  }
+  if (visibleOverlays.length > 0) {
+    var last = visibleOverlays[visibleOverlays.length - 1];
     closeOverlay(last.id);
     return;
   }
