@@ -120,14 +120,17 @@ app.json = ISODateJSONProvider(app)
 app.url_map.strict_slashes = False
 
 CORS(app, resources={r"/*": {
-
     "origins": "*",
-
-    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-
-    "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"]
-
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "X-Admin-Id", "x-admin-id", "X-User-Id", "x-user-id", "Accept", "Origin"]
 }})
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, X-Admin-Id, x-admin-id, X-User-Id, x-user-id, Accept, Origin'
+    return response
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max upload
 

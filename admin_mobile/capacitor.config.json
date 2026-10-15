@@ -4,8 +4,15 @@
   "webDir": "www",
   "server": {
     "cleartext": true,
+    "androidScheme": "https",
+    "iosScheme": "https",
     "allowNavigation": [
-      "autoride-booking-system.vercel.app"
+      "autoride-booking-system.vercel.app",
+      "https://autoride-booking-system.vercel.app",
+      "fydfsgjrlowrrtlmefwq.supabase.co",
+      "https://fydfsgjrlowrrtlmefwq.supabase.co",
+      "*.googleapis.com",
+      "*.google.com"
     ]
   },
   "plugins": {

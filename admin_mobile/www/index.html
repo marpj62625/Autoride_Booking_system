@@ -10619,31 +10619,35 @@ input:checked + .ctrl-slider:before {
 
     // API URL: auto-detect - works on Vercel (web) and Android APK (Capacitor)
     const API_BASE = (function() {
-        // Always use production URL on native Capacitor APK (window.Capacitor.isNative is true on real device)
-        if (window.Capacitor && window.Capacitor.isNative) {
+        // 1. Mobile devices / Android APK / Capacitor
+        const isMobileOrCap = (typeof window.Capacitor !== 'undefined' && window.Capacitor) ||
+                              window.location.protocol === 'capacitor:' ||
+                              window.location.protocol === 'file:' ||
+                              /android|iphone|ipad|ipod/i.test(navigator.userAgent || '');
+        if (isMobileOrCap) {
             return 'https://autoride-booking-system.vercel.app';
         }
-        // Capacitor serves from capacitor:// protocol on some versions
-        if (window.location.protocol === 'capacitor:') {
-            return 'https://autoride-booking-system.vercel.app';
-        }
-        // Capacitor on Android serves from localhost - force production
+
+        // 2. Local PC development (only if explicitly running on port 5000)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Check if running as installed APK (not local web dev server)
-            if (window.Capacitor) {
-                return 'https://autoride-booking-system.vercel.app';
+            if (window.location.port === '5000') {
+                return 'http://localhost:5000';
             }
-            return 'http://localhost:5000';
+            return 'https://autoride-booking-system.vercel.app';
         }
-        // Web: Vercel or HTTPS - use origin
+
+        // 3. Web: Vercel or HTTPS
         if (window.location.hostname.includes('vercel.app') || window.location.protocol === 'https:') {
             return window.location.origin;
         }
-        // Fallback
+
+        // 4. Default Fallback
         return 'https://autoride-booking-system.vercel.app';
     })();
 
     const API_URL = API_BASE + '/api';
+    window.API_BASE = API_BASE;
+    window.API_URL = API_URL;
 
 
 
