@@ -3267,7 +3267,13 @@
 
 
 
-        .premium-modal .modal-content input::placeholder { color: rgba(255,255,255,0.4); }
+        .premium-modal .modal-content input::placeholder,
+        .premium-modal .modal-content textarea::placeholder,
+        .modal-content input::placeholder,
+        .modal-content textarea::placeholder {
+            color: var(--text-muted, #64748b) !important;
+            opacity: 0.75 !important;
+        }
 
 
 
@@ -3280,17 +3286,32 @@
 
 
         .modal-content {
-
-
-
             background: var(--surface-container);
+            color: var(--text-main, #0f172a);
+        }
 
+        @media (max-width: 480px) {
+            .premium-modal .modal-content,
+            .modal-content {
+                padding: 16px 14px !important;
+                width: calc(100% - 20px) !important;
+                max-width: calc(100% - 20px) !important;
+                border-radius: 16px !important;
+                box-sizing: border-box !important;
+            }
+            .settings-group-card {
+                padding: 14px 12px !important;
+            }
+        }
 
-
-            color: white;
-
-
-
+        .settings-group-card {
+            box-sizing: border-box !important;
+        }
+        .settings-field-item input,
+        .settings-field-item select,
+        .settings-field-item textarea {
+            box-sizing: border-box !important;
+            max-width: 100% !important;
         }
 
 
@@ -7488,11 +7509,11 @@ input:checked + .ctrl-slider:before {
         </div>
 
         <!-- Tabs: FAQs vs AI Assistant -->
-        <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:12px;">
-            <button type="button" id="chatCtrlTabFaqs" onclick="AdminChatControls.switchTab('faqs')" style="padding:10px 18px; border-radius:12px; font-weight:700; font-size:0.85rem; border:none; cursor:pointer; background:var(--primary); color:#fff; display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+            <button type="button" id="chatCtrlTabFaqs" onclick="AdminChatControls.switchTab('faqs')" style="flex:1; padding:9px 12px; border-radius:12px; font-weight:700; font-size:0.82rem; border:none; cursor:pointer; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box;">
                 <i class="fas fa-question-circle"></i> Live Chat FAQs
             </button>
-            <button type="button" id="chatCtrlTabAi" onclick="AdminChatControls.switchTab('ai')" style="padding:10px 18px; border-radius:12px; font-weight:700; font-size:0.85rem; border:1px solid var(--border); cursor:pointer; background:transparent; color:var(--text-muted); display:flex; align-items:center; gap:8px;">
+            <button type="button" id="chatCtrlTabAi" onclick="AdminChatControls.switchTab('ai')" style="flex:1; padding:9px 12px; border-radius:12px; font-weight:700; font-size:0.82rem; border:1px solid var(--border); cursor:pointer; background:transparent; color:var(--text-muted); display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box;">
                 <i class="fas fa-robot"></i> AI Assistant (Chatbot)
             </button>
         </div>
@@ -7500,29 +7521,29 @@ input:checked + .ctrl-slider:before {
         <!-- TAB 1: LIVE CHAT FAQs -->
         <div id="chatCtrlPaneFaqs">
             <!-- Master Switches Card -->
-            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:16px; box-sizing:border-box;">
                 <h4 style="margin:0 0 12px; font-size:0.95rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
                     <i class="fas fa-toggle-on" style="color:var(--primary);"></i> Live Chat FAQ Master Switches
                 </h4>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap:10px;">
                     <!-- FAQ Chips Master Toggle -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
-                        <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border); box-sizing:border-box;">
+                        <div style="flex:1; min-width:0; padding-right:8px;">
                             <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">FAQ Quick Chips</div>
-                            <div style="font-size:0.7rem; color:var(--text-muted);">Show clickable FAQ chips in customer live chat</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.3;">Show clickable FAQ chips in customer live chat</div>
                         </div>
-                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer; flex-shrink:0;">
                             <input type="checkbox" id="chatCtrlFaqEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
                             <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
                         </label>
                     </div>
                     <!-- Auto-reply Master Toggle -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
-                        <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border); box-sizing:border-box;">
+                        <div style="flex:1; min-width:0; padding-right:8px;">
                             <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Automated FAQ Replies</div>
-                            <div style="font-size:0.7rem; color:var(--text-muted);">Auto-answer matching FAQ questions in chat</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.3;">Auto-answer matching FAQ questions in chat</div>
                         </div>
-                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer; flex-shrink:0;">
                             <input type="checkbox" id="chatCtrlFaqAutoreplyEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
                             <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
                         </label>
@@ -7553,29 +7574,29 @@ input:checked + .ctrl-slider:before {
         <!-- TAB 2: AI ASSISTANT (CHATBOT) -->
         <div id="chatCtrlPaneAi" style="display:none;">
             <!-- Master Switches Card -->
-            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:16px 20px; margin-bottom:20px;">
+            <div style="background:var(--surface-card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:16px; box-sizing:border-box;">
                 <h4 style="margin:0 0 12px; font-size:0.95rem; color:var(--text-main); display:flex; align-items:center; gap:8px;">
                     <i class="fas fa-toggle-on" style="color:var(--primary);"></i> AI Assistant Master Switches
                 </h4>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap:10px;">
                     <!-- Floating Widget Master Toggle -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
-                        <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border); box-sizing:border-box;">
+                        <div style="flex:1; min-width:0; padding-right:8px;">
                             <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Floating AI Widget</div>
-                            <div style="font-size:0.7rem; color:var(--text-muted);">Show floating chatbot button on web &amp; mobile</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.3;">Show floating chatbot button on web &amp; mobile</div>
                         </div>
-                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer; flex-shrink:0;">
                             <input type="checkbox" id="chatCtrlAiEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
                             <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
                         </label>
                     </div>
                     <!-- Smart Auto-responses Master Toggle -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border);">
-                        <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(255,255,255,0.03); padding:12px 14px; border-radius:10px; border:1px solid var(--border); box-sizing:border-box;">
+                        <div style="flex:1; min-width:0; padding-right:8px;">
                             <div style="font-weight:700; font-size:0.85rem; color:var(--text-main);">Smart Auto-Replies</div>
-                            <div style="font-size:0.7rem; color:var(--text-muted);">Enable AI chatbot to automatically answer questions</div>
+                            <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.3;">Enable AI chatbot to automatically answer questions</div>
                         </div>
-                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer;">
+                        <label style="position:relative; display:inline-block; width:44px; height:24px; margin:0; cursor:pointer; flex-shrink:0;">
                             <input type="checkbox" id="chatCtrlAiAutoreplyEnabled" onchange="AdminChatControls.saveSettings()" style="opacity:0; width:0; height:0;">
                             <span class="ctrl-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; transition:.3s; border-radius:24px;"></span>
                         </label>
@@ -7590,7 +7611,7 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-comment-dots" style="color:var(--primary); margin-right:4px;"></i> Welcome Greeting Message
                     </label>
                     <p style="margin:0 0 8px; font-size:0.7rem; color:var(--text-muted);">First message sent by the AI chatbot when a customer opens the chat.</p>
-                    <textarea id="chatCtrlAiGreeting" rows="3" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+                    <textarea id="chatCtrlAiGreeting" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
                 </div>
 
                 <div>
@@ -7598,7 +7619,7 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-question" style="color:#f59e0b; margin-right:4px;"></i> Fallback / Unrecognized Question Message
                     </label>
                     <p style="margin:0 0 8px; font-size:0.7rem; color:var(--text-muted);">Response sent when the AI assistant cannot understand or find a match for the customer's question.</p>
-                    <textarea id="chatCtrlAiFallback" rows="3" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+                    <textarea id="chatCtrlAiFallback" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
                 </div>
 
                 <div style="display:flex; justify-content:flex-end;">
@@ -7626,37 +7647,37 @@ input:checked + .ctrl-slider:before {
         <form id="adminFaqForm" onsubmit="event.preventDefault(); AdminChatControls.saveFaq();" style="display:flex; flex-direction:column; gap:14px;">
             <input type="hidden" id="faqFormId" value="">
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:12px;">
                 <div>
                     <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Chip Label (Button in Chat) *</label>
-                    <input type="text" id="faqFormChipLabel" placeholder="e.g. 💳 20% DP &amp; Balance" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                    <input type="text" id="faqFormChipLabel" placeholder="e.g. 💳 20% DP &amp; Balance" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 </div>
                 <div>
                     <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Category</label>
-                    <input type="text" id="faqFormCategory" placeholder="e.g. payment, general, fuel" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                    <input type="text" id="faqFormCategory" placeholder="e.g. payment, general, fuel" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 </div>
             </div>
 
             <div>
                 <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Full Question (Sent as Customer Message) *</label>
-                <input type="text" id="faqFormQuestion" placeholder="e.g. How does the 20% downpayment and balance payment work?" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                <input type="text" id="faqFormQuestion" placeholder="e.g. How does the 20% downpayment and balance payment work?" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
             </div>
 
             <div>
                 <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Trigger Keywords (comma separated) *</label>
-                <input type="text" id="faqFormKeywords" placeholder="e.g. 20%, downpayment, dp, balance, upon pickup" required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                <input type="text" id="faqFormKeywords" placeholder="e.g. 20%, downpayment, dp, balance, upon pickup" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">If customer types any of these words in chat, this automated answer triggers.</div>
             </div>
 
             <div>
                 <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Automated Bot Answer *</label>
-                <textarea id="faqFormAnswer" rows="5" placeholder="Enter clear policy explanation or instructions..." required style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem; font-family:inherit; resize:vertical;"></textarea>
+                <textarea id="faqFormAnswer" rows="5" placeholder="Enter clear policy explanation or instructions..." required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem; font-family:inherit; resize:vertical;"></textarea>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:center;">
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:12px; align-items:center;">
                 <div>
                     <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Display Order</label>
-                    <input type="number" id="faqFormDisplayOrder" value="1" min="1" max="999" style="width:100%; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                    <input type="number" id="faqFormDisplayOrder" value="1" min="1" max="999" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; padding-top:16px;">
                     <input type="checkbox" id="faqFormIsActive" checked style="width:18px; height:18px; accent-color:var(--primary); cursor:pointer;">
@@ -7699,7 +7720,7 @@ input:checked + .ctrl-slider:before {
                 <!-- Search Box -->
                 <div style="position: relative; margin-bottom: 12px;">
                     <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none;"></i>
-                    <input type="text" id="settingsSearchInput" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
+                    <input type="text" id="settingsSearchInput" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; box-sizing: border-box; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
                     <button id="settingsSearchClearBtn" type="button" onclick="Settings.clearSearch()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 0.9rem;">
                         <i class="fas fa-times-circle"></i>
                     </button>
@@ -8211,15 +8232,15 @@ input:checked + .ctrl-slider:before {
 
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Package Name</label>
-                    <input type="text" id="insuranceNameInput" placeholder="e.g. Standard Protection" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input type="text" id="insuranceNameInput" placeholder="e.g. Standard Protection" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Price per Day (&#8369;) <span style="font-size:0.75rem; color:var(--text-muted);">(Enter 0 for free/included)</span></label>
-                    <input type="number" id="insurancePriceInput" placeholder="e.g. 500" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input type="number" id="insurancePriceInput" placeholder="e.g. 500" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Coverage Description <span style="color: var(--text-muted);">(Optional)</span></label>
-                    <textarea id="insuranceDescInput" placeholder="Briefly describe what this insurance covers..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+                    <textarea id="insuranceDescInput" placeholder="Briefly describe what this insurance covers..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -13282,20 +13303,20 @@ input:checked + .ctrl-slider:before {
         listDiv.innerHTML = insuranceList.map(function(ins) {
             const priceText = parseFloat(ins.price_per_day) === 0 ? 'Included (₱0.00)' : `₱${parseFloat(ins.price_per_day).toLocaleString('en-US', { minimumFractionDigits: 2 })}/day`;
             return `
-                <div class="stat-card" style="padding: 12px; display: flex; align-items: center; justify-content: space-between; background: var(--surface-container); border: 1px solid var(--border); margin-bottom: 8px; border-radius: 12px;">
-                    <div style="flex: 1; min-width: 0; padding-right: 10px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <h5 style="margin: 0; font-size: 0.92rem; color: var(--text-main); font-weight: 700;">${ins.name}</h5>
-                            <span style="font-size: 0.75rem; color: var(--primary); font-weight: 800; background: rgba(0,177,79,0.1); padding: 2px 8px; border-radius: 6px;">${priceText}</span>
+                <div class="stat-card" style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--surface-container); border: 1px solid var(--border); margin-bottom: 8px; border-radius: 12px; box-sizing: border-box;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                            <h5 style="margin: 0; font-size: 0.92rem; color: var(--text-main); font-weight: 700; word-break: break-word;">${ins.name}</h5>
+                            <span style="font-size: 0.74rem; color: var(--primary); font-weight: 800; background: rgba(0,177,79,0.1); padding: 2px 8px; border-radius: 6px; white-space: nowrap; display: inline-block;">${priceText}</span>
                         </div>
-                        ${ins.description ? `<p style="margin: 4px 0 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.3;">${ins.description}</p>` : ''}
+                        ${ins.description ? `<p style="margin: 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.3;">${ins.description}</p>` : ''}
                     </div>
                     ${canManage ? `
-                    <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
-                        <button onclick="editInsuranceOption(${ins.id})" title="Edit" style="background: rgba(0, 177, 79, 0.1); color: var(--primary); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                        <button onclick="editInsuranceOption(${ins.id})" title="Edit" style="background: rgba(0, 177, 79, 0.1); color: var(--primary); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                             <i class="fas fa-edit" style="font-size: 0.85rem;"></i>
                         </button>
-                        <button onclick="deleteInsuranceOption(${ins.id})" title="Delete" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <button onclick="deleteInsuranceOption(${ins.id})" title="Delete" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: none; border-radius: 8px; width: 32px; height: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                             <i class="fas fa-trash" style="font-size: 0.85rem;"></i>
                         </button>
                     </div>
@@ -28519,17 +28540,17 @@ function toggleNewsletterModal(show = true) {
 
                 html += `
                     <div class="settings-group-card" data-cat="${cat}" style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 36px; height: 36px; background: ${g.color}15; border: 1px solid ${g.color}33; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                                <div style="width: 36px; height: 36px; flex-shrink: 0; background: ${g.color}15; border: 1px solid ${g.color}33; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                                     <i class="fas ${g.icon}" style="color: ${g.color}; font-size: 1rem;"></i>
                                 </div>
-                                <div>
-                                    <div style="font-size: 0.96rem; font-weight: 700; color: var(--text-main);">${g.title}</div>
-                                    <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px;">${g.desc}</div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="font-size: 0.96rem; font-weight: 700; color: var(--text-main); word-break: break-word;">${g.title}</div>
+                                    <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px; word-break: break-word;">${g.desc}</div>
                                 </div>
                             </div>
-                            <span style="font-size: 0.72rem; font-weight: 700; color: ${g.color}; background: ${g.color}15; padding: 3px 10px; border-radius: 12px; border: 1px solid ${g.color}33; white-space: nowrap;">
+                            <span style="font-size: 0.72rem; font-weight: 700; color: ${g.color}; background: ${g.color}15; padding: 3px 10px; border-radius: 12px; border: 1px solid ${g.color}33; white-space: nowrap; flex-shrink: 0;">
                                 ${g.settings.length} ${g.settings.length === 1 ? 'setting' : 'settings'}
                             </span>
                         </div>
@@ -28617,7 +28638,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
+                        <select data-key="${s.key}" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; font-weight: 600; outline: none; cursor: pointer;">
                             <option value="true" ${isStrict ? 'selected' : ''}>🛡️ Strict (Require Approved License)</option>
                             <option value="false" ${!isStrict ? 'selected' : ''}>⚠️ Relaxed (Allow Booking Pending Verification)</option>
                         </select>
@@ -28631,8 +28652,8 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
-                            <option value="true" ${isReq ? 'selected' : ''}>✅ Required (Mandatory Before Booking)</option>
+                        <select data-key="${s.key}" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="true" ${isReq ? 'selected' : ''}>✅ Required (Before Booking)</option>
                             <option value="false" ${!isReq ? 'selected' : ''}>⚪ Optional</option>
                         </select>
                     </div>
@@ -28645,9 +28666,9 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || 'Require Live Selfie / Profile Picture'}</label>
-                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
-                            <option value="true" ${isReq ? 'selected' : ''}>📸 Mandatory (Live Selfie / Profile Picture Required)</option>
-                            <option value="false" ${!isReq ? 'selected' : ''}>📝 Fill-up Info Only (Name & Phone Number Only, No Selfie Required)</option>
+                        <select data-key="${s.key}" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="true" ${isReq ? 'selected' : ''}>📸 Mandatory (Selfie / ID Photo)</option>
+                            <option value="false" ${!isReq ? 'selected' : ''}>📝 Info Only (No Selfie Required)</option>
                         </select>
                     </div>
                 `;
@@ -28659,7 +28680,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">
+                        <select data-key="${s.key}" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; font-weight: 600; outline: none; cursor: pointer;">
                             <option value="true" ${isEnabled ? 'selected' : ''}>🟢 Enabled</option>
                             <option value="false" ${!isEnabled ? 'selected' : ''}>⚪ Disabled</option>
                         </select>
@@ -28675,7 +28696,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <select data-key="${s.key}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; cursor: pointer;">${optHtml}</select>
+                        <select data-key="${s.key}" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; font-weight: 600; outline: none; cursor: pointer;">${optHtml}</select>
                     </div>
                 `;
             }
@@ -28714,7 +28735,7 @@ function toggleNewsletterModal(show = true) {
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                            <input type="password" id="${inputId}" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                            <input type="password" id="${inputId}" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
                             <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -28730,7 +28751,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <input type="text" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                        <input type="text" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
                     </div>
                 `;
             }
@@ -28773,7 +28794,7 @@ function toggleNewsletterModal(show = true) {
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                            <input type="number" data-key="${s.key}" value="${val}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="width: 100%; padding: 12px 65px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 700; outline: none; transition: border-color 0.2s;">
+                            <input type="number" data-key="${s.key}" value="${val}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="width: 100%; box-sizing: border-box; padding: 12px 65px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 700; outline: none; transition: border-color 0.2s;">
                             <span style="position: absolute; right: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; pointer-events: none;">${nc.suffix}</span>
                         </div>
                     </div>
@@ -28786,7 +28807,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <textarea data-key="${s.key}" style="width: 100%; height: ${height}; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${val}</textarea>
+                        <textarea data-key="${s.key}" style="width: 100%; box-sizing: border-box; height: ${height}; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${val}</textarea>
                     </div>
                 `;
             }
@@ -28797,7 +28818,7 @@ function toggleNewsletterModal(show = true) {
             return `
                 <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                     <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                    <input type="text" data-key="${s.key}" value="${val}" style="width: 100%; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;">
+                    <input type="text" data-key="${s.key}" value="${val}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;">
                     ${helperNote}
                 </div>
             `;
