@@ -1953,7 +1953,9 @@ function doLogin() {
       } else if (err.status === 403) {
         pendingOtpEmail = email;
         document.getElementById('otpEmailDisplay').textContent = email;
+        showToast('Verification code sent to your email!', 'info');
         showPage('page-otp-verify');
+        startResendCountdown();
       } else {
         document.getElementById('loginErr').textContent = err.message || 'Invalid credentials.';
       }
@@ -2453,7 +2455,9 @@ function doVerifyEmail() {
   document.getElementById('otpErr').textContent = '';
   if (otp.length < 6) { document.getElementById('otpErr').textContent = 'Please enter the full 6-digit code.'; return; }
   showLoading(true);
-  apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email: pendingOtpEmail, otp: otp }) })
+  var targetEmail = (pendingOtpEmail || (document.getElementById('otpEmailDisplay') ? document.getElementById('otpEmailDisplay').textContent.trim() : '')).trim();
+  pendingOtpEmail = targetEmail;
+  apiCall('/auth/verify-email', { method: 'POST', body: JSON.stringify({ email: targetEmail, otp: otp }) })
     .then(function(data) {
       showToast('Email verified successfully!', 'success');
       
@@ -2512,10 +2516,12 @@ function startResendCountdown() {
 }
 
 function resendOtp() {
-  if (!pendingOtpEmail || resendCountdown > 0) return;
-  
+  var targetEmail = (pendingOtpEmail || (document.getElementById('otpEmailDisplay') ? document.getElementById('otpEmailDisplay').textContent.trim() : '')).trim();
+  if (!targetEmail || resendCountdown > 0) return;
+  pendingOtpEmail = targetEmail;
+
   showLoading(true);
-  apiCall('/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email: pendingOtpEmail }) })
+  apiCall('/auth/resend-otp', { method: 'POST', body: JSON.stringify({ email: targetEmail }) })
     .then(function() {
       showToast('Verification code sent!', 'success');
       startResendCountdown();

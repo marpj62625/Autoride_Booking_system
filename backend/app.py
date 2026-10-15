@@ -1838,6 +1838,24 @@ def migrate_masked_users_view():
     finally:
         if 'cur' in locals(): cur.close()
 
+def migrate_email_verification_otps():
+    """Ensures email_verification_otps table exists in public schema."""
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS email_verification_otps (
+                email VARCHAR(255) PRIMARY KEY,
+                otp VARCHAR(10) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        """)
+        commit_db()
+        print("[MIGRATION] migrate_email_verification_otps completed successfully")
+    except Exception as e:
+        print(f"[MIGRATION] migrate_email_verification_otps error: {e}")
+    finally:
+        if 'cur' in locals(): cur.close()
+
 if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
     try:
         with app.app_context():
@@ -1853,6 +1871,7 @@ if not os.environ.get('VERCEL') or os.environ.get('RUN_MIGRATIONS') == '1':
             migrate_driver_wage_policy()
             migrate_calendar_color()
             migrate_masked_users_view()
+            migrate_email_verification_otps()
     except Exception as _e:
         print(f"[STARTUP ERROR] {_e}")
 
@@ -2154,6 +2173,80 @@ def send_verification_email(email: str, otp: str):
     send_email_notifications(email, subject, body, is_html=False)
 
 
+temp_email_otps = {}
+
+def save_email_otp(email: str, otp: str):
+    """Persists OTP to database table so it survives across serverless lambdas and multi-worker processes."""
+    clean_email = (email or '').strip().lower()
+    clean_otp = str(otp or '').strip()
+    temp_email_otps[clean_email] = clean_otp
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS email_verification_otps (
+                email VARCHAR(255) PRIMARY KEY,
+                otp VARCHAR(10) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+        """)
+        cur.execute("""
+            INSERT INTO email_verification_otps (email, otp, created_at)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (email)
+            DO UPDATE SET otp = EXCLUDED.otp, created_at = EXCLUDED.created_at;
+        """, (clean_email, clean_otp))
+        commit_db()
+        print(f"[OTP] Successfully persisted OTP for {clean_email}")
+    except Exception as e:
+        print(f"[OTP ERROR] Failed to persist OTP for {clean_email}: {e}")
+
+def verify_email_otp(email: str, otp: str) -> bool:
+    """Verifies OTP from database with 24-hour expiration window, falling back to memory."""
+    clean_email = (email or '').strip().lower()
+    clean_otp = str(otp or '').strip()
+    if not clean_email or not clean_otp:
+        return False
+
+    # 1. Database persistent check
+    try:
+        cur = get_cursor()
+        cur.execute("""
+            SELECT otp, created_at 
+            FROM email_verification_otps 
+            WHERE LOWER(TRIM(email)) = %s
+        """, (clean_email,))
+        row = cur.fetchone()
+        if row and row.get('otp'):
+            db_otp = str(row['otp']).strip()
+            if db_otp == clean_otp:
+                created_at = row.get('created_at')
+                if created_at:
+                    from datetime import datetime, timezone, timedelta
+                    now = datetime.now(timezone.utc)
+                    if created_at.tzinfo is None:
+                        created_at = created_at.replace(tzinfo=timezone.utc)
+                    if now - created_at > timedelta(hours=24):
+                        print(f"[OTP] Expired verification code for {clean_email}")
+                        return False
+                # Consume OTP so it cannot be reused
+                try:
+                    cur.execute("DELETE FROM email_verification_otps WHERE LOWER(TRIM(email)) = %s", (clean_email,))
+                    commit_db()
+                except Exception:
+                    pass
+                temp_email_otps.pop(clean_email, None)
+                temp_email_otps.pop(email, None)
+                return True
+    except Exception as e:
+        print(f"[OTP ERROR] Error verifying OTP in database for {clean_email}: {e}")
+
+    # 2. In-memory fallback
+    if temp_email_otps.get(clean_email) == clean_otp or temp_email_otps.get(email) == clean_otp:
+        temp_email_otps.pop(clean_email, None)
+        temp_email_otps.pop(email, None)
+        return True
+
+    return False
 
 
 def send_receipt_email(email: str, details: dict):
@@ -2407,8 +2500,9 @@ def register():
 
         import random
 
+        clean_email = (email or '').strip().lower()
         otp = str(random.randint(100000, 999999))
-        temp_email_otps[email] = otp
+        save_email_otp(clean_email, otp)
 
         hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
@@ -2416,15 +2510,13 @@ def register():
             INSERT INTO users(first_name, middle_name, last_name, email, password, is_email_verified, is_verified, license_image_url, role)
             VALUES(%s, %s, %s, %s, %s, False, %s, %s, 'customer')
             RETURNING id
-        """, (first_name, middle_name, last_name, email, hashed_pw, is_verified, license_url))
-
-        
+        """, (first_name, middle_name, last_name, clean_email, hashed_pw, is_verified, license_url))
 
         user_id = cur.fetchone()['id']
 
         commit_db()
 
-        send_verification_email(email, otp)
+        send_verification_email(clean_email, otp)
 
 
 
@@ -2579,17 +2671,19 @@ def login():
         if user:
 
             # Check Email Verification Status
-
             if not user.get('is_email_verified'):
+                try:
+                    import random
+                    fresh_otp = str(random.randint(100000, 999999))
+                    save_email_otp(email, fresh_otp)
+                    send_verification_email(email, fresh_otp)
+                except Exception as otp_err:
+                    print(f"WARN login: failed to auto-send OTP: {otp_err}")
 
                 return jsonify({
-
                     "error": "Email not verified", 
-
                     "verification_required": True,
-
                     "email": email
-
                 }), 403
 
 
@@ -3841,21 +3935,19 @@ def get_user_points():
 
 
 
-temp_email_otps = {}
-
 @app.route('/auth/resend-otp', methods=['POST'])
 @app.route('/api/auth/resend-otp', methods=['POST'])
 def resend_otp():
     """Resend a new 6-digit OTP to the user's email."""
     try:
-        data = request.json
-        email = data.get('email')
+        data = request.json or {}
+        email = (data.get('email') or '').strip().lower()
         if not email:
             return jsonify({"error": "Email is required"}), 400
         
         import random
         otp = str(random.randint(100000, 999999))
-        temp_email_otps[email] = otp
+        save_email_otp(email, otp)
         
         send_verification_email(email, otp)
         return jsonify({"message": "Verification code sent!"}), 200
@@ -3866,33 +3958,25 @@ def resend_otp():
 @app.route('/auth/verify-email', methods=['POST'])
 @app.route('/api/auth/verify-email', methods=['POST'])
 def verify_email():
-
     """Verify the 6-digit OTP sent to the user's gmail."""
-
-    data = request.json
-
-    email = data.get('email')
-
-    otp = data.get('otp')
-
-    
+    data = request.json or {}
+    email = (data.get('email') or '').strip().lower()
+    otp = str(data.get('otp') or '').strip()
 
     if not email or not otp:
-
         return jsonify({"error": "Email and OTP are required"}), 400
 
-    
-
-    if temp_email_otps.get(email) == str(otp):
-
+    if verify_email_otp(email, otp):
         try:
-
             cur = get_cursor()
-            cur.execute("UPDATE users SET is_email_verified = True, force_logout_at = NULL WHERE email = %s RETURNING id, full_name, is_driver, is_verified", (email,))
+            cur.execute("""
+                UPDATE users 
+                SET is_email_verified = True, force_logout_at = NULL 
+                WHERE LOWER(TRIM(email)) = %s 
+                RETURNING id, full_name, is_driver, is_verified
+            """, (email,))
             user = cur.fetchone()
             commit_db()
-
-            del temp_email_otps[email]
 
             if user:
                 return jsonify({
@@ -3907,11 +3991,8 @@ def verify_email():
                 return jsonify({"message": "Email verified successfully!"}), 200
 
         except Exception as e:
-
             return jsonify({"error": str(e)}), 500
-
     else:
-
         return jsonify({"error": "Invalid or expired verification code"}), 400
 
 
