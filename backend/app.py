@@ -7049,7 +7049,7 @@ def get_all_bookings():
 
             SELECT b.id, b.user_id, COALESCE(u.full_name, b.customer_name, 'Customer') AS customer_name, u.email AS customer_email,
                    COALESCE(u.phone, b.customer_phone, '') AS customer_phone,
-                   COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), b.customer_address, 'N/A') AS customer_address,
+                   COALESCE(NULLIF(TRIM(b.customer_address), ''), NULLIF(TRIM(ld.address), ''), NULLIF(TRIM(ld.issuing_country_state), ''), NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), 'N/A') AS customer_address,
 
                    CONCAT(v.brand, ' ', v.model, ' (', v.plate_number, ')') AS car,
                    v.plate_number,
@@ -7186,7 +7186,14 @@ def create_walkin_booking():
         emergency_rel = (data.get('emergency_rel') or '').strip()
 
         if user_id:
-            cur.execute("SELECT id, full_name, phone, barangay, municipality, province FROM users WHERE id = %s", (user_id,))
+            cur.execute("""
+                SELECT u.id, u.full_name, u.phone, u.barangay, u.municipality, u.province,
+                       COALESCE(NULLIF(TRIM(ld.address), ''), NULLIF(TRIM(ld.issuing_country_state), '')) as license_address,
+                       ld.emergency_contact_name, ld.emergency_contact_phone, ld.emergency_contact_relationship
+                FROM users u
+                LEFT JOIN license_details ld ON u.id = ld.user_id
+                WHERE u.id = %s
+            """, (user_id,))
             user_row = cur.fetchone()
             if user_row:
                 if not customer_name:
@@ -7194,8 +7201,16 @@ def create_walkin_booking():
                 if not customer_phone:
                     customer_phone = user_row.get('phone') or ''
                 if not customer_address:
-                    addr_parts = [p for p in [user_row.get('barangay'), user_row.get('municipality'), user_row.get('province')] if p]
-                    customer_address = ', '.join(addr_parts) if addr_parts else ''
+                    customer_address = user_row.get('license_address') or ''
+                    if not customer_address:
+                        addr_parts = [p for p in [user_row.get('barangay'), user_row.get('municipality'), user_row.get('province')] if p]
+                        customer_address = ', '.join(addr_parts) if addr_parts else ''
+                if not emergency_name and user_row.get('emergency_contact_name'):
+                    emergency_name = user_row.get('emergency_contact_name')
+                if not emergency_phone and user_row.get('emergency_contact_phone'):
+                    emergency_phone = user_row.get('emergency_contact_phone')
+                if not emergency_rel and user_row.get('emergency_contact_relationship'):
+                    emergency_rel = user_row.get('emergency_contact_relationship')
             else:
                 user_id = None
 
@@ -16658,7 +16673,7 @@ def get_fleet_bookings():
                 COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), 'Customer') AS customer_name,
                 COALESCE(NULLIF(TRIM(u.phone), ''), NULLIF(TRIM(b.customer_phone), ''), 'N/A') AS customer_phone,
                 COALESCE(u.email, '') AS customer_email,
-                COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), NULLIF(TRIM(b.customer_address), ''), 'N/A') AS customer_address,
+                COALESCE(NULLIF(TRIM(b.customer_address), ''), NULLIF(TRIM(ld.address), ''), NULLIF(TRIM(ld.issuing_country_state), ''), NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), 'N/A') AS customer_address,
                 COALESCE(NULLIF(TRIM(ld.emergency_contact_name), ''), NULLIF(TRIM(b.emergency_name), ''), '') AS emergency_contact_name,
                 COALESCE(NULLIF(TRIM(ld.emergency_contact_phone), ''), NULLIF(TRIM(b.emergency_phone), ''), '') AS emergency_contact_phone,
                 COALESCE(NULLIF(TRIM(ld.emergency_contact_relationship), ''), NULLIF(TRIM(b.emergency_rel), ''), '') AS emergency_contact_relationship
@@ -16748,7 +16763,7 @@ def export_fleet_calendar_excel():
                 COALESCE(NULLIF(TRIM(u.full_name), ''), NULLIF(TRIM(b.customer_name), ''), 'Customer') AS customer_name,
                 COALESCE(NULLIF(TRIM(u.phone), ''), NULLIF(TRIM(b.customer_phone), ''), 'N/A') AS customer_phone,
                 COALESCE(u.email, '') AS customer_email,
-                COALESCE(NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), NULLIF(TRIM(b.customer_address), ''), 'N/A') AS customer_address,
+                COALESCE(NULLIF(TRIM(b.customer_address), ''), NULLIF(TRIM(ld.address), ''), NULLIF(TRIM(ld.issuing_country_state), ''), NULLIF(TRIM(CONCAT_WS(', ', NULLIF(u.barangay, ''), NULLIF(u.municipality, ''), NULLIF(u.province, ''))), ''), 'N/A') AS customer_address,
                 COALESCE(NULLIF(TRIM(ld.emergency_contact_name), ''), NULLIF(TRIM(b.emergency_name), ''), '') AS emergency_contact_name,
                 COALESCE(NULLIF(TRIM(ld.emergency_contact_phone), ''), NULLIF(TRIM(b.emergency_phone), ''), '') AS emergency_contact_phone
             FROM bookings b
