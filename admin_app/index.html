@@ -4141,8 +4141,132 @@
             background-color: var(--primary);
             color: #ffffff;
         }
-        #gpsConfigModal input::placeholder {
-            color: var(--text-muted);
+        /* ==================== WALKIN & NEWSLETTER RESPONSIVE MODAL FIXES ==================== */
+        .walkin-schedule-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .walkin-sub-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .walkin-sub-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        .walkin-pricing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .walkin-payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.2fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .nl-tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .nl-tab-nav::-webkit-scrollbar {
+            display: none;
+        }
+        .nl-tab-btn {
+            flex: 1 1 0;
+            min-width: max-content;
+            white-space: nowrap;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .nl-count-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 7px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .nl-fields-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 640px) {
+            #walkinBookingModal .modal-content,
+            #newsletterModal .modal-content {
+                padding: 16px 14px !important;
+                border-radius: 16px !important;
+                width: 95% !important;
+                max-height: 92vh !important;
+                box-sizing: border-box !important;
+            }
+            .walkin-schedule-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+            .walkin-sub-grid-2 {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            .walkin-sub-grid-3 {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+            }
+            .walkin-sub-grid-3 > div:last-child {
+                grid-column: span 2 !important;
+            }
+            .walkin-pricing-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+            }
+            .walkin-pricing-grid > div:last-child {
+                grid-column: span 2 !important;
+            }
+            .walkin-payment-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+            }
+            .walkin-payment-grid > div:last-child {
+                grid-column: span 2 !important;
+            }
+            .nl-fields-row {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+            }
+            .nl-tab-btn {
+                padding: 7px 10px !important;
+                font-size: 0.76rem !important;
+                gap: 5px !important;
+            }
+            #walkinBookingModal input[type="date"],
+            #walkinBookingModal input[type="time"] {
+                font-size: 0.78rem !important;
+                padding: 8px 6px !important;
+            }
         }
 
 </style>
@@ -6794,15 +6918,15 @@
             </div>
 
             <!-- Tab Navigation Bar -->
-            <div style="display: flex; gap: 8px; margin-bottom: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-                <button id="nlTabBtn_broadcast" onclick="NewsletterAdmin.switchTab('broadcast')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #3b82f6; background: #3b82f6; color: #ffffff; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <i class="fas fa-bullhorn"></i> New Campaign
+            <div class="nl-tab-nav" style="display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none;">
+                <button type="button" id="nlTabBtn_broadcast" class="nl-tab-btn" onclick="NewsletterAdmin.switchTab('broadcast')" style="border: 1.5px solid #3b82f6; background: #3b82f6; color: #ffffff;">
+                    <i class="fas fa-bullhorn"></i> <span>New Campaign</span>
                 </button>
-                <button id="nlTabBtn_campaigns" onclick="NewsletterAdmin.switchTab('campaigns')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f1f5f9; color: #475569; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <i class="fas fa-history"></i> Campaigns (<span id="adminCampaignCount">0</span>)
+                <button type="button" id="nlTabBtn_campaigns" class="nl-tab-btn" onclick="NewsletterAdmin.switchTab('campaigns')" style="border: 1.5px solid #e2e8f0; background: #f1f5f9; color: #475569;">
+                    <i class="fas fa-history"></i> <span>Campaigns</span> <span id="adminCampaignCount" class="nl-count-badge" style="background: rgba(0,0,0,0.08);">0</span>
                 </button>
-                <button id="nlTabBtn_subscribers" onclick="NewsletterAdmin.switchTab('subscribers')" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #f1f5f9; color: #475569; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <i class="fas fa-users"></i> Audience (<span id="adminSubCount">0</span>)
+                <button type="button" id="nlTabBtn_subscribers" class="nl-tab-btn" onclick="NewsletterAdmin.switchTab('subscribers')" style="border: 1.5px solid #e2e8f0; background: #f1f5f9; color: #475569;">
+                    <i class="fas fa-users"></i> <span>Audience</span> <span id="adminSubCount" class="nl-count-badge" style="background: rgba(0,0,0,0.08);">0</span>
                 </button>
             </div>
 
@@ -6814,7 +6938,7 @@
                         <input type="text" id="nlFormTitle" required placeholder="e.g. Summer Weekend Roadtrip Special — 15% OFF" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="nl-fields-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <div>
                             <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Category</label>
                             <select id="nlFormCategory" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
@@ -7239,7 +7363,7 @@
                     <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); margin-bottom: 8px; letter-spacing: 0.5px;">
                         Customer Account Option
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="walkin-sub-grid-2" style="gap: 10px;">
                         <button type="button" id="walkinModeGuestBtn" onclick="WalkinBooking.setMode('guest')" 
                                 style="padding: 10px 14px; border-radius: 10px; border: 2px solid #00B14F; background: rgba(0, 177, 79, 0.08); color: #00B14F; font-weight: 800; font-size: 0.82rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; transition: all 0.2s;">
                             <i class="fas fa-user-tag" style="font-size: 1.1rem;"></i>
@@ -7265,7 +7389,7 @@
                         <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.5px;">Guest Customer Details</span>
                         <span style="font-size: 0.7rem; color: #10b981; font-weight: 700;"><i class="fas fa-shield-alt"></i> Recorded in admin booking only</span>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                    <div class="walkin-sub-grid-2" style="gap: 12px; margin-bottom: 10px;">
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Full Name <span style="color:#ef4444;">*</span></label>
                             <input type="text" id="walkinCustName" placeholder="e.g. Juan Dela Cruz" required
@@ -7280,9 +7404,9 @@
                     <div style="margin-bottom: 10px;">
                         <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Address / Residence</label>
                         <input type="text" id="walkinCustAddress" placeholder="e.g. 123 Rizal St., San Fernando, La Union"
-                               style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div class="walkin-sub-grid-3" style="gap: 10px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Contact</label>
                             <input type="text" id="walkinEmergName" placeholder="Name"
@@ -7345,7 +7469,7 @@
                     </div>
 
                     <!-- Schedule Dates & Times -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                    <div class="walkin-schedule-grid" style="gap: 12px; margin-bottom: 10px;">
                         <!-- Start Schedule -->
                         <div>
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -7388,7 +7512,7 @@
                     </div>
 
                     <!-- Rental Type, Pickup Loc, Destination -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="walkin-sub-grid-2" style="gap: 10px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Rental Type</label>
                             <select id="walkinRentalType" onchange="WalkinBooking.recalculate()"
@@ -7411,7 +7535,7 @@
                         Pricing & Counter Payment
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div class="walkin-pricing-grid" style="gap: 10px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Base Price (₱)</label>
                             <input type="number" id="walkinBasePrice" min="0" step="any" oninput="WalkinBooking.recalculateTotal()"
@@ -7439,7 +7563,7 @@
                     </div>
 
                     <!-- Payment Method, Status, & Amount Collected -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; margin-bottom: 12px;">
+                    <div class="walkin-payment-grid" style="gap: 10px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Payment Method</label>
                             <select id="walkinPaymentMethod"
@@ -7468,7 +7592,7 @@
                     </div>
 
                     <!-- Initial Booking Status Selector -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--border, #e2e8f0);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--border, #e2e8f0); flex-wrap: wrap; gap: 8px;">
                         <div>
                             <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-main, #0f172a); margin-right: 8px;">Initial Status:</label>
                             <select id="walkinBookingStatus"
@@ -7485,7 +7609,7 @@
                 </div>
 
                 <!-- Footer Buttons -->
-                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
                     <button type="button" onclick="WalkinBooking.closeModal()" 
                             style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); font-weight: 700; font-size: 0.85rem; cursor: pointer;">
                         Cancel
@@ -17829,14 +17953,23 @@ async edit(id) { this.openModal(id); }
                 const btn = document.getElementById('nlTabBtn_' + t);
                 const pane = document.getElementById('nlTabPane_' + t);
                 if (btn) {
+                    const badge = btn.querySelector('.nl-count-badge');
                     if (t === tab) {
                         btn.style.background = '#3b82f6';
                         btn.style.color = '#ffffff';
                         btn.style.borderColor = '#3b82f6';
+                        if (badge) {
+                            badge.style.background = 'rgba(255, 255, 255, 0.25)';
+                            badge.style.color = '#ffffff';
+                        }
                     } else {
                         btn.style.background = '#f1f5f9';
                         btn.style.color = '#475569';
                         btn.style.borderColor = '#e2e8f0';
+                        if (badge) {
+                            badge.style.background = 'rgba(0, 0, 0, 0.08)';
+                            badge.style.color = '#475569';
+                        }
                     }
                 }
                 if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
