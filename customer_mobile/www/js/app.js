@@ -11432,10 +11432,219 @@ function _loadWebPenalties(bookingId) {
 // ===========================================================================
 // FIRST-TIME USER TUTORIAL (DESIGN 1: SWIPEABLE CARDS)
 // ===========================================================================
+var _tutorialLang = localStorage.getItem('autoride_tutorial_lang') || 'tl';
 var _tutorialCurrentSlide = 0;
 var _tutorialTotalSlides = 4;
 var _tutTouchStartX = 0;
 var _tutTouchEndX = 0;
+
+var TUTORIAL_DATA = {
+  tl: {
+    badge: 'Gabay sa Paggamit',
+    skip: 'Laktawan',
+    stepText: 'Hakbang {n} ng {total}',
+    prev: 'Bumalik',
+    next: 'Susunod',
+    finish: 'Simulan ang Pag-biyahe',
+    skipToast: 'Welcome sa Autoride! Puwede mo itong buksan ulit sa More menu.',
+    finishToast: 'Handa ka na mag-rent! Mag-browse at piliin ang iyong sasakyan.',
+    homeBannerTitle: 'First time mag-rent ng sasakyan?',
+    homeBannerBadge: 'GABAY',
+    homeBannerDesc: 'Tingnan ang 4-step quick walkthrough kung paano mag-book',
+    moreTitle: 'Gabay sa Pag-rent (Quick Guide)',
+    moreDesc: '4-step walkthrough sa pag-verify at pag-book ng sasakyan',
+    slides: [
+      {
+        icon: 'fas fa-id-card',
+        bg: 'rgba(59, 130, 246, 0.12)',
+        color: '#3b82f6',
+        border: 'rgba(59, 130, 246, 0.3)',
+        title: '1. Mag-verify ng Account',
+        desc: 'Bago makapag-book, mag-sign up at i-verify ang iyong account gamit ang malinaw na Driver\'s License sa aming AI OCR scanner.',
+        features: [
+          'Awtomatikong binabasa at bini-verify ang lisensya sa ilang segundo',
+          'Isang beses lang kailangang mag-upload para sa susunod na bookings',
+          '100% protektado ang data ayon sa Data Privacy Act (RA 10173)'
+        ]
+      },
+      {
+        icon: 'fas fa-car',
+        bg: 'rgba(0, 177, 79, 0.12)',
+        color: '#00B14F',
+        border: 'rgba(0, 177, 79, 0.3)',
+        title: '2. Pumili ng Sasakyan',
+        desc: 'Pumili mula sa aming iba\'t ibang de-kalidad na sedan, SUV, van, at hatchback para sa iyong biyahe.',
+        features: [
+          'Piliin ang kulay at Automatic o Manual transmission',
+          'Tingnan ang seating capacity, mileage, at luggage space',
+          'Transparent daily rates nang walang hidden charges'
+        ]
+      },
+      {
+        icon: 'fas fa-map-marked-alt',
+        bg: 'rgba(245, 158, 11, 0.12)',
+        color: '#f59e0b',
+        border: 'rgba(245, 158, 11, 0.3)',
+        title: '3. Petsa at Lokasyon',
+        desc: 'Itakda ang rental schedule at piliin kung paano mo gustong matanggap ang sasakyan.',
+        features: [
+          'Pumili ng Pick-up at Return date & time sa interactive calendar',
+          'Pumili ng Self-Pickup sa branch o Door-to-Door Delivery',
+          'I-pin ang eksaktong lokasyon gamit ang aming interactive map'
+        ]
+      },
+      {
+        icon: 'fas fa-shield-alt',
+        bg: 'rgba(16, 185, 129, 0.12)',
+        color: '#10b981',
+        border: 'rgba(16, 185, 129, 0.3)',
+        title: '4. Bayad at Pag-biyahe',
+        desc: 'Magbayad nang ligtas via GCash, Maya, o Card, lagdaan ang rental agreement, at simulan ang masayang biyahe!',
+        features: [
+          'Secure online payment via PayMongo na may instant receipt',
+          'Real-time booking countdown at live GPS tracking sa sasakyan',
+          'Kumita ng loyalty reward points sa bawat completed rental'
+        ]
+      }
+    ]
+  },
+  en: {
+    badge: 'Quick Guide',
+    skip: 'Skip',
+    stepText: 'Step {n} of {total}',
+    prev: 'Back',
+    next: 'Next',
+    finish: 'Get Started',
+    skipToast: 'Welcome to Autoride! You can reopen this guide anytime in More.',
+    finishToast: 'You are all set! Browse our fleet and choose your vehicle.',
+    homeBannerTitle: 'First time renting a car?',
+    homeBannerBadge: 'GUIDE',
+    homeBannerDesc: 'View our 4-step quick walkthrough on how to book',
+    moreTitle: 'How to Rent (Quick Guide)',
+    moreDesc: '4-step walkthrough on account verification and vehicle booking',
+    slides: [
+      {
+        icon: 'fas fa-id-card',
+        bg: 'rgba(59, 130, 246, 0.12)',
+        color: '#3b82f6',
+        border: 'rgba(59, 130, 246, 0.3)',
+        title: '1. Verify Your Account',
+        desc: 'Before booking a vehicle, register and verify your identity by uploading your Driver\'s License to our AI OCR scanner.',
+        features: [
+          'Automated AI OCR scans and validates your driver\'s license in seconds',
+          'One-time verification good for all future car reservations',
+          '100% encrypted & protected under the Data Privacy Act (RA 10173)'
+        ]
+      },
+      {
+        icon: 'fas fa-car',
+        bg: 'rgba(0, 177, 79, 0.12)',
+        color: '#00B14F',
+        border: 'rgba(0, 177, 79, 0.3)',
+        title: '2. Choose Your Vehicle',
+        desc: 'Browse and select from our well-maintained fleet of sedans, SUVs, vans, and hatchbacks for your journey.',
+        features: [
+          'Filter by Automatic or Manual transmission, seating, and fuel',
+          'Inspect real-time availability, mileage, and luggage specs',
+          'Transparent daily rental rates with zero hidden fees'
+        ]
+      },
+      {
+        icon: 'fas fa-map-marked-alt',
+        bg: 'rgba(245, 158, 11, 0.12)',
+        color: '#f59e0b',
+        border: 'rgba(245, 158, 11, 0.3)',
+        title: '3. Schedule & Location',
+        desc: 'Set your rental reservation schedule and select self-pickup or doorstep delivery.',
+        features: [
+          'Choose pickup and return dates with our interactive calendar',
+          'Select Self-Pickup at our branch or convenient Doorstep Delivery',
+          'Pin your exact delivery location on our interactive live map'
+        ]
+      },
+      {
+        icon: 'fas fa-shield-alt',
+        bg: 'rgba(16, 185, 129, 0.12)',
+        color: '#10b981',
+        border: 'rgba(16, 185, 129, 0.3)',
+        title: '4. Payment & Travel',
+        desc: 'Pay securely via GCash, Maya, or Card, sign your rental agreement, and enjoy your trip!',
+        features: [
+          'Safe online payment checkout via PayMongo with instant digital receipt',
+          'Real-time booking countdown timer and live GPS tracking',
+          'Earn loyalty rewards points on every completed vehicle rental'
+        ]
+      }
+    ]
+  }
+};
+
+function setTutorialLanguage(lang) {
+  if (lang !== 'tl' && lang !== 'en') lang = 'tl';
+  _tutorialLang = lang;
+  try {
+    localStorage.setItem('autoride_tutorial_lang', lang);
+  } catch (e) {}
+
+  var btnTl = document.getElementById('tutLangBtnTl');
+  var btnEn = document.getElementById('tutLangBtnEn');
+  if (btnTl) {
+    if (lang === 'tl') btnTl.classList.add('active');
+    else btnTl.classList.remove('active');
+  }
+  if (btnEn) {
+    if (lang === 'en') btnEn.classList.add('active');
+    else btnEn.classList.remove('active');
+  }
+
+  renderTutorialContent();
+}
+
+function renderTutorialContent() {
+  var data = TUTORIAL_DATA[_tutorialLang] || TUTORIAL_DATA['tl'];
+  
+  var badgeText = document.getElementById('tutBadgeText');
+  if (badgeText) badgeText.textContent = data.badge;
+
+  var skipText = document.getElementById('tutSkipText');
+  if (skipText) skipText.textContent = data.skip;
+
+  var track = document.getElementById('tutorialTrack');
+  if (track) {
+    var slidesHtml = data.slides.map(function(s) {
+      var featsHtml = s.features.map(function(f) {
+        return '<div class="tut-feature-item"><i class="fas fa-check-circle"></i> <span>' + escapeHtml(f) + '</span></div>';
+      }).join('');
+
+      return '<div class="tutorial-slide">' +
+        '<div class="tutorial-icon-wrap" style="background: ' + s.bg + '; color: ' + s.color + '; border-color: ' + s.border + ';">' +
+          '<i class="' + s.icon + '"></i>' +
+        '</div>' +
+        '<h3 class="tutorial-slide-title">' + escapeHtml(s.title) + '</h3>' +
+        '<p class="tutorial-slide-desc">' + escapeHtml(s.desc) + '</p>' +
+        '<div class="tutorial-features">' + featsHtml + '</div>' +
+      '</div>';
+    }).join('');
+    track.innerHTML = slidesHtml;
+  }
+
+  var homeBannerTitle = document.querySelector('#homeTutorialBanner div[style*="font-weight:800"] span:first-child');
+  if (homeBannerTitle) homeBannerTitle.textContent = data.homeBannerTitle;
+
+  var homeBannerBadge = document.querySelector('#homeTutorialBanner span[style*="background:#00B14F"]');
+  if (homeBannerBadge) homeBannerBadge.textContent = data.homeBannerBadge;
+
+  var homeBannerDesc = document.querySelector('#homeTutorialBanner div[style*="font-size:0.75rem"]');
+  if (homeBannerDesc) homeBannerDesc.textContent = data.homeBannerDesc;
+
+  var moreTitle = document.getElementById('moreAppGuideTitle');
+  if (moreTitle) moreTitle.textContent = data.moreTitle;
+
+  var moreDesc = document.getElementById('moreAppGuideDesc');
+  if (moreDesc) moreDesc.textContent = data.moreDesc;
+
+  updateTutorialSlide();
+}
 
 function openCustomerTutorial(force) {
   if (!force && localStorage.getItem('autoride_tutorial_seen')) {
@@ -11444,7 +11653,9 @@ function openCustomerTutorial(force) {
   var modal = document.getElementById('customerTutorialModal');
   if (!modal) return;
   _tutorialCurrentSlide = 0;
-  updateTutorialSlide();
+  
+  // Set current language and render content
+  setTutorialLanguage(_tutorialLang);
   modal.style.display = 'flex';
   
   // Attach touch swipe listeners
@@ -11477,9 +11688,11 @@ function handleTutorialSwipe() {
 }
 
 function updateTutorialSlide() {
+  var data = TUTORIAL_DATA[_tutorialLang] || TUTORIAL_DATA['tl'];
   var track = document.getElementById('tutorialTrack');
   var indicator = document.getElementById('tutorialStepIndicator');
   var prevBtn = document.getElementById('tutPrevBtn');
+  var prevBtnText = document.getElementById('tutPrevBtnText');
   var nextBtn = document.getElementById('tutNextBtn');
   var dots = document.querySelectorAll('.tut-dot');
 
@@ -11487,7 +11700,8 @@ function updateTutorialSlide() {
     track.style.transform = 'translateX(-' + (_tutorialCurrentSlide * 25) + '%)';
   }
   if (indicator) {
-    indicator.textContent = 'Step ' + (_tutorialCurrentSlide + 1) + ' of ' + _tutorialTotalSlides;
+    var stepTpl = data.stepText || 'Step {n} of {total}';
+    indicator.textContent = stepTpl.replace('{n}', _tutorialCurrentSlide + 1).replace('{total}', _tutorialTotalSlides);
   }
   if (dots && dots.length > 0) {
     dots.forEach(function(dot, idx) {
@@ -11501,11 +11715,14 @@ function updateTutorialSlide() {
   if (prevBtn) {
     prevBtn.style.display = _tutorialCurrentSlide === 0 ? 'none' : 'inline-flex';
   }
+  if (prevBtnText) {
+    prevBtnText.textContent = data.prev;
+  }
   if (nextBtn) {
     if (_tutorialCurrentSlide === _tutorialTotalSlides - 1) {
-      nextBtn.innerHTML = '<i class="fas fa-check"></i> <span>Magsimula Na</span>';
+      nextBtn.innerHTML = '<i class="fas fa-check"></i> <span id="tutNextBtnText">' + escapeHtml(data.finish) + '</span>';
     } else {
-      nextBtn.innerHTML = '<span>Susunod</span> <i class="fas fa-arrow-right"></i>';
+      nextBtn.innerHTML = '<span id="tutNextBtnText">' + escapeHtml(data.next) + '</span> <i class="fas fa-arrow-right"></i>';
     }
   }
 }
@@ -11539,18 +11756,20 @@ function closeCustomerTutorial() {
 }
 
 function skipCustomerTutorial() {
+  var data = TUTORIAL_DATA[_tutorialLang] || TUTORIAL_DATA['tl'];
   localStorage.setItem('autoride_tutorial_seen', 'true');
   closeCustomerTutorial();
   if (typeof showToast === 'function') {
-    showToast('Welcome to Autoride! Puwede mo itong buksan ulit sa More menu.', 'info');
+    showToast(data.skipToast, 'info');
   }
 }
 
 function finishCustomerTutorial() {
+  var data = TUTORIAL_DATA[_tutorialLang] || TUTORIAL_DATA['tl'];
   localStorage.setItem('autoride_tutorial_seen', 'true');
   closeCustomerTutorial();
   if (typeof showToast === 'function') {
-    showToast('Handa ka na mag-rent! Mag-browse at piliin ang iyong sasakyan.', 'success');
+    showToast(data.finishToast, 'success');
   }
 }
 
@@ -11563,6 +11782,8 @@ function checkFirstTimeTutorial() {
 }
 
 window.openCustomerTutorial = openCustomerTutorial;
+window.setTutorialLanguage = setTutorialLanguage;
+window.renderTutorialContent = renderTutorialContent;
 window.skipCustomerTutorial = skipCustomerTutorial;
 window.finishCustomerTutorial = finishCustomerTutorial;
 window.nextTutorialSlide = nextTutorialSlide;
