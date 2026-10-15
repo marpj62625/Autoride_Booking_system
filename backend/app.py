@@ -2973,7 +2973,7 @@ def admin_list_users():
                        ld.license_back_url, ld.issuing_country_state, 
                        CAST(ld.date_of_birth AS TEXT) AS date_of_birth, ld.emergency_contact_name, 
                        ld.emergency_contact_phone, ld.emergency_contact_relationship,
-                       u.is_verified
+                       u.is_verified, CAST(u.created_at AS TEXT) AS created_at
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
                 WHERE u.is_verified = 1
@@ -2991,7 +2991,7 @@ def admin_list_users():
                        ld.license_back_url, ld.issuing_country_state, 
                        CAST(ld.date_of_birth AS TEXT) AS date_of_birth, ld.emergency_contact_name, 
                        ld.emergency_contact_phone, ld.emergency_contact_relationship,
-                       u.is_verified
+                       u.is_verified, CAST(u.created_at AS TEXT) AS created_at
                 FROM users u
                 LEFT JOIN license_details ld ON u.id = ld.user_id
                 WHERE COALESCE(u.role, 'user') NOT IN ('admin', 'super_admin', 'superadmin', 'staff')
