@@ -9,6 +9,9 @@
     "allowNavigation": [
       "autoride-booking-system.vercel.app",
       "https://autoride-booking-system.vercel.app",
+      "car-rental-inlaguna.vercel.app",
+      "https://car-rental-inlaguna.vercel.app",
+      "*.vercel.app",
       "fydfsgjrlowrrtlmefwq.supabase.co",
       "https://fydfsgjrlowrrtlmefwq.supabase.co",
       "*.googleapis.com",

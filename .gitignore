@@ -39,3 +39,4 @@ firebase-service-account.json
 .vercel
 .gradle/
 nul
+*.apk
