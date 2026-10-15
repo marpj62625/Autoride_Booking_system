@@ -5443,16 +5443,14 @@ def book():
         # Category Auto-Assignment Logic
 
         # Get category info from the representative vehicle_id
-
-        cur.execute("SELECT brand, model FROM vehicles WHERE id = %s", (vehicle_id,))
-
+        cur.execute("SELECT brand, model, status FROM vehicles WHERE id = %s", (vehicle_id,))
         category = cur.fetchone()
-
         if not category:
-
             return jsonify({"error": "Invalid vehicle category."}), 404
 
-            
+        req_status = (category.get('status') or '').strip().lower()
+        if req_status in ('maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled'):
+            return jsonify({"error": f"Vehicle is currently {category['status']} and cannot be booked."}), 400
 
         # Find first available unit in this category for the given dates with transactional row lock
         conn = get_db()
@@ -5460,7 +5458,7 @@ def book():
             cur.execute("""
                 SELECT id FROM vehicles 
                 WHERE brand = %s AND model = %s 
-                AND status NOT IN ('Maintenance', 'Repair', 'Service', 'Sold')
+                AND LOWER(status) NOT IN ('maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled')
                 AND id NOT IN (
                     SELECT vehicle_id FROM bookings 
                     WHERE status IN ('Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing')
@@ -7222,7 +7220,7 @@ def create_walkin_booking():
         veh = cur.fetchone()
         if not veh:
             return jsonify({"error": "Vehicle not found"}), 404
-        if veh['status'] in ('Maintenance', 'Repair', 'Sold'):
+        if (veh.get('status') or '').strip().lower() in ('maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled'):
             return jsonify({"error": f"Vehicle is currently in {veh['status']} status and cannot be booked"}), 400
 
         # Overlap guard: Prevent conflicting bookings on this physical unit
@@ -12749,6 +12747,25 @@ def check_vehicle_availability():
 
         cur = get_cursor()
 
+        # Check vehicle operational status first
+        cur.execute("SELECT id, brand, model, status FROM vehicles WHERE id = %s", (vehicle_id,))
+        veh_row = cur.fetchone()
+        if not veh_row:
+            return jsonify({'available': False, 'reason': 'Vehicle not found'}), 404
+
+        veh_status = (veh_row.get('status') or '').strip()
+        if veh_status.lower() in ('maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled'):
+            return jsonify({
+                'available': False,
+                'conflict': {
+                    'booking_id': 'Status',
+                    'start_date': str(start_date),
+                    'end_date': str(end_date),
+                    'status': veh_status
+                },
+                'reason': f"Vehicle is currently {veh_status} and cannot be booked."
+            }), 200
+
         # Check for blackout dates
         cur.execute("""
             SELECT id, reason, affected_vehicles 
@@ -12864,37 +12881,24 @@ def get_vehicle_categories():
                 -- Use image from first AVAILABLE unit (not in permanent out-of-service states)
                 -- Falls back to any unit image if none are available
                 COALESCE(
-                    MIN(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN vehicle_image END),
+                    MIN(CASE WHEN LOWER(status) NOT IN ('maintenance','repair','service','sold','unavailable','inactive','disabled') THEN vehicle_image END),
                     MIN(vehicle_image)
                 ) as vehicle_image,
-
                 MIN(daily_rate) as daily_rate,
-
                 MIN(vehicle_type) as vehicle_type,
-
                 MIN(seats) as seats,
-
                 MIN(fuel_type) as fuel_type,
-
                 MIN(transmission) as transmission,
-
                 MIN(location) as location,
-
                 COUNT(*) as total_units,
-
                 -- Count units that are operationally available (not permanently out of service).
                 -- 'Rented' is intentionally included because a car booked for June 25-26 is
                 -- still bookable for other dates — overlap is enforced at booking time, not here.
-                SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN 1 ELSE 0 END) as available_units
-
+                SUM(CASE WHEN LOWER(status) NOT IN ('maintenance','repair','service','sold','unavailable','inactive','disabled') THEN 1 ELSE 0 END) as available_units
             FROM vehicles
-
-            WHERE status != 'Sold'
-
+            WHERE LOWER(status) != 'sold'
             GROUP BY brand, model
-
             ORDER BY brand, model
-
         """)
 
         categories = cur.fetchall()
@@ -13810,7 +13814,7 @@ def get_vehicle_colors():
         commit_db()
         cur.execute(
             "SELECT DISTINCT COALESCE(color, 'Not Specified') as color, COUNT(*) as total, "
-            "SUM(CASE WHEN status NOT IN ('Maintenance','Repair','Service','Sold') THEN 1 ELSE 0 END) as available "
+            "SUM(CASE WHEN LOWER(status) NOT IN ('maintenance','repair','service','sold','unavailable','inactive','disabled') THEN 1 ELSE 0 END) as available "
             "FROM vehicles WHERE brand = %s AND model = %s GROUP BY color ORDER BY color",
             (brand, model)
         )
@@ -13838,17 +13842,17 @@ def get_vehicle_units():
         # Exclude permanently unavailable statuses only.
         # 'Rented' and 'Booked' are intentionally NOT excluded here — a vehicle rented for
         # June 25-26 is still bookable for other dates; overlap is enforced at submit time.
-        unavailable = ['Maintenance', 'Repair', 'Service', 'Sold']
+        unavailable = ['maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled']
         placeholders = ','.join(['%s'] * len(unavailable))
 
         if color and color != 'all' and color != 'Not Specified':
             cur.execute(
-                f"SELECT * FROM vehicles WHERE brand = %s AND model = %s AND COALESCE(color, 'Not Specified') = %s AND status NOT IN ({placeholders}) ORDER BY id ASC",
+                f"SELECT * FROM vehicles WHERE brand = %s AND model = %s AND COALESCE(color, 'Not Specified') = %s AND LOWER(status) NOT IN ({placeholders}) ORDER BY id ASC",
                 [brand, model, color] + unavailable
             )
         else:
             cur.execute(
-                f"SELECT * FROM vehicles WHERE brand = %s AND model = %s AND status NOT IN ({placeholders}) ORDER BY id ASC",
+                f"SELECT * FROM vehicles WHERE brand = %s AND model = %s AND LOWER(status) NOT IN ({placeholders}) ORDER BY id ASC",
                 [brand, model] + unavailable
             )
         units = cur.fetchall()

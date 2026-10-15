@@ -3562,6 +3562,13 @@ function openColorSelection(brandEnc, modelEnc) {
     .finally(function() { showLoading(false); });
 }
 
+// Check if vehicle status is operational (i.e. not out of service or unavailable)
+var NON_OPERATIONAL_STATUSES = ['maintenance', 'repair', 'service', 'sold', 'unavailable', 'inactive', 'disabled'];
+function isVehicleOperational(status) {
+  if (!status) return true;
+  return NON_OPERATIONAL_STATUSES.indexOf(String(status).toLowerCase().trim()) === -1;
+}
+
 // STEP 2: Color selected - show individual units with inline dropdowns
 function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
   var brand = decodeURIComponent(brandEnc);
@@ -3596,7 +3603,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
       window._vdModel = model;
 
       // Get unique transmissions from operationally available units (not out of service)
-      var availUnits = allUnits.filter(function(u) { return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1; });
+      var availUnits = allUnits.filter(function(u) { return isVehicleOperational(u.status); });
       var seenTrans = {};
       var transmissions = [];
       availUnits.forEach(function(u) {
@@ -3619,7 +3626,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
       if (!defaultUnit) {
         defaultUnit = availUnits.filter(function(u) { return u.status === 'Available'; })[0] || availUnits[0] || allUnits[0];
       }
-      var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(defaultUnit.status) === -1;
+      var isBookable = defaultUnit && isVehicleOperational(defaultUnit.status);
       var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
       var imgSrc = (defaultUnit.gallery && defaultUnit.gallery.length) ? buildImgUrl(defaultUnit.gallery[0]) : buildImgUrl(defaultUnit.vehicle_image);
 
@@ -3741,7 +3748,7 @@ function onVdTransChange() {
   var transEl = document.getElementById('vd-trans');
   var trans = transEl && transEl.value ? transEl.value : (transEl ? transEl.textContent : '');
   var availUnits = (window._vdUnits || []).filter(function(u) {
-    return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && (!trans || u.transmission === trans);
+    return isVehicleOperational(u.status) && (!trans || u.transmission === trans);
   });
   var seenColors = {};
   var colors = [];
@@ -3770,7 +3777,7 @@ function onVdColorChange() {
   for (var i = 0; i < units.length; i++) {
     var u = units[i];
     var uColor = u.color_display || u.color || 'Not Specified';
-    if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && (!color || uColor === color) && (!trans || u.transmission === trans)) {
+    if (isVehicleOperational(u.status) && (!color || uColor === color) && (!trans || u.transmission === trans)) {
       unit = u; break;
     }
   }
@@ -3779,7 +3786,7 @@ function onVdColorChange() {
     for (var i = 0; i < units.length; i++) {
       var u = units[i];
       var uColor = u.color_display || u.color || 'Not Specified';
-      if (['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1 && uColor === color) {
+      if (isVehicleOperational(u.status) && uColor === color) {
         unit = u;
         // Auto-update transmission dropdown to match this unit
         if (transEl) {
@@ -3792,7 +3799,7 @@ function onVdColorChange() {
   }
   // 3. Last fallback: any available unit
   if (!unit) {
-    unit = units.filter(function(u) { return ['Maintenance','Repair','Service','Sold'].indexOf(u.status) === -1; })[0];
+    unit = units.filter(function(u) { return isVehicleOperational(u.status); })[0];
   }
   if (!unit) return;
 
@@ -3829,7 +3836,7 @@ function onVdColorChange() {
   // Update book button
   var bookBtn = document.getElementById('vd-book-btn');
   if (bookBtn) {
-    var isBookable = ['Maintenance','Repair','Service','Sold'].indexOf(unit.status) === -1;
+    var isBookable = isVehicleOperational(unit.status);
     var canBook = isBookable && parseInt(currentUser.isVerified) === 2;
     if (canBook) {
       bookBtn.disabled = false;
@@ -3932,6 +3939,10 @@ function selectVehicleUnit(vehicleId) {
       if (svdEl) svdEl.innerHTML = '<div style="height:180px;width:100%;border-radius:6px;background:linear-gradient(90deg,var(--border) 25%,var(--bg-input,#f4f6fb) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;margin-bottom:0px;"></div>';
       apiCall('/vehicle/' + vehicleId + '?user_id=' + (currentUser.id || ''))
         .then(function(v) {
+          if (!isVehicleOperational(v.status)) {
+            showToast('This vehicle is currently ' + (v.status || 'Unavailable') + ' and cannot be booked.', 'error');
+            return;
+          }
           currentVehicleDetail = v;
           openBookingForm(vehicleId);
         })
@@ -4758,10 +4769,12 @@ function submitBooking() {
     if (!avail.available) {
       var conflict = avail.conflict || {};
       var nextDate = avail.next_available_from ? formatDateDisplay(avail.next_available_from) : 'unknown';
-      var msg = '\u26a0\ufe0f This vehicle is already booked from ' +
+      var msg = avail.reason || ('\u26a0\ufe0f This vehicle is already booked from ' +
         formatDateDisplay(conflict.start_date) + ' to ' + formatDateDisplay(conflict.end_date) + 
-        '. Next available: ' + nextDate + '.';
-      document.getElementById('bfErr').textContent = msg;
+        '. Next available: ' + nextDate + '.');
+      var errEl = document.getElementById('bfErr');
+      if (errEl) errEl.textContent = msg;
+      showToast(msg, 'error');
       return;
     }
     // Warn if the chosen end_date is close to an upcoming booking
@@ -4775,9 +4788,10 @@ function submitBooking() {
   }).catch(function(err) {
     showLoading(false);
     restoreBtn();
-    // If availability check fails, allow the booking to proceed (server will catch it)
-    console.warn('Availability check failed:', err);
-    showRentalAgreement(payload, result, payType);
+    var errMsg = (err && (err.error || err.message)) || 'Vehicle availability check failed.';
+    var errEl = document.getElementById('bfErr');
+    if (errEl) errEl.textContent = errMsg;
+    showToast(errMsg, 'error');
   });
 }
 
