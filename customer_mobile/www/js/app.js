@@ -11791,3 +11791,58 @@ window.prevTutorialSlide = prevTutorialSlide;
 window.goToTutorialSlide = goToTutorialSlide;
 window.closeCustomerTutorial = closeCustomerTutorial;
 window.checkFirstTimeTutorial = checkFirstTimeTutorial;
+
+// ===========================================================================
+// GOOGLE PLAY CLOSED TESTING DOWNLOAD FLOW
+// ===========================================================================
+var GOOGLE_GROUP_TESTING_URL = 'https://groups.google.com/g/autoride-testers';
+var PLAY_STORE_OPTIN_URL = 'https://play.google.com/apps/testing/com.autoride.customer';
+var PLAY_STORE_DETAILS_URL = 'https://play.google.com/store/apps/details?id=com.autoride.customer';
+
+function openPlayStoreTestingFlow() {
+  var modal = document.getElementById('playStoreTestingModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  } else {
+    window.open(GOOGLE_GROUP_TESTING_URL, '_blank');
+    setTimeout(function() {
+      window.open(PLAY_STORE_OPTIN_URL, '_blank');
+    }, 1500);
+  }
+}
+
+function closePlayStoreTestingModal() {
+  var modal = document.getElementById('playStoreTestingModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function joinGoogleGroupTesters() {
+  window.open(GOOGLE_GROUP_TESTING_URL, '_blank');
+  if (typeof showToast === 'function') {
+    showToast('I-click ang "Join group" sa binuksang Google Group tab.', 'info');
+  }
+}
+
+function openPlayStoreOptIn() {
+  window.open(PLAY_STORE_OPTIN_URL, '_blank');
+}
+
+function launchTestingSequence() {
+  // 1. Open Google Group in a new tab for the user to click "Join group"
+  window.open(GOOGLE_GROUP_TESTING_URL, '_blank');
+  
+  if (typeof showToast === 'function') {
+    showToast('Paki-click ang "Join group" sa Google Group tab, pagkatapos ay ididirekta ka na sa Play Store!', 'info');
+  }
+
+  // 2. Open Play Store Opt-In in another tab
+  setTimeout(function() {
+    window.open(PLAY_STORE_OPTIN_URL, '_blank');
+  }, 1400);
+}
+
+window.openPlayStoreTestingFlow = openPlayStoreTestingFlow;
+window.closePlayStoreTestingModal = closePlayStoreTestingModal;
+window.joinGoogleGroupTesters = joinGoogleGroupTesters;
+window.openPlayStoreOptIn = openPlayStoreOptIn;
+window.launchTestingSequence = launchTestingSequence;
