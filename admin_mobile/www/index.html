@@ -2275,89 +2275,31 @@
 
 
             position: fixed;
-
-
-
             top: 0; left: 0; width: 100%; height: 100%;
-
-
-
             background: rgba(15, 23, 42, 0.9);
-
-
-
             backdrop-filter: blur(12px);
-
-
-
             -webkit-backdrop-filter: blur(12px);
-
-
-
             z-index: 5000;
-
-
-
             display: none;
-
-
-
             align-items: center;
-
-
-
             justify-content: center;
-
-
-
             padding: 20px;
-
-
-
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
 
-
-
         .modal-content {
-
-
-
             background: var(--surface-solid);
-
-
-
             width: 100%;
-
-
-
             max-width: 450px;
-
-
-
             border-radius: 32px;
-
-
-
             padding: 30px;
-
-
-
             border: 1px solid var(--border);
-
-
-
             box-shadow: var(--shadow-premium);
-
-
-
             max-height: 90vh;
-
-
-
             overflow-y: auto;
-
-
-
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
 
 
@@ -3291,27 +3233,71 @@
         }
 
         @media (max-width: 480px) {
+            .premium-modal {
+                padding: 10px !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
+            }
+
             .premium-modal .modal-content,
             .modal-content {
-                padding: 16px 14px !important;
-                width: calc(100% - 20px) !important;
-                max-width: calc(100% - 20px) !important;
+                padding: 16px 12px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
                 border-radius: 16px !important;
                 box-sizing: border-box !important;
+                overflow-x: hidden !important;
             }
+
             .settings-group-card {
-                padding: 14px 12px !important;
+                padding: 12px 10px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            .settings-fields-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            #permGridContainer {
+                grid-template-columns: 1fr !important;
+                gap: 10px !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                box-sizing: border-box !important;
             }
         }
 
         .settings-group-card {
             box-sizing: border-box !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+        }
+        .settings-field-item {
+            box-sizing: border-box !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+        }
+        .settings-field-item label {
+            word-break: break-word !important;
         }
         .settings-field-item input,
         .settings-field-item select,
         .settings-field-item textarea {
             box-sizing: border-box !important;
             max-width: 100% !important;
+            width: 100% !important;
         }
 
 
@@ -7461,7 +7447,12 @@
 <!-- ===================== LIVE CHAT FAQ & AI ASSISTANT STYLES & MODALS ===================== -->
 <style id="adminChatControlsStyles">
 .ctrl-slider {
-    background-color: rgba(255,255,255,0.2) !important;
+    background-color: #cbd5e1 !important;
+    transition: .3s;
+    border-radius: 24px;
+}
+[data-theme="dark"] .ctrl-slider {
+    background-color: rgba(255,255,255,0.25) !important;
 }
 .ctrl-slider:before {
     position: absolute;
@@ -7473,6 +7464,7 @@
     background-color: white;
     transition: .3s;
     border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
 input:checked + .ctrl-slider {
     background-color: var(--primary, #00B14F) !important;
@@ -7700,25 +7692,25 @@ input:checked + .ctrl-slider:before {
 
 
         <div id="systemConfigModal" class="premium-modal" style="display: none;" onclick="closeSystemConfigModalBackdrop(event)">
-        <div class="modal-content" style="max-width: 920px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div>
-                    <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-sliders-h" style="color: var(--primary);"></i>
-                        System Configurations
+        <div class="modal-content" style="max-width: 920px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 16px;">
+                <div style="flex: 1; min-width: 0;">
+                    <h3 style="margin: 0; font-size: 1.25rem; color: var(--text-main); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <i class="fas fa-sliders-h" style="color: var(--primary); flex-shrink: 0;"></i>
+                        <span style="word-break: break-word;">System Configurations</span>
                     </h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 3px 0 0 0;">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin: 3px 0 0 0; word-break: break-word;">
                         Manage system rules, policies, and parameters organized by category.
                     </p>
                 </div>
-                <button type="button" onclick="handleSystemConfigCloseAttempt(event)" class="menu-btn" style="width: 36px; height: 36px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <button type="button" onclick="handleSystemConfigCloseAttempt(event)" class="menu-btn" style="width: 36px; height: 36px; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
                 <!-- Search Box -->
-                <div style="position: relative; margin-bottom: 12px;">
+                <div style="position: relative; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
                     <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none;"></i>
                     <input type="text" id="settingsSearchInput" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; box-sizing: border-box; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
                     <button id="settingsSearchClearBtn" type="button" onclick="Settings.clearSearch()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 0.9rem;">
@@ -7727,11 +7719,11 @@ input:checked + .ctrl-slider:before {
                 </div>
 
                 <!-- Category Tabs Navigation Bar -->
-                <div id="settingsCategoryTabs" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px; -webkit-overflow-scrolling: touch; scrollbar-width: thin;">
+                <div id="settingsCategoryTabs" style="display: flex; gap: 6px; overflow-x: auto; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; padding-bottom: 8px; margin-bottom: 14px; -webkit-overflow-scrolling: touch; scrollbar-width: thin;">
                     <!-- Injected dynamically by Settings.render() -->
                 </div>
 
-                <div id="mobileSettingsList" style="display: grid; gap: 16px;">
+                <div id="mobileSettingsList" style="display: grid; gap: 16px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
                     <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 20px;">Loading settings...</p>
                 </div>
             </div>
@@ -12037,19 +12029,19 @@ input:checked + .ctrl-slider:before {
                         const m = this.meta[key];
                         const isGranted = Boolean(perms[key] && perms[key].granted);
                         return `
-                            <div style="background:var(--surface-card);border:1px solid ${isGranted ? 'rgba(0,177,79,0.35)' : 'var(--border)'};border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:all 0.2s;">
-                                <div style="display:flex;align-items:center;gap:12px;flex:1;">
-                                    <div style="width:38px;height:38px;border-radius:10px;background:${isGranted ? 'rgba(0,177,79,0.15)' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;">
-                                        <i class="${m.icon}" style="color:${isGranted ? 'var(--primary)' : 'var(--text-muted)'};font-size:1.05rem;"></i>
+                            <div style="background:var(--surface-card);border:1px solid ${isGranted ? 'rgba(0,177,79,0.35)' : 'var(--border)'};border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-sizing:border-box;width:100%;max-width:100%;min-width:0;transition:all 0.2s;">
+                                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                                    <div style="width:36px;height:36px;flex-shrink:0;border-radius:10px;background:${isGranted ? 'rgba(0,177,79,0.15)' : 'rgba(255,255,255,0.05)'};display:flex;align-items:center;justify-content:center;">
+                                        <i class="${m.icon}" style="color:${isGranted ? 'var(--primary)' : 'var(--text-muted)'};font-size:1rem;"></i>
                                     </div>
-                                    <div style="flex:1;">
-                                        <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);">${m.label}</div>
-                                        <div style="font-size:0.7rem;color:var(--text-muted);">${m.desc}</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:0.86rem;font-weight:700;color:var(--text-main);word-break:break-word;">${m.label}</div>
+                                        <div style="font-size:0.68rem;color:var(--text-muted);word-break:break-word;line-height:1.3;margin-top:2px;">${m.desc}</div>
                                     </div>
                                 </div>
-                                <label class="ctrl-switch" style="margin-left:8px;">
-                                    <input type="checkbox" ${isGranted ? 'checked' : ''} onchange="StaffPermissions.togglePermission('${key}', this.checked)">
-                                    <span class="ctrl-slider"></span>
+                                <label style="position:relative;display:inline-block;width:44px;height:24px;margin:0;cursor:pointer;flex-shrink:0;">
+                                    <input type="checkbox" ${isGranted ? 'checked' : ''} onchange="StaffPermissions.togglePermission('${key}', this.checked)" style="opacity:0;width:0;height:0;">
+                                    <span class="ctrl-slider" style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.3s;border-radius:24px;"></span>
                                 </label>
                             </div>
                         `;
@@ -28539,22 +28531,22 @@ function toggleNewsletterModal(show = true) {
                 if (g.settings.length === 0) continue;
 
                 html += `
-                    <div class="settings-group-card" data-cat="${cat}" style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
-                            <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
-                                <div style="width: 36px; height: 36px; flex-shrink: 0; background: ${g.color}15; border: 1px solid ${g.color}33; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas ${g.icon}" style="color: ${g.color}; font-size: 1rem;"></i>
+                    <div class="settings-group-card" data-cat="${cat}" style="background: var(--surface-container); border: 1px solid var(--border); border-radius: 16px; padding: 16px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.2s;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+                            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;">
+                                <div style="width: 34px; height: 34px; flex-shrink: 0; background: ${g.color}15; border: 1px solid ${g.color}33; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas ${g.icon}" style="color: ${g.color}; font-size: 0.95rem;"></i>
                                 </div>
                                 <div style="flex: 1; min-width: 0;">
-                                    <div style="font-size: 0.96rem; font-weight: 700; color: var(--text-main); word-break: break-word;">${g.title}</div>
-                                    <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 1px; word-break: break-word;">${g.desc}</div>
+                                    <div style="font-size: 0.92rem; font-weight: 700; color: var(--text-main); word-break: break-word;">${g.title}</div>
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; word-break: break-word;">${g.desc}</div>
                                 </div>
                             </div>
-                            <span style="font-size: 0.72rem; font-weight: 700; color: ${g.color}; background: ${g.color}15; padding: 3px 10px; border-radius: 12px; border: 1px solid ${g.color}33; white-space: nowrap; flex-shrink: 0;">
+                            <span style="font-size: 0.7rem; font-weight: 700; color: ${g.color}; background: ${g.color}15; padding: 3px 8px; border-radius: 12px; border: 1px solid ${g.color}33; white-space: nowrap; flex-shrink: 0;">
                                 ${g.settings.length} ${g.settings.length === 1 ? 'setting' : 'settings'}
                             </span>
                         </div>
-                        <div class="settings-fields-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; margin-top: 14px;">
+                        <div class="settings-fields-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; margin-top: 14px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
                 `;
 
                 if (cat === 'email_smtp') {
@@ -37434,54 +37426,58 @@ function toggleNewsletterModal(show = true) {
 
 <!-- ==================== STAFF PERMISSIONS & ACCESS REQUESTS (SUPER ADMIN MODAL) ==================== -->
 <div id="staffPermissionsSuperModal" class="premium-modal" style="display:none;" onclick="StaffPermissions.handleBackdropClick(event)">
-    <div class="modal-content" style="max-width: 860px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
-            <div>
-                <h3 style="margin:0; font-size:1.2rem; color:var(--text-main); display:flex; align-items:center; gap:10px;">
-                    <i class="fas fa-user-shield" style="color:var(--primary);"></i>
-                    Staff Control Permissions &amp; Requests
-                    <span style="font-size:0.65rem; background:rgba(0,177,79,0.15); color:var(--primary); font-weight:800; padding:3px 8px; border-radius:8px;">SUPER ADMIN</span>
+    <div class="modal-content" style="max-width: 860px; width: 95%; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 20px; padding: 24px; box-shadow: var(--shadow-modal); max-height: 90vh; overflow-y: auto; overflow-x: hidden; box-sizing: border-box;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);">
+            <div style="flex:1; min-width:0;">
+                <h3 style="margin:0; font-size:1.15rem; color:var(--text-main); display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <i class="fas fa-user-shield" style="color:var(--primary); flex-shrink:0;"></i>
+                    <span style="word-break:break-word;">Staff Control Permissions &amp; Requests</span>
+                    <span style="font-size:0.65rem; background:rgba(0,177,79,0.15); color:var(--primary); font-weight:800; padding:3px 8px; border-radius:8px; flex-shrink:0;">SUPER ADMIN</span>
                 </h3>
-                <p style="margin:4px 0 0; font-size:0.75rem; color:var(--text-muted);">Allow or restrict specific operational controls for staff members, and review incoming access requests.</p>
+                <p style="margin:4px 0 0; font-size:0.75rem; color:var(--text-muted); word-break:break-word;">Allow or restrict specific operational controls for staff members, and review incoming access requests.</p>
             </div>
-            <button type="button" onclick="StaffPermissions.closeSuperAdminModal()" class="menu-btn" style="width:36px; height:36px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:10px; cursor:pointer;">
+            <button type="button" onclick="StaffPermissions.closeSuperAdminModal()" class="menu-btn" style="width:36px; height:36px; flex-shrink:0; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text-main); border-radius:10px; cursor:pointer;">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
         <!-- Sub Tabs -->
-        <div style="display:flex; gap:10px; margin-bottom:18px; border-bottom:1px solid var(--border); padding-bottom:12px;">
-            <button type="button" id="permTabToggles" onclick="StaffPermissions.switchSuperTab('toggles')" style="padding:8px 16px; border-radius:10px; font-weight:700; font-size:0.82rem; border:none; cursor:pointer; background:var(--primary); color:#fff; display:flex; align-items:center; gap:6px;">
+        <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px; flex-wrap:wrap;">
+            <button type="button" id="permTabToggles" onclick="StaffPermissions.switchSuperTab('toggles')" style="flex:1; min-width:140px; justify-content:center; padding:8px 14px; border-radius:10px; font-weight:700; font-size:0.82rem; border:none; cursor:pointer; background:var(--primary); color:#fff; display:flex; align-items:center; gap:6px;">
                 <i class="fas fa-toggle-on"></i> Control Permissions
             </button>
-            <button type="button" id="permTabRequests" onclick="StaffPermissions.switchSuperTab('requests')" style="padding:8px 16px; border-radius:10px; font-weight:700; font-size:0.82rem; border:1px solid var(--border); cursor:pointer; background:transparent; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+            <button type="button" id="permTabRequests" onclick="StaffPermissions.switchSuperTab('requests')" style="flex:1; min-width:140px; justify-content:center; padding:8px 14px; border-radius:10px; font-weight:700; font-size:0.82rem; border:1px solid var(--border); cursor:pointer; background:transparent; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
                 <i class="fas fa-inbox"></i> Access Requests <span id="permModalRequestsBadge" style="display:none; background:#ef4444; color:#fff; font-size:0.6rem; padding:1px 6px; border-radius:8px; margin-left:4px;">0</span>
             </button>
         </div>
 
         <!-- Tab 1: Permissions by Staff Member -->
-        <div id="permSuperViewToggles">
-            <div style="margin-bottom: 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">Select Staff Member:</label>
-                <select id="permStaffSelect" onchange="StaffPermissions.onStaffSelected()" style="flex: 1; min-width: 200px; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-weight: 600; outline: none;">
-                    <option value="">Loading staff accounts...</option>
-                </select>
-                <button type="button" onclick="StaffPermissions.grantAllCurrentStaff(true)" class="btn-premium" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer;">
-                    <i class="fas fa-check-double"></i> Allow All
-                </button>
-                <button type="button" onclick="StaffPermissions.grantAllCurrentStaff(false)" class="btn-premium" style="padding: 10px 14px; font-size: 0.75rem; border-radius: 10px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700; cursor: pointer;">
-                    <i class="fas fa-ban"></i> Restrict All
-                </button>
+        <div id="permSuperViewToggles" style="width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
+            <div style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; width: 100%; box-sizing: border-box;">
+                <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                    <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">Select Staff Member:</label>
+                    <select id="permStaffSelect" onchange="StaffPermissions.onStaffSelected()" style="width: 100%; box-sizing: border-box; padding: 10px 12px; background: var(--surface-solid, #fff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); font-weight: 600; font-size: 0.85rem; outline: none; text-overflow: ellipsis;">
+                        <option value="">Loading staff accounts...</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <button type="button" onclick="StaffPermissions.grantAllCurrentStaff(true)" class="btn-premium" style="flex: 1; justify-content: center; padding: 9px 12px; font-size: 0.78rem; border-radius: 10px; background: rgba(0, 177, 79, 0.12); color: var(--primary); border: 1px solid rgba(0, 177, 79, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-check-double"></i> Allow All
+                    </button>
+                    <button type="button" onclick="StaffPermissions.grantAllCurrentStaff(false)" class="btn-premium" style="flex: 1; justify-content: center; padding: 9px 12px; font-size: 0.78rem; border-radius: 10px; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-ban"></i> Restrict All
+                    </button>
+                </div>
             </div>
 
-            <div id="permGridContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px;">
+            <div id="permGridContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 10px; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
                 <!-- Injected via JS -->
             </div>
         </div>
 
         <!-- Tab 2: Access Requests Review -->
-        <div id="permSuperViewRequests" style="display: none;">
-            <div id="permRequestsList" style="display: flex; flex-direction: column; gap: 12px;">
+        <div id="permSuperViewRequests" style="display: none; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
+            <div id="permRequestsList" style="display: flex; flex-direction: column; gap: 12px; width: 100%; box-sizing: border-box;">
                 <!-- Injected via JS -->
             </div>
         </div>
