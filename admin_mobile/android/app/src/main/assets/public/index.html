@@ -5702,7 +5702,13 @@
 
 
 
-        <h1 class="page-title">Bookings Overview</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+            <h1 class="page-title" style="margin: 0;">Bookings Overview</h1>
+            <button type="button" onclick="WalkinBooking.openModal()" class="btn-primary" style="background: linear-gradient(135deg, #00B14F 0%, #059669 100%); color: white; border: none; border-radius: 10px; padding: 10px 18px; font-weight: 800; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0, 177, 79, 0.25); transition: transform 0.15s, box-shadow 0.15s;">
+                <i class="fas fa-plus-circle" style="font-size: 1rem;"></i>
+                <span>+ Walk-in Booking</span>
+            </button>
+        </div>
 
 
 
@@ -7203,6 +7209,295 @@
                 </button>
             </div>
             <div id="markPaidModalBody"></div>
+        </div>
+    </div>
+
+    <!-- WALKIN BOOKING MODAL -->
+    <div id="walkinBookingModal" class="premium-modal" style="background: rgba(15,23,42,0.85); display: none; z-index: 10001;" onclick="if(event.target === this) WalkinBooking.closeModal();">
+        <div class="modal-content" style="background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); padding: 24px; border-radius: 20px; max-width: 680px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35); border: 1px solid var(--border, #e2e8f0);">
+            
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border, #e2e8f0);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(0, 177, 79, 0.12); color: #00B14F; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main, #0f172a); margin: 0;">Walk-in / Direct Counter Booking</h2>
+                        <p style="font-size: 0.76rem; color: var(--text-muted, #64748b); margin: 3px 0 0;">Create same-day or instant rentals directly without customer account restrictions.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="WalkinBooking.closeModal()" style="background: rgba(0,0,0,0.06); border: none; color: #374151; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(0,0,0,0.12)'" onmouseout="this.style.background='rgba(0,0,0,0.06)'">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="walkinBookingForm" onsubmit="WalkinBooking.submit(event)">
+                
+                <!-- Account Mode Selector -->
+                <div style="background: var(--surface-container, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 14px; padding: 14px; margin-bottom: 18px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); margin-bottom: 8px; letter-spacing: 0.5px;">
+                        Customer Account Option
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button type="button" id="walkinModeGuestBtn" onclick="WalkinBooking.setMode('guest')" 
+                                style="padding: 10px 14px; border-radius: 10px; border: 2px solid #00B14F; background: rgba(0, 177, 79, 0.08); color: #00B14F; font-weight: 800; font-size: 0.82rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; transition: all 0.2s;">
+                            <i class="fas fa-user-tag" style="font-size: 1.1rem;"></i>
+                            <div>
+                                <div style="font-weight: 800;">Walk-in Guest</div>
+                                <div style="font-size: 0.7rem; font-weight: 500; opacity: 0.85;">No account created in users DB</div>
+                            </div>
+                        </button>
+                        <button type="button" id="walkinModeRegisteredBtn" onclick="WalkinBooking.setMode('registered')" 
+                                style="padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-muted, #64748b); font-weight: 700; font-size: 0.82rem; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 10px; transition: all 0.2s;">
+                            <i class="fas fa-user-check" style="font-size: 1.1rem;"></i>
+                            <div>
+                                <div style="font-weight: 800;">Registered Account</div>
+                                <div style="font-size: 0.7rem; font-weight: 500; opacity: 0.85;">Link to existing customer</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Guest Customer Info Section -->
+                <div id="walkinGuestSection" style="margin-bottom: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.5px;">Guest Customer Details</span>
+                        <span style="font-size: 0.7rem; color: #10b981; font-weight: 700;"><i class="fas fa-shield-alt"></i> Recorded in admin booking only</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Full Name <span style="color:#ef4444;">*</span></label>
+                            <input type="text" id="walkinCustName" placeholder="e.g. Juan Dela Cruz" required
+                                   style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="color:#ef4444;">*</span></label>
+                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" required
+                                   style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Address / Residence</label>
+                        <input type="text" id="walkinCustAddress" placeholder="e.g. 123 Rizal St., San Fernando, La Union"
+                               style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Contact</label>
+                            <input type="text" id="walkinEmergName" placeholder="Name"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Phone</label>
+                            <input type="tel" id="walkinEmergPhone" placeholder="Phone"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Relationship</label>
+                            <input type="text" id="walkinEmergRel" placeholder="e.g. Spouse / Sibling"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registered Customer Selector Section (Hidden by default) -->
+                <div id="walkinRegisteredSection" style="display: none; margin-bottom: 18px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); letter-spacing: 0.5px;">Assign to Customer Account</span>
+                        <span style="font-size: 0.7rem; color: #2563eb; font-weight: 700;"><i class="fas fa-link"></i> Linked to existing profile</span>
+                    </div>
+                    <div style="position: relative; margin-bottom: 10px;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted, #64748b);"></i>
+                        <input type="text" id="walkinCustomerSearch" placeholder="Type customer name, email, or phone to search..." oninput="WalkinBooking.onCustomerSearch(this.value)"
+                               style="width: 100%; padding: 9px 12px 9px 34px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        <div id="walkinCustomerDropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface-solid, #ffffff); border: 1px solid var(--border, #cbd5e1); border-radius: 10px; max-height: 200px; overflow-y: auto; z-index: 50; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);"></div>
+                    </div>
+                    <!-- Selected Customer Preview Card -->
+                    <div id="walkinSelectedCustCard" style="display: none; background: rgba(37, 99, 235, 0.06); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 12px; padding: 12px; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 38px; height: 38px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div>
+                                <div id="walkinSelectedCustName" style="font-weight: 800; font-size: 0.85rem; color: var(--text-main, #0f172a);">Customer Name</div>
+                                <div id="walkinSelectedCustMeta" style="font-size: 0.72rem; color: var(--text-muted, #64748b);">user@email.com • 09123456789</div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="WalkinBooking.clearCustomerSelection()" style="padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.08); color: #ef4444; font-size: 0.72rem; font-weight: 700; cursor: pointer;">Change</button>
+                    </div>
+                    <input type="hidden" id="walkinCustUserId" value="">
+                </div>
+
+                <!-- Rental Vehicle & Schedule Section -->
+                <div style="background: var(--surface-container, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 14px; padding: 14px; margin-bottom: 18px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); margin-bottom: 10px; letter-spacing: 0.5px;">
+                        Vehicle & Schedule
+                    </div>
+
+                    <!-- Vehicle Selection -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Assign Vehicle Unit <span style="color:#ef4444;">*</span></label>
+                        <select id="walkinVehicleSelect" required onchange="WalkinBooking.onVehicleChange()"
+                                style="width: 100%; padding: 9px 12px; font-size: 0.84rem; font-weight: 600; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            <option value="">Select an available vehicle...</option>
+                        </select>
+                    </div>
+
+                    <!-- Schedule Dates & Times -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                        <!-- Start Schedule -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-main, #0f172a);">Pickup / Start <span style="color:#ef4444;">*</span></label>
+                                <button type="button" onclick="WalkinBooking.setCurrentTime()" title="Set to current date and exact current time (e.g. 8:40 PM)"
+                                        style="font-size: 0.68rem; font-weight: 800; padding: 2px 7px; border-radius: 5px; border: 1px solid #00B14F; background: rgba(0, 177, 79, 0.1); color: #00B14F; cursor: pointer;">
+                                    <i class="fas fa-clock"></i> Exact Time Now
+                                </button>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                <input type="date" id="walkinStartDate" required onchange="WalkinBooking.recalculate()"
+                                       style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                <input type="time" id="walkinStartTime" required onchange="WalkinBooking.recalculate()"
+                                       style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            </div>
+                        </div>
+
+                        <!-- End Schedule -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-main, #0f172a);">Return / End <span style="color:#ef4444;">*</span></label>
+                                <span id="walkinDurationDaysBadge" style="font-size: 0.68rem; font-weight: 800; color: #2563eb; background: rgba(37, 99, 235, 0.1); padding: 2px 7px; border-radius: 5px;">1 Day</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                <input type="date" id="walkinEndDate" required onchange="WalkinBooking.recalculate()"
+                                       style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                <input type="time" id="walkinEndTime" required onchange="WalkinBooking.recalculate()"
+                                       style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Days Chips -->
+                    <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;">
+                        <span style="font-size: 0.7rem; color: var(--text-muted, #64748b); font-weight: 600;">Quick add:</span>
+                        <button type="button" onclick="WalkinBooking.addDays(1)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+1 Day</button>
+                        <button type="button" onclick="WalkinBooking.addDays(2)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+2 Days</button>
+                        <button type="button" onclick="WalkinBooking.addDays(3)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+3 Days</button>
+                        <button type="button" onclick="WalkinBooking.addDays(7)" style="padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 6px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); cursor: pointer;">+1 Week</button>
+                    </div>
+
+                    <!-- Rental Type, Pickup Loc, Destination -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Rental Type</label>
+                            <select id="walkinRentalType" onchange="WalkinBooking.recalculate()"
+                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                <option value="Self Drive" selected>Self Drive</option>
+                                <option value="With Driver">With Driver (+₱755/day)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Pickup Location</label>
+                            <input type="text" id="walkinPickupLocation" value="Main Office / Counter Garage"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing & Payment Section -->
+                <div style="background: var(--surface-container, #f8fafc); border: 1px solid var(--border, #e2e8f0); border-radius: 14px; padding: 14px; margin-bottom: 20px;">
+                    <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted, #64748b); margin-bottom: 10px; letter-spacing: 0.5px;">
+                        Pricing & Counter Payment
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Base Price (₱)</label>
+                            <input type="number" id="walkinBasePrice" min="0" step="any" oninput="WalkinBooking.recalculateTotal()"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Driver / Delivery (₱)</label>
+                            <input type="number" id="walkinExtraFee" min="0" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Discount (₱)</label>
+                            <input type="number" id="walkinDiscount" min="0" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <!-- Total Banner -->
+                    <div style="background: linear-gradient(135deg, rgba(0, 177, 79, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%); border: 1px solid rgba(0, 177, 79, 0.3); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div>
+                            <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #047857; letter-spacing: 0.5px;">Total Rental Price</span>
+                            <div style="font-size: 0.74rem; color: var(--text-muted, #64748b);">Inclusive of all counter fees</div>
+                        </div>
+                        <div id="walkinTotalDisplay" style="font-size: 1.35rem; font-weight: 900; color: #00B14F;">₱0.00</div>
+                    </div>
+
+                    <!-- Payment Method, Status, & Amount Collected -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Payment Method</label>
+                            <select id="walkinPaymentMethod"
+                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                <option value="Cash" selected>Cash (Counter)</option>
+                                <option value="GCash">GCash</option>
+                                <option value="Maya">Maya</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                                <option value="Card">Credit/Debit Card</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Payment Status</label>
+                            <select id="walkinPaymentStatus" onchange="WalkinBooking.onPaymentStatusChange()"
+                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                <option value="Paid" selected>Paid (Full)</option>
+                                <option value="Partial">Downpayment (Partial)</option>
+                                <option value="Unpaid">Unpaid / Collect Later</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Amount Collected Now (₱)</label>
+                            <input type="number" id="walkinAmountPaid" min="0" step="any" oninput="WalkinBooking.recalculateBalance()"
+                                   style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <!-- Initial Booking Status Selector -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--border, #e2e8f0);">
+                        <div>
+                            <label style="font-size: 0.74rem; font-weight: 700; color: var(--text-main, #0f172a); margin-right: 8px;">Initial Status:</label>
+                            <select id="walkinBookingStatus"
+                                    style="padding: 6px 10px; font-size: 0.78rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none;">
+                                <option value="Confirmed" selected>Confirmed (Reserved & Ready)</option>
+                                <option value="Picked Up">Picked Up (Key Handed Over Now)</option>
+                                <option value="Approved">Approved</option>
+                            </select>
+                        </div>
+                        <div id="walkinBalanceNote" style="font-size: 0.74rem; font-weight: 700; color: #10b981;">
+                            Balance: ₱0.00
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Buttons -->
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" onclick="WalkinBooking.closeModal()" 
+                            style="padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="walkinSubmitBtn" 
+                            style="padding: 10px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #00B14F 0%, #059669 100%); color: white; font-weight: 800; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0, 177, 79, 0.3);">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Confirm Walk-in Booking</span>
+                    </button>
+                </div>
+
+            </form>
         </div>
     </div>
 
@@ -10296,6 +10591,9 @@ input:checked + .ctrl-slider:before {
                 </div>
                 <button onclick="FleetCalendar.refresh()" class="btn-secondary" title="Refresh Schedule" style="padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-muted);">
                     <i class="fas fa-sync-alt"></i>
+                </button>
+                <button type="button" onclick="WalkinBooking.openModal()" class="btn-primary" title="Create new walk-in or manual booking" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 800; cursor: pointer; background: linear-gradient(135deg, #00B14F 0%, #059669 100%); border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,177,79,0.35);">
+                    <i class="fas fa-plus-circle"></i> <span class="fc-btn-text">+ Walk-in Booking</span>
                 </button>
                 <button type="button" onclick="FleetCalendar.openExportModal()" class="btn-primary" title="Export Fleet Schedule & Bookings to Excel" style="padding: 7px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: #00B14F; border: none; color: white; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,177,79,0.3);">
                     <i class="fas fa-file-excel"></i> <span class="fc-btn-text">Export Excel</span>
@@ -32642,6 +32940,551 @@ function toggleNewsletterModal(show = true) {
     window.Vehicles = Vehicles;
     window.FleetCalendar = FleetCalendar;
     window.Bookings = Bookings;
+
+    // ==================== WALKIN BOOKING CONTROLLER ====================
+    const WalkinBooking = {
+        mode: 'guest', // 'guest' or 'registered'
+        vehicles: [],
+        customers: [],
+        selectedCustomer: null,
+
+        formatTime(date) {
+            const h = String(date.getHours()).padStart(2, '0');
+            const m = String(date.getMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        },
+
+        formatDate(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        },
+
+        async openModal(preselectedVehicleId = null) {
+            const modal = document.getElementById('walkinBookingModal');
+            if (!modal) return;
+
+            // Reset form
+            const form = document.getElementById('walkinBookingForm');
+            if (form) form.reset();
+
+            this.selectedCustomer = null;
+            this.setMode('guest');
+
+            // Default dates: today start time now
+            const now = new Date();
+            const todayStr = this.formatDate(now);
+            const timeStr = this.formatTime(now);
+
+            const tomorrow = new Date(now.getTime() + 86400000);
+            const tomorrowStr = this.formatDate(tomorrow);
+
+            const startD = document.getElementById('walkinStartDate');
+            const startT = document.getElementById('walkinStartTime');
+            const endD = document.getElementById('walkinEndDate');
+            const endT = document.getElementById('walkinEndTime');
+
+            if (startD) startD.value = todayStr;
+            if (startT) startT.value = timeStr;
+            if (endD) endD.value = tomorrowStr;
+            if (endT) endT.value = timeStr;
+
+            const extraFee = document.getElementById('walkinExtraFee');
+            if (extraFee) extraFee.value = '0';
+            const disc = document.getElementById('walkinDiscount');
+            if (disc) disc.value = '0';
+
+            modal.style.display = 'flex';
+            if (typeof modalOpen === 'function') modalOpen();
+
+            // Load vehicles & customers in background
+            await Promise.all([
+                this.loadVehicles(preselectedVehicleId),
+                this.loadCustomers()
+            ]);
+
+            this.recalculate();
+        },
+
+        closeModal() {
+            const modal = document.getElementById('walkinBookingModal');
+            if (modal) modal.style.display = 'none';
+            if (typeof modalClose === 'function') modalClose();
+        },
+
+        setMode(mode) {
+            this.mode = mode;
+            const guestBtn = document.getElementById('walkinModeGuestBtn');
+            const regBtn = document.getElementById('walkinModeRegisteredBtn');
+            const guestSec = document.getElementById('walkinGuestSection');
+            const regSec = document.getElementById('walkinRegisteredSection');
+
+            const nameInput = document.getElementById('walkinCustName');
+            const phoneInput = document.getElementById('walkinCustPhone');
+
+            if (mode === 'guest') {
+                if (guestBtn) {
+                    guestBtn.style.border = '2px solid #00B14F';
+                    guestBtn.style.background = 'rgba(0, 177, 79, 0.08)';
+                    guestBtn.style.color = '#00B14F';
+                }
+                if (regBtn) {
+                    regBtn.style.border = '1px solid var(--border, #cbd5e1)';
+                    regBtn.style.background = 'var(--surface-solid, #ffffff)';
+                    regBtn.style.color = 'var(--text-muted, #64748b)';
+                }
+                if (guestSec) guestSec.style.display = 'block';
+                if (regSec) regSec.style.display = 'none';
+
+                if (nameInput) nameInput.required = true;
+                if (phoneInput) phoneInput.required = true;
+                const uid = document.getElementById('walkinCustUserId');
+                if (uid) uid.value = '';
+            } else {
+                if (regBtn) {
+                    regBtn.style.border = '2px solid #2563eb';
+                    regBtn.style.background = 'rgba(37, 99, 235, 0.08)';
+                    regBtn.style.color = '#2563eb';
+                }
+                if (guestBtn) {
+                    guestBtn.style.border = '1px solid var(--border, #cbd5e1)';
+                    guestBtn.style.background = 'var(--surface-solid, #ffffff)';
+                    guestBtn.style.color = 'var(--text-muted, #64748b)';
+                }
+                if (guestSec) guestSec.style.display = 'none';
+                if (regSec) regSec.style.display = 'block';
+
+                if (nameInput) nameInput.required = false;
+                if (phoneInput) phoneInput.required = false;
+            }
+        },
+
+        setCurrentTime() {
+            const now = new Date();
+            const startD = document.getElementById('walkinStartDate');
+            const startT = document.getElementById('walkinStartTime');
+            if (startD) startD.value = this.formatDate(now);
+            if (startT) startT.value = this.formatTime(now);
+            this.recalculate();
+        },
+
+        addDays(num) {
+            const startD = document.getElementById('walkinStartDate');
+            const startVal = startD && startD.value ? new Date(startD.value) : new Date();
+            const endD = document.getElementById('walkinEndDate');
+            if (endD) {
+                const target = new Date(startVal.getTime() + (num * 86400000));
+                endD.value = this.formatDate(target);
+            }
+            this.recalculate();
+        },
+
+        async loadVehicles(preselectedId = null) {
+            try {
+                const res = await fetch(`${API_BASE}/api/vehicles`);
+                if (!res.ok) throw new Error('Failed to load vehicles');
+                const list = await res.json();
+                this.vehicles = Array.isArray(list) ? list : (list.vehicles || []);
+
+                const sel = document.getElementById('walkinVehicleSelect');
+                if (!sel) return;
+
+                sel.innerHTML = '<option value="">Select an available vehicle...</option>';
+                this.vehicles.forEach(v => {
+                    const statusStr = (v.status || 'Available');
+                    const isOperational = !['maintenance', 'repair', 'sold'].includes(statusStr.toLowerCase());
+                    if (isOperational) {
+                        const opt = document.createElement('option');
+                        opt.value = v.id;
+                        opt.textContent = `${v.brand} ${v.model} (${v.plate_number || 'No Plate'}) - ₱${Number(v.daily_rate || 0).toLocaleString()}/day [${statusStr}]`;
+                        opt.dataset.rate = v.daily_rate || 0;
+                        if (preselectedId && String(v.id) === String(preselectedId)) {
+                            opt.selected = true;
+                        }
+                        sel.appendChild(opt);
+                    }
+                });
+            } catch (err) {
+                console.error('Error loading vehicles for walk-in:', err);
+            }
+        },
+
+        async loadCustomers() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/users/list`);
+                if (res.ok) {
+                    const data = await res.json();
+                    this.customers = Array.isArray(data) ? data : (data.users || []);
+                }
+            } catch (err) {
+                console.warn('Could not preload customers list:', err);
+            }
+        },
+
+        onCustomerSearch(query) {
+            const dropdown = document.getElementById('walkinCustomerDropdown');
+            if (!dropdown) return;
+
+            const q = (query || '').toLowerCase().trim();
+            if (q.length < 1) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = this.customers.filter(c => {
+                const name = (c.full_name || '').toLowerCase();
+                const email = (c.email || '').toLowerCase();
+                const phone = (c.phone || '').toLowerCase();
+                return name.includes(q) || email.includes(q) || phone.includes(q);
+            }).slice(0, 10);
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = '<div style="padding: 10px 14px; font-size: 0.78rem; color: var(--text-muted);">No matching registered customers found.</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            let html = '';
+            matches.forEach(m => {
+                const safeName = (m.full_name || 'Customer').replace(/"/g, '&quot;');
+                const safeEmail = (m.email || '').replace(/"/g, '&quot;');
+                const safePhone = (m.phone || '').replace(/"/g, '&quot;');
+                html += `
+                    <div onclick="WalkinBooking.selectCustomer(${m.id})" 
+                         style="padding: 10px 14px; border-bottom: 1px solid var(--border, #e2e8f0); cursor: pointer; transition: background 0.15s;"
+                         onmouseover="this.style.background='rgba(0,177,79,0.06)'" onmouseout="this.style.background='transparent'">
+                        <div style="font-weight: 700; font-size: 0.82rem; color: var(--text-main, #0f172a);">${safeName}</div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted, #64748b);">${safeEmail} • ${safePhone}</div>
+                    </div>
+                `;
+            });
+            dropdown.innerHTML = html;
+            dropdown.style.display = 'block';
+        },
+
+        selectCustomer(userId) {
+            const cust = this.customers.find(c => Number(c.id) === Number(userId));
+            if (!cust) return;
+
+            this.selectedCustomer = cust;
+            const uidInput = document.getElementById('walkinCustUserId');
+            if (uidInput) uidInput.value = cust.id;
+
+            const nameEl = document.getElementById('walkinSelectedCustName');
+            if (nameEl) nameEl.textContent = cust.full_name || 'Customer';
+
+            const metaEl = document.getElementById('walkinSelectedCustMeta');
+            if (metaEl) metaEl.textContent = `${cust.email || 'No email'} • ${cust.phone || 'No phone'}`;
+            
+            const card = document.getElementById('walkinSelectedCustCard');
+            if (card) card.style.display = 'flex';
+
+            const searchInput = document.getElementById('walkinCustomerSearch');
+            if (searchInput) searchInput.style.display = 'none';
+
+            const dropdown = document.getElementById('walkinCustomerDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        },
+
+        clearCustomerSelection() {
+            this.selectedCustomer = null;
+            const uidInput = document.getElementById('walkinCustUserId');
+            if (uidInput) uidInput.value = '';
+
+            const card = document.getElementById('walkinSelectedCustCard');
+            if (card) card.style.display = 'none';
+
+            const searchInput = document.getElementById('walkinCustomerSearch');
+            if (searchInput) {
+                searchInput.style.display = 'block';
+                searchInput.value = '';
+                searchInput.focus();
+            }
+        },
+
+        onVehicleChange() {
+            const sel = document.getElementById('walkinVehicleSelect');
+            if (!sel) return;
+            const opt = sel.options[sel.selectedIndex];
+            const dailyRate = opt ? Number(opt.dataset.rate || 0) : 0;
+            this.recalculate(dailyRate);
+        },
+
+        getDays() {
+            const startD = document.getElementById('walkinStartDate');
+            const endD = document.getElementById('walkinEndDate');
+            if (!startD || !endD || !startD.value || !endD.value) return 1;
+
+            const s = new Date(startD.value).getTime();
+            const e = new Date(endD.value).getTime();
+            if (isNaN(s) || isNaN(e) || e < s) return 1;
+            return Math.max(1, Math.round((e - s) / 86400000));
+        },
+
+        recalculate(forcedDailyRate = null) {
+            const days = this.getDays();
+            const daysBadge = document.getElementById('walkinDurationDaysBadge');
+            if (daysBadge) daysBadge.textContent = `${days} Day${days > 1 ? 's' : ''}`;
+
+            const sel = document.getElementById('walkinVehicleSelect');
+            let dailyRate = 0;
+            if (forcedDailyRate !== null) {
+                dailyRate = forcedDailyRate;
+            } else if (sel && sel.selectedIndex >= 0) {
+                const opt = sel.options[sel.selectedIndex];
+                dailyRate = opt ? Number(opt.dataset.rate || 0) : 0;
+            }
+
+            const basePriceInput = document.getElementById('walkinBasePrice');
+            if (basePriceInput) {
+                basePriceInput.value = dailyRate * days;
+            }
+
+            // Driver fee calculation if With Driver selected
+            const rType = document.getElementById('walkinRentalType');
+            const extraFeeInput = document.getElementById('walkinExtraFee');
+            if (rType && extraFeeInput) {
+                if (rType.value === 'With Driver') {
+                    extraFeeInput.value = 755 * days;
+                } else if (Number(extraFeeInput.value) === 755 * days) {
+                    extraFeeInput.value = '0';
+                }
+            }
+
+            this.recalculateTotal();
+        },
+
+        recalculateTotal() {
+            const base = Number(document.getElementById('walkinBasePrice')?.value || 0);
+            const extra = Number(document.getElementById('walkinExtraFee')?.value || 0);
+            const disc = Number(document.getElementById('walkinDiscount')?.value || 0);
+            const total = Math.max(0, (base + extra) - disc);
+
+            const display = document.getElementById('walkinTotalDisplay');
+            if (display) display.textContent = `₱${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Sync amount paid based on status
+            const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
+            const amountInput = document.getElementById('walkinAmountPaid');
+            if (amountInput) {
+                if (payStatus === 'Paid') {
+                    amountInput.value = total;
+                } else if (payStatus === 'Unpaid') {
+                    amountInput.value = 0;
+                }
+            }
+            this.recalculateBalance();
+        },
+
+        onPaymentStatusChange() {
+            const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
+            const base = Number(document.getElementById('walkinBasePrice')?.value || 0);
+            const extra = Number(document.getElementById('walkinExtraFee')?.value || 0);
+            const disc = Number(document.getElementById('walkinDiscount')?.value || 0);
+            const total = Math.max(0, (base + extra) - disc);
+
+            const amountInput = document.getElementById('walkinAmountPaid');
+            if (amountInput) {
+                if (payStatus === 'Paid') {
+                    amountInput.value = total;
+                } else if (payStatus === 'Unpaid') {
+                    amountInput.value = 0;
+                } else if (payStatus === 'Partial' && Number(amountInput.value) === 0) {
+                    amountInput.value = Math.round(total / 2);
+                }
+            }
+            this.recalculateBalance();
+        },
+
+        recalculateBalance() {
+            const base = Number(document.getElementById('walkinBasePrice')?.value || 0);
+            const extra = Number(document.getElementById('walkinExtraFee')?.value || 0);
+            const disc = Number(document.getElementById('walkinDiscount')?.value || 0);
+            const total = Math.max(0, (base + extra) - disc);
+
+            const paid = Number(document.getElementById('walkinAmountPaid')?.value || 0);
+            const balance = Math.max(0, total - paid);
+
+            const note = document.getElementById('walkinBalanceNote');
+            if (note) {
+                if (balance <= 0) {
+                    note.textContent = 'Paid in Full (Balance: ₱0.00)';
+                    note.style.color = '#10b981';
+                } else {
+                    note.textContent = `Balance to Collect: ₱${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                    note.style.color = '#f59e0b';
+                }
+            }
+        },
+
+        async submit(e) {
+            if (e && e.preventDefault) e.preventDefault();
+
+            const submitBtn = document.getElementById('walkinSubmitBtn');
+            const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            }
+
+            try {
+                const vehicleId = document.getElementById('walkinVehicleSelect')?.value;
+                if (!vehicleId) {
+                    alert('Please select a vehicle unit.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+
+                const startDate = document.getElementById('walkinStartDate')?.value;
+                const startTime = document.getElementById('walkinStartTime')?.value || '08:00';
+                const endDate = document.getElementById('walkinEndDate')?.value;
+                const endTime = document.getElementById('walkinEndTime')?.value || '08:00';
+
+                if (!startDate || !endDate) {
+                    alert('Please select both start date and end date.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+
+                const isExisting = (this.mode === 'registered');
+                const userId = isExisting ? (document.getElementById('walkinCustUserId')?.value || null) : null;
+
+                if (isExisting && !userId) {
+                    alert('Please search and select a registered customer profile.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+
+                let custName = '';
+                let custPhone = '';
+                let custAddress = '';
+                let emergName = '';
+                let emergPhone = '';
+                let emergRel = '';
+
+                if (isExisting && this.selectedCustomer) {
+                    custName = this.selectedCustomer.full_name || 'Customer';
+                    custPhone = this.selectedCustomer.phone || '';
+                } else {
+                    custName = (document.getElementById('walkinCustName')?.value || '').trim();
+                    custPhone = (document.getElementById('walkinCustPhone')?.value || '').trim();
+                    custAddress = (document.getElementById('walkinCustAddress')?.value || '').trim();
+                    emergName = (document.getElementById('walkinEmergName')?.value || '').trim();
+                    emergPhone = (document.getElementById('walkinEmergPhone')?.value || '').trim();
+                    emergRel = (document.getElementById('walkinEmergRel')?.value || '').trim();
+
+                    if (!custName || !custPhone) {
+                        alert('Customer Full Name and Phone Number are required.');
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                        return;
+                    }
+                }
+
+                const basePrice = Number(document.getElementById('walkinBasePrice')?.value || 0);
+                const extraFee = Number(document.getElementById('walkinExtraFee')?.value || 0);
+                const discount = Number(document.getElementById('walkinDiscount')?.value || 0);
+                const totalPrice = Math.max(0, (basePrice + extraFee) - discount);
+                const amountPaid = Number(document.getElementById('walkinAmountPaid')?.value || 0);
+                const balanceAmount = Math.max(0, totalPrice - amountPaid);
+
+                const paymentMethod = document.getElementById('walkinPaymentMethod')?.value || 'Cash';
+                const paymentStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
+                const bookingStatus = document.getElementById('walkinBookingStatus')?.value || 'Confirmed';
+                const rentalType = document.getElementById('walkinRentalType')?.value || 'Self Drive';
+                const pickupLocation = document.getElementById('walkinPickupLocation')?.value || 'Main Office / Garage';
+
+                // Auth credentials
+                let adminUser = null;
+                try {
+                    adminUser = JSON.parse(localStorage.getItem('admin_user') || localStorage.getItem('autoride_user') || '{}');
+                } catch (pe) {
+                    adminUser = {};
+                }
+                const adminId = adminUser.id || 1;
+                const token = localStorage.getItem('admin_token') || localStorage.getItem('token');
+
+                const payload = {
+                    vehicle_id: Number(vehicleId),
+                    start_date: startDate,
+                    start_time: startTime,
+                    end_date: endDate,
+                    end_time: endTime,
+                    is_existing_account: isExisting,
+                    user_id: userId ? Number(userId) : null,
+                    customer_name: custName,
+                    customer_phone: custPhone,
+                    customer_address: custAddress,
+                    emergency_name: emergName,
+                    emergency_phone: emergPhone,
+                    emergency_rel: emergRel,
+                    base_price: basePrice,
+                    driver_fee: (rentalType === 'With Driver' ? extraFee : 0),
+                    delivery_fee: (rentalType !== 'With Driver' ? extraFee : 0),
+                    discount_amount: discount,
+                    total_price: totalPrice,
+                    amount_paid: amountPaid,
+                    balance_amount: balanceAmount,
+                    payment_method: paymentMethod,
+                    payment_status: paymentStatus,
+                    status: bookingStatus,
+                    rental_type: rentalType,
+                    pickup_location: pickupLocation,
+                    rental_purpose: 'Walk-in Counter Rental',
+                    admin_id: adminId
+                };
+
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-Admin-Id': String(adminId)
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const res = await fetch(`${API_BASE}/api/admin/bookings/walkin`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                if (!res.ok) {
+                    throw new Error(result.error || 'Failed to create walk-in booking');
+                }
+
+                // Success!
+                this.closeModal();
+
+                if (typeof showNotification === 'function') {
+                    showNotification('Walk-in booking created successfully!', 'success');
+                } else {
+                    alert('Walk-in booking created successfully!');
+                }
+
+                // Refresh views
+                if (window.FleetCalendar && typeof window.FleetCalendar.refresh === 'function') {
+                    window.FleetCalendar.refresh();
+                }
+                if (window.Bookings && typeof window.Bookings.refresh === 'function') {
+                    window.Bookings.refresh();
+                }
+                if (typeof loadDashboardData === 'function') {
+                    loadDashboardData();
+                }
+
+            } catch (err) {
+                console.error('Error submitting walk-in booking:', err);
+                alert(`Error: ${err.message}`);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnHtml;
+                }
+            }
+        }
+    };
+    window.WalkinBooking = WalkinBooking;
 
 
 

@@ -7139,7 +7139,197 @@ def get_all_bookings():
     finally:
 
         if 'cur' in locals():
+            cur.close()
 
+
+@app.route('/admin/bookings/walkin', methods=['POST'])
+@app.route('/api/admin/bookings/walkin', methods=['POST'])
+def create_walkin_booking():
+    """
+    Creates an admin walk-in / manual booking.
+    - If customer has no account, stores details under bookings without creating a user account (user_id = NULL).
+    - If customer has an existing account, links booking to that user_id.
+    - Allows same-day & real-time booking (e.g. current exact time like 8:40 PM).
+    - No customer active-booking limits or advance lead-time constraints.
+    - Records counter payment (Cash, GCash, etc.) in payments table if amount_paid > 0.
+    """
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    data = request.json or {}
+    try:
+        vehicle_id = data.get('vehicle_id')
+        if not vehicle_id:
+            return jsonify({"error": "Vehicle is required"}), 400
+
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        if not start_date or not end_date:
+            return jsonify({"error": "Start date and end date are required"}), 400
+
+        start_time = (data.get('start_time') or '08:00').strip()
+        end_time = (data.get('end_time') or '08:00').strip()
+
+        # Customer account linking vs pure walk-in
+        is_existing_account = bool(data.get('is_existing_account'))
+        user_id = data.get('user_id') if is_existing_account else None
+
+        cur = get_cursor()
+
+        customer_name = (data.get('customer_name') or '').strip()
+        customer_phone = (data.get('customer_phone') or '').strip()
+        customer_address = (data.get('customer_address') or '').strip()
+        emergency_name = (data.get('emergency_name') or '').strip()
+        emergency_phone = (data.get('emergency_phone') or '').strip()
+        emergency_rel = (data.get('emergency_rel') or '').strip()
+
+        if user_id:
+            cur.execute("SELECT id, full_name, phone, barangay, municipality, province FROM users WHERE id = %s", (user_id,))
+            user_row = cur.fetchone()
+            if user_row:
+                if not customer_name:
+                    customer_name = user_row.get('full_name') or 'Customer'
+                if not customer_phone:
+                    customer_phone = user_row.get('phone') or ''
+                if not customer_address:
+                    addr_parts = [p for p in [user_row.get('barangay'), user_row.get('municipality'), user_row.get('province')] if p]
+                    customer_address = ', '.join(addr_parts) if addr_parts else ''
+            else:
+                user_id = None
+
+        if not customer_name:
+            return jsonify({"error": "Customer name is required"}), 400
+
+        # Verify vehicle exists and is operational
+        cur.execute("SELECT id, brand, model, plate_number, daily_rate, status FROM vehicles WHERE id = %s", (vehicle_id,))
+        veh = cur.fetchone()
+        if not veh:
+            return jsonify({"error": "Vehicle not found"}), 404
+        if veh['status'] in ('Maintenance', 'Repair', 'Sold'):
+            return jsonify({"error": f"Vehicle is currently in {veh['status']} status and cannot be booked"}), 400
+
+        # Overlap guard: Prevent conflicting bookings on this physical unit
+        cur.execute("""
+            SELECT id, start_date, end_date, start_time, end_time, status, customer_name
+            FROM bookings
+            WHERE vehicle_id = %s
+              AND status IN ('Confirmed', 'Approved', 'Picked Up', 'Ongoing')
+              AND start_date <= %s
+              AND end_date >= %s
+            LIMIT 1
+        """, (vehicle_id, end_date, start_date))
+        conflict = cur.fetchone()
+        if conflict:
+            conf_cname = conflict.get('customer_name') or 'another customer'
+            return jsonify({
+                "error": f"Vehicle {veh['brand']} {veh['model']} ({veh['plate_number']}) is already booked from {conflict['start_date']} to {conflict['end_date']} (by {conf_cname}, status: {conflict['status']})."
+            }), 409
+
+        # Pricing calculations
+        try:
+            from datetime import datetime as _dt
+            s_d = _dt.strptime(str(start_date)[:10], '%Y-%m-%d').date()
+            e_d = _dt.strptime(str(end_date)[:10], '%Y-%m-%d').date()
+            days = max(1, (e_d - s_d).days)
+        except Exception:
+            days = 1
+
+        daily_rate = float(veh['daily_rate'] or 0.0)
+        base_price = float(data.get('base_price') or (daily_rate * days))
+        addon_price = max(0.0, float(data.get('addon_price') or 0.0))
+        driver_fee = max(0.0, float(data.get('driver_fee') or 0.0))
+        delivery_fee = max(0.0, float(data.get('delivery_fee') or 0.0))
+        discount_amount = max(0.0, float(data.get('discount_amount') or 0.0))
+
+        default_total = max(0.0, (base_price + addon_price + driver_fee + delivery_fee) - discount_amount)
+        total_price = float(data.get('total_price') if data.get('total_price') is not None else default_total)
+
+        amount_paid = max(0.0, float(data.get('amount_paid') or 0.0))
+        balance_amount = max(0.0, float(data.get('balance_amount') if data.get('balance_amount') is not None else max(0.0, total_price - amount_paid)))
+
+        payment_method = (data.get('payment_method') or 'Cash').strip()
+        payment_status = (data.get('payment_status') or ('Paid' if (amount_paid >= total_price and total_price > 0) else ('Partial' if amount_paid > 0 else 'Unpaid'))).strip()
+        payment_type = (data.get('payment_type') or ('Full' if amount_paid >= total_price else 'Downpayment')).strip()
+
+        # Status: Walk-in can be directly Confirmed or Picked Up
+        status = (data.get('status') or 'Confirmed').strip()
+        rental_type = (data.get('rental_type') or 'Self Drive').strip()
+        pickup_location = (data.get('pickup_location') or 'Main Office / Garage').strip()
+        destination = (data.get('destination') or '').strip()
+        rental_purpose = (data.get('rental_purpose') or 'Walk-in Counter Rental').strip()
+        raw_addons = data.get('addons', '')
+        addons = ",".join(raw_addons) if isinstance(raw_addons, list) else str(raw_addons)
+
+        cur.execute("""
+            INSERT INTO bookings (
+                user_id, vehicle_id, start_date, end_date, start_time, end_time,
+                pickup_location, rental_type, service_type,
+                customer_name, customer_phone, customer_address,
+                emergency_name, emergency_phone, emergency_rel,
+                base_price, addon_price, driver_fee, delivery_fee, discount_amount,
+                total_price, amount_paid, balance_amount,
+                status, payment_status, payment_type, payment_method,
+                destination, rental_purpose, addons, created_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s,
+                %s, %s, 'pickup',
+                %s, %s, %s,
+                %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                %s, %s, %s,
+                %s, %s, %s, %s,
+                %s, %s, %s, NOW()
+            ) RETURNING id, booking_id
+        """, (
+            user_id, vehicle_id, start_date, end_date, start_time, end_time,
+            pickup_location, rental_type,
+            customer_name, customer_phone, customer_address,
+            emergency_name, emergency_phone, emergency_rel,
+            base_price, addon_price, driver_fee, delivery_fee, discount_amount,
+            total_price, amount_paid, balance_amount,
+            status, payment_status, payment_type, payment_method,
+            destination, rental_purpose, addons
+        ))
+        created_row = cur.fetchone()
+        new_booking_id = created_row['id'] if created_row else None
+
+        # Record counter payment if money was collected
+        if new_booking_id and amount_paid > 0:
+            try:
+                cur.execute("""
+                    INSERT INTO payments (
+                        booking_id, amount, method, status, reference_number
+                    ) VALUES (
+                        %s, %s, %s, 'Completed', %s
+                    )
+                """, (new_booking_id, amount_paid, payment_method, f"COUNTER-{new_booking_id}"))
+            except Exception as pe:
+                print(f"WARN walk-in payment insert: {pe}")
+
+        # If booking is immediately Picked Up / Ongoing, update vehicle status to Rented
+        if status.lower() in ('picked up', 'ongoing'):
+            cur.execute("UPDATE vehicles SET status = 'Rented' WHERE id = %s", (vehicle_id,))
+        elif status.lower() in ('confirmed', 'approved'):
+            cur.execute("UPDATE vehicles SET status = 'Booked' WHERE id = %s", (vehicle_id,))
+
+        commit_db()
+
+        return jsonify({
+            "success": True,
+            "message": "Walk-in booking created successfully!",
+            "booking_id": new_booking_id,
+            "customer_name": customer_name,
+            "user_id": user_id,
+            "status": status
+        }), 201
+
+    except Exception as e:
+        import traceback as _tb
+        print(f"ERROR create_walkin_booking: {_tb.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
             cur.close()
 
 
