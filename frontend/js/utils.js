@@ -131,19 +131,31 @@ function formatDateDisplay(dateStr) {
 
 /**
  * Formats a driver's license number as LNN-YY-NNNNNN (13 chars total).
+ * Strictly enforces 1 uppercase letter followed by 10 digits.
+ * Auto-corrects common letter/digit lookalikes in digit positions (O->0, I/L->1).
  * @param {string} value
  * @returns {string}
  */
 function formatLicenseNumberInput(value) {
   if (!value) return '';
-  let cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  if (cleaned.length > 11) {
-    cleaned = cleaned.substring(0, 11);
-  }
-  let formatted = '';
-  if (cleaned.length > 0) {
-    formatted += cleaned.substring(0, 3);
-  }
+  var raw = String(value).toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (!raw) return '';
+
+  // Position 0 must be a letter A-Z
+  var firstLetterIdx = raw.search(/[A-Z]/);
+  if (firstLetterIdx === -1) return '';
+  var letter = raw.charAt(firstLetterIdx);
+  var rest = raw.slice(firstLetterIdx + 1);
+
+  // Positions 1..10 must be digits (convert O->0, I/L->1, strip other letters)
+  var digits = rest
+    .replace(/O/g, '0')
+    .replace(/[IL]/g, '1')
+    .replace(/[^0-9]/g, '')
+    .substring(0, 10);
+
+  var cleaned = letter + digits;
+  var formatted = cleaned.substring(0, 3);
   if (cleaned.length > 3) {
     formatted += '-' + cleaned.substring(3, 5);
   }
@@ -152,6 +164,256 @@ function formatLicenseNumberInput(value) {
   }
   return formatted;
 }
+
+/**
+ * Validates a person's name (First Name, Middle Name, Last Name, Full Name, Emergency Contact Name).
+ * Blocks character spam (e.g., "aaaa..."), excessive length, digits/symbols, and single-word full names.
+ * @param {string} value
+ * @param {string} fieldLabel
+ * @param {{ required?: boolean, minLen?: number, maxLen?: number, requireFullName?: boolean, isMiddleName?: boolean }} [options]
+ * @returns {{ valid: boolean, error?: string, cleaned?: string }}
+ */
+function validatePersonName(value, fieldLabel, options) {
+  options = options || {};
+  var label = fieldLabel || 'Name';
+  var required = options.required !== false;
+  var isMiddle = Boolean(options.isMiddleName);
+  var requireFull = Boolean(options.requireFullName);
+  var minLen = options.minLen || (isMiddle ? 1 : (requireFull ? 5 : 2));
+  var maxLen = options.maxLen || (requireFull ? 70 : 40);
+
+  var trimmed = (value || '').trim().replace(/\s+/g, ' ');
+  if (!trimmed) {
+    if (required) return { valid: false, error: label + ' is required.' };
+    return { valid: true, cleaned: '' };
+  }
+
+  if (trimmed.length < minLen) {
+    return { valid: false, error: label + ' must be at least ' + minLen + ' characters.' };
+  }
+  if (trimmed.length > maxLen) {
+    return { valid: false, error: label + ' cannot exceed ' + maxLen + ' characters.' };
+  }
+
+  // Only letters (including Ñ/ñ and accented chars), spaces, hyphens, apostrophes, periods
+  if (!/^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u00D1\u00F1\s.'-]+$/.test(trimmed)) {
+    return { valid: false, error: label + ' may only contain letters, spaces, hyphens, and periods (no numbers or symbols).' };
+  }
+
+  // Must start with a letter
+  if (!/^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u00D1\u00F1]/.test(trimmed)) {
+    return { valid: false, error: label + ' must start with a valid letter.' };
+  }
+
+  // Block 3 or more identical consecutive letters (e.g. "aaa", "bbbb", "xxxx")
+  if (/([A-Za-z\u00D1\u00F1])\1\1/i.test(trimmed)) {
+    return { valid: false, error: label + ' contains invalid repeating characters (e.g., "aaa"). Please enter a real name.' };
+  }
+
+  // Block repeated 2-letter patterns 3+ times (e.g. "ababab", "asdasd")
+  var lettersOnly = trimmed.replace(/[^A-Za-z]/g, '').toLowerCase();
+  if (/(..)\1\1/.test(lettersOnly) || /(...)\1\1/.test(lettersOnly)) {
+    return { valid: false, error: label + ' appears to contain repetitive or gibberish text. Please enter a real name.' };
+  }
+
+  var words = trimmed.split(' ').filter(Boolean);
+  for (var i = 0; i < words.length; i++) {
+    var w = words[i].replace(/[.'-]/g, '');
+    if (w.length > 20) {
+      return { valid: false, error: 'Each word in ' + label + ' cannot exceed 20 characters.' };
+    }
+    // Any word of 4+ letters must contain at least one vowel (a, e, i, o, u, y) and not be 5+ vowels only
+    if (w.length >= 4 && !/[aeiouyAEIOUY\u00C0-\u00FF]/.test(w)) {
+      return { valid: false, error: label + ' contains an unrecognizable word ("' + words[i] + '"). Please enter a valid name.' };
+    }
+    if (w.length >= 5 && /^[aeiouAEIOU]+$/.test(w)) {
+      return { valid: false, error: label + ' contains an invalid vowel sequence ("' + words[i] + '"). Please enter a valid name.' };
+    }
+  }
+
+  if (requireFull) {
+    var meaningfulWords = words.filter(function(w) { return w.replace(/[^A-Za-z]/g, '').length >= 2; });
+    if (words.length < 2 || meaningfulWords.length < 2) {
+      return { valid: false, error: 'Please enter both First Name and Last Name for ' + label + '.' };
+    }
+    if (words.length >= 2 && words.every(function(w) { return w.toLowerCase() === words[0].toLowerCase(); })) {
+      return { valid: false, error: label + ' cannot have identical first and last names.' };
+    }
+  }
+
+  return { valid: true, cleaned: trimmed };
+}
+
+/**
+ * Validates a Philippine mobile phone number (09XXXXXXXXX).
+ * Rejects dummy/repeating numbers such as 09999999999, 09000000000, 09123456789.
+ * @param {string} phone
+ * @param {string} [fieldLabel]
+ * @returns {{ valid: boolean, error?: string, cleaned?: string }}
+ */
+function validatePhonePH(phone, fieldLabel) {
+  var label = fieldLabel || 'Phone number';
+  var raw = (phone || '').trim();
+  if (!raw) {
+    return { valid: false, error: label + ' is required.' };
+  }
+  var cleaned = raw.replace(/\s|-/g, '');
+  if (cleaned.indexOf('+639') === 0 && cleaned.length === 13) {
+    cleaned = '0' + cleaned.slice(3);
+  } else if (cleaned.indexOf('639') === 0 && cleaned.length === 12) {
+    cleaned = '0' + cleaned.slice(2);
+  }
+
+  if (!/^09\d{9}$/.test(cleaned)) {
+    return { valid: false, error: label + ' must be an 11-digit Philippine mobile number starting with 09 (e.g., 09171234567).' };
+  }
+
+  // Reject 5+ identical consecutive digits (e.g., 09999999999, 09111111111, 09170000000)
+  if (/(\d)\1{4,}/.test(cleaned)) {
+    return { valid: false, error: 'Invalid ' + label.toLowerCase() + '. Repeating or dummy numbers (like ' + cleaned + ') are not allowed.' };
+  }
+
+  // Reject sequential dummy digits
+  var sub = cleaned.slice(2);
+  if (sub === '123456789' || sub === '987654321' || sub === '012345678' || /(..)\1{3,}/.test(sub) || /(\d{3})\1{2}/.test(sub)) {
+    return { valid: false, error: 'Invalid ' + label.toLowerCase() + '. Please enter an active, real mobile number.' };
+  }
+
+  return { valid: true, cleaned: cleaned };
+}
+
+/**
+ * Validates a Philippine LTO Driver's License Number (LNN-YY-NNNNNN).
+ * Position 1 must be a letter (A-Z), followed by 2 digits, hyphen, 2 digits, hyphen, 6 digits.
+ * @param {string} licenseNum
+ * @returns {{ valid: boolean, error?: string, cleaned?: string }}
+ */
+function validateLtoLicenseNumber(licenseNum) {
+  var cleaned = (licenseNum || '').trim().toUpperCase();
+  if (!cleaned) {
+    return { valid: false, error: 'License Number is required.' };
+  }
+  if (!/^[A-Z]\d{2}-\d{2}-\d{6}$/.test(cleaned)) {
+    return {
+      valid: false,
+      error: 'Invalid LTO License format. Must be 1 letter + 2 digits - 2 digits - 6 digits (e.g., N01-23-456789).'
+    };
+  }
+  var parts = cleaned.split('-');
+  var officeDigits = parts[0].slice(1);
+  var serial = parts[2];
+  if (officeDigits === '00') {
+    return { valid: false, error: 'Invalid LTO agency code (' + parts[0] + '). Cannot be 00.' };
+  }
+  if (/^(\d)\1{5}$/.test(serial) || serial === '123456' || serial === '654321' || serial === '012345') {
+    return { valid: false, error: 'Invalid LTO serial number (' + serial + '). Dummy or repeating numbers are not allowed.' };
+  }
+  return { valid: true, cleaned: cleaned };
+}
+
+/**
+ * Validates Driver's License Date of Birth.
+ * Must be a valid date and driver age must be between 18 and 75 years old.
+ * @param {string} dobStr - YYYY-MM-DD
+ * @returns {{ valid: boolean, error?: string }}
+ */
+function validateDriverDob(dobStr) {
+  if (!dobStr) {
+    return { valid: false, error: 'Date of Birth is required.' };
+  }
+  var parts = String(dobStr).split('T')[0].split('-').map(Number);
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
+    return { valid: false, error: 'Invalid Date of Birth format.' };
+  }
+  var dob = new Date(parts[0], parts[1] - 1, parts[2]);
+  if (isNaN(dob.getTime()) || dob.getFullYear() !== parts[0] || (dob.getMonth() + 1) !== parts[1] || dob.getDate() !== parts[2]) {
+    return { valid: false, error: 'Invalid Date of Birth.' };
+  }
+  var today = new Date();
+  var age = today.getFullYear() - dob.getFullYear();
+  var m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  if (age < 18) {
+    return { valid: false, error: 'You must be at least 18 years old to rent or drive a vehicle.' };
+  }
+  if (age > 75 || parts[0] < (today.getFullYear() - 75)) {
+    return { valid: false, error: 'Invalid Date of Birth (' + parts[0] + '). Driver age must be between 18 and 75 years old.' };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates Driver's License Expiry Date.
+ * Must not be expired and must not exceed 10 years from today (LTO max validity).
+ * @param {string} expiryStr - YYYY-MM-DD
+ * @returns {{ valid: boolean, error?: string }}
+ */
+function validateLicenseExpiry(expiryStr) {
+  if (!expiryStr) {
+    return { valid: false, error: 'License Expiry Date is required.' };
+  }
+  var parts = String(expiryStr).split('T')[0].split('-').map(Number);
+  if (parts.length !== 3 || !parts[0] || !parts[1] || !parts[2]) {
+    return { valid: false, error: 'Invalid Expiry Date format.' };
+  }
+  var exp = new Date(parts[0], parts[1] - 1, parts[2]);
+  if (isNaN(exp.getTime()) || exp.getFullYear() !== parts[0] || (exp.getMonth() + 1) !== parts[1] || exp.getDate() !== parts[2]) {
+    return { valid: false, error: 'Invalid Expiry Date.' };
+  }
+  var now = new Date();
+  var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (exp <= todayStart) {
+    return { valid: false, error: 'Your driver\'s license is expired. Please provide an active, unexpired license.' };
+  }
+  var maxExpiry = new Date(now.getFullYear() + 11, now.getMonth(), now.getDate());
+  if (exp > maxExpiry) {
+    return {
+      valid: false,
+      error: 'Invalid Expiry Date (' + parts[0] + '). LTO driver\'s licenses are valid for up to 10 years only (max year ' + (now.getFullYear() + 10) + ').'
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates an Address or Destination text field against character spam and length bounds.
+ * @param {string} value
+ * @param {string} fieldLabel
+ * @param {number} [minLen]
+ * @param {number} [maxLen]
+ * @returns {{ valid: boolean, error?: string, cleaned?: string }}
+ */
+function validateAddressOrPlace(value, fieldLabel, minLen, maxLen) {
+  var label = fieldLabel || 'Address';
+  minLen = minLen || 4;
+  maxLen = maxLen || 150;
+  var trimmed = (value || '').trim().replace(/\s+/g, ' ');
+  if (!trimmed) {
+    return { valid: false, error: label + ' is required.' };
+  }
+  if (trimmed.length < minLen) {
+    return { valid: false, error: label + ' must be at least ' + minLen + ' characters.' };
+  }
+  if (trimmed.length > maxLen) {
+    return { valid: false, error: label + ' cannot exceed ' + maxLen + ' characters.' };
+  }
+  if (!/[A-Za-z]{2,}/.test(trimmed)) {
+    return { valid: false, error: 'Please enter a valid ' + label.toLowerCase() + ' containing letters.' };
+  }
+  if (/([A-Za-z])\1\1/i.test(trimmed) || /(.)\1{4,}/.test(trimmed)) {
+    return { valid: false, error: label + ' contains invalid repeating characters. Please enter a real location.' };
+  }
+  var words = trimmed.split(' ');
+  for (var i = 0; i < words.length; i++) {
+    if (words[i].length > 28) {
+      return { valid: false, error: label + ' contains an unusually long word. Please enter a valid address or place.' };
+    }
+  }
+  return { valid: true, cleaned: trimmed };
+}
+
 
 
 /**

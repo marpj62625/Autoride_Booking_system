@@ -2631,19 +2631,19 @@
 
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>First Name</label>
-          <input type="text" id="regFirstName" placeholder="Juan" maxlength="40">
+          <input type="text" id="regFirstName" placeholder="Juan" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
 
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>Middle Name</label>
-          <input type="text" id="regMiddleName" placeholder="M. (Optional)" maxlength="40">
+          <input type="text" id="regMiddleName" placeholder="M. (Optional)" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
 
       </div>
 
       <div class="form-group" style="margin-top:15px;">
         <label>Last Name</label>
-        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40">
+        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         <span class="field-error" id="regNameErr"></span>
       </div>
 
@@ -3514,7 +3514,7 @@
       </div>
 
 
-      <h3 id="profileName" style="font-size:1.2rem;font-weight:800;"></h3>
+      <h3 id="profileName" style="font-size:1.2rem;font-weight:800;overflow-wrap:anywhere;word-break:break-word;"></h3>
 
 
       <p id="profileEmail" style="color:var(--text-secondary);font-size:0.875rem;margin-top:4px;"></p>
@@ -3571,16 +3571,16 @@
       <div style="display:flex; gap:10px;">
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>First Name</label>
-          <input type="text" id="editFirstName" placeholder="Juan" maxlength="40">
+          <input type="text" id="editFirstName" placeholder="Juan" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>Middle Name</label>
-          <input type="text" id="editMiddleName" placeholder="M. (Optional)" maxlength="40">
+          <input type="text" id="editMiddleName" placeholder="M. (Optional)" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
       </div>
       <div class="form-group" style="margin-top:15px;">
         <label>Last Name</label>
-        <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="40">
+        <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
       </div>
 
 
@@ -3667,7 +3667,7 @@
       <!-- VIEW MODE -->
 
 
-      <div id="licenseViewMode">
+      <div id="licenseViewMode" style="overflow-wrap:anywhere;word-break:break-word;">
 
 
         <div id="profileLicenseThumb" style="margin-bottom:12px; display:flex; gap:10px;">
@@ -3682,19 +3682,19 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">License No.</div>
 
 
-            <div id="viewLicenseNumber" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseNumber" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
 
 
           </div>
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Expiry Date</div>
@@ -3706,19 +3706,19 @@
           </div>
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Class / Category</div>
 
 
-            <div id="viewLicenseClass" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseClass" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
 
 
           </div>
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Date of Birth</div>
@@ -3742,25 +3742,25 @@
         <div style="display:flex;flex-direction:column;gap:10px;">
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Name on License</div>
 
 
-            <div id="viewLicenseName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
 
 
           </div>
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Complete Address</div>
 
 
-            <div id="viewLicenseAddress" style="font-size:0.88rem;font-weight:600;color:var(--text-main);line-height:1.4;">-</div>
+            <div id="viewLicenseAddress" style="font-size:0.88rem;font-weight:600;color:var(--text-main);line-height:1.4;overflow-wrap:anywhere;word-break:break-word;">-</div>
 
             <div id="viewLicenseCountry" style="display:none;"></div>
 
@@ -3780,31 +3780,31 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
 
 
-          <div style="grid-column: span 2;">
+          <div style="grid-column: span 2;min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Contact Name</div>
 
 
-            <div id="viewLicenseEmName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseEmName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
 
 
           </div>
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Phone Number</div>
 
 
-            <div id="viewLicenseEmPhone" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
+            <div id="viewLicenseEmPhone" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
 
 
           </div>
 
 
-          <div>
+          <div style="min-width:0;">
 
 
             <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Relationship</div>
@@ -3867,7 +3867,7 @@
             <label>Expiry Date</label>
 
 
-            <input type="date" id="editLicenseExpiry" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+            <input type="date" id="editLicenseExpiry" min="2026-01-01" max="2037-12-31" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
 
           </div>
@@ -3879,7 +3879,7 @@
             <label>License Class / Category</label>
 
 
-            <input type="text" id="editLicenseClass" placeholder="e.g. A, B, B1 (Separate with commas)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+            <input type="text" id="editLicenseClass" maxlength="25" placeholder="e.g. A, B, B1 (Separate with commas)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
 
           </div>
@@ -3894,7 +3894,7 @@
           <label>Complete Residential Address</label>
 
 
-          <input type="text" id="editLicenseAddress" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+          <input type="text" id="editLicenseAddress" maxlength="150" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" oninput="this.value=this.value.replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
           <input type="hidden" id="editLicenseCountry" value="">
 
@@ -3917,7 +3917,7 @@
           <label>Name on License</label>
 
 
-          <input type="text" id="editLicenseName" placeholder="First Name, Middle Name, Last Name">
+          <input type="text" id="editLicenseName" maxlength="70" placeholder="First Name, Middle Name, Last Name" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
 
 
         </div>
@@ -3929,7 +3929,7 @@
           <label>Date of Birth</label>
 
 
-          <input type="date" id="editLicenseDob" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+          <input type="date" id="editLicenseDob" min="1950-01-01" max="2008-12-31" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
 
         </div>
@@ -3950,7 +3950,7 @@
           <label>Contact Name</label>
 
 
-          <input type="text" id="editLicenseEmName" placeholder="Maria Dela Cruz">
+          <input type="text" id="editLicenseEmName" maxlength="70" placeholder="Maria Dela Cruz" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
 
 
         </div>

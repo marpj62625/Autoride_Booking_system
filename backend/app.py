@@ -2415,6 +2415,134 @@ def home():
 
 
 
+def _validate_person_name_py(val, label="Name", required=True, is_middle=False, require_full=False):
+    import re
+    trimmed = re.sub(r'\s+', ' ', (val or '').strip())
+    if not trimmed:
+        if required:
+            return False, f"{label} is required.", ""
+        return True, None, ""
+    min_len = 1 if is_middle else (5 if require_full else 2)
+    max_len = 70 if require_full else 40
+    if len(trimmed) < min_len:
+        return False, f"{label} must be at least {min_len} characters.", trimmed
+    if len(trimmed) > max_len:
+        return False, f"{label} cannot exceed {max_len} characters.", trimmed
+    if not re.match(r"^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u00D1\u00F1\s.,'-]+$", trimmed):
+        return False, f"{label} may only contain letters, spaces, hyphens, and periods.", trimmed
+    if not re.match(r"^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u00D1\u00F1]", trimmed):
+        return False, f"{label} must start with a valid letter.", trimmed
+    if re.search(r"([A-Za-z\u00D1\u00F1])\1\1", trimmed, re.IGNORECASE):
+        return False, f"{label} contains invalid repeating characters (e.g., 'aaa'). Please enter a real name.", trimmed
+    letters_only = re.sub(r"[^A-Za-z]", "", trimmed).lower()
+    if re.search(r"(..)\1\1", letters_only) or re.search(r"(...)\1\1", letters_only):
+        return False, f"{label} appears to contain repetitive or gibberish text.", trimmed
+    words = [w for w in trimmed.split(' ') if w]
+    for w in words:
+        w_clean = re.sub(r"[.,'-]", "", w)
+        if len(w_clean) > 20:
+            return False, f"Each word in {label} cannot exceed 20 characters.", trimmed
+        if len(w_clean) >= 4 and not re.search(r"[aeiouyAEIOUY\u00C0-\u00FF]", w_clean):
+            return False, f"{label} contains an unrecognizable word ('{w}'). Please enter a valid name.", trimmed
+        if len(w_clean) >= 5 and re.match(r"^[aeiouAEIOU]+$", w_clean):
+            return False, f"{label} contains an invalid vowel sequence ('{w}').", trimmed
+    if require_full:
+        meaningful = [w for w in words if len(re.sub(r"[^A-Za-z]", "", w)) >= 2]
+        if len(words) < 2 or len(meaningful) < 2:
+            return False, f"Please enter both First Name and Last Name for {label}.", trimmed
+        if len(set(w.lower() for w in words)) == 1:
+            return False, f"{label} cannot have identical first and last names.", trimmed
+    return True, None, trimmed
+
+
+def _validate_phone_ph_py(val, label="Phone number"):
+    import re
+    raw = (val or '').strip()
+    if not raw:
+        return False, f"{label} is required.", ""
+    cleaned = re.sub(r"[\s\-]", "", raw)
+    if cleaned.startswith('+639') and len(cleaned) == 13:
+        cleaned = '0' + cleaned[3:]
+    elif cleaned.startswith('639') and len(cleaned) == 12:
+        cleaned = '0' + cleaned[2:]
+    if not re.match(r"^09\d{9}$", cleaned):
+        return False, f"{label} must be a valid 11-digit Philippine mobile number starting with 09.", cleaned
+    if re.search(r"(\d)\1{4,}", cleaned):
+        return False, f"Invalid {label.lower()}. Repeating or dummy numbers (like {cleaned}) are not allowed.", cleaned
+    sub = cleaned[2:]
+    if sub in ('123456789', '987654321', '012345678') or re.search(r"(..)\1{3,}", sub) or re.search(r"(\d{3})\1{2}", sub):
+        return False, f"Invalid {label.lower()}. Please enter an active, real mobile number.", cleaned
+    return True, None, cleaned
+
+
+def _validate_lto_license_py(val):
+    import re
+    cleaned = (val or '').strip().upper()
+    if not cleaned:
+        return False, "License Number is required.", ""
+    if not re.match(r"^[A-Z]\d{2}-\d{2}-\d{6}$", cleaned):
+        return False, "Invalid LTO License format. Must be 1 letter + 2 digits - 2 digits - 6 digits (e.g., N01-23-456789).", cleaned
+    parts = cleaned.split('-')
+    if parts[0][1:] == '00':
+        return False, f"Invalid LTO agency code ({parts[0]}). Cannot be 00.", cleaned
+    serial = parts[2]
+    if re.match(r"^(\d)\1{5}$", serial) or serial in ('123456', '654321', '012345'):
+        return False, f"Invalid LTO serial number ({serial}). Dummy or repeating numbers are not allowed.", cleaned
+    return True, None, cleaned
+
+
+def _validate_driver_dob_py(val):
+    if not val or val in ('null', 'undefined'):
+        return False, "Date of Birth is required."
+    try:
+        dob_str = str(val).split('T')[0]
+        dob = datetime.strptime(dob_str, '%Y-%m-%d').date()
+    except Exception:
+        return False, "Invalid Date of Birth format."
+    today = datetime.now().date()
+    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    if age < 18:
+        return False, "You must be at least 18 years old to rent or drive a vehicle."
+    if age > 75 or dob.year < (today.year - 75):
+        return False, f"Invalid Date of Birth ({dob.year}). Driver age must be between 18 and 75 years old."
+    return True, None
+
+
+def _validate_license_expiry_py(val):
+    if not val or val in ('null', 'undefined'):
+        return False, "License Expiry Date is required."
+    try:
+        exp_str = str(val).split('T')[0]
+        exp = datetime.strptime(exp_str, '%Y-%m-%d').date()
+    except Exception:
+        return False, "Invalid Expiry Date format."
+    today = datetime.now().date()
+    if exp <= today:
+        return False, "Your driver's license is expired. Please provide an active, unexpired license."
+    max_year = today.year + 11
+    if exp.year > max_year:
+        return False, f"Invalid Expiry Date ({exp.year}). LTO driver's licenses are valid for up to 10 years only (max year {today.year + 10})."
+    return True, None
+
+
+def _validate_address_py(val, label="Address", min_len=5, max_len=150):
+    import re
+    trimmed = re.sub(r'\s+', ' ', (val or '').strip())
+    if not trimmed:
+        return False, f"{label} is required.", ""
+    if len(trimmed) < min_len:
+        return False, f"{label} must be at least {min_len} characters.", trimmed
+    if len(trimmed) > max_len:
+        return False, f"{label} cannot exceed {max_len} characters.", trimmed
+    if not re.search(r"[A-Za-z]{2,}", trimmed):
+        return False, f"Please enter a valid {label.lower()} containing letters.", trimmed
+    if re.search(r"([A-Za-z])\1\1", trimmed, re.IGNORECASE) or re.search(r"(.)\1{4,}", trimmed):
+        return False, f"{label} contains invalid repeating characters. Please enter a real location.", trimmed
+    if any(len(w) > 28 for w in trimmed.split(' ')):
+        return False, f"{label} contains an unusually long word. Please enter a valid address or place.", trimmed
+    return True, None, trimmed
+
+
 @app.route('/register', methods=['POST'])
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -2453,9 +2581,23 @@ def register():
 
         return jsonify({"error": "Only @gmail.com emails are allowed for registration."}), 400
 
-    if not first_name or not first_name.strip():
+    ok_fn, err_fn, first_name = _validate_person_name_py(first_name, "First name", required=True)
+    if not ok_fn:
+        return jsonify({"error": err_fn}), 400
 
-        return jsonify({"error": "First name is required."}), 400
+    if middle_name and middle_name.strip():
+        ok_mn, err_mn, middle_name = _validate_person_name_py(middle_name, "Middle name", required=False, is_middle=True)
+        if not ok_mn:
+            return jsonify({"error": err_mn}), 400
+    else:
+        middle_name = ''
+
+    ok_ln, err_ln, last_name = _validate_person_name_py(last_name, "Last name", required=True)
+    if not ok_ln:
+        return jsonify({"error": err_ln}), 400
+
+    if first_name.lower() == last_name.lower():
+        return jsonify({"error": "First name and Last name cannot be identical."}), 400
 
 
 
@@ -5504,7 +5646,11 @@ def book():
 
             # New fields
             destination = (data.get('destination') or '').strip()
-            rental_purpose = (data.get('rental_purpose') or data.get('purpose_of_rental') or '').strip()
+            if destination:
+                ok_dest, err_dest, destination = _validate_address_py(destination, "Destination (San Dadalhin)", min_len=3, max_len=100)
+                if not ok_dest:
+                    return jsonify({"error": err_dest}), 400
+            rental_purpose = (data.get('rental_purpose') or data.get('purpose_of_rental') or '').strip()[:100]
             # Recalculate and validate pricing server-side to prevent client-side price tampering
             cur.execute("SELECT daily_rate FROM vehicles WHERE id = %s", (final_vehicle_id,))
             veh_row = cur.fetchone()
@@ -6066,7 +6212,27 @@ def update_profile():
         last_name = request.form.get('last_name')
         phone = request.form.get('phone')
 
-        
+        ok_fn, err_fn, first_name = _validate_person_name_py(first_name, "First name", required=True)
+        if not ok_fn:
+            return jsonify({'error': err_fn}), 400
+
+        if middle_name and middle_name.strip():
+            ok_mn, err_mn, middle_name = _validate_person_name_py(middle_name, "Middle name", required=False, is_middle=True)
+            if not ok_mn:
+                return jsonify({'error': err_mn}), 400
+        else:
+            middle_name = ''
+
+        ok_ln, err_ln, last_name = _validate_person_name_py(last_name, "Last name", required=True)
+        if not ok_ln:
+            return jsonify({'error': err_ln}), 400
+
+        if first_name.lower() == last_name.lower():
+            return jsonify({'error': 'First name and Last name cannot be identical.'}), 400
+
+        ok_ph, err_ph, phone = _validate_phone_ph_py(phone, "Phone number")
+        if not ok_ph:
+            return jsonify({'error': err_ph}), 400
 
         cur = get_cursor()
 
@@ -14411,24 +14577,58 @@ def save_license_details():
         emergency_contact_phone = (request.form.get('emergency_contact_phone', '') or '')[:50]
         emergency_contact_relationship = (request.form.get('emergency_contact_relationship', '') or '')[:100]
 
+        # 1. Validate LTO License Number
+        ok_lic, err_lic, license_number = _validate_lto_license_py(license_number)
+        if not ok_lic:
+            return jsonify({"error": err_lic, "message": err_lic}), 400
+
+        # 2. Validate Expiry Date (> today and <= 10 years from today)
+        ok_exp, err_exp = _validate_license_expiry_py(expiry_date)
+        if not ok_exp:
+            return jsonify({"error": err_exp, "message": err_exp}), 400
+
+        # 3. Validate Date of Birth (age 18..75)
+        ok_dob, err_dob = _validate_driver_dob_py(date_of_birth)
+        if not ok_dob:
+            return jsonify({"error": err_dob, "message": err_dob}), 400
+
+        # 4. Validate Name on License
+        ok_name, err_name, full_name = _validate_person_name_py(full_name, "Name on License", required=True, require_full=True)
+        if not ok_name:
+            return jsonify({"error": err_name, "message": err_name}), 400
+
+        # 5. Validate Residential Address
+        ok_addr, err_addr, address = _validate_address_py(address, "Residential Address", min_len=5, max_len=150)
+        if not ok_addr:
+            return jsonify({"error": err_addr, "message": err_addr}), 400
+        issuing_country_state = address[:100]
+
         # Check if emergency contact is strictly required
         cur.execute("SELECT value FROM settings WHERE key = 'require_emergency_contact'")
         em_row = cur.fetchone()
         require_em = (em_row['value'] == 'true') if em_row else True
 
-        if require_em:
-            if not emergency_contact_name.strip() or not emergency_contact_phone.strip():
-                return jsonify({
-                    "error": "Validation failed",
-                    "message": "Emergency contact name and phone number are required."
-                }), 400
-        
-        # Convert empty date strings to valid dates or None
-        if date_of_birth == '' or date_of_birth == 'null':
-            date_of_birth = '1990-01-01'  # Default date if not provided
-        if expiry_date == '' or expiry_date == 'null':
-            expiry_date = '2030-12-31'  # Default expiry if not provided
-        
+        if require_em or emergency_contact_name.strip() or emergency_contact_phone.strip():
+            ok_emn, err_emn, emergency_contact_name = _validate_person_name_py(
+                emergency_contact_name, "Emergency Contact Name", required=require_em, require_full=True
+            )
+            if not ok_emn:
+                return jsonify({"error": err_emn, "message": err_emn}), 400
+
+            if emergency_contact_name and emergency_contact_name.lower() == full_name.lower():
+                msg = "Emergency contact must be a different person from the driver."
+                return jsonify({"error": msg, "message": msg}), 400
+
+            ok_emp, err_emp, emergency_contact_phone = _validate_phone_ph_py(
+                emergency_contact_phone, "Emergency Contact Phone"
+            )
+            if not ok_emp:
+                return jsonify({"error": err_emp, "message": err_emp}), 400
+
+            if p_phone and emergency_contact_phone == p_phone:
+                msg = "Emergency contact phone number cannot be the same as your own phone number."
+                return jsonify({"error": msg, "message": msg}), 400
+
         front_url = (request.form.get('license_front_url', '') or '')[:1000]  # Limit URL length
         back_url = (request.form.get('license_back_url', '') or '')[:1000]   # Limit URL length
 

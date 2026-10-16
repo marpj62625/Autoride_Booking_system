@@ -2411,24 +2411,41 @@ function _finishGoogleLogin(idToken, email, name) {
 
 // AUTH: REGISTER
 function doRegister() {
-  var firstName = sanitizeInput(document.getElementById('regFirstName').value.trim());
-  var middleName = sanitizeInput(document.getElementById('regMiddleName').value.trim());
-  var lastName = sanitizeInput(document.getElementById('regLastName').value.trim());
-  var email = sanitizeInput(document.getElementById('regEmail').value.trim());
-  var password = document.getElementById('regPassword').value;
   var firstNameEl = document.getElementById('regFirstName');
+  var middleNameEl = document.getElementById('regMiddleName');
   var lastNameEl = document.getElementById('regLastName');
   var emailEl = document.getElementById('regEmail');
   var passwordEl = document.getElementById('regPassword');
 
+  var firstName = sanitizeInput(firstNameEl ? firstNameEl.value.trim() : '');
+  var middleName = sanitizeInput(middleNameEl ? middleNameEl.value.trim() : '');
+  var lastName = sanitizeInput(lastNameEl ? lastNameEl.value.trim() : '');
+  var email = sanitizeInput(emailEl ? emailEl.value.trim() : '');
+  var password = passwordEl ? passwordEl.value : '';
+
   clearInlineError(firstNameEl);
+  if (middleNameEl) clearInlineError(middleNameEl);
   clearInlineError(lastNameEl);
   clearInlineError(emailEl);
   clearInlineError(passwordEl);
   
   var hasErr = false;
-  if (isBlank(firstName)) { showInlineError(firstNameEl, 'First name is required.'); hasErr = true; }
-  if (isBlank(lastName)) { showInlineError(lastNameEl, 'Last name is required.'); hasErr = true; }
+  var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 40 });
+  if (!fnCheck.valid) { showInlineError(firstNameEl, fnCheck.error); hasErr = true; } else { firstName = fnCheck.cleaned; }
+
+  if (middleName) {
+    var mnCheck = validatePersonName(middleName, 'Middle name', { required: false, isMiddleName: true, minLen: 1, maxLen: 40 });
+    if (!mnCheck.valid) { showInlineError(middleNameEl, mnCheck.error); hasErr = true; } else { middleName = mnCheck.cleaned; }
+  }
+
+  var lnCheck = validatePersonName(lastName, 'Last name', { required: true, minLen: 2, maxLen: 40 });
+  if (!lnCheck.valid) { showInlineError(lastNameEl, lnCheck.error); hasErr = true; } else { lastName = lnCheck.cleaned; }
+
+  if (fnCheck.valid && lnCheck.valid && firstName.toLowerCase() === lastName.toLowerCase()) {
+    showInlineError(lastNameEl, 'First name and Last name cannot be identical.');
+    hasErr = true;
+  }
+
   if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed for registration.'); hasErr = true; }
   if (isBlank(password) || password.length < 8) { showInlineError(passwordEl, 'Password must be at least 8 characters.'); hasErr = true; }
   
@@ -4274,7 +4291,7 @@ function openBookingForm(vehicleId) {
     // Destination & Purpose of Rental
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-map-marked-alt" style="color:var(--primary);margin-right:8px;"></i>Trip & Rental Purpose</h4>' +
     '<div class="form-group"><label>Destination (San Dadalhin) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
-    '<input type="text" id="bfDestination" placeholder="e.g., Baguio City, Tagaytay, Metro Manila, Batangas..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<input type="text" id="bfDestination" maxlength="100" placeholder="e.g., Baguio City, Tagaytay, Metro Manila, Batangas..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     '<span class="field-error" id="bfDestErr"></span></div>' +
     '<div class="form-group"><label>Purpose of Rental (Layunin ng Pag-arkila) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
     '<select id="bfRentalPurpose" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
@@ -4307,10 +4324,10 @@ function openBookingForm(vehicleId) {
     '<div class="form-group"><label>Delivery Zone / Serviced Area</label>' +
     '<select id="bfDeliveryZone" onchange="onDeliveryZoneChange()">' + deliveryZoneOptions + '</select></div>' +
     '<div class="form-group"><label>Detailed Delivery Address (Street, House No., landmark)</label>' +
-    '<input type="text" id="bfDeliveryAddress" placeholder="Enter specific delivery address"></div>' +
-    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" placeholder="Barangay"></div>' +
-    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" placeholder="Municipality or City"></div>' +
-    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" placeholder="Province"></div>' +
+    '<input type="text" id="bfDeliveryAddress" maxlength="150" placeholder="Enter specific delivery address"></div>' +
+    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" maxlength="60" placeholder="Barangay"></div>' +
+    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" maxlength="60" placeholder="Municipality or City"></div>' +
+    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" maxlength="60" placeholder="Province"></div>' +
     '<a href="#" onclick="openDeliveryMapPicker(); return false;" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map-marker-alt"></i> Pin delivery location on map</a>' +
     '</div></div>' +
 
@@ -4692,13 +4709,15 @@ function submitBooking() {
 
   var destination = destEl ? destEl.value.trim() : '';
   var rentalPurpose = purposeEl ? purposeEl.value.trim() : 'Personal / Family Trip';
-  if (!destination) {
-    if (destEl) showInlineError(destEl, 'Please enter your destination (San Dadalhin)');
+  var destCheck = validateAddressOrPlace(destination, 'Destination (San Dadalhin)', 3, 100);
+  if (!destCheck.valid) {
+    if (destEl) showInlineError(destEl, destCheck.error);
     var bfErr = document.getElementById('bfErr');
-    if (bfErr) bfErr.textContent = 'Please specify where you will take the vehicle (Destination).';
-    showToast('Please enter your destination.', 'error');
+    if (bfErr) bfErr.textContent = destCheck.error;
+    showToast(destCheck.error, 'error');
     return;
   }
+  destination = destCheck.cleaned;
   var pts = parseInt(document.getElementById('bfPoints').value) || 0;
   var serviceType = document.getElementById('bfServiceType') ? document.getElementById('bfServiceType').value : 'pickup';
   var delFee = 0;
@@ -6294,11 +6313,11 @@ function renderBookingDetail(b) {
       ? '<a href="' + b.license_back_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Back Image</a>'
       : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Back Image</div>';
     licenseHtml =
-      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">' +
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;overflow-wrap:anywhere;word-break:break-word;min-width:0;">' +
         '<h4 style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:12px;">Driver\'s License Details</h4>' +
-        (b.license_full_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
+        (b.license_full_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;overflow-wrap:anywhere;word-break:break-word;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
         (b.date_of_birth ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">DOB: ' + b.date_of_birth + '</p>' : '') +
-        (b.license_number ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">License #: ' + b.license_number + '</p>' : '') +
+        (b.license_number ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;overflow-wrap:anywhere;word-break:break-word;">License #: ' + b.license_number + '</p>' : '') +
         (b.license_expiry ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:12px;">Expiry: ' + b.license_expiry + '</p>' : '') +
         '<div style="display:flex;gap:10px;">' + frontBtn + backBtn + '</div>' +
       '</div>';
@@ -6308,11 +6327,11 @@ function renderBookingDetail(b) {
   var emergencyHtml = '';
   if (b.emergency_contact_name || b.emergency_contact_phone) {
     emergencyHtml =
-      '<div style="margin-bottom:16px;">' +
+      '<div style="margin-bottom:16px;overflow-wrap:anywhere;word-break:break-word;min-width:0;">' +
         '<h4 style="font-weight:700;font-size:1rem;color:#1a1a1a;margin-bottom:10px;">Emergency Contact</h4>' +
-        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;">Name: ' + b.emergency_contact_name + '</p>' : '') +
-        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
-        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:#1a1a1a;">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
+        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word;">Name: ' + b.emergency_contact_name + '</p>' : '') +
+        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
+        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:#1a1a1a;overflow-wrap:anywhere;word-break:break-word;">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
       '</div>';
   }
 
@@ -6399,29 +6418,29 @@ function renderBookingDetail(b) {
 
       // Info grid: customer / vehicle / rental period / destination / purpose
       '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;margin-bottom:16px;">' +
-        '<div>' +
+        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);overflow-wrap:anywhere;word-break:break-word;">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
         '</div>' +
-        '<div>' +
+        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Vehicle</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + vehicleName + plateInfo + '</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);overflow-wrap:anywhere;word-break:break-word;">' + vehicleName + plateInfo + '</div>' +
         '</div>' +
-        '<div>' +
+        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
           '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' ' + (b.start_time || '06:00') + ' to ' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '06:00') + '</div>' +
         '</div>' +
         (b.destination ? 
-        '<div>' +
+        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Destination</div>' +
-          '<div style="font-size:0.9rem;font-weight:700;color:var(--primary);"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>' + b.destination + '</div>' +
+          '<div style="font-size:0.9rem;font-weight:700;color:var(--primary);overflow-wrap:anywhere;word-break:break-word;"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>' + b.destination + '</div>' +
         '</div>' : '') +
         (b.rental_purpose ? 
-        '<div>' +
+        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Purpose</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + b.rental_purpose + '</div>' +
+          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);overflow-wrap:anywhere;word-break:break-word;">' + b.rental_purpose + '</div>' +
         '</div>' : '') +
-        '<div>' +
+        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
           '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Service</div>' +
           '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + (b.rental_type === 'With Driver' ? '<i class="fas fa-user-tie" style="color:var(--primary);margin-right:4px;"></i>With Driver' : 'Self-Drive') + '</div>' +
         '</div>' +
@@ -8548,6 +8567,22 @@ var Profile = {
     if (prevF) { prevF.src = ''; prevF.style.display = 'none'; }
     var prevB = document.getElementById('licenseEditPreviewBack');
     if (prevB) { prevB.src = ''; prevB.style.display = 'none'; }
+
+    // Set realistic min/max date constraints on DOB (18–75 yrs old) and Expiry (tomorrow to +10 yrs)
+    var now = new Date();
+    var pad2 = function(n) { return String(n).padStart(2, '0'); };
+    var dobEl = document.getElementById('editLicenseDob');
+    if (dobEl) {
+      dobEl.min = (now.getFullYear() - 75) + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+      dobEl.max = (now.getFullYear() - 18) + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    }
+    var expEl = document.getElementById('editLicenseExpiry');
+    if (expEl) {
+      var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      expEl.min = tomorrow.getFullYear() + '-' + pad2(tomorrow.getMonth() + 1) + '-' + pad2(tomorrow.getDate());
+      expEl.max = (now.getFullYear() + 10) + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+    }
+
     // Load existing data into edit fields
     loadLicenseDetailsForEdit();
   },
@@ -8573,6 +8608,7 @@ var Profile = {
 
     // Validate required fields
     var addrFieldId = document.getElementById('editLicenseAddress') ? 'editLicenseAddress' : 'editLicenseCountry';
+    var reqEm = (typeof appSettings === 'undefined' || (appSettings.require_emergency_contact !== 'false' && appSettings.require_emergency_contact !== false));
     var fields = {
       'editLicenseNumber': 'License Number',
       'editLicenseExpiry': 'Expiry Date',
@@ -8581,7 +8617,7 @@ var Profile = {
       'editLicenseDob': 'Date of Birth'
     };
     fields[addrFieldId] = 'Complete Residential Address';
-    if (typeof appSettings !== 'undefined' && appSettings.require_emergency_contact !== 'false' && appSettings.require_emergency_contact !== false) {
+    if (reqEm) {
       fields['editLicenseEmName'] = 'Emergency Contact Name';
       fields['editLicenseEmPhone'] = 'Emergency Phone';
       fields['editLicenseEmRel'] = 'Relationship';
@@ -8600,61 +8636,116 @@ var Profile = {
       }
     }
 
+    // 1. Strict LTO License Number validation (LNN-YY-NNNNNN)
     var licenseNumEl = document.getElementById('editLicenseNumber');
-    var licenseNum = licenseNumEl.value.trim();
-    var licensePattern = /^[A-Z0-9]{3}-[A-Z0-9]{2}-[0-9]{6}$/i;
-    if (!licensePattern.test(licenseNum)) {
-      if (errEl) errEl.textContent = 'Please fix the errors below.';
-      showInlineError(licenseNumEl, 'Invalid format. Must be LNN-YY-NNNNNN (e.g., N01-23-456789).');
+    var licCheck = validateLtoLicenseNumber(licenseNumEl ? licenseNumEl.value : '');
+    if (!licCheck.valid) {
+      if (errEl) errEl.textContent = licCheck.error;
+      showInlineError(licenseNumEl, licCheck.error);
       return;
-    } else {
-      clearInlineError(licenseNumEl);
     }
+    licenseNumEl.value = licCheck.cleaned;
+    clearInlineError(licenseNumEl);
 
-    var dobEl = document.getElementById('editLicenseDob');
-    if (dobEl && dobEl.value) {
-      var dob = new Date(dobEl.value);
-      var today = new Date();
-      var age = today.getFullYear() - dob.getFullYear();
-      var m = today.getMonth() - dob.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-        age--;
-      }
-      if (age < 18) {
-        if (errEl) errEl.textContent = 'Please fix the errors below.';
-        showInlineError(dobEl, 'You must be at least 18 years old to use this service.');
-        return;
-      } else {
-        clearInlineError(dobEl);
-      }
+    // 2. Strict License Expiry validation (must be > today and <= 10 years from today)
+    var expiryEl = document.getElementById('editLicenseExpiry');
+    var expCheck = validateLicenseExpiry(expiryEl ? expiryEl.value : '');
+    if (!expCheck.valid) {
+      if (errEl) errEl.textContent = expCheck.error;
+      showInlineError(expiryEl, expCheck.error);
+      return;
     }
+    clearInlineError(expiryEl);
 
+    // 3. License Class validation
     var classEl = document.getElementById('editLicenseClass');
     var licenseClass = classEl.value.trim().toUpperCase();
     var classes = licenseClass.split(/[\s,]+/).filter(Boolean);
+    var validDlCodes = ['A', 'A1', 'B', 'B1', 'B2', 'C', 'D', 'BE', 'CE', '1', '2', '3', '4', '5', '6', '7', '8'];
+    var hasInvalidCode = classes.length === 0 || classes.some(function(c) { return validDlCodes.indexOf(c) === -1; });
+    if (hasInvalidCode) {
+      var clsErr = 'Invalid License Class. Use valid LTO DL codes (e.g., B, B1, B2, C, D, or 2, 3).';
+      if (errEl) errEl.textContent = clsErr;
+      showInlineError(classEl, clsErr);
+      return;
+    }
     var isMotorcycleOnly = classes.length > 0 && classes.every(function(c) { return ['A', 'A1', '1'].indexOf(c) !== -1; });
     if (isMotorcycleOnly) {
       if (errEl) errEl.textContent = 'Please fix the errors below.';
       showInlineError(classEl, 'Motorcycle-only licenses (A, A1, 1) are not allowed. A car/light vehicle class (e.g., B, B1, 2) is required.');
       return;
-    } else {
-      clearInlineError(classEl);
+    }
+    clearInlineError(classEl);
+
+    // 4. Residential Address validation
+    var addrInputEl = document.getElementById(addrFieldId);
+    var addrCheck = validateAddressOrPlace(addrInputEl ? addrInputEl.value : '', 'Residential Address', 5, 150);
+    if (!addrCheck.valid) {
+      if (errEl) errEl.textContent = addrCheck.error;
+      showInlineError(addrInputEl, addrCheck.error);
+      return;
+    }
+    addrInputEl.value = addrCheck.cleaned;
+    clearInlineError(addrInputEl);
+
+    // 5. Name on License validation (full name, no character spam)
+    var licNameEl = document.getElementById('editLicenseName');
+    var licNameCheck = validatePersonName(licNameEl ? licNameEl.value : '', 'Name on License', { required: true, requireFullName: true, minLen: 5, maxLen: 70 });
+    if (!licNameCheck.valid) {
+      if (errEl) errEl.textContent = licNameCheck.error;
+      showInlineError(licNameEl, licNameCheck.error);
+      return;
+    }
+    licNameEl.value = licNameCheck.cleaned;
+    clearInlineError(licNameEl);
+
+    // 6. Date of Birth validation (18 to 75 years old)
+    var dobEl = document.getElementById('editLicenseDob');
+    var dobCheck = validateDriverDob(dobEl ? dobEl.value : '');
+    if (!dobCheck.valid) {
+      if (errEl) errEl.textContent = dobCheck.error;
+      showInlineError(dobEl, dobCheck.error);
+      return;
+    }
+    clearInlineError(dobEl);
+
+    // 7. Emergency Contact Name & Phone validation
+    var emNameEl = document.getElementById('editLicenseEmName');
+    var emPhoneEl = document.getElementById('editLicenseEmPhone');
+    if (emNameEl && (reqEm || emNameEl.value.trim())) {
+      var emNameCheck = validatePersonName(emNameEl.value, 'Emergency Contact Name', { required: reqEm, requireFullName: true, minLen: 5, maxLen: 70 });
+      if (!emNameCheck.valid) {
+        if (errEl) errEl.textContent = emNameCheck.error;
+        showInlineError(emNameEl, emNameCheck.error);
+        return;
+      }
+      if (emNameCheck.cleaned.toLowerCase() === licNameCheck.cleaned.toLowerCase()) {
+        var sameNameMsg = 'Emergency contact must be a different person from the driver.';
+        if (errEl) errEl.textContent = sameNameMsg;
+        showInlineError(emNameEl, sameNameMsg);
+        return;
+      }
+      emNameEl.value = emNameCheck.cleaned;
+      clearInlineError(emNameEl);
+    }
+    if (emPhoneEl && (reqEm || emPhoneEl.value.trim())) {
+      var emPhoneCheck = validatePhonePH(emPhoneEl.value, 'Emergency Contact Phone');
+      if (!emPhoneCheck.valid) {
+        if (errEl) errEl.textContent = emPhoneCheck.error;
+        showInlineError(emPhoneEl, emPhoneCheck.error);
+        return;
+      }
+      var userOwnPhone = (currentUser && currentUser._profileData && currentUser._profileData.phone) || (document.getElementById('editPhone') ? document.getElementById('editPhone').value : '');
+      if (userOwnPhone && emPhoneCheck.cleaned === normalizePhone(userOwnPhone)) {
+        var samePhoneMsg = 'Emergency contact phone number cannot be the same as your own phone number.';
+        if (errEl) errEl.textContent = samePhoneMsg;
+        showInlineError(emPhoneEl, samePhoneMsg);
+        return;
+      }
+      emPhoneEl.value = emPhoneCheck.cleaned;
+      clearInlineError(emPhoneEl);
     }
 
-    // Validate license expiry date — must not be expired
-    var expiryEl = document.getElementById('editLicenseExpiry');
-    if (expiryEl && expiryEl.value) {
-      var expiryDate = new Date(expiryEl.value);
-      var todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      if (expiryDate < todayStart) {
-        if (errEl) errEl.textContent = 'Please fix the errors below.';
-        showInlineError(expiryEl, 'Your license has already expired. Please renew your license before registering.');
-        return;
-      } else {
-        clearInlineError(expiryEl);
-      }
-    }
     var saveBtn = document.querySelector('button[onclick="Profile.saveLicenseInfo()"]');
     var restoreBtn = setButtonLoading(saveBtn, 'Saving...');
     showLoading(true);
@@ -9587,25 +9678,52 @@ function doUpdateProfile() {
   var firstName = firstEl ? sanitizeInput(firstEl.value.trim()) : '';
   var middleName = middleEl ? sanitizeInput(middleEl.value.trim()) : '';
   var lastName = lastEl ? sanitizeInput(lastEl.value.trim()) : '';
-  var name = [firstName, middleName, lastName].filter(Boolean).join(' ');
   var phone = phoneEl ? phoneEl.value.trim() : '';
   var email = emailEl ? emailEl.value.trim().toLowerCase() : '';
+  clearInlineError(firstEl);
+  if (middleEl) clearInlineError(middleEl);
+  clearInlineError(lastEl);
   clearInlineError(phoneEl);
   clearInlineError(emailEl);
   if (phoneErrEl) phoneErrEl.textContent = '';
   if (emailErrEl) emailErrEl.textContent = '';
-  if (!firstName) {
-    showInlineError(firstEl, 'First name is required.'); return;
+
+  var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 40 });
+  if (!fnCheck.valid) {
+    showInlineError(firstEl, fnCheck.error); return;
   }
-  if (!lastName) {
-    showInlineError(lastEl, 'Last name is required.'); return;
+  firstName = fnCheck.cleaned;
+  firstEl.value = firstName;
+
+  if (middleName) {
+    var mnCheck = validatePersonName(middleName, 'Middle name', { required: false, isMiddleName: true, minLen: 1, maxLen: 40 });
+    if (!mnCheck.valid) {
+      showInlineError(middleEl, mnCheck.error); return;
+    }
+    middleName = mnCheck.cleaned;
+    middleEl.value = middleName;
   }
-  if (!phone) {
-    showInlineError(phoneEl, 'Phone number is required.'); return;
+
+  var lnCheck = validatePersonName(lastName, 'Last name', { required: true, minLen: 2, maxLen: 40 });
+  if (!lnCheck.valid) {
+    showInlineError(lastEl, lnCheck.error); return;
   }
-  if (!/^\d+$/.test(phone) || phone.length < 10 || phone.length > 11) {
-    showInlineError(phoneEl, 'Phone must be 10-11 digits.'); return;
+  lastName = lnCheck.cleaned;
+  lastEl.value = lastName;
+
+  if (firstName.toLowerCase() === lastName.toLowerCase()) {
+    showInlineError(lastEl, 'First name and Last name cannot be identical.'); return;
   }
+
+  var name = [firstName, middleName, lastName].filter(Boolean).join(' ');
+
+  var phoneCheck = validatePhonePH(phone, 'Phone number');
+  if (!phoneCheck.valid) {
+    showInlineError(phoneEl, phoneCheck.error); return;
+  }
+  phone = phoneCheck.cleaned;
+  phoneEl.value = phone;
+
   if (email && !isGmailAddress(email)) {
     showInlineError(emailErrEl, 'Only @gmail.com emails are allowed.'); return;
   }
