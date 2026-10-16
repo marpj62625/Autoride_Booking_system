@@ -1,8 +1,31 @@
 from fpdf import FPDF
 import os
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+
+PHT = timezone(timedelta(hours=8))
+
+def _format_receipt_date(raw_dt):
+    if not raw_dt:
+        return datetime.now(PHT).strftime("%b %d, %Y %I:%M %p")
+    try:
+        if isinstance(raw_dt, datetime):
+            dt = raw_dt
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(PHT).strftime("%b %d, %Y %I:%M %p")
+        s = str(raw_dt).strip().replace('Z', '+00:00')
+        dt = datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(PHT).strftime("%b %d, %Y %I:%M %p")
+    except Exception:
+        return str(raw_dt)
 
 class ReceiptGenerator(FPDF):
+    def __init__(self, issued_str=None):
+        super().__init__()
+        self.issued_str = issued_str or datetime.now(PHT).strftime("%b %d, %Y %I:%M %p")
+
     def header(self):
         # Company Logo Banner
         self.set_fill_color(30, 41, 59) # Dark blue/slate
@@ -19,18 +42,19 @@ class ReceiptGenerator(FPDF):
         self.set_y(-25)
         self.set_font('Helvetica', 'I', 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 10, f'Generated on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} | Authorized Digital Copy', 0, 0, 'C')
+        self.cell(0, 10, f'Issued on {self.issued_str} (PHT) | Authorized Digital Copy', 0, 0, 'C')
         self.ln(5)
         self.cell(0, 10, 'Thank you for choosing Autoride!', 0, 0, 'C')
 
 def generate_booking_pdf(booking, user, vehicle, payment=None):
-    pdf = ReceiptGenerator()
+    issued_str = _format_receipt_date(booking.get('created_at'))
+    pdf = ReceiptGenerator(issued_str=issued_str)
     pdf.add_page()
     
     # 1. Invoice Summary Header
     pdf.set_font('Helvetica', 'B', 16)
     pdf.set_text_color(30, 41, 59)
-    pdf.cell(100, 10, f'RECEIPT #{booking["id"]:06d}', 0, 0, 'L')
+    pdf.cell(100, 8, f'RECEIPT #{booking["id"]:06d}', 0, 0, 'L')
     
     # Status Tag in header
     b_status = str(booking.get('status') or 'Pending').upper()
@@ -42,7 +66,10 @@ def generate_booking_pdf(booking, user, vehicle, payment=None):
         pdf.set_text_color(22, 163, 74) # Green
     else:
         pdf.set_text_color(217, 119, 6) # Amber
-    pdf.cell(90, 10, f'BOOKING: {b_status}', 0, 1, 'R')
+    pdf.cell(90, 8, f'BOOKING: {b_status}', 0, 1, 'R')
+    pdf.set_font('Helvetica', '', 9)
+    pdf.set_text_color(100, 116, 139)
+    pdf.cell(100, 6, f'Date Issued: {issued_str}', 0, 1, 'L')
     pdf.set_text_color(30, 41, 59)
     pdf.ln(2)
     
@@ -106,11 +133,19 @@ def generate_booking_pdf(booking, user, vehicle, payment=None):
     add_row('Base Rental Rate', booking['base_price'])
     
     if float(booking.get('addon_price', 0) or 0) > 0:
-        add_row('Insurance/Extras', booking['addon_price'])
+        add_row('Add-ons / Extras', booking['addon_price'])
     
     insurance = float(booking.get('insurance_price', 0) or 0)
     if insurance > 0:
-        add_row('Basic Insurance', insurance)
+        add_row('Insurance Coverage', insurance)
+
+    driver_fee = float(booking.get('driver_fee', 0) or 0)
+    if driver_fee > 0:
+        add_row('Driver Service Fee', driver_fee)
+
+    payment_fee = float(booking.get('payment_fee', 0) or 0)
+    if payment_fee > 0:
+        add_row('Payment Processing Fee', payment_fee)
 
     discount = float(booking.get('discount_amount', 0) or 0)
     if discount > 0:
@@ -159,6 +194,7 @@ def generate_booking_pdf(booking, user, vehicle, payment=None):
 
     add_row('Payment Status', 0, custom_val_str=p_status)
     add_row('Payment Method', 0, custom_val_str=pay_method_full)
+    add_row('Transaction Date', 0, custom_val_str=f'{issued_str} (PHT)')
     if ref_num and ref_num != 'N/A':
         add_row('Reference / Trans No.', 0, custom_val_str=str(ref_num))
     

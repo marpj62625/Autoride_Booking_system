@@ -5916,7 +5916,8 @@ def user_bookings():
                    b.base_price, b.addon_price, b.total_price, b.status, b.payment_status,
                    b.payment_type, b.amount_paid,
                    CASE WHEN b.status IN ('Cancelled', 'Rejected') THEN 0.00 ELSE b.balance_amount END AS balance_amount,
-                   (SELECT p.method FROM payments p WHERE p.booking_id = b.id ORDER BY p.id DESC LIMIT 1) AS payment_method,
+                   COALESCE((SELECT p.method FROM payments p WHERE p.booking_id = b.id ORDER BY p.id DESC LIMIT 1), b.payment_method) AS payment_method,
+                   (SELECT p.reference_number FROM payments p WHERE p.booking_id = b.id ORDER BY p.id DESC LIMIT 1) AS reference_number,
                    b.applied_coupon_id, b.discount_amount, b.points_redeemed, b.points_earned,
                    b.cancellation_reason, b.cancelled_by,
                    COALESCE(b.refund_amount, 0) AS refund_amount,
@@ -7065,7 +7066,8 @@ def get_all_bookings():
 
                    b.driver_id, d.full_name AS driver_name,
 
-                   pm.method AS payment_method, pm.reference_number,
+                   COALESCE(pm.method, b.payment_method) AS payment_method, pm.reference_number,
+                   TO_CHAR(b.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at,
 
                    b.refund_amount, b.refund_channel, b.refund_account_name, b.refund_account_number,
                    b.refund_proof_url, b.refund_ref, b.refunded_at,

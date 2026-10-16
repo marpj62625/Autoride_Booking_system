@@ -5741,41 +5741,43 @@ function retryPayment(bookingId, amount, method) {
 }
 
 function showReceipt(bookingId, data, amountPaid, method, refNum) {
-  var receipt = data.receipt || {};
+  var receipt = (data && data.receipt) ? data.receipt : {};
   var vehicle = bookingFormVehicle || {};
-  var now = new Date();
-  var dateStr = now.toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' });
-  var timeStr = now.toLocaleTimeString('en-PH', { hour:'2-digit', minute:'2-digit' });
+  var dtObj = receipt.created_at ? new Date(receipt.created_at) : new Date();
+  if (isNaN(dtObj.getTime())) dtObj = new Date();
+  var dateStr = dtObj.toLocaleDateString('en-PH', { timeZone: 'Asia/Manila', year:'numeric', month:'long', day:'numeric' });
+  var timeStr = dtObj.toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour:'2-digit', minute:'2-digit' });
   var el = document.getElementById('receiptContent');
   if (!el) return;
 
   var isWithDriver = (receipt.rental_type === 'With Driver') || (_pendingBookingPayload && _pendingBookingPayload.rental_type === 'With Driver');
-  var addonsText = selectedAddons.length > 0 ? selectedAddons.map(function(a) { return a.name; }).join(', ') : 'None';
-  var insText = selectedInsurance.type || 'Basic Protection';
+  var addonsText = receipt.addons ? receipt.addons : (selectedAddons.length > 0 ? selectedAddons.map(function(a) { return a.name; }).join(', ') : 'None');
+  var insText = receipt.insurance_type || selectedInsurance.type || 'Basic Protection';
+  var backAction = receipt.from_detail ? "closeOverlay('page-receipt')" : "closeOverlay('page-receipt');showPage('page-bookings')";
 
   el.innerHTML =
     '<div class="page-header">' +
-    '<button class="back-btn" onclick="closeOverlay(\'page-receipt\');showPage(\'page-bookings\')"><i class="fas fa-arrow-left"></i></button>' +
-    '<h2>Receipt</h2></div>' +
+    '<button class="back-btn" onclick="' + backAction + '"><i class="fas fa-arrow-left"></i></button>' +
+    '<h2>Official Receipt</h2></div>' +
     '<div class="scroll-content" style="padding-bottom:100px;">' +
     '<div class="receipt-card">' +
     '<div class="receipt-header">' +
     '<img src="Autoride-logo-nobg.png" alt="Autoride" style="width:80px;height:80px;object-fit:contain;margin-bottom:8px;">' +
     '<i class="fas fa-check-circle" style="font-size:2.5rem;color:var(--success);"></i>' +
-    '<h2>Booking Confirmed!</h2>' +
-    '<p style="color:var(--text-secondary);font-size:0.875rem;">Your receipt has been sent to your email</p>' +
+    '<h2>Official Electronic Receipt</h2>' +
+    '<p style="color:var(--text-secondary);font-size:0.875rem;">Receipt #' + String(bookingId).padStart(6, '0') + '</p>' +
     '</div>' +
 
     // Receipt details
     '<div style="border-top:2px dashed var(--border);padding-top:16px;margin-top:8px;">' +
     '<div class="receipt-row"><span>Booking ID</span><strong>#' + bookingId + '</strong></div>' +
-    '<div class="receipt-row"><span>Vehicle</span><strong>' + (receipt.brand || vehicle.brand || '') + ' ' + (receipt.model || vehicle.model || '') + '</strong></div>' +
+    '<div class="receipt-row"><span>Vehicle</span><strong>' + (receipt.brand || vehicle.brand || '') + ' ' + (receipt.model || vehicle.model || '') + (receipt.plate_number ? ' (' + receipt.plate_number + ')' : '') + '</strong></div>' +
     (receipt.start_date ? '<div class="receipt-row"><span>Rental Period</span><strong>' + receipt.start_date + ' – ' + receipt.end_date + '</strong></div>' : '') +
     '<div class="receipt-row"><span>Rental Type</span><strong>' + (isWithDriver ? 'With Professional Driver (₱' + (parseFloat(appSettings.driver_daily_wage) || 755).toLocaleString() + '/day)' : 'Self-Drive') + '</strong></div>' +
     '<div class="receipt-row"><span>Insurance</span><strong>' + insText + '</strong></div>' +
     '<div class="receipt-row"><span>Add-ons</span><strong>' + addonsText + '</strong></div>' +
     '<div class="receipt-row"><span>Payment Method</span><strong>' + (method || receipt.method || 'GCash') + '</strong></div>' +
-    (refNum ? '<div class="receipt-row"><span>Reference No.</span><strong>' + refNum + '</strong></div>' : '') +
+    (refNum ? '<div class="receipt-row"><span>Reference No.</span><strong style="font-family:monospace;">' + refNum + '</strong></div>' : '') +
     '<div class="receipt-row"><span>Date & Time</span><strong>' + dateStr + ', ' + timeStr + '</strong></div>' +
     '</div>' +
 
@@ -5787,13 +5789,13 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
 
     // Email notice
     '<div style="background:#e8f4fd;border-radius:var(--radius-sm);padding:12px;text-align:center;margin-bottom:16px;font-size:0.8rem;color:#084298;">' +
-    '<i class="fas fa-envelope"></i> A receipt has been sent to <strong>' + (currentUser.email || 'your email') + '</strong>' +
+    '<i class="fas fa-envelope"></i> Official copy issued to <strong>' + (currentUser.email || 'your email') + '</strong>' +
     '</div>' +
 
     '<button class="btn-primary" onclick="downloadReceipt(' + bookingId + ')" style="margin-bottom:10px;">' +
     '<i class="fas fa-download"></i> Download PDF Receipt</button>' +
-    '<button class="btn-secondary" onclick="closeOverlay(\'page-receipt\');showPage(\'page-bookings\')">' +
-    '<i class="fas fa-list"></i> View My Bookings</button>' +
+    '<button class="btn-secondary" onclick="' + backAction + '">' +
+    '<i class="fas fa-arrow-left"></i> ' + (receipt.from_detail ? 'Back to Booking Details' : 'View My Bookings') + '</button>' +
     '</div>' +
     '</div>';
 
@@ -5822,6 +5824,34 @@ function showReceipt(bookingId, data, amountPaid, method, refNum) {
       }
     }, 50);
   }
+}
+
+function viewBookingReceipt(bookingId) {
+  var b = (_allBookingsData || []).find(function(x) { return x.id === bookingId; });
+  if (!b) {
+    downloadReceipt(bookingId);
+    return;
+  }
+  showReceipt(
+    b.id,
+    {
+      receipt: {
+        brand: b.brand || '',
+        model: b.model || '',
+        plate_number: b.plate_number || '',
+        start_date: formatBookingDate(b.start_date),
+        end_date: formatBookingDate(b.end_date),
+        rental_type: b.rental_type || 'Self-Drive',
+        insurance_type: b.insurance_type || 'Basic Protection',
+        addons: b.addons || 'None',
+        created_at: b.created_at || b.start_date,
+        from_detail: true
+      }
+    },
+    parseFloat(b.amount_paid || b.total_price || 0),
+    b.payment_method || b.payment_type || 'GCash',
+    b.reference_number || ''
+  );
 }
 
 function downloadReceipt(bookingId, btnEl) {
@@ -6315,10 +6345,15 @@ function renderBookingDetail(b) {
 
   // Secondary action buttons
   var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
-  secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')">Download Receipt</button>';
-  if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
-  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '</div><button class="btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
-  else secondaryActions += '</div>';
+  secondaryActions += '<button class="btn-outline" onclick="viewBookingReceipt(' + b.id + ')"><i class="fas fa-receipt" style="margin-right:5px;"></i>View Receipt</button>';
+  secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')"><i class="fas fa-file-pdf" style="margin-right:5px;"></i>Download PDF</button>';
+  secondaryActions += '</div>';
+  if (canCancel || b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') {
+    secondaryActions += '<div style="display:grid;grid-template-columns:' + (canCancel && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') ? '1fr 1fr' : '1fr') + ';gap:10px;margin-bottom:12px;">';
+    if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '<button class="btn-secondary" style="width:100%;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
+    if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);width:100%;" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
+    secondaryActions += '</div>';
+  }
 
   if (b.status === 'Completed') {
     secondaryActions += '<button class="btn-outline" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openCompanyReviews()"><i class="fas fa-star" style="color:#f59e0b;"></i> View All Company Reviews</button>';
@@ -6425,23 +6460,30 @@ function renderBookingDetail(b) {
         '</div>' +
       '</div>' +
 
-      // Payment Settlement Record (Amount Paid vs Balance)
-      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
-        '<div>' +
-          '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Amount Paid:</span>' +
-          '<strong style="font-size:0.9rem;color:#16a34a;">' + formatPHP(b.amount_paid || 0) + '</strong>' +
+      // Payment Settlement & Official Receipt Record
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">' +
+          '<span style="font-size:0.7rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:5px;"></i>Official Receipt #' + String(b.id).padStart(6, '0') + '</span>' +
+          '<span style="font-size:0.72rem;color:var(--text-secondary);font-weight:600;">' + (b.created_at ? new Date(b.created_at).toLocaleString('en-PH', {timeZone:'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : formatBookingDate(b.start_date)) + '</span>' +
         '</div>' +
-        (b.payment_fee && parseFloat(b.payment_fee) > 0 ? 
-        '<div>' +
-          '<span style="font-size:0.65rem;color:#d97706;font-weight:700;text-transform:uppercase;margin-right:6px;">' + (b.payment_method || 'Terminal') + ' Fee (' + (b.payment_fee_percent || 3.5) + '%):</span>' +
-          '<strong style="font-size:0.9rem;color:#d97706;">+' + formatPHP(b.payment_fee) + '</strong>' +
-        '</div>' : '') +
-        '<div>' +
-          '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Balance Due:</span>' +
-          '<strong style="font-size:0.9rem;color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#16a34a')) + ';">' + 
-            (isCancelledOrRefunded ? '₱0.00 (Cancelled)' : (parseFloat(b.balance_amount || 0) > 0 ? formatPHP(b.balance_amount) : '₱0.00 (Settled)')) + 
-          '</strong>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+          '<div>' +
+            '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Amount Paid:</span>' +
+            '<strong style="font-size:0.9rem;color:#16a34a;">' + formatPHP(b.amount_paid || 0) + '</strong>' +
+          '</div>' +
+          (b.payment_fee && parseFloat(b.payment_fee) > 0 ? 
+          '<div>' +
+            '<span style="font-size:0.65rem;color:#d97706;font-weight:700;text-transform:uppercase;margin-right:6px;">' + (b.payment_method || 'Terminal') + ' Fee (' + (b.payment_fee_percent || 3.5) + '%):</span>' +
+            '<strong style="font-size:0.9rem;color:#d97706;">+' + formatPHP(b.payment_fee) + '</strong>' +
+          '</div>' : '') +
+          '<div>' +
+            '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Balance Due:</span>' +
+            '<strong style="font-size:0.9rem;color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#16a34a')) + ';">' + 
+              (isCancelledOrRefunded ? '₱0.00 (Cancelled)' : (parseFloat(b.balance_amount || 0) > 0 ? formatPHP(b.balance_amount) : '₱0.00 (Settled)')) + 
+            '</strong>' +
+          '</div>' +
         '</div>' +
+        (b.reference_number ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;"><span style="color:var(--text-muted);font-weight:700;text-transform:uppercase;font-size:0.65rem;">Reference No.</span><strong style="font-family:monospace;color:var(--text-primary);">' + b.reference_number + '</strong></div>' : '') +
       '</div>' +
 
       // Divider
