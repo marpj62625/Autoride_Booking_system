@@ -4291,7 +4291,7 @@ function openBookingForm(vehicleId) {
     // Destination & Purpose of Rental
     '<div class="card"><h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-map-marked-alt" style="color:var(--primary);margin-right:8px;"></i>Trip & Rental Purpose</h4>' +
     '<div class="form-group"><label>Destination (San Dadalhin) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
-    '<input type="text" id="bfDestination" maxlength="100" placeholder="e.g., Baguio City, Tagaytay, Metro Manila, Batangas..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
+    '<input type="text" id="bfDestination" maxlength="60" oninput="this.value=this.value.replace(/([A-Za-z\\u00C0-\\u00FF0-9])\\1\\1+/gi, \'$1$1\').slice(0, 60)" placeholder="e.g., Baguio City, Tagaytay, Metro Manila, Batangas..." style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
     '<span class="field-error" id="bfDestErr"></span></div>' +
     '<div class="form-group"><label>Purpose of Rental (Layunin ng Pag-arkila) <span style="color:var(--danger);font-weight:700;">*</span></label>' +
     '<select id="bfRentalPurpose" style="width:100%;padding:12px 14px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);outline:none;">' +
@@ -4324,10 +4324,10 @@ function openBookingForm(vehicleId) {
     '<div class="form-group"><label>Delivery Zone / Serviced Area</label>' +
     '<select id="bfDeliveryZone" onchange="onDeliveryZoneChange()">' + deliveryZoneOptions + '</select></div>' +
     '<div class="form-group"><label>Detailed Delivery Address (Street, House No., landmark)</label>' +
-    '<input type="text" id="bfDeliveryAddress" maxlength="150" placeholder="Enter specific delivery address"></div>' +
-    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" maxlength="60" placeholder="Barangay"></div>' +
-    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" maxlength="60" placeholder="Municipality or City"></div>' +
-    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" maxlength="60" placeholder="Province"></div>' +
+    '<input type="text" id="bfDeliveryAddress" maxlength="100" placeholder="Enter specific delivery address"></div>' +
+    '<div class="form-group"><label>Barangay</label><input type="text" id="bfDeliveryBarangay" maxlength="40" placeholder="Barangay"></div>' +
+    '<div class="form-group"><label>Municipality / City</label><input type="text" id="bfDeliveryMunicipality" maxlength="40" placeholder="Municipality or City"></div>' +
+    '<div class="form-group"><label>Province</label><input type="text" id="bfDeliveryProvince" maxlength="40" placeholder="Province"></div>' +
     '<a href="#" onclick="openDeliveryMapPicker(); return false;" style="display:block;text-align:center;color:var(--primary);font-size:0.875rem;margin-top:8px;"><i class="fas fa-map-marker-alt"></i> Pin delivery location on map</a>' +
     '</div></div>' +
 
@@ -6993,7 +6993,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   parts.push('</select></div>');
   parts.push('<div id="extCashFields" style="display:none;">');
   parts.push('<div class="form-group"><label>Reference / Transaction # (optional)</label>');
-  parts.push('<input type="text" id="extRef" placeholder="e.g. 1234567890">');
+  parts.push('<input type="text" id="extRef" placeholder="e.g. 1234567890" maxlength="30">');
   parts.push('</div>');
   parts.push('<div class="form-group"><label>Payment Proof Screenshot</label>');
   parts.push('<button class="btn-secondary" onclick="pickExtProof()"><i class="fas fa-upload"></i> Upload Screenshot</button>');
@@ -7450,7 +7450,8 @@ function openRefundDetailsForm(bookingId, refundAmount) {
       // Account name
       '<div style="margin-bottom:14px;">' +
         '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Account Name</label>' +
-        '<input id="refundAcctName" type="text" placeholder="Full name on account" ' +
+        '<input id="refundAcctName" type="text" placeholder="Full name on account" maxlength="50" ' +
+          'oninput="this.value=this.value.replace(/[^A-Za-z\\u00C0-\\u00FF\\s.,\'-]/g,\'\').replace(/([A-Za-z\\u00C0-\\u00FF])\\1\\1+/gi,\'$1$1\').slice(0,50);" ' +
           'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;box-sizing:border-box;">' +
       '</div>' +
 
@@ -7465,7 +7466,7 @@ function openRefundDetailsForm(bookingId, refundAmount) {
       // Notes
       '<div style="margin-bottom:20px;">' +
         '<label style="font-size:0.75rem;font-weight:700;color:var(--text-muted,#94a3b8);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Additional Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>' +
-        '<textarea id="refundNotes" placeholder="e.g. Bank name, branch, etc." rows="2" ' +
+        '<textarea id="refundNotes" maxlength="200" placeholder="e.g. Bank name, branch, etc." rows="2" ' +
           'style="width:100%;padding:12px 14px;border:1.5px solid var(--border,#e5e7eb);border-radius:12px;font-size:0.9rem;background:var(--surface-container,#f4f6fb);color:var(--text-primary,#0f172a);outline:none;resize:none;box-sizing:border-box;font-family:inherit;"></textarea>' +
       '</div>' +
 
@@ -7835,7 +7836,7 @@ function openInspection(bookingId, type) {
     '</div>' +
     '<div class="form-group"><label>Mileage Reading (km) *</label><input type="number" id="inspMileage" placeholder="e.g. 12500"><div id="inspMileageMinNotice" style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;font-weight:600;"></div><span class="field-error" id="inspMileageErr"></span></div>' +
     '<div class="form-group"><label>Fuel Level</label><select id="inspFuel" style="font-weight:700;"><option value="Full" selected>Full (100% Full Tank)</option><option value="3/4">3/4 Tank (Missing 1/4)</option><option value="1/2">1/2 Tank (Missing 1/2)</option><option value="1/4">1/4 Tank (Missing 3/4)</option><option value="Empty">Empty (0% Tank)</option></select></div>' +
-    '<div class="form-group"><label>Condition Notes</label><textarea id="inspNotes" placeholder="Describe vehicle condition..."></textarea></div>' +
+    '<div class="form-group"><label>Condition Notes</label><textarea id="inspNotes" maxlength="300" placeholder="Describe vehicle condition..."></textarea></div>' +
     '</div>' +
     '<div class="card"><h4 style="font-weight:700;margin-bottom:10px;">Photos</h4>' +
     '<button class="btn-secondary" onclick="addInspectionPhoto()"><i class="fas fa-camera"></i> Add Photo</button>' +
@@ -8042,7 +8043,7 @@ function openReviewForm(vehicleId) {
     [1,2,3,4,5].map(function(n) { return '<i class="fas fa-star" onclick="setRating(' + n + ')" data-val="' + n + '"></i>'; }).join('') +
     '</div>' +
     '<span class="field-error" id="ratingErr" style="margin-top:8px;display:block;"></span>' +
-    '<div class="form-group" style="margin-top:16px;"><label>Comment (optional)</label><textarea id="reviewComment" placeholder="Share your experience..."></textarea></div>' +
+    '<div class="form-group" style="margin-top:16px;"><label>Comment (optional)</label><textarea id="reviewComment" maxlength="300" placeholder="Share your experience..."></textarea></div>' +
     '<span class="field-error" id="reviewErr" style="display:block;margin-bottom:12px;"></span>' +
     '<button class="btn-primary" onclick="submitReview(' + vehicleId + ')"><i class="fas fa-paper-plane"></i> Submit Review</button>' +
     '</div></div>';
@@ -9894,7 +9895,7 @@ function loadSavedPayments() {
         '<div class="card" style="margin-top:16px;"><h4 style="font-weight:700;margin-bottom:14px;">Add Payment Method</h4>' +
         '<div class="form-group"><label>Card Type</label><select id="newCardType"><option>Visa</option><option>Mastercard</option><option>GCash</option><option>Maya</option></select></div>' +
         '<div class="form-group"><label>Last 4 Digits</label><input type="text" id="newLastFour" maxlength="4" placeholder="1234"><span class="field-error" id="lastFourErr"></span></div>' +
-        '<div class="form-group"><label>Provider</label><input type="text" id="newProvider" placeholder="e.g. BDO, BPI, GCash"></div>' +
+        '<div class="form-group"><label>Provider</label><input type="text" id="newProvider" maxlength="40" placeholder="e.g. BDO, BPI, GCash"></div>' +
         '<button class="btn-primary" onclick="addSavedPayment()"><i class="fas fa-plus"></i> Add Method</button>' +
         '</div></div>';
     })
@@ -9979,7 +9980,7 @@ function loadChatbot() {
     '</div>' +
     '</div>' +
     '<div class="chat-input-row" id="chatbotInputRow" style="flex-shrink:0;position:relative;z-index:100;background:var(--bg-card);padding:10px 14px calc(14px + env(safe-area-inset-bottom, 0px));border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;box-shadow:0 -2px 10px rgba(0,0,0,0.05);">' +
-    '<input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;padding:12px 16px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:24px;font-size:0.95rem;color:var(--text-primary);outline:none;box-sizing:border-box;" onkeydown="if(event.key===\'Enter\')sendChat()">' +
+    '<input type="text" id="chatInput" maxlength="250" placeholder="Type a message..." style="flex:1;padding:12px 16px;background:var(--bg-input);border:1.5px solid var(--border);border-radius:24px;font-size:0.95rem;color:var(--text-primary);outline:none;box-sizing:border-box;" onkeydown="if(event.key===\'Enter\')sendChat()">' +
     '<button onclick="sendChat()" style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 6px rgba(0,177,79,0.3);"><i class="fas fa-paper-plane" style="font-size:1rem;"></i></button>' +
     '</div>';
 
@@ -10276,7 +10277,7 @@ function renderNewsletterStatus(isSubscribed, email) {
       '</div>' +
     '</div>' +
     '<div class="form-group" style="margin-bottom:10px;">' +
-      '<input type="email" id="nlEmail" placeholder="Enter your email address" value="' + (email || '') + '" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:0.875rem;">' +
+      '<input type="email" id="nlEmail" maxlength="60" placeholder="Enter your email address" value="' + (email || '') + '" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:0.875rem;">' +
       '<span class="field-error" id="nlErr" style="color:#ef4444;font-size:0.75rem;display:block;margin-top:4px;"></span>' +
     '</div>' +
     '<button class="btn-primary" onclick="doSubscribeNewsletter()" style="width:100%;padding:11px;border-radius:10px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">' +
@@ -10785,7 +10786,7 @@ var LiveChat = (function () {
         '</div>' +
       '</div>' +
       '<div class="chat-input-row">' +
-        '<input type="text" id="lcInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')LiveChat.send()">' +
+        '<input type="text" id="lcInput" maxlength="250" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')LiveChat.send()">' +
         '<button onclick="LiveChat.send()"><i class="fas fa-paper-plane"></i></button>' +
       '</div>';
 

@@ -2390,7 +2390,7 @@
         <label>Email Address</label>
 
 
-        <input type="email" id="loginEmail" placeholder="yourname@gmail.com" autocomplete="email">
+        <input type="email" id="loginEmail" placeholder="yourname@gmail.com" autocomplete="email" maxlength="60">
 
 
         <span class="field-error" id="loginEmailErr"></span>
@@ -2408,7 +2408,7 @@
         <div class="password-input-wrapper">
 
 
-          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+          <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" maxlength="64">
 
 
           <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">
@@ -2533,7 +2533,7 @@
         <label>Email Address</label>
 
 
-        <input type="email" id="forgotPwEmail" placeholder="yourname@gmail.com" autocomplete="email" onkeydown="if(event.key==='Enter')doForgotPassword()">
+        <input type="email" id="forgotPwEmail" placeholder="yourname@gmail.com" autocomplete="email" maxlength="60" onkeydown="if(event.key==='Enter')doForgotPassword()">
 
 
         <span class="field-error" id="forgotPwErr"></span>
@@ -2628,22 +2628,18 @@
 
 
       <div style="display:flex; gap:10px;">
-
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>First Name</label>
-          <input type="text" id="regFirstName" placeholder="Juan" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+          <input type="text" id="regFirstName" placeholder="Juan" maxlength="30" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
-
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>Middle Name</label>
-          <input type="text" id="regMiddleName" placeholder="M. (Optional)" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+          <input type="text" id="regMiddleName" placeholder="M. (Optional)" maxlength="30" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
-
       </div>
-
       <div class="form-group" style="margin-top:15px;">
         <label>Last Name</label>
-        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+        <input type="text" id="regLastName" placeholder="Dela Cruz" maxlength="30" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         <span class="field-error" id="regNameErr"></span>
       </div>
 
@@ -2654,7 +2650,7 @@
         <label>Gmail Address</label>
 
 
-        <input type="email" id="regEmail" placeholder="yourname@gmail.com">
+        <input type="email" id="regEmail" placeholder="yourname@gmail.com" maxlength="60">
 
 
         <span class="field-error" id="regEmailErr"></span>
@@ -2672,7 +2668,7 @@
         <div class="password-input-wrapper">
 
 
-          <input type="password" id="regPassword" placeholder="At least 8 characters" oninput="validatePassword(this.value, 'regPasswordErr')">
+          <input type="password" id="regPassword" placeholder="At least 8 characters" maxlength="64" oninput="validatePassword(this.value, 'regPasswordErr')">
 
 
           <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)">
@@ -3280,9 +3276,7 @@
       <i class="fas fa-search" style="position:absolute;left:32px;top:50%;transform:translateY(-50%);color:var(--primary);font-size:1rem;"></i>
 
 
-      <input type="text" id="vehicleSearch" placeholder="Search for cars, locations..." oninput="searchVehicles(this.value)"
-
-
+      <input type="text" id="vehicleSearch" placeholder="Search for cars, locations..." maxlength="50" oninput="this.value=this.value.replace(/[<>{}]/g,''); searchVehicles(this.value)"
         style="width:100%;padding:12px 44px 12px 44px;background:#ffffff;border:none;border-radius:12px;color:var(--text-primary);font-size:0.95rem;outline:none;box-shadow:0 4px 12px rgba(0,0,0,0.08); font-weight:500;">
 
 
@@ -3571,16 +3565,16 @@
       <div style="display:flex; gap:10px;">
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>First Name</label>
-          <input type="text" id="editFirstName" placeholder="Juan" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+          <input type="text" id="editFirstName" placeholder="Juan" maxlength="30" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
         <div class="form-group" style="flex:1; margin-bottom:0;">
           <label>Middle Name</label>
-          <input type="text" id="editMiddleName" placeholder="M. (Optional)" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+          <input type="text" id="editMiddleName" placeholder="M. (Optional)" maxlength="30" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
         </div>
       </div>
       <div class="form-group" style="margin-top:15px;">
         <label>Last Name</label>
-        <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="40" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+        <input type="text" id="editLastName" placeholder="Dela Cruz" maxlength="30" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
       </div>
 
 
@@ -3605,7 +3599,7 @@
         <label>Email Address</label>
 
 
-        <input type="email" id="editEmail" placeholder="yourname@gmail.com">
+        <input type="email" id="editEmail" placeholder="yourname@gmail.com" maxlength="60">
 
 
         <span class="field-error" id="editEmailErr"></span>
@@ -3879,7 +3873,7 @@
             <label>License Class / Category</label>
 
 
-            <input type="text" id="editLicenseClass" maxlength="25" placeholder="e.g. A, B, B1 (Separate with commas)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+            <input type="text" id="editLicenseClass" maxlength="15" placeholder="e.g. A, B, B1" oninput="this.value = this.value.toUpperCase().replace(/[^A-E1-8,\s]/g, '').slice(0, 15)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
 
           </div>
@@ -3894,7 +3888,7 @@
           <label>Complete Residential Address</label>
 
 
-          <input type="text" id="editLicenseAddress" maxlength="150" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" oninput="this.value=this.value.replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
+          <input type="text" id="editLicenseAddress" maxlength="100" placeholder="House/Unit No., Street, Barangay, City/Municipality, Province" oninput="this.value=this.value.replace(/([A-Za-z\u00C0-\u00FF0-9])\1\1+/gi,'$1$1').slice(0, 100)" style="width:100%;padding:10px 12px;background:var(--surface-container,#f1f5f9);border:1px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;box-sizing:border-box;">
 
           <input type="hidden" id="editLicenseCountry" value="">
 
@@ -3917,7 +3911,7 @@
           <label>Name on License</label>
 
 
-          <input type="text" id="editLicenseName" maxlength="70" placeholder="First Name, Middle Name, Last Name" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+          <input type="text" id="editLicenseName" maxlength="50" placeholder="First Name, Middle Name, Last Name" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0, 50)">
 
 
         </div>
@@ -3950,7 +3944,7 @@
           <label>Contact Name</label>
 
 
-          <input type="text" id="editLicenseEmName" maxlength="70" placeholder="Maria Dela Cruz" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1')">
+          <input type="text" id="editLicenseEmName" maxlength="50" placeholder="Maria Dela Cruz" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.,'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0, 50)">
 
 
         </div>
@@ -4696,7 +4690,7 @@
       <div class="form-group" id="changePasswordCurrentGroup">
         <label>Current Password</label>
         <div class="password-input-wrapper">
-          <input type="password" id="changePasswordCurrent" placeholder="Enter current password">
+          <input type="password" id="changePasswordCurrent" placeholder="Enter current password" maxlength="64">
           <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordCurrent', this)">
             <i class="fas fa-eye"></i>
           </button>
@@ -4707,7 +4701,7 @@
       <div class="form-group">
         <label>New Password</label>
         <div class="password-input-wrapper">
-          <input type="password" id="changePasswordNew" placeholder="At least 8 characters" oninput="validatePassword(this.value, 'changePasswordNewErr', 'req-update-')">
+          <input type="password" id="changePasswordNew" placeholder="At least 8 characters" maxlength="64" oninput="validatePassword(this.value, 'changePasswordNewErr', 'req-update-')">
           <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordNew', this)">
             <i class="fas fa-eye"></i>
           </button>
@@ -4724,7 +4718,7 @@
       <div class="form-group">
         <label>Confirm New Password</label>
         <div class="password-input-wrapper">
-          <input type="password" id="changePasswordConfirm" placeholder="Re-enter new password">
+          <input type="password" id="changePasswordConfirm" placeholder="Re-enter new password" maxlength="64">
           <button type="button" class="password-toggle" onclick="togglePasswordVisibility('changePasswordConfirm', this)">
             <i class="fas fa-eye"></i>
           </button>
@@ -4889,7 +4883,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Feedback Textarea -->
     <div class="form-group" style="margin-bottom:18px;">
       <label style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">Additional Feedback / Suggestions</label>
-      <textarea id="mandatoryReviewComment" placeholder="Tell us how we did or how we can make your next rental even better..." style="width:100%;height:80px;border-radius:12px;padding:10px 12px;font-size:0.85rem;resize:none;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);box-sizing:border-box;"></textarea>
+      <textarea id="mandatoryReviewComment" maxlength="300" placeholder="Tell us how we did or how we can make your next rental even better..." style="width:100%;height:80px;border-radius:12px;padding:10px 12px;font-size:0.85rem;resize:none;border:1px solid var(--border);background:var(--bg-input);color:var(--text-primary);box-sizing:border-box;"></textarea>
       <span id="mandatoryReviewErr" class="field-error" style="display:block;margin-top:6px;font-size:0.8rem;"></span>
     </div>
 
