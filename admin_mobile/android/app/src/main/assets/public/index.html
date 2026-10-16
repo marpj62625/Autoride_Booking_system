@@ -20232,13 +20232,20 @@ function toggleNewsletterModal(show = true) {
                     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 0;"><span style="font-size:0.92rem;font-weight:800;color:#0f172a;">TOTAL</span><span style="font-size:1.1rem;font-weight:900;color:#00B14F;">${fmtMoney(b.total_price)}</span></div>
                 </div>
                 <div style="background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:${actionBtns ? '14px' : '0'};border:1px solid #e2e8f0;">
-                    <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;gap:5px;"><i class="fas fa-credit-card" style="color:#3b82f6;"></i>Payment</div>
+                    <div style="font-size:0.65rem;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                        <span style="display:flex;align-items:center;gap:5px;"><i class="fas fa-credit-card" style="color:#3b82f6;"></i>Payment &amp; Official Receipt</span>
+                        <span style="font-size:0.68rem;color:#00B14F;font-weight:800;background:#f0fdf4;padding:2px 8px;border-radius:6px;border:1px solid #bbf7d0;">RECEIPT #${String(b.id).padStart(6,'0')}</span>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Method</div><div style="font-size:0.85rem;font-weight:700;color:#0f172a;">${b.payment_method||'N/A'}</div></div>
                         <div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Status</div><div style="font-size:0.82rem;font-weight:700;color:${['paid','fully paid'].includes((b.payment_status||'').toLowerCase().trim())?'#16a34a':b.payment_status==='Refund Pending'?'#d97706':b.payment_status==='Partially Paid'?'#2563eb':'#374151'};">${b.payment_status||'N/A'}</div></div>
                     </div>
-                    ${parseFloat(b.amount_paid||0)>0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>${parseFloat(b.balance_amount||0)>0?`<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>`:''}</div>` : ''}
-                    ${b.reference_number ? `<div style="padding-top:8px;border-top:1px solid #f1f5f9;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Reference #</div><div style="font-size:0.78rem;font-weight:600;color:#0f172a;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;">${b.reference_number}</div></div>` : ''}
+                    ${parseFloat(b.amount_paid||0)>0 ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;"><div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Amount Paid</div><div style="font-size:0.85rem;font-weight:700;color:#16a34a;">${fmtMoney(b.amount_paid)}</div></div>${parseFloat(b.balance_amount||0)>0?`<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Balance Due</div><div style="font-size:0.85rem;font-weight:700;color:#ef4444;">${fmtMoney(b.balance_amount)}</div></div>`:`<div><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:2px;">Date Issued</div><div style="font-size:0.78rem;font-weight:700;color:#0f172a;">${b.created_at ? new Date(b.created_at).toLocaleString('en-PH', {timeZone:'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : fmtDate(b.start_date)}</div></div>`}</div>` : ''}
+                    ${b.reference_number ? `<div style="padding-top:8px;border-top:1px solid #f1f5f9;"><div style="font-size:0.62rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Reference #</div><div style="font-size:0.78rem;font-weight:600;color:#0f172a;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid #e2e8f0;font-family:monospace;">${b.reference_number}</div></div>` : ''}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;">
+                        <button type="button" onclick="Inspections.showReceiptModal(${b.id})" style="background:#0f172a;color:#ffffff;border:none;padding:9px 10px;border-radius:8px;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;"><i class="fas fa-receipt" style="color:#00B14F;"></i>View Receipt</button>
+                        <button type="button" onclick="window.open(API_URL + '/bookings/${b.id}/receipt', '_blank')" style="background:#00B14F;color:#ffffff;border:none;padding:9px 10px;border-radius:8px;font-size:0.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;"><i class="fas fa-file-pdf"></i>Download PDF</button>
+                    </div>
                 </div>
 
                 <div style="background:#fff5f5;border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid #feb2b2;">
@@ -31490,13 +31497,11 @@ function toggleNewsletterModal(show = true) {
 
 
 
-            // Use already-loaded booking data from Bookings.data
-
-
-
-            const b = Bookings.data.find(x => x.id === bookingId);
-
-
+            // Use already-loaded booking data across active, past, and archived bookings
+            const b = (Bookings.data || []).find(x => x.id === bookingId)
+                   || (window.PastBookings && Array.isArray(PastBookings.data) ? PastBookings.data.find(x => x.id === bookingId) : null)
+                   || (window.ArchivedBookings && Array.isArray(ArchivedBookings.data) ? ArchivedBookings.data.find(x => x.id === bookingId) : null)
+                   || (Bookings.currentBooking && Bookings.currentBooking.id === bookingId ? Bookings.currentBooking : null);
 
             if (!b) {
 
@@ -31560,11 +31565,14 @@ function toggleNewsletterModal(show = true) {
 
             } catch(e) { proofs = []; }
 
-
-
-
-
-
+            if (proofs.length === 0 && (b.payment_method || b.reference_number)) {
+                proofs = [{
+                    method: b.payment_method || 'Payment',
+                    amount: b.amount_paid || b.total_price || 0,
+                    reference_number: b.reference_number || '',
+                    status: b.payment_status || 'Completed'
+                }];
+            }
 
             const fmt = n => parseFloat(n||0).toLocaleString('en-PH', {minimumFractionDigits:2});
 
@@ -31586,6 +31594,11 @@ function toggleNewsletterModal(show = true) {
 
 
 
+            };
+            const fmtDT = d => {
+                if (!d) return fmtD(b.start_date);
+                try { return new Date(d).toLocaleString('en-PH', {timeZone:'Asia/Manila', year:'numeric', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}); }
+                catch(e) { return fmtD(d); }
             };
 
 
@@ -31662,18 +31675,12 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                <div style="padding:4px 0 14px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:14px;">
-
-
-
-                    <div style="font-size:1rem;font-weight:900;color:white;">RECEIPT #${String(b.id).padStart(6,'0')}</div>
-
-
-
-                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);margin-top:2px;">Status: <span style="color:#00B14F;font-weight:700;">${(b.status||'').toUpperCase()}</span></div>
-
-
-
+                <div style="padding:4px 0 14px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div>
+                        <div style="font-size:1rem;font-weight:900;color:white;">RECEIPT #${String(b.id).padStart(6,'0')}</div>
+                        <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);margin-top:3px;"><i class="far fa-clock" style="margin-right:4px;"></i>Date Issued: ${fmtDT(b.created_at)}</div>
+                    </div>
+                    <div style="font-size:0.75rem;color:rgba(255,255,255,0.4);text-align:right;">Status: <span style="color:#00B14F;font-weight:700;">${(b.status||'').toUpperCase()}</span></div>
                 </div>
 
 
@@ -31782,7 +31789,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        <span>Payment: <span style="color:${b.payment_status==='paid'?'#4ade80':'#fbbf24'};font-weight:700;">${(b.payment_status||'pending').toUpperCase()}</span></span>
+                        <span>Payment: <span style="color:${['paid','fully paid'].includes((b.payment_status||'').toLowerCase().trim())?'#4ade80':'#fbbf24'};font-weight:700;">${(b.payment_status||'pending').toUpperCase()}</span></span>
 
 
 
@@ -31818,7 +31825,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                            <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-top:2px;">Status: ${(p.status||'pending').toUpperCase()}</div>
+                            <div style="font-size:0.7rem;color:rgba(255,255,255,0.35);margin-top:2px;">Status: ${(p.status||'completed').toUpperCase()}</div>
 
 
 
@@ -31836,7 +31843,11 @@ function toggleNewsletterModal(show = true) {
 
                 ${proofsHtml}
 
-
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">
+                    <button type="button" onclick="window.open(API_URL + '/bookings/${b.id}/receipt', '_blank')" style="width:100%;background:#00B14F;color:#ffffff;border:none;padding:10px 14px;border-radius:10px;font-size:0.82rem;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+                        <i class="fas fa-file-pdf"></i> Download Official PDF Receipt
+                    </button>
+                </div>
 
             `;
 
