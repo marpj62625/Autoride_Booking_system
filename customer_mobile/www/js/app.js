@@ -3009,7 +3009,7 @@ function refreshActiveBookingMonitor() {
       var startNorm = _normDateStr(active.start_date);
       var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
       var imgHtml = imgSrc
-        ? '<img src="' + imgSrc + '" id="activeRentalImg" alt="' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\';">'
+        ? '<img src="' + imgSrc + '" id="activeRentalImg" alt="' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\';">'
         : '<div style="width:100%;height:100%;min-height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
 
       var statusLabel = isPickedUp ? (active.status === 'Picked Up' ? 'Picked Up' : 'Active') : active.status;
@@ -3202,9 +3202,10 @@ function loadHome() {
   }
 }
 
+var DEFAULT_CAR_SVG = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Cpath%20d%3D%22M130%20130%20L150%2080%20L250%2080%20L270%20130%20Z%22%20fill%3D%22%23cbd5e1%22%2F%3E%3Ccircle%20cx%3D%22155%22%20cy%3D%22135%22%20r%3D%2216%22%20fill%3D%22%2394a3b8%22%2F%3E%3Ccircle%20cx%3D%22245%22%20cy%3D%22135%22%20r%3D%2216%22%20fill%3D%22%2394a3b8%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%22115%22%20font-family%3D%22sans-serif%22%20font-size%3D%2213%22%20font-weight%3D%22bold%22%20text-anchor%3D%22middle%22%20fill%3D%22%2364748b%22%3EAUTORIDE%3C%2Ftext%3E%3C%2Fsvg%3E';
+
 function buildImgUrl(path) {
-  var _noImg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E';
-  if (!path) return _noImg;
+  if (!path) return DEFAULT_CAR_SVG;
   if (path.startsWith('http')) return path;
   return API_BASE.replace('/api', '') + '/' + path;
 }
@@ -3303,28 +3304,31 @@ function renderVehicles(list) {
     var mEnc = encodeURIComponent(v.model);
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
-      '<span class="badge-available"><span style="width:7px;height:7px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:5px;"></span>' + avail + ' available</span>' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + escapeHtml(v.brand + ' ' + v.model) + '" loading="lazy" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'">' +
+      '<span class="badge-available"><span class="badge-dot"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;">' +
-      '<div>' +
-      '<h3>' + v.brand + ' ' + v.model + '</h3>' +
-      '<div style="display:flex;gap:6px;margin-top:4px;">' +
-      '<span style="background:#1f1f1f;color:#71717a;padding:2px 8px;border-radius:20px;font-size:0.65rem;font-weight:600;">' + (v.vehicle_type || '-') + '</span>' +
-      '</div></div>' +
-      '<div style="text-align:right;">' +
-      '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + '</div>' +
-      '<div style="font-size:0.65rem;color:#52525b;margin-top:1px;">per day</div>' +
-      '</div></div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);">' +
-      '<div style="display:flex;align-items:center;gap:6px;">' +
-      '<i class="fas fa-map-marker-alt" style="color:#3f3f46;font-size:0.75rem;"></i>' +
-      '<span style="font-size:0.75rem;color:#52525b;">' + (v.location || '-') + '</span>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">' +
+      '<h3 style="font-size:1.02rem;font-weight:900;color:var(--text-primary);margin:0;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(v.brand + ' ' + v.model) + '</h3>' +
+      '<span style="background:var(--bg-input,#f1f5f9);color:var(--text-secondary);border:1px solid var(--border);padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:800;letter-spacing:0.3px;flex-shrink:0;">' + (v.vehicle_type || 'Vehicle') + '</span>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:4px;background:rgba(220,38,38,0.1);color:#f87171;padding:5px 12px;border-radius:12px;font-size:0.75rem;font-weight:700;">' +
-      'View <i class="fas fa-chevron-right" style="font-size:0.6rem;"></i></div>' +
-      '</div></div></div>';
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">' +
+      '<div style="display:flex;align-items:baseline;gap:4px;">' +
+      '<span class="vehicle-rate" style="font-size:1.22rem;font-weight:900;color:var(--text-primary);line-height:1;">' + formatPHP(v.daily_rate) + '</span>' +
+      '<span style="font-size:0.72rem;font-weight:600;color:var(--text-muted);">/ day</span>' +
+      '</div>' +
+      (v.transmission ? '<span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-cog" style="color:var(--primary);font-size:0.7rem;"></i>' + v.transmission + '</span>' : '') +
+      '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);">' +
+      '<div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;">' +
+      '<i class="fas fa-location-dot" style="color:var(--primary);font-size:0.75rem;flex-shrink:0;"></i>' +
+      '<span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (v.location || 'Hub Pickup') + '</span>' +
+      '</div>' +
+      '<div class="btn-view-unit" style="display:flex;align-items:center;gap:5px;background:rgba(0,177,79,0.12);color:var(--primary);border:1px solid rgba(0,177,79,0.25);padding:5px 12px;border-radius:10px;font-size:0.75rem;font-weight:800;flex-shrink:0;transition:all 0.15s ease;">' +
+      '<span>View</span> <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i>' +
+      '</div>' +
+      '</div>' +
+      '</div></div>';
   }).join('');
 
   if (window.anime) {
@@ -3424,7 +3428,7 @@ function onVehicleColorChange(brandEnc, modelEnc, cardId) {
       if (plateEl) plateEl.textContent = unit.plate_number || 'N/A';
       if (imgWrap) {
         var imgSrc = (unit.gallery && unit.gallery.length) ? buildImgUrl(unit.gallery[0]) : buildImgUrl(unit.vehicle_image);
-        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'" style="width:100%;height:100%;object-fit:cover;">';
+        imgWrap.innerHTML = '<img src="' + imgSrc + '" alt="vehicle" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'" style="width:100%;height:100%;object-fit:cover;">';
       }
       if (bookBtn) {
         var ACTIVE_STATUSES = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Ongoing'];
@@ -3587,7 +3591,7 @@ function renderVehicleUnits(brand, model, color, units) {
 
     return '<div class="card" style="margin-bottom:14px;">' +
       '<div style="position:relative;height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;">' +
-      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">' +
+      '<img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'">' +
       '<span style="position:absolute;top:8px;right:8px;background:' + statusColor + ';color:#fff;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:20px;">' + v.status + '</span>' +
       (v.color_display && v.color_display !== 'Not Specified' ? '<span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;padding:4px 8px;border-radius:20px;">' + v.color_display + '</span>' : '') +
       '</div>' +
@@ -10177,7 +10181,7 @@ function loadFavorites() {
         '<div class="vehicle-grid" style="padding:16px;">' +
         (data.length ? data.map(function(v) {
           return '<div class="vehicle-card" onclick="openVehicleDetail(' + v.id + ')">' +
-            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + v.brand + ' ' + v.model + '" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'"></div>' +
+            '<div class="vehicle-img-wrap"><img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + escapeHtml(v.brand + ' ' + v.model) + '" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'"></div>' +
             '<div class="vehicle-info"><h3>' + v.brand + ' ' + v.model + '</h3>' +
             '<div class="vehicle-meta"><i class="fas fa-map-marker-alt"></i> ' + (v.location || '-') + '</div>' +
             '<div class="vehicle-rate">' + formatPHP(v.daily_rate) + ' <span>/ day</span></div></div></div>';
@@ -11520,7 +11524,7 @@ function renderVdGallery(unit) {
   var html = '<div class="vd-slideshow-container" style="position:relative;width:100%;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);background:#000;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;">';
   
   // Image tag
-  html += '<img id="vd-img" src="' + galleryImages[0] + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22400%22%20height%3D%22200%22%3E%3Crect%20width%3D%22400%22%20height%3D%22200%22%20fill%3D%22%23f3f4f6%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%2285%22%20font-family%3D%22Arial%22%20font-size%3D%2240%22%20text-anchor%3D%22middle%22%20fill%3D%22%23d1d5db%22%3E%F0%9F%9A%97%3C%2Ftext%3E%3Ctext%20x%3D%22200%22%20y%3D%22130%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%239ca3af%22%3ENo%20Image%3C%2Ftext%3E%3C%2Fsvg%3E\'">';
+  html += '<img id="vd-img" src="' + galleryImages[0] + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'">';
 
   // Navigation Arrows (if 2 or more images)
   if (galleryImages.length > 1) {
