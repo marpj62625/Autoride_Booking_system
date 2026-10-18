@@ -2790,11 +2790,14 @@ def user_forgot_password():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json or {}
-    email = (data.get('email') or '').strip().lower()
+    email = (data.get('email') or '').strip().lower()[:100]
     password = (data.get('password') or '').strip()
 
     if not email or not password:
         return jsonify({"error": "Missing credentials"}), 400
+
+    if len(password) > 128:
+        return jsonify({"error": "Password exceeds maximum length"}), 400
 
     # 1. Domain Restriction (@gmail.com only)
     if not is_gmail(email):
@@ -6143,7 +6146,10 @@ def user_bookings():
 
         return jsonify({"error": "user_id is required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -8681,7 +8687,10 @@ def user_cancel_booking():
                 pickup_dt = _dtm.datetime.combine(start_raw if isinstance(start_raw, _dtm.date) else start_raw.date(),
                                                    _dtm.time(6, 0))
             else:
-                pickup_dt = _dtm.datetime.strptime(str(start_raw)[:10], '%Y-%m-%d').replace(hour=6)
+                try:
+                    pickup_dt = _dtm.datetime.strptime(str(start_raw)[:10], '%Y-%m-%d').replace(hour=6)
+                except Exception:
+                    pickup_dt = _dtm.datetime.now()
 
             hours_until_pickup = (pickup_dt - _dtm.datetime.now()).total_seconds() / 3600
 
@@ -8899,7 +8908,10 @@ def trigger_refund(booking_id):
                 _dtm.time(6, 0)
             )
         else:
-            pickup_dt = _dtm.datetime.strptime(str(start_raw)[:10], '%Y-%m-%d').replace(hour=6)
+            try:
+                pickup_dt = _dtm.datetime.strptime(str(start_raw)[:10], '%Y-%m-%d').replace(hour=6)
+            except Exception:
+                pickup_dt = cancel_dt
 
         hours_before = (pickup_dt - cancel_dt).total_seconds() / 3600
 
@@ -12324,11 +12336,15 @@ def admin_login():
     if not data:
         return jsonify({"error": "No data received - check Content-Type"}), 400
 
-    email = data.get('email')
+    email = str(data.get('email') or '').strip().lower()[:100]
 
-    password = data.get('password')
+    password = str(data.get('password') or '').strip()
 
-    
+    if not email or not password:
+        return jsonify({"error": "Missing email or password"}), 400
+
+    if len(password) > 128:
+        return jsonify({"error": "Password exceeds maximum length"}), 400
 
     try:
 
@@ -12391,6 +12407,10 @@ def admin_login():
 def list_admins():
 
     requester_id = request.args.get('requester_id')
+    try:
+        requester_id = int(requester_id) if requester_id else None
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid requester_id"}), 400
 
     try:
 
@@ -12527,6 +12547,10 @@ def update_admin(user_id):
 def delete_admin(user_id):
 
     requester_id = request.args.get('requester_id')
+    try:
+        requester_id = int(requester_id) if requester_id else None
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid requester_id"}), 400
 
     try:
 
@@ -12589,9 +12613,11 @@ def delete_admin(user_id):
 def update_super_admin_profile():
     data = request.json or {}
     admin_id = data.get('admin_id') or data.get('user_id')
-    current_password = str(data.get('current_password', '')).strip()
-    new_email = str(data.get('email', '')).strip().lower()
-    new_password = str(data.get('new_password', '')).strip()
+    current_password = str(data.get('current_password', '')).strip()[:128]
+    new_email = str(data.get('email', '')).strip().lower()[:100]
+    new_password = str(data.get('new_password', '')).strip()[:128]
+    if new_password and (len(new_password) < 6 or len(new_password) > 64):
+        return jsonify({"error": "New password must be between 6 and 64 characters."}), 400
 
     if not admin_id:
         return jsonify({"error": "Admin ID is required."}), 400
@@ -14070,8 +14096,14 @@ def handle_location_detail(loc_id):
 def get_activity_logs():
     try:
         cur = get_cursor()
-        page = request.args.get('page')
-        limit = request.args.get('limit')
+        try:
+            page = max(1, int(request.args.get('page', 1) or 1))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            limit = max(1, min(100, int(request.args.get('limit', 50) or 50)))
+        except (ValueError, TypeError):
+            limit = 50
         filter_type = (request.args.get('filter') or request.args.get('action') or '').strip().lower()[:50]
         search_query = (request.args.get('q') or request.args.get('search') or '').strip().lower()[:50]
 
@@ -14209,7 +14241,10 @@ def get_vehicle_location_for_customer(vehicle_id):
 
         return jsonify({"error": "user_id is required"}), 400
 
-
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -14334,10 +14369,15 @@ def get_vehicle_colors():
 @app.route('/api/vehicles/units', methods=['GET'])
 def get_vehicle_units():
     """Get all individual units for a brand+model, optionally filtered by color. Only shows available units."""
-    brand = request.args.get('brand', '')
-    model = request.args.get('model', '')
-    color = request.args.get('color', '')
+    brand = str(request.args.get('brand', '')).strip()[:50]
+    model = str(request.args.get('model', '')).strip()[:50]
+    color = str(request.args.get('color', '')).strip()[:50]
     user_id = request.args.get('user_id', '')
+    if user_id:
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            user_id = None
     if not brand or not model:
         return jsonify({'error': 'brand and model are required'}), 400
 
@@ -14668,6 +14708,10 @@ def get_license_details():
                 'error': 'user_id required or empty',
                 'debug': debug_info
             }), 400
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid user_id'}), 400
         
         # Validate user_id is numeric
         try:
@@ -16302,6 +16346,11 @@ def chat_messages():
     if not user_id or not admin_id:
         return jsonify({'error': 'user_id and admin_id required'}), 400
     try:
+        user_id = int(user_id)
+        admin_id = int(admin_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid user_id or admin_id format'}), 400
+    try:
         cur = get_cursor()
         cur.execute("SET search_path = public")
         
@@ -16423,10 +16472,16 @@ def chat_inbox():
     Get inbox for an admin: list of users who have chatted, with last message and unread count.
     Or for a user: list of admins they've chatted with.
     """
-    viewer_type = request.args.get('viewer_type')  # 'admin' or 'user'
+    viewer_type = str(request.args.get('viewer_type') or '').strip().lower()
     viewer_id   = request.args.get('viewer_id')
     if not viewer_type or not viewer_id:
         return jsonify({'error': 'viewer_type and viewer_id required'}), 400
+    if viewer_type not in ['admin', 'user', 'customer', 'driver', 'staff', 'system']:
+        return jsonify({'error': 'Invalid viewer_type'}), 400
+    try:
+        viewer_id = int(viewer_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid viewer_id format'}), 400
     try:
         cur = get_cursor()
         if viewer_type == 'admin':
@@ -17004,10 +17059,24 @@ def record_expense():
 @app.route('/api/admin/expenses', methods=['GET'])
 def get_expenses():
     """Retrieve filtered list of expenses."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
     admin_id = request.args.get('admin_id')
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
+    try:
+        admin_id = int(admin_id) if admin_id else None
+    except (ValueError, TypeError):
+        admin_id = None
+
     vehicle_id = request.args.get('vehicle_id')
+    try:
+        vehicle_id = int(vehicle_id) if vehicle_id else None
+    except (ValueError, TypeError):
+        vehicle_id = None
+
+    date_from = str(request.args.get('date_from') or '').strip()[:10] or None
+    date_to = str(request.args.get('date_to') or '').strip()[:10] or None
 
     try:
         cur = get_cursor()
