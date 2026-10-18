@@ -17,6 +17,7 @@ from flask_cors import CORS
 import typing
 
 import os
+import re
 
 try:
     from notifications import notification_service, fcm_service
@@ -2001,11 +2002,82 @@ from database import get_db, get_cursor, commit_db
 
 
 
+DISPOSABLE_EMAIL_DOMAINS = {
+    'mailinator.com', 'yopmail.com', 'guerrillamail.com', 'guerrillamail.net', 'guerrillamail.org',
+    'guerrillamail.biz', 'guerrillamailblock.com', 'sharklasers.com', 'grr.la', 'pokemail.net', 'spam4.me',
+    'temp-mail.org', 'temp-mail.io', 'tempmail.com', 'tempmail.net', 'tempmailo.com', 'mytempmail.com',
+    'mytempmail.net', 'tempreceive.com', 'tempail.com', 'tempinbox.com', 'tempinbox.co.uk', 'tempmail24.net',
+    '10minutemail.com', '10minutemail.net', '10minutemail.org', 'minutemail.com', 'minuteinbox.com',
+    'throwawaymail.com', 'throwaway.email', 'trashmail.com', 'trashmail.net', 'trashmail.me', 'trashmail.org',
+    'trashmail.at', 'trashmail.de', 'trash-mail.com', 'dispostable.com', 'disposablemail.com', 'disposable.email',
+    'getairmail.com', 'mohmal.com', 'mohmal.in', 'fakemailgenerator.com', 'generator.email', 'mytemp.email',
+    'nada.ltd', 'getnada.com', 'inboxkitten.com', 'crazymailing.com', 'crazymail.com', 'dropmail.me',
+    'emailondeck.com', 'burnermail.io', 'tmpmail.org', 'tmpmail.net', 'internalmail.net', 'maildrop.cc',
+    'harakirimail.com', 'boun.cr', 'byom.de', 'mailcatch.com', 'fakeinbox.com', 'trashinbox.com',
+    'mailnesia.com', 'luxusmail.org', 'spamgourmet.com', 'incognitomail.com', 'anonymbox.com',
+    'armyspy.com', 'cuvox.de', 'dayrep.com', 'fleckens.hu', 'gustr.com', 'jourrapide.com',
+    'rhyta.com', 'superrito.com', 'teleworm.us', 'tinypm.com', 'fakemail.net', 'filzmail.com',
+    'hidemail.de', 'jetable.org', 'kasmail.com', 'meltmail.com', 'no-spam.ws', 'noclickemail.com',
+    'nomail.xl.cx', 'nospam.ze.tc', 'safersignup.de', 'shortmail.net', 'spambox.us', 'spamfree24.org',
+    'wegwerfadresse.de', 'wegwerfemail.de', 'whyspam.me', 'yapped.net', 'zippymail.info', 'zoemail.org',
+    'tmail.ws', 'tempmailaddress.com', 'instant-mail.de', 'disposableaddress.com', 'burneremail.com',
+    'getnada.edu', 'inboxproxy.com', 'tempmailer.com', 'throwawayemail.com', 'fake-box.com', 'trashbox.eu'
+}
+
+DISPOSABLE_EMAIL_KEYWORDS = (
+    'tempmail', 'temp-mail', 'disposable', 'throwaway', '10minutemail', 'fakemail',
+    'trashmail', 'mailinator', 'yopmail', 'guerrillamail', 'burnermail', 'dropmail',
+    'getnada', 'fakeinbox'
+)
+
+def is_disposable_email(email: str) -> bool:
+    """Returns True if the email belongs to a temporary or disposable email service."""
+    if not email or '@' not in email:
+        return False
+    parts = email.strip().lower().split('@')
+    if len(parts) != 2:
+        return False
+    domain = parts[1]
+    if domain in DISPOSABLE_EMAIL_DOMAINS:
+        return True
+    for kw in DISPOSABLE_EMAIL_KEYWORDS:
+        if kw in domain:
+            return True
+    return False
+
+def is_valid_email(email: str) -> bool:
+    """Validates email format and max length of 60 chars."""
+    if not email or len(email) > 60:
+        return False
+    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(email_regex, email.strip()))
+
+def validate_password_complexity(password: str):
+    """
+    Validates password complexity:
+    - Min 8 chars, Max 64 chars
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one digit
+    - At least one special character
+    """
+    if not password:
+        return False, "Password is required."
+    if len(password) < 8 or len(password) > 64:
+        return False, "Password must be between 8 and 64 characters."
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter."
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter."
+    if not re.search(r'\d', password):
+        return False, "Password must contain at least one number."
+    if not re.search(r'[^A-Za-z0-9]', password):
+        return False, "Password must contain at least one special character."
+    return True, None
+
 def is_gmail(email: str) -> bool:
-
     """Check if the email domain is precisely @gmail.com"""
-
-    return email.lower().endswith('@gmail.com')
+    return bool(email and email.lower().endswith('@gmail.com'))
 
 def send_email_notifications(to_email, subject, body, is_html=False, trace_callback=None):
     """
@@ -2179,7 +2251,7 @@ def send_email_notifications(to_email, subject, body, is_html=False, trace_callb
 def send_verification_email(email: str, otp: str):
     """Sends a verification OTP via SMTP with terminal fallback."""
     subject = "Autoride Email Verification"
-    body = f"Your Autoride verification code is: {otp}\n\nThis code is for your @gmail.com account verification."
+    body = f"Your Autoride verification code is: {otp}\n\nThis code is for your Autoride account verification."
     
     # TERMINAL FALLBACK (Log the code so the user can see it without real SMTP)
     print("\n" + "="*50)
@@ -2564,45 +2636,35 @@ def _validate_address_py(val, label="Address", min_len=5, max_len=150):
 @app.route('/api/register', methods=['POST'])
 def register():
 
-    # Handle both JSON and Multipart
-
     if request.is_json:
-
-        data = request.json
-
+        data = request.json or {}
         first_name = data.get('first_name')
-
         middle_name = data.get('middle_name', '')
-
         last_name = data.get('last_name')
-
         email = data.get('email')
-
         password = data.get('password')
-
+        confirm_password = data.get('confirm_password')
     else:
-
         first_name = request.form.get('first_name')
-
         middle_name = request.form.get('middle_name', '')
-
         last_name = request.form.get('last_name')
-
         email = request.form.get('email')
-
         password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
 
-    
+    if not email or not is_valid_email(email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
 
-    if not email or not is_gmail(email):
+    if is_disposable_email(email):
+        return jsonify({"error": "Temporary or disposable email addresses are not supported. Please use a valid permanent email provider (e.g. Gmail, Outlook, Yahoo, iCloud)."}), 400
 
-        return jsonify({"error": "Only @gmail.com emails are allowed for registration."}), 400
+    if confirm_password is not None and str(confirm_password).strip():
+        if password != confirm_password:
+            return jsonify({"error": "Passwords do not match."}), 400
 
-    if len(email) > 60:
-        return jsonify({"error": "Email cannot exceed 60 characters."}), 400
-
-    if not password or len(password) < 6 or len(password) > 64:
-        return jsonify({"error": "Password must be between 6 and 64 characters."}), 400
+    ok_pw, err_pw = validate_password_complexity(password)
+    if not ok_pw:
+        return jsonify({"error": err_pw}), 400
 
     ok_fn, err_fn, first_name = _validate_person_name_py(first_name, "First name", required=True)
     if not ok_fn:
@@ -2806,9 +2868,9 @@ def login():
     if len(password) > 128:
         return jsonify({"error": "Password exceeds maximum length"}), 400
 
-    # 1. Domain Restriction (@gmail.com only)
-    if not is_gmail(email):
-        return jsonify({"error": "Only @gmail.com accounts can sign in."}), 400
+    # 1. Email format check
+    if not is_valid_email(email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
 
     try:
         cur = get_cursor()
@@ -6307,8 +6369,9 @@ def user_change_password():
         if not user_id or not new_password:
             return jsonify({'error': 'Missing required fields.'}), 400
 
-        if len(str(new_password)) < 6 or len(str(new_password)) > 64:
-            return jsonify({'error': 'Password must be between 6 and 64 characters.'}), 400
+        ok_pw, err_pw = validate_password_complexity(new_password)
+        if not ok_pw:
+            return jsonify({'error': err_pw}), 400
 
         cur = get_cursor()
         cur.execute("SELECT id, password FROM users WHERE id = %s", (user_id,))
@@ -6447,7 +6510,11 @@ def update_profile():
 
         # Update email if provided and not taken by another user
         new_email = request.form.get('email', '').strip().lower()
-        if new_email and '@gmail.com' in new_email:
+        if new_email:
+            if not is_valid_email(new_email):
+                return jsonify({"error": "Please enter a valid email address."}), 400
+            if is_disposable_email(new_email):
+                return jsonify({"error": "Temporary or disposable email addresses are not supported."}), 400
             cur.execute("SELECT id FROM users WHERE email=%s AND id != %s", (new_email, user_id))
             existing = cur.fetchone()
             if existing:

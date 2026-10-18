@@ -2390,7 +2390,7 @@
         <label>Email Address</label>
 
 
-        <input type="email" id="loginEmail" placeholder="yourname@gmail.com" autocomplete="email" maxlength="60">
+        <input type="email" id="loginEmail" placeholder="yourname@email.com" autocomplete="email" maxlength="60">
 
 
         <span class="field-error" id="loginEmailErr"></span>
@@ -2533,7 +2533,7 @@
         <label>Email Address</label>
 
 
-        <input type="email" id="forgotPwEmail" placeholder="yourname@gmail.com" autocomplete="email" maxlength="60" onkeydown="if(event.key==='Enter')doForgotPassword()">
+        <input type="email" id="forgotPwEmail" placeholder="yourname@email.com" autocomplete="email" maxlength="60" onkeydown="if(event.key==='Enter')doForgotPassword()">
 
 
         <span class="field-error" id="forgotPwErr"></span>
@@ -2645,89 +2645,48 @@
 
 
       <div class="form-group">
-
-
-        <label>Gmail Address</label>
-
-
-        <input type="email" id="regEmail" placeholder="yourname@gmail.com" maxlength="60">
-
-
+        <label>Email Address</label>
+        <input type="email" id="regEmail" placeholder="yourname@email.com" maxlength="60" oninput="validateRegistrationEmailField(this)">
         <span class="field-error" id="regEmailErr"></span>
-
-
       </div>
 
+      <div class="form-group">
+        <label>Password</label>
+        <div class="password-input-wrapper">
+          <input type="password" id="regPassword" placeholder="At least 8 characters" maxlength="64" oninput="validatePassword(this.value, 'regPasswordErr'); checkConfirmPasswordMatch();">
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <div class="password-requirements">
+          <div class="requirement" id="req-uppercase">
+            <i class="fas fa-times"></i> At least one uppercase letter
+          </div>
+          <div class="requirement" id="req-lowercase">
+            <i class="fas fa-times"></i> At least one lowercase letter
+          </div>
+          <div class="requirement" id="req-number">
+            <i class="fas fa-times"></i> At least one number
+          </div>
+          <div class="requirement" id="req-special">
+            <i class="fas fa-times"></i> At least one special character
+          </div>
+          <div class="requirement" id="req-length">
+            <i class="fas fa-times"></i> At least 8 characters
+          </div>
+        </div>
+        <span class="field-error" id="regPasswordErr"></span>
+      </div>
 
       <div class="form-group">
-
-
-        <label>Password</label>
-
-
+        <label>Confirm Password</label>
         <div class="password-input-wrapper">
-
-
-          <input type="password" id="regPassword" placeholder="At least 8 characters" maxlength="64" oninput="validatePassword(this.value, 'regPasswordErr')">
-
-
-          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regPassword', this)">
-
-
+          <input type="password" id="regConfirmPassword" placeholder="Confirm your password" maxlength="64" oninput="checkConfirmPasswordMatch()">
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility('regConfirmPassword', this)">
             <i class="fas fa-eye"></i>
-
-
           </button>
-
-
         </div>
-
-
-        <div class="password-requirements">
-
-
-          <div class="requirement" id="req-uppercase">
-
-
-            <i class="fas fa-times"></i> At least one uppercase letter
-
-
-          </div>
-
-
-          <div class="requirement" id="req-lowercase">
-
-
-            <i class="fas fa-times"></i> At least one lowercase letter
-
-
-          </div>
-
-
-          <div class="requirement" id="req-number">
-
-
-            <i class="fas fa-times"></i> At least one number
-
-
-          </div>
-
-
-          <div class="requirement" id="req-length">
-
-
-            <i class="fas fa-times"></i> At least 8 characters
-
-
-          </div>
-
-
-        </div>
-
-
-        <span class="field-error" id="regPasswordErr"></span>
-
-
+        <span class="field-error" id="regConfirmPasswordErr"></span>
       </div>
 
 
@@ -3599,7 +3558,7 @@
         <label>Email Address</label>
 
 
-        <input type="email" id="editEmail" placeholder="yourname@gmail.com" maxlength="60">
+        <input type="email" id="editEmail" placeholder="yourname@email.com" maxlength="60">
 
 
         <span class="field-error" id="editEmailErr"></span>
@@ -4710,6 +4669,7 @@
           <div class="requirement" id="req-update-uppercase"><i class="fas fa-times"></i> At least one uppercase letter</div>
           <div class="requirement" id="req-update-lowercase"><i class="fas fa-times"></i> At least one lowercase letter</div>
           <div class="requirement" id="req-update-number"><i class="fas fa-times"></i> At least one number</div>
+          <div class="requirement" id="req-update-special"><i class="fas fa-times"></i> At least one special character</div>
           <div class="requirement" id="req-update-length"><i class="fas fa-times"></i> At least 8 characters</div>
         </div>
         <span class="field-error" id="changePasswordNewErr"></span>
@@ -4773,6 +4733,7 @@ function validatePassword(password, errorElementId, prefix) {
         uppercase: /[A-Z]/.test(password),
         lowercase: /[a-z]/.test(password),
         number: /\d/.test(password),
+        special: /[^A-Za-z0-9]/.test(password),
         length: password.length >= 8
     };
     var updateRequirement = function(id, isValid) {
@@ -4793,12 +4754,13 @@ function validatePassword(password, errorElementId, prefix) {
     updateRequirement(prefix + 'uppercase', requirements.uppercase);
     updateRequirement(prefix + 'lowercase', requirements.lowercase);
     updateRequirement(prefix + 'number', requirements.number);
+    updateRequirement(prefix + 'special', requirements.special);
     updateRequirement(prefix + 'length', requirements.length);
     var isValid = Object.values(requirements).every(function(req) { return req; });
     var errorElement = document.getElementById(errorElementId);
     if (errorElement) {
         if (password.length > 0 && !isValid) {
-            errorElement.textContent = 'Password does not meet all requirements';
+            errorElement.textContent = 'Password must meet all 5 requirements';
             errorElement.style.display = 'block';
         } else {
             errorElement.textContent = '';
@@ -4806,6 +4768,48 @@ function validatePassword(password, errorElementId, prefix) {
         }
     }
     return isValid;
+}
+
+function checkConfirmPasswordMatch() {
+    var pwEl = document.getElementById('regPassword');
+    var cpEl = document.getElementById('regConfirmPassword');
+    var errEl = document.getElementById('regConfirmPasswordErr');
+    if (!cpEl || !errEl) return true;
+    var pw = pwEl ? pwEl.value : '';
+    var cp = cpEl.value;
+    if (!cp) {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
+        return true;
+    }
+    if (pw !== cp) {
+        errEl.textContent = 'Passwords do not match';
+        errEl.style.display = 'block';
+        return false;
+    } else {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
+        return true;
+    }
+}
+
+function validateRegistrationEmailField(inputEl) {
+    if (!inputEl) return true;
+    var errEl = document.getElementById('regEmailErr');
+    var val = (inputEl.value || '').trim();
+    if (!val) {
+        if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+        return true;
+    }
+    if (typeof validateEmailAddress === 'function') {
+        var res = validateEmailAddress(val);
+        if (!res.valid) {
+            if (errEl) { errEl.textContent = res.error; errEl.style.display = 'block'; }
+            return false;
+        }
+    }
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    return true;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -4819,6 +4823,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     e.stopPropagation();
                     showToast('Please ensure your password meets all requirements before submitting.', 'error');
+                    return false;
+                }
+            }
+            var confirmInput = document.getElementById('regConfirmPassword');
+            if (confirmInput) {
+                var confirmPw = confirmInput.value;
+                var passwordVal = passwordInput ? passwordInput.value : '';
+                if (!confirmPw) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showToast('Please confirm your password.', 'error');
+                    return false;
+                }
+                if (passwordVal !== confirmPw) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showToast('Passwords do not match.', 'error');
                     return false;
                 }
             }

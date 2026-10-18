@@ -6,8 +6,96 @@
  */
 
 /**
- * Returns true if the email ends with @gmail.com (case-insensitive).
- * Property 1: Gmail-only registration enforcement.
+ * Disposable/temporary email domains list for fraud & burner account prevention.
+ */
+var DISPOSABLE_EMAIL_DOMAINS = [
+  'mailinator.com', 'yopmail.com', 'guerrillamail.com', 'guerrillamail.net', 'guerrillamail.org',
+  'guerrillamail.biz', 'guerrillamailblock.com', 'sharklasers.com', 'grr.la', 'pokemail.net', 'spam4.me',
+  'temp-mail.org', 'temp-mail.io', 'tempmail.com', 'tempmail.net', 'tempmailo.com', 'mytempmail.com',
+  'mytempmail.net', 'tempreceive.com', 'tempail.com', 'tempinbox.com', 'tempinbox.co.uk', 'tempmail24.net',
+  '10minutemail.com', '10minutemail.net', '10minutemail.org', 'minutemail.com', 'minuteinbox.com',
+  'throwawaymail.com', 'throwaway.email', 'trashmail.com', 'trashmail.net', 'trashmail.me', 'trashmail.org',
+  'trashmail.at', 'trashmail.de', 'trash-mail.com', 'dispostable.com', 'disposablemail.com', 'disposable.email',
+  'getairmail.com', 'mohmal.com', 'mohmal.in', 'fakemailgenerator.com', 'generator.email', 'mytemp.email',
+  'nada.ltd', 'getnada.com', 'inboxkitten.com', 'crazymailing.com', 'crazymail.com', 'dropmail.me',
+  'emailondeck.com', 'burnermail.io', 'tmpmail.org', 'tmpmail.net', 'internalmail.net', 'maildrop.cc',
+  'harakirimail.com', 'boun.cr', 'byom.de', 'mailcatch.com', 'fakeinbox.com', 'trashinbox.com',
+  'mailnesia.com', 'luxusmail.org', 'spamgourmet.com', 'incognitomail.com', 'anonymbox.com',
+  'armyspy.com', 'cuvox.de', 'dayrep.com', 'fleckens.hu', 'gustr.com', 'jourrapide.com',
+  'rhyta.com', 'superrito.com', 'teleworm.us', 'tinypm.com', 'fakemail.net', 'filzmail.com',
+  'hidemail.de', 'jetable.org', 'kasmail.com', 'meltmail.com', 'no-spam.ws', 'noclickemail.com',
+  'nomail.xl.cx', 'nospam.ze.tc', 'safersignup.de', 'shortmail.net', 'spambox.us', 'spamfree24.org',
+  'wegwerfadresse.de', 'wegwerfemail.de', 'whyspam.me', 'yapped.net', 'zippymail.info', 'zoemail.org',
+  'tmail.ws', 'tempmailaddress.com', 'instant-mail.de', 'disposableaddress.com', 'burneremail.com',
+  'getnada.edu', 'inboxproxy.com', 'tempmailer.com', 'throwawayemail.com', 'fake-box.com', 'trashbox.eu'
+];
+
+var DISPOSABLE_EMAIL_KEYWORDS = [
+  'tempmail', 'temp-mail', 'disposable', 'throwaway', '10minutemail', 'fakemail',
+  'trashmail', 'mailinator', 'yopmail', 'guerrillamail', 'burnermail', 'dropmail',
+  'getnada', 'fakeinbox'
+];
+
+/**
+ * Returns true if the email is from a known temporary/disposable email provider.
+ * @param {string} email
+ * @returns {boolean}
+ */
+function isDisposableEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  var clean = email.trim().toLowerCase();
+  var parts = clean.split('@');
+  if (parts.length !== 2) return false;
+  var domain = parts[1];
+  for (var i = 0; i < DISPOSABLE_EMAIL_DOMAINS.length; i++) {
+    if (domain === DISPOSABLE_EMAIL_DOMAINS[i] || domain.endsWith('.' + DISPOSABLE_EMAIL_DOMAINS[i])) {
+      return true;
+    }
+  }
+  for (var k = 0; k < DISPOSABLE_EMAIL_KEYWORDS.length; k++) {
+    if (domain.indexOf(DISPOSABLE_EMAIL_KEYWORDS[k]) !== -1) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns true if the email has a valid format (standard RFC-compliant structure, max 60 chars).
+ * @param {string} email
+ * @returns {boolean}
+ */
+function isValidEmailFormat(email) {
+  if (!email || typeof email !== 'string') return false;
+  var clean = email.trim();
+  if (clean.length < 5 || clean.length > 60) return false;
+  var emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(clean);
+}
+
+/**
+ * Validates an email address for registration, login, and profile updates.
+ * Supports standard providers (Gmail, Outlook, Yahoo, iCloud, custom domains, etc.)
+ * but strictly rejects temporary/disposable mail providers.
+ * @param {string} email
+ * @returns {{valid: boolean, error?: string, email?: string}}
+ */
+function validateEmailAddress(email) {
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return { valid: false, error: 'Email address is required.' };
+  }
+  var clean = email.trim().toLowerCase();
+  if (!isValidEmailFormat(clean)) {
+    return { valid: false, error: 'Please enter a valid email address (e.g. name@outlook.com, name@gmail.com).' };
+  }
+  if (isDisposableEmail(clean)) {
+    return { valid: false, error: 'Temporary/disposable email addresses are not supported. Please use a valid email (e.g. Gmail, Outlook, Yahoo, iCloud).' };
+  }
+  return { valid: true, email: clean };
+}
+
+/**
+ * Legacy helper for checking @gmail.com
  * @param {string} email
  * @returns {boolean}
  */

@@ -1935,7 +1935,8 @@ function doLogin() {
   clearInlineError(emailEl);
   clearInlineError(passwordEl);
   if (isBlank(email)) { showInlineError(emailEl, 'Email is required.'); return; }
-  if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed.'); return; }
+  var emailCheck = (typeof validateEmailAddress === 'function') ? validateEmailAddress(email) : { valid: Boolean(email && email.indexOf('@') !== -1) };
+  if (!emailCheck.valid) { showInlineError(emailEl, emailCheck.error || 'Please enter a valid email address.'); return; }
   if (isBlank(password)) { showInlineError(passwordEl, 'Password is required.'); return; }
   var loginBtn = document.querySelector('button[onclick="doLogin()"]');
   var restoreBtn = setButtonLoading(loginBtn, 'Signing in...');
@@ -2416,18 +2417,21 @@ function doRegister() {
   var lastNameEl = document.getElementById('regLastName');
   var emailEl = document.getElementById('regEmail');
   var passwordEl = document.getElementById('regPassword');
+  var confirmPasswordEl = document.getElementById('regConfirmPassword');
 
   var firstName = sanitizeInput(firstNameEl ? firstNameEl.value.trim() : '');
   var middleName = sanitizeInput(middleNameEl ? middleNameEl.value.trim() : '');
   var lastName = sanitizeInput(lastNameEl ? lastNameEl.value.trim() : '');
   var email = sanitizeInput(emailEl ? emailEl.value.trim() : '');
   var password = passwordEl ? passwordEl.value : '';
+  var confirmPassword = confirmPasswordEl ? confirmPasswordEl.value : '';
 
   clearInlineError(firstNameEl);
   if (middleNameEl) clearInlineError(middleNameEl);
   clearInlineError(lastNameEl);
   clearInlineError(emailEl);
   clearInlineError(passwordEl);
+  if (confirmPasswordEl) clearInlineError(confirmPasswordEl);
   
   var hasErr = false;
   var fnCheck = validatePersonName(firstName, 'First name', { required: true, minLen: 2, maxLen: 40 });
@@ -2446,14 +2450,30 @@ function doRegister() {
     hasErr = true;
   }
 
-  if (!isGmailAddress(email)) { showInlineError(emailEl, 'Only @gmail.com emails are allowed for registration.'); hasErr = true; }
-  if (isBlank(password) || password.length < 8) { showInlineError(passwordEl, 'Password must be at least 8 characters.'); hasErr = true; }
+  var emailCheck = (typeof validateEmailAddress === 'function') ? validateEmailAddress(email) : { valid: Boolean(email && email.indexOf('@') !== -1) };
+  if (!emailCheck.valid) {
+    showInlineError(emailEl, emailCheck.error || 'Please enter a valid email address.');
+    hasErr = true;
+  }
+
+  if (isBlank(password) || (typeof validatePassword === 'function' && !validatePassword(password, 'regPasswordErr'))) {
+    showInlineError(passwordEl, 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
+    hasErr = true;
+  }
+
+  if (isBlank(confirmPassword)) {
+    if (confirmPasswordEl) showInlineError(confirmPasswordEl, 'Please confirm your password.');
+    hasErr = true;
+  } else if (password !== confirmPassword) {
+    if (confirmPasswordEl) showInlineError(confirmPasswordEl, 'Passwords do not match.');
+    hasErr = true;
+  }
   
   if (hasErr) return;
   var regBtn = document.querySelector('button[onclick="doRegister()"]');
   var restoreBtn = setButtonLoading(regBtn, 'Creating Account...');
   showLoading(true);
-  apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password }) })
+  apiCall('/register', { method: 'POST', body: JSON.stringify({ first_name: firstName, middle_name: middleName, last_name: lastName, email: email, password: password, confirm_password: confirmPassword }) })
     .then(function() {
       pendingOtpEmail = email;
       document.getElementById('otpEmailDisplay').textContent = email;
@@ -9728,8 +9748,11 @@ function doUpdateProfile() {
   phone = phoneCheck.cleaned;
   phoneEl.value = phone;
 
-  if (email && !isGmailAddress(email)) {
-    showInlineError(emailErrEl, 'Only @gmail.com emails are allowed.'); return;
+  if (email) {
+    var emailCheck = (typeof validateEmailAddress === 'function') ? validateEmailAddress(email) : { valid: Boolean(email && email.indexOf('@') !== -1) };
+    if (!emailCheck.valid) {
+      showInlineError(emailErrEl, emailCheck.error || 'Please enter a valid email address.'); return;
+    }
   }
   var requireSelfie = (appSettings.require_live_selfie !== 'false' && appSettings.require_live_selfie !== false);
   var hasPic = Boolean(profilePicBlob || (currentUser._profileData && currentUser._profileData.profile_picture && currentUser._profileData.profile_picture !== 'null' && currentUser._profileData.profile_picture !== 'undefined'));

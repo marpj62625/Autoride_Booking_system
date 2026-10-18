@@ -122,13 +122,13 @@
 
                     <!-- Email -->
                     <div style="margin-bottom:14px;">
-                        <label for="email" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Gmail Address <span style="color:#ef4444;">*</span></label>
-                        <input type="email" id="email" required placeholder="example@gmail.com"
+                        <label for="email" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Email Address <span style="color:#ef4444;">*</span></label>
+                        <input type="email" id="email" required placeholder="example@email.com"
                             style="width:100%;padding:11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
                             onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
                             onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';">
                         <div class="domain-warning" id="domainWarning">
-                            <i class="fas fa-exclamation-circle"></i> Please use a @gmail.com address
+                            <i class="fas fa-exclamation-circle"></i> <span id="domainWarningText">Temporary or invalid emails are not allowed</span>
                         </div>
                     </div>
 
@@ -140,7 +140,7 @@
                                 style="width:100%;padding:11px 42px 11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
                                 onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
                                 onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';"
-                                oninput="validatePassword(this.value, 'passwordErr')">
+                                oninput="validatePassword(this.value, 'passwordErr'); checkStandaloneConfirmMatch();">
                             <button type="button" onclick="togglePasswordVisibility('password', this)"
                                 style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;padding:0;">
                                 <i class="fas fa-eye"></i>
@@ -150,9 +150,27 @@
                             <div class="requirement" id="req-uppercase"><i class="fas fa-times"></i> At least one uppercase letter</div>
                             <div class="requirement" id="req-lowercase"><i class="fas fa-times"></i> At least one lowercase letter</div>
                             <div class="requirement" id="req-number"><i class="fas fa-times"></i> At least one number</div>
+                            <div class="requirement" id="req-special"><i class="fas fa-times"></i> At least one special character</div>
                             <div class="requirement" id="req-length"><i class="fas fa-times"></i> At least 8 characters</div>
                         </div>
                         <span id="passwordErr" style="font-size:0.75rem;color:#ef4444;margin-top:4px;display:none;"></span>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div style="margin-bottom:14px;">
+                        <label for="confirm_password" style="display:block;font-size:0.8rem;font-weight:600;color:#374151;margin-bottom:5px;">Confirm Password <span style="color:#ef4444;">*</span></label>
+                        <div style="position:relative;">
+                            <input type="password" id="confirm_password" required placeholder="••••••••"
+                                style="width:100%;padding:11px 42px 11px 13px;border:1.5px solid #d1d5db;border-radius:9px;font-size:0.9rem;color:#111827;outline:none;transition:border-color 0.2s,box-shadow 0.2s;"
+                                onfocus="this.style.borderColor='#00b14f';this.style.boxShadow='0 0 0 3px rgba(0,177,79,0.12)';"
+                                onblur="this.style.borderColor='#d1d5db';this.style.boxShadow='none';"
+                                oninput="checkStandaloneConfirmMatch()">
+                            <button type="button" onclick="togglePasswordVisibility('confirm_password', this)"
+                                style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;padding:0;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <span id="confirmPasswordErr" style="font-size:0.75rem;color:#ef4444;margin-top:4px;display:none;"></span>
                     </div>
 
                     <!-- Driver's License (Optional) -->
@@ -230,10 +248,69 @@
     const messageEl = document.getElementById('message');
     const displayEmail = document.getElementById('displayEmail');
 
-    // Gmail validation
+    // Disposable/temporary email domains list
+    const DISPOSABLE_EMAIL_DOMAINS = new Set([
+        'mailinator.com', 'yopmail.com', 'guerrillamail.com', 'guerrillamail.net', 'guerrillamail.org',
+        'guerrillamail.biz', 'guerrillamailblock.com', 'sharklasers.com', 'grr.la', 'pokemail.net', 'spam4.me',
+        'temp-mail.org', 'temp-mail.io', 'tempmail.com', 'tempmail.net', 'tempmailo.com', 'mytempmail.com',
+        'mytempmail.net', 'tempreceive.com', 'tempail.com', 'tempinbox.com', 'tempinbox.co.uk', 'tempmail24.net',
+        '10minutemail.com', '10minutemail.net', '10minutemail.org', 'minutemail.com', 'minuteinbox.com',
+        'throwawaymail.com', 'throwaway.email', 'trashmail.com', 'trashmail.net', 'trashmail.me', 'trashmail.org',
+        'trashmail.at', 'trashmail.de', 'trash-mail.com', 'dispostable.com', 'disposablemail.com', 'disposable.email',
+        'getairmail.com', 'mohmal.com', 'mohmal.in', 'fakemailgenerator.com', 'generator.email', 'mytemp.email',
+        'nada.ltd', 'getnada.com', 'inboxkitten.com', 'crazymailing.com', 'crazymail.com', 'dropmail.me',
+        'emailondeck.com', 'burnermail.io', 'tmpmail.org', 'tmpmail.net', 'internalmail.net', 'maildrop.cc',
+        'harakirimail.com', 'boun.cr', 'byom.de', 'mailcatch.com', 'fakeinbox.com', 'trashinbox.com',
+        'mailnesia.com', 'luxusmail.org', 'spamgourmet.com', 'incognitomail.com', 'anonymbox.com',
+        'armyspy.com', 'cuvox.de', 'dayrep.com', 'fleckens.hu', 'gustr.com', 'jourrapide.com',
+        'rhyta.com', 'superrito.com', 'teleworm.us', 'tinypm.com', 'fakemail.net', 'filzmail.com',
+        'hidemail.de', 'jetable.org', 'kasmail.com', 'meltmail.com', 'no-spam.ws', 'noclickemail.com',
+        'nomail.xl.cx', 'nospam.ze.tc', 'safersignup.de', 'shortmail.net', 'spambox.us', 'spamfree24.org',
+        'wegwerfadresse.de', 'wegwerfemail.de', 'whyspam.me', 'yapped.net', 'zippymail.info', 'zoemail.org',
+        'tmail.ws', 'tempmailaddress.com', 'instant-mail.de', 'disposableaddress.com', 'burneremail.com',
+        'getnada.edu', 'inboxproxy.com', 'tempmailer.com', 'throwawayemail.com', 'fake-box.com', 'trashbox.eu'
+    ]);
+
+    const DISPOSABLE_EMAIL_KEYWORDS = [
+        'tempmail', 'temp-mail', 'disposable', 'throwaway', '10minutemail', 'fakemail',
+        'trashmail', 'mailinator', 'yopmail', 'guerrillamail', 'burnermail', 'dropmail',
+        'getnada', 'fakeinbox'
+    ];
+
+    function isDisposableEmail(email) {
+        if (!email || typeof email !== 'string') return false;
+        const clean = email.trim().toLowerCase();
+        const parts = clean.split('@');
+        if (parts.length !== 2) return false;
+        const domain = parts[1];
+        if (DISPOSABLE_EMAIL_DOMAINS.has(domain)) return true;
+        for (let kw of DISPOSABLE_EMAIL_KEYWORDS) {
+            if (domain.includes(kw)) return true;
+        }
+        return false;
+    }
+
+    function isValidEmailFormat(email) {
+        if (!email || typeof email !== 'string') return false;
+        const clean = email.trim();
+        if (clean.length < 5 || clean.length > 60) return false;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return emailRegex.test(clean);
+    }
+
+    // Email validation
     emailInput.addEventListener('input', () => {
-        const val = emailInput.value;
-        if (val && !val.toLowerCase().endsWith('@gmail.com')) {
+        const val = emailInput.value.trim().toLowerCase();
+        const warningSpan = document.getElementById('domainWarningText');
+        if (!val) {
+            domainWarning.style.display = 'none';
+            return;
+        }
+        if (isDisposableEmail(val)) {
+            if (warningSpan) warningSpan.textContent = 'Temporary / disposable emails are not supported.';
+            domainWarning.style.display = 'flex';
+        } else if (val.includes('@') && !isValidEmailFormat(val)) {
+            if (warningSpan) warningSpan.textContent = 'Please enter a valid email address.';
             domainWarning.style.display = 'flex';
         } else {
             domainWarning.style.display = 'none';
@@ -261,16 +338,34 @@
         const lastName = document.getElementById('last_name').value.trim();
         const email = emailInput.value.trim();
         const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
         const licenseFile = document.getElementById('license').files[0];
 
-        if (!email.toLowerCase().endsWith('@gmail.com')) {
-            messageEl.textContent = 'Only @gmail.com addresses are allowed.';
+        if (!isValidEmailFormat(email)) {
+            messageEl.textContent = 'Please enter a valid email address.';
+            messageEl.style.color = '#ef4444';
+            return;
+        }
+        if (isDisposableEmail(email)) {
+            messageEl.textContent = 'Temporary or disposable email addresses are not supported. Please use a permanent email (e.g. Gmail, Outlook, Yahoo, iCloud).';
             messageEl.style.color = '#ef4444';
             return;
         }
         if (!validatePassword(password, 'passwordErr')) {
-            messageEl.textContent = 'Please ensure your password meets all requirements.';
+            messageEl.textContent = 'Please ensure your password meets all requirements (including at least one special character).';
             messageEl.style.color = '#ef4444';
+            return;
+        }
+        if (!confirmPassword) {
+            messageEl.textContent = 'Please confirm your password.';
+            messageEl.style.color = '#ef4444';
+            document.getElementById('confirm_password').focus();
+            return;
+        }
+        if (password !== confirmPassword) {
+            messageEl.textContent = 'Passwords do not match.';
+            messageEl.style.color = '#ef4444';
+            document.getElementById('confirm_password').focus();
             return;
         }
 
@@ -285,6 +380,7 @@
         formData.append('last_name', lastName);
         formData.append('email', email);
         formData.append('password', password);
+        formData.append('confirm_password', confirmPassword);
         if (licenseFile) formData.append('license', licenseFile);
 
         try {
@@ -352,11 +448,33 @@
         }
     }
 
+    function checkStandaloneConfirmMatch() {
+        const pw = document.getElementById('password').value;
+        const cp = document.getElementById('confirm_password').value;
+        const errEl = document.getElementById('confirmPasswordErr');
+        if (!errEl) return true;
+        if (!cp) {
+            errEl.style.display = 'none';
+            errEl.textContent = '';
+            return true;
+        }
+        if (pw !== cp) {
+            errEl.textContent = 'Passwords do not match';
+            errEl.style.display = 'block';
+            return false;
+        } else {
+            errEl.textContent = '';
+            errEl.style.display = 'none';
+            return true;
+        }
+    }
+
     function validatePassword(password, errorElementId) {
         const requirements = {
             uppercase: /[A-Z]/.test(password),
             lowercase: /[a-z]/.test(password),
             number: /\d/.test(password),
+            special: /[^A-Za-z0-9]/.test(password),
             length: password.length >= 8
         };
         const update = (id, isValid) => {
@@ -369,11 +487,12 @@
         update('req-uppercase', requirements.uppercase);
         update('req-lowercase', requirements.lowercase);
         update('req-number', requirements.number);
+        update('req-special', requirements.special);
         update('req-length', requirements.length);
         const isValid = Object.values(requirements).every(r => r);
         const errEl = document.getElementById(errorElementId);
         if (errEl) {
-            errEl.textContent = password.length > 0 && !isValid ? 'Password does not meet all requirements' : '';
+            errEl.textContent = password.length > 0 && !isValid ? 'Password must meet all 5 requirements' : '';
             errEl.style.display = password.length > 0 && !isValid ? 'block' : 'none';
         }
         return isValid;
