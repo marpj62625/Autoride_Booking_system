@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.18.3">
+    <meta name="build-version" content="2026.10.18.4">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -660,7 +660,7 @@
 
         .vehicle-grid { display:grid; grid-template-columns:1fr; gap:16px; padding:12px 16px 32px; }
 
-        .vehicle-card { background:var(--bg-card); border-radius:18px; border:1px solid var(--border); overflow:hidden; cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,0.03); transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; display:flex; flex-direction:column; }
+        .vehicle-card { background:var(--bg-card); border-radius:18px; border:1px solid var(--border); overflow:hidden; cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,0.03); transition:transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; display:flex; flex-direction:column; height: 100%; box-sizing: border-box; }
         .vehicle-card:hover { transform:translateY(-4px); box-shadow:0 10px 28px rgba(0,0,0,0.08); border-color:rgba(0,177,79,0.35); }
         .vehicle-card:active { transform:scale(0.98); }
 
@@ -672,9 +672,9 @@
         .badge-available { position:absolute; top:12px; right:12px; z-index:2; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:20px; background:rgba(15,23,42,0.75); backdrop-filter:blur(8px); color:#ffffff; border:1px solid rgba(255,255,255,0.2); display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(0,0,0,0.15); }
         .badge-available .badge-dot { width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981; }
 
-        .vehicle-info { padding:14px 16px; display:flex; flex-direction:column; flex:1; }
-        .vehicle-info h3 { font-size:1.05rem; font-weight:900; margin:0 0 4px; color:var(--text-primary); }
-        .vehicle-rate { font-size:1.2rem; font-weight:900; color:var(--text-primary); }
+        .vehicle-info { padding:14px 16px; display:flex; flex-direction:column; flex:1; box-sizing: border-box; }
+        .vehicle-info h3 { font-size:1.02rem; font-weight:900; margin:0 0 4px; color:var(--text-primary); }
+        .vehicle-rate { font-size:1.22rem; font-weight:900; color:var(--text-primary); white-space:nowrap !important; }
 
         /* Filter chips */
         .filter-chips { display:flex; gap:8px; padding:12px 16px 8px; overflow-x:auto; scrollbar-width:none; }

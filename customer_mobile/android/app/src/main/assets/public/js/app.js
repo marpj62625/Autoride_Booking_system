@@ -3302,27 +3302,28 @@ function renderVehicles(list) {
     var avail = parseInt(v.available_units) || 0;
     var bEnc = encodeURIComponent(v.brand);
     var mEnc = encodeURIComponent(v.model);
+    var fullName = (v.brand || '') + ' ' + (v.model || '');
+    var vType = v.vehicle_type || 'Vehicle';
+    var trans = v.transmission || '';
     return '<div class="vehicle-card" onclick="openVehicleUnits(\'' + bEnc + '\',\'' + mEnc + '\',\'all\')">' +
       '<div class="vehicle-img-wrap">' +
-      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + escapeHtml(v.brand + ' ' + v.model) + '" loading="lazy" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'">' +
+      '<img src="' + buildImgUrl(v.vehicle_image) + '" alt="' + escapeHtml(fullName) + '" loading="lazy" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\'">' +
       '<span class="badge-available"><span class="badge-dot"></span>' + avail + ' available</span>' +
       '</div>' +
       '<div class="vehicle-info">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">' +
-      '<h3 style="font-size:1.02rem;font-weight:900;color:var(--text-primary);margin:0;letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(v.brand + ' ' + v.model) + '</h3>' +
-      '<span style="background:var(--bg-input,#f1f5f9);color:var(--text-secondary);border:1px solid var(--border);padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:800;letter-spacing:0.3px;flex-shrink:0;">' + (v.vehicle_type || 'Vehicle') + '</span>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px;">' +
+      '<span style="background:rgba(0,177,79,0.08);color:var(--primary);border:1px solid rgba(0,177,79,0.25);padding:2px 8px;border-radius:6px;font-size:0.68rem;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">' + escapeHtml(vType) + '</span>' +
+      (trans ? '<span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;flex-shrink:0;"><i class="fas fa-cog" style="color:var(--primary);font-size:0.68rem;"></i>' + escapeHtml(trans) + '</span>' : '') +
       '</div>' +
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;">' +
-      '<div style="display:flex;align-items:baseline;gap:4px;">' +
-      '<span class="vehicle-rate" style="font-size:1.22rem;font-weight:900;color:var(--text-primary);line-height:1;">' + formatPHP(v.daily_rate) + '</span>' +
-      '<span style="font-size:0.72rem;font-weight:600;color:var(--text-muted);">/ day</span>' +
+      '<h3 style="font-size:1.02rem;font-weight:900;color:var(--text-primary);margin:0 0 10px 0;letter-spacing:-0.2px;line-height:1.3;min-height:2.6em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;" title="' + escapeHtml(fullName) + '">' + escapeHtml(fullName) + '</h3>' +
+      '<div style="display:flex;align-items:baseline;gap:4px;margin-bottom:12px;white-space:nowrap;overflow:hidden;">' +
+      '<span class="vehicle-rate" style="font-size:1.22rem;font-weight:900;color:var(--text-primary);line-height:1;white-space:nowrap;">' + formatPHP(v.daily_rate) + '</span>' +
+      '<span style="font-size:0.72rem;font-weight:600;color:var(--text-muted);white-space:nowrap;">/ day</span>' +
       '</div>' +
-      (v.transmission ? '<span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-cog" style="color:var(--primary);font-size:0.7rem;"></i>' + v.transmission + '</span>' : '') +
-      '</div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);">' +
-      '<div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:auto;">' +
+      '<div style="display:flex;align-items:center;gap:5px;min-width:0;flex:1;margin-right:8px;">' +
       '<i class="fas fa-location-dot" style="color:var(--primary);font-size:0.75rem;flex-shrink:0;"></i>' +
-      '<span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (v.location || 'Hub Pickup') + '</span>' +
+      '<span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + escapeHtml(v.location || 'Hub Pickup') + '">' + escapeHtml(v.location || 'Hub Pickup') + '</span>' +
       '</div>' +
       '<div class="btn-view-unit" style="display:flex;align-items:center;gap:5px;background:rgba(0,177,79,0.12);color:var(--primary);border:1px solid rgba(0,177,79,0.25);padding:5px 12px;border-radius:10px;font-size:0.75rem;font-weight:800;flex-shrink:0;transition:all 0.15s ease;">' +
       '<span>View</span> <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i>' +
