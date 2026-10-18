@@ -5733,7 +5733,7 @@
 
 
 
-            <input id="activitySearch" type="text" placeholder="Search by name, action or details..."
+            <input id="activitySearch" type="text" maxlength="50" placeholder="Search by name, action or details..."
 
 
 
@@ -6104,7 +6104,7 @@
 
 
 
-                        <input type="text" id="pastBookingsSearch" placeholder="Search by customer, ID, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="filterPastBookings()">
+                        <input type="text" id="pastBookingsSearch" maxlength="50" placeholder="Search by customer, ID, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="filterPastBookings()">
 
 
 
@@ -6391,7 +6391,7 @@
                 <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 200px; position: relative;">
                         <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
-                        <input type="text" id="archivedBookingsSearch" placeholder="Search by customer, booking #, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="ArchivedBookings.onSearch(this.value)">
+                        <input type="text" id="archivedBookingsSearch" maxlength="50" placeholder="Search by customer, booking #, or vehicle..." style="width: 100%; padding: 10px 10px 10px 36px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem;" oninput="ArchivedBookings.onSearch(this.value)">
                     </div>
                     <select id="archivedBookingsReasonFilter" onchange="ArchivedBookings.onFilterReason(this.value)" style="padding: 8px 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 0.8rem; font-weight: 600;">
                         <option value="all">All Archive Reasons</option>
@@ -6803,7 +6803,7 @@
         <div style="display: flex; gap: 10px; margin-bottom: 18px; align-items: center; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 200px; position: relative;">
                 <i class="fas fa-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem;"></i>
-                <input type="text" id="verificationsSearch" oninput="Verifications.onSearch(this.value)" placeholder="Search name, license no, email..." style="width: 100%; padding: 11px 14px 11px 40px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; outline: none; box-sizing: border-box;">
+                <input type="text" id="verificationsSearch" maxlength="50" oninput="Verifications.onSearch(this.value)" placeholder="Search name, license no, email..." style="width: 100%; padding: 11px 14px 11px 40px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; outline: none; box-sizing: border-box;">
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label for="verificationsSort" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;"><i class="fas fa-sort" style="margin-right: 4px;"></i>Sort:</label>
@@ -6860,7 +6860,7 @@
                 </div>
                 <div>
                     <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Reason / Label</label>
-                    <input type="text" id="blackoutReason" required placeholder="e.g. Christmas Holiday, Car Maintenance" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
+                    <input type="text" id="blackoutReason" required maxlength="100" placeholder="e.g. Christmas Holiday, Car Maintenance" style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                 </div>
                 <div>
                     <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 4px;">Scope / Affected Vehicles</label>
@@ -6935,7 +6935,7 @@
                 <form id="nlBroadcastForm" onsubmit="NewsletterAdmin.submitCampaign(event)" style="display: flex; flex-direction: column; gap: 12px;">
                     <div>
                         <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Campaign Title *</label>
-                        <input type="text" id="nlFormTitle" required placeholder="e.g. Summer Weekend Roadtrip Special — 15% OFF" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
+                        <input type="text" id="nlFormTitle" required maxlength="80" placeholder="e.g. Summer Weekend Roadtrip Special — 15% OFF" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
                     </div>
 
                     <div class="nl-fields-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -6951,18 +6951,18 @@
                         </div>
                         <div>
                             <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Discount % (Optional)</label>
-                            <input type="number" id="nlFormDiscount" min="1" max="99" placeholder="e.g. 15" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
+                            <input type="number" id="nlFormDiscount" min="1" max="90" placeholder="e.g. 15" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important;">
                         </div>
                     </div>
 
                     <div>
                         <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Promo Voucher Code (Optional)</label>
-                        <input type="text" id="nlFormCode" placeholder="e.g. SUMMER15 (Leave blank if no voucher)" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-family: monospace; font-weight: 700; color: #0f172a !important; background: #fff !important; text-transform: uppercase;">
+                        <input type="text" id="nlFormCode" placeholder="e.g. SUMMER15 (Leave blank if no voucher)" maxlength="15" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 15)" style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-family: monospace; font-weight: 700; color: #0f172a !important; background: #fff !important; text-transform: uppercase;">
                     </div>
 
                     <div>
                         <label style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 4px;">Campaign Content *</label>
-                        <textarea id="nlFormContent" required rows="4" placeholder="Write your newsletter announcement, promotional details, instructions or tips here..." style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important; font-family: inherit; resize: vertical;"></textarea>
+                        <textarea id="nlFormContent" required rows="4" maxlength="1000" placeholder="Write your newsletter announcement, promotional details, instructions or tips here..." style="width: 100%; box-sizing: border-box; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; color: #0f172a !important; background: #fff !important; font-family: inherit; resize: vertical;"></textarea>
                     </div>
 
                     <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
@@ -7392,34 +7392,34 @@
                     <div class="walkin-sub-grid-2" style="gap: 12px; margin-bottom: 10px;">
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Full Name <span style="color:#ef4444;">*</span></label>
-                            <input type="text" id="walkinCustName" placeholder="e.g. Juan Dela Cruz" required
+                            <input type="text" id="walkinCustName" placeholder="e.g. Juan Dela Cruz" required maxlength="50" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0,50)"
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Phone Number <span style="color:#ef4444;">*</span></label>
-                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" required
+                            <input type="tel" id="walkinCustPhone" placeholder="e.g. 09171234567" required maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)"
                                    style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
                     <div style="margin-bottom: 10px;">
                         <label style="display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Address / Residence</label>
-                        <input type="text" id="walkinCustAddress" placeholder="e.g. 123 Rizal St., San Fernando, La Union"
+                        <input type="text" id="walkinCustAddress" placeholder="e.g. 123 Rizal St., San Fernando, La Union" maxlength="100" oninput="this.value=this.value.replace(/([A-Za-z\u00C0-\u00FF0-9])\1\1+/gi,'$1$1').slice(0,100)"
                                 style="width: 100%; padding: 9px 12px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                     </div>
                     <div class="walkin-sub-grid-3" style="gap: 10px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Contact</label>
-                            <input type="text" id="walkinEmergName" placeholder="Name"
+                            <input type="text" id="walkinEmergName" placeholder="Name" maxlength="50" oninput="this.value=this.value.replace(/[^A-Za-z\u00C0-\u00FF\s.'-]/g,'').replace(/([A-Za-z\u00C0-\u00FF])\1\1+/gi,'$1$1').slice(0,50)"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Emergency Phone</label>
-                            <input type="tel" id="walkinEmergPhone" placeholder="Phone"
+                            <input type="tel" id="walkinEmergPhone" placeholder="Phone" maxlength="11" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted, #64748b);">Relationship</label>
-                            <input type="text" id="walkinEmergRel" placeholder="e.g. Spouse / Sibling"
+                            <input type="text" id="walkinEmergRel" placeholder="e.g. Spouse / Sibling" maxlength="30"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -7433,7 +7433,7 @@
                     </div>
                     <div style="position: relative; margin-bottom: 10px;">
                         <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--text-muted, #64748b);"></i>
-                        <input type="text" id="walkinCustomerSearch" placeholder="Type customer name, email, or phone to search..." oninput="WalkinBooking.onCustomerSearch(this.value)"
+                        <input type="text" id="walkinCustomerSearch" placeholder="Type customer name, email, or phone to search..." maxlength="50" oninput="this.value=this.value.replace(/[<>{}]/g,''); WalkinBooking.onCustomerSearch(this.value)"
                                style="width: 100%; padding: 9px 12px 9px 34px; font-size: 0.82rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         <div id="walkinCustomerDropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface-solid, #ffffff); border: 1px solid var(--border, #cbd5e1); border-radius: 10px; max-height: 200px; overflow-y: auto; z-index: 50; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);"></div>
                     </div>
@@ -7523,7 +7523,7 @@
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Pickup Location</label>
-                            <input type="text" id="walkinPickupLocation" value="Main Office / Counter Garage"
+                            <input type="text" id="walkinPickupLocation" value="Main Office / Counter Garage" maxlength="60"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -7538,17 +7538,17 @@
                     <div class="walkin-pricing-grid" style="gap: 10px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Base Price (₱)</label>
-                            <input type="number" id="walkinBasePrice" min="0" step="any" oninput="WalkinBooking.recalculateTotal()"
+                            <input type="number" id="walkinBasePrice" min="0" max="500000" step="any" oninput="WalkinBooking.recalculateTotal()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Driver / Delivery (₱)</label>
-                            <input type="number" id="walkinExtraFee" min="0" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
+                            <input type="number" id="walkinExtraFee" min="0" max="50000" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Discount (₱)</label>
-                            <input type="number" id="walkinDiscount" min="0" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
+                            <input type="number" id="walkinDiscount" min="0" max="50000" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -7567,7 +7567,7 @@
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Payment Method</label>
                             <select id="walkinPaymentMethod"
-                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                     style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                                 <option value="Cash" selected>Cash (Counter)</option>
                                 <option value="GCash">GCash</option>
                                 <option value="Maya">Maya</option>
@@ -7586,7 +7586,7 @@
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Amount Collected Now (₱)</label>
-                            <input type="number" id="walkinAmountPaid" min="0" step="any" oninput="WalkinBooking.recalculateBalance()"
+                            <input type="number" id="walkinAmountPaid" min="0" max="500000" step="any" oninput="WalkinBooking.recalculateBalance()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -8512,7 +8512,7 @@ input:checked + .ctrl-slider:before {
                 <div style="display: flex; gap: 12px; margin-bottom: 16px;">
                     <div style="flex: 1;">
                         <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Amount (PHP) *</label>
-                        <input type="number" step="0.01" id="expAmount" required min="0" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                        <input type="number" step="0.01" id="expAmount" required min="1" max="1000000" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
                     </div>
                     <div style="flex: 1;">
                         <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Expense Date *</label>
@@ -8522,7 +8522,7 @@ input:checked + .ctrl-slider:before {
 
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Description *</label>
-                    <textarea id="expDesc" required style="width: 100%; height: 80px; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-family: inherit; resize: vertical;"></textarea>
+                    <textarea id="expDesc" required maxlength="250" style="width: 100%; height: 80px; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; font-family: inherit; resize: vertical;"></textarea>
                 </div>
 
                 <div style="margin-bottom: 24px;">
@@ -9628,15 +9628,15 @@ input:checked + .ctrl-slider:before {
             <form id="staffForm">
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Full Name</label>
-                    <input id="staffName" type="text" required placeholder="John Doe" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input id="staffName" type="text" required maxlength="50" placeholder="John Doe" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Email Address</label>
-                    <input id="staffEmail" type="email" required placeholder="john@autoride.com" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input id="staffEmail" type="email" required maxlength="60" placeholder="john@autoride.com" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 16px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Password</label>
-                    <input id="staffPass" type="password" placeholder="********" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input id="staffPass" type="password" maxlength="64" placeholder="********" style="width: 100%; padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                     <small id="staffPassHint" style="font-size: 0.7rem; color: var(--text-muted); display: none; margin-top: 4px;">Leave blank to keep current password</small>
                 </div>
                 <div style="margin-bottom: 24px;">
@@ -9788,13 +9788,13 @@ input:checked + .ctrl-slider:before {
                         <!-- Plate Number -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Plate Number <span style="color:#ef4444;">*</span></label>
-                            <input type="text" id="vPlate" placeholder="e.g. ABC 1234" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;text-transform:uppercase;">
+                            <input type="text" id="vPlate" placeholder="e.g. ABC 1234" required maxlength="8" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9\s-]/g, '').slice(0, 8)" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;text-transform:uppercase;">
                         </div>
 
                         <!-- Color -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Color</label>
-                            <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="text" id="vColor" placeholder="e.g. Red, Blue" list="vColorList" maxlength="30" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '').slice(0, 30)" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                             <datalist id="vColorList">
                                 <option value="White"><option value="Black"><option value="Silver">
                                 <option value="Gray"><option value="Red"><option value="Blue">
@@ -9869,7 +9869,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Daily Rate -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Daily Rate (₱) <span style="color:#ef4444;">*</span></label>
-                            <input type="number" id="vRate" placeholder="e.g. 2500" required style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vRate" placeholder="e.g. 2500" required min="500" max="50000" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Mileage Type -->
@@ -9884,7 +9884,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Mileage Km/day -->
                         <div id="vMileageKmDiv">
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Limit (km/day)</label>
-                            <input type="number" id="vMileageKm" value="250" placeholder="e.g. 250" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vMileageKm" value="250" min="50" max="1000" placeholder="e.g. 250" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
@@ -9919,7 +9919,7 @@ input:checked + .ctrl-slider:before {
                         <!-- Odometer -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Odometer (km)</label>
-                            <input type="number" id="vOdometer" placeholder="e.g. 45000" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="number" id="vOdometer" placeholder="e.g. 45000" min="0" max="999999" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- Fuel Level -->
@@ -9958,11 +9958,11 @@ input:checked + .ctrl-slider:before {
                         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;">
                             <div>
                                 <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary, #94a3b8);margin-bottom:4px;">Tracker Unit / Label</label>
-                                <input type="text" id="vGpsDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
+                                <input type="text" id="vGpsDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" maxlength="50" style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;box-sizing:border-box;">
                             </div>
                             <div>
                                 <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--text-secondary, #94a3b8);margin-bottom:4px;">Blynk Auth Token</label>
-                                <input type="text" id="vGpsDeviceToken" placeholder="e.g. 6fub_AeSZfywBab9j..." style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:monospace;box-sizing:border-box;">
+                                <input type="text" id="vGpsDeviceToken" placeholder="e.g. 6fub_AeSZfywBab9j..." maxlength="50" style="width:100%;padding:10px 12px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.85rem;font-family:monospace;box-sizing:border-box;">
                             </div>
                         </div>
                     </div>
@@ -10010,7 +10010,7 @@ input:checked + .ctrl-slider:before {
             <div style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">Email Address</label>
                 <div style="position: relative;">
-                    <input id="superAdminEditEmail" type="email" placeholder="superadmin@autoride.com" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <input id="superAdminEditEmail" type="email" maxlength="60" placeholder="superadmin@autoride.com" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
                     <i class="fas fa-envelope" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
             </div>
@@ -10018,7 +10018,7 @@ input:checked + .ctrl-slider:before {
             <div style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">Current Password <span style="color: #ef4444;">*</span></label>
                 <div style="position: relative;">
-                    <input id="superAdminCurrentPassword" type="password" placeholder="Enter current password to verify" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <input id="superAdminCurrentPassword" type="password" maxlength="64" placeholder="Enter current password to verify" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
                     <i class="fas fa-key" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
                 <span style="font-size: 0.7rem; color: var(--text-muted, #6b7080); margin-top: 3px; display: block;">Required to authorize email or password changes</span>
@@ -10027,7 +10027,7 @@ input:checked + .ctrl-slider:before {
             <div style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">New Password <span style="color: var(--text-muted, #6b7080); font-weight: 400;">(leave blank to keep current)</span></label>
                 <div style="position: relative;">
-                    <input id="superAdminNewPassword" type="password" placeholder="Min. 6 characters" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <input id="superAdminNewPassword" type="password" maxlength="64" placeholder="Min. 6 characters" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
                     <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
             </div>
@@ -10035,7 +10035,7 @@ input:checked + .ctrl-slider:before {
             <div style="margin-bottom: 22px;">
                 <label style="display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-main, #0f1117); margin-bottom: 6px;">Confirm New Password</label>
                 <div style="position: relative;">
-                    <input id="superAdminConfirmPassword" type="password" placeholder="Re-enter new password" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
+                    <input id="superAdminConfirmPassword" type="password" maxlength="64" placeholder="Re-enter new password" style="width: 100%; padding: 11px 12px 11px 36px; background: var(--surface-container, #f4f6fb); border: 1.5px solid var(--border, #dde2ee); border-radius: 10px; color: var(--text-main, #0f1117); font-size: 0.88rem; box-sizing: border-box;">
                     <i class="fas fa-lock" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted, #6b7080); font-size: 0.85rem;"></i>
                 </div>
             </div>
@@ -10239,7 +10239,7 @@ input:checked + .ctrl-slider:before {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 16px;">
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Mileage (KM)</label>
-                        <input type="number" id="inspectMileage" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
+                        <input type="number" id="inspectMileage" min="0" max="999999" placeholder="0" required style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-weight: 600;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Fuel Level</label>
@@ -10282,12 +10282,12 @@ input:checked + .ctrl-slider:before {
                             <label style="display: block; font-size: 0.68rem; font-weight: 800; color: #9f1239; text-transform: uppercase; margin-bottom: 4px;">Refuel Fee (₱)</label>
                             <div style="position: relative; display: flex; align-items: center;">
                                 <span style="position: absolute; left: 10px; font-weight: 800; font-size: 0.85rem; color: #9f1239;">₱</span>
-                                <input type="number" id="inspectFuelChargeAmount" min="0" step="50" placeholder="0" style="width: 100%; padding: 10px 10px 10px 24px; background: #ffffff; border: 1.5px solid #fb7185; border-radius: 10px; font-size: 0.95rem; font-weight: 800; color: #9f1239; outline: none;">
+                                <input type="number" id="inspectFuelChargeAmount" min="0" max="10000" step="50" placeholder="0" style="width: 100%; padding: 10px 10px 10px 24px; background: #ffffff; border: 1.5px solid #fb7185; border-radius: 10px; font-size: 0.95rem; font-weight: 800; color: #9f1239; outline: none;">
                             </div>
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.68rem; font-weight: 800; color: #9f1239; text-transform: uppercase; margin-bottom: 4px;">Reason / Receipt Note</label>
-                            <input type="text" id="inspectFuelChargeNotes" placeholder="e.g. Refuel to Full Tank: missing 1/4 tank" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #fda4af; border-radius: 10px; font-size: 0.8rem; color: #0f172a; outline: none;">
+                            <input type="text" id="inspectFuelChargeNotes" maxlength="150" placeholder="e.g. Refuel to Full Tank: missing 1/4 tank" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #fda4af; border-radius: 10px; font-size: 0.8rem; color: #0f172a; outline: none;">
                         </div>
                     </div>
 
@@ -10319,7 +10319,7 @@ input:checked + .ctrl-slider:before {
                         <div>
                             <label style="display: block; font-size: 0.68rem; font-weight: 800; color: #14532d; text-transform: uppercase; margin-bottom: 4px;">Overtime Hours (OT)</label>
                             <div style="position: relative; display: flex; align-items: center;">
-                                <input type="number" id="inspectDriverOTHours" min="0" step="0.5" value="0" placeholder="0" oninput="Inspections.onDriverOTChange()" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 10px; font-size: 0.95rem; font-weight: 800; color: #14532d; outline: none;">
+                                <input type="number" id="inspectDriverOTHours" min="0" max="24" step="0.5" value="0" placeholder="0" oninput="Inspections.onDriverOTChange()" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1.5px solid #86efac; border-radius: 10px; font-size: 0.95rem; font-weight: 800; color: #14532d; outline: none;">
                                 <span style="position: absolute; right: 12px; font-size: 0.75rem; font-weight: 700; color: #15803d;">Hours</span>
                             </div>
                         </div>
@@ -10349,7 +10349,7 @@ input:checked + .ctrl-slider:before {
 
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 800; color: #14532d; text-transform: uppercase; margin-bottom: 4px;">Staff Notes / Trip Ticket Details</label>
-                        <input type="text" id="inspectDriverOTNotes" placeholder="e.g. Trip Ticket #0482: Batangas trip excess 3.5 hrs (renter paid cash)" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 0.8rem; color: #0f172a; outline: none;">
+                        <input type="text" id="inspectDriverOTNotes" maxlength="150" placeholder="e.g. Trip Ticket #0482: Batangas trip excess 3.5 hrs (renter paid cash)" style="width: 100%; padding: 10px 12px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 0.8rem; color: #0f172a; outline: none;">
                     </div>
                 </div>
 
@@ -10407,7 +10407,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                    <textarea id="inspectNotes" placeholder="Describe any scratches, dents, or cleaness issues..." style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
+                    <textarea id="inspectNotes" maxlength="300" placeholder="Describe any scratches, dents, or cleaness issues..." style="width: 100%; padding: 12px; background: #f4f6fb; border: 1px solid var(--border); border-radius: 12px; color: #0f1117; font-size: 0.85rem; height: 80px; resize: none;"></textarea>
 
 
 
@@ -10501,7 +10501,7 @@ input:checked + .ctrl-slider:before {
     <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
         <div style="flex:1; min-width:200px; position:relative;">
             <i class="fas fa-search" style="position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#64748b; font-size:0.9rem;"></i>
-            <input type="text" id="umSearch" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 14px 12px 42px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:50px; color:#0f172a; font-size:0.88rem; font-weight:600; outline:none; box-sizing:border-box;">
+            <input type="text" id="umSearch" maxlength="50" oninput="UserMgmt.applyFilters()" placeholder="Search name, email, phone..." style="width:100%; padding:12px 14px 12px 42px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:50px; color:#0f172a; font-size:0.88rem; font-weight:600; outline:none; box-sizing:border-box;">
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
             <select id="umSort" onchange="UserMgmt.setSort(this.value)" style="padding:11px 14px; background:#ffffff; border:1.5px solid #cbd5e1; border-radius:50px; color:#0f172a; font-size:0.82rem; font-weight:700; outline:none; cursor:pointer;">
@@ -10697,7 +10697,7 @@ input:checked + .ctrl-slider:before {
             <div id="fcToolbar" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <div id="fleetCalendarSearchWrap" style="position: relative; min-width: 220px;">
                     <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--text-muted);"></i>
-                    <input type="text" id="fleetCalendarSearch" placeholder="Filter customer or car..." oninput="FleetCalendar.onSearch(this.value)"
+                    <input type="text" id="fleetCalendarSearch" maxlength="50" placeholder="Filter customer or car..." oninput="FleetCalendar.onSearch(this.value)"
                            style="width: 100%; padding: 7px 10px 7px 28px; font-size: 0.78rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-solid); color: var(--text-main); outline: none;">
                 </div>
                 <button onclick="FleetCalendar.goToToday()" class="btn-secondary" style="padding: 7px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; cursor: pointer; background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main);">
@@ -10961,7 +10961,7 @@ input:checked + .ctrl-slider:before {
             onfocusout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.backgroundColor='rgba(255,255,255,0.06)';"
             onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus();">
             <i class="fas fa-envelope" style="padding:0 10px 0 18px;color:rgba(255,255,255,0.35);font-size:0.95rem;flex-shrink:0;"></i>
-            <input type="email" id="loginEmail" placeholder="Email Address" autocomplete="email"
+            <input type="email" id="loginEmail" maxlength="60" placeholder="Email Address" autocomplete="email"
                 style="flex:1;width:0;padding:16px 14px 16px 0;background:transparent;border:none;color:#ffffff;font-size:1rem;outline:none;font-weight:500;">
         </div>
 
@@ -10971,7 +10971,7 @@ input:checked + .ctrl-slider:before {
             onfocusout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.backgroundColor='rgba(255,255,255,0.06)';"
             onkeydown="if(event.key==='Enter'&&window.adminAuth)adminAuth.login();">
             <i class="fas fa-lock" style="padding:0 10px 0 18px;color:rgba(255,255,255,0.35);font-size:0.95rem;flex-shrink:0;"></i>
-            <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password"
+            <input type="password" id="loginPass" maxlength="64" placeholder="Password" autocomplete="current-password"
                 style="flex:1;width:0;padding:16px 0;background:transparent;border:none;color:#ffffff;font-size:1rem;outline:none;font-weight:500;">
             <button type="button"
                 onclick="var i=document.getElementById('loginPass'),ic=document.getElementById('webEyeIcon');if(i.type==='password'){i.type='text';ic.className='fas fa-eye-slash';}else{i.type='password';ic.className='fas fa-eye';}"
@@ -15681,9 +15681,16 @@ async edit(id) { this.openModal(id); }
 
 
         _addFile(file) {
-
-
-
+            if (!file) return;
+            const isImg = (file.type || "").toLowerCase().startsWith("image/") || /\.(jpe?g|png|webp|gif|heic)$/i.test(file.name || "");
+            if (!isImg) {
+                showNotification("Only image files (JPG, PNG, WebP) are allowed.", "error");
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification("Vehicle photo must be 5 MB or smaller.", "error");
+                return;
+            }
             if (this._items.length >= this.MAX) {
 
 
@@ -17427,6 +17434,10 @@ async edit(id) { this.openModal(id); }
             const isValid = validExts.some(ext => fileName.endsWith(ext));
             if (!isValid) {
                 showNotification('Please select a valid Excel file (.xlsx or .xls)', 'warning');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showNotification('Excel file must be 10 MB or smaller.', 'warning');
                 return;
             }
 
@@ -20260,8 +20271,8 @@ function toggleNewsletterModal(show = true) {
                                 <option value="excess_mileage">Excess Mileage</option>
                                 <option value="other">Other Charge</option>
                             </select>
-                            <input type="number" id="penaltyAmount_${b.id}" placeholder="Amount (PHP)" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;box-sizing:border-box;color:#0f172a !important;background:#ffffff !important;">
-                            <textarea id="penaltyNotes_${b.id}" placeholder="Reason/Details" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;box-sizing:border-box;font-family:inherit;color:#0f172a !important;background:#ffffff !important;"></textarea>
+                            <input type="number" id="penaltyAmount_${b.id}" min="0" max="100000" placeholder="Amount (PHP)" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;box-sizing:border-box;color:#0f172a !important;background:#ffffff !important;">
+                            <textarea id="penaltyNotes_${b.id}" maxlength="250" placeholder="Reason/Details" style="width:100%;padding:6px;border-radius:6px;border:1px solid #feb2b2;font-size:0.78rem;box-sizing:border-box;font-family:inherit;color:#0f172a !important;background:#ffffff !important;"></textarea>
                             <div style="display:flex;gap:6px;">
                                 <button onclick="Bookings.submitPenalty(${b.id})" style="flex:1;padding:6px;background:#10b981;color:white;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Save</button>
                                 <button onclick="Bookings.toggleAddPenaltyForm(${b.id}, false)" style="flex:1;padding:6px;background:#94a3b8;color:white;border:none;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;">Cancel</button>
@@ -20340,6 +20351,18 @@ function toggleNewsletterModal(show = true) {
 
         _onProofSelected(bookingId, input) {
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const isImg = (file.type || "").toLowerCase().startsWith("image/") || /\.(jpe?g|png|webp|gif|heic)$/i.test(file.name || "");
+                if (!isImg) {
+                    showNotification("Only image files are allowed for transfer proof.", "error");
+                    input.value = "";
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification("Transfer proof must be 5 MB or smaller.", "error");
+                    input.value = "";
+                    return;
+                }
                 const label = document.getElementById('refundProofLabel_' + bookingId);
                 if (label) label.textContent = input.files[0].name;
                 const btn = document.getElementById('markRefundedBtn_' + bookingId);
@@ -28446,6 +28469,16 @@ function toggleNewsletterModal(show = true) {
                 showNotification('Proof of expense image is required', 'error');
                 return;
             }
+            const expFile = fileInput.files[0];
+            const isExpImg = (expFile.type || "").toLowerCase().startsWith("image/") || /\.(jpe?g|png|webp|gif|heic)$/i.test(expFile.name || "");
+            if (!isExpImg) {
+                showNotification("Only image files are allowed for expense proof.", "error");
+                return;
+            }
+            if (expFile.size > 5 * 1024 * 1024) {
+                showNotification("Expense proof must be 5 MB or smaller.", "error");
+                return;
+            }
 
             const formData = new FormData();
             formData.append('vehicle_id', vehicleId);
@@ -31308,9 +31341,16 @@ function toggleNewsletterModal(show = true) {
 
 
             Array.from(input.files).forEach(file => {
-
-
-
+                if (!file) return;
+                const isImg = (file.type || "").toLowerCase().startsWith("image/") || /\.(jpe?g|png|webp|gif|heic)$/i.test(file.name || "");
+                if (!isImg) {
+                    showNotification("Only image files are allowed for inspection photos.", "error");
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotification("Inspection photos must be 5 MB or smaller.", "error");
+                    return;
+                }
                 this.currentPhotos.push(file);
 
 

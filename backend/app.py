@@ -57,12 +57,21 @@ def is_allowed_image(file_storage):
         return False
     return True
 
-def reject_non_image(file_storage, field_name='file'):
-    """Return a 400 JSON error if the file is not an allowed image, else None."""
+def reject_non_image(file_storage, field_name='file', max_mb=15):
+    """Return a 400 JSON error if the file is not an allowed image or exceeds max_mb, else None."""
     if file_storage and file_storage.filename and file_storage.filename != '':
         if not is_allowed_image(file_storage):
             from flask import jsonify
             return jsonify({'error': f'{field_name} must be an image file (jpg, png, gif, webp).'}), 400
+        try:
+            file_storage.seek(0, 2)
+            size = file_storage.tell()
+            file_storage.seek(0)
+            if size > max_mb * 1024 * 1024:
+                from flask import jsonify
+                return jsonify({'error': f'{field_name} exceeds {max_mb} MB limit.'}), 400
+        except Exception:
+            pass
     return None
 
 
@@ -2580,6 +2589,12 @@ def register():
     if not email or not is_gmail(email):
 
         return jsonify({"error": "Only @gmail.com emails are allowed for registration."}), 400
+
+    if len(email) > 60:
+        return jsonify({"error": "Email cannot exceed 60 characters."}), 400
+
+    if not password or len(password) < 6 or len(password) > 64:
+        return jsonify({"error": "Password must be between 6 and 64 characters."}), 400
 
     ok_fn, err_fn, first_name = _validate_person_name_py(first_name, "First name", required=True)
     if not ok_fn:
@@ -6452,6 +6467,8 @@ def add_review():
 
     if not user_id or not rating:
         return jsonify({"error": "user_id and rating are required"}), 400
+    if comment and len(comment) > 300:
+        return jsonify({"error": "Review comment cannot exceed 300 characters"}), 400
 
     try:
         rating = int(rating)
@@ -7382,6 +7399,18 @@ def create_walkin_booking():
 
         if not customer_name:
             return jsonify({"error": "Customer name is required"}), 400
+        if len(customer_name) > 50:
+            return jsonify({"error": "Customer name cannot exceed 50 characters"}), 400
+        if len(customer_phone) > 15:
+            return jsonify({"error": "Customer phone cannot exceed 15 characters"}), 400
+        if len(customer_address) > 100:
+            return jsonify({"error": "Customer address cannot exceed 100 characters"}), 400
+        if len(emergency_name) > 50:
+            return jsonify({"error": "Emergency contact name cannot exceed 50 characters"}), 400
+        if len(emergency_phone) > 15:
+            return jsonify({"error": "Emergency contact phone cannot exceed 15 characters"}), 400
+        if len(emergency_rel) > 30:
+            return jsonify({"error": "Emergency relationship cannot exceed 30 characters"}), 400
 
         # Verify vehicle exists and is operational
         cur.execute("SELECT id, brand, model, plate_number, daily_rate, status FROM vehicles WHERE id = %s", (vehicle_id,))
@@ -7984,10 +8013,15 @@ def submit_inspection():
 
         try:
             new_mileage = float(str(mileage).strip())
-            if new_mileage < 0:
-                return jsonify({"error": "Mileage must be a positive number."}), 400
+            if new_mileage < 0 or new_mileage > 999999:
+                return jsonify({"error": "Mileage must be between 0 and 999,999 km."}), 400
         except (ValueError, TypeError):
             return jsonify({"error": "Invalid mileage number format."}), 400
+
+        if notes and len(str(notes)) > 300:
+            return jsonify({"error": "Inspection notes cannot exceed 300 characters."}), 400
+        if fuel_charge_notes and len(str(fuel_charge_notes)) > 150:
+            return jsonify({"error": "Fuel charge notes cannot exceed 150 characters."}), 400
 
         vehicle_id = bk.get('vehicle_id')
         current_odometer = 0.0
@@ -8814,6 +8848,12 @@ def submit_refund_details(booking_id):
 
         if not refund_channel or not refund_account_name or not refund_account_number:
             return jsonify({"error": "Refund channel, account name, and account number are required."}), 400
+        if len(refund_account_name) > 50:
+            return jsonify({"error": "Account name cannot exceed 50 characters."}), 400
+        if len(refund_account_number) > 20:
+            return jsonify({"error": "Account number cannot exceed 20 characters."}), 400
+        if refund_notes and len(refund_notes) > 200:
+            return jsonify({"error": "Notes cannot exceed 200 characters."}), 400
 
         cur = get_cursor()
 
@@ -10940,6 +10980,14 @@ def admin_create_newsletter():
 
     if not title or not content:
         return jsonify({"error": "Title and content are required"}), 400
+    if len(title) > 80:
+        return jsonify({"error": "Title cannot exceed 80 characters"}), 400
+    if len(content) > 1000:
+        return jsonify({"error": "Content cannot exceed 1000 characters"}), 400
+    if promo_code and len(promo_code) > 15:
+        return jsonify({"error": "Promo code cannot exceed 15 characters"}), 400
+    if discount_val is not None and (discount_val < 1 or discount_val > 90):
+        return jsonify({"error": "Discount must be between 1 and 90 percent"}), 400
 
     discount_val = None
     if discount_percent is not None and str(discount_percent).strip() != '':
@@ -12371,6 +12419,11 @@ def update_super_admin_profile():
         if not pw_ok:
             return jsonify({"error": "Current password is incorrect."}), 401
 
+        if new_email and len(new_email) > 60:
+            return jsonify({"error": "Email cannot exceed 60 characters."}), 400
+        if new_password and (len(new_password) < 6 or len(new_password) > 64):
+            return jsonify({"error": "New password must be between 6 and 64 characters."}), 400
+
         # If email is changing, validate format and ensure uniqueness across users
         if new_email and new_email != (admin['email'] or '').lower():
             import re
@@ -12654,6 +12707,11 @@ def add_vehicle():
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_name VARCHAR(100) DEFAULT NULL")
         
         color = data.get('color') or None
+        plate = (data.get('plate_number') or '').strip().upper()
+        if not plate or len(plate) > 8:
+            return jsonify({"error": "Plate number is required and cannot exceed 8 characters"}), 400
+        if color and len(color) > 30:
+            return jsonify({"error": "Color cannot exceed 30 characters"}), 400
         mileage_type = data.get('mileage_type') or 'limited'
         mileage_km_per_day = data.get('mileage_km_per_day') or 250
         year_model = data.get('year_model') or None
@@ -15882,6 +15940,8 @@ def chat_send():
     message       = (data.get('message') or '').strip()
     if not all([sender_type, sender_id, receiver_type, receiver_id, message]):
         return jsonify({'error': 'Missing required fields'}), 400
+    if len(message) > 250:
+        return jsonify({'error': 'Message cannot exceed 250 characters'}), 400
     conn = None
     try:
         conn = _psycopg.connect(conninfo=_DB_URL)
@@ -17288,6 +17348,14 @@ def add_booking_penalty(booking_id):
     
     if not charge_type or amount is None:
         return jsonify({'error': 'Charge type and amount required'}), 400
+    try:
+        amt_float = float(amount)
+        if amt_float < 0 or amt_float > 100000:
+            return jsonify({'error': 'Penalty amount must be between 0 and 100,000 PHP'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid penalty amount'}), 400
+    if notes and len(str(notes)) > 250:
+        return jsonify({'error': 'Notes cannot exceed 250 characters'}), 400
         
     try:
         cur = get_cursor()
