@@ -1968,7 +1968,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 @app.route('/uploads/<path:filename>')
 @app.route('/api/uploads/<path:filename>')
 def serve_uploads(filename):
-
+    if '..' in filename or filename.startswith(('/', '\\')):
+        return jsonify({"error": "Invalid file path"}), 400
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
@@ -3015,6 +3016,10 @@ def check_verify_status():
     user_id = request.args.get('user_id')
 
     if not user_id: return jsonify({"error": "Missing user_id"}), 400
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -4096,6 +4101,10 @@ def get_user_points():
     if not user_id:
 
         return jsonify({"error": "User ID required"}), 400
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -5172,6 +5181,11 @@ def update_vehicle_gps_config(vehicle_id):
 def get_vehicle(vehicle_id):
 
     user_id = request.args.get('user_id')
+    if user_id:
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            user_id = None
 
     try:
 
@@ -5395,8 +5409,11 @@ def delete_vehicle_image(image_id):
 @app.route('/vehicles/<int:vehicle_id>/images/order', methods=['PUT'])
 @app.route('/api/vehicles/<int:vehicle_id>/images/order', methods=['PUT'])
 def update_image_order(vehicle_id):
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
-    data = request.json
+    data = request.json or {}
 
     order = data.get('order') # Expecting list of image IDs in order
 
@@ -5404,7 +5421,10 @@ def update_image_order(vehicle_id):
 
         return jsonify({"error": "Order list is required"}), 400
 
-    
+    if not isinstance(order, list):
+        return jsonify({"error": "Order must be a list of image IDs"}), 400
+    if len(order) > 50:
+        return jsonify({"error": "Order list exceeds maximum limit (50)"}), 400
 
     try:
 
@@ -6205,7 +6225,10 @@ def profile():
 
         return jsonify({"error": "user_id is required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -6490,7 +6513,10 @@ def get_favorites():
 
         return jsonify({"error": "user_id is required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -6803,7 +6829,10 @@ def get_saved_payments():
 
         return jsonify({"error": "user_id is required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -7279,6 +7308,10 @@ def get_all_bookings():
     """Get all bookings with customer, vehicle, and driver info for admin panel."""
 
     admin_id = request.args.get('admin_id')
+    try:
+        admin_id = int(admin_id) if admin_id else None
+    except (ValueError, TypeError):
+        admin_id = None
 
     try:
 
@@ -9662,7 +9695,10 @@ def driver_status():
 
         return jsonify({"error": "user_id required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -9700,7 +9736,10 @@ def get_driver_bookings():
 
         return jsonify({"error": "user_id required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
     try:
 
@@ -9860,12 +9899,16 @@ def download_report():
 def get_detailed_stats():
     """Aggregated stats for the executive dashboard charts."""
     admin_id = request.args.get('admin_id')
-    chart_type = request.args.get('type')
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
-    status_filter = request.args.get('status')
-    vehicle_type = request.args.get('vehicle_type')
-    filter_period = request.args.get('filter')
+    try:
+        admin_id = int(admin_id) if admin_id else None
+    except (ValueError, TypeError):
+        admin_id = None
+    chart_type = str(request.args.get('type') or '').strip()[:50] or None
+    date_from = str(request.args.get('date_from') or '').strip()[:10] or None
+    date_to = str(request.args.get('date_to') or '').strip()[:10] or None
+    status_filter = str(request.args.get('status') or '').strip()[:30] or None
+    vehicle_type = str(request.args.get('vehicle_type') or '').strip()[:50] or None
+    filter_period = str(request.args.get('filter') or '').strip()[:30] or None
 
     try:
         cur = get_cursor()
@@ -10034,6 +10077,10 @@ def get_detailed_stats():
 @app.route('/api/admin/reports/export-excel', methods=['GET', 'POST'])
 def export_reports_excel():
     """Generates an executive Excel (.xlsx) report complete with native interactive charts."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
     import openpyxl
     from openpyxl.chart import BarChart, LineChart, PieChart, Reference
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -10041,11 +10088,15 @@ def export_reports_excel():
     import io
 
     admin_id = request.args.get('admin_id')
-    date_from = request.args.get('date_from')
-    date_to = request.args.get('date_to')
-    filter_period = request.args.get('filter', 'year')
-    status_filter = request.args.get('status')
-    vehicle_type = request.args.get('vehicle_type')
+    try:
+        admin_id = int(admin_id) if admin_id else None
+    except (ValueError, TypeError):
+        admin_id = None
+    date_from = str(request.args.get('date_from') or '').strip()[:10] or None
+    date_to = str(request.args.get('date_to') or '').strip()[:10] or None
+    filter_period = str(request.args.get('filter', 'year') or 'year').strip()[:20]
+    status_filter = str(request.args.get('status') or '').strip()[:30] or None
+    vehicle_type = str(request.args.get('vehicle_type') or '').strip()[:50] or None
 
     try:
         cur = get_cursor()
@@ -11747,6 +11798,13 @@ def cleanup_chat_messages():
 @app.route('/api/admin/maintenance/export/<string:data_type>', methods=['GET'])
 def export_maintenance_data(data_type):
     """Admin endpoint to download JSON export backup of archived items or logs."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
+    if data_type not in ['archived_bookings', 'activity_logs', 'notifications']:
+        return jsonify({"error": "Invalid export type. Options: archived_bookings, activity_logs, notifications"}), 400
+
     import json
     from flask import Response
     from datetime import datetime
@@ -13349,6 +13407,11 @@ def get_vehicle_details_v2(vehicle_id):
 
 
     user_id = request.args.get('user_id')
+    if user_id:
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            user_id = None
 
     try:
 
@@ -13814,6 +13877,11 @@ def handle_admin_settings():
 
         if not updates:
             return jsonify({"error": "Missing settings payload"}), 400
+
+        if not isinstance(updates, list):
+            return jsonify({"error": "Settings payload must be a list"}), 400
+        if len(updates) > 100:
+            return jsonify({"error": "Settings batch exceeds maximum limit (100)"}), 400
 
         try:
             cur = get_cursor()
@@ -17403,13 +17471,26 @@ def confirm_fleet_calendar_import():
     """
     Imports the verified records into the database with smart renter linking.
     """
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
     data = request.json or {}
     records = data.get('records') or []
     auto_create_renters = data.get('auto_create_renters', True)
     requester_id = data.get('requester_id', 1)
+    try:
+        requester_id = int(requester_id)
+    except (ValueError, TypeError):
+        requester_id = 1
 
     if not records:
         return jsonify({'error': 'No records selected for import'}), 400
+
+    if not isinstance(records, list):
+        return jsonify({'error': 'Records must be a list'}), 400
+    if len(records) > 2000:
+        return jsonify({'error': 'Import batch exceeds maximum limit (2,000 records)'}), 400
 
     try:
         import fleet_import
