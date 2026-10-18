@@ -2478,6 +2478,9 @@ function doRegister() {
 
 // AUTH: OTP
 function otpNext(el, nextIdx) {
+  if (el.value) {
+    el.value = el.value.replace(/[^0-9]/g, '').slice(-1);
+  }
   if (el.value.length >= 1 && nextIdx >= 0) {
     var next = document.getElementById('otp' + nextIdx);
     if (next) next.focus();

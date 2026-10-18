@@ -5162,7 +5162,7 @@
         <div style="display:flex;gap:12px;margin-bottom:16px;">
             <div style="position:relative;flex:1;">
                 <i class="fas fa-search" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.85rem;pointer-events:none;"></i>
-                <input id="vehicleSearch" type="text" placeholder="Search brand, model or plate..."
+                <input id="vehicleSearch" type="text" maxlength="50" placeholder="Search brand, model or plate..."
                     oninput="Vehicles.applyFilters()"
                     style="width:100%;padding:11px 14px 11px 38px;background:var(--surface-container);border:1px solid var(--border);border-radius:12px;color:var(--text-main);font-size:0.85rem;box-sizing:border-box;">
             </div>
@@ -7011,7 +7011,7 @@
 
                 <!-- Search Input -->
                 <div style="margin-bottom: 12px;">
-                    <input type="text" id="nlSubSearchInput" oninput="NewsletterAdmin.filterSubscribers()" placeholder="Search by email, name, or status..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.825rem; color: #0f172a !important; background: #fff !important;">
+                    <input type="text" id="nlSubSearchInput" maxlength="60" oninput="NewsletterAdmin.filterSubscribers()" placeholder="Search by email, name, or status..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.825rem; color: #0f172a !important; background: #fff !important;">
                 </div>
 
                 <div id="nlAdminSubscribersList" style="display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto;">
@@ -7267,12 +7267,12 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Total Price (₱)</label>
-                        <input type="number" id="quickTotalPrice" step="50" min="0" oninput="FleetCalendar.recalcQuickBalance()"
+                        <input type="number" id="quickTotalPrice" step="50" min="0" max="500000" oninput="FleetCalendar.recalcQuickBalance()"
                                style="width: 100%; padding: 8px 10px; font-size: 0.88rem; font-weight: 800; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Amount Paid (₱)</label>
-                        <input type="number" id="quickAmountPaid" step="50" min="0" oninput="FleetCalendar.recalcQuickBalance()"
+                        <input type="number" id="quickAmountPaid" step="50" min="0" max="500000" oninput="FleetCalendar.recalcQuickBalance()"
                                style="width: 100%; padding: 8px 10px; font-size: 0.88rem; font-weight: 800; color: #16a34a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
                     </div>
                 </div>
@@ -8022,7 +8022,7 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-comment-dots" style="color:var(--primary); margin-right:4px;"></i> Welcome Greeting Message
                     </label>
                     <p style="margin:0 0 8px; font-size:0.7rem; color:var(--text-muted);">First message sent by the AI chatbot when a customer opens the chat.</p>
-                    <textarea id="chatCtrlAiGreeting" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+                    <textarea id="chatCtrlAiGreeting" maxlength="500" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
                 </div>
 
                 <div>
@@ -8030,7 +8030,7 @@ input:checked + .ctrl-slider:before {
                         <i class="fas fa-question" style="color:#f59e0b; margin-right:4px;"></i> Fallback / Unrecognized Question Message
                     </label>
                     <p style="margin:0 0 8px; font-size:0.7rem; color:var(--text-muted);">Response sent when the AI assistant cannot understand or find a match for the customer's question.</p>
-                    <textarea id="chatCtrlAiFallback" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
+                    <textarea id="chatCtrlAiFallback" maxlength="500" rows="3" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); padding:10px 12px; font-size:0.85rem; resize:vertical; font-family:inherit;"></textarea>
                 </div>
 
                 <div style="display:flex; justify-content:flex-end;">
@@ -8061,28 +8061,28 @@ input:checked + .ctrl-slider:before {
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:12px;">
                 <div>
                     <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Chip Label (Button in Chat) *</label>
-                    <input type="text" id="faqFormChipLabel" placeholder="e.g. 💳 20% DP &amp; Balance" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                    <input type="text" id="faqFormChipLabel" maxlength="40" placeholder="e.g. 💳 20% DP &amp; Balance" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 </div>
                 <div>
                     <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Category</label>
-                    <input type="text" id="faqFormCategory" placeholder="e.g. payment, general, fuel" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                    <input type="text" id="faqFormCategory" maxlength="30" placeholder="e.g. payment, general, fuel" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 </div>
             </div>
 
             <div>
                 <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Full Question (Sent as Customer Message) *</label>
-                <input type="text" id="faqFormQuestion" placeholder="e.g. How does the 20% downpayment and balance payment work?" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                <input type="text" id="faqFormQuestion" maxlength="150" placeholder="e.g. How does the 20% downpayment and balance payment work?" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
             </div>
 
             <div>
                 <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Trigger Keywords (comma separated) *</label>
-                <input type="text" id="faqFormKeywords" placeholder="e.g. 20%, downpayment, dp, balance, upon pickup" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                <input type="text" id="faqFormKeywords" maxlength="200" placeholder="e.g. 20%, downpayment, dp, balance, upon pickup" required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 <div style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">If customer types any of these words in chat, this automated answer triggers.</div>
             </div>
 
             <div>
                 <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Automated Bot Answer *</label>
-                <textarea id="faqFormAnswer" rows="5" placeholder="Enter clear policy explanation or instructions..." required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem; font-family:inherit; resize:vertical;"></textarea>
+                <textarea id="faqFormAnswer" maxlength="1000" rows="5" placeholder="Enter clear policy explanation or instructions..." required style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem; font-family:inherit; resize:vertical;"></textarea>
             </div>
 
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:12px; align-items:center;">
@@ -8131,7 +8131,7 @@ input:checked + .ctrl-slider:before {
                 <!-- Search Box -->
                 <div style="position: relative; margin-bottom: 12px; width: 100%; box-sizing: border-box;">
                     <i class="fas fa-search" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 0.85rem; pointer-events: none;"></i>
-                    <input type="text" id="settingsSearchInput" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; box-sizing: border-box; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
+                    <input type="text" id="settingsSearchInput" maxlength="60" placeholder="Search settings (e.g. strike, suspension, mileage, chat, discount)..." oninput="Settings.onSearchInput(this.value)" style="width: 100%; box-sizing: border-box; padding: 10px 38px 10px 38px; background: var(--surface-container); border: 1.5px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.85rem; outline: none; transition: border-color 0.2s;">
                     <button id="settingsSearchClearBtn" type="button" onclick="Settings.clearSearch()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; font-size: 0.9rem;">
                         <i class="fas fa-times-circle"></i>
                     </button>
@@ -8581,15 +8581,15 @@ input:checked + .ctrl-slider:before {
 
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Add-on Name</label>
-                    <input type="text" id="addonNameInput" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input type="text" id="addonNameInput" maxlength="50" placeholder="e.g. GPS Navigator" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Price per Day (&#8369;)</label>
-                    <input type="number" id="addonPriceInput" placeholder="e.g. 150" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input type="number" id="addonPriceInput" min="0" max="10000" placeholder="e.g. 150" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Description <span style="color: var(--text-muted);">(Optional)</span></label>
-                    <textarea id="addonDescInput" placeholder="Briefly describe this add-on..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+                    <textarea id="addonDescInput" maxlength="250" placeholder="Briefly describe this add-on..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -8643,15 +8643,15 @@ input:checked + .ctrl-slider:before {
 
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Package Name</label>
-                    <input type="text" id="insuranceNameInput" placeholder="e.g. Standard Protection" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input type="text" id="insuranceNameInput" maxlength="50" placeholder="e.g. Standard Protection" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Price per Day (&#8369;) <span style="font-size:0.75rem; color:var(--text-muted);">(Enter 0 for free/included)</span></label>
-                    <input type="number" id="insurancePriceInput" placeholder="e.g. 500" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+                    <input type="number" id="insurancePriceInput" min="0" max="20000" placeholder="e.g. 500" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
                 </div>
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Coverage Description <span style="color: var(--text-muted);">(Optional)</span></label>
-                    <textarea id="insuranceDescInput" placeholder="Briefly describe what this insurance covers..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+                    <textarea id="insuranceDescInput" maxlength="250" placeholder="Briefly describe what this insurance covers..." rows="3" style="width: 100%; padding: 11px 14px; background: var(--surface-solid, #ffffff); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; resize: vertical; font-family: inherit; font-size: 0.9rem; outline: none;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"></textarea>
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -8702,26 +8702,26 @@ input:checked + .ctrl-slider:before {
 
                 <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Zone Name / Description</label>
-                    <input type="text" id="locationNameInput" placeholder="e.g. San Pablo City, Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                    <input type="text" id="locationNameInput" maxlength="60" placeholder="e.g. San Pablo City, Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Province</label>
-                        <input type="text" id="locationProvinceInput" placeholder="Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                        <input type="text" id="locationProvinceInput" maxlength="40" placeholder="Laguna" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Municipality</label>
-                        <input type="text" id="locationMuniInput" placeholder="San Pablo City" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                        <input type="text" id="locationMuniInput" maxlength="40" placeholder="San Pablo City" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Barangay (Optional)</label>
-                        <input type="text" id="locationBrgyInput" placeholder="Leave empty for all" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                        <input type="text" id="locationBrgyInput" maxlength="40" placeholder="Leave empty for all" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500;">Delivery Fee (&#8369;)</label>
-                        <input type="number" id="locationFeeInput" placeholder="0" value="0" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
+                        <input type="number" id="locationFeeInput" min="0" max="10000" placeholder="0" value="0" style="width: 100%; padding: 11px 14px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem; outline: none; border: 1px solid var(--border);">
                     </div>
                 </div>
 
@@ -9488,7 +9488,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                <input type="text" id="newInstructionInput" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                <input type="text" id="newInstructionInput" maxlength="150" placeholder="e.g. Bring 2 valid IDs upon pickup." style="width: 100%; padding: 12px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
 
 
 
@@ -10073,7 +10073,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                <input id="newMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
+                <input id="newMobilePassword" type="password" maxlength="64" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
 
 
 
@@ -10089,7 +10089,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                <input id="confirmMobilePassword" type="password" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
+                <input id="confirmMobilePassword" type="password" maxlength="64" placeholder="********" style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main);">
 
 
 
@@ -10616,7 +10616,7 @@ input:checked + .ctrl-slider:before {
 
                 <label for="pushNotifTitle" style="display:block; font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Notification Title</label>
 
-                <input type="text" id="pushNotifTitle" placeholder="e.g. System Update" style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; color:#0f172a !important; font-size:0.9rem; font-weight:500; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00B14F'" onblur="this.style.borderColor='#cbd5e1'">
+                <input type="text" id="pushNotifTitle" maxlength="80" placeholder="e.g. System Update" style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; color:#0f172a !important; font-size:0.9rem; font-weight:500; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00B14F'" onblur="this.style.borderColor='#cbd5e1'">
 
             </div>
 
@@ -10626,7 +10626,7 @@ input:checked + .ctrl-slider:before {
 
                 <label for="pushNotifBody" style="display:block; font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; margin-bottom:6px;">Message Body</label>
 
-                <textarea id="pushNotifBody" rows="4" placeholder="Type your message here..." style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; color:#0f172a !important; font-size:0.9rem; font-weight:500; resize:none; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00B14F'" onblur="this.style.borderColor='#cbd5e1'"></textarea>
+                <textarea id="pushNotifBody" maxlength="500" rows="4" placeholder="Type your message here..." style="width:100%; background:#ffffff; border:1px solid #cbd5e1; border-radius:12px; padding:12px 14px; color:#0f172a !important; font-size:0.9rem; font-weight:500; resize:none; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='#00B14F'" onblur="this.style.borderColor='#cbd5e1'"></textarea>
 
             </div>
 
@@ -38490,7 +38490,7 @@ function toggleNewsletterModal(show = true) {
 
         <div style="margin-bottom: 18px;">
             <label style="display: block; font-size: 0.8rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">Reason for Request <span style="font-weight: 400; color: var(--text-muted);">(Optional)</span>:</label>
-            <textarea id="staffReqPermReason" placeholder="e.g. Need access to manage incoming holiday blackout dates for customers..." rows="3" style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; resize: vertical; box-sizing: border-box; outline: none;"></textarea>
+            <textarea id="staffReqPermReason" maxlength="250" placeholder="e.g. Need access to manage incoming holiday blackout dates for customers..." rows="3" style="width: 100%; padding: 12px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; resize: vertical; box-sizing: border-box; outline: none;"></textarea>
         </div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
@@ -38568,7 +38568,7 @@ function toggleNewsletterModal(show = true) {
                 <label style="display:block; font-size:0.8rem; font-weight:800; color:var(--text-main); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                     GPS Tracker Name / Label
                 </label>
-                <input type="text" id="gpsConfigDeviceName" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-weight:600; outline:none; box-sizing:border-box;">
+                <input type="text" id="gpsConfigDeviceName" maxlength="50" placeholder="e.g. Tracker Unit 1 (ESP32)" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-weight:600; outline:none; box-sizing:border-box;">
                 <span style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block;">Physical label written on the device or vehicle dashboard.</span>
             </div>
 
@@ -38581,7 +38581,7 @@ function toggleNewsletterModal(show = true) {
                     <button type="button" onclick="GPS.toggleTokenVisibility()" style="background:rgba(0,177,79,0.12); border:1px solid rgba(0,177,79,0.3); color:#00B14F; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;">Show/Hide</button>
                 </div>
                 <div style="position:relative;">
-                    <input type="password" id="gpsConfigToken" placeholder="Paste Blynk Auth Token from hardware / console" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
+                    <input type="password" id="gpsConfigToken" maxlength="50" placeholder="Paste Blynk Auth Token from hardware / console" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
                 </div>
                 <span style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block;">Token generated by Blynk IoT cloud for this specific physical GPS device.</span>
             </div>
@@ -38591,7 +38591,7 @@ function toggleNewsletterModal(show = true) {
                 <label style="display:block; font-size:0.8rem; font-weight:800; color:var(--text-main); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">
                     Blynk Cloud Server Host
                 </label>
-                <input type="text" id="gpsConfigServer" value="sgp1.blynk.cloud" placeholder="sgp1.blynk.cloud" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
+                <input type="text" id="gpsConfigServer" maxlength="50" value="sgp1.blynk.cloud" placeholder="sgp1.blynk.cloud" style="width:100%; padding:12px 14px; background:var(--surface-container, var(--surface-card)); border:1.5px solid var(--border); border-radius:10px; color:var(--text-main); font-size:0.92rem; font-family:monospace; outline:none; box-sizing:border-box;">
                 <span style="font-size:0.75rem; color:var(--text-muted); margin-top:4px; display:block;">Default is <code style="background:rgba(59,130,246,0.1); padding:2px 6px; border-radius:4px; color:#3b82f6; font-weight:700;">sgp1.blynk.cloud</code> (Singapore region for Philippines).</span>
             </div>
 

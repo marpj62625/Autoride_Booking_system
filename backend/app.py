@@ -2724,8 +2724,8 @@ def user_forgot_password():
     """Forgot password endpoint for customers. Generates a temporary password and emails it."""
     data = request.get_json(silent=True) or {}
     email = data.get('email', '').strip().lower()
-    if not email:
-        return jsonify({'error': 'Email is required'}), 400
+    if not email or len(email) > 60:
+        return jsonify({'error': 'A valid email address (max 60 characters) is required'}), 400
         
     try:
         cur = get_cursor()
@@ -3104,6 +3104,10 @@ def upload_license():
     if file.filename == '':
 
         return jsonify({"error": "No selected file"}), 400
+
+    _img_err = reject_non_image(file, "Driver's license")
+    if _img_err:
+        return _img_err
 
         
 
@@ -4124,6 +4128,12 @@ def verify_email():
     if not email or not otp:
         return jsonify({"error": "Email and OTP are required"}), 400
 
+    if len(email) > 60:
+        return jsonify({"error": "Email cannot exceed 60 characters"}), 400
+
+    if len(otp) != 6 or not otp.isdigit():
+        return jsonify({"error": "OTP must be exactly 6 digits"}), 400
+
     if verify_email_otp(email, otp):
         try:
             cur = get_cursor()
@@ -4505,8 +4515,8 @@ def admin_send_custom_push():
     """Admin endpoint to send custom push notification or broadcast to all users"""
     try:
         data = request.get_json() or {}
-        title = data.get('title', '').strip()
-        body = data.get('body', '').strip()
+        title = (data.get('title', '') or '').strip()[:80]
+        body = (data.get('body', '') or '').strip()[:500]
         user_id = data.get('user_id')
         broadcast = data.get('broadcast', False)
         
@@ -4763,6 +4773,17 @@ def process_refund():
         return jsonify({"error": "booking_id, admin_id, and refund_amount are required"}), 400
 
     try:
+        refund_amount_val = float(refund_amount)
+        if refund_amount_val <= 0 or refund_amount_val > 1000000:
+            return jsonify({"error": "Refund amount must be greater than 0 and at most 1,000,000"}), 400
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid refund amount"}), 400
+
+    refund_method = str(refund_method or 'GCash')[:50]
+    refund_ref = str(refund_ref or '')[:50]
+    refund_note = str(refund_note or '')[:300]
+
+    try:
         cur = get_cursor()
 
         # Ensure columns exist
@@ -4780,6 +4801,9 @@ def process_refund():
             from werkzeug.utils import secure_filename as _sf
             f = request.files['proof']
             if f and f.filename:
+                _img_err = reject_non_image(f, 'Proof screenshot')
+                if _img_err:
+                    return _img_err
                 fname = _sf(f"refund_{booking_id}_{int(_dtmod.datetime.now().timestamp())}_{f.filename}")
                 fpath = os.path.join(app.config['UPLOAD_FOLDER'], fname)
                 f.save(fpath)
@@ -5696,11 +5720,17 @@ def book():
                 except Exception:
                     server_addon_price = 0.0
 
-            driver_fee = float(data.get('driver_fee', 0.00) or 0.00)
+            try:
+                driver_fee = max(0.0, float(data.get('driver_fee', 0.00) or 0.00))
+            except Exception:
+                driver_fee = 0.00
             if rental_type == 'With Driver' and driver_fee <= 0:
                 driver_fee = float(755.0 * computed_days)
 
-            delivery_fee = max(0.0, float(data.get('delivery_fee', 0.00) or 0.00))
+            try:
+                delivery_fee = max(0.0, float(data.get('delivery_fee', 0.00) or 0.00))
+            except Exception:
+                delivery_fee = 0.00
 
             # Validate and cap loyalty points
             points_redeemed = max(0, int(data.get('points_redeemed', 0) or 0))
@@ -6180,6 +6210,9 @@ def user_change_password():
 
         if not user_id or not new_password:
             return jsonify({'error': 'Missing required fields.'}), 400
+
+        if len(str(new_password)) < 6 or len(str(new_password)) > 64:
+            return jsonify({'error': 'Password must be between 6 and 64 characters.'}), 400
 
         cur = get_cursor()
         cur.execute("SELECT id, password FROM users WHERE id = %s", (user_id,))
@@ -7821,9 +7854,12 @@ def approve_booking(booking_id):
 def mark_booking_paid(booking_id):
     """Mark a booking as Fully Paid with support for payment method surcharge (e.g. Card Terminal 3.5%)."""
     data = request.get_json(silent=True) or {}
-    payment_method = (data.get('payment_method') or 'Cash (Over the counter)').strip()
-    payment_fee = float(data.get('payment_fee', 0.0) or 0.0)
-    payment_fee_percent = float(data.get('payment_fee_percent', 0.0) or 0.0)
+    payment_method = (data.get('payment_method') or 'Cash (Over the counter)').strip()[:50]
+    try:
+        payment_fee = max(0.0, float(data.get('payment_fee', 0.0) or 0.0))
+        payment_fee_percent = max(0.0, float(data.get('payment_fee_percent', 0.0) or 0.0))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid payment fee format"}), 400
 
     try:
         cur = get_cursor()
@@ -12247,6 +12283,14 @@ def update_admin(user_id):
 
     assigned_location = data.get('assigned_location')
 
+    if name is not None and len(str(name).strip()) > 50:
+        return jsonify({"error": "Admin name cannot exceed 50 characters."}), 400
+    if email is not None and (len(str(email).strip()) > 60 or (str(email).strip() and '@' not in str(email))):
+        return jsonify({"error": "Admin email must be valid and max 60 characters."}), 400
+    if password is not None and str(password).strip():
+        if len(str(password)) < 6 or len(str(password)) > 64:
+            return jsonify({"error": "Password must be between 6 and 64 characters."}), 400
+
 
 
     try:
@@ -12553,15 +12597,22 @@ def create_admin():
 
     requester_id = data.get('requester_id') # Matches frontend
 
-    name = data.get('name')
+    name = (data.get('name') or '').strip()
 
-    email = data.get('email')
+    email = (data.get('email') or '').strip().lower()
 
-    password = data.get('password')
+    password = data.get('password') or ''
 
     role = data.get('role', 'admin')
 
     assigned_location = data.get('assigned_location')
+
+    if not name or len(name) > 50:
+        return jsonify({"error": "Admin name is required (max 50 characters)."}), 400
+    if not email or len(email) > 60 or '@' not in email:
+        return jsonify({"error": "Valid admin email is required (max 60 characters)."}), 400
+    if len(password) < 6 or len(password) > 64:
+        return jsonify({"error": "Password must be between 6 and 64 characters."}), 400
 
 
 
@@ -13563,6 +13614,9 @@ def change_admin_password():
 
         return jsonify({"error": "Missing user_id or password"}), 400
 
+    if len(str(new_password)) < 6 or len(str(new_password)) > 64:
+        return jsonify({"error": "Password must be between 6 and 64 characters"}), 400
+
 
 
     try:
@@ -13697,11 +13751,15 @@ def add_location():
     try:
         data = request.json or {}
         requester_id = data.get('requester_id')
-        name = data.get('name')
-        province = data.get('province', '')
-        municipality = data.get('municipality', '')
-        barangay = data.get('barangay', '')
-        delivery_fee = float(data.get('delivery_fee', 0.00))
+        name = (data.get('name') or '').strip()[:60]
+        province = (data.get('province', '') or '').strip()[:40]
+        municipality = (data.get('municipality', '') or '').strip()[:40]
+        barangay = (data.get('barangay', '') or '').strip()[:40]
+        try:
+            delivery_fee = max(0.0, float(data.get('delivery_fee', 0.00) or 0.00))
+            if delivery_fee > 10000: delivery_fee = 10000.0
+        except (ValueError, TypeError):
+            delivery_fee = 0.00
 
         if not requester_id or not name:
             return jsonify({"error": "Missing requester_id or name"}), 400
@@ -13759,11 +13817,15 @@ def handle_location_detail(loc_id):
 
         if request.method == 'PUT':
 
-            name = data.get('name')
-            province = data.get('province', '')
-            municipality = data.get('municipality', '')
-            barangay = data.get('barangay', '')
-            delivery_fee = float(data.get('delivery_fee', 0.00))
+            name = (data.get('name') or '').strip()[:60]
+            province = (data.get('province', '') or '').strip()[:40]
+            municipality = (data.get('municipality', '') or '').strip()[:40]
+            barangay = (data.get('barangay', '') or '').strip()[:40]
+            try:
+                delivery_fee = max(0.0, float(data.get('delivery_fee', 0.00) or 0.00))
+                if delivery_fee > 10000: delivery_fee = 10000.0
+            except (ValueError, TypeError):
+                delivery_fee = 0.00
 
             if not name:
                 return jsonify({"error": "Missing location name"}), 400
@@ -14241,6 +14303,9 @@ def update_license_info():
         if 'license' in request.files:
             file = request.files['license']
             if file.filename:
+                _img_err = reject_non_image(file, "Driver's license")
+                if _img_err:
+                    return _img_err
                 filename = f"license_{user_id}_{int(datetime.now().timestamp())}.jpg"
                 file_data = file.read()
                 try:
@@ -14694,6 +14759,8 @@ def save_license_details():
         def upload_img(file_key, prefix):
             if file_key in request.files and request.files[file_key].filename:
                 file = request.files[file_key]
+                if not is_allowed_image(file):
+                    raise ValueError(f"File {file_key} must be an image file (jpg, png, gif, webp).")
                 
                 # Check file size (max 5MB)
                 file.seek(0, 2)  # Seek to end
@@ -16353,13 +16420,18 @@ def get_addons():
 def create_addon():
     """Create a new rental addon. Admin only validation."""
     data = request.get_json(silent=True) or {}
-    name = data.get('name', '').strip()
+    name = (data.get('name', '') or '').strip()[:50]
     price = data.get('price_per_day')
-    desc = data.get('description', '').strip()
+    desc = (data.get('description', '') or '').strip()[:250]
     admin_id = data.get('admin_id')
 
     if not name or price is None or not admin_id:
         return jsonify({'error': 'Name, price per day, and admin_id are required.'}), 400
+
+    try:
+        price_val = max(0.0, min(10000.0, float(price)))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid price per day.'}), 400
 
     try:
         cur = get_cursor()
@@ -16369,7 +16441,7 @@ def create_addon():
         cur.execute("""
             INSERT INTO addons (name, price_per_day, description)
             VALUES (%s, %s, %s) RETURNING id
-        """, (name, float(price), desc))
+        """, (name, price_val, desc))
         addon_id = cur.fetchone()['id']
         commit_db()
         return jsonify({'message': 'Addon created successfully', 'id': addon_id}), 201
@@ -16493,13 +16565,18 @@ def get_insurance_options():
 def create_insurance_option():
     """Create a new insurance package. Super Admin / Admin validation."""
     data = request.get_json(silent=True) or {}
-    name = data.get('name', '').strip()
+    name = (data.get('name', '') or '').strip()[:50]
     price = data.get('price_per_day')
-    desc = data.get('description', '').strip()
+    desc = (data.get('description', '') or '').strip()[:250]
     admin_id = data.get('admin_id')
 
     if not name or price is None or not admin_id:
         return jsonify({'error': 'Name, price per day, and admin_id are required.'}), 400
+
+    try:
+        price_val = max(0.0, min(20000.0, float(price)))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid price per day.'}), 400
 
     try:
         cur = get_cursor()
@@ -16511,7 +16588,7 @@ def create_insurance_option():
         cur.execute("""
             INSERT INTO insurance_options (name, price_per_day, description, is_active)
             VALUES (%s, %s, %s, TRUE) RETURNING id
-        """, (name, float(price), desc))
+        """, (name, price_val, desc))
         ins_id = cur.fetchone()['id']
         commit_db()
 
@@ -17223,13 +17300,15 @@ def update_booking_quick_pricing(booking_id):
         if not b:
             return jsonify({"error": "Booking not found"}), 404
 
-        total_price = float(data.get('total_price') if data.get('total_price') is not None else (b['total_price'] or 0.0))
-        amount_paid = float(data.get('amount_paid') if data.get('amount_paid') is not None else (b['amount_paid'] or 0.0))
-        
-        if data.get('balance_amount') is not None:
-            balance_amount = float(data.get('balance_amount'))
-        else:
-            balance_amount = max(0.0, total_price - amount_paid)
+        try:
+            total_price = max(0.0, float(data.get('total_price') if data.get('total_price') is not None else (b['total_price'] or 0.0)))
+            amount_paid = max(0.0, float(data.get('amount_paid') if data.get('amount_paid') is not None else (b['amount_paid'] or 0.0)))
+            if data.get('balance_amount') is not None:
+                balance_amount = max(0.0, float(data.get('balance_amount')))
+            else:
+                balance_amount = max(0.0, total_price - amount_paid)
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid price or amount values"}), 400
 
         payment_status = data.get('payment_status')
         if not payment_status:
