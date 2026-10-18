@@ -3783,7 +3783,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
       var galleryHtml = renderVdGallery(defaultUnit);
  
        var highlightsHtml =
-        '<div class="veh-detail-highlights card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:20px;">' +
+        '<div class="veh-detail-highlights card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:0;">' +
           '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
             '<i class="fas fa-check-circle" style="color:var(--primary);"></i> Rental Inclusions &amp; Benefits' +
           '</h4>' +
@@ -3828,7 +3828,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
         '</div>';
 
       var policiesHtml =
-        '<div class="veh-detail-policies card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:16px;">' +
+        '<div class="veh-detail-policies card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:0;">' +
           '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
             '<i class="fas fa-file-contract" style="color:var(--primary);"></i> Rental Requirements &amp; Policies' +
           '</h4>' +
@@ -3855,10 +3855,9 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
               galleryHtml +
             '</div>' +
             highlightsHtml +
-            policiesHtml +
           '</div>' +
           '<div class="veh-detail-info-col">' +
-            '<div class="card" style="padding: 24px; border-radius:20px; border:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.05);">' +
+            '<div id="vd-booking-card" class="card" style="padding: 24px; border-radius:20px; border:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.05);">' +
               '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
                 '<div>' +
                   '<h3 style="font-weight:900;font-size:1.35rem;margin:0;color:var(--text-primary);letter-spacing:-0.3px;">' + brand + ' ' + model + '</h3>' +
@@ -3933,6 +3932,7 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                 '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-lock" style="color:#3b82f6;"></i> Secure System</span>' +
               '</div>' +
             '</div>' +
+            policiesHtml +
           '</div>' +
         '</div>';
 

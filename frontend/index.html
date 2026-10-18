@@ -1226,13 +1226,14 @@
             flex-direction: column !important;
             gap: 16px !important;
           }
-          .veh-detail-gallery-col {
+          .veh-detail-gallery-col,
+          .veh-detail-info-col {
             display: contents !important;
           }
-          #vd-gallery-col-wrapper { order: 1 !important; }
-          .veh-detail-info-col    { order: 2 !important; }
-          .veh-detail-highlights  { order: 3 !important; }
-          .veh-detail-policies    { order: 4 !important; }
+          #vd-gallery-col-wrapper { order: 1 !important; margin-bottom: 0 !important; }
+          #vd-booking-card        { order: 2 !important; margin-bottom: 0 !important; }
+          .veh-detail-highlights  { order: 3 !important; margin-bottom: 0 !important; }
+          .veh-detail-policies    { order: 4 !important; margin-bottom: 0 !important; }
         }
 
         @media (min-width: 768px) {
