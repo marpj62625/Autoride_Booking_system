@@ -1189,85 +1189,299 @@
 
         /* ============================================================
            DESKTOP LAYOUT — kicks in at 768px+
-           Left sidebar + constrained content area
+           Sleek, Compact Sidebar + Constrained Content Area
         ============================================================ */
+        :root {
+          --customer-sidebar-width: 0px;
+        }
+
+        @media (max-width: 767px) {
+          .sidebar-desktop-header,
+          .sidebar-section-title,
+          .sidebar-collapse-btn {
+            display: none !important;
+          }
+          .sidebar-desktop-footer {
+            display: contents !important;
+          }
+        }
+
         @media (min-width: 768px) {
+          :root {
+            --customer-sidebar-width: 200px;
+          }
+          body.customer-sidebar-collapsed {
+            --customer-sidebar-width: 64px;
+          }
+
+          /* Remove legacy pseudo-element text */
+          .bottom-nav::before {
+            display: none !important;
+            content: none !important;
+          }
 
           /* Sidebar: replaces fixed bottom nav */
           .bottom-nav {
             position: fixed;
             top: 0; left: 0; bottom: 0; right: auto;
-            width: 220px;
+            width: var(--customer-sidebar-width);
             height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: stretch;
-            padding: 0 0 24px 0;
+            padding: 0;
             border-top: none;
             border-right: 1px solid var(--border);
-            box-shadow: 2px 0 16px rgba(0,0,0,0.06);
+            box-shadow: 2px 0 16px rgba(0,0,0,0.04);
             overflow-y: auto;
             overflow-x: hidden;
             z-index: 1000;
+            background: var(--bg-card);
+            transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           }
 
-          /* Brand logo in sidebar */
-          .bottom-nav::before {
-            content: 'Autoride';
-            display: block;
-            padding: 28px 20px 20px;
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: var(--primary);
-            letter-spacing: -0.5px;
+          /* Desktop Header */
+          .sidebar-desktop-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 58px;
+            padding: 0 12px;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 8px;
+            flex-shrink: 0;
+            background: var(--bg-card);
+            transition: padding 0.25s ease;
+          }
+
+          .sidebar-desktop-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            overflow: hidden;
+          }
+
+          .sidebar-brand-logo {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
             flex-shrink: 0;
           }
 
-          /* Sidebar nav items */
+          .sidebar-brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+            white-space: nowrap;
+          }
+
+          .sidebar-brand-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--primary, #00b14f);
+            letter-spacing: -0.4px;
+          }
+
+          .sidebar-brand-subtitle {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+          }
+
+          /* Collapse Toggle Button */
+          .sidebar-collapse-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-card2, #f8fafc);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 10px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            padding: 0;
+          }
+
+          .sidebar-collapse-btn:hover {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+          }
+
+          .sidebar-collapse-btn i {
+            transition: transform 0.25s ease;
+          }
+
+          body.customer-sidebar-collapsed .sidebar-collapse-btn i {
+            transform: rotate(180deg);
+          }
+
+          /* Section Title */
+          .sidebar-section-title {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #94a3b8;
+            padding: 14px 16px 6px;
+            flex-shrink: 0;
+          }
+
+          /* Sidebar Nav Items (Modern Pill Style) */
           .bottom-nav button {
+            flex: none;
             flex-direction: row;
             justify-content: flex-start;
-            gap: 14px;
-            padding: 14px 20px;
-            font-size: 0.9rem;
+            gap: 12px;
+            padding: 8px 12px;
+            font-size: 0.86rem;
             font-weight: 600;
-            border-radius: 0;
-            width: 100%;
+            border-radius: 10px;
+            width: calc(100% - 16px);
+            margin: 2px 8px;
             text-align: left;
-            min-height: 52px;
+            min-height: 40px;
+            box-sizing: border-box;
+            color: var(--text-muted);
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
           }
 
           .bottom-nav button i {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             width: 20px;
             text-align: center;
             flex-shrink: 0;
+            transition: transform 0.2s ease, color 0.2s ease;
           }
 
-          .bottom-nav button span { font-size: 0.9rem; }
+          .bottom-nav button span {
+            font-size: 0.86rem;
+            white-space: nowrap;
+          }
+
+          .bottom-nav button:hover:not(.active) {
+            background: var(--bg-card2, #f1f5f9);
+            color: var(--text-primary);
+          }
 
           .bottom-nav button.active {
-            background: rgba(0,177,79,0.09);
-            border-left: 3px solid var(--primary);
-            padding-left: 17px;
+            background: rgba(0, 177, 79, 0.1);
+            color: var(--primary, #00873a);
+            font-weight: 700;
+            border-left: none;
+            padding-left: 12px;
           }
 
-          /* Logout button: visible in sidebar */
+          .bottom-nav button.active i {
+            color: var(--primary, #00a846);
+          }
+
+          /* Logout / Footer Area */
+          .sidebar-desktop-footer {
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex-shrink: 0;
+          }
+
           #nav-logout {
             display: flex !important;
-            margin-top: auto;
+            width: calc(100% - 16px);
+            margin: 2px 8px 12px;
+            padding: 8px 12px;
+            min-height: 38px;
+            border-radius: 10px;
+            background: #fff1f2;
+            color: #e11d48;
+            font-size: 0.82rem;
+            font-weight: 600;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(225, 29, 72, 0.12);
+            cursor: pointer;
+            transition: all 0.15s ease;
+          }
+
+          #nav-logout i {
+            color: #e11d48;
+            font-size: 1rem;
+          }
+
+          #nav-logout:hover {
+            background: #fee2e2;
+            color: #be123c;
+            border-color: rgba(225, 29, 72, 0.25);
+          }
+
+          /* =========================================
+             COLLAPSED STATE (64px width)
+          ========================================= */
+          body.customer-sidebar-collapsed .sidebar-brand-text,
+          body.customer-sidebar-collapsed .sidebar-section-title,
+          body.customer-sidebar-collapsed .bottom-nav button span {
+            display: none !important;
+          }
+
+          body.customer-sidebar-collapsed .sidebar-desktop-header {
+            padding: 0 4px;
+            justify-content: center;
+            position: relative;
+          }
+
+          body.customer-sidebar-collapsed .sidebar-desktop-brand {
+            margin-right: 0;
+          }
+
+          body.customer-sidebar-collapsed .sidebar-collapse-btn {
+            position: absolute;
+            right: 4px;
+            top: 6px;
+            width: 18px;
+            height: 18px;
+            font-size: 8px;
+            background: var(--bg-card);
+          }
+
+          body.customer-sidebar-collapsed .bottom-nav button {
+            width: 44px;
+            margin: 4px auto;
+            padding: 9px 0;
+            justify-content: center;
+            gap: 0;
+            border-radius: 10px;
+          }
+
+          body.customer-sidebar-collapsed #nav-logout {
+            width: 44px;
+            margin: 4px auto 12px;
+            padding: 8px 0;
+            justify-content: center;
+            gap: 0;
           }
 
           /* All pages: push right of sidebar */
           .page.active {
-            margin-left: 220px;
-            width: calc(100% - 220px);
+            margin-left: var(--customer-sidebar-width);
+            width: calc(100% - var(--customer-sidebar-width));
             min-height: 100vh;
             padding-bottom: 40px;
             overflow-y: auto;
+            transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           /* Auth pages: full-screen, ignore sidebar */
@@ -1284,17 +1498,20 @@
 
           /* Overlay pages respect sidebar */
           .overlay-page {
-            left: 220px;
-            width: calc(100% - 220px);
+            left: var(--customer-sidebar-width);
+            width: calc(100% - var(--customer-sidebar-width));
+            transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           #loadingOverlay {
-            left: 220px;
-            width: calc(100% - 220px);
+            left: var(--customer-sidebar-width);
+            width: calc(100% - var(--customer-sidebar-width));
+            transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           .toast {
-            left: calc(220px + (100% - 220px) / 2);
+            left: calc(var(--customer-sidebar-width) + (100% - var(--customer-sidebar-width)) / 2);
+            transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           }
 
           .page-header { padding: 20px 28px; }
@@ -1538,10 +1755,9 @@
             display: none !important;
           }
 
-        /* 1024px: slightly wider sidebar */
+        /* 1024px+: retain compact modern sidebar width */
         @media (min-width: 1024px) {
-          .bottom-nav { width: 240px; }
-          .page.active:not(.auth-page) { margin-left: 240px; width: calc(100% - 240px); }
+          .page.active:not(.auth-page) { margin-left: var(--customer-sidebar-width); width: calc(100% - var(--customer-sidebar-width)); }
           .auth-page.active,
           #page-login.auth-page.active,
           #page-register.auth-page.active,
@@ -1562,9 +1778,9 @@
             align-items: stretch !important;
             padding: 0 !important;
           }
-          .overlay-page { left: 240px; width: calc(100% - 240px); }
-          #loadingOverlay { left: 240px; width: calc(100% - 240px); }
-          .toast { left: calc(240px + (100% - 240px) / 2); }
+          .overlay-page { left: var(--customer-sidebar-width); width: calc(100% - var(--customer-sidebar-width)); }
+          #loadingOverlay { left: var(--customer-sidebar-width); width: calc(100% - var(--customer-sidebar-width)); }
+          .toast { left: calc(var(--customer-sidebar-width) + (100% - var(--customer-sidebar-width)) / 2); }
           .vehicle-grid { grid-template-columns: repeat(3, 1fr); padding: 24px 32px; gap: 24px; }
           .filter-chips { padding: 14px 32px; }
           #vehicleCount { padding: 0 32px 8px; }
@@ -2833,22 +3049,33 @@
 
 
 <nav class="bottom-nav hidden" id="bottomNav">
+  <!-- Desktop-only Brand Header -->
+  <div class="sidebar-desktop-header">
+    <div class="sidebar-desktop-brand" onclick="showPage('page-home')" style="cursor:pointer;" title="Autoride Home">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" class="sidebar-brand-logo" />
+      <div class="sidebar-brand-text">
+        <span class="sidebar-brand-title">Autoride</span>
+        <span class="sidebar-brand-subtitle">Customer</span>
+      </div>
+    </div>
+    <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="toggleCustomerSidebar()" title="Toggle Sidebar (Collapse/Expand)" aria-label="Toggle Sidebar">
+      <i class="fas fa-chevron-left" id="sidebarCollapseIcon"></i>
+    </button>
+  </div>
 
+  <div class="sidebar-section-title">Menu</div>
 
-  <button onclick="showPage('page-home')" id="nav-home"><i class="fas fa-home"></i><span>Home</span></button>
+  <button onclick="showPage('page-home')" id="nav-home" title="Home"><i class="fas fa-home"></i><span>Home</span></button>
+  <button onclick="showPage('page-vehicles')" id="nav-vehicles" title="Browse Vehicles"><i class="fas fa-car"></i><span>Browse</span></button>
+  <button onclick="showPage('page-bookings')" id="nav-bookings" title="My Bookings"><i class="fas fa-calendar-check"></i><span>Bookings</span></button>
+  <button onclick="showPage('page-profile')" id="nav-profile" title="Profile & Account"><i class="fas fa-user"></i><span>Profile</span></button>
+  <button onclick="showPage('page-more')" id="nav-more" title="More Services" style="position:relative;"><i class="fas fa-ellipsis-h"></i><span>More</span><span id="navMoreViolationDot" style="display:none;position:absolute;top:6px;right:calc(50% - 14px);width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px var(--surface);"></span></button>
 
-
-  <button onclick="showPage('page-vehicles')" id="nav-vehicles"><i class="fas fa-car"></i><span>Browse</span></button>
-
-
-  <button onclick="showPage('page-bookings')" id="nav-bookings"><i class="fas fa-calendar-check"></i><span>Bookings</span></button>
-
-
-  <button onclick="showPage('page-profile')" id="nav-profile"><i class="fas fa-user"></i><span>Profile</span></button>
-
-
-  <button onclick="showPage('page-more')" id="nav-more" style="position:relative;"><i class="fas fa-ellipsis-h"></i><span>More</span><span id="navMoreViolationDot" style="display:none;position:absolute;top:6px;right:calc(50% - 14px);width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px var(--surface);"></span></button>
-  <button id="nav-logout" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="display:none;color:var(--danger);"><i class="fas fa-sign-out-alt"></i><span>Sign Out</span></button>
+  <div class="sidebar-desktop-footer">
+    <button id="nav-logout" onclick="if(confirm('Sign out of your account?')){doLogout();}" title="Sign Out">
+      <i class="fas fa-sign-out-alt"></i><span>Sign Out</span>
+    </button>
+  </div>
 </nav>
 
 
@@ -4716,6 +4943,21 @@
 <script src="cordova.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// Customer sidebar collapse/expand toggle & state persistence
+function toggleCustomerSidebar() {
+    var isCollapsed = document.body.classList.toggle('customer-sidebar-collapsed');
+    try {
+        localStorage.setItem('autoride_customer_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+    } catch(e) {}
+}
+(function() {
+    try {
+        if (localStorage.getItem('autoride_customer_sidebar_collapsed') === 'true' && window.innerWidth >= 768) {
+            document.body.classList.add('customer-sidebar-collapsed');
+        }
+    } catch(e) {}
+})();
+
 // Password visibility toggle function
 function togglePasswordVisibility(inputId, button) {
     var input = document.getElementById(inputId);
