@@ -7267,12 +7267,12 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Total Price (₱)</label>
-                        <input type="number" id="quickTotalPrice" step="50" min="0" max="500000" oninput="FleetCalendar.recalcQuickBalance()"
+                        <input type="number" id="quickTotalPrice" step="50" min="0" max="500000" maxlength="7" oninput="if(this.value.length>7)this.value=this.value.slice(0,7);if(Number(this.value)>500000)this.value=500000;if(Number(this.value)<0)this.value=0;FleetCalendar.recalcQuickBalance()"
                                style="width: 100%; padding: 8px 10px; font-size: 0.88rem; font-weight: 800; color: #0f172a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Amount Paid (₱)</label>
-                        <input type="number" id="quickAmountPaid" step="50" min="0" max="500000" oninput="FleetCalendar.recalcQuickBalance()"
+                        <input type="number" id="quickAmountPaid" step="50" min="0" max="500000" maxlength="7" oninput="if(this.value.length>7)this.value=this.value.slice(0,7);if(Number(this.value)>500000)this.value=500000;if(Number(this.value)<0)this.value=0;FleetCalendar.recalcQuickBalance()"
                                style="width: 100%; padding: 8px 10px; font-size: 0.88rem; font-weight: 800; color: #16a34a; background: white; border: 1px solid #cbd5e1; border-radius: 8px; outline: none;">
                     </div>
                 </div>
@@ -7538,28 +7538,28 @@
                     <div class="walkin-pricing-grid" style="gap: 10px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Base Price (₱)</label>
-                            <input type="number" id="walkinBasePrice" min="0" max="500000" step="any" oninput="WalkinBooking.recalculateTotal()"
+                            <input type="number" id="walkinBasePrice" min="0" max="500000" maxlength="7" step="any" oninput="if(this.value.length>7)this.value=this.value.slice(0,7);if(Number(this.value)>500000)this.value=500000;if(Number(this.value)<0)this.value=0;WalkinBooking.recalculateTotal()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Driver / Delivery (₱)</label>
-                            <input type="number" id="walkinExtraFee" min="0" max="50000" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
+                            <input type="number" id="walkinExtraFee" min="0" max="50000" maxlength="6" step="any" value="0" oninput="if(this.value.length>6)this.value=this.value.slice(0,6);if(Number(this.value)>50000)this.value=50000;if(Number(this.value)<0)this.value=0;WalkinBooking.recalculateTotal()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Discount (₱)</label>
-                            <input type="number" id="walkinDiscount" min="0" max="50000" step="any" value="0" oninput="WalkinBooking.recalculateTotal()"
+                            <input type="number" id="walkinDiscount" min="0" max="50000" maxlength="6" step="any" value="0" oninput="if(this.value.length>6)this.value=this.value.slice(0,6);if(Number(this.value)>50000)this.value=50000;if(Number(this.value)<0)this.value=0;WalkinBooking.recalculateTotal()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
 
                     <!-- Total Banner -->
-                    <div style="background: linear-gradient(135deg, rgba(0, 177, 79, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%); border: 1px solid rgba(0, 177, 79, 0.3); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <div>
+                    <div style="background: linear-gradient(135deg, rgba(0, 177, 79, 0.12) 0%, rgba(5, 150, 105, 0.12) 100%); border: 1px solid rgba(0, 177, 79, 0.3); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; overflow: hidden; gap: 12px;">
+                        <div style="min-width: 140px; flex-shrink: 0;">
                             <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #047857; letter-spacing: 0.5px;">Total Rental Price</span>
                             <div style="font-size: 0.74rem; color: var(--text-muted, #64748b);">Inclusive of all counter fees</div>
                         </div>
-                        <div id="walkinTotalDisplay" style="font-size: 1.35rem; font-weight: 900; color: #00B14F;">₱0.00</div>
+                        <div id="walkinTotalDisplay" style="font-size: 1.35rem; font-weight: 900; color: #00B14F; text-align: right; max-width: 60%; word-break: break-all; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">₱0.00</div>
                     </div>
 
                     <!-- Payment Method, Status, & Amount Collected -->
@@ -7578,7 +7578,7 @@
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Payment Status</label>
                             <select id="walkinPaymentStatus" onchange="WalkinBooking.onPaymentStatusChange()"
-                                    style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
+                                     style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                                 <option value="Paid" selected>Paid (Full)</option>
                                 <option value="Partial">Downpayment (Partial)</option>
                                 <option value="Unpaid">Unpaid / Collect Later</option>
@@ -7586,7 +7586,7 @@
                         </div>
                         <div>
                             <label style="display: block; font-size: 0.72rem; font-weight: 700; margin-bottom: 4px; color: var(--text-main, #0f172a);">Amount Collected Now (₱)</label>
-                            <input type="number" id="walkinAmountPaid" min="0" max="500000" step="any" oninput="WalkinBooking.recalculateBalance()"
+                            <input type="number" id="walkinAmountPaid" min="0" max="500000" maxlength="7" step="any" oninput="if(this.value.length>7)this.value=this.value.slice(0,7);if(Number(this.value)>500000)this.value=500000;if(Number(this.value)<0)this.value=0;WalkinBooking.recalculateBalance()"
                                    style="width: 100%; padding: 8px 10px; font-size: 0.82rem; font-weight: 700; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                         </div>
                     </div>
@@ -16971,8 +16971,21 @@ async edit(id) { this.openModal(id); }
         },
 
         recalcQuickBalance() {
-            const total = parseFloat(document.getElementById('quickTotalPrice')?.value || 0);
-            const paid = parseFloat(document.getElementById('quickAmountPaid')?.value || 0);
+            const totalInp = document.getElementById('quickTotalPrice');
+            const paidInp = document.getElementById('quickAmountPaid');
+            if (totalInp) {
+                if (totalInp.value.length > 7) totalInp.value = totalInp.value.slice(0, 7);
+                if (Number(totalInp.value) > 500000) totalInp.value = 500000;
+                if (Number(totalInp.value) < 0) totalInp.value = 0;
+            }
+            if (paidInp) {
+                if (paidInp.value.length > 7) paidInp.value = paidInp.value.slice(0, 7);
+                if (Number(paidInp.value) > 500000) paidInp.value = 500000;
+                if (Number(paidInp.value) < 0) paidInp.value = 0;
+            }
+
+            const total = Math.min(500000, Math.max(0, parseFloat(totalInp?.value || 0)));
+            const paid = Math.min(500000, Math.max(0, parseFloat(paidInp?.value || 0)));
             const bal = Math.max(0, total - paid);
 
             const balInp = document.getElementById('quickBalanceAmount');
@@ -17002,7 +17015,8 @@ async edit(id) { this.openModal(id); }
         },
 
         quickMarkPaid() {
-            const total = parseFloat(document.getElementById('quickTotalPrice')?.value || 0);
+            const totalInp = document.getElementById('quickTotalPrice');
+            const total = Math.min(500000, Math.max(0, parseFloat(totalInp?.value || 0)));
             const paidInp = document.getElementById('quickAmountPaid');
             if (paidInp) paidInp.value = total;
             this.recalcQuickBalance();
@@ -17011,8 +17025,8 @@ async edit(id) { this.openModal(id); }
         async saveQuickPricing() {
             if (!this.activeBookingId) return;
 
-            const total = parseFloat(document.getElementById('quickTotalPrice')?.value || 0);
-            const paid = parseFloat(document.getElementById('quickAmountPaid')?.value || 0);
+            const total = Math.min(500000, Math.max(0, parseFloat(document.getElementById('quickTotalPrice')?.value || 0)));
+            const paid = Math.min(500000, Math.max(0, parseFloat(document.getElementById('quickAmountPaid')?.value || 0)));
             const bal = Math.max(0, total - paid);
             const paymentStatus = document.getElementById('quickPaymentStatus')?.value || 'Unpaid';
             const paymentMethod = document.getElementById('quickPaymentMethod')?.value || 'Cash';
@@ -33398,10 +33412,30 @@ function toggleNewsletterModal(show = true) {
         },
 
         recalculateTotal() {
-            const base = Number(document.getElementById('walkinBasePrice')?.value || 0);
-            const extra = Number(document.getElementById('walkinExtraFee')?.value || 0);
-            const disc = Number(document.getElementById('walkinDiscount')?.value || 0);
-            const total = Math.max(0, (base + extra) - disc);
+            const baseInput = document.getElementById('walkinBasePrice');
+            const extraInput = document.getElementById('walkinExtraFee');
+            const discInput = document.getElementById('walkinDiscount');
+
+            if (baseInput) {
+                if (baseInput.value.length > 7) baseInput.value = baseInput.value.slice(0, 7);
+                if (Number(baseInput.value) > 500000) baseInput.value = 500000;
+                if (Number(baseInput.value) < 0) baseInput.value = 0;
+            }
+            if (extraInput) {
+                if (extraInput.value.length > 6) extraInput.value = extraInput.value.slice(0, 6);
+                if (Number(extraInput.value) > 50000) extraInput.value = 50000;
+                if (Number(extraInput.value) < 0) extraInput.value = 0;
+            }
+            if (discInput) {
+                if (discInput.value.length > 6) discInput.value = discInput.value.slice(0, 6);
+                if (Number(discInput.value) > 50000) discInput.value = 50000;
+                if (Number(discInput.value) < 0) discInput.value = 0;
+            }
+
+            const base = Math.min(500000, Math.max(0, Number(baseInput?.value || 0)));
+            const extra = Math.min(50000, Math.max(0, Number(extraInput?.value || 0)));
+            const disc = Math.min(50000, Math.max(0, Number(discInput?.value || 0)));
+            const total = Math.min(550000, Math.max(0, (base + extra) - disc));
 
             const display = document.getElementById('walkinTotalDisplay');
             if (display) display.textContent = `₱${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -33421,10 +33455,10 @@ function toggleNewsletterModal(show = true) {
 
         onPaymentStatusChange() {
             const payStatus = document.getElementById('walkinPaymentStatus')?.value || 'Paid';
-            const base = Number(document.getElementById('walkinBasePrice')?.value || 0);
-            const extra = Number(document.getElementById('walkinExtraFee')?.value || 0);
-            const disc = Number(document.getElementById('walkinDiscount')?.value || 0);
-            const total = Math.max(0, (base + extra) - disc);
+            const base = Math.min(500000, Math.max(0, Number(document.getElementById('walkinBasePrice')?.value || 0)));
+            const extra = Math.min(50000, Math.max(0, Number(document.getElementById('walkinExtraFee')?.value || 0)));
+            const disc = Math.min(50000, Math.max(0, Number(document.getElementById('walkinDiscount')?.value || 0)));
+            const total = Math.min(550000, Math.max(0, (base + extra) - disc));
 
             const amountInput = document.getElementById('walkinAmountPaid');
             if (amountInput) {
@@ -33440,17 +33474,24 @@ function toggleNewsletterModal(show = true) {
         },
 
         recalculateBalance() {
-            const base = Number(document.getElementById('walkinBasePrice')?.value || 0);
-            const extra = Number(document.getElementById('walkinExtraFee')?.value || 0);
-            const disc = Number(document.getElementById('walkinDiscount')?.value || 0);
-            const total = Math.max(0, (base + extra) - disc);
+            const base = Math.min(500000, Math.max(0, Number(document.getElementById('walkinBasePrice')?.value || 0)));
+            const extra = Math.min(50000, Math.max(0, Number(document.getElementById('walkinExtraFee')?.value || 0)));
+            const disc = Math.min(50000, Math.max(0, Number(document.getElementById('walkinDiscount')?.value || 0)));
+            const total = Math.min(550000, Math.max(0, (base + extra) - disc));
 
-            const paid = Number(document.getElementById('walkinAmountPaid')?.value || 0);
+            const amountInput = document.getElementById('walkinAmountPaid');
+            if (amountInput) {
+                if (amountInput.value.length > 7) amountInput.value = amountInput.value.slice(0, 7);
+                if (Number(amountInput.value) > 500000) amountInput.value = 500000;
+                if (Number(amountInput.value) < 0) amountInput.value = 0;
+            }
+
+            const paid = Math.min(500000, Math.max(0, Number(amountInput?.value || 0)));
             const balance = Math.max(0, total - paid);
 
             const note = document.getElementById('walkinBalanceNote');
             if (note) {
-                if (balance <= 0) {
+                if (balance <= 0.01) {
                     note.textContent = 'Paid in Full (Balance: ₱0.00)';
                     note.style.color = '#10b981';
                 } else {
@@ -33523,11 +33564,37 @@ function toggleNewsletterModal(show = true) {
                     }
                 }
 
-                const basePrice = Number(document.getElementById('walkinBasePrice')?.value || 0);
-                const extraFee = Number(document.getElementById('walkinExtraFee')?.value || 0);
-                const discount = Number(document.getElementById('walkinDiscount')?.value || 0);
-                const totalPrice = Math.max(0, (basePrice + extraFee) - discount);
-                const amountPaid = Number(document.getElementById('walkinAmountPaid')?.value || 0);
+                const rawBasePrice = Number(document.getElementById('walkinBasePrice')?.value || 0);
+                const rawExtraFee = Number(document.getElementById('walkinExtraFee')?.value || 0);
+                const rawDiscount = Number(document.getElementById('walkinDiscount')?.value || 0);
+                const rawAmountPaid = Number(document.getElementById('walkinAmountPaid')?.value || 0);
+
+                if (isNaN(rawBasePrice) || rawBasePrice < 0 || rawBasePrice > 500000) {
+                    alert('Base price must be between ₱0 and ₱500,000.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+                if (isNaN(rawExtraFee) || rawExtraFee < 0 || rawExtraFee > 50000) {
+                    alert('Driver/Delivery fee must be between ₱0 and ₱50,000.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+                if (isNaN(rawDiscount) || rawDiscount < 0 || rawDiscount > 50000) {
+                    alert('Discount must be between ₱0 and ₱50,000.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+                if (isNaN(rawAmountPaid) || rawAmountPaid < 0 || rawAmountPaid > 500000) {
+                    alert('Amount collected must be between ₱0 and ₱500,000.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; }
+                    return;
+                }
+
+                const basePrice = Math.min(500000, Math.max(0, rawBasePrice));
+                const extraFee = Math.min(50000, Math.max(0, rawExtraFee));
+                const discount = Math.min(50000, Math.max(0, rawDiscount));
+                const totalPrice = Math.min(550000, Math.max(0, (basePrice + extraFee) - discount));
+                const amountPaid = Math.min(500000, Math.max(0, rawAmountPaid));
                 const balanceAmount = Math.max(0, totalPrice - amountPaid);
 
                 const paymentMethod = document.getElementById('walkinPaymentMethod')?.value || 'Cash';
