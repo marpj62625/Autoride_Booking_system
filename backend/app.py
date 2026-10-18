@@ -35,6 +35,8 @@ ALLOWED_IMAGE_MIMES = {
     'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
     'image/webp', 'image/heic', 'image/heif', 'image/bmp'
 }
+ALLOWED_PDF_EXTENSIONS = {'pdf'}
+ALLOWED_PDF_MIMES = {'application/pdf', 'application/x-pdf'}
 
 DANGEROUS_EXTENSIONS = {
     'php', 'php3', 'php4', 'php5', 'phtml', 'html', 'htm', 'js',
@@ -42,27 +44,32 @@ DANGEROUS_EXTENSIONS = {
     'asp', 'aspx', 'jsp', 'jar', 'vbs', 'ps1', 'dll', 'bin'
 }
 
-def is_allowed_image(file_storage):
-    """Return True if the FileStorage object is a genuine, safe allowed image type."""
+def is_allowed_image(file_storage, allow_pdf=False):
+    """Return True if the FileStorage object is a genuine, safe allowed image type (or PDF if allow_pdf=True)."""
     if not file_storage or not file_storage.filename:
         return False
     filename = file_storage.filename.strip()
     if '.' not in filename:
         return False
     ext = filename.rsplit('.', 1)[-1].lower()
-    if ext in DANGEROUS_EXTENSIONS or ext not in ALLOWED_IMAGE_EXTENSIONS:
+    if ext in DANGEROUS_EXTENSIONS:
+        return False
+    allowed_exts = ALLOWED_IMAGE_EXTENSIONS.union(ALLOWED_PDF_EXTENSIONS) if allow_pdf else ALLOWED_IMAGE_EXTENSIONS
+    if ext not in allowed_exts:
         return False
     mime = (file_storage.content_type or '').lower().split(';')[0].strip()
-    if mime and mime not in ALLOWED_IMAGE_MIMES and mime != 'application/octet-stream':
+    allowed_mimes = ALLOWED_IMAGE_MIMES.union(ALLOWED_PDF_MIMES) if allow_pdf else ALLOWED_IMAGE_MIMES
+    if mime and mime not in allowed_mimes and mime != 'application/octet-stream':
         return False
     return True
 
-def reject_non_image(file_storage, field_name='file', max_mb=15):
-    """Return a 400 JSON error if the file is not an allowed image or exceeds max_mb, else None."""
+def reject_non_image(file_storage, field_name='file', max_mb=15, allow_pdf=False):
+    """Return a 400 JSON error if the file is not an allowed image (or PDF if allow_pdf=True) or exceeds max_mb, else None."""
     if file_storage and file_storage.filename and file_storage.filename != '':
-        if not is_allowed_image(file_storage):
+        if not is_allowed_image(file_storage, allow_pdf=allow_pdf):
             from flask import jsonify
-            return jsonify({'error': f'{field_name} must be an image file (jpg, png, gif, webp).'}), 400
+            msg = f"{field_name} must be an image file (jpg, png, gif, webp) or PDF." if allow_pdf else f"{field_name} must be an image file (jpg, png, gif, webp)."
+            return jsonify({'error': msg}), 400
         try:
             file_storage.seek(0, 2)
             size = file_storage.tell()
@@ -5974,8 +5981,9 @@ def legacy_payment():
         if 'payment_proof' in request.files:
             file = request.files['payment_proof']
             if file and file.filename:
-                if not is_allowed_image(file):
-                    return jsonify({"error": "Payment proof must be a valid image file (jpg, png, webp)."}), 400
+                _err = reject_non_image(file, "Payment proof", max_mb=15)
+                if _err:
+                    return _err
                 filename = secure_filename(f"proof_{booking_id}_{int(datetime.now().timestamp())}_{file.filename}")
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
@@ -8251,9 +8259,19 @@ def submit_inspection():
         # Handle photos upload
         photo_urls = []
         if 'photos' in request.files:
-            files = request.files.getlist('photos')
+            files = request.files.getlist('photos')[:10]  # Max 10 photos per inspection
             for file in files:
-                if file.filename != '':
+                if file and file.filename:
+                    if not is_allowed_image(file):
+                        continue
+                    try:
+                        file.seek(0, 2)
+                        f_sz = file.tell()
+                        file.seek(0)
+                        if f_sz > 15 * 1024 * 1024:  # 15MB limit
+                            continue
+                    except Exception:
+                        pass
                     filename = f"inspect_{booking_id}_{inspection_type}_{int(datetime.now().timestamp())}_{secure_filename(file.filename)}"
                     file_data = file.read()
                     supabase.storage.from_('uploads').upload(
@@ -12997,16 +13015,21 @@ def add_vehicle():
         # Handle image upload if file provided
         vehicle_image = data.get('vehicle_image', '')
         if 'gallery' in request.files:
-            files = request.files.getlist('gallery')
+            files = request.files.getlist('gallery')[:10]
             if files and files[0].filename:
                 file = files[0]
-                filename = 'vehicle_' + str(__import__('time').time()) + '_' + file.filename
-                file_data = file.read()
-                try:
-                    supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": file.content_type})
-                    vehicle_image = supabase.storage.from_('uploads').get_public_url(filename)
-                except Exception:
-                    pass
+                if is_allowed_image(file):
+                    try:
+                        file.seek(0, 2)
+                        f_sz = file.tell()
+                        file.seek(0)
+                        if f_sz <= 15 * 1024 * 1024:
+                            filename = 'vehicle_' + str(int(__import__('time').time())) + '_' + secure_filename(file.filename)
+                            file_data = file.read()
+                            supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": file.content_type})
+                            vehicle_image = supabase.storage.from_('uploads').get_public_url(filename)
+                    except Exception:
+                        pass
         cur.execute(
             "INSERT INTO vehicles (brand, model, plate_number, vehicle_type, transmission, fuel_type, seats, location, status, daily_rate, vehicle_image, color, mileage_type, mileage_km_per_day, year_model, odometer, fuel_level, next_service_schedule, lto_expiry_date, gps_device_token, gps_device_name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (data.get('brand'), data.get('model'), data.get('plate_number'), data.get('vehicle_type'),
@@ -13017,15 +13040,19 @@ def add_vehicle():
         new_id = cur.fetchone()['id']
         # Handle additional gallery files
         if 'gallery' in request.files:
-            files = request.files.getlist('gallery')
+            files = request.files.getlist('gallery')[:10]
             for i, f in enumerate(files):
-                if f.filename:
-                    fname = 'gallery_' + str(new_id) + '_' + str(i) + '_' + f.filename
-                    fdata = f.read()
+                if f and f.filename and is_allowed_image(f):
                     try:
-                        supabase.storage.from_('uploads').upload(path=fname, file=fdata, file_options={"content-type": f.content_type})
-                        img_url = supabase.storage.from_('uploads').get_public_url(fname)
-                        cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (new_id, img_url, i))
+                        f.seek(0, 2)
+                        f_sz = f.tell()
+                        f.seek(0)
+                        if f_sz <= 15 * 1024 * 1024:
+                            fname = 'gallery_' + str(new_id) + '_' + str(i) + '_' + secure_filename(f.filename)
+                            fdata = f.read()
+                            supabase.storage.from_('uploads').upload(path=fname, file=fdata, file_options={"content-type": f.content_type})
+                            img_url = supabase.storage.from_('uploads').get_public_url(fname)
+                            cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (new_id, img_url, i))
                     except Exception:
                         pass
         commit_db()
@@ -13103,17 +13130,21 @@ def update_vehicle(vehicle_id):
         if form_image:
             vehicle_image = form_image
         if 'gallery' in request.files:
-            files = request.files.getlist('gallery')
+            files = request.files.getlist('gallery')[:10]
             for i, f in enumerate(files):
-                if f.filename:
-                    filename = 'vehicle_' + str(vehicle_id) + '_' + str(__import__('time').time()) + '_' + str(i) + '_' + f.filename
-                    file_data = f.read()
+                if f and f.filename and is_allowed_image(f):
                     try:
-                        supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": f.content_type})
-                        img_url = supabase.storage.from_('uploads').get_public_url(filename)
-                        cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (vehicle_id, img_url, i))
-                        if i == 0:
-                            vehicle_image = img_url  # Update main image to first new photo
+                        f.seek(0, 2)
+                        f_sz = f.tell()
+                        f.seek(0)
+                        if f_sz <= 15 * 1024 * 1024:
+                            filename = 'vehicle_' + str(vehicle_id) + '_' + str(int(__import__('time').time())) + '_' + str(i) + '_' + secure_filename(f.filename)
+                            file_data = f.read()
+                            supabase.storage.from_('uploads').upload(path=filename, file=file_data, file_options={"content-type": f.content_type})
+                            img_url = supabase.storage.from_('uploads').get_public_url(filename)
+                            cur.execute("INSERT INTO vehicle_images (vehicle_id, image_path, order_index) VALUES (%s, %s, %s)", (vehicle_id, img_url, i))
+                            if i == 0:
+                                vehicle_image = img_url  # Update main image to first new photo
                     except Exception:
                         pass
         cur.execute(
