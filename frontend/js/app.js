@@ -6085,12 +6085,24 @@ function updateBookingStats(data) {
   var total = data.length;
   var completed = data.filter(function(b) { return b.status === 'Completed'; }).length;
   var spent = data.filter(function(b) { return b.payment_status === 'Paid'; }).reduce(function(s, b) { return s + parseFloat(b.total_price || 0); }, 0);
-  var statTotal = document.getElementById('bkStatTotal');
-  var statDone = document.getElementById('bkStatDone');
-  var statSpent = document.getElementById('bkStatSpent');
-  if (statTotal) statTotal.querySelector('div').textContent = total;
-  if (statDone) statDone.querySelector('div').textContent = completed;
-  if (statSpent) statSpent.querySelector('div').textContent = spent > 0 ? ('P' + (spent / 1000).toFixed(1) + 'k') : '-';
+  
+  var elTotal = document.getElementById('bkStatTotalVal') || (document.getElementById('bkStatTotal') && document.getElementById('bkStatTotal').querySelector('.bk-stat-val')) || (document.getElementById('bkStatTotal') && document.getElementById('bkStatTotal').querySelector('div'));
+  var elDone = document.getElementById('bkStatDoneVal') || (document.getElementById('bkStatDone') && document.getElementById('bkStatDone').querySelector('.bk-stat-val')) || (document.getElementById('bkStatDone') && document.getElementById('bkStatDone').querySelector('div'));
+  var elSpent = document.getElementById('bkStatSpentVal') || (document.getElementById('bkStatSpent') && document.getElementById('bkStatSpent').querySelector('.bk-stat-val')) || (document.getElementById('bkStatSpent') && document.getElementById('bkStatSpent').querySelector('div'));
+  
+  if (elTotal) elTotal.textContent = total;
+  if (elDone) elDone.textContent = completed;
+  if (elSpent) {
+    if (spent >= 1000000) {
+      elSpent.textContent = 'PHP ' + (spent / 1000000).toFixed(1) + 'M';
+    } else if (spent >= 1000) {
+      elSpent.textContent = 'PHP ' + (spent / 1000).toFixed(1) + 'k';
+    } else if (spent > 0) {
+      elSpent.textContent = formatPHP(spent);
+    } else {
+      elSpent.textContent = 'PHP 0';
+    }
+  }
 }
 
 function filterBookingsList(filter, btn) {
@@ -6098,6 +6110,7 @@ function filterBookingsList(filter, btn) {
   // Update tab styles
   var tabs = document.querySelectorAll('#bookingFilterTabs button');
   for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.remove('active');
     tabs[i].style.background = 'transparent';
     tabs[i].style.color = 'var(--text-secondary)';
   }
@@ -6112,6 +6125,7 @@ function filterBookingsList(filter, btn) {
   }
 
   if (btn) {
+    btn.classList.add('active');
     btn.style.background = 'var(--primary)';
     btn.style.color = '#fff';
   }
@@ -6128,85 +6142,115 @@ function renderBookingsList(data) {
   var el = document.getElementById('bookingsList');
   if (!el) return;
   if (!data.length) {
-    el.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No bookings found</p></div>';
+    el.innerHTML =
+      '<div class="card" style="grid-column:1/-1;text-align:center;padding:48px 24px;border-radius:20px;border:1px dashed var(--border);background:var(--bg-card);margin:0 auto;width:100%;box-sizing:border-box;">' +
+        '<div style="width:70px;height:70px;border-radius:50%;background:rgba(0,177,79,0.08);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 16px;">' +
+          '<i class="fas fa-calendar-check"></i>' +
+        '</div>' +
+        '<h3 style="font-weight:800;font-size:1.15rem;margin:0 0 6px;color:var(--text-primary);">No Bookings Found</h3>' +
+        '<p style="font-size:0.85rem;color:var(--text-muted);max-width:380px;margin:0 auto 20px;line-height:1.5;">' +
+          'You don\'t have any bookings matching this filter. Explore our fleet and reserve your next ride!' +
+        '</p>' +
+        '<button class="btn-primary" onclick="showPage(\'page-vehicles\')" style="width:auto;display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:12px;font-size:0.88rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,177,79,0.25);">' +
+          '<i class="fas fa-car-side"></i> Browse Fleet' +
+        '</button>' +
+      '</div>';
     return;
   }
-  var statusColors = {
-    'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
-    'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
+
+  var statusConfig = {
+    'Pending': { bg: 'rgba(245,158,11,0.12)', color: '#d97706', border: 'rgba(245,158,11,0.25)', icon: 'fa-clock' },
+    'Pending Payment': { bg: 'rgba(245,158,11,0.12)', color: '#d97706', border: 'rgba(245,158,11,0.25)', icon: 'fa-clock' },
+    'Confirmed': { bg: 'rgba(0,177,79,0.12)', color: '#00873a', border: 'rgba(0,177,79,0.25)', icon: 'fa-check-circle' },
+    'Approved': { bg: 'rgba(0,177,79,0.12)', color: '#00873a', border: 'rgba(0,177,79,0.25)', icon: 'fa-check-circle' },
+    'Picked Up': { bg: 'rgba(59,130,246,0.12)', color: '#2563eb', border: 'rgba(59,130,246,0.25)', icon: 'fa-key' },
+    'Ongoing': { bg: 'rgba(59,130,246,0.12)', color: '#2563eb', border: 'rgba(59,130,246,0.25)', icon: 'fa-car-side' },
+    'Completed': { bg: 'rgba(16,185,129,0.12)', color: '#059669', border: 'rgba(16,185,129,0.25)', icon: 'fa-flag-checkered' },
+    'Cancelled': { bg: 'rgba(239,68,68,0.12)', color: '#dc2626', border: 'rgba(239,68,68,0.25)', icon: 'fa-times-circle' },
+    'Rejected': { bg: 'rgba(239,68,68,0.12)', color: '#dc2626', border: 'rgba(239,68,68,0.25)', icon: 'fa-times-circle' }
   };
+
   el.innerHTML = data.map(function(b) {
-    var color = statusColors[b.status] || '#a1a1aa';
-    var payColor = b.payment_status === 'Paid' ? '#00b14f' : '#f87171';
-    var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
-    var vehicleSub = [b.color, b.plate_number].filter(Boolean).join(' - ');
+    var sConf = statusConfig[b.status] || { bg: 'rgba(107,114,128,0.12)', color: '#4b5563', border: 'rgba(107,114,128,0.25)', icon: 'fa-circle-info' };
+    var isPaid = b.payment_status === 'Paid';
+    var payColor = isPaid ? '#10b981' : (b.payment_status === 'Downpayment Paid' ? '#f59e0b' : '#ef4444');
+    var payBg = isPaid ? 'rgba(16,185,129,0.12)' : (b.payment_status === 'Downpayment Paid' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)');
+    var payBorder = isPaid ? 'rgba(16,185,129,0.25)' : (b.payment_status === 'Downpayment Paid' ? 'rgba(245,158,11,0.25)' : 'rgba(239,68,68,0.25)');
+    var payIcon = isPaid ? 'fa-check' : (b.payment_status === 'Downpayment Paid' ? 'fa-coins' : 'fa-clock');
+
+    var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim() || 'Rental Vehicle';
     var startFmt = formatBookingDate(b.start_date);
     var endFmt = formatBookingDate(b.end_date);
-    return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;margin:0 16px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="openBookingDetail(' + b.id + ')">' +
-      '<div style="padding:16px;">' +
-      
-      /* Header row: icon + name + status badge */
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;">' +
-        '<div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">' +
-          '<div style="width:40px;height:40px;border-radius:50%;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '<i class="fas fa-car" style="color:var(--primary);font-size:1.2rem;"></i>' +
-          '</div>' +
-          '<div style="flex:1;min-width:0;">' +
-            '<div style="font-weight:700;font-size:1rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + vehicleName + '</div>' +
-            (vehicleSub ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">' + vehicleSub + '</div>' : '') +
-          '</div>' +
-        '</div>' +
-        '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + color + ';color:#fff;flex-shrink:0;">' + b.status + '</span>' +
-      '</div>' +
 
-      '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
+    // Calculate rental days
+    var rentalDays = 1;
+    try {
+      if (b.start_date && b.end_date) {
+        var msDiff = new Date(b.end_date.split('T')[0]).getTime() - new Date(b.start_date.split('T')[0]).getTime();
+        rentalDays = Math.max(1, Math.round(msDiff / 86400000));
+      }
+    } catch(e) {}
 
-      /* Date row */
-      '<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:16px;">' +
-        '<div style="min-width:0;">' +
-          '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;white-space:nowrap;">Pick-up</div>' +
-          '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + startFmt + '</div>' +
-        '</div>' +
-        '<div style="color:var(--text-muted);font-size:0.9rem;font-weight:400;margin-top:14px;text-align:center;">&rarr;</div>' +
-        '<div style="min-width:0;">' +
-          '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;white-space:nowrap;">Return</div>' +
-          '<div style="display:flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span>' + endFmt + '</span><i class="fas fa-chevron-right" style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0;"></i></div>' +
-        '</div>' +
-      '</div>' +
-
-      (b.destination ? 
-      '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
-        '<i class="fas fa-map-marker-alt" style="color:var(--primary);font-size:0.8rem;"></i> <span>Destination: <strong style="color:var(--text-primary);">' + b.destination + '</strong></span>' +
-      '</div>' : '') +
-
-      '<div style="border-top:1px solid var(--border);margin-bottom:16px;"></div>' +
-
-      /* Footer row: payment badge + price */
-      (function() {
-        var isPendingDep = (b.status === 'Pending' || b.status === 'Pending Payment') &&
-                           (b.payment_status === 'Unpaid' || b.payment_status === 'Downpayment unpaid' || b.payment_status === 'Pending Payment');
-        var payBadgeExtra = '';
-        if (isPendingDep && b.created_at) {
-          var bC = parseBookingDateMs(b.created_at);
-          if (!isNaN(bC) && (bC + 30 * 60 * 1000 - Date.now() > 0)) {
-            payBadgeExtra = '<span style="margin-left:8px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-clock" style="margin-right:3px;"></i>Pay within 30m</span>';
-          }
-        }
-        var isCancelledOrRefund = (b.status === 'Cancelled' || b.status === 'Rejected' || b.payment_status === 'Refund Pending' || b.payment_status === 'Refunded');
-        var balBadge = (!isCancelledOrRefund && parseFloat(b.balance_amount || 0) > 0)
-          ? '<span style="margin-left:4px;padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);"><i class="fas fa-exclamation-circle" style="margin-right:3px;"></i>Bal: ' + formatPHP(b.balance_amount) + '</span>'
-          : '';
-        return '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-          '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">' +
-            '<span style="padding:6px 12px;border-radius:6px;font-size:0.75rem;font-weight:600;background:' + payColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
-            payBadgeExtra +
-            balBadge +
-          '</div>' +
-          '<div style="font-weight:800;font-size:1.1rem;color:var(--primary);">' + formatPHP(b.total_price) + '</div>' +
+    // Thumbnail
+    var thumbHtml = '';
+    if (b.vehicle_image) {
+      thumbHtml =
+        '<div style="width:76px;height:54px;border-radius:12px;overflow:hidden;background:var(--bg-input);border:1px solid var(--border);flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.04);position:relative;">' +
+          '<img src="' + buildImgUrl(b.vehicle_image) + '" alt="' + vehicleName + '" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">' +
+          '<div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:rgba(0,177,79,0.08);color:var(--primary);font-size:1.3rem;"><i class="fas fa-car-side"></i></div>' +
         '</div>';
-      }()) +
+    } else {
+      thumbHtml =
+        '<div style="width:54px;height:54px;border-radius:14px;background:rgba(0,177,79,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--primary);font-size:1.35rem;">' +
+          '<i class="fas fa-car-side"></i>' +
+        '</div>';
+    }
 
-      /* Approaching Return Status Badge on Booking Card */
+    return '<div class="bk-card-item" onclick="openBookingDetail(' + b.id + ')">' +
+      /* Top Row: Thumbnail + Info + Status */
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">' +
+          thumbHtml +
+          '<div style="min-width:0;flex:1;">' +
+            '<div style="font-weight:800;font-size:1.05rem;color:var(--text-primary);letter-spacing:-0.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + vehicleName + '</div>' +
+            '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:0.75rem;color:var(--text-muted);">' +
+              (b.color ? '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:50%;background:' + b.color.toLowerCase() + ';border:1px solid rgba(0,0,0,0.15);"></span>' + b.color + '</span>' : '') +
+              (b.plate_number ? '<span style="font-family:monospace;font-weight:700;font-size:0.72rem;background:var(--bg-input);color:var(--text-primary);border:1px solid var(--border);padding:1px 6px;border-radius:5px;">' + b.plate_number + '</span>' : '') +
+              (b.rental_type ? '<span style="font-size:0.7rem;background:rgba(0,0,0,0.04);padding:1px 6px;border-radius:4px;color:var(--text-secondary);">' + b.rental_type + '</span>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<span style="padding:5px 12px;border-radius:20px;font-size:0.75rem;font-weight:800;background:' + sConf.bg + ';color:' + sConf.color + ';border:1px solid ' + sConf.border + ';display:inline-flex;align-items:center;gap:5px;flex-shrink:0;">' +
+          '<i class="fas ' + sConf.icon + '"></i> ' + b.status +
+        '</span>' +
+      '</div>' +
+
+      /* Schedule Timeline Box */
+      '<div style="background:var(--bg-card2, #f8fafc);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:14px;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<div style="min-width:0;flex:1;">' +
+            '<div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:2px;"><i class="fas fa-calendar-check" style="color:var(--primary);margin-right:4px;"></i> Pick-up</div>' +
+            '<div style="font-size:0.86rem;font-weight:800;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + startFmt + '</div>' +
+            (b.start_time ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:1px;">' + b.start_time + '</div>' : '') +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 8px;flex-shrink:0;">' +
+            '<span style="font-size:0.68rem;font-weight:800;color:var(--text-muted);background:var(--bg-card);border:1px solid var(--border);padding:2px 8px;border-radius:12px;white-space:nowrap;">' + rentalDays + ' Day' + (rentalDays > 1 ? 's' : '') + '</span>' +
+            '<i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:0.75rem;margin-top:4px;"></i>' +
+          '</div>' +
+          '<div style="min-width:0;flex:1;text-align:right;">' +
+            '<div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px;margin-bottom:2px;"><i class="fas fa-undo-alt" style="color:#3b82f6;margin-right:4px;"></i> Return</div>' +
+            '<div style="font-size:0.86rem;font-weight:800;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + endFmt + '</div>' +
+            (b.end_time ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:1px;">' + b.end_time + '</div>' : '') +
+          '</div>' +
+        '</div>' +
+        (b.destination ?
+          '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);font-size:0.75rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">' +
+            '<i class="fas fa-location-dot" style="color:var(--primary);font-size:0.8rem;"></i>' +
+            '<span>Destination: <strong style="color:var(--text-primary);">' + b.destination + '</strong></span>' +
+          '</div>' : '') +
+      '</div>' +
+
+      /* Urgent Status / Return Warning Badges */
       (function() {
         var isOngoing = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
         if (!isOngoing || !b.end_date) return '';
@@ -6225,23 +6269,59 @@ function renderBookingsList(data) {
           var durDays = (rMs - new Date(sD + 'T' + sT).getTime()) / (1000 * 86400);
 
           if (rDiff <= 0) {
-            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1.5px solid #ef4444;display:flex;align-items:center;gap:6px;"><i class="fas fa-ban"></i> OVERDUE RETURN — Late penalties applying!</div>';
+            return '<div style="margin-bottom:12px;padding:8px 12px;border-radius:10px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.15);color:#dc2626;border:1.5px solid #ef4444;display:flex;align-items:center;gap:6px;"><i class="fas fa-ban"></i> OVERDUE RETURN — Late penalties applying!</div>';
           } else if (rH <= 0.5) {
-            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(220,38,38,0.15);color:#dc2626;border:1.5px solid #dc2626;display:flex;align-items:center;gap:6px;"><i class="fas fa-bell"></i> FINAL 30m WARNING: Due in ' + Math.max(1, rM) + 'm — Penalty applies!</div>';
+            return '<div style="margin-bottom:12px;padding:8px 12px;border-radius:10px;font-size:0.75rem;font-weight:800;background:rgba(220,38,38,0.15);color:#dc2626;border:1.5px solid #dc2626;display:flex;align-items:center;gap:6px;"><i class="fas fa-bell"></i> FINAL 30m WARNING: Due in ' + Math.max(1, rM) + 'm — Penalty applies!</div>';
           } else if (rH <= 1.0) {
-            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.12);color:#dc2626;border:1px solid #ef4444;display:flex;align-items:center;gap:6px;"><i class="fas fa-hourglass-half"></i> 1 HOUR LEFT: Due in ' + Math.max(1, rM) + 'm — Penalty applies!</div>';
+            return '<div style="margin-bottom:12px;padding:8px 12px;border-radius:10px;font-size:0.75rem;font-weight:800;background:rgba(239,68,68,0.12);color:#dc2626;border:1px solid #ef4444;display:flex;align-items:center;gap:6px;"><i class="fas fa-hourglass-half"></i> 1 HOUR LEFT: Due in ' + Math.max(1, rM) + 'm — Penalty applies!</div>';
           } else if (rH <= 5.0) {
-            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:800;background:rgba(249,115,22,0.12);color:#ea580c;border:1px solid #f97316;display:flex;align-items:center;gap:6px;"><i class="fas fa-exclamation-triangle"></i> 5h WARNING: Due today — Late returns incur penalties!</div>';
+            return '<div style="margin-bottom:12px;padding:8px 12px;border-radius:10px;font-size:0.75rem;font-weight:800;background:rgba(249,115,22,0.12);color:#ea580c;border:1px solid #f97316;display:flex;align-items:center;gap:6px;"><i class="fas fa-exclamation-triangle"></i> 5h WARNING: Due today — Late returns incur penalties!</div>';
           } else if (rH <= 24.0) {
-            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;background:rgba(245,158,11,0.12);color:#d97706;border:1px solid #f59e0b;display:flex;align-items:center;gap:6px;"><i class="fas fa-business-time"></i> 24h Left: Return due tomorrow at ' + (b.end_time || '18:00') + '</div>';
+            return '<div style="margin-bottom:12px;padding:8px 12px;border-radius:10px;font-size:0.75rem;font-weight:700;background:rgba(245,158,11,0.12);color:#d97706;border:1px solid #f59e0b;display:flex;align-items:center;gap:6px;"><i class="fas fa-business-time"></i> 24h Left: Return due tomorrow at ' + (b.end_time || '18:00') + '</div>';
           } else if (rH <= 72.0 && durDays > 3) {
-            return '<div style="margin-top:12px;padding:8px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid #3b82f6;display:flex;align-items:center;gap:6px;"><i class="fas fa-calendar-day"></i> 3 Days Left: Return on ' + formatBookingDate(b.end_date) + '</div>';
+            return '<div style="margin-bottom:12px;padding:8px 12px;border-radius:10px;font-size:0.75rem;font-weight:700;background:rgba(59,130,246,0.12);color:#2563eb;border:1px solid #3b82f6;display:flex;align-items:center;gap:6px;"><i class="fas fa-calendar-day"></i> 3 Days Left: Return on ' + formatBookingDate(b.end_date) + '</div>';
           }
           return '';
         } catch(e) { return ''; }
       }()) +
 
-      '</div></div>';
+      /* Footer Row: Payment badge + Price */
+      (function() {
+        var isPendingDep = (b.status === 'Pending' || b.status === 'Pending Payment') &&
+                           (b.payment_status === 'Unpaid' || b.payment_status === 'Downpayment unpaid' || b.payment_status === 'Pending Payment');
+        var payBadgeExtra = '';
+        if (isPendingDep && b.created_at) {
+          var bC = parseBookingDateMs(b.created_at);
+          if (!isNaN(bC) && (bC + 30 * 60 * 1000 - Date.now() > 0)) {
+            payBadgeExtra = '<span style="padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(245,158,11,0.15);color:#d97706;border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-clock"></i>Pay within 30m</span>';
+          }
+        }
+        var isCancelledOrRefund = (b.status === 'Cancelled' || b.status === 'Rejected' || b.payment_status === 'Refund Pending' || b.payment_status === 'Refunded');
+        var balBadge = (!isCancelledOrRefund && parseFloat(b.balance_amount || 0) > 0)
+          ? '<span style="padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:700;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);display:inline-flex;align-items:center;gap:4px;"><i class="fas fa-exclamation-circle"></i>Bal: ' + formatPHP(b.balance_amount) + '</span>'
+          : '';
+
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--border);gap:8px;">' +
+          '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">' +
+            '<span style="padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:800;background:' + payBg + ';color:' + payColor + ';border:1px solid ' + payBorder + ';display:inline-flex;align-items:center;gap:4px;">' +
+              '<i class="fas ' + payIcon + '"></i> ' + (b.payment_status || 'Unpaid') +
+            '</span>' +
+            payBadgeExtra +
+            balBadge +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Total Amount</div>' +
+            '<div style="font-weight:900;font-size:1.15rem;color:var(--primary);line-height:1.1;">' + formatPHP(b.total_price) + '</div>' +
+          '</div>' +
+        '</div>';
+      }()) +
+
+      /* Click hint */
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;font-size:0.74rem;color:var(--text-muted);">' +
+        '<span>Booking #' + b.id + '</span>' +
+        '<span style="color:var(--primary);font-weight:700;display:inline-flex;align-items:center;gap:4px;">View details <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i></span>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
