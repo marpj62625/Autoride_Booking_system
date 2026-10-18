@@ -3009,15 +3009,15 @@ function refreshActiveBookingMonitor() {
       var startNorm = _normDateStr(active.start_date);
       var imgSrc = active.vehicle_image ? buildImgUrl(active.vehicle_image) : null;
       var imgHtml = imgSrc
-        ? '<img src="' + imgSrc + '" id="activeRentalImg" alt="' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\';">'
-        : '<div style="width:100%;height:100%;min-height:160px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;"><i class="fas fa-car" style="font-size:3rem;color:var(--text-muted);opacity:0.3;"></i></div>';
+        ? '<img src="' + imgSrc + '" id="activeRentalImg" alt="' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '" class="active-rental-car-img" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\';">'
+        : '<div class="active-rental-no-img"><i class="fas fa-car"></i></div>';
 
       var statusLabel = isPickedUp ? (active.status === 'Picked Up' ? 'Picked Up' : 'Active') : active.status;
       var statusBg = isPickedUp ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)';
       var statusColor = isPickedUp ? 'var(--primary)' : '#3b82f6';
       var statusBorder = isPickedUp ? 'rgba(16,185,129,0.25)' : 'rgba(59,130,246,0.25)';
       var returnLabel = isPickedUp ? 'Return by' : 'Pickup at';
-      var subText = [active.color, active.plate_number].filter(Boolean).join(' - ') || active.plate_number || '';
+      var subText = [active.color, active.plate_number].filter(Boolean).join(' • ') || active.plate_number || '';
 
       // Determine what time to show next to the date
       var startTimeStr = active.start_time ? String(active.start_time).substring(0,5) : '00:00';
@@ -3028,33 +3028,53 @@ function refreshActiveBookingMonitor() {
       var initialTimerLabel = isPickedUp ? 'Time Remaining' : 'Time Until Pickup';
 
       card.innerHTML =
-        '<div class="active-rental-img">' + imgHtml + '</div>' +
+        '<div class="active-rental-img">' +
+          '<div class="active-car-plate-badge"><i class="fas fa-car-side" style="color:var(--primary);margin-right:5px;"></i> ' + escapeHtml(active.plate_number || 'AUTORIDE') + '</div>' +
+          '<div class="active-car-live-chip"><span class="active-pulse-dot"></span> ' + (isPickedUp ? 'LIVE IN TRIP' : 'RESERVATION READY') + '</div>' +
+          imgHtml +
+        '</div>' +
         '<div class="active-rental-info">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">' +
+          '<div class="active-rental-header-row">' +
             '<div>' +
-              '<div style="font-size:1rem;font-weight:900;color:var(--text-primary);">' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '</div>' +
-              '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">' + escapeHtml(subText) + '</div>' +
+              '<div class="active-rental-veh-title">' + escapeHtml((active.brand||'') + ' ' + (active.model||'')) + '</div>' +
+              '<div class="active-rental-veh-sub">' + escapeHtml(subText) + '</div>' +
             '</div>' +
-            '<span style="background:' + statusBg + ';color:' + statusColor + ';border:1px solid ' + statusBorder + ';padding:4px 10px;border-radius:20px;font-size:0.65rem;font-weight:800;">' + escapeHtml(statusLabel) + '</span>' +
+            '<span class="active-rental-status-pill" style="background:' + statusBg + ';color:' + statusColor + ';border:1px solid ' + statusBorder + ';">' +
+              '<span class="active-pulse-dot" style="background:' + statusColor + ';box-shadow:0 0 6px ' + statusColor + ';"></span> ' +
+              escapeHtml(statusLabel) +
+            '</span>' +
           '</div>' +
-          '<div style="background:var(--bg-card2);border-radius:14px;padding:12px;margin-bottom:10px;">' +
-            '<div id="activeBookingTimerLabel" style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">' + initialTimerLabel + '</div>' +
-            '<div id="activeBookingCountdown" class="ticker-pulse" style="font-size:1.6rem;font-weight:900;letter-spacing:-0.5px;color:var(--primary);">-</div>' +
-            '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">' + returnLabel + ' <strong style="color:var(--text-primary);">' + returnDateDisplay + '</strong></div>' +
-          '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">' +
-            '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
-              '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Start Date</div>' +
-              '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + _fmtDate(startNorm) + ' ' + startTimeStr + '</div>' +
+          '<div class="active-rental-timer-box' + (isPickedUp ? ' in-trip' : '') + '">' +
+            '<div class="active-rental-timer-top">' +
+              '<div id="activeBookingTimerLabel" class="active-rental-timer-label">' + initialTimerLabel + '</div>' +
+              '<span class="active-rental-timer-kicker"><i class="fas fa-satellite-dish" style="margin-right:4px;"></i> Live Session</span>' +
             '</div>' +
-            '<div style="background:var(--bg-card2);border-radius:12px;padding:10px;">' +
-              '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Booking #</div>' +
-              '<div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);">' + active.id + '</div>' +
+            '<div id="activeBookingCountdown" class="active-rental-countdown ticker-pulse">-</div>' +
+            '<div class="active-rental-timer-return">' +
+              '<i class="fas fa-calendar-check" style="color:var(--primary);margin-right:6px;"></i> ' +
+              returnLabel + ' <strong style="color:var(--text-primary);">' + returnDateDisplay + '</strong>' +
             '</div>' +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;">' +
-            '<button onclick="event.stopPropagation();window._openedExtendFromDetail=false;openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')" style="padding:10px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Extend</button>' +
-            '<button onclick="event.stopPropagation();showOverlay(\'page-livechat\')" style="padding:10px;background:var(--bg-card2);color:var(--text-primary);border:1px solid var(--border);border-radius:12px;font-size:0.78rem;font-weight:700;cursor:pointer;"><i class="fas fa-comments" style="margin-right:5px;"></i>Chat</button>' +
+          '<div class="active-rental-stats-grid">' +
+            '<div class="active-rental-stat-card">' +
+              '<div class="active-rental-stat-lbl"><i class="fas fa-play" style="color:#0ea5e9;margin-right:5px;"></i> Start Date</div>' +
+              '<div class="active-rental-stat-val">' + _fmtDate(startNorm) + ' • ' + startTimeStr + '</div>' +
+            '</div>' +
+            '<div class="active-rental-stat-card">' +
+              '<div class="active-rental-stat-lbl"><i class="fas fa-receipt" style="color:#f59e0b;margin-right:5px;"></i> Booking Ref</div>' +
+              '<div class="active-rental-stat-val">#' + active.id + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="active-rental-actions-grid">' +
+            '<button type="button" class="active-rental-btn-extend" onclick="event.stopPropagation();window._openedExtendFromDetail=false;openExtendBooking(' + active.id + ',\'' + endNorm + '\',\'' + (active.daily_rate||0) + '\')">' +
+              '<i class="fas fa-calendar-plus" style="margin-right:6px;"></i>Extend Rental' +
+            '</button>' +
+            '<button type="button" class="active-rental-btn-chat" onclick="event.stopPropagation();showOverlay(\'page-livechat\')">' +
+              '<i class="fas fa-comments" style="margin-right:6px;"></i>Chat Support' +
+            '</button>' +
+          '</div>' +
+          '<div class="active-rental-detail-link" onclick="event.stopPropagation();openBookingDetail(' + active.id + ')">' +
+            '<span>View Trip Receipt &amp; Agreement</span> <i class="fas fa-arrow-right"></i>' +
           '</div>' +
         '</div>';
 
@@ -12166,7 +12186,11 @@ function updateTutorialSlide() {
   var prevBtnText = document.getElementById('tutPrevBtnText');
   var nextBtn = document.getElementById('tutNextBtn');
   var dots = document.querySelectorAll('.tut-dot');
+  var pBar = document.getElementById('tutorialStepProgressBar');
 
+  if (pBar) {
+    pBar.style.width = (((_tutorialCurrentSlide + 1) / _tutorialTotalSlides) * 100) + '%';
+  }
   if (track) {
     track.style.transform = 'translateX(-' + (_tutorialCurrentSlide * 25) + '%)';
   }

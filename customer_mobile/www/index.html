@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.18.6">
+    <meta name="build-version" content="2026.10.18.7">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -3035,10 +3035,300 @@
         }
 
         /* Active Rental card (mobile: stacked) */
-        .active-rental-card { display: flex; flex-direction: column; border-radius: 20px; overflow: hidden; }
-        .active-rental-img { width: 100%; height: 200px; overflow: hidden; }
-        .active-rental-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .active-rental-info { padding: 14px; background: var(--bg-card); }
+        .active-rental-card {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          border-radius: 24px;
+          overflow: hidden;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .active-rental-card:hover {
+          border-color: rgba(0, 177, 79, 0.4);
+          box-shadow: 0 14px 40px rgba(0, 177, 79, 0.12);
+        }
+        .active-rental-img {
+          position: relative;
+          width: 100%;
+          min-height: 220px;
+          background: radial-gradient(ellipse at 50% 65%, rgba(0, 177, 79, 0.14) 0%, rgba(13, 17, 23, 0.85) 70%, #090d12 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          padding: 24px 18px;
+          box-sizing: border-box;
+        }
+        .active-rental-img::after {
+          content: "";
+          position: absolute;
+          bottom: 12px;
+          left: 15%;
+          right: 15%;
+          height: 18px;
+          background: radial-gradient(ellipse at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 75%);
+          pointer-events: none;
+          z-index: 1;
+        }
+        .active-rental-car-img {
+          width: 100%;
+          max-height: 210px;
+          object-fit: contain;
+          display: block;
+          position: relative;
+          z-index: 2;
+          filter: drop-shadow(0 14px 18px rgba(0,0,0,0.6));
+          transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .active-rental-card:hover .active-rental-car-img {
+          transform: scale(1.035) translateY(-3px);
+        }
+        .active-rental-no-img {
+          width: 100%;
+          height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 3rem;
+          color: var(--text-muted);
+          position: relative;
+          z-index: 2;
+        }
+        .active-car-plate-badge {
+          position: absolute;
+          top: 14px;
+          left: 14px;
+          z-index: 3;
+          background: rgba(15, 23, 42, 0.88);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.14);
+          color: #f8fafc;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          text-transform: uppercase;
+          padding: 5px 11px;
+          border-radius: 9px;
+          display: inline-flex;
+          align-items: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        }
+        .active-car-live-chip {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          z-index: 3;
+          background: rgba(16, 185, 129, 0.16);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(16, 185, 129, 0.38);
+          color: #10b981;
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          padding: 5px 11px;
+          border-radius: 20px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+        .active-pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #10b981;
+          box-shadow: 0 0 8px #10b981;
+          animation: activePulseDot 2s infinite ease-in-out;
+          display: inline-block;
+          flex-shrink: 0;
+        }
+        @keyframes activePulseDot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        .active-rental-info {
+          padding: 18px 20px 20px;
+          background: var(--bg-card);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          box-sizing: border-box;
+        }
+        .active-rental-header-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+        .active-rental-veh-title {
+          font-size: 1.22rem;
+          font-weight: 900;
+          color: var(--text-primary);
+          line-height: 1.25;
+          margin-bottom: 3px;
+          letter-spacing: -0.01em;
+        }
+        .active-rental-veh-sub {
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: var(--text-muted);
+        }
+        .active-rental-status-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 11px;
+          border-radius: 20px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          flex-shrink: 0;
+        }
+        .active-rental-timer-box {
+          background: linear-gradient(145deg, rgba(16, 185, 129, 0.08) 0%, rgba(0,0,0,0.2) 100%);
+          border: 1px solid rgba(16, 185, 129, 0.22);
+          border-radius: 16px;
+          padding: 13px 16px;
+          position: relative;
+          overflow: hidden;
+        }
+        .active-rental-timer-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 2px;
+        }
+        .active-rental-timer-label {
+          font-size: 0.7rem;
+          font-weight: 800;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+        }
+        .active-rental-timer-kicker {
+          font-size: 0.68rem;
+          font-weight: 700;
+          color: var(--primary);
+          display: inline-flex;
+          align-items: center;
+        }
+        .active-rental-countdown {
+          font-size: 2.15rem;
+          font-weight: 900;
+          color: var(--text-primary);
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+          letter-spacing: 0.5px;
+          line-height: 1.15;
+          margin: 4px 0 8px;
+          text-shadow: 0 0 20px rgba(0, 177, 79, 0.22);
+        }
+        .active-rental-timer-return {
+          font-size: 0.78rem;
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          border-top: 1px dashed rgba(255,255,255,0.08);
+          padding-top: 8px;
+          margin-top: 4px;
+        }
+        .active-rental-stats-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        .active-rental-stat-card {
+          background: var(--bg-input, rgba(255,255,255,0.03));
+          border: 1px solid var(--border, rgba(255,255,255,0.07));
+          border-radius: 12px;
+          padding: 9px 12px;
+        }
+        .active-rental-stat-lbl {
+          font-size: 0.66rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 3px;
+          display: flex;
+          align-items: center;
+        }
+        .active-rental-stat-val {
+          font-size: 0.8rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .active-rental-actions-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 2px;
+        }
+        .active-rental-btn-extend {
+          background: linear-gradient(135deg, var(--primary) 0%, #00873c 100%);
+          color: #fff;
+          border: none;
+          padding: 11px 14px;
+          border-radius: 12px;
+          font-size: 0.82rem;
+          font-weight: 800;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 14px rgba(0, 177, 79, 0.32);
+          transition: all 0.2s;
+        }
+        .active-rental-btn-extend:hover {
+          box-shadow: 0 6px 18px rgba(0, 177, 79, 0.45);
+          transform: translateY(-1px);
+        }
+        .active-rental-btn-chat {
+          background: rgba(255,255,255,0.06);
+          color: var(--text-primary);
+          border: 1px solid var(--border, rgba(255,255,255,0.12));
+          padding: 11px 14px;
+          border-radius: 12px;
+          font-size: 0.82rem;
+          font-weight: 800;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .active-rental-btn-chat:hover {
+          background: rgba(255,255,255,0.1);
+          border-color: rgba(255,255,255,0.22);
+          transform: translateY(-1px);
+        }
+        .active-rental-detail-link {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 14px;
+          background: rgba(0, 177, 79, 0.06);
+          border: 1px solid rgba(0, 177, 79, 0.18);
+          border-radius: 11px;
+          color: var(--primary);
+          font-size: 0.78rem;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .active-rental-detail-link:hover {
+          background: rgba(0, 177, 79, 0.12);
+          border-color: rgba(0, 177, 79, 0.35);
+          padding-left: 17px;
+        }
 
         /* Booking hover + active rental side-by-side on desktop */
         @media (min-width: 768px) {
@@ -3051,15 +3341,14 @@
           .active-rental-card {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            min-height: 280px;
-            border-radius: 20px;
+            min-height: 320px;
+            border-radius: 24px;
             overflow: hidden;
           }
-          .active-rental-img { position: relative; overflow: hidden; min-height: 280px; }
-          .active-rental-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
-          .active-rental-img:hover img { transform: scale(1.03); }
-          .active-rental-info { padding: 28px 28px 24px; display: flex; flex-direction: column; background: var(--bg-card); }
-          #activeBookingCountdown { font-size: 2.8rem !important; }
+          .active-rental-img { position: relative; overflow: hidden; min-height: 320px; padding: 32px 24px; }
+          .active-rental-car-img { max-height: 270px; }
+          .active-rental-info { padding: 26px 28px 24px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); }
+          .active-rental-countdown { font-size: 2.7rem; }
           #activeBookingMonitor { margin: 0 28px 24px !important; }
           #activeBookingMonitor > div:first-child { padding: 0 4px 12px !important; }
         }
@@ -3418,9 +3707,9 @@
   position: fixed;
   inset: 0;
   z-index: 100000;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3434,27 +3723,43 @@
 }
 .tutorial-modal-card {
   width: 100%;
-  max-width: 440px;
-  background: var(--bg-card, #141414);
-  border: 1px solid var(--border, rgba(255,255,255,0.1));
-  border-radius: 24px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  max-width: 520px;
+  background: var(--bg-card, #14171d);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 26px;
+  box-shadow: 0 28px 70px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.05);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
   box-sizing: border-box;
-  animation: tutScaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: tutScaleUp 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 @keyframes tutScaleUp {
   from { transform: scale(0.92); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+/* Top animated step progress bar */
+.tutorial-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  position: relative;
+  overflow: hidden;
+}
+.tutorial-progress-bar {
+  height: 100%;
+  width: 25%;
+  background: linear-gradient(90deg, #00B14F, #10b981);
+  box-shadow: 0 0 10px rgba(0, 177, 79, 0.6);
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .tutorial-header {
-  padding: 18px 22px 10px;
+  padding: 16px 20px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 .tutorial-badge {
   display: inline-flex;
@@ -3463,35 +3768,86 @@
   background: rgba(0, 177, 79, 0.12);
   color: #00B14F;
   border: 1px solid rgba(0, 177, 79, 0.3);
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 20px;
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
-.tutorial-step-text {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-muted, #94a3b8);
+.tut-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
 }
-.tutorial-skip-btn {
+.tut-lang-btn {
   background: transparent;
   border: none;
   color: var(--text-muted, #94a3b8);
-  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.tut-lang-btn:hover {
+  color: var(--text-primary, #ffffff);
+}
+.tut-lang-btn.active {
+  background: linear-gradient(135deg, #00B14F, #00873c);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 177, 79, 0.35);
+}
+.tutorial-skip-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 8px;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 18px;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .tutorial-skip-btn:hover {
-  color: var(--text-primary, #ffffff);
-  background: rgba(255,255,255,0.06);
+  color: #ffffff;
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.2);
+}
+.tutorial-subheader {
+  display: flex;
+  justify-content: center;
+  padding: 0 20px 6px;
+}
+.tut-step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  letter-spacing: 0.3px;
+}
+.tutorial-step-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: inherit;
 }
 .tutorial-carousel {
   overflow: hidden;
@@ -3507,58 +3863,64 @@
 .tutorial-slide {
   width: 25%;
   flex-shrink: 0;
-  padding: 16px 24px 20px;
+  padding: 14px 24px 18px;
   box-sizing: border-box;
   text-align: center;
 }
 .tutorial-icon-wrap {
-  width: 68px;
-  height: 68px;
-  border-radius: 20px;
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.85rem;
+  font-size: 2.1rem;
   margin: 0 auto 16px;
   border: 1.5px solid;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.3);
+  transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.tutorial-slide:hover .tutorial-icon-wrap {
+  transform: scale(1.06);
 }
 .tutorial-slide-title {
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 1.35rem;
+  font-weight: 900;
   color: var(--text-primary, #ffffff);
   margin: 0 0 6px;
   letter-spacing: -0.02em;
 }
 .tutorial-slide-desc {
-  font-size: 0.82rem;
-  color: var(--text-secondary, #a1a1aa);
-  margin: 0 0 16px;
-  line-height: 1.45;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+  margin: 0 auto 16px;
+  line-height: 1.5;
+  max-width: 440px;
 }
 .tutorial-features {
-  background: var(--bg-input, rgba(255,255,255,0.03));
+  background: rgba(255,255,255,0.025);
   border: 1px solid var(--border, rgba(255,255,255,0.08));
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 16px;
+  padding: 13px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   text-align: left;
 }
 .tut-feature-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 0.78rem;
+  gap: 10px;
+  font-size: 0.8rem;
   color: var(--text-primary, #e2e8f0);
-  line-height: 1.35;
+  line-height: 1.4;
 }
 .tut-feature-item i {
   color: #00B14F;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   margin-top: 2px;
   flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0, 177, 79, 0.4));
 }
 .tutorial-footer {
   padding: 14px 22px 20px;
@@ -3567,7 +3929,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.2);
 }
 .tutorial-dots {
   display: flex;
@@ -3578,15 +3940,15 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.22);
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .tut-dot.active {
-  width: 24px;
+  width: 26px;
   border-radius: 12px;
   background: #00B14F;
-  box-shadow: 0 0 10px rgba(0, 177, 79, 0.5);
+  box-shadow: 0 0 10px rgba(0, 177, 79, 0.55);
 }
 .tutorial-actions {
   display: flex;
@@ -3605,10 +3967,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 .tut-btn-secondary:hover {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.14);
 }
 .tut-btn-primary {
   background: linear-gradient(135deg, #00B14F, #00873c);
@@ -6097,6 +6459,11 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- FIRST-TIME USER TUTORIAL / ONBOARDING MODAL (DESIGN 1: SWIPEABLE CARDS WITH TL/EN LANGUAGE TOGGLE) -->
 <div id="customerTutorialModal" class="tutorial-modal-overlay" style="display:none;" onclick="if(event.target===this)closeCustomerTutorial()">
   <div class="tutorial-modal-card">
+    <!-- Animated Top Step Progress Bar -->
+    <div class="tutorial-progress-track">
+      <div id="tutorialStepProgressBar" class="tutorial-progress-bar"></div>
+    </div>
+
     <!-- Header with Badge, Language Toggle & Skip Button -->
     <div class="tutorial-header">
       <div class="tutorial-badge" id="tutBadgeEl"><i class="fas fa-sparkles"></i> <span id="tutBadgeText">Gabay sa Paggamit</span></div>
@@ -6112,9 +6479,12 @@ document.addEventListener('DOMContentLoaded', function() {
       </button>
     </div>
 
-    <!-- Subheader with Step Indicator -->
+    <!-- Subheader with Step Indicator inside modern chip -->
     <div class="tutorial-subheader">
-      <div id="tutorialStepIndicator" class="tutorial-step-text">Hakbang 1 ng 4</div>
+      <div class="tut-step-chip">
+        <i class="fas fa-layer-group" style="color:var(--primary);font-size:0.75rem;"></i>
+        <span id="tutorialStepIndicator" class="tutorial-step-text">Hakbang 1 ng 4</span>
+      </div>
     </div>
 
     <!-- Carousel Viewport -->
