@@ -3782,16 +3782,117 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
 
       var galleryHtml = renderVdGallery(defaultUnit);
  
-       var cardHtml =
-         '<div class="veh-detail-desktop">' +
-           '<div class="veh-detail-gallery-col" id="vd-gallery-col-wrapper">' +
-             galleryHtml +
-           '</div>' +
+       var highlightsHtml =
+        '<div class="veh-detail-highlights card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:20px;">' +
+          '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
+            '<i class="fas fa-check-circle" style="color:var(--primary);"></i> Rental Inclusions &amp; Benefits' +
+          '</h4>' +
+          '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">' +
+            '<div style="display:flex; align-items:flex-start; gap:12px;">' +
+              '<div style="width:38px; height:38px; border-radius:12px; background:rgba(0,177,79,0.12); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">' +
+                '<i class="fas fa-road"></i>' +
+              '</div>' +
+              '<div>' +
+                '<div style="font-size:0.88rem; font-weight:800; color:var(--text-primary);">250 km / Day Mileage</div>' +
+                '<div style="font-size:0.76rem; color:var(--text-muted); line-height:1.4; margin-top:2px;">Generous daily distance allowance for city and provincial travel.</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="display:flex; align-items:flex-start; gap:12px;">' +
+              '<div style="width:38px; height:38px; border-radius:12px; background:rgba(245,158,11,0.12); color:#f59e0b; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">' +
+                '<i class="fas fa-gas-pump"></i>' +
+              '</div>' +
+              '<div>' +
+                '<div style="font-size:0.88rem; font-weight:800; color:var(--text-primary);">Full-to-Full Fuel Policy</div>' +
+                '<div style="font-size:0.76rem; color:var(--text-muted); line-height:1.4; margin-top:2px;">Pick up with a full tank and return full with zero hidden refueling markups.</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="display:flex; align-items:flex-start; gap:12px;">' +
+              '<div style="width:38px; height:38px; border-radius:12px; background:rgba(6,182,212,0.12); color:#06b6d4; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">' +
+                '<i class="fas fa-shield-alt"></i>' +
+              '</div>' +
+              '<div>' +
+                '<div style="font-size:0.88rem; font-weight:800; color:var(--text-primary);">Sanitized &amp; Inspected</div>' +
+                '<div style="font-size:0.76rem; color:var(--text-muted); line-height:1.4; margin-top:2px;">Pre-trip mechanical checkup, washed and sanitized for complete peace of mind.</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="display:flex; align-items:flex-start; gap:12px;">' +
+              '<div style="width:38px; height:38px; border-radius:12px; background:rgba(139,92,246,0.12); color:#8b5cf6; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0;">' +
+                '<i class="fas fa-headset"></i>' +
+              '</div>' +
+              '<div>' +
+                '<div style="font-size:0.88rem; font-weight:800; color:var(--text-primary);">24/7 Road Assistance</div>' +
+                '<div style="font-size:0.76rem; color:var(--text-muted); line-height:1.4; margin-top:2px;">Direct live support hotline ready to assist you anywhere in Luzon.</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      var amenitiesHtml =
+        '<div class="veh-detail-amenities card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:16px;">' +
+          '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
+            '<i class="fas fa-sliders-h" style="color:var(--primary);"></i> Vehicle Features &amp; Equipment' +
+          '</h4>' +
+          '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">' +
+            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
+              '<i class="fas fa-snowflake" style="color:#0ea5e9; font-size:1rem;"></i> Air Conditioning' +
+            '</div>' +
+            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
+              '<i class="fab fa-bluetooth-b" style="color:#3b82f6; font-size:1rem;"></i> Bluetooth &amp; USB Audio' +
+            '</div>' +
+            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
+              '<i class="fas fa-shield-virus" style="color:#f59e0b; font-size:1rem;"></i> Dual SRS Airbags' +
+            '</div>' +
+            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
+              '<i class="fas fa-lock" style="color:#ec4899; font-size:1rem;"></i> Central Door Lock' +
+            '</div>' +
+            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
+              '<i class="fas fa-car-side" style="color:#10b981; font-size:1rem;"></i> Power Windows' +
+            '</div>' +
+            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
+              '<i class="fas fa-compass" style="color:#8b5cf6; font-size:1rem;"></i> Anti-lock Brakes (ABS)' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      var policiesHtml =
+        '<div class="veh-detail-policies card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:16px;">' +
+          '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
+            '<i class="fas fa-file-contract" style="color:var(--primary);"></i> Rental Requirements &amp; Policies' +
+          '</h4>' +
+          '<div style="display:flex; flex-direction:column; gap:12px;">' +
+            '<div style="display:flex; align-items:flex-start; gap:10px; font-size:0.84rem; color:var(--text-secondary); line-height:1.45;">' +
+              '<i class="fas fa-id-card" style="color:var(--primary); font-size:0.95rem; margin-top:2px; flex-shrink:0;"></i>' +
+              '<div><strong style="color:var(--text-primary);">Valid Driver\'s License:</strong> Renter must present an original, unexpired Driver\'s License upon vehicle pickup.</div>' +
+            '</div>' +
+            '<div style="display:flex; align-items:flex-start; gap:10px; font-size:0.84rem; color:var(--text-secondary); line-height:1.45;">' +
+              '<i class="fas fa-address-card" style="color:#3b82f6; font-size:0.95rem; margin-top:2px; flex-shrink:0;"></i>' +
+              '<div><strong style="color:var(--text-primary);">Secondary Government ID:</strong> At least 1 valid government-issued ID (Passport, UMID, National ID, PhilSys, SSS, PRC).</div>' +
+            '</div>' +
+            '<div style="display:flex; align-items:flex-start; gap:10px; font-size:0.84rem; color:var(--text-secondary); line-height:1.45;">' +
+              '<i class="fas fa-coins" style="color:#f59e0b; font-size:0.95rem; margin-top:2px; flex-shrink:0;"></i>' +
+              '<div><strong style="color:var(--text-primary);">20% Downpayment Confirmation:</strong> Minimum 20% downpayment confirms your reservation. The remaining 80% is paid upon vehicle handover.</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+
+      var cardHtml =
+        '<div class="veh-detail-desktop">' +
+          '<div class="veh-detail-gallery-col">' +
+            '<div id="vd-gallery-col-wrapper">' +
+              galleryHtml +
+            '</div>' +
+            highlightsHtml +
+            amenitiesHtml +
+            policiesHtml +
+          '</div>' +
           '<div class="veh-detail-info-col">' +
-            '<div class="card" style="margin-bottom:16px; padding: 24px;">' +
-              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-                '<h4 style="font-weight:800;font-size:1.2rem;margin:0;">' + brand + ' ' + model + '</h4>' +
-                '<span id="vd-status" style="padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;background:' + (defaultUnit.status === 'Available' ? '#d1e7dd' : '#f8d7da') + ';color:' + (defaultUnit.status === 'Available' ? '#0a3622' : '#842029') + ';">' + defaultUnit.status + '</span>' +
+            '<div class="card" style="padding: 24px; border-radius:20px; border:1px solid var(--border); box-shadow:0 4px 20px rgba(0,0,0,0.05);">' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
+                '<div>' +
+                  '<h3 style="font-weight:900;font-size:1.35rem;margin:0;color:var(--text-primary);letter-spacing:-0.3px;">' + brand + ' ' + model + '</h3>' +
+                  '<span style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Premium Fleet Rental</span>' +
+                '</div>' +
+                '<span id="vd-status" style="padding:5px 14px;border-radius:20px;font-size:0.75rem;font-weight:800;background:' + (defaultUnit.status === 'Available' ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)') + ';color:' + (defaultUnit.status === 'Available' ? '#10b981' : '#ef4444') + ';border:1px solid ' + (defaultUnit.status === 'Available' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)') + ';">' + defaultUnit.status + '</span>' +
               '</div>' +
               '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">' +
                 '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
@@ -3837,23 +3938,27 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
                   '<i class="fas fa-calendar-alt" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
                   '<span id="vd-year">' + (defaultUnit.year_model ? defaultUnit.year_model + ' Model' : 'Year N/A') + '</span>' +
                 '</div>' +
-
                 // Fuel Level
                 '<div style="font-size:0.85rem;display:flex;align-items:center;gap:6px;">' +
                   '<i class="fas fa-oil-can" style="color:var(--primary);width:16px;flex-shrink:0;"></i>' +
                   '<span id="vd-fuel-level" style="font-weight:600;">' + (defaultUnit.fuel_level || '-') + '</span>' +
                 '</div>' +
               '</div>' +
-
-              '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--border);">' +
+              '<div style="padding:16px;background:var(--bg-card2);border-radius:14px;border:1px solid var(--border);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;">' +
                 '<div>' +
-                  '<div class="vehicle-rate" id="vd-rate">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
-                  '<div style="font-size:0.72rem;color:var(--text-muted);">/ day</div>' +
+                  '<div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Rental Rate</div>' +
+                  '<div class="vehicle-rate" id="vd-rate" style="font-size:1.6rem;font-weight:900;color:var(--text-primary);line-height:1.1;">' + formatPHP(defaultUnit.daily_rate) + '</div>' +
+                  '<div style="font-size:0.7rem;color:var(--text-muted);">per 24-hour day</div>' +
                 '</div>' +
-                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 24px;border-radius:30px;font-size:0.95rem;font-weight:800;cursor:pointer;"' +
-                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : (isBookable ? ' onclick="goToProfileForVerification()"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:30px;font-size:0.85rem;cursor:not-allowed;"')) + '>' +
-                  (canBook ? '<i class="fas fa-calendar-plus"></i> Book' : (isBookable ? (parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License') : '<i class="fas fa-ban"></i> Unavailable')) +
+                '<button id="vd-book-btn" class="btn-primary" style="width:auto;padding:12px 28px;border-radius:14px;font-size:0.95rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,177,79,0.3);"' +
+                  (canBook ? ' onclick="selectVehicleUnit(' + defaultUnit.id + ')"' : (isBookable ? ' onclick="goToProfileForVerification()"' : ' disabled style="width:auto;padding:12px 20px;background:var(--bg-input);color:var(--text-muted);border:none;border-radius:14px;font-size:0.85rem;cursor:not-allowed;"')) + '>' +
+                  (canBook ? '<i class="fas fa-calendar-plus"></i> Book Now' : (isBookable ? (parseInt(currentUser.isVerified) === 1 ? '<i class="fas fa-clock"></i> Under Review' : '<i class="fas fa-id-card"></i> Verify License') : '<i class="fas fa-ban"></i> Unavailable')) +
                 '</button>' +
+              '</div>' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);font-size:0.74rem;color:var(--text-muted);">' +
+                '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-shield-alt" style="color:var(--primary);"></i> Verified Fleet</span>' +
+                '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-bolt" style="color:#f59e0b;"></i> Fast Booking</span>' +
+                '<span style="display:flex;align-items:center;gap:4px;"><i class="fas fa-lock" style="color:#3b82f6;"></i> Secure System</span>' +
               '</div>' +
             '</div>' +
           '</div>' +
