@@ -3519,9 +3519,16 @@ def admin_get_user_violations(user_id):
 @app.route('/api/admin/users/<int:user_id>/violations/reset', methods=['POST'])
 def admin_reset_user_violations(user_id):
     """Reset a user's strikes and lift any suspension."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or {}
-    note = data.get('note', '')
+    note = str(data.get('note', '') or '').strip()[:250]
     admin_id = data.get('admin_id')
+    try:
+        admin_id = int(admin_id) if admin_id else None
+    except (ValueError, TypeError):
+        admin_id = None
     try:
         cur = get_cursor()
         cur.execute("""
@@ -4903,6 +4910,15 @@ def update_vehicle_location(vehicle_id):
 
     if lat is None or lng is None:
         return jsonify({"error": "Latitude and Longitude are required"}), 400
+
+    try:
+        lat = max(-90.0, min(90.0, float(lat)))
+        lng = max(-180.0, min(180.0, float(lng)))
+        speed = max(0.0, min(300.0, float(speed)))
+        address = str(address).strip()[:255] if address else None
+        gps_status = str(gps_status).strip()[:20]
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid GPS coordinate or speed values"}), 400
 
     try:
         cur = get_cursor()
@@ -6740,7 +6756,14 @@ def save_payment():
 
         return jsonify({"error": "Missing payment details"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
+
+    card_type = str(card_type).strip()[:30]
+    last_four = str(last_four).strip()[:4]
+    provider = str(provider).strip()[:50]
 
     try:
 
@@ -7419,12 +7442,12 @@ def create_walkin_booking():
 
         cur = get_cursor()
 
-        customer_name = (data.get('customer_name') or '').strip()
-        customer_phone = (data.get('customer_phone') or '').strip()
-        customer_address = (data.get('customer_address') or '').strip()
-        emergency_name = (data.get('emergency_name') or '').strip()
-        emergency_phone = (data.get('emergency_phone') or '').strip()
-        emergency_rel = (data.get('emergency_rel') or '').strip()
+        customer_name = (data.get('customer_name') or '').strip()[:100]
+        customer_phone = (data.get('customer_phone') or '').strip()[:20]
+        customer_address = (data.get('customer_address') or '').strip()[:250]
+        emergency_name = (data.get('emergency_name') or '').strip()[:100]
+        emergency_phone = (data.get('emergency_phone') or '').strip()[:20]
+        emergency_rel = (data.get('emergency_rel') or '').strip()[:50]
 
         if user_id:
             cur.execute("""
@@ -8584,7 +8607,15 @@ def user_cancel_booking():
         data = request.get_json(silent=True) or {}
         booking_id = data.get('booking_id')
         user_id    = data.get('user_id')
-        reason     = data.get('reason', 'No reason provided')
+        reason     = str(data.get('reason', 'No reason provided') or 'No reason provided').strip()[:250]
+
+        if not booking_id:
+            return jsonify({"error": "booking_id is required"}), 400
+        try:
+            booking_id = int(booking_id)
+            user_id = int(user_id) if user_id else None
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid booking_id or user_id format"}), 400
 
         cur = get_cursor()
         cur.execute("""
@@ -8987,6 +9018,9 @@ def submit_refund_details(booking_id):
 def admin_cancel_booking(booking_id):
 
     """Cancel an approved/confirmed booking and trigger refund if needed."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
     try:
 
@@ -9025,7 +9059,7 @@ def admin_cancel_booking(booking_id):
 
 
 
-        reason = (request.json or {}).get('reason', 'No reason provided')
+        reason = str((request.json or {}).get('reason', 'No reason provided') or 'No reason provided').strip()[:250]
 
         # Insert notification using a fresh connection to avoid transaction conflicts
         notif_error = None
@@ -9439,10 +9473,13 @@ def approve_driver(driver_id):
 def reject_driver(driver_id):
 
     """Reject a pending driver application."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
     data = request.json or {}
 
-    reason = data.get('reason', '')
+    reason = str(data.get('reason', '') or '').strip()[:250]
 
     try:
 
@@ -12130,8 +12167,13 @@ def match_chatbot_intent(message):
 def chat_endpoint():
     """Smart FAQ chatbot endpoint with Admin toggle controls."""
     data = request.json or {}
-    message = data.get('message', '').strip()
+    message = str(data.get('message', '') or '').strip()[:1000]
     user_id = data.get('user_id', None)
+    if user_id:
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            user_id = None
 
     if not message:
         return jsonify({"error": "Message is required"}), 400
@@ -12814,7 +12856,18 @@ def add_vehicle():
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_token TEXT DEFAULT NULL")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_name VARCHAR(100) DEFAULT NULL")
         
-        color = data.get('color') or None
+        color = str(data.get('color') or '').strip()[:50] or None
+        mileage_type = 'unlimited' if str(data.get('mileage_type') or 'limited').strip().lower() == 'unlimited' else 'limited'
+        fuel_level = str(data.get('fuel_level') or 'Full Tank').strip()[:20]
+        year_model_raw = data.get('year_model')
+        year_model = None
+        if year_model_raw is not None and str(year_model_raw).strip() != '':
+            try:
+                ym_int = int(year_model_raw)
+                if 1950 <= ym_int <= 2030:
+                    year_model = ym_int
+            except (ValueError, TypeError):
+                pass
         plate = (data.get('plate_number') or '').strip().upper()
         if not plate or len(plate) > 8:
             return jsonify({"error": "Plate number is required and cannot exceed 8 characters"}), 400
@@ -12911,10 +12964,18 @@ def update_vehicle(vehicle_id):
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_token TEXT DEFAULT NULL")
         cur.execute("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS gps_device_name VARCHAR(100) DEFAULT NULL")
         
-        color = data.get('color') or None
-        mileage_type = data.get('mileage_type') or 'limited'
+        color = str(data.get('color') or '').strip()[:50] or None
+        mileage_type = 'unlimited' if str(data.get('mileage_type') or 'limited').strip().lower() == 'unlimited' else 'limited'
         mileage_km_per_day = data.get('mileage_km_per_day') or 250
-        year_model = data.get('year_model') or None
+        year_model_raw = data.get('year_model')
+        year_model = None
+        if year_model_raw is not None and str(year_model_raw).strip() != '':
+            try:
+                ym_int = int(year_model_raw)
+                if 1950 <= ym_int <= 2030:
+                    year_model = ym_int
+            except (ValueError, TypeError):
+                pass
         odometer = data.get('odometer') or 0
         fuel_level = data.get('fuel_level') or 'Full Tank'
         next_service_schedule = data.get('next_service_schedule') or None
@@ -14367,9 +14428,9 @@ def update_license_info():
         return jsonify({'error': 'user_id is required'}), 400
     try:
         cur = get_cursor()
-        license_number = request.form.get('license_number', '').strip() or None
-        license_expiry  = request.form.get('license_expiry', '').strip() or None
-        license_type    = request.form.get('license_type', '').strip() or None
+        license_number = str(request.form.get('license_number', '') or '').strip()[:30] or None
+        license_expiry  = str(request.form.get('license_expiry', '') or '').strip()[:20] or None
+        license_type    = str(request.form.get('license_type', '') or '').strip()[:30] or None
 
         license_url = None
         if 'license' in request.files:
@@ -16399,6 +16460,16 @@ def chat_mark_read():
     sender_id     = data.get('sender_id')
     if not all([receiver_type, receiver_id, sender_type, sender_id]):
         return jsonify({'error': 'Missing fields'}), 400
+    allowed_chat_roles = ['admin', 'customer', 'driver', 'staff', 'user', 'system']
+    receiver_type = str(receiver_type).strip().lower()
+    sender_type = str(sender_type).strip().lower()
+    if receiver_type not in allowed_chat_roles or sender_type not in allowed_chat_roles:
+        return jsonify({'error': 'Invalid sender or receiver type'}), 400
+    try:
+        receiver_id = int(receiver_id)
+        sender_id = int(sender_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid user ID format'}), 400
     try:
         cur = get_cursor()
         cur.execute("""
@@ -16549,9 +16620,14 @@ def get_single_addon(addon_id):
 def update_addon(addon_id):
     """Update an existing addon. Admin only validation."""
     data = request.get_json(silent=True) or {}
-    name = data.get('name', '').strip()
+    name = str(data.get('name', '') or '').strip()[:100]
     price = data.get('price_per_day')
-    desc = data.get('description', '').strip()
+    desc = str(data.get('description', '') or '').strip()[:250]
+    if price is not None:
+        try:
+            price = max(0.0, min(100000.0, float(price)))
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid price per day'}), 400
     admin_id = data.get('admin_id')
 
     if not admin_id:
@@ -17596,10 +17672,13 @@ def add_booking_penalty(booking_id):
 @app.route('/api/admin/penalties/<int:p_id>', methods=['PUT'])
 def edit_penalty(p_id):
     """Admin edits or waives a penalty charge, updating booking balance."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.json or {}
     new_amount = data.get('amount')
-    new_notes = data.get('notes')
-    new_charge_type = data.get('charge_type')
+    new_notes = str(data.get('notes') or '').strip()[:250] if data.get('notes') else None
+    new_charge_type = str(data.get('charge_type') or '').strip()[:50] if data.get('charge_type') else None
     admin_id = data.get('admin_id')
 
     if new_amount is None:
