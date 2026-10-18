@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.18.5">
+    <meta name="build-version" content="2026.10.18.6">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -1923,8 +1923,221 @@
             padding: 0 !important;
           }
 
-          #page-home > div:nth-child(2) { margin-left: 28px; margin-right: 28px; border-radius: 20px; }
-          #page-home > div:nth-child(3) { padding-left: 28px; padding-right: 28px; }
+          /* Home Page: Desktop Layout */
+          #page-home .home-page-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 24px 32px 80px;
+          }
+          #page-home #homeBanner {
+            border-radius: 24px;
+            margin-bottom: 24px;
+            padding: 28px 32px 32px;
+            box-shadow: 0 10px 32px rgba(0, 177, 79, 0.22);
+            position: relative;
+            overflow: hidden;
+          }
+          #page-home .home-hero-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 28px;
+            align-items: center;
+          }
+          #page-home .home-hero-left {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
+          #page-home .home-hero-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          }
+          #page-home .home-hero-logo {
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));
+            transition: transform 0.2s ease;
+          }
+          #page-home .home-hero-logo:hover {
+            transform: scale(1.05);
+          }
+          #page-home .home-hero-kicker {
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin: 0;
+          }
+          #page-home .home-hero-title {
+            color: #ffffff;
+            font-size: 1.95rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            margin: 2px 0 0;
+            line-height: 1.15;
+          }
+          #page-home .home-hero-desc {
+            display: block !important;
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.88rem;
+            line-height: 1.45;
+            margin: 2px 0 6px;
+            max-width: 480px;
+          }
+          #page-home .home-hero-actions {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+          }
+          #page-home .home-hero-cta {
+            background: #ffffff;
+            color: #00873a;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+            transition: all 0.2s ease;
+          }
+          #page-home .home-hero-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+            background: #f8fafc;
+          }
+          #page-home .home-hero-cta-secondary {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+          }
+          #page-home .home-hero-cta-secondary:hover {
+            background: rgba(255, 255, 255, 0.28);
+            transform: translateY(-2px);
+          }
+          #page-home .home-loyalty-card {
+            background: rgba(0, 40, 15, 0.42);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            padding: 20px 22px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            position: relative;
+          }
+          #page-home .home-quick-actions-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 22px 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+            margin: 0 0 24px !important;
+          }
+          #page-home .home-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+          }
+          #page-home .home-action-card {
+            background: var(--bg-page);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px 18px;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            text-decoration: none;
+            color: inherit;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          #page-home .home-action-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 177, 79, 0.45);
+            box-shadow: 0 8px 22px rgba(0, 177, 79, 0.09);
+            background: var(--bg-card);
+          }
+          #page-home .home-action-card:hover .home-action-arrow {
+            background: var(--primary);
+            color: #ffffff;
+            transform: translateX(3px);
+          }
+          #page-home .home-action-info h4 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+          }
+          #page-home .home-action-info p {
+            display: block !important;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            margin: 2px 0 0;
+            line-height: 1.35;
+          }
+          #page-home .home-action-arrow {
+            display: flex !important;
+          }
+          #page-home #homeTutorialBanner {
+            margin: 0 0 24px !important;
+            padding: 18px 24px;
+            border-radius: 20px;
+          }
+          #page-home #homeTutorialBanner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 177, 79, 0.12);
+            border-color: var(--primary);
+          }
+          #page-home .home-tutorial-btn {
+            display: inline-flex !important;
+          }
+          #page-home #companyReviewsPreviewSection {
+            margin-top: 28px;
+            margin-bottom: 32px;
+          }
+          #page-home #homeReviewsSnippetList {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 16px !important;
+            overflow-x: visible !important;
+          }
+          #page-home #homeReviewsSnippetList > div {
+            min-width: 0 !important;
+            max-width: none !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 16px !important;
+            border-radius: 16px !important;
+            transition: all 0.2s ease !important;
+          }
+          #page-home #homeReviewsSnippetList > div:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08) !important;
+            border-color: rgba(0, 177, 79, 0.35) !important;
+          }
+          #page-home .home-content-section {
+            padding: 0 !important;
+          }
 
 
 
@@ -2326,8 +2539,6 @@
           #browseActiveBanner { margin: 0 32px 12px; }
           .scroll-content { padding: 24px 32px; max-width: 900px; }
           .page-header { padding: 20px 32px; }
-          #page-home > div:nth-child(2) { margin-left: 32px; margin-right: 32px; }
-          #page-home > div:nth-child(3) { padding-left: 32px; padding-right: 32px; }
           #page-profile .scroll-content {
             grid-template-columns: 360px 1fr !important;
             gap: 28px !important;
@@ -2616,6 +2827,200 @@
         }
         .more-greeting-banner { display: none; }
         .more-signout-mobile { display: flex !important; }
+
+        /* Home page: Base & Mobile Styles */
+        .home-page-container {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 0 80px;
+        }
+        #homeBanner {
+          background: linear-gradient(135deg, #00873a 0%, #00b14f 60%, #10b981 100%);
+          padding: 20px 18px 28px;
+          border-radius: 0 0 24px 24px;
+          box-shadow: 0 4px 18px rgba(0, 177, 79, 0.18);
+          position: relative;
+          overflow: hidden;
+        }
+        #homeBanner::before {
+          content: '';
+          position: absolute;
+          top: -40%;
+          right: -10%;
+          width: 260px;
+          height: 260px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .home-hero-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .home-hero-left {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .home-hero-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 2px;
+        }
+        .home-hero-logo {
+          width: 52px;
+          height: 52px;
+          object-fit: contain;
+          cursor: pointer;
+        }
+        .home-hero-kicker {
+          color: rgba(255, 255, 255, 0.85);
+          font-size: 0.65rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1.2px;
+          margin: 0;
+        }
+        .home-hero-title {
+          font-size: 1.5rem;
+          font-weight: 900;
+          color: #ffffff;
+          margin: 2px 0 0;
+          letter-spacing: -0.4px;
+          max-width: 240px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .home-hero-desc {
+          display: none;
+        }
+        .home-hero-actions {
+          display: none;
+        }
+        .home-loyalty-card {
+          background: rgba(255, 255, 255, 0.14);
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 20px;
+          padding: 16px;
+          backdrop-filter: blur(20px);
+        }
+        .home-quick-actions-wrap {
+          margin: -16px 16px 18px;
+          position: relative;
+          z-index: 10;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 20px;
+          padding: 16px 14px;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+        }
+        .home-section-kicker {
+          font-size: 0.68rem;
+          font-weight: 800;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin: 0 0 12px;
+          display: flex;
+          align-items: center;
+        }
+        .home-actions-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 8px;
+        }
+        .home-action-card {
+          background: none;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 2px;
+          text-align: center;
+        }
+        .home-action-icon {
+          width: 50px;
+          height: 50px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.25rem;
+          position: relative;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+          transition: transform 0.15s ease;
+        }
+        .home-action-card:active .home-action-icon {
+          transform: scale(0.94);
+        }
+        .home-action-info h4 {
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.2;
+        }
+        .home-action-info p {
+          display: none;
+        }
+        .home-action-arrow {
+          display: none;
+        }
+        .home-tutorial-banner {
+          margin: 0 16px 18px;
+          padding: 14px 18px;
+          background: linear-gradient(135deg, rgba(0,177,79,0.12), rgba(0,177,79,0.03));
+          border: 1px solid rgba(0,177,79,0.28);
+          border-radius: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          gap: 12px;
+          box-shadow: 0 4px 16px rgba(0,177,79,0.06);
+          transition: transform 0.2s, border-color 0.2s;
+        }
+        .home-tutorial-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          background: rgba(0,177,79,0.18);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--primary);
+          font-size: 1.15rem;
+          flex-shrink: 0;
+        }
+        .home-tutorial-btn {
+          display: none;
+          background: rgba(0, 177, 79, 0.12);
+          color: var(--primary);
+          border: 1px solid rgba(0, 177, 79, 0.25);
+          padding: 6px 14px;
+          border-radius: 10px;
+          font-size: 0.78rem;
+          font-weight: 800;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .home-content-section {
+          padding: 0 16px;
+        }
+        @media (min-width: 768px) {
+          .home-tutorial-banner {
+            margin: 0 0 24px;
+          }
+          .home-content-section {
+            padding: 0;
+          }
+        }
 
         /* Skeleton loading animation */
         @keyframes skeleton-shimmer {
@@ -3890,333 +4295,217 @@
 
 
 <div id="page-home" class="page" style="background:var(--bg-page);">
-
-
-  <div id="homeBanner" style="background:linear-gradient(160deg,var(--primary-light) 0%,var(--primary) 60%,var(--primary-dark) 100%);padding:20px 20px 32px;position:relative;overflow:hidden;">
-
-
-    <div style="position:absolute;top:0;right:0;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,107,0.15),transparent);transform:translate(30%,-30%);"></div>
-
-
-    <div style="position:relative;z-index:1;">
-
-
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
-
-
-        <div style="display:flex;align-items:center;gap:10px;">
-
-
-          <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" style="display:block;text-decoration:none;"><img src="Autoride-logo-nobg.png" alt="Autoride" style="width:64px;height:64px;object-fit:contain;cursor:pointer;"></a>
-
-
-          <div>
-
-
-            <p style="color:rgba(255,255,255,0.8);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;">Good day</p>
-
-
-            <h2 id="homeUserName" style="font-size:1.5rem;font-weight:900;color:var(--on-primary);margin-top:2px;letter-spacing:-0.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">there</h2>
-
-
-          </div>
-
-
-        </div>
-
-
-        <div class="notif-btn-wrap">
-
-
-          <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.15);border:none;color:var(--on-primary);width:40px;height:40px;border-radius:14px;font-size:1rem;cursor:pointer;backdrop-filter:blur(10px);">
-
-
-            <i class="fas fa-bell"></i>
-
-
-          </button>
-
-
-          <span class="notif-badge hidden" id="notifBadge">0</span>
-
-
-        </div>
-
-
-      </div>
-
-
-      <div style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:16px;backdrop-filter:blur(20px);">
-
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-
-
-          <div style="display:flex;align-items:center;gap:10px;">
-
-
-            <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;">
-
-
-              <i class="fas fa-award" style="color:#ffffff;font-size:1rem;"></i>
-
-
+  <div class="home-page-container">
+    <!-- Hero Banner with Greeting & Loyalty Card -->
+    <div id="homeBanner">
+      <div style="position:absolute;top:0;right:0;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.12),transparent 70%);pointer-events:none;"></div>
+      
+      <div class="home-hero-grid" style="position:relative;z-index:1;">
+        <!-- Left: Branding, Greeting, CTA -->
+        <div class="home-hero-left">
+          <div class="home-hero-top">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
+                <img src="Autoride-logo-nobg.png" alt="Autoride" class="home-hero-logo">
+              </a>
+              <div>
+                <p class="home-hero-kicker">GOOD DAY</p>
+                <h2 class="home-hero-title"><span id="homeUserName">there</span> 👋</h2>
+              </div>
             </div>
-
-
-            <div>
-
-
-              <div style="font-size:0.6rem;color:rgba(255,255,255,0.8);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Loyalty Points</div>
-
-
-              <div id="homePoints" style="font-size:1.6rem;font-weight:900;color:var(--on-primary);line-height:1;">0</div>
-
-
+            
+            <div class="notif-btn-wrap">
+              <button onclick="showOverlay('page-notifications')" style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);color:#ffffff;width:42px;height:42px;border-radius:14px;font-size:1.05rem;cursor:pointer;backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;transition:background 0.2s;">
+                <i class="fas fa-bell"></i>
+              </button>
+              <span class="notif-badge hidden" id="notifBadge">0</span>
             </div>
-
-
           </div>
 
-
-          <div id="loyaltyTierBadge" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:4px 10px;border-radius:20px;font-size:0.6rem;font-weight:800;">SILVER</div>
-
-
-        </div>
-
-
-        <div style="font-size:0.65rem;display:flex;justify-content:space-between;margin-bottom:6px;">
-
-
-          <span id="loyaltyProgressLabel" style="color:rgba(255,255,255,0.6);">Progress to Gold</span>
-
-
-          <span style="color:#fbbf24;font-weight:700;"><span id="homePoints2">0</span> / <span id="loyaltyTargetPoints">2,000</span></span>
-
-
-        </div>
-
-
-        <div style="background:rgba(255,255,255,0.12);border-radius:10px;height:6px;overflow:hidden;">
-
-
-          <div id="loyaltyBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);border-radius:10px;width:0%;transition:width 1.2s ease;"></div>
-
-
-        </div>
-
-
-        <div id="ptsNeeded" style="font-size:0.6rem;color:rgba(255,255,255,0.4);margin-top:6px;">2,000 pts more to unlock Gold benefits</div>
-
-
-      </div>
-
-
-    </div>
-
-
-  </div>
-
-
-  <div style="margin:-16px 16px 0;position:relative;z-index:10;background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:18px;margin-bottom:16px;">
-
-
-    <p style="font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">Quick Actions</p>
-
-
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-
-
-      <button onclick="showPage('page-vehicles')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-
-
-        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
-
-
-          <i class="fas fa-car" style="color:var(--on-primary);font-size:1.2rem;"></i>
-
-
-        </div>
-
-
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Browse Cars</span>
-
-
-      </button>
-
-
-      <button onclick="showPage('page-bookings')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-
-
-        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
-
-
-          <i class="fas fa-calendar-check" style="color:var(--on-primary);font-size:1.2rem;"></i>
-
-
-        </div>
-
-
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">My Bookings</span>
-
-
-      </button>
-
-
-      <button onclick="showOverlay('page-livechat')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-
-
-        <div style="position:relative;width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
-
-
-          <i class="fas fa-comments" style="color:var(--on-primary);font-size:1.2rem;"></i>
-
-
-          <span id="chatUnreadBadge" style="display:none;position:absolute;top:0;right:0;background:var(--danger);color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.55rem;font-weight:700;align-items:center;justify-content:center;border:2px solid var(--bg-card);"></span>
-
-
-        </div>
-
-
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">Live Chat</span>
-
-
-      </button>
-
-
-      <button onclick="showOverlay('page-chatbot')" style="background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;">
-
-
-        <div style="width:52px;height:52px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,177,79,0.2);">
-
-
-          <i class="fas fa-robot" style="color:var(--on-primary);font-size:1.2rem;"></i>
-
-
-        </div>
-
-
-        <span style="font-size:0.6rem;font-weight:600;color:var(--text-secondary);text-align:center;line-height:1.2;">AI Assistant</span>
-
-
-      </button>
-
-
-    </div>
-
-
-  </div>
-
-
-    <div style="padding:0 16px;">
-    <!-- 1st-Time User Quick Guide Banner (Design 1) -->
-    <div id="homeTutorialBanner" onclick="openCustomerTutorial(true)" style="margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg, rgba(0,177,79,0.12), rgba(0,177,79,0.03));border:1px solid rgba(0,177,79,0.28);border-radius:18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:12px;box-shadow:0 4px 16px rgba(0,177,79,0.06);transition:transform 0.2s,border-color 0.2s;">
-      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-        <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,177,79,0.18);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:1.15rem;flex-shrink:0;">
-          <i class="fas fa-compass"></i>
-        </div>
-        <div style="min-width:0;">
-          <div style="font-weight:800;font-size:0.9rem;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
-            <span>First time renting a car?</span>
-            <span style="font-size:0.62rem;font-weight:800;background:#00B14F;color:#fff;padding:1px 6px;border-radius:6px;letter-spacing:0.3px;">GUIDE</span>
-          </div>
-          <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            Tingnan ang 4-step quick walkthrough kung paano mag-book
+          <p class="home-hero-desc">Rent self-drive and with-driver vehicles across the Philippines. Transparent rates, flexible bookings, and 24/7 dedicated support.</p>
+
+          <div class="home-hero-actions">
+            <button onclick="showPage('page-vehicles')" class="home-hero-cta">
+              <i class="fas fa-car-side"></i> Browse Vehicles
+            </button>
+            <button onclick="openCustomerTutorial(true)" class="home-hero-cta-secondary">
+              <i class="fas fa-graduation-cap"></i> How to Rent Guide
+            </button>
           </div>
         </div>
+
+        <!-- Right: Loyalty Rewards Card -->
+        <div class="home-loyalty-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(245,158,11,0.3);">
+                <i class="fas fa-award" style="color:#ffffff;font-size:1.05rem;"></i>
+              </div>
+              <div>
+                <div style="font-size:0.62rem;color:rgba(255,255,255,0.85);font-weight:800;text-transform:uppercase;letter-spacing:1px;">Loyalty Points</div>
+                <div id="homePoints" style="font-size:1.65rem;font-weight:900;color:#ffffff;line-height:1;margin-top:2px;">0</div>
+              </div>
+            </div>
+            <div id="loyaltyTierBadge" style="background:rgba(245,158,11,0.25);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);padding:4px 12px;border-radius:20px;font-size:0.65rem;font-weight:900;letter-spacing:0.5px;">BRONZE</div>
+          </div>
+
+          <div style="font-size:0.68rem;display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span id="loyaltyProgressLabel" style="color:rgba(255,255,255,0.75);font-weight:600;">Progress to Silver</span>
+            <span style="color:#fbbf24;font-weight:800;"><span id="homePoints2">0</span> / <span id="loyaltyTargetPoints">1,000</span></span>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.18);border-radius:10px;height:7px;overflow:hidden;">
+            <div id="loyaltyBar" style="height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);border-radius:10px;width:0%;transition:width 1.2s ease;"></div>
+          </div>
+
+          <div id="ptsNeeded" style="font-size:0.65rem;color:rgba(255,255,255,0.7);margin-top:6px;">1,000 pts more to unlock Silver benefits</div>
+        </div>
       </div>
-      <i class="fas fa-chevron-right" style="color:var(--primary);font-size:0.9rem;flex-shrink:0;"></i>
     </div>
 
+    <!-- Quick Actions Section -->
+    <div class="home-quick-actions-wrap">
+      <p class="home-section-kicker"><i class="fas fa-bolt" style="color:var(--primary);margin-right:6px;"></i> QUICK ACTIONS</p>
+      <div class="home-actions-grid">
+        <!-- Action 1: Browse Fleet -->
+        <div class="home-action-card" onclick="showPage('page-vehicles')">
+          <div class="home-action-icon" style="background:rgba(0,177,79,0.12);color:var(--primary);">
+            <i class="fas fa-car"></i>
+          </div>
+          <div class="home-action-info">
+            <h4>Browse Fleet</h4>
+            <p>Sedans, SUVs, Vans &amp; Pickups</p>
+          </div>
+          <div class="home-action-arrow"><i class="fas fa-chevron-right"></i></div>
+        </div>
 
-    <!-- Pending Payment / 30-Min Deposit Countdown Monitor -->
-    <div id="pendingPaymentMonitor" style="display:none;margin-bottom:20px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <h3 style="font-size:1rem;font-weight:900;color:#d97706;display:flex;align-items:center;gap:6px;">
-          <i class="fas fa-clock"></i> Pending Deposit Payment
-        </h3>
-        <span style="font-size:0.65rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;">30-MIN LIMIT</span>
-      </div>
-      <div id="pendingPaymentCard" class="active-rental-card" style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,0.4);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(245,158,11,0.12);">
-        <!-- filled by JS -->
+        <!-- Action 2: My Bookings -->
+        <div class="home-action-card" onclick="showPage('page-bookings')">
+          <div class="home-action-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="home-action-info">
+            <h4>My Bookings</h4>
+            <p>Active trips &amp; past bookings</p>
+          </div>
+          <div class="home-action-arrow"><i class="fas fa-chevron-right"></i></div>
+        </div>
+
+        <!-- Action 3: Live Chat -->
+        <div class="home-action-card" onclick="showOverlay('page-livechat')">
+          <div class="home-action-icon" style="background:rgba(14,165,233,0.12);color:#0ea5e9;">
+            <i class="fas fa-comments"></i>
+            <span id="chatUnreadBadge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--danger);color:#fff;border-radius:50%;width:18px;height:18px;font-size:0.6rem;font-weight:800;align-items:center;justify-content:center;border:2px solid var(--bg-card);"></span>
+          </div>
+          <div class="home-action-info">
+            <h4>Live Chat</h4>
+            <p>Direct verified support team</p>
+          </div>
+          <div class="home-action-arrow"><i class="fas fa-chevron-right"></i></div>
+        </div>
+
+        <!-- Action 4: AI Assistant -->
+        <div class="home-action-card" onclick="showOverlay('page-chatbot')">
+          <div class="home-action-icon" style="background:rgba(168,85,247,0.12);color:#a855f7;">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="home-action-info">
+            <h4>AI Assistant</h4>
+            <p>24/7 instant smart advice</p>
+          </div>
+          <div class="home-action-arrow"><i class="fas fa-chevron-right"></i></div>
+        </div>
       </div>
     </div>
 
-    <!-- Active Booking Monitor -->
-    <div id="activeBookingMonitor" style="display:none;margin-bottom:20px;">
-
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-
-
-        <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Active Rental</h3>
-
-
-        <span style="font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(16,185,129,0.2);">LIVE</span>
-
-
+    <!-- Content Sections Wrapper -->
+    <div class="home-content-section">
+      <!-- 1st-Time User Quick Guide Banner -->
+      <div id="homeTutorialBanner" onclick="openCustomerTutorial(true)" class="home-tutorial-banner">
+        <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+          <div class="home-tutorial-icon">
+            <i class="fas fa-compass"></i>
+          </div>
+          <div style="min-width:0;">
+            <div style="font-weight:800;font-size:0.95rem;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+              <span>First time renting a car?</span>
+              <span style="font-size:0.62rem;font-weight:800;background:#00B14F;color:#fff;padding:2px 7px;border-radius:6px;letter-spacing:0.3px;">GUIDE</span>
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              Tingnan ang 4-step quick walkthrough kung paano mag-book
+            </div>
+          </div>
+        </div>
+        <div class="home-tutorial-btn">
+          <span>View 4-Step Guide</span>
+          <i class="fas fa-chevron-right"></i>
+        </div>
       </div>
 
-
-      <div id="activeBookingCard" class="active-rental-card" style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;" onclick="openBookingDetail(window._activeBookingId)">
-
-
-        <!-- filled by JS -->
-
-
-      </div>
-
-
-    </div>
-
-
-
-
-
-    <!-- Recent Bookings section removed as per Requirement 10.1 (admin-panel-ui-improvements spec) -->
-
-    <!-- Company Customer Reviews Preview Section -->
-    <div id="companyReviewsPreviewSection" style="margin-top:24px;margin-bottom:28px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div>
-          <h3 style="font-size:1.1rem;font-weight:900;color:var(--text-primary);margin:0;display:flex;align-items:center;gap:8px;">
-            <i class="fas fa-star" style="color:#f59e0b;font-size:1rem;"></i> What Our Customers Say
+      <!-- Pending Payment / 30-Min Deposit Countdown Monitor -->
+      <div id="pendingPaymentMonitor" style="display:none;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h3 style="font-size:1rem;font-weight:900;color:#d97706;display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-clock"></i> Pending Deposit Payment
           </h3>
-          <p style="font-size:0.75rem;color:var(--text-muted);margin:2px 0 0;">Real reviews from verified Autoride renters</p>
+          <span style="font-size:0.65rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;">30-MIN LIMIT</span>
         </div>
-        <button onclick="openCompanyReviews()" style="background:none;border:none;color:var(--primary);font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 8px;">
-          See All <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
-        </button>
+        <div id="pendingPaymentCard" class="active-rental-card" style="background:var(--bg-card);border:1.5px solid rgba(245,158,11,0.4);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(245,158,11,0.12);">
+          <!-- filled by JS -->
+        </div>
       </div>
 
-      <!-- Rating Summary Card -->
-      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="background:linear-gradient(135deg, #f59e0b, #d97706);color:#fff;border-radius:14px;padding:10px 14px;text-align:center;min-width:60px;">
-            <div id="homeRatingScore" style="font-size:1.6rem;font-weight:900;line-height:1;">5.0</div>
-            <div style="font-size:0.6rem;font-weight:700;text-transform:uppercase;opacity:0.9;margin-top:2px;">out of 5</div>
-          </div>
+      <!-- Active Booking Monitor -->
+      <div id="activeBookingMonitor" style="display:none;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h3 style="font-size:1rem;font-weight:900;color:var(--text-primary);">Active Rental</h3>
+          <span style="font-size:0.65rem;font-weight:700;color:#10b981;background:rgba(16,185,129,0.1);padding:3px 10px;border-radius:20px;border:1px solid rgba(16,185,129,0.2);">LIVE</span>
+        </div>
+        <div id="activeBookingCard" class="active-rental-card" style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;overflow:hidden;cursor:pointer;" onclick="openBookingDetail(window._activeBookingId)">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Company Customer Reviews Preview Section -->
+      <div id="companyReviewsPreviewSection" style="margin-top:24px;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div>
-            <div id="homeRatingStars" style="color:#f59e0b;font-size:0.9rem;margin-bottom:4px;">
-              <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-            </div>
-            <div id="homeRatingCount" style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Based on company rentals</div>
+            <h3 style="font-size:1.15rem;font-weight:900;color:var(--text-primary);margin:0;display:flex;align-items:center;gap:8px;">
+              <i class="fas fa-star" style="color:#f59e0b;font-size:1.05rem;"></i> What Our Customers Say
+            </h3>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:2px 0 0;">Real reviews from verified Autoride renters</p>
           </div>
+          <button onclick="openCompanyReviews()" style="background:none;border:none;color:var(--primary);font-size:0.82rem;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;transition:all 0.2s;">
+            See All <i class="fas fa-chevron-right" style="font-size:0.72rem;"></i>
+          </button>
         </div>
-        <button onclick="openCompanyReviews()" class="btn btn-sm btn-outline-primary" style="border-radius:12px;font-size:0.75rem;font-weight:700;padding:6px 12px;border:1.5px solid var(--primary);color:var(--primary);background:none;cursor:pointer;">
-          View Reviews
-        </button>
-      </div>
 
-      <!-- Recent Reviews Scroll / Snippets -->
-      <div id="homeReviewsSnippetList" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
-        <!-- Populated by JS -->
+        <!-- Rating Summary Card -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:18px 20px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(0,0,0,0.03);">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="background:linear-gradient(135deg, #f59e0b, #d97706);color:#fff;border-radius:14px;padding:10px 16px;text-align:center;min-width:64px;box-shadow:0 4px 12px rgba(245,158,11,0.25);">
+              <div id="homeRatingScore" style="font-size:1.7rem;font-weight:900;line-height:1;">5.0</div>
+              <div style="font-size:0.6rem;font-weight:800;text-transform:uppercase;opacity:0.95;margin-top:2px;letter-spacing:0.4px;">out of 5</div>
+            </div>
+            <div>
+              <div id="homeRatingStars" style="color:#f59e0b;font-size:0.95rem;margin-bottom:4px;letter-spacing:2px;">
+                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+              </div>
+              <div id="homeRatingCount" style="font-size:0.78rem;color:var(--text-muted);font-weight:600;">Based on company rentals</div>
+            </div>
+          </div>
+          <button onclick="openCompanyReviews()" class="btn btn-sm btn-outline-primary" style="border-radius:12px;font-size:0.78rem;font-weight:800;padding:8px 16px;border:1.5px solid var(--primary);color:var(--primary);background:none;cursor:pointer;transition:all 0.2s ease;">
+            View Reviews
+          </button>
+        </div>
+
+        <!-- Recent Reviews Scroll / Snippets -->
+        <div id="homeReviewsSnippetList" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+          <!-- Populated by JS -->
+        </div>
       </div>
     </div>
-
   </div>
-
-
 </div>
 
 
