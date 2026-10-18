@@ -4649,7 +4649,9 @@ def upload_refund_proof():
 
         return jsonify({"error": "No selected file"}), 400
 
-        
+    _img_err = reject_non_image(file, "Refund proof", allow_pdf=True)
+    if _img_err:
+        return _img_err
 
     try:
 
@@ -7566,29 +7568,38 @@ def create_walkin_booking():
         except Exception:
             days = 1
 
-        daily_rate = float(veh['daily_rate'] or 0.0)
-        base_price = float(data.get('base_price') or (daily_rate * days))
-        addon_price = max(0.0, float(data.get('addon_price') or 0.0))
-        driver_fee = max(0.0, float(data.get('driver_fee') or 0.0))
-        delivery_fee = max(0.0, float(data.get('delivery_fee') or 0.0))
-        discount_amount = max(0.0, float(data.get('discount_amount') or 0.0))
+        try:
+            daily_rate = min(1000000.0, max(0.0, float(veh['daily_rate'] or 0.0)))
+            base_price = min(10000000.0, max(0.0, float(data.get('base_price') or (daily_rate * days))))
+            addon_price = min(10000000.0, max(0.0, float(data.get('addon_price') or 0.0)))
+            driver_fee = min(10000000.0, max(0.0, float(data.get('driver_fee') or 0.0)))
+            delivery_fee = min(10000000.0, max(0.0, float(data.get('delivery_fee') or 0.0)))
+            discount_amount = min(10000000.0, max(0.0, float(data.get('discount_amount') or 0.0)))
 
-        default_total = max(0.0, (base_price + addon_price + driver_fee + delivery_fee) - discount_amount)
-        total_price = float(data.get('total_price') if data.get('total_price') is not None else default_total)
+            default_total = max(0.0, (base_price + addon_price + driver_fee + delivery_fee) - discount_amount)
+            total_price = min(10000000.0, max(0.0, float(data.get('total_price') if data.get('total_price') is not None else default_total)))
 
-        amount_paid = max(0.0, float(data.get('amount_paid') or 0.0))
-        balance_amount = max(0.0, float(data.get('balance_amount') if data.get('balance_amount') is not None else max(0.0, total_price - amount_paid)))
+            amount_paid = min(10000000.0, max(0.0, float(data.get('amount_paid') or 0.0)))
+            balance_amount = min(10000000.0, max(0.0, float(data.get('balance_amount') if data.get('balance_amount') is not None else max(0.0, total_price - amount_paid))))
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid numerical values in pricing or payment amounts"}), 400
 
-        payment_method = (data.get('payment_method') or 'Cash').strip()
-        payment_status = (data.get('payment_status') or ('Paid' if (amount_paid >= total_price and total_price > 0) else ('Partial' if amount_paid > 0 else 'Unpaid'))).strip()
-        payment_type = (data.get('payment_type') or ('Full' if amount_paid >= total_price else 'Downpayment')).strip()
+        payment_method = str(data.get('payment_method') or 'Cash').strip()[:50]
+        payment_status = str(data.get('payment_status') or ('Paid' if (amount_paid >= total_price and total_price > 0) else ('Partial' if amount_paid > 0 else 'Unpaid'))).strip()
+        allowed_pay_statuses = ['Paid', 'Partial', 'Partially Paid', 'Unpaid', 'Refunded', 'Cancelled']
+        if payment_status not in allowed_pay_statuses:
+            payment_status = 'Unpaid'
+        payment_type = str(data.get('payment_type') or ('Full' if amount_paid >= total_price else 'Downpayment')).strip()[:30]
 
         # Status: Walk-in can be directly Confirmed or Picked Up
-        status = (data.get('status') or 'Confirmed').strip()
-        rental_type = (data.get('rental_type') or 'Self Drive').strip()
-        pickup_location = (data.get('pickup_location') or 'Main Office / Garage').strip()
-        destination = (data.get('destination') or '').strip()
-        rental_purpose = (data.get('rental_purpose') or 'Walk-in Counter Rental').strip()
+        status = str(data.get('status') or 'Confirmed').strip()
+        allowed_walkin_statuses = ['Pending', 'Confirmed', 'Approved', 'Picked Up', 'Completed', 'Cancelled']
+        if status not in allowed_walkin_statuses:
+            status = 'Confirmed'
+        rental_type = str(data.get('rental_type') or 'Self Drive').strip()[:30]
+        pickup_location = str(data.get('pickup_location') or 'Main Office / Garage').strip()[:150]
+        destination = str(data.get('destination') or '').strip()[:100]
+        rental_purpose = str(data.get('rental_purpose') or 'Walk-in Counter Rental').strip()[:100]
         raw_addons = data.get('addons', '')
         addons = ",".join(raw_addons) if isinstance(raw_addons, list) else str(raw_addons)
 
@@ -17018,6 +17029,9 @@ def record_expense():
     if 'proof_image' in request.files:
         file = request.files['proof_image']
         if file.filename != '':
+            _img_err = reject_non_image(file, "Expense receipt", allow_pdf=True)
+            if _img_err:
+                return _img_err
             ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
             filename = f"expense_{recorded_by}_{int(datetime.now().timestamp())}.{ext}"
             file_data = file.read()
