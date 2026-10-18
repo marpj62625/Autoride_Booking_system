@@ -4,7 +4,7 @@ import os
 # Add the backend directory to the path so we can import app.py
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
-from app import app  # v2026.10.18.4 - Card Layout Realignment
+from app import app  # v2026.10.18.5 - More Page UI Modernization
 
 # This middleware strips the /api prefix before passing to Flask
 # Vercel receives /api/vehicles/categories -> middleware strips -> Flask sees /vehicles/categories

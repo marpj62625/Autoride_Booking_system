@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.18.4">
+    <meta name="build-version" content="2026.10.18.5">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -1982,46 +1982,142 @@
             grid-column: span 1 !important;
           }
 
-          /* More page: desktop grid */
-          #page-more .scroll-content {
-            max-width: none;
-            padding: 32px 36px;
+          /* More Page: Desktop Layout */
+          #page-more .more-page-container {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 24px 32px 80px;
           }
-          .more-greeting-banner {
+          #page-more .more-header-banner {
+            background: linear-gradient(135deg, #00873a 0%, #00b14f 55%, #10b981 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 26px 32px;
+            box-shadow: 0 8px 30px rgba(0, 177, 79, 0.22);
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+          }
+          #page-more .more-header-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+          }
+          #page-more .more-header-content {
             display: flex;
             align-items: center;
-            padding: 28px 32px;
-            background: linear-gradient(135deg, rgba(0,177,79,0.06), rgba(0,177,79,0.02));
-            border: 1px solid rgba(0,177,79,0.12);
-            border-radius: 20px;
-            margin-bottom: 28px;
+            justify-content: space-between;
+            gap: 24px;
+            position: relative;
+            z-index: 1;
           }
-          .more-grid {
+          #page-more .more-header-kicker {
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+            display: block;
+          }
+          #page-more .more-header-title {
+            color: #ffffff;
+            font-size: 1.75rem;
+            font-weight: 900;
+            letter-spacing: -0.4px;
+            margin: 0;
+          }
+          #page-more .more-header-sub {
+            display: block;
+            font-size: 0.88rem;
+            color: rgba(255, 255, 255, 0.92);
+            margin: 4px 0 0;
+            max-width: 520px;
+            line-height: 1.45;
+          }
+          #page-more .more-header-badge-wrap {
+            flex-shrink: 0;
+          }
+          #page-more .more-support-pill {
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          }
+          #page-more .more-pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6ee7b7;
+            box-shadow: 0 0 8px #6ee7b7;
+            animation: pulse-dot 2s infinite;
+          }
+          #page-more .more-content-wrap {
+            padding: 0 !important;
+            max-width: none !important;
+            gap: 26px;
+          }
+          #page-more .more-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 16px;
           }
-          .more-card {
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 28px 24px 24px;
-            border-radius: 20px;
-            border: 1px solid var(--border-light);
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          #page-more .more-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 20px 22px;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            text-align: left !important;
             gap: 16px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
             margin-bottom: 0;
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            text-decoration: none;
+            color: inherit;
           }
-          .more-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            border-color: var(--primary);
+          #page-more .more-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0, 177, 79, 0.09);
+            border-color: rgba(0, 177, 79, 0.35);
           }
-          .more-card-icon { width: 56px; height: 56px; border-radius: 16px; }
-          .more-card-body h4 { font-size: 1.05rem; font-weight: 800; }
-          .more-card-body p { font-size: 0.85rem; line-height: 1.4; }
-          .more-card-arrow { display: none; }
-          .more-signout-mobile { display: none !important; }
+          #page-more .more-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            font-size: 1.35rem;
+          }
+          #page-more .more-card-body h4 {
+            font-size: 1.02rem;
+          }
+          #page-more .more-card-body p {
+            font-size: 0.82rem;
+          }
+          #page-more .more-social-card {
+            padding: 22px 26px;
+            border-radius: 20px;
+          }
+          #page-more .more-signout-mobile {
+            display: none !important;
+          }
 
           /* Auth pages: full-viewport split-screen */
           #page-login.auth-page.active,
@@ -2266,36 +2362,260 @@
           }
         }
 
-        /* More-card base (mobile: looks like more-item) */
-        .more-card {
-          background: var(--bg-card);
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-card);
-          padding: 16px;
-          margin-bottom: 10px;
+        /* More page: Base & Mobile Styles */
+        .more-page-container {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 0 80px;
+        }
+        .more-header-banner {
+          background: linear-gradient(135deg, #00873a 0%, #00b14f 60%, #10b981 100%);
+          padding: 20px 18px 22px;
+          border-radius: 0 0 24px 24px;
+          box-shadow: 0 4px 18px rgba(0, 177, 79, 0.18);
+          position: relative;
+          overflow: hidden;
+        }
+        .more-header-banner::before {
+          content: '';
+          position: absolute;
+          top: -40%;
+          right: -10%;
+          width: 260px;
+          height: 260px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .more-header-content {
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          position: relative;
+          z-index: 1;
+        }
+        .more-header-kicker {
+          font-size: 0.68rem;
+          font-weight: 800;
+          color: rgba(255, 255, 255, 0.85);
+          letter-spacing: 0.8px;
+          display: block;
+          margin-bottom: 2px;
+          text-transform: uppercase;
+        }
+        .more-header-title {
+          font-size: 1.5rem;
+          font-weight: 900;
+          color: #ffffff;
+          margin: 0;
+          letter-spacing: -0.4px;
+        }
+        .more-header-sub {
+          display: none;
+        }
+        .more-header-badge-wrap {
+          flex-shrink: 0;
+        }
+        .more-support-pill {
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 20px;
+          padding: 4px 12px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          color: #ffffff;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .more-pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #6ee7b7;
+          box-shadow: 0 0 6px #6ee7b7;
+          animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+          0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(110, 231, 183, 0.7); }
+          70% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 0 6px rgba(110, 231, 183, 0); }
+          100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(110, 231, 183, 0); }
+        }
+        .more-content-wrap {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+        .more-section-group {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .more-section-header {
+          font-size: 0.8rem;
+          font-weight: 800;
+          color: var(--text-muted);
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding-left: 2px;
+        }
+        .more-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .more-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          padding: 14px 16px;
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
           gap: 14px;
           cursor: pointer;
-          transition: transform 0.15s;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          transition: all 0.2s ease;
           text-decoration: none;
           color: inherit;
         }
-        .more-card:active { transform: scale(0.98); }
+        .more-card:active {
+          transform: scale(0.985);
+        }
         .more-card-icon {
-          width: 48px; height: 48px;
-          border-radius: var(--radius-sm);
-          display: flex; align-items: center; justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.25rem;
           flex-shrink: 0;
         }
-        .more-card-body { flex: 1; }
-        .more-card-body h4 { font-size: 0.95rem; font-weight: 700; }
-        .more-card-body p { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
-        .more-card-arrow { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
-        /* Greeting banner: hidden on mobile */
+        .more-card-body {
+          flex: 1;
+          min-width: 0;
+        }
+        .more-card-body h4 {
+          font-size: 0.95rem;
+          font-weight: 800;
+          margin: 0 0 2px;
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .more-card-body p {
+          font-size: 0.76rem;
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.35;
+        }
+        .more-card-arrow {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          background: var(--bg-input, #f1f5f9);
+          display: flex !important;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+          font-size: 0.72rem;
+          margin-left: auto;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+        }
+        .more-card:hover .more-card-arrow {
+          background: var(--primary);
+          color: #ffffff;
+          transform: translateX(3px);
+        }
+        .more-social-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          padding: 16px 18px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+          margin-top: 4px;
+        }
+        .more-fb-link {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          text-decoration: none;
+          color: inherit;
+          padding-bottom: 14px;
+          border-bottom: 1px solid var(--border);
+        }
+        .more-fb-icon-wrap {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          background: rgba(24, 119, 242, 0.1);
+          color: #1877f2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.3rem;
+          flex-shrink: 0;
+        }
+        .more-fb-info {
+          flex: 1;
+          min-width: 0;
+        }
+        .more-fb-info h4 {
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          margin: 0 0 2px 0;
+        }
+        .more-fb-info p {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+          margin: 0;
+        }
+        .more-fb-btn {
+          background: rgba(24, 119, 242, 0.1);
+          color: #1877f2;
+          border: 1px solid rgba(24, 119, 242, 0.2);
+          padding: 6px 12px;
+          border-radius: 10px;
+          font-size: 0.75rem;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          flex-shrink: 0;
+        }
+        .more-footer-credits {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 10px;
+          padding-top: 12px;
+          font-size: 0.72rem;
+          color: var(--text-muted);
+        }
+        .more-credits-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+        }
+        .more-version-tag {
+          font-weight: 700;
+          color: var(--text-muted);
+        }
         .more-greeting-banner { display: none; }
-        /* Sign out: visible on mobile only */
-        .more-signout-mobile { display: flex; }
+        .more-signout-mobile { display: flex !important; }
 
         /* Skeleton loading animation */
         @keyframes skeleton-shimmer {
@@ -4676,191 +4996,176 @@
  -->
 
 
-<div id="page-more" class="page">
-
-
-  <div class="page-header"><h2>More</h2></div>
-
-
-  <div class="scroll-content" id="moreScrollContent">
-
-
-
-    <!-- Desktop: greeting banner -->
-
-
-    <div class="more-greeting-banner">
-
-
-      <div>
-
-
-        <h2 id="moreGreetName" style="font-size:1.5rem;font-weight:900;color:var(--text-primary);margin-bottom:4px;">Hello there 👋</h2>
-
-
-        <p style="color:var(--text-muted);font-size:0.9rem;">What can we help you with today?</p>
-
-
-      </div>
-
-
-    </div>
-
-
-
-    <!-- Grid of action cards (desktop) / list items (mobile) -->
-
-
-    <div class="more-grid">
-      <!-- App Guide / First Time User Tutorial -->
-      <div class="more-card" id="moreAppGuideCard" onclick="openCustomerTutorial(true)">
-        <div class="more-card-icon" style="background:rgba(0,177,79,0.1);"><i class="fas fa-graduation-cap" style="color:var(--primary);font-size:1.6rem;"></i></div>
-        <div class="more-card-body">
-          <h4>How to Rent (Guide)</h4>
-          <p>4-step quick walkthrough on booking a vehicle</p>
+<div id="page-more" class="page" style="background:var(--bg-page);">
+  <div class="more-page-container">
+    <!-- Emerald Header Banner -->
+    <div class="more-header-banner">
+      <div class="more-header-content">
+        <div>
+          <span class="more-header-kicker">AUTORIDE SUPPORT &amp; SERVICES</span>
+          <h1 class="more-header-title">More Options</h1>
+          <p class="more-header-sub">Access guides, live assistance, account standings, policies, and community updates all in one place.</p>
         </div>
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-      </div>
-
-      <!-- Account Standing & Violations -->
-      <div class="more-card" id="moreAccountStandingCard" onclick="openAccountStanding()">
-        <div class="more-card-icon" id="standingCardIconWrap" style="background:rgba(0,177,79,0.1);"><i class="fas fa-shield-alt" id="standingCardIcon" style="color:var(--primary);font-size:1.6rem;"></i></div>
-        <div class="more-card-body">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <h4 style="margin:0;">Account Standing</h4>
-            <span id="standingCardBadge" style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(0,177,79,0.15);color:var(--primary);">Good Standing</span>
+        <div class="more-header-badge-wrap">
+          <div class="more-support-pill">
+            <span class="more-pulse-dot"></span>
+            <span>Support Online 24/7</span>
           </div>
-          <p id="standingCardSubtext">0 Strikes · Full booking access</p>
         </div>
-        <i class="fas fa-arrow-right more-card-arrow"></i>
+      </div>
+    </div>
+
+    <div class="more-content-wrap" id="moreScrollContent">
+      <!-- Section 1: Support & Assistance -->
+      <div class="more-section-group">
+        <div class="more-section-header">
+          <i class="fas fa-headset" style="color:var(--primary);"></i>
+          <span>Support &amp; Guidance</span>
+        </div>
+        <div class="more-grid">
+          <!-- How to Rent Guide -->
+          <div class="more-card" id="moreAppGuideCard" onclick="openCustomerTutorial(true)">
+            <div class="more-card-icon" style="background:rgba(0,177,79,0.12);color:var(--primary);"><i class="fas fa-graduation-cap"></i></div>
+            <div class="more-card-body">
+              <h4>How to Rent (Guide)</h4>
+              <p>4-step quick walkthrough on booking and driving a vehicle</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Live Chat -->
+          <div class="more-card" onclick="showOverlay('page-livechat')">
+            <div class="more-card-icon" style="background:rgba(0,177,79,0.12);color:var(--primary);"><i class="fas fa-comments"></i></div>
+            <div class="more-card-body">
+              <h4>Live Chat</h4>
+              <p>Chat directly with our verified support team in real time</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+
+          <!-- AI Assistant -->
+          <div class="more-card" onclick="showOverlay('page-chatbot')">
+            <div class="more-card-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6;"><i class="fas fa-robot"></i></div>
+            <div class="more-card-body">
+              <h4>AI Assistant</h4>
+              <p>Get instant automated help, FAQs &amp; vehicle recommendations 24/7</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+
+          <!-- Newsletter & Promos -->
+          <div class="more-card more-card-newsletter" id="moreCardNewsletter" onclick="showOverlay('page-newsletter')">
+            <div class="more-card-icon" style="background:rgba(168,85,247,0.12);color:#a855f7;"><i class="fas fa-envelope-open-text"></i></div>
+            <div class="more-card-body">
+              <h4>Newsletter &amp; Promos</h4>
+              <p>Subscribe for seasonal discounts, coupon drops and announcements</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+        </div>
       </div>
 
-      <div class="more-card" onclick="showOverlay('page-livechat')">
+      <!-- Section 2: Account, Policy & Trust -->
+      <div class="more-section-group">
+        <div class="more-section-header">
+          <i class="fas fa-user-shield" style="color:var(--primary);"></i>
+          <span>Account &amp; Trust Center</span>
+        </div>
+        <div class="more-grid">
+          <!-- Account Standing & Violations -->
+          <div class="more-card" id="moreAccountStandingCard" onclick="openAccountStanding()">
+            <div class="more-card-icon" id="standingCardIconWrap" style="background:rgba(0,177,79,0.12);color:var(--primary);"><i class="fas fa-shield-alt" id="standingCardIcon"></i></div>
+            <div class="more-card-body">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <h4 style="margin:0;">Account Standing</h4>
+                <span id="standingCardBadge" style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:12px;background:rgba(0,177,79,0.15);color:var(--primary);">Good Standing</span>
+              </div>
+              <p id="standingCardSubtext">0 Strikes · Full booking access</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
 
+          <!-- Notifications -->
+          <div class="more-card" onclick="showOverlay('page-notifications')">
+            <div class="more-card-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;"><i class="fas fa-bell"></i></div>
+            <div class="more-card-body">
+              <h4>Notifications</h4>
+              <p>Review booking updates, alerts, schedules &amp; payment receipts</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
 
-        <div class="more-card-icon" style="background:rgba(0,177,79,0.1);"><i class="fas fa-comments" style="color:var(--primary);font-size:1.6rem;"></i></div>
+          <!-- Company Reviews -->
+          <div class="more-card" onclick="openCompanyReviews()">
+            <div class="more-card-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;"><i class="fas fa-star"></i></div>
+            <div class="more-card-body">
+              <h4>Company Reviews</h4>
+              <p>Verified ratings &amp; customer experiences across all branches</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
 
+          <!-- Terms & Conditions -->
+          <div class="more-card" onclick="openTermsAndConditions()">
+            <div class="more-card-icon" style="background:rgba(14,165,233,0.12);color:#0ea5e9;"><i class="fas fa-file-contract"></i></div>
+            <div class="more-card-body">
+              <h4>Terms &amp; Conditions</h4>
+              <p>Transparent rental guidelines, 20% DP rules &amp; return policies</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
 
-        <div class="more-card-body"><h4>Live Chat</h4><p>Chat with our support team in real time</p></div>
-
-
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-
-
+          <!-- Download Mobile App (Web only) -->
+          <div class="more-card" id="moreDownloadAppCard" style="display: none;" onclick="openPlayStoreTestingFlow()">
+            <div class="more-card-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;"><i class="fab fa-google-play"></i></div>
+            <div class="more-card-body">
+              <h4>Download Mobile App</h4>
+              <p>Fast offline booking &amp; instant GPS notifications (Play Store Beta)</p>
+            </div>
+            <div class="more-card-arrow"><i class="fas fa-chevron-right"></i></div>
+          </div>
+        </div>
       </div>
 
+      <!-- Section 3: Official Social Hub & System Info -->
+      <div class="more-social-card">
+        <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" class="more-fb-link">
+          <div class="more-fb-icon-wrap">
+            <i class="fab fa-facebook-f"></i>
+          </div>
+          <div class="more-fb-info">
+            <h4>Follow us on Facebook <span style="display:inline-flex;align-items:center;background:rgba(24,119,242,0.12);color:#1877f2;border-radius:12px;font-size:0.65rem;padding:2px 7px;font-weight:700;margin-left:6px;"><i class="fas fa-check-circle" style="margin-right:3px;"></i> Official Page</span></h4>
+            <p>Catch flash sales, new vehicle additions, and community feedback directly from our team.</p>
+          </div>
+          <div class="more-fb-btn">
+            <span>Visit</span>
+            <i class="fas fa-external-link-alt"></i>
+          </div>
+        </a>
 
-
-      <div class="more-card" onclick="showOverlay('page-chatbot')">
-
-
-        <div class="more-card-icon" style="background:rgba(96,165,250,0.1);"><i class="fas fa-robot" style="color:#60a5fa;font-size:1.6rem;"></i></div>
-
-
-        <div class="more-card-body"><h4>AI Assistant</h4><p>Get instant automated answers 24/7</p></div>
-
-
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-
-
+        <div class="more-footer-credits">
+          <div class="more-credits-row">
+            <span>&copy; 2026 Autoride Car Rental</span>
+            <span>&bull;</span>
+            <span>All rights reserved</span>
+          </div>
+          <div class="more-version-tag">
+            <i class="fas fa-code-branch" style="margin-right:4px;color:var(--primary);"></i>v2026.10.18
+          </div>
+        </div>
       </div>
 
-
-
-      <div class="more-card" onclick="showOverlay('page-notifications')">
-
-
-        <div class="more-card-icon" style="background:rgba(251,191,36,0.1);"><i class="fas fa-bell" style="color:#fbbf24;font-size:1.6rem;"></i></div>
-
-
-        <div class="more-card-body"><h4>Notifications</h4><p>View all your booking and account alerts</p></div>
-
-
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-
-
-      </div>
-
-
-
-      <div class="more-card more-card-newsletter" id="moreCardNewsletter" onclick="showOverlay('page-newsletter')">
-        <div class="more-card-icon" style="background:rgba(167,139,250,0.1);"><i class="fas fa-envelope" style="color:#a78bfa;font-size:1.6rem;"></i></div>
-
-
-        <div class="more-card-body"><h4>Newsletter</h4><p>Subscribe for exclusive promos and updates</p></div>
-
-
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-
-
-      </div>
-
-
-
-      <div class="more-card" onclick="openCompanyReviews()">
-        <div class="more-card-icon" style="background:rgba(245,158,11,0.1);"><i class="fas fa-star" style="color:#f59e0b;font-size:1.6rem;"></i></div>
-        <div class="more-card-body"><h4>Company Reviews</h4><p>See ratings & feedback from our customers</p></div>
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-      </div>
-
-      <div class="more-card" onclick="openTermsAndConditions()">
-        <div class="more-card-icon" style="background:rgba(59,130,246,0.1);"><i class="fas fa-file-contract" style="color:#3b82f6;font-size:1.6rem;"></i></div>
-        <div class="more-card-body"><h4>Terms &amp; Conditions</h4><p>Rental policies, 20% DP &amp; handover rules</p></div>
-        <i class="fas fa-arrow-right more-card-arrow"></i>
-      </div>
-
-      <!-- Download App Card (Web only) -->
-      <div class="more-card" id="moreDownloadAppCard" style="display: none;" onclick="openPlayStoreTestingFlow()">
-        <div class="more-card-icon" style="background: rgba(219,68,85,0.1);"><i class="fab fa-google-play" style="color: #db4437; font-size: 1.6rem;"></i></div>
+      <!-- Mobile Sign Out Button -->
+      <div class="more-card more-signout-mobile" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="border:1px solid rgba(239,68,68,0.25);background:rgba(239,68,68,0.03);">
+        <div class="more-card-icon" style="background:rgba(239,68,68,0.12);color:var(--danger);"><i class="fas fa-sign-out-alt"></i></div>
         <div class="more-card-body">
-          <h4>Download Mobile App</h4>
-          <p>Get the best experience on your phone (Play Store Beta)</p>
+          <h4 style="color:var(--danger);margin:0;">Sign Out</h4>
+          <p style="color:var(--danger);opacity:0.8;margin:2px 0 0;">Log out of your Autoride account</p>
         </div>
-        <i class="fas fa-arrow-right more-card-arrow"></i>
+        <div class="more-card-arrow" style="color:var(--danger);background:rgba(239,68,68,0.1);"><i class="fas fa-chevron-right"></i></div>
       </div>
-
-
     </div>
-
-
-
-    <!-- Facebook link -->
-
-
-    <a href="https://www.facebook.com/share/1JJw2qthYj/" target="_blank" rel="noopener" style="text-decoration:none;">
-
-
-    <div class="more-card" style="margin-bottom:8px;margin-top:8px;">
-
-
-      <div class="more-card-icon" style="background:rgba(24,119,242,0.1);"><i class="fab fa-facebook" style="color:#1877f2;font-size:1.6rem;"></i></div>
-
-
-      <div class="more-card-body"><h4>Follow us on Facebook</h4><p>Stay updated with latest news and offers</p></div>
-
-
-      <i class="fas fa-arrow-right more-card-arrow"></i>
-
-
-    </div>
-
-
-    </a>
-
-
-
-
-
-    <!-- Sign out: only visible on mobile (sidebar handles it on desktop) -->
-    <div class="more-item more-signout-mobile" onclick="if(confirm('Sign out of your account?')){doLogout();}" style="margin-top:8px;border:1.5px solid var(--danger);">
-      <div class="more-item-icon" style="background:rgba(248,113,113,0.12);color:var(--danger);"><i class="fas fa-sign-out-alt"></i></div>
-      <div class="more-item-text"><h4 style="color:var(--danger);">Sign Out</h4><p>Log out of your account</p></div>
-    </div>
-
-
   </div>
-
-
 </div>
 
 
