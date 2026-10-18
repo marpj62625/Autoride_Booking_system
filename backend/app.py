@@ -2921,6 +2921,9 @@ def admin_verify_user():
     except (ValueError, TypeError) as e:
         return jsonify({"error": f"Invalid parameter types: {e}"}), 400
 
+    if status not in (0, 1, 2):
+        return jsonify({"error": "Invalid status: must be 2 (Verified), 1 (Pending), or 0 (Rejected)"}), 400
+
     # Use a fresh direct connection - bypasses g.db_conn / PgBouncer state issues
     import psycopg as _psycopg
     from config import SUPABASE_DB_URL as _DB_URL
@@ -9538,13 +9541,23 @@ def apply_driver():
 
         return jsonify({"error": "Missing application details"}), 400
 
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id"}), 400
 
+    full_name = str(full_name).strip()[:50]
+    license_number = str(license_number).strip()[:30]
+    contact_info = str(contact_info).strip()[:30]
 
     if 'license_document' not in request.files or request.files['license_document'].filename == '':
 
         return jsonify({"error": "Driver's license document is required"}), 400
 
-
+    lic_file = request.files['license_document']
+    _img_err = reject_non_image(lic_file, "Driver's license document", allow_pdf=True)
+    if _img_err:
+        return _img_err
 
     try:
 
@@ -9724,7 +9737,10 @@ def update_driver_booking_status(booking_id):
 
         return jsonify({"error": "user_id and status required"}), 400
 
-        
+    new_status = str(new_status).strip()
+    allowed_driver_statuses = ['Arrived', 'En Route', 'Picked Up', 'Completed', 'Cancelled']
+    if new_status not in allowed_driver_statuses:
+        return jsonify({"error": f"Invalid driver booking status. Allowed: {', '.join(allowed_driver_statuses)}"}), 400
 
     try:
 
@@ -10678,7 +10694,10 @@ def submit_support():
 
         return jsonify({"error": "Missing required support fields"}), 400
 
-        
+    name = str(name).strip()[:50]
+    email = str(email or '').strip()[:100]
+    subject = str(subject).strip()[:150]
+    message = str(message).strip()[:2000]
 
     try:
 
@@ -10739,14 +10758,18 @@ def get_all_support_tickets():
 @app.route('/admin/support/<int:ticket_id>', methods=['PUT'])
 @app.route('/api/admin/support/<int:ticket_id>', methods=['PUT'])
 def resolve_support_ticket(ticket_id):
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
-    data = request.json
+    data = request.json or {}
 
-    reply = data.get('admin_reply', '')
+    reply = str(data.get('admin_reply', '') or '').strip()[:2000]
 
-    status = data.get('status', 'resolved')
-
-    
+    status = str(data.get('status', 'resolved') or 'resolved').strip()
+    allowed_ticket_statuses = ['open', 'in_progress', 'resolved', 'closed', 'Open', 'In Progress', 'Resolved', 'Closed']
+    if status not in allowed_ticket_statuses:
+        return jsonify({"error": f"Invalid ticket status. Allowed: {', '.join(allowed_ticket_statuses)}"}), 400
 
     try:
 
@@ -11806,6 +11829,9 @@ def get_pending_verifications():
 @app.route('/admin/verify-user', methods=['POST'])
 @app.route('/api/admin/verify-user', methods=['POST'])
 def verify_user():
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
 
     data = request.json or {}
 
@@ -11813,13 +11839,18 @@ def verify_user():
 
     status = data.get('status') # 1 for Approve, 2 for Reject
 
-    
-
     if not user_id or status is None:
 
         return jsonify({"error": "user_id and status are required"}), 400
 
-        
+    try:
+        user_id = int(user_id)
+        status = int(status)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid user_id or status type"}), 400
+
+    if status not in (0, 1, 2):
+        return jsonify({"error": "Status must be 1 (Approve), 2 (Reject), or 0"}), 400
 
     try:
 
@@ -12951,10 +12982,16 @@ def update_vehicle(vehicle_id):
 @app.route('/api/admin/vehicles/<int:vehicle_id>/status', methods=['PATCH', 'PUT', 'POST'])
 @app.route('/api/admin/vehicles/<int:vehicle_id>/status/', methods=['PATCH', 'PUT', 'POST'])
 def update_vehicle_status(vehicle_id):
-    data = request.json or request.form
-    new_status = data.get('status')
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+    data = request.json or request.form or {}
+    new_status = str(data.get('status', '') or '').strip()
     if not new_status:
         return jsonify({"error": "Status is required"}), 400
+    allowed_veh_statuses = ['Available', 'Rented', 'Maintenance', 'Unavailable']
+    if new_status not in allowed_veh_statuses:
+        return jsonify({"error": f"Invalid vehicle status. Allowed: {', '.join(allowed_veh_statuses)}"}), 400
     try:
         cur = get_cursor()
         cur.execute("UPDATE vehicles SET status = %s WHERE id = %s", (new_status, vehicle_id))
@@ -12973,6 +13010,9 @@ def update_vehicle_status(vehicle_id):
 @app.route('/api/admin/vehicles/<int:vehicle_id>/rate', methods=['PATCH', 'PUT', 'POST'])
 @app.route('/api/admin/vehicles/<int:vehicle_id>/rate/', methods=['PATCH', 'PUT', 'POST'])
 def update_vehicle_rate(vehicle_id):
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or request.form or {}
     raw_rate = data.get('daily_rate')
     if raw_rate is None:
@@ -12981,8 +13021,8 @@ def update_vehicle_rate(vehicle_id):
     try:
         dr_str = str(raw_rate).replace('PHP', '').replace('Php', '').replace('₱', '').replace('/day', '').replace('/DAY', '').replace(',', '').strip()
         daily_rate = float(dr_str)
-        if daily_rate < 0:
-            return jsonify({"error": "Daily rate must be non-negative"}), 400
+        if daily_rate < 0 or daily_rate > 1000000:
+            return jsonify({"error": "Daily rate must be between 0 and 1,000,000 PHP"}), 400
         
         cur = get_cursor()
         cur.execute("UPDATE vehicles SET daily_rate = %s WHERE id = %s", (daily_rate, vehicle_id))
@@ -16967,6 +17007,26 @@ def add_admin_blackout_date():
     
     if not all([start_date, end_date, reason, created_by]):
         return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        from datetime import datetime as _dt
+        d1 = _dt.strptime(str(start_date).strip(), '%Y-%m-%d')
+        d2 = _dt.strptime(str(end_date).strip(), '%Y-%m-%d')
+        if d1 > d2:
+            return jsonify({'error': 'Start date cannot be after end date'}), 400
+        if d1.year < 2020 or d2.year > 2099:
+            return jsonify({'error': 'Dates must be between 2020 and 2099'}), 400
+    except ValueError:
+        return jsonify({'error': 'Dates must be in valid YYYY-MM-DD format'}), 400
+
+    reason = str(reason).strip()[:100]
+    affected_vehicles = str(affected_vehicles).strip()[:100]
+
+    try:
+        created_by = int(created_by)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid created_by admin_id'}), 400
+
     if not check_staff_permission(created_by, 'perm_blackout_dates'):
         return jsonify({'error': 'Unauthorized. Blackout dates management permission required.'}), 403
         
@@ -17234,6 +17294,13 @@ def import_fleet_calendar_preview():
             file_obj = request.files['file']
             if not file_obj or file_obj.filename == '':
                 return jsonify({'error': 'No file uploaded'}), 400
+            if not file_obj.filename.lower().endswith(('.xlsx', '.xls', '.csv')):
+                return jsonify({'error': 'Uploaded file must be an Excel file (.xlsx, .xls) or CSV'}), 400
+            file_obj.seek(0, os.SEEK_END)
+            f_size = file_obj.tell()
+            file_obj.seek(0)
+            if f_size > 15 * 1024 * 1024:
+                return jsonify({'error': 'Excel file exceeds maximum allowed size (15 MB)'}), 400
             raw_records = fleet_import.parse_fleet_excel_file(file_obj)
         elif request.is_json and 'records' in request.json:
             raw_records = request.json['records']
@@ -17339,10 +17406,10 @@ def update_booking_quick_pricing(booking_id):
             return jsonify({"error": "Booking not found"}), 404
 
         try:
-            total_price = max(0.0, float(data.get('total_price') if data.get('total_price') is not None else (b['total_price'] or 0.0)))
-            amount_paid = max(0.0, float(data.get('amount_paid') if data.get('amount_paid') is not None else (b['amount_paid'] or 0.0)))
+            total_price = min(10000000.0, max(0.0, float(data.get('total_price') if data.get('total_price') is not None else (b['total_price'] or 0.0))))
+            amount_paid = min(10000000.0, max(0.0, float(data.get('amount_paid') if data.get('amount_paid') is not None else (b['amount_paid'] or 0.0))))
             if data.get('balance_amount') is not None:
-                balance_amount = max(0.0, float(data.get('balance_amount')))
+                balance_amount = min(10000000.0, max(0.0, float(data.get('balance_amount'))))
             else:
                 balance_amount = max(0.0, total_price - amount_paid)
         except (ValueError, TypeError):
@@ -17356,10 +17423,15 @@ def update_booking_quick_pricing(booking_id):
                 payment_status = 'Partially Paid'
             else:
                 payment_status = b.get('payment_status') or 'Unpaid'
+        else:
+            payment_status = str(payment_status).strip()
+            allowed_pay_statuses = ['Paid', 'Partially Paid', 'Unpaid', 'Refunded', 'Cancelled']
+            if payment_status not in allowed_pay_statuses:
+                return jsonify({"error": f"Invalid payment status. Allowed: {', '.join(allowed_pay_statuses)}"}), 400
 
-        payment_method = data.get('payment_method') or b.get('payment_method') or 'Cash'
+        payment_method = str(data.get('payment_method') or b.get('payment_method') or 'Cash').strip()[:50]
         calendar_color = data.get('calendar_color') if 'calendar_color' in data else (b.get('calendar_color') or '')
-        calendar_color = str(calendar_color or '').strip()
+        calendar_color = str(calendar_color or '').strip()[:20]
         apply_to_customer = data.get('apply_to_customer', False)
 
         cur.execute("""
@@ -17457,6 +17529,10 @@ def get_booking_penalties(booking_id):
 @app.route('/admin/bookings/<int:booking_id>/penalties', methods=['POST'])
 @app.route('/api/admin/bookings/<int:booking_id>/penalties', methods=['POST'])
 def add_booking_penalty(booking_id):
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
+
     data = request.json or {}
     charge_type = data.get('charge_type')
     amount = data.get('amount')
@@ -17465,6 +17541,12 @@ def add_booking_penalty(booking_id):
     
     if not charge_type or amount is None:
         return jsonify({'error': 'Charge type and amount required'}), 400
+
+    charge_type = str(charge_type).strip()[:50]
+    try:
+        admin_id = int(admin_id) if admin_id else None
+    except (ValueError, TypeError):
+        admin_id = None
     try:
         amt_float = float(amount)
         if amt_float < 0 or amt_float > 100000:

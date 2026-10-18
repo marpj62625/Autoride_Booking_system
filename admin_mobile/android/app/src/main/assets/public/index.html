@@ -4349,7 +4349,7 @@
 
 
 
-                        <input type="date" id="popupDateFrom" onchange="applyPopupFilters()">
+                        <input type="date" id="popupDateFrom" min="2020-01-01" max="2099-12-31" onchange="applyPopupFilters()">
 
 
 
@@ -4365,7 +4365,7 @@
 
 
 
-                        <input type="date" id="popupDateTo" onchange="applyPopupFilters()">
+                        <input type="date" id="popupDateTo" min="2020-01-01" max="2099-12-31" onchange="applyPopupFilters()">
 
 
 
@@ -4937,11 +4937,11 @@
         <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; background: var(--surface-container); padding: 12px; border-radius: 12px; border: 1px solid var(--border);">
             <div style="flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px;">
                 <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700;">START DATE</label>
-                <input type="date" id="dashDateFrom" onchange="syncAndRefreshDashboardDates()" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.8rem;">
+                <input type="date" id="dashDateFrom" min="2020-01-01" max="2099-12-31" onchange="syncAndRefreshDashboardDates()" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.8rem;">
             </div>
             <div style="flex: 1; min-width: 120px; display: flex; flex-direction: column; gap: 4px;">
                 <label style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700;">END DATE</label>
-                <input type="date" id="dashDateTo" onchange="syncAndRefreshDashboardDates()" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.8rem;">
+                <input type="date" id="dashDateTo" min="2020-01-01" max="2099-12-31" onchange="syncAndRefreshDashboardDates()" style="width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-main); font-size: 0.8rem;">
             </div>
         </div>
 
@@ -6851,11 +6851,11 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
                         <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Start Date</label>
-                        <input type="date" id="blackoutStartDate" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
+                        <input type="date" id="blackoutStartDate" min="2020-01-01" max="2099-12-31" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                     </div>
                     <div>
                         <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">End Date</label>
-                        <input type="date" id="blackoutEndDate" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
+                        <input type="date" id="blackoutEndDate" min="2020-01-01" max="2099-12-31" required style="width: 100%; padding: 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; box-sizing: border-box; color: #0f172a !important; background: #ffffff !important;">
                     </div>
                 </div>
                 <div>
@@ -7280,7 +7280,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                     <div>
                         <label style="display: block; font-size: 0.68rem; font-weight: 700; color: #374151; margin-bottom: 3px;">Balance Due (₱)</label>
-                        <input type="text" id="quickBalanceAmount" readonly
+                        <input type="text" id="quickBalanceAmount" maxlength="20" readonly
                                style="width: 100%; padding: 8px 10px; font-size: 0.88rem; font-weight: 900; color: #dc2626; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; outline: none;">
                     </div>
                     <div>
@@ -7480,9 +7480,9 @@
                                 </button>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                                <input type="date" id="walkinStartDate" required onchange="WalkinBooking.recalculate()"
+                                <input type="date" id="walkinStartDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
-                                <input type="time" id="walkinStartTime" required onchange="WalkinBooking.recalculate()"
+                                <input type="time" id="walkinStartTime" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                             </div>
                         </div>
@@ -7494,9 +7494,9 @@
                                 <span id="walkinDurationDaysBadge" style="font-size: 0.68rem; font-weight: 800; color: #2563eb; background: rgba(37, 99, 235, 0.1); padding: 2px 7px; border-radius: 5px;">1 Day</span>
                             </div>
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-                                <input type="date" id="walkinEndDate" required onchange="WalkinBooking.recalculate()"
+                                <input type="date" id="walkinEndDate" min="2020-01-01" max="2099-12-31" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
-                                <input type="time" id="walkinEndTime" required onchange="WalkinBooking.recalculate()"
+                                <input type="time" id="walkinEndTime" min="00:00" max="23:59" required onchange="WalkinBooking.recalculate()"
                                        style="width: 100%; padding: 8px 10px; font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--border, #cbd5e1); background: var(--surface-solid, #ffffff); color: var(--text-main, #0f172a); outline: none; box-sizing: border-box;">
                             </div>
                         </div>
@@ -8272,11 +8272,11 @@ input:checked + .ctrl-slider:before {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
                         <label style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">Start Date</label>
-                        <input type="date" id="fleetExportStartDate" style="width: 100%; padding: 9px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600;">
+                        <input type="date" id="fleetExportStartDate" min="2020-01-01" max="2099-12-31" style="width: 100%; padding: 9px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600;">
                     </div>
                     <div>
                         <label style="display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">End Date</label>
-                        <input type="date" id="fleetExportEndDate" style="width: 100%; padding: 9px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600;">
+                        <input type="date" id="fleetExportEndDate" min="2020-01-01" max="2099-12-31" style="width: 100%; padding: 9px 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.82rem; outline: none; font-weight: 600;">
                     </div>
                 </div>
             </div>
@@ -8516,7 +8516,7 @@ input:checked + .ctrl-slider:before {
                     </div>
                     <div style="flex: 1;">
                         <label style="display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 700;">Expense Date *</label>
-                        <input type="date" id="expDate" required style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
+                        <input type="date" id="expDate" min="2020-01-01" max="2099-12-31" required style="width: 100%; padding: 12px; background: var(--surface-container); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem;">
                     </div>
                 </div>
 
@@ -8867,11 +8867,11 @@ input:checked + .ctrl-slider:before {
 
 
 
-                <input type="date" id="rptDateFrom" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
+                <input type="date" id="rptDateFrom" min="2020-01-01" max="2099-12-31" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
 
 
 
-                <input type="date" id="rptDateTo" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
+                <input type="date" id="rptDateTo" min="2020-01-01" max="2099-12-31" onchange="Reports.refresh()" style="flex:1;min-width:110px;padding:6px 10px;background:var(--surface-container);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.75rem;">
 
 
 
@@ -9937,13 +9937,13 @@ input:checked + .ctrl-slider:before {
                         <!-- Next Service -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">Next Service / PMS Date</label>
-                            <input type="date" id="vNextService" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="date" id="vNextService" min="2020-01-01" max="2099-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
 
                         <!-- LTO Expiry -->
                         <div>
                             <label style="display:block;font-size:0.8rem;font-weight:600;color:var(--text-primary, #ffffff);margin-bottom:5px;">LTO Expiry Date</label>
-                            <input type="date" id="vLtoExpiry" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
+                            <input type="date" id="vLtoExpiry" min="2020-01-01" max="2099-12-31" style="width:100%;padding:11px 13px;background:var(--bg-input, var(--surface-container));border:1.5px solid var(--border);border-radius:10px;color:var(--text-primary);font-size:0.88rem;box-sizing:border-box;">
                         </div>
                     </div>
                 </div>
@@ -10327,7 +10327,7 @@ input:checked + .ctrl-slider:before {
                             <label id="inspectDriverOTRateLabel" style="display: block; font-size: 0.68rem; font-weight: 800; color: #14532d; text-transform: uppercase; margin-bottom: 4px;">OT Amount (₱95/hr)</label>
                             <div style="position: relative; display: flex; align-items: center;">
                                 <span style="position: absolute; left: 10px; font-weight: 800; font-size: 0.85rem; color: #15803d;">₱</span>
-                                <input type="text" id="inspectDriverOTAmount" readonly value="0.00" style="width: 100%; padding: 10px 10px 10px 24px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; font-size: 0.95rem; font-weight: 900; color: #15803d; outline: none;">
+                                <input type="text" id="inspectDriverOTAmount" maxlength="20" readonly value="0.00" style="width: 100%; padding: 10px 10px 10px 24px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; font-size: 0.95rem; font-weight: 900; color: #15803d; outline: none;">
                             </div>
                         </div>
                     </div>
@@ -34719,7 +34719,7 @@ function toggleNewsletterModal(show = true) {
                             <option value="30d">Suspend for 30 Days from now</option>
                             <option value="custom">Set Custom Expiry Date &amp; Time...</option>
                         </select>
-                        <input type="datetime-local" id="editSuspCustom_${u.id}" style="display:none;width:100%;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;" />
+                        <input type="datetime-local" id="editSuspCustom_${u.id}" min="2020-01-01T00:00" max="2099-12-31T23:59" style="display:none;width:100%;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;" />
                     </div>
 
                     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;">

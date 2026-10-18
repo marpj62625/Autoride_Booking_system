@@ -6977,7 +6977,7 @@ function _renderExtendForm(container, bookingId, currentEndDate, dailyRate, isMo
   parts.push('<div class="card">');
   parts.push('<h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-calendar-plus" style="color:var(--primary);margin-right:8px;"></i>New Return Date</h4>');
   parts.push('<div class="form-group"><label>Extend Until</label>');
-  parts.push('<input type="date" id="extNewEnd" min="' + minDate + '" onchange="calcExtPrice(\'' + currentEndDate + '\',' + rate + ')" style="width:100%;padding:12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);">');
+  parts.push('<input type="date" id="extNewEnd" min="' + minDate + '" max="2099-12-31" onchange="calcExtPrice(\'' + currentEndDate + '\',' + rate + ')" style="width:100%;padding:12px;background:var(--bg-input);border:1.5px solid transparent;border-radius:var(--radius-sm);font-size:0.95rem;color:var(--text-primary);">');
   parts.push('</div>');
   parts.push('<div id="extPriceBox" style="display:none;background:rgba(0,177,79,0.08);border:1px solid rgba(0,177,79,0.3);border-radius:12px;padding:14px;margin-top:8px;">');
   parts.push('<div style="display:flex;justify-content:space-between;align-items:center;">');
@@ -7578,8 +7578,8 @@ function openModifyBooking(bookingId, currentStart, currentEnd, amountPaid) {
     '<div class="scroll-content">' +
       '<div class="card">' +
         '<p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">Select new rental dates. The price will be recalculated.</p>' +
-        '<div class="form-group"><label>New Start Date</label><input type="date" id="modStart" value="' + currentStart + '"></div>' +
-        '<div class="form-group"><label>New End Date</label><input type="date" id="modEnd" value="' + currentEnd + '"></div>' +
+        '<div class="form-group"><label>New Start Date</label><input type="date" id="modStart" min="2020-01-01" max="2099-12-31" value="' + currentStart + '"></div>' +
+        '<div class="form-group"><label>New End Date</label><input type="date" id="modEnd" min="2020-01-01" max="2099-12-31" value="' + currentEnd + '"></div>' +
         '<input type="hidden" id="modAmountPaid" value="' + amountPaid + '">' +
         '<span class="field-error" id="modErr" style="display:block;margin-bottom:12px;"></span>' +
         '<div id="modNewTotal" style="margin-bottom:14px;"></div>' +
