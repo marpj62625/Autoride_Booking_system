@@ -3827,33 +3827,6 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
           '</div>' +
         '</div>';
 
-      var amenitiesHtml =
-        '<div class="veh-detail-amenities card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:16px;">' +
-          '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
-            '<i class="fas fa-sliders-h" style="color:var(--primary);"></i> Vehicle Features &amp; Equipment' +
-          '</h4>' +
-          '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">' +
-            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
-              '<i class="fas fa-snowflake" style="color:#0ea5e9; font-size:1rem;"></i> Air Conditioning' +
-            '</div>' +
-            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
-              '<i class="fab fa-bluetooth-b" style="color:#3b82f6; font-size:1rem;"></i> Bluetooth &amp; USB Audio' +
-            '</div>' +
-            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
-              '<i class="fas fa-shield-virus" style="color:#f59e0b; font-size:1rem;"></i> Dual SRS Airbags' +
-            '</div>' +
-            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
-              '<i class="fas fa-lock" style="color:#ec4899; font-size:1rem;"></i> Central Door Lock' +
-            '</div>' +
-            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
-              '<i class="fas fa-car-side" style="color:#10b981; font-size:1rem;"></i> Power Windows' +
-            '</div>' +
-            '<div style="display:flex; align-items:center; gap:10px; font-size:0.84rem; font-weight:600; color:var(--text-primary); background:var(--bg-card2); padding:10px 14px; border-radius:12px; border:1px solid var(--border);">' +
-              '<i class="fas fa-compass" style="color:#8b5cf6; font-size:1rem;"></i> Anti-lock Brakes (ABS)' +
-            '</div>' +
-          '</div>' +
-        '</div>';
-
       var policiesHtml =
         '<div class="veh-detail-policies card" style="padding:22px 24px; border-radius:18px; border:1px solid var(--border); box-shadow:0 2px 10px rgba(0,0,0,0.03); margin-top:16px;">' +
           '<h4 style="font-weight:800; font-size:1.05rem; margin:0 0 16px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">' +
@@ -3882,7 +3855,6 @@ function openVehicleUnits(brandEnc, modelEnc, colorEnc) {
               galleryHtml +
             '</div>' +
             highlightsHtml +
-            amenitiesHtml +
             policiesHtml +
           '</div>' +
           '<div class="veh-detail-info-col">' +
