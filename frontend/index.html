@@ -1204,6 +1204,21 @@
           .sidebar-desktop-footer {
             display: contents !important;
           }
+
+          /* Profile Mobile: Single-column flow with order */
+          #page-profile .scroll-content {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+          }
+          .profile-desktop-col-left,
+          .profile-desktop-col-right {
+            display: contents !important;
+          }
+          #profileSummaryCard { order: 1 !important; margin-bottom: 0 !important; }
+          #profileEditCard    { order: 2 !important; margin-bottom: 0 !important; }
+          #profileLicenseCard { order: 3 !important; margin-bottom: 0 !important; }
+          #profileAccountCard { order: 4 !important; margin-bottom: 0 !important; }
         }
 
         @media (min-width: 768px) {
@@ -1560,26 +1575,27 @@
             padding: 24px 32px 48px !important;
           }
 
-          /* Column 1: Profile Summary Card + Security & Account Card */
-          #page-profile #profileSummaryCard {
-            grid-column: 1 !important;
-            margin-bottom: 0 !important;
-          }
-          #page-profile #profileAccountCard {
-            grid-column: 1 !important;
-            margin-top: 0 !important;
+          /* Column 1 Container & Column 2 Container */
+          .profile-desktop-col-left {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 20px !important;
+            min-width: 0 !important;
           }
 
-          /* Column 2: License Verification & Profile Edit */
-          #page-profile #profileLicenseCard {
-            grid-column: 2 !important;
-            grid-row: 1 / span 2 !important;
-            margin-bottom: 0 !important;
+          .profile-desktop-col-right {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 20px !important;
+            min-width: 0 !important;
           }
+
+          #page-profile #profileSummaryCard,
+          #page-profile #profileAccountCard,
+          #page-profile #profileLicenseCard,
           #page-profile #profileEditCard {
-            grid-column: 2 !important;
-            grid-row: 1 / span 2 !important;
             margin-bottom: 0 !important;
+            margin-top: 0 !important;
           }
 
           /* Modern 4-column license fields and 3-column emergency contacts */
@@ -3729,65 +3745,35 @@
 
   <div class="scroll-content">
 
-
-
-
-
-    <!-- Avatar + summary card -->
-
-
-    <div class="card" id="profileSummaryCard" style="text-align:center;padding:24px;">
-
-
-      <div id="profileAvatarWrap" style="display:flex;justify-content:center;margin-bottom:12px;">
-
-
-        <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">?</div>
-
-
+    <div class="profile-desktop-col-left">
+      <!-- Avatar + summary card -->
+      <div class="card" id="profileSummaryCard" style="text-align:center;padding:24px;">
+        <div id="profileAvatarWrap" style="display:flex;justify-content:center;margin-bottom:12px;">
+          <div class="profile-avatar-placeholder" id="profileAvatarPlaceholder">?</div>
+        </div>
+        <h3 id="profileName" style="font-size:1.2rem;font-weight:800;overflow-wrap:anywhere;word-break:break-word;"></h3>
+        <p id="profileEmail" style="color:var(--text-secondary);font-size:0.875rem;margin-top:4px;"></p>
+        <div style="margin-top:6px;font-size:0.8rem;color:var(--text-secondary);"><i class="fas fa-phone" style="color:var(--primary);margin-right:6px;"></i><span id="profilePhoneDisplay">Loading...</span></div>
+        <div style="margin-top:4px;font-size:0.8rem;color:var(--text-secondary);"><i class="fas fa-envelope" style="color:var(--primary);margin-right:6px;"></i><span id="profileEmailDisplay"></span></div>
+        <div style="margin-top:10px;">
+          <span class="verify-badge" id="profileVerifyBadge">Not Verified</span>
+        </div>
+        <div class="points-badge" style="justify-content:center;margin-top:10px;background:rgba(230,57,70,0.1);color:var(--primary);">
+          <i class="fas fa-star"></i> <span id="profilePoints">0</span> Loyalty Points
+        </div>
       </div>
 
-
-      <h3 id="profileName" style="font-size:1.2rem;font-weight:800;overflow-wrap:anywhere;word-break:break-word;"></h3>
-
-
-      <p id="profileEmail" style="color:var(--text-secondary);font-size:0.875rem;margin-top:4px;"></p>
-
-
-      <div style="margin-top:6px;font-size:0.8rem;color:var(--text-secondary);"><i class="fas fa-phone" style="color:var(--primary);margin-right:6px;"></i><span id="profilePhoneDisplay">Loading...</span></div>
-
-
-      <div style="margin-top:4px;font-size:0.8rem;color:var(--text-secondary);"><i class="fas fa-envelope" style="color:var(--primary);margin-right:6px;"></i><span id="profileEmailDisplay"></span></div>
-
-
-      <div style="margin-top:10px;">
-
-
-        <span class="verify-badge" id="profileVerifyBadge">Not Verified</span>
-
-
+      <!-- Account -->
+      <div class="card" id="profileAccountCard">
+        <h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-shield-alt" style="color:var(--primary);margin-right:8px;"></i>Security &amp; Account</h4>
+        <button class="btn-secondary" style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);" onclick="openChangePasswordOverlay()"><i class="fas fa-key"></i> Update Password</button>
+        <button class="btn-danger" onclick="doLogout()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;"><i class="fas fa-sign-out-alt"></i> Log Out</button>
       </div>
+    </div><!-- /.profile-desktop-col-left -->
 
-
-      <div class="points-badge" style="justify-content:center;margin-top:10px;background:rgba(230,57,70,0.1);color:var(--primary);">
-
-
-        <i class="fas fa-star"></i> <span id="profilePoints">0</span> Loyalty Points
-
-
-      </div>
-
-
-    </div>
-
-
-
-
-
-    <!-- EDIT PROFILE (hidden by default) -->
-
-
-    <div id="profileEditCard" class="card" style="display:none;">
+    <div class="profile-desktop-col-right">
+      <!-- EDIT PROFILE (hidden by default) -->
+      <div id="profileEditCard" class="card" style="display:none;">
 
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -4348,27 +4334,7 @@
 
 
     </div>
-
-
-
-
-
-    <!-- Account -->
-
-
-    <div class="card" id="profileAccountCard">
-      <h4 style="font-weight:700;margin-bottom:14px;"><i class="fas fa-shield-alt" style="color:var(--primary);margin-right:8px;"></i>Security &amp; Account</h4>
-      <button class="btn-secondary" style="margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--surface-container);border:1px solid var(--border);color:var(--text-main);" onclick="openChangePasswordOverlay()"><i class="fas fa-key"></i> Update Password</button>
-
-
-      <button class="btn-danger" onclick="doLogout()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;"><i class="fas fa-sign-out-alt"></i> Log Out</button>
-
-
-    </div>
-
-
-
-
+    </div><!-- /.profile-desktop-col-right -->
 
   </div>
 

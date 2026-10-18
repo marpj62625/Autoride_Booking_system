@@ -8620,7 +8620,10 @@ function goToProfileForVerification() {
 var Profile = {
   enterEdit: function() {
     var card = document.getElementById('profileEditCard');
-    if (card) card.style.display = '';
+    if (card) {
+      card.style.display = '';
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     var btn = document.getElementById('profileEditBtn');
     if (btn) btn.style.display = 'none';
   },
