@@ -2249,7 +2249,7 @@ def send_email_notifications(to_email, subject, body, is_html=False, trace_callb
 
 
 def generate_verification_email_html(otp: str, email: str = "") -> str:
-    """Generates a professional, responsive HTML email template for email verification."""
+    """Generates a professional, responsive HTML email template for email verification with official Autoride logo."""
     clean_otp = str(otp).strip()
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -2265,17 +2265,22 @@ def generate_verification_email_html(otp: str, email: str = "") -> str:
         <!-- Main Card Container -->
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07); border: 1px solid #e5e7eb;">
           
-          <!-- Green Header Banner with Branding -->
+          <!-- Green Header Banner with Official Branding -->
           <tr>
             <td style="background: linear-gradient(135deg, #00c853 0%, #00b14f 50%, #007a36 100%); padding: 36px 32px; text-align: center;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; width: 64px; height: 64px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.18); border: 2px solid rgba(255, 255, 255, 0.35); text-align: center; line-height: 64px; margin-bottom: 12px;">
-                      <span style="font-size: 30px; line-height: 64px;">🚗</span>
-                    </div>
+                    <!-- Official Logo Badge -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto 14px auto;">
+                      <tr>
+                        <td align="center" valign="middle" style="background-color: #ffffff; width: 76px; height: 76px; border-radius: 50%; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16); border: 2px solid rgba(255, 255, 255, 0.6); padding: 6px;">
+                          <img src="https://autoride-booking-system.vercel.app/Autoride-logo-nobg.png" alt="Autoride Logo" width="62" height="62" style="display: block; width: 62px; height: 62px; object-fit: contain; margin: 0 auto; border: 0;" />
+                        </td>
+                      </tr>
+                    </table>
                     <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">AUTORIDE</h1>
-                    <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; letter-spacing: 0.5px;">Premium Car Rental & Mobility Solutions</p>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; letter-spacing: 0.5px;">Premium Car Rental &amp; Mobility Solutions</p>
                   </td>
                 </tr>
               </table>
@@ -2328,14 +2333,21 @@ def generate_verification_email_html(otp: str, email: str = "") -> str:
           <!-- Divider -->
           <tr>
             <td style="padding: 0 36px;">
-              <div style="height: 1px; background-color: #e5e7eb; width: 100%;"></div>
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 0;">
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 36px 36px 36px; text-align: center; background-color: #fafafa;">
-              <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #4b5563;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto 10px auto;">
+                <tr>
+                  <td align="center">
+                    <img src="https://autoride-booking-system.vercel.app/Autoride-logo-nobg.png" alt="Autoride" width="38" height="38" style="display: block; width: 38px; height: 38px; object-fit: contain; margin: 0 auto; border: 0;" />
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 6px 0; font-size: 12.5px; font-weight: 700; color: #374151;">
                 Autoride Car Rental Services
               </p>
               <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #9ca3af; line-height: 1.5;">
@@ -2359,7 +2371,7 @@ def generate_verification_email_html(otp: str, email: str = "") -> str:
 
 
 def generate_password_reset_email_html(temp_password: str, full_name: str = "", email: str = "") -> str:
-    """Generates a professional, responsive HTML email template for password reset."""
+    """Generates a professional, responsive HTML email template for password reset with official Autoride logo."""
     clean_pw = str(temp_password).strip()
     display_name = full_name or "Valued Customer"
     return f"""<!DOCTYPE html>
@@ -2382,11 +2394,16 @@ def generate_password_reset_email_html(temp_password: str, full_name: str = "", 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; width: 64px; height: 64px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.18); border: 2px solid rgba(255, 255, 255, 0.35); text-align: center; line-height: 64px; margin-bottom: 12px;">
-                      <span style="font-size: 30px; line-height: 64px;">🔑</span>
-                    </div>
+                    <!-- Official Logo Badge -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto 14px auto;">
+                      <tr>
+                        <td align="center" valign="middle" style="background-color: #ffffff; width: 76px; height: 76px; border-radius: 50%; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16); border: 2px solid rgba(255, 255, 255, 0.6); padding: 6px;">
+                          <img src="https://autoride-booking-system.vercel.app/Autoride-logo-nobg.png" alt="Autoride Logo" width="62" height="62" style="display: block; width: 62px; height: 62px; object-fit: contain; margin: 0 auto; border: 0;" />
+                        </td>
+                      </tr>
+                    </table>
                     <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: -0.5px; text-transform: uppercase;">AUTORIDE</h1>
-                    <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; letter-spacing: 0.5px;">Account Security & Recovery</p>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.9); font-weight: 500; letter-spacing: 0.5px;">Account Security &amp; Recovery</p>
                   </td>
                 </tr>
               </table>
@@ -2439,7 +2456,14 @@ def generate_password_reset_email_html(temp_password: str, full_name: str = "", 
           <!-- Footer -->
           <tr>
             <td style="padding: 24px 36px 36px 36px; text-align: center; background-color: #fafafa; border-top: 1px solid #e5e7eb;">
-              <p style="margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #4b5563;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: 0 auto 10px auto;">
+                <tr>
+                  <td align="center">
+                    <img src="https://autoride-booking-system.vercel.app/Autoride-logo-nobg.png" alt="Autoride" width="38" height="38" style="display: block; width: 38px; height: 38px; object-fit: contain; margin: 0 auto; border: 0;" />
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 6px 0; font-size: 12.5px; font-weight: 700; color: #374151;">
                 Autoride Car Rental Services
               </p>
               <p style="margin: 0 0 12px 0; font-size: 11.5px; color: #9ca3af;">
