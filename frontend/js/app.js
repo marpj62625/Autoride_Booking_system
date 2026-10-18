@@ -1307,6 +1307,11 @@ function showOverlay(id) {
     if (scStanding) scStanding.scrollTop = 0;
     loadAccountStanding();
   }
+  if (id === 'page-otp-verify') {
+    if (typeof updateEmailProviderButton === 'function') {
+      updateEmailProviderButton(pendingOtpEmail);
+    }
+  }
 }
 
 function openAccountStanding() {
@@ -1981,6 +1986,7 @@ function doLogin() {
         pendingOtpEmail = email;
         document.getElementById('otpEmailDisplay').textContent = email;
         showToast('Verification code sent to your email!', 'info');
+        if (typeof updateEmailProviderButton === 'function') updateEmailProviderButton(email);
         showPage('page-otp-verify');
         startResendCountdown();
       } else {
@@ -2478,6 +2484,7 @@ function doRegister() {
       pendingOtpEmail = email;
       document.getElementById('otpEmailDisplay').textContent = email;
       showToast('Verification code sent to your email!', 'success');
+      if (typeof updateEmailProviderButton === 'function') updateEmailProviderButton(email);
       showPage('page-otp-verify');
       // Start countdown timer
       startResendCountdown();
@@ -2603,21 +2610,71 @@ function resendOtp() {
     .finally(function() { showLoading(false); });
 }
 
-function openGmail() {
-  // Try to open Gmail app first, fallback to web
-  var gmailApp = 'googlegmail://';
-  var gmailWeb = 'https://mail.google.com';
-  
-  // For mobile apps, try to open Gmail app
-  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-    window.Capacitor.Plugins.App.openUrl({ url: gmailApp }).catch(function() {
-      // If Gmail app not installed, open web version
-      window.open(gmailWeb, '_system');
+function updateEmailProviderButton(email) {
+  var em = (email || pendingOtpEmail || (document.getElementById('otpEmailDisplay') ? document.getElementById('otpEmailDisplay').textContent.trim() : '')).toLowerCase();
+  var btnText = document.getElementById('openEmailAppBtnText');
+  if (!btnText) return;
+  var domain = em.includes('@') ? em.split('@')[1] : '';
+  if (domain.includes('gmail.com')) {
+    btnText.textContent = 'Open Gmail';
+  } else if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live.com')) {
+    btnText.textContent = 'Open Outlook';
+  } else if (domain.includes('yahoo')) {
+    btnText.textContent = 'Open Yahoo Mail';
+  } else if (domain.includes('icloud')) {
+    btnText.textContent = 'Open iCloud Mail';
+  } else {
+    btnText.textContent = 'Open Email Inbox';
+  }
+}
+
+function handleOtpPaste(e) {
+  var clipboardData = e.clipboardData || window.clipboardData;
+  if (!clipboardData) return;
+  var pastedData = clipboardData.getData('Text') || '';
+  var digits = pastedData.replace(/[^0-9]/g, '').slice(0, 6);
+  if (digits.length > 0) {
+    e.preventDefault();
+    for (var i = 0; i < digits.length; i++) {
+      var input = document.getElementById('otp' + i);
+      if (input) input.value = digits[i];
+    }
+    var focusIdx = Math.min(digits.length, 5);
+    var target = document.getElementById('otp' + focusIdx);
+    if (target) target.focus();
+    var err = document.getElementById('otpErr');
+    if (err) err.textContent = '';
+  }
+}
+
+function openEmailInbox() {
+  var em = (pendingOtpEmail || (document.getElementById('otpEmailDisplay') ? document.getElementById('otpEmailDisplay').textContent.trim() : '')).toLowerCase();
+  var domain = em.includes('@') ? em.split('@')[1] : '';
+  var webUrl = 'mailto:';
+  var appScheme = '';
+  if (domain.includes('gmail.com')) {
+    webUrl = 'https://mail.google.com';
+    appScheme = 'googlegmail://';
+  } else if (domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live.com')) {
+    webUrl = 'https://outlook.live.com/mail/';
+    appScheme = 'ms-outlook://';
+  } else if (domain.includes('yahoo')) {
+    webUrl = 'https://mail.yahoo.com';
+  } else if (domain.includes('icloud')) {
+    webUrl = 'https://www.icloud.com/mail';
+  }
+
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App && appScheme) {
+    window.Capacitor.Plugins.App.openUrl({ url: appScheme }).catch(function() {
+      window.open(webUrl, '_system');
     });
   } else {
-    // For web, just open Gmail in new tab
-    window.open(gmailWeb, '_blank');
+    window.open(webUrl, '_blank');
   }
+}
+
+function openGmail() {
+  openEmailInbox();
 }
 
 function otpBackspace(event, currentInput, prevIdx) {

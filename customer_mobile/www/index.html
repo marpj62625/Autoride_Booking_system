@@ -569,29 +569,49 @@
 
 
         /* OTP Input */
-
-
-        .otp-inputs { display:flex; gap:10px; justify-content:center; margin:20px 0; }
-
-
-        .otp-inputs input { width:44px; height:52px; text-align:center; font-size:1.4rem; font-weight:700; background:var(--bg-input); border:1.5px solid transparent; border-radius:var(--radius-sm); outline:none; }
-
-
-        .otp-inputs input:focus { border-color:var(--primary); background:#fff; }
-
-
-        .otp-inputs input::placeholder { color: #999999; opacity: 1; }
-
-
+        .otp-inputs { display:flex; gap:10px; justify-content:center; margin:24px 0; }
+        .otp-inputs input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: #f8fafc;
+            border: 2px solid #d1d5db;
+            border-radius: 12px;
+            color: #0f172a;
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .otp-inputs input:hover {
+            border-color: #9ca3af;
+            background: #ffffff;
+        }
+        .otp-inputs input:focus {
+            border-color: var(--primary, #00b14f) !important;
+            background: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.18) !important;
+            transform: translateY(-1px);
+        }
+        .otp-inputs input::placeholder { color: #94a3b8; opacity: 1; }
         @media (max-width: 380px) {
-
-
             .otp-inputs { gap: 6px; }
-
-
-            .otp-inputs input { width: 36px; height: 44px; font-size: 1.2rem; }
-
-
+            .otp-inputs input { width: 38px; height: 48px; font-size: 1.25rem; border-radius: 10px; }
+        }
+        [data-theme="dark"] .otp-inputs input {
+            background: #1e293b;
+            border-color: #334155;
+            color: #f8fafc;
+        }
+        [data-theme="dark"] .otp-inputs input:hover {
+            border-color: #475569;
+            background: #1e293b;
+        }
+        [data-theme="dark"] .otp-inputs input:focus {
+            border-color: var(--primary, #00b14f) !important;
+            background: #0f172a !important;
+            box-shadow: 0 0 0 3px rgba(0, 177, 79, 0.25) !important;
         }
 
 
@@ -2736,83 +2756,67 @@
 
 
 <div id="page-otp-verify" class="auth-page">
-
+  <!-- Desktop hero panel (hidden on mobile) -->
+  <div class="auth-hero-panel">
+    <div class="auth-hero-inner">
+      <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:180px;height:auto;object-fit:contain;margin-bottom:28px;position:relative;z-index:1;flex-shrink:0;">
+      <div style="font-size:3.5rem;font-weight:900;color:white;letter-spacing:-0.04em;margin-bottom:8px;position:relative;z-index:1;">Verify Email</div>
+      <div style="font-size:1rem;color:rgba(255,255,255,0.9);font-weight:500;line-height:1.7;margin-bottom:44px;position:relative;z-index:1;letter-spacing:0.3px;">We've sent a 6-digit verification code to protect your account.</div>
+      
+      <!-- Feature highlights -->
+      <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:20px;position:relative;z-index:1;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-envelope-open-text" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Instant Code Delivery</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Check your inbox or spam folder</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-user-shield" style="color:white;font-size:1rem;"></i></div>
+          <div><div style="font-weight:700;color:white;font-size:0.95rem;">Account Security</div><div style="font-size:0.78rem;color:rgba(255,255,255,0.75);">Keeps your rentals safe and verified</div></div>
+        </div>
+      </div>
+    </div>
+    <!-- Trust text -->
+    <div style="position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:340px;z-index:1;text-align:center;">
+      <div style="width:100%;height:1px;background:rgba(255,255,255,0.15);margin-bottom:20px;"></div>
+      <div style="font-size:0.72rem;color:rgba(255,255,255,0.5);letter-spacing:0.3px;">Trusted by hundreds of customers across the region</div>
+    </div>
+  </div>
 
   <div class="auth-container">
-
-
     <div class="auth-logo">
-
-
       <img src="Autoride-logo-nobg.png" alt="Autoride" style="width:120px;height:120px;object-fit:contain;margin-bottom:4px;">
-
-
       <h1 style="font-size:1.5rem;margin-top:8px;">Check your email</h1>
-
-
     </div>
 
-
-    <div class="auth-card">
-
-
+    <div class="auth-card" style="max-width: 440px; width: 100%;">
       <h2>Verify Email</h2>
-
-
-      <p class="subtitle">Enter the 6-digit code sent to <strong id="otpEmailDisplay"></strong></p>
-
+      <p class="subtitle">Enter the 6-digit code sent to <strong id="otpEmailDisplay" style="color:var(--primary, #00b14f); word-break:break-all;"></strong></p>
 
       <div class="otp-inputs">
-
-
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp0" oninput="otpNext(this,1)" onkeydown="otpBackspace(event, this, -1)">
-
-
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp1" oninput="otpNext(this,2)" onkeydown="otpBackspace(event, this, 0)">
-
-
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp2" oninput="otpNext(this,3)" onkeydown="otpBackspace(event, this, 1)">
-
-
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp3" oninput="otpNext(this,4)" onkeydown="otpBackspace(event, this, 2)">
-
-
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp4" oninput="otpNext(this,5)" onkeydown="otpBackspace(event, this, 3)">
-
-
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp5" oninput="otpNext(this,-1)" onkeydown="otpBackspace(event, this, 4)">
-
-
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp0" onpaste="handleOtpPaste(event)" oninput="otpNext(this,1)" onkeydown="otpBackspace(event, this, -1)">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp1" onpaste="handleOtpPaste(event)" oninput="otpNext(this,2)" onkeydown="otpBackspace(event, this, 0)">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp2" onpaste="handleOtpPaste(event)" oninput="otpNext(this,3)" onkeydown="otpBackspace(event, this, 1)">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp3" onpaste="handleOtpPaste(event)" oninput="otpNext(this,4)" onkeydown="otpBackspace(event, this, 2)">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp4" onpaste="handleOtpPaste(event)" oninput="otpNext(this,5)" onkeydown="otpBackspace(event, this, 3)">
+        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="1" id="otp5" onpaste="handleOtpPaste(event)" oninput="otpNext(this,-1)" onkeydown="otpBackspace(event, this, 4)">
       </div>
-
 
       <span class="field-error" id="otpErr" style="display:block;margin-bottom:12px;text-align:center;"></span>
 
-
       <button class="btn-primary" onclick="doVerifyEmail()"><i class="fas fa-check-circle"></i> Verify</button>
+      <button class="btn-secondary" id="openEmailAppBtn" onclick="openEmailInbox()" style="margin-top:10px;"><i class="fas fa-envelope"></i> <span id="openEmailAppBtnText">Open Email App</span></button>
 
-
-      <button class="btn-secondary" onclick="openGmail()" style="margin-top:10px;"><i class="fas fa-envelope"></i> Open Gmail</button>
-
-
-      <div class="auth-link" style="margin-top:16px;">
-
-
-        <a href="#" id="resendLink" onclick="resendOtp()">Resend Code</a>
-
-
-        <span id="resendTimer" style="display:none;color:var(--text-muted);font-weight:600;">Resend in <span id="countdown">30</span>s</span>
-
-
+      <div class="auth-link" style="margin-top:20px; display:flex; flex-direction:column; gap:8px; align-items:center;">
+        <div>
+          <a href="#" id="resendLink" onclick="resendOtp()" style="font-weight:600;">Resend Code</a>
+          <span id="resendTimer" style="display:none;color:var(--text-muted);font-weight:600;">Resend in <span id="countdown">30</span>s</span>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text-muted);">
+          Wrong email address? <a href="#" onclick="showPage('page-register')" style="color:var(--primary, #00b14f); font-weight:600;">Change email</a>
+        </div>
       </div>
-
-
     </div>
-
-
   </div>
-
-
 </div>
 
 
