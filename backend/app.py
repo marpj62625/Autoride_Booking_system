@@ -3457,7 +3457,7 @@ def admin_freeze_user(user_id):
         return err_resp
     data = request.get_json(silent=True) or {}
     freeze = data.get('freeze', True)
-    reason = data.get('reason', '')
+    reason = (data.get('reason', '') or '').strip()[:200]
     try:
         cur = get_cursor()
         cur.execute(
@@ -3600,12 +3600,15 @@ def admin_edit_user_violations(user_id):
     - admin_id (int)
     - note (str)
     """
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or {}
     strikes = data.get('violation_strikes')
     susp_until = data.get('booking_suspension_until')
     perm = data.get('violation_permanently_restricted')
     fee_req = data.get('violation_commitment_fee_required')
-    note = (data.get('note') or '').strip()
+    note = (data.get('note') or '').strip()[:200]
     admin_id = data.get('admin_id')
 
     try:
@@ -3944,11 +3947,14 @@ def user_booking_eligibility():
 @app.route('/api/admin/users/<int:user_id>/edit', methods=['PUT'])
 def admin_edit_user(user_id):
     """Edit user basic info."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or {}
-    first_name = data.get('first_name', '').strip()
-    middle_name = data.get('middle_name', '').strip()
-    last_name = data.get('last_name', '').strip()
-    phone = data.get('phone', '').strip()
+    first_name = (data.get('first_name', '') or '').strip()[:30]
+    middle_name = (data.get('middle_name', '') or '').strip()[:30]
+    last_name = (data.get('last_name', '') or '').strip()[:30]
+    phone = (data.get('phone', '') or '').strip()[:11]
     if not first_name or not last_name:
         return jsonify({"error": "First name and last name are required"}), 400
     try:
@@ -3967,13 +3973,20 @@ def admin_edit_user(user_id):
 @app.route('/api/admin/users/<int:user_id>/loyalty', methods=['PUT'])
 def admin_set_loyalty(user_id):
     """Set loyalty points for a user."""
+    is_authorized, err_resp = verify_admin_access()
+    if not is_authorized:
+        return err_resp
     data = request.get_json(silent=True) or {}
     points = data.get('points')
-    if points is None or not str(points).lstrip('-').isdigit():
+    if points is None:
+        return jsonify({"error": "Valid points value required"}), 400
+    try:
+        points_val = max(0, min(100000, int(points)))
+    except (ValueError, TypeError):
         return jsonify({"error": "Valid points value required"}), 400
     try:
         cur = get_cursor()
-        cur.execute("UPDATE users SET loyalty_points = %s WHERE id = %s", (int(points), user_id))
+        cur.execute("UPDATE users SET loyalty_points = %s WHERE id = %s", (points_val, user_id))
         commit_db()
         return jsonify({"message": f"Loyalty points set to {points}."}), 200
     except Exception as e:
@@ -3988,9 +4001,9 @@ def admin_reset_password(user_id):
     if not is_authorized:
         return err_resp
     data = request.get_json(silent=True) or {}
-    new_password = data.get('new_password', '').strip()
-    if len(new_password) < 8:
-        return jsonify({"error": "Password must be at least 8 characters"}), 400
+    new_password = (data.get('new_password', '') or '').strip()
+    if len(new_password) < 8 or len(new_password) > 64:
+        return jsonify({"error": "Password must be between 8 and 64 characters"}), 400
     hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     try:
         cur = get_cursor()
@@ -5036,7 +5049,10 @@ def get_gps_privacy_status():
 @app.route('/api/vehicles/<int:vehicle_id>/gps-history', methods=['GET'])
 def get_vehicle_gps_history(vehicle_id):
     """Fetch breadcrumb trip history logs for a specific vehicle."""
-    limit = min(int(request.args.get('limit', 100)), 500)
+    try:
+        limit = max(1, min(int(request.args.get('limit', 100) or 100), 500))
+    except (ValueError, TypeError):
+        limit = 100
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
@@ -5733,7 +5749,10 @@ def book():
                 delivery_fee = 0.00
 
             # Validate and cap loyalty points
-            points_redeemed = max(0, int(data.get('points_redeemed', 0) or 0))
+            try:
+                points_redeemed = max(0, int(data.get('points_redeemed', 0) or 0))
+            except (ValueError, TypeError):
+                points_redeemed = 0
             if points_redeemed > 0:
                 cur.execute("SELECT loyalty_points FROM users WHERE id = %s", (user_id,))
                 user_pts = cur.fetchone()
@@ -6900,8 +6919,11 @@ def modify_booking():
 
         # Calculate new days
         from datetime import datetime
-        d1 = datetime.strptime(new_start, "%Y-%m-%d")
-        d2 = datetime.strptime(new_end, "%Y-%m-%d")
+        try:
+            d1 = datetime.strptime(str(new_start)[:10], "%Y-%m-%d")
+            d2 = datetime.strptime(str(new_end)[:10], "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
         new_days = (d2 - d1).days + 1
 
         if new_days <= 0:
@@ -7612,13 +7634,17 @@ def get_cancelled_bookings():
     """Get all cancelled bookings with pagination and sorting for admin panel."""
     try:
         # Get pagination parameters
-        page = int(request.args.get('page', 1))
-        page_size = int(request.args.get('page_size', 25))
-        sort_by = request.args.get('sort_by', 'cancellation_date_desc')
-        
-        # Validate page_size
+        try:
+            page = max(1, int(request.args.get('page', 1) or 1))
+        except (ValueError, TypeError):
+            page = 1
+        try:
+            page_size = int(request.args.get('page_size', 25) or 25)
+        except (ValueError, TypeError):
+            page_size = 25
         if page_size not in [10, 25, 50, 100]:
             page_size = 25
+        sort_by = request.args.get('sort_by', 'cancellation_date_desc')
         
         # Calculate offset
         offset = (page - 1) * page_size
@@ -13877,8 +13903,8 @@ def get_activity_logs():
         cur = get_cursor()
         page = request.args.get('page')
         limit = request.args.get('limit')
-        filter_type = (request.args.get('filter') or request.args.get('action') or '').strip().lower()
-        search_query = (request.args.get('q') or request.args.get('search') or '').strip().lower()
+        filter_type = (request.args.get('filter') or request.args.get('action') or '').strip().lower()[:50]
+        search_query = (request.args.get('q') or request.args.get('search') or '').strip().lower()[:50]
 
         where_clauses = []
         params = []
@@ -13894,8 +13920,14 @@ def get_activity_logs():
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
         if page:
-            page = int(page)
-            limit = int(limit) if limit else 50
+            try:
+                page = max(1, int(page))
+            except (ValueError, TypeError):
+                page = 1
+            try:
+                limit = max(1, min(100, int(limit))) if limit else 50
+            except (ValueError, TypeError):
+                limit = 50
             offset = (page - 1) * limit
 
             # Get total count
@@ -15737,8 +15769,11 @@ def mark_admin_notification_read(notif_id):
 @app.route('/api/users/search', methods=['GET'])
 def users_search():
     """Search users by name or email. Used by admin chat to start new conversations."""
-    q = (request.args.get('q') or '').strip()
-    limit = min(int(request.args.get('limit', 10)), 50)
+    q = (request.args.get('q') or '').strip()[:50]
+    try:
+        limit = max(1, min(int(request.args.get('limit', 10) or 10), 50))
+    except (ValueError, TypeError):
+        limit = 10
     if len(q) < 2:
         return jsonify([]), 200
     try:
@@ -16091,7 +16126,10 @@ def chat_messages():
     """Get conversation between a user and an admin (paginated, newest last)."""
     user_id  = request.args.get('user_id')
     admin_id = request.args.get('admin_id')
-    limit    = int(request.args.get('limit', 50))
+    try:
+        limit = max(1, min(int(request.args.get('limit', 50) or 50), 100))
+    except (ValueError, TypeError):
+        limit = 50
     if not user_id or not admin_id:
         return jsonify({'error': 'user_id and admin_id required'}), 400
     try:
@@ -17486,6 +17524,11 @@ def edit_penalty(p_id):
         return jsonify({'error': 'Amount is required'}), 400
 
     try:
+        new_amount_val = max(0.0, min(100000.0, float(new_amount)))
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid penalty amount'}), 400
+
+    try:
         cur = get_cursor()
         cur.execute("SELECT booking_id, amount, charge_type FROM booking_penalties WHERE id = %s", (p_id,))
         p_row = cur.fetchone()
@@ -17494,7 +17537,7 @@ def edit_penalty(p_id):
         booking_id = p_row['booking_id']
 
         update_fields = ["amount = %s"]
-        params = [float(new_amount)]
+        params = [new_amount_val]
 
         if new_notes is not None:
             update_fields.append("notes = %s")

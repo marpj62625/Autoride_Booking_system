@@ -9236,7 +9236,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                    <input type="text" id="driverWageInput" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem;">
+                    <input type="text" id="driverWageInput" maxlength="50" placeholder="e.g. 500 per day" style="width: 100%; padding: 14px; background: var(--bg-input, var(--surface-container)); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 0.9rem;">
 
 
 
@@ -9284,7 +9284,7 @@ input:checked + .ctrl-slider:before {
 
 
 
-                    <input type="text" id="driverSearchInput" oninput="Drivers.applyFilters()" placeholder="Search drivers..." style="width: 100%; padding: 12px 12px 12px 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; color: white; font-size: 0.85rem;">
+                    <input type="text" id="driverSearchInput" maxlength="50" oninput="Drivers.applyFilters()" placeholder="Search drivers..." style="width: 100%; padding: 12px 12px 12px 40px; background: var(--surface); border: 1px solid var(--border); border-radius: 50px; color: white; font-size: 0.85rem;">
 
 
 
@@ -16767,7 +16767,7 @@ async edit(id) { this.openModal(id); }
                     <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                         <div style="position: relative; flex: 1;">
                             <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-weight: 800; color: #64748b; font-size: 0.95rem;">₱</span>
-                            <input type="number" id="fleetVehicleRateInput" value="${curRate}" step="50" min="0"
+                            <input type="number" id="fleetVehicleRateInput" value="${curRate}" step="50" min="0" max="50000"
                                    style="width: 100%; padding: 9px 10px 9px 26px; font-size: 1rem; font-weight: 900; color: #0f172a; background: white; border: 1.5px solid #cbd5e1; border-radius: 8px; outline: none; box-sizing: border-box;">
                         </div>
                         <button type="button" id="btnSaveFleetVehicleRate" onclick="FleetCalendar.saveVehicleDailyRate(${v.id})"
@@ -20305,7 +20305,7 @@ function toggleNewsletterModal(show = true) {
                             <i class="fas fa-upload" style="margin-right:6px;color:#d97706;"></i><span id="refundProofLabel_${b.id}">Choose proof image</span>
                         </button>
                         <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:8px;">Step 2 &#8212; Reference / Transaction No. (optional)</div>
-                        <input type="text" id="refundRefInput_${b.id}" placeholder="e.g. TXN123456789"
+                        <input type="text" id="refundRefInput_${b.id}" maxlength="50" placeholder="e.g. TXN123456789"
                             style="width:100%;padding:8px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.82rem;color:#0f172a;background:#f8fafc;box-sizing:border-box;margin-bottom:10px;">
                         <button id="markRefundedBtn_${b.id}" onclick="Bookings.markRefunded(${b.id})" disabled
                             style="width:100%;padding:10px;background:#d1d5db;border:none;border-radius:10px;color:#fff;font-size:0.82rem;font-weight:700;cursor:not-allowed;">
@@ -27017,7 +27017,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                                    <input id="extRfAmt_${extensionId}" type="number" step="0.01" value="${parseFloat(refundAmount).toFixed(2)}"
+                                    <input id="extRfAmt_${extensionId}" type="number" step="0.01" min="0" max="500000" value="${parseFloat(refundAmount).toFixed(2)}"
 
 
 
@@ -27053,7 +27053,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                                    <input id="extRfRef_${extensionId}" type="text" placeholder="Reference # (optional)"
+                                    <input id="extRfRef_${extensionId}" type="text" maxlength="50" placeholder="Reference # (optional)"
 
 
 
@@ -29156,7 +29156,7 @@ function toggleNewsletterModal(show = true) {
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                            <input type="password" id="${inputId}" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                            <input type="password" id="${inputId}" data-key="${s.key}" maxlength="255" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
                             <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -29172,7 +29172,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <input type="text" data-key="${s.key}" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                        <input type="text" data-key="${s.key}" maxlength="500" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
                     </div>
                 `;
             }
@@ -29228,7 +29228,7 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
                         <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <textarea data-key="${s.key}" style="width: 100%; box-sizing: border-box; height: ${height}; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${val}</textarea>
+                        <textarea data-key="${s.key}" maxlength="5000" style="width: 100%; box-sizing: border-box; height: ${height}; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${val}</textarea>
                     </div>
                 `;
             }
@@ -29239,7 +29239,7 @@ function toggleNewsletterModal(show = true) {
             return `
                 <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                     <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                    <input type="text" data-key="${s.key}" value="${val}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;">
+                    <input type="text" data-key="${s.key}" maxlength="500" value="${val}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;">
                     ${helperNote}
                 </div>
             `;
@@ -34609,22 +34609,22 @@ function toggleNewsletterModal(show = true) {
             <!-- Edit Form -->
             <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">
                 <div style="font-size:0.72rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">Edit Info</div>
-                <input id="umEditName" type="text" value="${u.full_name || ''}" placeholder="Full Name" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
-                <input id="umEditPhone" type="text" value="${u.phone || ''}" placeholder="Phone Number" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
+                <input id="umEditName" type="text" maxlength="50" value="${u.full_name || ''}" placeholder="Full Name" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
+                <input id="umEditPhone" type="text" maxlength="11" value="${u.phone || ''}" placeholder="Phone Number" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
                 <button onclick="UserMgmt.saveEdit(${u.id})" class="btn-primary" style="width:100%;padding:11px;border-radius:10px;font-weight:800;font-size:0.85rem;">Save Changes</button>
             </div>
 
             <!-- Loyalty Points -->
             <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">
                 <div style="font-size:0.72rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-star" style="color:var(--amber);margin-right:6px;"></i>Loyalty Points</div>
-                <input id="umLoyaltyInput" type="number" value="${u.loyalty_points || 0}" placeholder="Points" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.9rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
+                <input id="umLoyaltyInput" type="number" min="0" max="100000" value="${u.loyalty_points || 0}" placeholder="Points" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.9rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
                 <button onclick="UserMgmt.setLoyalty(${u.id})" style="width:100%;padding:11px;background:rgba(245,158,11,0.12);border:1.5px solid var(--amber);border-radius:10px;color:var(--amber);font-weight:800;font-size:0.85rem;cursor:pointer;">Update Points</button>
             </div>
 
             <!-- Reset Password -->
             <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">
                 <div style="font-size:0.72rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;"><i class="fas fa-key" style="color:var(--primary);margin-right:6px;"></i>Reset Password</div>
-                <input id="umNewPass" type="password" placeholder="New password (min 8 chars)" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.9rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
+                <input id="umNewPass" type="password" maxlength="64" placeholder="New password (min 8 chars)" style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.9rem;margin-bottom:10px;box-sizing:border-box;outline:none;">
                 <button onclick="UserMgmt.resetPassword(${u.id})" class="btn-primary" style="width:100%;padding:11px;border-radius:10px;font-weight:800;font-size:0.85rem;">Reset Password</button>
             </div>
 
@@ -34735,7 +34735,7 @@ function toggleNewsletterModal(show = true) {
 
                     <div style="margin-bottom:12px;">
                         <label style="display:block;font-size:0.72rem;color:var(--text-muted);font-weight:700;margin-bottom:4px;">ADMIN NOTE / REASON FOR CHANGE</label>
-                        <input type="text" id="editNote_${u.id}" placeholder="e.g., Customer dispute approved / Strike reduction granted" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;">
+                        <input type="text" id="editNote_${u.id}" maxlength="200" placeholder="e.g., Customer dispute approved / Strike reduction granted" style="width:100%;padding:9px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;color:white;font-size:0.85rem;">
                     </div>
 
                     <div style="display:flex;gap:8px;">
@@ -34754,7 +34754,7 @@ function toggleNewsletterModal(show = true) {
             <!-- Freeze / Unfreeze -->
             <div style="background:var(--surface-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;">
                 <div style="font-size:0.72rem;color:var(--text-muted);font-weight:800;text-transform:uppercase;margin-bottom:12px;">${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}</div>
-                ${!u.is_frozen ? `<input id="umFreezeReason" type="text" placeholder="Reason for freezing..." style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;margin-bottom:10px;outline:none;box-sizing:border-box;">` : `<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">Reason: ${escapeHtml(u.freeze_reason || 'No reason provided')}</p>`}
+                ${!u.is_frozen ? `<input id="umFreezeReason" type="text" maxlength="200" placeholder="Reason for freezing..." style="width:100%;padding:11px 14px;background:var(--surface-container, var(--surface-solid));border:1.5px solid var(--border);border-radius:10px;color:var(--text-main);font-size:0.88rem;margin-bottom:10px;outline:none;box-sizing:border-box;">` : `<p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">Reason: ${escapeHtml(u.freeze_reason || 'No reason provided')}</p>`}
                 <button onclick="UserMgmt.toggleFreeze(${u.id}, ${u.is_frozen})" style="width:100%;padding:12px;background:${u.is_frozen ? 'rgba(0,177,79,0.12)' : 'rgba(239,68,68,0.12)'};border:1.5px solid ${u.is_frozen ? 'var(--success)' : 'var(--danger)'};border-radius:10px;color:${u.is_frozen ? 'var(--success)' : 'var(--danger)'};font-weight:800;font-size:0.85rem;cursor:pointer;">
                     <i class="fas fa-${u.is_frozen ? 'unlock' : 'lock'}"></i> ${u.is_frozen ? 'Unfreeze Account' : 'Freeze Account'}
                 </button>
@@ -35654,7 +35654,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                        '<input type="text" id="chatSearchInput" placeholder="Search conversations by name, email, or message..." autocomplete="off"' +
+                        '<input type="text" id="chatSearchInput" maxlength="50" placeholder="Search conversations by name, email, or message..." autocomplete="off"' +
 
 
 
@@ -35742,7 +35742,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    '<input type="text" id="acUserSearchInput" placeholder="Search by name or email..." oninput="AdminChat.searchUsers(this.value)"' +
+                    '<input type="text" id="acUserSearchInput" maxlength="50" placeholder="Search by name or email..." oninput="AdminChat.searchUsers(this.value)"' +
 
 
 
@@ -36554,7 +36554,7 @@ function toggleNewsletterModal(show = true) {
 
 
 
-                    '<input type="text" id="acInput" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')AdminChat.send()"' +
+                    '<input type="text" id="acInput" maxlength="500" placeholder="Type a message..." onkeydown="if(event.key===\'Enter\')AdminChat.send()"' +
 
 
 
@@ -38057,8 +38057,8 @@ function toggleNewsletterModal(show = true) {
                             Generate a 16-character password in Google Account (Security &gt; 2-Step Verification &gt; App Passwords) for 100% reliable, never-expiring email sending.
                         </div>
                         <div style="display:flex;flex-direction:column;gap:8px;">
-                            <input id="manualSmtpEmail" type="email" placeholder="Your Gmail address (e.g. yourname@gmail.com)" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.manual_smtp_user || (data.email || '')}">
-                            <input id="manualSmtpPass" type="password" placeholder="16-character Gmail App Password" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;">
+                            <input id="manualSmtpEmail" type="email" maxlength="60" placeholder="Your Gmail address (e.g. yourname@gmail.com)" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.manual_smtp_user || (data.email || '')}">
+                            <input id="manualSmtpPass" type="password" maxlength="64" placeholder="16-character Gmail App Password" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;">
                             <button onclick="saveManualSmtpSettings()" class="btn-premium" style="width:100%;padding:10px;font-size:0.8rem;font-weight:700;background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--text-main);border-radius:8px;cursor:pointer;">
                                 <i class="fas fa-save"></i> Save Gmail App Password
                             </button>
@@ -38070,7 +38070,7 @@ function toggleNewsletterModal(show = true) {
                             <i class="fas fa-paper-plane" style="color:var(--primary);"></i> Test Email Sending
                         </div>
                         <div style="display:flex;gap:6px;">
-                            <input id="testEmailRecipient" type="email" placeholder="Enter recipient email..." style="flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.email || ''}">
+                            <input id="testEmailRecipient" type="email" maxlength="60" placeholder="Enter recipient email..." style="flex:1;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-main);font-size:0.8rem;" value="${data.email || ''}">
                             <button onclick="sendTestNotificationEmail()" class="btn-premium" style="padding:8px 14px;font-size:0.8rem;font-weight:700;background:var(--primary);color:white;border-radius:8px;cursor:pointer;">
                                 Test Send
                             </button>
