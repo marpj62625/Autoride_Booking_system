@@ -3783,12 +3783,31 @@ def admin_save_violation_settings():
     ]
     try:
         cur = get_cursor()
+        v_bounds = {
+            'violation_max_strikes': (1, 10, int),
+            'violation_1st_suspension_hours': (1, 168, int),
+            'violation_2nd_suspension_days': (1, 60, int),
+            'violation_commitment_fee_amount': (0, 5000, int),
+            'violation_auto_reset_clean_days': (1, 365, int),
+        }
         for key in allowed_keys:
             if key in data:
+                val = data[key]
+                if key in v_bounds:
+                    min_val, max_val, cast_type = v_bounds[key]
+                    try:
+                        num_v = cast_type(float(val))
+                        if num_v < min_val: num_v = min_val
+                        elif num_v > max_val: num_v = max_val
+                        val = str(num_v)
+                    except (ValueError, TypeError):
+                        continue
+                elif key in ['violation_warning_15min_enabled', 'violation_warning_5min_enabled']:
+                    val = 'true' if str(val).lower() in ['true', '1', 'yes'] else 'false'
                 cur.execute("""
                     INSERT INTO settings (key, value) VALUES (%s, %s)
                     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-                """, (key, str(data[key])))
+                """, (key, str(val)))
         commit_db()
         return jsonify({'message': 'Violation settings saved.'}), 200
     except Exception as e:
@@ -13964,11 +13983,68 @@ def handle_admin_settings():
                 user = cur.fetchone() or {'id': 0, 'full_name': 'Super Admin'}
                 requester_id = user['id']
 
+            SETTINGS_NUMERIC_CONFIG = {
+                'long_term_discount_percent':        (0, 100, int),
+                'loyalty_max_discount_percent':      (0, 100, int),
+                'cancellation_penalty_percent':      (0, 100, int),
+                'cancellation_deadline_hours':       (1, 168, int),
+                'loyalty_points_spend_ratio':        (1, 9999, int),
+                'loyalty_points_value':              (0.01, 100.0, float),
+                'mileage_limit':                     (10, 9999, int),
+                'refuel_full_tank_price':            (500, 10000, int),
+                'long_term_discount_days':           (1, 365, int),
+                'extension_conflict_deadline_hours': (1, 720, int),
+                'max_booking_duration_days':         (1, 3650, int),
+                'violation_max_strikes':             (1, 10, int),
+                'violation_1st_suspension_hours':    (1, 168, int),
+                'violation_2nd_suspension_days':     (1, 60, int),
+                'violation_commitment_fee_amount':   (0, 5000, int),
+                'violation_auto_reset_clean_days':   (1, 365, int),
+                'late_return_grace_period_mins':     (0, 1440, int),
+                'late_return_hourly_rate':           (0, 10000, int),
+                'late_return_fixed_base_fee':        (0, 10000, int),
+                'late_return_max_penalty_cap':       (0, 50000, int),
+                'cleaning_fee_standard':             (0, 10000, int),
+                'refuel_price_per_liter':            (1, 300, int),
+                'regular_customer_min_bookings':     (1, 100, int),
+                'payment_fee_card_percent':          (0, 50.0, float),
+                'payment_fee_ewallet_percent':       (0, 50.0, float),
+                'payment_fee_cash_percent':          (0, 50.0, float),
+                'driver_daily_wage':                 (100, 10000, int),
+                'driver_shift_hours':                (1, 24, int),
+                'driver_overtime_rate':              (0, 1000, int),
+            }
+            BOOLEAN_SETTINGS = {
+                'require_license_verification', 'require_emergency_contact', 'require_live_selfie',
+                'ai_assistant_enabled', 'ai_assistant_autoreply_enabled', 'chat_faq_enabled',
+                'chat_faq_autoreply_enabled', 'enable_newsletter', 'violation_warning_15min_enabled',
+                'violation_warning_5min_enabled', 'late_return_auto_apply_enabled',
+                'block_booking_on_unpaid_penalty', 'regular_customer_auto_qualify',
+                'regular_customer_downpayment_exempt', 'driver_service_enabled'
+            }
+
             for item in updates:
                 k = item.get('key')
                 v = item.get('value', '')
-                if k:
-                    cur.execute("UPDATE settings SET value=%s, updated_at=CURRENT_TIMESTAMP WHERE key=%s", (str(v), k))
+                if not k:
+                    continue
+                if k in SETTINGS_NUMERIC_CONFIG:
+                    min_val, max_val, cast_type = SETTINGS_NUMERIC_CONFIG[k]
+                    try:
+                        num_v = cast_type(float(v))
+                        if num_v < min_val:
+                            num_v = min_val
+                        elif num_v > max_val:
+                            num_v = max_val
+                        v = str(num_v)
+                    except (ValueError, TypeError):
+                        continue
+                elif k in BOOLEAN_SETTINGS:
+                    v = 'true' if str(v).lower() in ['true', '1', 'yes'] else 'false'
+                else:
+                    v = str(v)[:5000] if k in ['rental_terms', 'ai_assistant_greeting', 'ai_assistant_fallback', 'driver_meals_lodging_policy'] else str(v)[:255]
+
+                cur.execute("UPDATE settings SET value=%s, updated_at=CURRENT_TIMESTAMP WHERE key=%s", (v, k))
             
             commit_db()
 

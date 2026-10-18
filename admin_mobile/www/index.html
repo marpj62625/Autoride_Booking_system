@@ -8088,7 +8088,7 @@ input:checked + .ctrl-slider:before {
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap:12px; align-items:center;">
                 <div>
                     <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">Display Order</label>
-                    <input type="number" id="faqFormDisplayOrder" value="1" min="1" max="999" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
+                    <input type="number" id="faqFormDisplayOrder" value="1" min="1" max="999" onkeydown="if(event.key==='e'||event.key==='E'||event.key==='+'||event.key==='-')event.preventDefault();" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);if(Number(this.value)>999)this.value=999;" onblur="let v=Number(this.value);if(!v||v<1)this.value=1;else if(v>999)this.value=999;else this.value=Math.round(v);" style="width:100%; box-sizing:border-box; background:var(--surface-container, #f8fafc); border:1.5px solid var(--border); border-radius:8px; color:var(--text-main); padding:8px 10px; font-size:0.85rem;">
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; padding-top:16px;">
                     <input type="checkbox" id="faqFormIsActive" checked style="width:18px; height:18px; accent-color:var(--primary); cursor:pointer;">
@@ -12980,9 +12980,9 @@ input:checked + .ctrl-slider:before {
                     ${c.label}
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 0.76rem;">
-                    <span style="color: #dc2626; background: rgba(239,68,68,0.1); padding: 2px 7px; border-radius: 6px; text-decoration: line-through; font-weight: 600; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.oldValue}</span>
+                    <span style="color: #dc2626; background: rgba(239,68,68,0.1); padding: 2px 7px; border-radius: 6px; text-decoration: line-through; font-weight: 600; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: break-all;">${c.oldValue}</span>
                     <i class="fas fa-arrow-right" style="color: var(--text-muted, #94a3b8); font-size: 0.65rem;"></i>
-                    <span style="color: #00B14F; background: rgba(0,177,79,0.12); padding: 2px 7px; border-radius: 6px; font-weight: 800; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.newValue}</span>
+                    <span style="color: #00B14F; background: rgba(0,177,79,0.12); padding: 2px 7px; border-radius: 6px; font-weight: 800; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: break-all;">${c.newValue}</span>
                 </div>
             </div>
         `).join('');
@@ -28739,9 +28739,101 @@ function toggleNewsletterModal(show = true) {
 
     // --- SETTINGS MODULE ---
 
+    const SETTINGS_NUM_CONFIG = {
+        'long_term_discount_percent':        { min: 0,    max: 100,   step: 1,    suffix: '%' },
+        'loyalty_max_discount_percent':      { min: 0,    max: 100,   step: 1,    suffix: '%' },
+        'cancellation_penalty_percent':      { min: 0,    max: 100,   step: 1,    suffix: '%' },
+        'cancellation_deadline_hours':       { min: 1,    max: 168,   step: 1,    suffix: 'hrs' },
+        'loyalty_points_spend_ratio':        { min: 1,    max: 9999,  step: 1,    suffix: 'PHP' },
+        'loyalty_points_value':              { min: 0.01, max: 100,   step: 0.01, suffix: 'PHP' },
+        'mileage_limit':                     { min: 10,   max: 9999,  step: 10,   suffix: 'km/day' },
+        'refuel_full_tank_price':            { min: 500,  max: 10000, step: 100,  suffix: 'PHP' },
+        'long_term_discount_days':           { min: 1,    max: 365,   step: 1,    suffix: 'days' },
+        'extension_conflict_deadline_hours': { min: 1,    max: 720,   step: 1,    suffix: 'hrs' },
+        'max_booking_duration_days':         { min: 1,    max: 3650,  step: 1,    suffix: 'days' },
+        'violation_max_strikes':             { min: 1,    max: 10,    step: 1,    suffix: 'strikes' },
+        'violation_1st_suspension_hours':    { min: 1,    max: 168,   step: 1,    suffix: 'hrs' },
+        'violation_2nd_suspension_days':     { min: 1,    max: 60,    step: 1,    suffix: 'days' },
+        'violation_commitment_fee_amount':   { min: 0,    max: 5000,  step: 20,   suffix: 'PHP' },
+        'violation_auto_reset_clean_days':   { min: 1,    max: 365,   step: 1,    suffix: 'days' },
+        'late_return_grace_period_mins':     { min: 0,    max: 1440,  step: 5,    suffix: 'mins' },
+        'late_return_hourly_rate':           { min: 0,    max: 10000, step: 50,   suffix: 'PHP/hr' },
+        'late_return_fixed_base_fee':        { min: 0,    max: 10000, step: 50,   suffix: 'PHP' },
+        'late_return_max_penalty_cap':       { min: 0,    max: 50000, step: 100,  suffix: 'PHP' },
+        'cleaning_fee_standard':             { min: 0,    max: 10000, step: 50,   suffix: 'PHP' },
+        'refuel_price_per_liter':            { min: 1,    max: 300,   step: 1,    suffix: 'PHP/L' },
+        'regular_customer_min_bookings':     { min: 1,    max: 100,   step: 1,    suffix: 'bookings' },
+        'payment_fee_card_percent':          { min: 0,    max: 50,    step: 0.1,  suffix: '%' },
+        'payment_fee_ewallet_percent':       { min: 0,    max: 50,    step: 0.1,  suffix: '%' },
+        'payment_fee_cash_percent':          { min: 0,    max: 50,    step: 0.1,  suffix: '%' },
+        'driver_daily_wage':                 { min: 100,  max: 10000, step: 5,    suffix: 'PHP/day' },
+        'driver_shift_hours':                { min: 1,    max: 24,    step: 1,    suffix: 'hrs/day' },
+        'driver_overtime_rate':              { min: 0,    max: 1000,  step: 5,    suffix: 'PHP/hr' },
+    };
+    window.SETTINGS_NUM_CONFIG = SETTINGS_NUM_CONFIG;
 
+    window.handleSettingNumberKeydown = function(e, min) {
+        if (['e', 'E', '+'].includes(e.key)) {
+            e.preventDefault();
+            return false;
+        }
+        if (min >= 0 && e.key === '-') {
+            e.preventDefault();
+            return false;
+        }
+    };
 
-        const Settings = {
+    window.handleSettingNumberInput = function(input, min, max, step) {
+        if (!input) return;
+        let raw = input.value;
+        if (raw === '') return;
+
+        if (min >= 0 && raw.includes('-')) {
+            raw = raw.replace(/-/g, '');
+        }
+
+        const isDec = String(step).includes('.') || (min < 1 && min > 0);
+        const maxDigits = String(Math.floor(max)).length;
+        const parts = raw.split('.');
+
+        if (parts[0].length > maxDigits) {
+            parts[0] = parts[0].slice(0, maxDigits);
+            raw = parts.length > 1 && isDec ? parts[0] + '.' + parts[1].slice(0, 2) : parts[0];
+        }
+        if (parts.length > 1 && isDec && parts[1].length > 2) {
+            raw = parts[0] + '.' + parts[1].slice(0, 2);
+        }
+
+        const num = Number(raw);
+        if (!isNaN(num)) {
+            if (num > max) {
+                raw = String(max);
+            }
+        }
+        input.value = raw;
+    };
+
+    window.handleSettingNumberBlur = function(input, min, max, step) {
+        if (!input) return;
+        let raw = input.value.trim();
+        if (raw === '' || isNaN(Number(raw))) {
+            input.value = min;
+            return;
+        }
+        let num = Number(raw);
+        if (num > max) num = max;
+        if (num < min) num = min;
+
+        const isDec = String(step).includes('.') || (min < 1 && min > 0);
+        if (isDec) {
+            const decimals = (String(step).split('.')[1] || '0').length;
+            input.value = num.toFixed(decimals);
+        } else {
+            input.value = Math.round(num);
+        }
+    };
+
+    const Settings = {
         _allData: [],
         _groups: {},
         _activeCat: 'all',
@@ -29053,7 +29145,7 @@ function toggleNewsletterModal(show = true) {
                 'violation_max_strikes', 'violation_1st_suspension_hours', 'violation_2nd_suspension_days',
                 'violation_commitment_fee_amount', 'violation_auto_reset_clean_days',
                 'late_return_grace_period_mins', 'late_return_hourly_rate', 'late_return_fixed_base_fee',
-                'late_return_max_penalty_cap', 'cleaning_fee_standard', 'refuel_price_per_liter',
+                'late_return_max_penalty_cap', 'cleaning_fee_standard', 'refuel_price_per_liter', 'refuel_full_tank_price',
                 'regular_customer_min_bookings', 'payment_fee_card_percent', 'payment_fee_ewallet_percent', 'payment_fee_cash_percent',
                 'driver_daily_wage', 'driver_shift_hours', 'driver_overtime_rate'
             ];
@@ -29170,7 +29262,7 @@ function toggleNewsletterModal(show = true) {
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                            <input type="password" id="${inputId}" data-key="${s.key}" maxlength="255" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                            <input type="password" id="${inputId}" data-key="${s.key}" maxlength="255" autocomplete="new-password" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 42px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
                             <button type="button" onclick="togglePasswordVisibility('${inputId}', this)" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 6px; font-size: 0.9rem;">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -29186,50 +29278,27 @@ function toggleNewsletterModal(show = true) {
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="font-size: 0.68rem; color: ${isLiveKey ? '#ef4444' : 'var(--text-muted)'}; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                        <input type="text" data-key="${s.key}" maxlength="500" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
+                        <input type="text" data-key="${s.key}" maxlength="255" value="${val}" placeholder="${placeholder}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.86rem; font-family: monospace; font-weight: 600; outline: none;">
                     </div>
                 `;
             }
 
             // 8. Numeric Fields
             if (isNumeric) {
-                const numConfig = {
-                    'long_term_discount_percent':        { min: 0,    max: 100,  step: 1,    suffix: '%' },
-                    'loyalty_max_discount_percent':      { min: 0,    max: 100,  step: 1,    suffix: '%' },
-                    'cancellation_penalty_percent':      { min: 0,    max: 100,  step: 1,    suffix: '%' },
-                    'cancellation_deadline_hours':       { min: 1,    max: 168,  step: 1,    suffix: 'hrs' },
-                    'loyalty_points_spend_ratio':        { min: 1,    max: 9999, step: 1,    suffix: 'PHP' },
-                    'loyalty_points_value':              { min: 0.01, max: 100,  step: 0.01, suffix: 'PHP' },
-                    'mileage_limit':                     { min: 10,   max: 9999, step: 10,   suffix: 'km/day' },
-                    'refuel_full_tank_price':            { min: 500,  max: 10000, step: 100,  suffix: 'PHP' },
-                    'long_term_discount_days':           { min: 1,    max: 365,  step: 1,    suffix: 'days' },
-                    'extension_conflict_deadline_hours': { min: 1,    max: 720,  step: 1,    suffix: 'hrs' },
-                    'max_booking_duration_days':         { min: 1,    max: 3650, step: 1,    suffix: 'days' },
-                    'violation_max_strikes':             { min: 1,    max: 10,   step: 1,    suffix: 'strikes' },
-                    'violation_1st_suspension_hours':    { min: 1,    max: 168,  step: 1,    suffix: 'hrs' },
-                    'violation_2nd_suspension_days':     { min: 1,    max: 60,   step: 1,    suffix: 'days' },
-                    'violation_commitment_fee_amount':   { min: 0,    max: 5000, step: 20,   suffix: 'PHP' },
-                    'violation_auto_reset_clean_days':   { min: 1,    max: 365,  step: 1,    suffix: 'days' },
-                    'late_return_grace_period_mins':     { min: 0,    max: 1440, step: 5,    suffix: 'mins' },
-                    'late_return_hourly_rate':           { min: 0,    max: 10000, step: 50,  suffix: 'PHP/hr' },
-                    'late_return_fixed_base_fee':        { min: 0,    max: 10000, step: 50,  suffix: 'PHP' },
-                    'late_return_max_penalty_cap':       { min: 0,    max: 50000, step: 100, suffix: 'PHP' },
-                    'cleaning_fee_standard':             { min: 0,    max: 10000, step: 50,  suffix: 'PHP' },
-                    'refuel_price_per_liter':            { min: 1,    max: 300,  step: 1,    suffix: 'PHP/L' },
-                    'regular_customer_min_bookings':     { min: 1,    max: 100,  step: 1,    suffix: 'bookings' },
-                    'payment_fee_card_percent':          { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
-                    'payment_fee_ewallet_percent':       { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
-                    'payment_fee_cash_percent':          { min: 0,    max: 50,   step: 0.1,  suffix: '%' },
-                    'driver_daily_wage':                 { min: 100,  max: 10000, step: 5,   suffix: 'PHP/day' },
-                    'driver_shift_hours':                { min: 1,    max: 24,   step: 1,    suffix: 'hrs/day' },
-                    'driver_overtime_rate':              { min: 0,    max: 1000, step: 5,    suffix: 'PHP/hr' },
-                };
-                const nc = numConfig[s.key] || { min: 0, max: 9999, step: 1, suffix: '' };
+                const nc = (typeof SETTINGS_NUM_CONFIG !== 'undefined' && SETTINGS_NUM_CONFIG[s.key]) ? SETTINGS_NUM_CONFIG[s.key] : { min: 0, max: 9999, step: 1, suffix: '' };
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
-                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                            <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 600;">Limit: ${nc.min} – ${nc.max}</span>
+                        </div>
                         <div style="position: relative; display: flex; align-items: center; width: 100%;">
-                            <input type="number" data-key="${s.key}" value="${val}" min="${nc.min}" max="${nc.max}" step="${nc.step}" style="width: 100%; box-sizing: border-box; padding: 12px 65px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 700; outline: none; transition: border-color 0.2s;">
+                            <input type="number" data-key="${s.key}" value="${val}" min="${nc.min}" max="${nc.max}" step="${nc.step}"
+                                autocomplete="off"
+                                onkeydown="handleSettingNumberKeydown(event, ${nc.min})"
+                                oninput="handleSettingNumberInput(this, ${nc.min}, ${nc.max}, ${nc.step})"
+                                onblur="handleSettingNumberBlur(this, ${nc.min}, ${nc.max}, ${nc.step})"
+                                style="width: 100%; box-sizing: border-box; padding: 12px 65px 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 700; outline: none; transition: border-color 0.2s;">
                             <span style="position: absolute; right: 12px; font-size: 0.72rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase; pointer-events: none;">${nc.suffix}</span>
                         </div>
                     </div>
@@ -29241,7 +29310,10 @@ function toggleNewsletterModal(show = true) {
                 const height = s.key === 'rental_terms' ? '120px' : '75px';
                 return `
                     <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1;">
-                        <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
+                            <span style="font-size: 0.65rem; color: var(--text-muted);">Max 5,000 characters</span>
+                        </div>
                         <textarea data-key="${s.key}" maxlength="5000" style="width: 100%; box-sizing: border-box; height: ${height}; padding: 12px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.85rem; font-weight: 600; font-family: inherit; resize: vertical; outline: none; line-height: 1.5;">${val}</textarea>
                     </div>
                 `;
@@ -29249,11 +29321,18 @@ function toggleNewsletterModal(show = true) {
 
             // 10. Default Text Input
             const isExpiry = s.key === 'smtp_oauth_token_expiry';
-            const helperNote = isExpiry ? '<span style="font-size: 0.65rem; color: #0284c7; margin-top: 2px;"><i class="fas fa-info-circle"></i> Auto-managed by Gmail OAuth</span>' : '';
+            const isEmail = s.key === 'smtp_oauth_email';
+            const isCurrency = s.key === 'currency';
+            const isTimezone = s.key === 'time_zone';
+            const isCardLabel = s.key === 'payment_fee_card_label';
+            const maxLen = isCurrency ? 10 : isTimezone ? 50 : isCardLabel ? 60 : isEmail ? 100 : isExpiry ? 50 : 255;
+            const inputType = isEmail ? 'email' : 'text';
+            const readonlyAttr = isExpiry ? 'readonly style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-container); opacity: 0.8; border: 1px solid var(--border); border-radius: 10px; color: var(--text-muted); font-size: 0.88rem; font-weight: 600; outline: none; cursor: not-allowed;"' : 'style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;"';
+            const helperNote = isExpiry ? '<span style="font-size: 0.65rem; color: #0284c7; margin-top: 2px;"><i class="fas fa-info-circle"></i> Auto-managed by Gmail OAuth</span>' : `<span style="font-size: 0.62rem; color: var(--text-muted); margin-top: 2px;">Max ${maxLen} characters</span>`;
             return `
                 <div class="settings-field-item" data-key="${s.key}" style="display: flex; flex-direction: column; gap: 6px;">
                     <label style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${s.description || s.key}</label>
-                    <input type="text" data-key="${s.key}" maxlength="500" value="${val}" style="width: 100%; box-sizing: border-box; padding: 12px 14px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.88rem; font-weight: 600; outline: none; transition: border-color 0.2s;">
+                    <input type="${inputType}" data-key="${s.key}" maxlength="${maxLen}" value="${val}" ${readonlyAttr}>
                     ${helperNote}
                 </div>
             `;
@@ -29380,12 +29459,30 @@ function toggleNewsletterModal(show = true) {
             const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
             const changes = [];
             const secretKeys = ['paymongo_test_secret_key', 'paymongo_live_secret_key', 'paymongo_webhook_secret', 'smtp_oauth_access_token', 'smtp_oauth_refresh_token'];
+            const numConfig = (typeof SETTINGS_NUM_CONFIG !== 'undefined') ? SETTINGS_NUM_CONFIG : {};
 
             inputs.forEach(i => {
                 if (!i.dataset || !i.dataset.key) return;
                 const key = i.dataset.key;
                 const initialVal = (this._initialValues && this._initialValues[key] !== undefined) ? String(this._initialValues[key]) : '';
-                const currentVal = String(i.value !== undefined ? i.value : '');
+                let currentVal = String(i.value !== undefined ? i.value : '');
+
+                if (numConfig[key]) {
+                    const nc = numConfig[key];
+                    let n = Number(currentVal.trim());
+                    if (isNaN(n) || currentVal.trim() === '') {
+                        currentVal = String(nc.min);
+                    } else {
+                        if (n > nc.max) n = nc.max;
+                        if (n < nc.min) n = nc.min;
+                        const isDec = String(nc.step).includes('.');
+                        currentVal = isDec ? n.toFixed((String(nc.step).split('.')[1] || '0').length) : String(Math.round(n));
+                    }
+                } else if (i.tagName === 'TEXTAREA') {
+                    currentVal = currentVal.slice(0, 5000);
+                } else if (i.tagName === 'INPUT') {
+                    currentVal = currentVal.slice(0, 255);
+                }
 
                 if (initialVal !== currentVal) {
                     let label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -29433,7 +29530,34 @@ function toggleNewsletterModal(show = true) {
 
         async save() {
             const inputs = document.querySelectorAll('#mobileSettingsList input, #mobileSettingsList textarea, #mobileSettingsList select');
-            const updates = Array.from(inputs).filter(i => i.dataset && i.dataset.key).map(i => ({ key: i.dataset.key, value: i.value }));
+            const numConfig = (typeof SETTINGS_NUM_CONFIG !== 'undefined') ? SETTINGS_NUM_CONFIG : {};
+            const updates = [];
+
+            inputs.forEach(i => {
+                if (!i.dataset || !i.dataset.key) return;
+                const k = i.dataset.key;
+                let v = String(i.value !== undefined ? i.value : '');
+
+                if (numConfig[k]) {
+                    const nc = numConfig[k];
+                    let n = Number(v.trim());
+                    if (isNaN(n) || v.trim() === '') {
+                        n = nc.min;
+                    } else {
+                        if (n > nc.max) n = nc.max;
+                        if (n < nc.min) n = nc.min;
+                    }
+                    const isDec = String(nc.step).includes('.');
+                    v = isDec ? n.toFixed((String(nc.step).split('.')[1] || '0').length) : String(Math.round(n));
+                    i.value = v; // sync input box in DOM
+                } else if (i.tagName === 'TEXTAREA') {
+                    v = v.slice(0, 5000);
+                } else {
+                    v = v.trim().slice(0, 255);
+                }
+
+                updates.push({ key: k, value: v });
+            });
             const user = (typeof adminAuth !== 'undefined' && adminAuth.getUser) ? adminAuth.getUser() : null;
 
             try {
