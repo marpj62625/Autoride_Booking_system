@@ -23880,12 +23880,30 @@ function toggleNewsletterModal(show = true) {
             const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
             const labelEl = document.getElementById('gpsDeviceLabel');
             if (labelEl && currentVeh) {
+                const isCar2 = (
+                    (currentVeh.gps_device_name && (currentVeh.gps_device_name.includes('2') || currentVeh.gps_device_name.toLowerCase().includes('vios'))) ||
+                    (currentVeh.plate_number && currentVeh.plate_number.toUpperCase().includes('DBJ')) ||
+                    currentVeh.id === 18 ||
+                    currentVeh.id === 35
+                );
+                const isCar1 = (
+                    (currentVeh.gps_device_name && (currentVeh.gps_device_name.includes('1') || currentVeh.gps_device_name.toLowerCase().includes('montero'))) ||
+                    (currentVeh.plate_number && currentVeh.plate_number.toUpperCase().includes('DUY')) ||
+                    currentVeh.id === 12
+                );
+
+                if (!currentVeh.gps_device_token && (isCar1 || isCar2)) {
+                    currentVeh.gps_device_token = '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz';
+                    currentVeh.gps_device_name = isCar2 ? 'Tracker Unit 2 (ESP32 - Vios)' : 'Tracker Unit 1 (ESP32 - Montero)';
+                    currentVeh.gps_server = 'sgp1.blynk.cloud';
+                }
+
                 if (currentVeh.gps_device_name) {
                     labelEl.textContent = `Tracker: ${currentVeh.gps_device_name}`;
                     labelEl.style.color = 'var(--text-main)';
                     labelEl.style.borderColor = 'var(--border)';
                 } else if (currentVeh.gps_device_token) {
-                    labelEl.textContent = 'Tracker: Linked';
+                    labelEl.textContent = isCar2 ? 'Tracker: Unit 2 Linked' : 'Tracker: Unit 1 Linked';
                     labelEl.style.color = 'var(--primary)';
                     labelEl.style.borderColor = 'rgba(0,177,79,0.3)';
                 } else {
@@ -23900,6 +23918,25 @@ function toggleNewsletterModal(show = true) {
             this.selectedVehicleId = parseInt(vehicleId, 10);
             this._updateHeaderDeviceLabel();
             this.refresh();
+
+            // Notify map iframe to center on selected car
+            try {
+                const frame = document.getElementById('blynkMapFrame');
+                if (frame && frame.contentWindow) {
+                    const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId);
+                    const isCar2 = (
+                        (currentVeh?.gps_device_name && (currentVeh.gps_device_name.includes('2') || currentVeh.gps_device_name.toLowerCase().includes('vios'))) ||
+                        (currentVeh?.plate_number && currentVeh.plate_number.toUpperCase().includes('DBJ')) ||
+                        this.selectedVehicleId === 18 ||
+                        this.selectedVehicleId === 35
+                    );
+                    frame.contentWindow.postMessage({
+                        type: 'AUTORIDE_GPS_SELECT_CAR',
+                        car: isCar2 ? 2 : 1,
+                        vehicleId: this.selectedVehicleId
+                    }, '*');
+                }
+            } catch(e) {}
         },
 
         async loadLastKnownLocationFromDB() {
@@ -24010,6 +24047,26 @@ function toggleNewsletterModal(show = true) {
 
         async refresh() {
             const currentVeh = this.fleetVehicles.find(v => v.id === this.selectedVehicleId) || this.fleetVehicles[0];
+            if (!currentVeh) return;
+
+            const isCar2 = (
+                (currentVeh.gps_device_name && (currentVeh.gps_device_name.includes('2') || currentVeh.gps_device_name.toLowerCase().includes('vios'))) ||
+                (currentVeh.plate_number && currentVeh.plate_number.toUpperCase().includes('DBJ')) ||
+                currentVeh.id === 18 ||
+                currentVeh.id === 35
+            );
+            const isCar1 = (
+                (currentVeh.gps_device_name && (currentVeh.gps_device_name.includes('1') || currentVeh.gps_device_name.toLowerCase().includes('montero'))) ||
+                (currentVeh.plate_number && currentVeh.plate_number.toUpperCase().includes('DUY')) ||
+                currentVeh.id === 12
+            );
+
+            if (!currentVeh.gps_device_token && (isCar1 || isCar2)) {
+                currentVeh.gps_device_token = '6fub_AeSZfywBab9j-d7KRXWKFPMwIxz';
+                currentVeh.gps_device_name = isCar2 ? 'Tracker Unit 2 (ESP32 - Vios)' : 'Tracker Unit 1 (ESP32 - Montero)';
+                currentVeh.gps_server = 'sgp1.blynk.cloud';
+            }
+
             const token = currentVeh?.gps_device_token;
             const server = currentVeh?.gps_server || 'sgp1.blynk.cloud';
 
@@ -24021,9 +24078,14 @@ function toggleNewsletterModal(show = true) {
                 return;
             }
 
+            const latPin = isCar2 ? 'v5' : 'v1';
+            const lngPin = isCar2 ? 'v6' : 'v2';
+            const satPin = isCar2 ? 'v7' : 'v3';
+            const pingPin = isCar2 ? 'v8' : 'v4';
+
             try {
                 const res = await fetch(
-                    `https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&_=${Date.now()}`
+                    `https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&v5&v6&v7&v8&_=${Date.now()}`
                 );
                 if (!res.ok) {
                     this._showOffline('Device offline');
@@ -24034,11 +24096,11 @@ function toggleNewsletterModal(show = true) {
                 const data = await res.json();
                 const now = Date.now();
 
-                if (data.v4 !== undefined) this.lastActive = now;
-                const isOnline = (now - this.lastActive) < 20000;
+                if (data[pingPin] !== undefined) this.lastActive = now;
+                const isOnline = (now - this.lastActive) < 30000;
 
-                const rawLat = String(data.v1 || '');
-                const rawLng = String(data.v2 || '');
+                const rawLat = String(data[latPin] || '');
+                const rawLng = String(data[lngPin] || '');
                 const isEncrypted = rawLat.includes('ENCRYPTED') || rawLat === '' || rawLat === '0';
 
                 const badge = document.getElementById('gpsStatusBadge');
@@ -24051,7 +24113,7 @@ function toggleNewsletterModal(show = true) {
                 if (!isEncrypted) {
                     const lat = parseFloat(rawLat);
                     const lng = parseFloat(rawLng);
-                    if (!isNaN(lat) && !isNaN(lng)) {
+                    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
                         this.lat = lat;
                         this.lng = lng;
 
@@ -24063,7 +24125,7 @@ function toggleNewsletterModal(show = true) {
                         }
 
                         // Auto-persist to database for selected vehicle
-                        const vehId = this.selectedVehicleId || (currentVeh ? currentVeh.id : 12);
+                        const vehId = this.selectedVehicleId || currentVeh.id;
                         if (vehId) {
                             try {
                                 await fetch(`${API_BASE}/api/vehicles/${vehId}/location`, {
@@ -24278,21 +24340,50 @@ function toggleNewsletterModal(show = true) {
             }
 
             try {
-                const res = await fetch(`https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&_=${Date.now()}`);
+                const res = await fetch(`https://${server}/external/api/get?token=${token}&v1&v2&v3&v4&v5&v6&v7&v8&_=${Date.now()}`);
                 if (res.ok) {
                     const data = await res.json();
-                    const hasSignal = data.v4 !== undefined || (data.v1 && data.v1 !== '0');
+                    const sel = document.getElementById('gpsConfigVehicleSelect');
+                    const vehId = sel ? parseInt(sel.value, 10) : null;
+                    const veh = this.fleetVehicles.find(v => v.id === vehId);
+                    const isCar2 = (
+                        (veh?.gps_device_name && (veh.gps_device_name.includes('2') || veh.gps_device_name.toLowerCase().includes('vios'))) ||
+                        (veh?.plate_number && veh.plate_number.toUpperCase().includes('DBJ')) ||
+                        vehId === 18 || vehId === 35
+                    );
+
+                    const latPin = isCar2 ? 'v5' : 'v1';
+                    const lngPin = isCar2 ? 'v6' : 'v2';
+                    const satPin = isCar2 ? 'v7' : 'v3';
+                    const pingPin = isCar2 ? 'v8' : 'v4';
+
+                    const hasSelectedSignal = data[pingPin] !== undefined || (data[latPin] && data[latPin] !== '0');
+                    const hasAnySignal = data.v4 !== undefined || data.v8 !== undefined || (data.v1 && data.v1 !== '0') || (data.v5 && data.v5 !== '0');
+
                     if (statusBox) {
                         statusBox.style.display = 'block';
                         statusBox.style.background = 'rgba(0, 177, 79, 0.12)';
                         statusBox.style.border = '1px solid rgba(0, 177, 79, 0.3)';
                         statusBox.style.color = 'var(--primary)';
+
+                        let details = '';
+                        if (data[latPin] && data[lngPin]) {
+                            details += `<div style="font-size:0.75rem;font-family:monospace;margin-top:4px;color:var(--text-main);font-weight:600;">` +
+                                       `${isCar2 ? 'Unit 2 (Vios DBJ)' : 'Unit 1 (Montero DUY)'}: Lat ${data[latPin]}, Lng ${data[lngPin]} (Sats: ${data[satPin] || 'N/A'})</div>`;
+                        }
+                        const otherLat = isCar2 ? data.v1 : data.v5;
+                        const otherLng = isCar2 ? data.v2 : data.v6;
+                        if (otherLat && otherLng) {
+                            details += `<div style="font-size:0.70rem;font-family:monospace;margin-top:2px;color:var(--text-secondary);">` +
+                                       `Also active: ${isCar2 ? 'Unit 1' : 'Unit 2'} (Lat ${otherLat}, Lng ${otherLng})</div>`;
+                        }
+
                         statusBox.innerHTML = `
                             <div style="display:flex;align-items:center;gap:6px;">
                                 <i class="fas fa-check-circle"></i>
-                                <span>Token Valid &amp; Connected! ${hasSignal ? '(Online / Signal Received)' : '(Token OK, waiting for GPS fix)'}</span>
+                                <span>Token Valid &amp; Connected! ${hasSelectedSignal ? '(Online / Signal Received)' : (hasAnySignal ? '(Token OK, other unit active)' : '(Token OK, waiting for GPS fix)')}</span>
                             </div>
-                            ${data.v1 && data.v2 ? `<div style="font-size:0.72rem;font-family:monospace;margin-top:4px;color:var(--text-secondary);">Lat: ${data.v1}, Lng: ${data.v2}</div>` : ''}
+                            ${details}
                         `;
                     }
                 } else {
