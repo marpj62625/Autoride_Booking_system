@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.19.2">
+    <meta name="build-version" content="2026.10.19.3">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -2143,33 +2143,50 @@
 
 
 
-          /* Profile Desktop Layout — Wide, Balanced, Zero Wasted Margin */
-          #page-profile .scroll-content {
-            display: grid !important;
-            grid-template-columns: 350px 1fr !important;
-            gap: 24px !important;
-            align-items: start !important;
-            max-width: 1260px !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            padding: 24px 32px 48px !important;
+          /* Profile Responsive Layout */
+          @media (min-width: 1024px) {
+            #page-profile .scroll-content {
+              display: grid !important;
+              grid-template-columns: 340px 1fr !important;
+              gap: 24px !important;
+              align-items: start !important;
+              max-width: 1260px !important;
+              width: 100% !important;
+              box-sizing: border-box !important;
+              margin-left: 0 !important;
+              margin-right: 0 !important;
+              padding: 24px 32px 48px !important;
+            }
+            .profile-desktop-col-left {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 20px !important;
+              min-width: 0 !important;
+            }
+            .profile-desktop-col-right {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 20px !important;
+              min-width: 0 !important;
+            }
           }
 
-          /* Column 1 Container & Column 2 Container */
-          .profile-desktop-col-left {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 20px !important;
-            min-width: 0 !important;
-          }
-
-          .profile-desktop-col-right {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 20px !important;
-            min-width: 0 !important;
+          @media (min-width: 768px) and (max-width: 1023px) {
+            #page-profile .scroll-content {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 20px !important;
+              max-width: 720px !important;
+              margin: 0 auto !important;
+              padding: 20px 24px 60px !important;
+            }
+            .profile-desktop-col-left,
+            .profile-desktop-col-right {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 20px !important;
+              width: 100% !important;
+            }
           }
 
           #page-profile #profileSummaryCard,
@@ -2180,17 +2197,17 @@
             margin-top: 0 !important;
           }
 
-          /* Modern 4-column license fields and 3-column emergency contacts */
+          /* Responsive license fields and emergency contacts */
           #page-profile .license-fields-grid {
             display: grid !important;
-            grid-template-columns: repeat(4, 1fr) !important;
-            gap: 16px !important;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+            gap: 14px !important;
           }
 
           #page-profile .license-emergency-grid {
             display: grid !important;
-            grid-template-columns: 1.5fr 1fr 1fr !important;
-            gap: 16px !important;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+            gap: 14px !important;
           }
 
           #page-profile .license-emergency-grid > div:first-child {
@@ -5700,7 +5717,7 @@
       <!-- VIEW MODE -->
 
 
-      <div id="licenseViewMode" style="overflow-wrap:anywhere;word-break:break-word;">
+      <div id="licenseViewMode">
 
 
         <div id="profileLicenseThumb" style="margin-bottom:12px; display:flex; gap:10px;">
@@ -5712,16 +5729,16 @@
         </div>
 
 
-        <div class="license-fields-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="license-fields-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
 
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">License No.</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">License No.</div>
 
 
-            <div id="viewLicenseNumber" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
+            <div id="viewLicenseNumber" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:break-word;">-</div>
 
 
           </div>
@@ -5730,7 +5747,7 @@
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Expiry Date</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Expiry Date</div>
 
 
             <div id="viewLicenseExpiry" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
@@ -5742,10 +5759,10 @@
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Class / Category</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Class / Category</div>
 
 
-            <div id="viewLicenseClass" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
+            <div id="viewLicenseClass" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:break-word;">-</div>
 
 
           </div>
@@ -5754,7 +5771,7 @@
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Date of Birth</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Date of Birth</div>
 
 
             <div id="viewLicenseDob" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>
@@ -5766,7 +5783,7 @@
         </div>
 
 
-        <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
 
 
         <h5 style="margin-top:0;margin-bottom:8px;">Personal Info</h5>
@@ -5778,10 +5795,10 @@
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Name on License</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Name on License</div>
 
 
-            <div id="viewLicenseName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
+            <div id="viewLicenseName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:break-word;">-</div>
 
 
           </div>
@@ -5790,10 +5807,10 @@
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Complete Address</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Complete Address</div>
 
 
-            <div id="viewLicenseAddress" style="font-size:0.88rem;font-weight:600;color:var(--text-main);line-height:1.4;overflow-wrap:anywhere;word-break:break-word;">-</div>
+            <div id="viewLicenseAddress" style="font-size:0.88rem;font-weight:600;color:var(--text-main);line-height:1.4;overflow-wrap:break-word;">-</div>
 
             <div id="viewLicenseCountry" style="display:none;"></div>
 
@@ -5804,34 +5821,22 @@
         </div>
 
 
-        <hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
 
 
         <h5 style="margin-top:0;margin-bottom:8px;">IV. IN CASE OF EMERGENCY NOTIFY:</h5>
 
 
-        <div class="license-emergency-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="license-emergency-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
 
 
           <div style="grid-column: span 2;min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Contact Name</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Contact Name</div>
 
 
-            <div id="viewLicenseEmName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
-
-
-          </div>
-
-
-          <div style="min-width:0;">
-
-
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Phone Number</div>
-
-
-            <div id="viewLicenseEmPhone" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:anywhere;word-break:break-word;">-</div>
+            <div id="viewLicenseEmName" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:break-word;">-</div>
 
 
           </div>
@@ -5840,7 +5845,19 @@
           <div style="min-width:0;">
 
 
-            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Relationship</div>
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Phone Number</div>
+
+
+            <div id="viewLicenseEmPhone" style="font-size:0.88rem;font-weight:600;color:var(--text-main);overflow-wrap:break-word;">-</div>
+
+
+          </div>
+
+
+          <div style="min-width:0;">
+
+
+            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;white-space:nowrap;">Relationship</div>
 
 
             <div id="viewLicenseEmRel" style="font-size:0.88rem;font-weight:600;color:var(--text-main);">-</div>

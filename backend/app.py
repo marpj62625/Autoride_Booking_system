@@ -15114,25 +15114,20 @@ def get_license_details():
             'method': request.method
         }
         
-        if not user_id or user_id.strip() == '':
+        if not user_id or str(user_id).strip() == '':
             return jsonify({
                 'error': 'user_id required or empty',
                 'debug': debug_info
             }), 400
         try:
-            user_id = int(user_id)
-        except (ValueError, TypeError):
-            return jsonify({'error': 'Invalid user_id'}), 400
-        
-        # Validate user_id is numeric
-        try:
-            user_id_int = int(user_id.strip())
+            user_id_int = int(str(user_id).strip())
             if user_id_int <= 0:
                 return jsonify({
                     'error': 'user_id must be a positive integer',
                     'debug': debug_info
                 }), 400
-        except (ValueError, TypeError):
+            user_id = user_id_int
+        except (ValueError, TypeError, AttributeError):
             return jsonify({
                 'error': 'user_id must be a valid number',
                 'debug': debug_info

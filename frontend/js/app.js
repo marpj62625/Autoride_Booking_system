@@ -9791,28 +9791,28 @@ function loadProfile(callback) {
         console.log('Fallback license_image_url:', licenseData.license_image_url);
         
         if (frontUrl && frontUrl !== 'null' && frontUrl.trim() !== '' && !frontUrl.endsWith('/null') && !frontUrl.endsWith('/undefined')) {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
-                  '<img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;">FRONT</p>' +
+                  '<img src="' + frontUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border);" ' +
                   'onclick="viewLicenseImage(\'' + frontUrl + '\')" ' +
                   'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />' +
-                  '<div style="display:none;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Front Image<br>Not Available</div>' +
+                  '<div style="display:none;padding:14px 8px;background:var(--surface,#f4f7f6);border-radius:12px;text-align:center;font-size:0.75rem;font-weight:600;color:var(--text-muted);border:2px dashed var(--border);"><i class="fas fa-image" style="font-size:1.1rem;margin-bottom:4px;display:block;opacity:0.6;"></i>Front Photo<br><span style="font-size:0.68rem;opacity:0.75;">Not Available</span></div>' +
                   '</div>';
         } else {
-          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">FRONT</p>' +
-                  '<div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Front Image<br>Not Uploaded</div>' +
+          html += '<div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;">FRONT</p>' +
+                  '<div style="padding:14px 8px;background:var(--surface,#f4f7f6);border-radius:12px;text-align:center;font-size:0.75rem;font-weight:600;color:var(--text-muted);border:2px dashed var(--border);"><i class="fas fa-id-card" style="font-size:1.1rem;margin-bottom:4px;display:block;opacity:0.6;"></i>Front Photo<br><span style="font-size:0.68rem;opacity:0.75;">Not Uploaded</span></div>' +
                   '</div>';
         }
         
         if (backUrl && backUrl !== 'null' && backUrl.trim() !== '' && !backUrl.endsWith('/null') && !backUrl.endsWith('/undefined')) {
-          html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
-                  '<img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;" ' +
+          html += '<div style="flex:1;margin-left:10px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;">BACK</p>' +
+                  '<img src="' + backUrl + '" style="width:100%;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border);" ' +
                   'onclick="viewLicenseImage(\'' + backUrl + '\')" ' +
                   'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'block\';" />' +
-                  '<div style="display:none;padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Back Image<br>Not Available</div>' +
+                  '<div style="display:none;padding:14px 8px;background:var(--surface,#f4f7f6);border-radius:12px;text-align:center;font-size:0.75rem;font-weight:600;color:var(--text-muted);border:2px dashed var(--border);"><i class="fas fa-image" style="font-size:1.1rem;margin-bottom:4px;display:block;opacity:0.6;"></i>Back Photo<br><span style="font-size:0.68rem;opacity:0.75;">Not Available</span></div>' +
                   '</div>';
         } else {
-          html += '<div style="flex:1;margin-left:8px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;">BACK</p>' +
-                  '<div style="padding:20px;background:var(--bg-input);border-radius:var(--radius-sm);text-align:center;font-size:0.8rem;color:var(--text-muted);border:2px dashed var(--border);">Back Image<br>Not Uploaded</div>' +
+          html += '<div style="flex:1;margin-left:10px;"><p style="font-size:0.7rem;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.5px;">BACK</p>' +
+                  '<div style="padding:14px 8px;background:var(--surface,#f4f7f6);border-radius:12px;text-align:center;font-size:0.75rem;font-weight:600;color:var(--text-muted);border:2px dashed var(--border);"><i class="fas fa-id-card-clip" style="font-size:1.1rem;margin-bottom:4px;display:block;opacity:0.6;"></i>Back Photo<br><span style="font-size:0.68rem;opacity:0.75;">Not Uploaded</span></div>' +
                   '</div>';
         }
         
