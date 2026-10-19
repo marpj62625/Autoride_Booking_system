@@ -89,12 +89,18 @@ with zipfile.ZipFile(cust_apk_src, 'r') as z:
     has_rate_box_css = 'vd-rate-action-box' in idx
     has_desktop_cam_html = 'desktopCameraModal' in idx
     has_desktop_cam_js = 'openDesktopCameraModal' in app_js
+    has_notif_header = 'notif-page-header-inner' in idx
+    has_notif_filter = 'notif-filter-bar' in idx
+    has_notif_js = 'formatNotifTime' in app_js
     print(f"\n[VERIFICATION]")
     print(f"  English camera in index.html: {has_en_cam}")
     print(f"  vd-rate-action-box CSS in index.html: {has_rate_box_css}")
     print(f"  desktopCameraModal in index.html: {has_desktop_cam_html}")
     print(f"  openDesktopCameraModal in app.js: {has_desktop_cam_js}")
-    if not (has_en_cam and has_rate_box_css and has_desktop_cam_html and has_desktop_cam_js):
+    print(f"  notif-page-header-inner in index.html: {has_notif_header}")
+    print(f"  notif-filter-bar in index.html: {has_notif_filter}")
+    print(f"  formatNotifTime in app.js: {has_notif_js}")
+    if not (has_en_cam and has_rate_box_css and has_desktop_cam_html and has_desktop_cam_js and has_notif_header and has_notif_filter and has_notif_js):
         raise ValueError("Verification failed: APK missing new fixes!")
 
 print("\n" + "=" * 60)

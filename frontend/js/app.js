@@ -11155,7 +11155,303 @@ function sendChat() {
     });
 }
 
-// NOTIFICATIONS
+// ==========================================================================
+// NOTIFICATIONS SECTION
+// ==========================================================================
+var currentNotifFilter = 'all';
+
+function formatNotifTime(dateStr) {
+    if (!dateStr) return { display: '', full: '' };
+    try {
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return { display: dateStr, full: dateStr };
+        var now = new Date();
+        var diffMs = now.getTime() - d.getTime();
+        var diffMins = Math.floor(diffMs / 60000);
+        var diffDays = Math.floor(diffMs / 86400000);
+
+        var timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        var full = d.toLocaleString();
+
+        if (diffMins < 2) return { display: 'Just now', full: full };
+        if (diffMins < 60) return { display: diffMins + 'm ago', full: full };
+
+        var isToday = (now.toDateString() === d.toDateString());
+        if (isToday) return { display: 'Today at ' + timeStr, full: full };
+
+        var yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        if (yesterday.toDateString() === d.toDateString()) {
+            return { display: 'Yesterday at ' + timeStr, full: full };
+        }
+
+        if (diffDays < 7) {
+            return { display: diffDays + 'd ago (' + timeStr + ')', full: full };
+        }
+        return { display: d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + ' at ' + timeStr, full: full };
+    } catch(e) {
+        return { display: dateStr, full: dateStr };
+    }
+}
+
+function getNotifMeta(n) {
+    var type = (n.type || '').toLowerCase();
+    var title = (n.title || '');
+    var msg = (n.message || '');
+    var combined = (type + ' ' + title + ' ' + msg).toLowerCase();
+
+    // Extract booking ID
+    var bookingMatch = msg.match(/booking\s*#?(\d+)/i) || title.match(/booking\s*#?(\d+)/i);
+    var bookingId = bookingMatch ? parseInt(bookingMatch[1], 10) : null;
+
+    // Check if license/verification
+    var isLicense = (type.indexOf('license') !== -1 || combined.indexOf('license') !== -1 || combined.indexOf('driver') !== -1);
+
+    // Return reminder / countdown warning
+    if (combined.indexOf('24 hour') !== -1 || combined.indexOf('return') !== -1 || combined.indexOf('remind') !== -1 || combined.indexOf('overdue') !== -1) {
+        return {
+            category: 'warning',
+            icon: 'fa-hourglass-half',
+            tagLabel: 'Return Reminder',
+            bookingId: bookingId,
+            isLicense: false
+        };
+    }
+    // Verification / License / Approval
+    if (isLicense || combined.indexOf('approved') !== -1 || combined.indexOf('verified') !== -1) {
+        return {
+            category: 'success',
+            icon: isLicense ? 'fa-id-card' : 'fa-check-circle',
+            tagLabel: isLicense ? 'Verification' : 'Approved',
+            bookingId: bookingId,
+            isLicense: isLicense
+        };
+    }
+    // Cancelled / Rejected
+    if (combined.indexOf('cancel') !== -1 || combined.indexOf('reject') !== -1) {
+        return {
+            category: 'danger',
+            icon: 'fa-ban',
+            tagLabel: 'Cancelled',
+            bookingId: bookingId,
+            isLicense: false
+        };
+    }
+    // Payment
+    if (combined.indexOf('pay') !== -1 || combined.indexOf('refund') !== -1 || combined.indexOf('deposit') !== -1) {
+        return {
+            category: 'purple',
+            icon: 'fa-receipt',
+            tagLabel: 'Payment',
+            bookingId: bookingId,
+            isLicense: false
+        };
+    }
+    // Booking
+    if (bookingId || combined.indexOf('booking') !== -1 || combined.indexOf('vehicle') !== -1 || combined.indexOf('trip') !== -1) {
+        return {
+            category: 'info',
+            icon: 'fa-car',
+            tagLabel: 'Booking',
+            bookingId: bookingId,
+            isLicense: false
+        };
+    }
+    // Default notice
+    return {
+        category: 'default',
+        icon: 'fa-bell',
+        tagLabel: 'Notice',
+        bookingId: null,
+        isLicense: false
+    };
+}
+
+function handleNotificationClick(notifId, bookingId, isLicense) {
+    if (notifId) {
+        apiCall('/notifications/' + notifId + '/read', { method: 'POST' }).catch(function(){});
+        var found = notifList.find(function(item) { return (item.id == notifId || item.notification_id == notifId); });
+        if (found) {
+            found.is_read = true;
+            updateNotifBadge();
+            updateNotifCounts();
+        }
+        var cardEl = document.getElementById('notifCard-' + notifId);
+        if (cardEl) {
+            cardEl.classList.remove('unread');
+            var dot = cardEl.querySelector('.notif-unread-dot');
+            if (dot) dot.remove();
+        }
+    }
+    if (bookingId && typeof openBookingDetail === 'function') {
+        closeOverlay('page-notifications');
+        openBookingDetail(bookingId);
+    } else if (isLicense && typeof showPage === 'function') {
+        closeOverlay('page-notifications');
+        showPage('page-profile');
+    }
+}
+
+function markAllNotificationsAsRead() {
+    var userId = (currentUser && currentUser.id);
+    if (!userId) return;
+    var btn = document.getElementById('notifMarkAllBtn');
+    if (btn) btn.disabled = true;
+
+    apiCall('/notifications/read-all', {
+        method: 'POST',
+        body: JSON.stringify({ user_id: userId })
+    }).then(function() {
+        notifList.forEach(function(n) { n.is_read = true; });
+        updateNotifBadge();
+        renderNotificationCards();
+        if (typeof showToast === 'function') {
+            showToast('All notifications marked as read', 'success');
+        }
+    }).catch(function(err) {
+        if (typeof showToast === 'function') {
+            showToast('Could not mark all as read: ' + (err.message || 'error'), 'error');
+        }
+    }).finally(function() {
+        if (btn) btn.disabled = false;
+    });
+}
+
+function filterNotifs(type, btnEl) {
+    currentNotifFilter = type;
+    var container = document.getElementById('notifFilterBar');
+    if (container) {
+        var chips = container.querySelectorAll('.notif-filter-chip');
+        chips.forEach(function(chip) { chip.classList.remove('active'); });
+    }
+    if (btnEl) btnEl.classList.add('active');
+    renderNotificationCards();
+}
+
+function updateNotifCounts() {
+    var allCount = notifList.length;
+    var unreadCount = notifList.filter(function(n) { return !n.is_read; }).length;
+    var bookingsCount = notifList.filter(function(n) {
+        var meta = getNotifMeta(n);
+        return meta.bookingId !== null || meta.category === 'info' || meta.category === 'warning';
+    }).length;
+    var accountCount = notifList.filter(function(n) {
+        var meta = getNotifMeta(n);
+        return meta.isLicense || (n.type && n.type.indexOf('user') !== -1);
+    }).length;
+
+    var elAll = document.getElementById('chipCountAll');
+    if (elAll) elAll.textContent = allCount;
+    var elUnread = document.getElementById('chipCountUnread');
+    if (elUnread) elUnread.textContent = unreadCount;
+    var elBookings = document.getElementById('chipCountBookings');
+    if (elBookings) elBookings.textContent = bookingsCount;
+    var elAccount = document.getElementById('chipCountAccount');
+    if (elAccount) elAccount.textContent = accountCount;
+
+    var pill = document.getElementById('notifUnreadHeaderPill');
+    if (pill) {
+        if (unreadCount > 0) {
+            pill.textContent = unreadCount + ' Unread';
+            pill.style.display = 'inline-block';
+        } else {
+            pill.style.display = 'none';
+        }
+    }
+}
+
+function renderNotificationCards() {
+    var body = document.getElementById('notifCardsList');
+    if (!body) return;
+
+    var filtered = notifList.filter(function(n) {
+        if (currentNotifFilter === 'unread') return !n.is_read;
+        if (currentNotifFilter === 'bookings') {
+            var meta = getNotifMeta(n);
+            return meta.bookingId !== null || meta.category === 'info' || meta.category === 'warning';
+        }
+        if (currentNotifFilter === 'account') {
+            var meta = getNotifMeta(n);
+            return meta.isLicense || (n.type && n.type.indexOf('user') !== -1);
+        }
+        return true;
+    });
+
+    updateNotifCounts();
+
+    if (!filtered.length) {
+        var emptyMsg = 'No notifications yet';
+        var emptySub = "We'll alert you whenever there are updates on your bookings, returns, or account.";
+        if (currentNotifFilter === 'unread') {
+            emptyMsg = 'All caught up!';
+            emptySub = 'You have no unread notifications.';
+        } else if (currentNotifFilter === 'bookings') {
+            emptyMsg = 'No booking notifications';
+            emptySub = 'Updates about your active rentals and returns will appear here.';
+        } else if (currentNotifFilter === 'account') {
+            emptyMsg = 'No account alerts';
+            emptySub = 'License verifications and profile notifications will appear here.';
+        }
+
+        body.innerHTML =
+            '<div style="text-align:center;padding:50px 20px;background:#ffffff;border:1px dashed var(--border);border-radius:20px;margin-top:8px;">' +
+                '<div style="width:68px;height:68px;border-radius:50%;background:rgba(0,177,79,0.1);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:1.75rem;margin-bottom:16px;">' +
+                    '<i class="fas fa-bell-slash"></i>' +
+                '</div>' +
+                '<h3 style="font-size:1.15rem;font-weight:800;color:var(--text-dark,#0f172a);margin:0 0 6px;">' + emptyMsg + '</h3>' +
+                '<p style="font-size:0.86rem;color:var(--text-muted,#64748b);max-width:400px;margin:0 auto 18px;line-height:1.5;">' + emptySub + '</p>' +
+                '<button onclick="closeOverlay(\'page-notifications\');showPage(\'page-vehicles\');" style="background:var(--primary);color:#ffffff;border:none;padding:10px 20px;border-radius:12px;font-size:0.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">' +
+                    '<i class="fas fa-car"></i> Browse Fleet' +
+                '</button>' +
+            '</div>';
+        return;
+    }
+
+    body.innerHTML = filtered.map(function(n) {
+        var notifId = n.id || n.notification_id;
+        var meta = getNotifMeta(n);
+        var unreadClass = n.is_read ? '' : ' unread';
+        var timeInfo = formatNotifTime(n.created_at);
+
+        // Highlight booking # inside message
+        var safeMessage = (n.message || '').replace(/Booking\s*#?(\d+)/gi, function(match, id) {
+            return '<strong style="color:var(--text-dark,#0f172a);font-weight:800;">Booking #' + id + '</strong>';
+        });
+
+        // Action prompt
+        var actionPillHtml = '';
+        if (meta.bookingId) {
+            actionPillHtml = '<span class="notif-action-pill">View Booking #' + meta.bookingId + ' <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i></span>';
+        } else if (meta.isLicense) {
+            actionPillHtml = '<span class="notif-action-pill">View Profile <i class="fas fa-chevron-right" style="font-size:0.65rem;"></i></span>';
+        } else {
+            actionPillHtml = '<span class="notif-action-pill" style="color:var(--text-muted);"><i class="fas fa-chevron-right" style="font-size:0.75rem;"></i></span>';
+        }
+
+        var unreadDotHtml = n.is_read ? '' : '<span class="notif-unread-dot" title="Unread notification"></span>';
+
+        return '<div id="notifCard-' + notifId + '" class="notif-card' + unreadClass + '" onclick="handleNotificationClick(' + notifId + ', ' + (meta.bookingId || 'null') + ', ' + (meta.isLicense ? 'true' : 'false') + ')">' +
+            '<div class="notif-icon-box ' + meta.category + '">' +
+                '<i class="fas ' + meta.icon + '"></i>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">' +
+                    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                        '<span style="font-weight:800;font-size:0.92rem;color:var(--text-dark,#0f172a);letter-spacing:-0.2px;">' + (n.title || '') + '</span>' +
+                        '<span class="notif-cat-tag ' + meta.category + '">' + meta.tagLabel + '</span>' +
+                    '</div>' +
+                    unreadDotHtml +
+                '</div>' +
+                '<p style="font-size:0.85rem;color:var(--text-muted,#475569);margin:0 0 10px;line-height:1.52;">' + safeMessage + '</p>' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+                    '<span style="font-size:0.74rem;color:#94a3b8;" title="' + timeInfo.full + '"><i class="far fa-clock" style="margin-right:4px;"></i> ' + timeInfo.display + '</span>' +
+                    actionPillHtml +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
 function openNotificationsPage() {
     var overlay = document.getElementById('page-notifications');
     if (overlay) {
@@ -11165,73 +11461,74 @@ function openNotificationsPage() {
     var container = document.getElementById('notificationsContent');
     if (!container) return;
 
-    // Render header immediately
+    currentNotifFilter = 'all';
+
+    // Render header immediately with skeleton loader
     container.innerHTML =
-        '<div class="page-header">' +
-            '<button class="back-btn" onclick="closeOverlay(\'page-notifications\')"><i class="fas fa-arrow-left"></i></button>' +
-            '<h2>Notifications</h2>' +
+        '<div class="page-header notif-page-header">' +
+            '<div class="notif-page-header-inner">' +
+                '<div style="display:flex;align-items:center;gap:14px;">' +
+                    '<button class="notif-back-btn" onclick="closeOverlay(\'page-notifications\')" title="Back"><i class="fas fa-arrow-left"></i></button>' +
+                    '<div>' +
+                        '<div style="display:flex;align-items:center;gap:8px;">' +
+                            '<h2 style="font-size:1.35rem;font-weight:900;color:var(--text-dark,#0f172a);margin:0;letter-spacing:-0.4px;">Notifications</h2>' +
+                            '<span id="notifUnreadHeaderPill" class="notif-pill-counter" style="display:none;">0 Unread</span>' +
+                        '</div>' +
+                        '<p style="font-size:0.75rem;color:var(--text-muted,#64748b);margin:2px 0 0;">Stay updated on your bookings, returns, and account</p>' +
+                    '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<button id="notifMarkAllBtn" onclick="markAllNotificationsAsRead()" class="notif-header-btn" title="Mark all as read">' +
+                        '<i class="fas fa-check-double"></i> <span>Mark all read</span>' +
+                    '</button>' +
+                '</div>' +
+            '</div>' +
         '</div>' +
-        '<div id="notifListBody" class="scroll-content" style="padding:16px;">' +
-            '<div style="text-align:center;padding:40px;"><div class="spinner"></div></div>' +
+        '<div id="notifListBody" class="scroll-content notif-container" style="max-width:820px;margin:0 auto;padding:20px 20px 80px;">' +
+            '<div id="notifFilterBar" class="notif-filter-bar">' +
+                '<button class="notif-filter-chip active" onclick="filterNotifs(\'all\', this)">All <span id="chipCountAll" class="chip-count">0</span></button>' +
+                '<button class="notif-filter-chip" onclick="filterNotifs(\'unread\', this)">Unread <span id="chipCountUnread" class="chip-count">0</span></button>' +
+                '<button class="notif-filter-chip" onclick="filterNotifs(\'bookings\', this)">Bookings <span id="chipCountBookings" class="chip-count">0</span></button>' +
+                '<button class="notif-filter-chip" onclick="filterNotifs(\'account\', this)">Account <span id="chipCountAccount" class="chip-count">0</span></button>' +
+            '</div>' +
+            '<div id="notifCardsList">' +
+                '<div style="text-align:center;padding:50px 20px;"><div class="spinner"></div><p style="font-size:0.85rem;color:var(--text-muted);margin-top:12px;">Loading notifications...</p></div>' +
+            '</div>' +
         '</div>';
 
-    var userId = currentUser.id;
+    var userId = (currentUser && currentUser.id);
     if (!userId) {
-        document.getElementById('notifListBody').innerHTML =
-            '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>Please log in to view notifications</p></div>';
+        var cards = document.getElementById('notifCardsList');
+        if (cards) {
+            cards.innerHTML =
+                '<div style="text-align:center;padding:50px 20px;background:#ffffff;border:1px dashed var(--border);border-radius:20px;">' +
+                    '<div style="width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,0.1);color:#ef4444;display:inline-flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:14px;"><i class="fas fa-user-lock"></i></div>' +
+                    '<h3 style="font-size:1.1rem;font-weight:800;color:var(--text-dark,#0f172a);margin:0 0 6px;">Sign in required</h3>' +
+                    '<p style="font-size:0.85rem;color:var(--text-muted);margin:0 0 16px;">Please log in to your account to view your notifications.</p>' +
+                    '<button onclick="closeOverlay(\'page-notifications\');showLoginModal();" style="background:var(--primary);color:#ffffff;border:none;padding:10px 20px;border-radius:12px;font-size:0.85rem;font-weight:700;cursor:pointer;">Sign In</button>' +
+                '</div>';
+        }
         return;
     }
 
-    // Mark all as read
-    apiCall('/notifications/read-all', {
-        method: 'POST',
-        body: JSON.stringify({ user_id: userId })
-    }).then(function() {
-        notifList.forEach(function(n) { n.is_read = true; });
-        updateNotifBadge();
-    }).catch(function() {});
-
-    // Load and render
+    // Fetch notifications
     apiCall('/notifications?user_id=' + userId)
         .then(function(data) {
             notifList = Array.isArray(data) ? data : [];
             updateNotifBadge();
-            var body = document.getElementById('notifListBody');
-            if (!body) return;
-            if (!notifList.length) {
-                body.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><p>No notifications yet</p></div>';
-                return;
-            }
-            body.innerHTML = notifList.map(function(n) {
-                var unreadClass = n.is_read ? '' : ' unread';
-                var ts = n.created_at ? new Date(n.created_at).toLocaleString() : '';
-                var iconMap = {
-                    booking_created: 'fa-calendar-check', booking_approved: 'fa-check-circle',
-                    booking_rejected: 'fa-times-circle', booking_cancelled: 'fa-ban',
-                    booking_cancelled_by_admin: 'fa-ban', booking_picked_up: 'fa-car',
-                    booking_completed: 'fa-flag-checkered', booking_modified: 'fa-edit',
-                    payment_confirmed: 'fa-credit-card', payment_downpayment: 'fa-credit-card',
-                    payment_balance: 'fa-credit-card', payment_cash: 'fa-money-bill',
-                    license_approved: 'fa-id-card', license_rejected: 'fa-id-card',
-                    split_request: 'fa-users', split_paid: 'fa-users',
-                    driver_approved: 'fa-car', driver_rejected: 'fa-car'
-                };
-                var icon = iconMap[n.type] || 'fa-bell';
-                return '<div class="notif-item' + unreadClass + '" style="display:flex;gap:12px;align-items:flex-start;">' +
-                    '<div style="width:36px;height:36px;border-radius:50%;background:rgba(230,57,70,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">' +
-                        '<i class="fas ' + icon + '" style="color:var(--primary);font-size:0.85rem;"></i>' +
-                    '</div>' +
-                    '<div style="flex:1;min-width:0;">' +
-                        '<p style="font-weight:700;font-size:0.875rem;margin:0;">' + (n.title || '') + '</p>' +
-                        '<p style="font-size:0.82rem;color:var(--text-secondary);margin:3px 0 0;">' + (n.message || '') + '</p>' +
-                        '<small style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;display:block;">' + ts + '</small>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
+            renderNotificationCards();
         })
-        .catch(function() {
-            var body = document.getElementById('notifListBody');
-            if (body) body.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Failed to load notifications</p></div>';
+        .catch(function(err) {
+            var cards = document.getElementById('notifCardsList');
+            if (cards) {
+                cards.innerHTML =
+                    '<div style="text-align:center;padding:40px 20px;background:#ffffff;border:1px dashed var(--border);border-radius:20px;">' +
+                        '<div style="width:58px;height:58px;border-radius:50%;background:rgba(239,68,68,0.1);color:#ef4444;display:inline-flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i></div>' +
+                        '<p style="font-size:0.9rem;font-weight:700;color:var(--text-dark,#0f172a);margin:0 0 4px;">Failed to load notifications</p>' +
+                        '<p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 14px;">' + (err.message || 'Please check your connection.') + '</p>' +
+                        '<button onclick="openNotificationsPage()" style="background:#f1f5f9;color:var(--text-dark);border:1px solid var(--border);padding:8px 16px;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;"><i class="fas fa-redo"></i> Retry</button>' +
+                    '</div>';
+            }
         });
 }
 
