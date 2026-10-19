@@ -22,7 +22,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Autoride">
-    <meta name="build-version" content="2026.10.18.7">
+    <meta name="build-version" content="2026.10.19.1">
     <script>
         // Suppress browser DevTools live metrics / web-vitals internal inspection errors
         (function() {
@@ -3444,6 +3444,427 @@
         /* Auth hero panel: hidden on mobile */
         @media (max-width: 767px) {
           .auth-hero-panel { display: none; }
+        }
+
+        /* ============================================================
+           BOOKING DETAILS OVERLAY MODERNIZATION (PAGE-BOOKING-DETAIL)
+           ============================================================ */
+        #page-booking-detail {
+          background: var(--bg-body, #0a0d14);
+        }
+        #page-booking-detail .page-header {
+          background: var(--bg-card);
+          border-bottom: 1px solid var(--border);
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 22px;
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+        }
+        #page-booking-detail .scroll-content {
+          max-width: 960px !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          padding: 24px 20px 80px !important;
+        }
+        @media (min-width: 768px) {
+          #page-booking-detail .scroll-content {
+            padding: 32px 28px 90px !important;
+          }
+        }
+
+        /* Hero Vehicle & Booking Header Card */
+        .bkd-hero-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+          margin-bottom: 20px;
+          position: relative;
+        }
+        .bkd-hero-top {
+          padding: 18px 22px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 12px;
+          border-bottom: 1px solid var(--border);
+          background: rgba(255,255,255,0.02);
+        }
+        .bkd-ref-capsule {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: rgba(0, 177, 79, 0.1);
+          color: var(--primary);
+          border: 1px solid rgba(0, 177, 79, 0.25);
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 0.78rem;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+        }
+        .bkd-status-pills {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .bkd-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 20px;
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+        }
+        .bkd-hero-body {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        }
+        @media (min-width: 768px) {
+          .bkd-hero-body {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            align-items: center;
+            gap: 24px;
+            padding: 24px 28px;
+          }
+        }
+        .bkd-veh-preview {
+          position: relative;
+          min-height: 180px;
+          background: radial-gradient(ellipse at 50% 65%, rgba(0, 177, 79, 0.14) 0%, rgba(13, 17, 23, 0.85) 70%, #090d12 100%);
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          padding: 20px 16px;
+          border: 1px solid var(--border);
+        }
+        .bkd-veh-preview::after {
+          content: "";
+          position: absolute;
+          bottom: 12px;
+          left: 15%;
+          right: 15%;
+          height: 16px;
+          background: radial-gradient(ellipse at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 75%);
+          pointer-events: none;
+          z-index: 1;
+        }
+        .bkd-veh-img {
+          width: 100%;
+          max-height: 180px;
+          object-fit: contain;
+          position: relative;
+          z-index: 2;
+          filter: drop-shadow(0 12px 18px rgba(0,0,0,0.6));
+          transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .bkd-veh-img:hover {
+          transform: scale(1.04);
+        }
+        .bkd-plate-badge {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          z-index: 3;
+          background: rgba(15, 23, 42, 0.88);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.14);
+          color: #f8fafc;
+          font-size: 0.72rem;
+          font-weight: 800;
+          letter-spacing: 0.6px;
+          text-transform: uppercase;
+          padding: 4px 10px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        }
+        .bkd-veh-details {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          justify-content: center;
+        }
+        .bkd-veh-title {
+          font-size: 1.45rem;
+          font-weight: 900;
+          color: var(--text-primary);
+          line-height: 1.25;
+          margin: 0;
+          letter-spacing: -0.01em;
+        }
+        .bkd-veh-meta-tags {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .bkd-meta-tag {
+          background: var(--bg-input, rgba(255,255,255,0.04));
+          border: 1px solid var(--border, rgba(255,255,255,0.08));
+          color: var(--text-secondary);
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 5px 11px;
+          border-radius: 10px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        /* Section Cards */
+        .bkd-section-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 22px;
+          padding: 22px 24px;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+        .bkd-section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 1px solid var(--border);
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+        .bkd-section-title {
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 0;
+        }
+
+        /* Schedule Timeline */
+        .bkd-schedule-timeline {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+          background: var(--bg-input, rgba(255,255,255,0.02));
+          border: 1px solid var(--border, rgba(255,255,255,0.07));
+          border-radius: 16px;
+          padding: 18px 20px;
+        }
+        @media (min-width: 768px) {
+          .bkd-schedule-timeline {
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+          }
+        }
+        .bkd-node {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+        }
+        .bkd-node-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.15rem;
+          flex-shrink: 0;
+        }
+        .bkd-node-kicker {
+          font-size: 0.68rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
+          margin-bottom: 2px;
+        }
+        .bkd-node-date {
+          font-size: 0.98rem;
+          font-weight: 800;
+          color: var(--text-primary);
+          line-height: 1.3;
+        }
+        .bkd-node-sub {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+          margin-top: 3px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+        .bkd-connector {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 6px 0;
+        }
+        .bkd-duration-badge {
+          background: rgba(0, 177, 79, 0.12);
+          color: var(--primary);
+          border: 1px solid rgba(0, 177, 79, 0.25);
+          font-size: 0.72rem;
+          font-weight: 800;
+          padding: 4px 12px;
+          border-radius: 14px;
+          white-space: nowrap;
+        }
+        .bkd-connector-arrow {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+        }
+
+        /* Alert Banners */
+        .bkd-alert-banner {
+          border-radius: 18px;
+          padding: 18px 20px;
+          margin-bottom: 20px;
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+          position: relative;
+          overflow: hidden;
+        }
+        .bkd-alert-banner.alert-warning {
+          background: linear-gradient(135deg, rgba(245,158,11,0.09) 0%, rgba(217,119,6,0.14) 100%);
+          border: 1.5px solid rgba(245,158,11,0.38);
+        }
+        .bkd-alert-banner.alert-danger {
+          background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(220,38,38,0.15) 100%);
+          border: 1.5px solid rgba(239,68,68,0.4);
+        }
+        .bkd-alert-banner.alert-info {
+          background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(37,99,235,0.12) 100%);
+          border: 1.5px solid rgba(59,130,246,0.35);
+        }
+        .bkd-alert-icon-wrap {
+          width: 46px;
+          height: 46px;
+          border-radius: 14px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.3rem;
+          flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .bkd-alert-title {
+          font-size: 1rem;
+          font-weight: 900;
+          margin-bottom: 4px;
+          line-height: 1.3;
+        }
+        .bkd-alert-desc {
+          font-size: 0.82rem;
+          line-height: 1.45;
+          color: var(--text-secondary);
+        }
+
+        /* Financial Telemetry Grid */
+        .bkd-finance-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .bkd-finance-card {
+          background: var(--bg-input, rgba(255,255,255,0.03));
+          border: 1px solid var(--border, rgba(255,255,255,0.08));
+          border-radius: 14px;
+          padding: 14px 16px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        .bkd-finance-lbl {
+          font-size: 0.68rem;
+          font-weight: 800;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 4px;
+        }
+        .bkd-finance-val {
+          font-size: 1.35rem;
+          font-weight: 900;
+          color: var(--text-primary);
+          line-height: 1.2;
+        }
+        .bkd-finance-sub {
+          font-size: 0.72rem;
+          color: var(--text-secondary);
+          margin-top: 4px;
+        }
+
+        /* License & Emergency Fields */
+        .bkd-info-2col {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .bkd-info-field {
+          background: var(--bg-input, rgba(255,255,255,0.025));
+          border: 1px solid var(--border, rgba(255,255,255,0.07));
+          border-radius: 12px;
+          padding: 10px 14px;
+        }
+        .bkd-field-lbl {
+          font-size: 0.66rem;
+          font-weight: 700;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 3px;
+        }
+        .bkd-field-val {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: var(--text-primary);
+          word-break: break-word;
+        }
+        .bkd-media-btn {
+          flex: 1;
+          padding: 11px 16px;
+          background: rgba(0, 177, 79, 0.08);
+          border: 1px solid rgba(0, 177, 79, 0.25);
+          border-radius: 12px;
+          color: var(--primary);
+          font-size: 0.82rem;
+          font-weight: 800;
+          text-decoration: none !important;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+        .bkd-media-btn:hover {
+          background: rgba(0, 177, 79, 0.16);
+          border-color: rgba(0, 177, 79, 0.4);
+          transform: translateY(-1px);
         }
 
         /* Smart App Banner CSS */

@@ -6411,6 +6411,57 @@ function renderBookingDetail(b) {
   var el = document.getElementById('bookingDetailContent');
   if (!el) return;
 
+  var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim() || 'Autoride Vehicle';
+  var plateInfo = b.plate_number ? ' (' + b.plate_number + ')' : '';
+  var imgSrc = b.vehicle_image ? buildImgUrl(b.vehicle_image) : null;
+  var imgHtml = imgSrc
+    ? '<img src="' + imgSrc + '" class="bkd-veh-img" alt="' + escapeHtml(vehicleName) + '" onerror="this.onerror=null; this.src=\'' + DEFAULT_CAR_SVG + '\';">'
+    : '<div style="font-size:3.5rem;color:var(--text-muted);position:relative;z-index:2;"><i class="fas fa-car"></i></div>';
+
+  // Duration in days
+  var sDate = new Date((b.start_date || '').split('T')[0]);
+  var eDate = new Date((b.end_date || '').split('T')[0]);
+  var daysCount = Math.max(1, Math.round((eDate - sDate) / (1000 * 86400)));
+  var durationLabel = daysCount + (daysCount === 1 ? ' Day Rental' : ' Days Rental');
+
+  // Status colors & backgrounds
+  var statusColors = {
+    'Pending': '#f59e0b', 'Confirmed': '#10b981', 'Approved': '#10b981',
+    'Picked Up': '#10b981', 'Ongoing': '#10b981', 'Completed': '#10b981', 'Cancelled': '#ef4444', 'Rejected': '#ef4444'
+  };
+  var statusBgs = {
+    'Pending': 'rgba(245,158,11,0.12)', 'Confirmed': 'rgba(16,185,129,0.12)', 'Approved': 'rgba(16,185,129,0.12)',
+    'Picked Up': 'rgba(16,185,129,0.12)', 'Ongoing': 'rgba(16,185,129,0.12)', 'Completed': 'rgba(16,185,129,0.12)', 'Cancelled': 'rgba(239,68,68,0.12)', 'Rejected': 'rgba(239,68,68,0.12)'
+  };
+  var statusBorders = {
+    'Pending': 'rgba(245,158,11,0.3)', 'Confirmed': 'rgba(16,185,129,0.3)', 'Approved': 'rgba(16,185,129,0.3)',
+    'Picked Up': 'rgba(16,185,129,0.3)', 'Ongoing': 'rgba(16,185,129,0.3)', 'Completed': 'rgba(16,185,129,0.3)', 'Cancelled': 'rgba(239,68,68,0.3)', 'Rejected': 'rgba(239,68,68,0.3)'
+  };
+
+  var payColors = {
+    'Paid': '#10b981', 'Partially Paid': '#f59e0b', 'Unpaid': '#ef4444',
+    'Pending Payment': '#f59e0b', 'Downpayment unpaid': '#f59e0b',
+    'Refund Pending': '#f59e0b', 'Refunded': '#10b981', 'Cancelled': '#94a3b8'
+  };
+  var payBgs = {
+    'Paid': 'rgba(16,185,129,0.12)', 'Partially Paid': 'rgba(245,158,11,0.12)', 'Unpaid': 'rgba(239,68,68,0.12)',
+    'Pending Payment': 'rgba(245,158,11,0.12)', 'Downpayment unpaid': 'rgba(245,158,11,0.12)',
+    'Refund Pending': 'rgba(245,158,11,0.12)', 'Refunded': 'rgba(16,185,129,0.12)', 'Cancelled': 'rgba(148,163,184,0.12)'
+  };
+  var payBorders = {
+    'Paid': 'rgba(16,185,129,0.3)', 'Partially Paid': 'rgba(245,158,11,0.3)', 'Unpaid': 'rgba(239,68,68,0.3)',
+    'Pending Payment': 'rgba(245,158,11,0.3)', 'Downpayment unpaid': 'rgba(245,158,11,0.3)',
+    'Refund Pending': 'rgba(245,158,11,0.3)', 'Refunded': 'rgba(16,185,129,0.3)', 'Cancelled': 'rgba(148,163,184,0.3)'
+  };
+
+  var sColor = statusColors[b.status] || '#94a3b8';
+  var sBg = statusBgs[b.status] || 'rgba(148,163,184,0.12)';
+  var sBorder = statusBorders[b.status] || 'rgba(148,163,184,0.3)';
+
+  var pColor = payColors[b.payment_status] || '#ef4444';
+  var pBg = payBgs[b.payment_status] || 'rgba(239,68,68,0.12)';
+  var pBorder = payBorders[b.payment_status] || 'rgba(239,68,68,0.3)';
+
   // 30-Minute Payment Deadline Card for Pending/Unpaid Bookings
   var isPendingPay = (b.status === 'Pending' || b.status === 'Pending Payment') &&
                      (b.payment_status === 'Unpaid' || b.payment_status === 'Downpayment unpaid' || b.payment_status === 'Pending Payment');
@@ -6428,46 +6479,41 @@ function renderBookingDetail(b) {
         var initialColor = bRemainingMs <= 5 * 60 * 1000 ? '#dc2626' : '#d97706';
 
         payCountdownHtml =
-          '<div id="detailPayCountdownCard" style="background:linear-gradient(135deg, rgba(245,158,11,0.09), rgba(217,119,6,0.13));border:1.5px solid rgba(245,158,11,0.4);border-radius:16px;padding:16px;margin-bottom:20px;box-shadow:0 4px 15px rgba(245,158,11,0.08);">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
-              '<div style="display:flex;align-items:center;gap:10px;">' +
-                '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#f59e0b;color:#fff;font-size:1rem;box-shadow:0 2px 8px rgba(245,158,11,0.3);">' +
-                  '<i class="fas fa-stopwatch"></i>' +
-                '</span>' +
-                '<div>' +
-                  '<div style="font-size:0.75rem;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:0.5px;">Reservation Deposit Window</div>' +
-                  '<div style="font-size:0.75rem;color:var(--text-secondary);">30 minutes to confirm your reservation</div>' +
+          '<div id="detailPayCountdownCard" class="bkd-alert-banner alert-warning">' +
+            '<div class="bkd-alert-icon-wrap" style="background:rgba(245,158,11,0.2);color:#d97706;">' +
+              '<i class="fas fa-stopwatch"></i>' +
+            '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">' +
+                '<div class="bkd-alert-title" style="color:#d97706;margin:0;">Reservation Deposit Window</div>' +
+                '<div style="text-align:right;">' +
+                  '<div id="detailPayCountdownDisplay" style="font-size:1.6rem;font-weight:900;color:' + initialColor + ';letter-spacing:-0.5px;font-variant-numeric:tabular-nums;line-height:1;">' + initialDisp + '</div>' +
+                  '<div id="detailPayCountdownLabel" style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Time Remaining</div>' +
                 '</div>' +
               '</div>' +
-              '<div style="text-align:right;">' +
-                '<div id="detailPayCountdownDisplay" style="font-size:1.6rem;font-weight:900;color:' + initialColor + ';letter-spacing:-0.5px;font-variant-numeric:tabular-nums;line-height:1.1;">' + initialDisp + '</div>' +
-                '<div id="detailPayCountdownLabel" style="font-size:0.62rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Time Remaining</div>' +
-              '</div>' +
-            '</div>' +
-            '<div style="background:var(--bg-card);border-radius:10px;padding:10px 12px;font-size:0.75rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px;border:1px solid rgba(245,158,11,0.2);">' +
-              '<i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:0.9rem;flex-shrink:0;"></i>' +
-              '<span>Please settle your reservation deposit online via PayMongo before the timer expires. Unpaid reservations are auto-cancelled and record a strike.</span>' +
+              '<div class="bkd-alert-desc">Please settle your reservation deposit online via PayMongo before the timer expires. Unpaid reservations are auto-cancelled and record a strike.</div>' +
             '</div>' +
           '</div>';
       } else {
         payCountdownHtml =
-          '<div style="background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.3);border-radius:16px;padding:14px;margin-bottom:20px;display:flex;align-items:center;gap:10px;">' +
-            '<i class="fas fa-clock" style="color:#ef4444;font-size:1.2rem;flex-shrink:0;"></i>' +
-            '<div style="font-size:0.8rem;color:var(--danger);font-weight:600;">The 30-minute payment window for this booking has expired. The reservation is being cancelled.</div>' +
+          '<div class="bkd-alert-banner alert-danger">' +
+            '<div class="bkd-alert-icon-wrap" style="background:rgba(239,68,68,0.2);color:#dc2626;">' +
+              '<i class="fas fa-clock"></i>' +
+            '</div>' +
+            '<div style="flex:1;">' +
+              '<div class="bkd-alert-title" style="color:#dc2626;margin:0 0 4px;">Payment Window Expired</div>' +
+              '<div class="bkd-alert-desc">The 30-minute payment window for this booking has expired. The reservation is being cancelled.</div>' +
+            '</div>' +
           '</div>';
       }
     }
   }
 
-  // Status colors
-  var statusColors = {
-    'Pending': '#fbbf24', 'Confirmed': '#00b14f', 'Approved': '#00b14f',
-    'Picked Up': '#00b14f', 'Completed': '#00b14f', 'Cancelled': '#f87171', 'Rejected': '#f87171'
-  };
-  var payColors = { 'Paid': '#00b14f', 'Partially Paid': '#fbbf24', 'Unpaid': '#f87171', 'Refund Pending': '#f59e0b', 'Refunded': '#00b14f', 'Cancelled': '#a1a1aa' };
-    // Approaching Return Reminder & Late Penalty Warning Card for Active / Picked Up Bookings
+  // Approaching Return Reminder & Late Penalty Warning Card for Active / Picked Up Bookings
   var returnWarningBannerHtml = '';
   var isOngoingReturn = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
+  var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
+
   if (isOngoingReturn && b.end_date) {
     try {
       var eDateStr = (b.end_date || '').split('T')[0];
@@ -6483,76 +6529,92 @@ function renderBookingDetail(b) {
         var remHours = remMs / (1000 * 3600);
         var remMins = Math.floor(remMs / 60000);
 
+        var extendQuickBtn = canExtend
+          ? '<button type="button" class="btn-outline" style="border-color:#d97706;color:#d97706;padding:5px 12px;font-size:0.75rem;font-weight:800;border-radius:10px;cursor:pointer;background:rgba(245,158,11,0.06);margin-top:8px;" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')"><i class="fas fa-calendar-plus" style="margin-right:5px;"></i>Need More Time? Extend Rental</button>'
+          : '';
+
         if (remMs <= 0) {
           // Overdue
-          returnWarningBannerHtml = 
-            '<div style="background:rgba(239,68,68,0.12);border:2px solid #ef4444;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:#ef4444;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+          returnWarningBannerHtml =
+            '<div class="bkd-alert-banner alert-danger">' +
+              '<div class="bkd-alert-icon-wrap" style="background:#ef4444;color:#fff;">' +
                 '<i class="fas fa-ban"></i>' +
               '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:0.95rem;font-weight:800;color:#dc2626;margin-bottom:4px;">⛔ OVERDUE: Return Deadline Passed!</div>' +
-                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Your scheduled return was on <strong>' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '') + '</strong>. You are currently incurring <strong>Late Return Penalties</strong>. Please return the vehicle immediately or contact support.</div>' +
+                '<div class="bkd-alert-title" style="color:#dc2626;">⛔ OVERDUE: Return Deadline Passed!</div>' +
+                '<div class="bkd-alert-desc">Your scheduled return was on <strong>' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '') + '</strong>. You are currently incurring <strong>Late Return Penalties</strong>. Please return the vehicle immediately or contact support.</div>' +
               '</div>' +
             '</div>';
         } else if (remHours <= 0.5) {
           // 30 Minutes
-          returnWarningBannerHtml = 
-            '<div style="background:rgba(220,38,38,0.1);border:2px solid #dc2626;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+          returnWarningBannerHtml =
+            '<div class="bkd-alert-banner alert-danger">' +
+              '<div class="bkd-alert-icon-wrap" style="background:#dc2626;color:#fff;">' +
                 '<i class="fas fa-bell"></i>' +
               '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:0.95rem;font-weight:800;color:#dc2626;margin-bottom:4px;">🚨 FINAL WARNING: ' + Math.max(1, remMins) + ' Minutes Remaining!</div>' +
-                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Return deadline is at <strong>' + (b.end_time || 'scheduled time') + '</strong>! ⚠️ <strong>Late return penalty fees will be automatically assessed</strong> if the vehicle is not returned on time.</div>' +
+                '<div class="bkd-alert-title" style="color:#dc2626;">🚨 FINAL WARNING: ' + Math.max(1, remMins) + ' Minutes Remaining!</div>' +
+                '<div class="bkd-alert-desc">Return deadline is at <strong>' + (b.end_time || 'scheduled time') + '</strong>! ⚠️ <strong>Late return penalty fees will be automatically assessed</strong> if the vehicle is not returned on time.</div>' +
+                extendQuickBtn +
               '</div>' +
             '</div>';
         } else if (remHours <= 1.0) {
           // 1 Hour
-          returnWarningBannerHtml = 
-            '<div style="background:rgba(239,68,68,0.08);border:1.5px solid #ef4444;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(239,68,68,0.2);color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
+          returnWarningBannerHtml =
+            '<div class="bkd-alert-banner alert-danger">' +
+              '<div class="bkd-alert-icon-wrap" style="background:rgba(239,68,68,0.2);color:#dc2626;">' +
                 '<i class="fas fa-hourglass-half"></i>' +
               '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:0.95rem;font-weight:800;color:#dc2626;margin-bottom:4px;">🚨 1 Hour Left: Return Vehicle Soon (' + Math.max(1, remMins) + 'm left)</div>' +
-                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Return is due at <strong>' + (b.end_time || 'scheduled time') + '</strong>. Please head to the drop-off location. ⚠️ <strong>Late returns are subject to hourly penalty fees!</strong></div>' +
+                '<div class="bkd-alert-title" style="color:#dc2626;">🚨 1 Hour Left: Return Vehicle Soon (' + Math.max(1, remMins) + 'm left)</div>' +
+                '<div class="bkd-alert-desc">Return is due at <strong>' + (b.end_time || 'scheduled time') + '</strong>. Please head to the drop-off location. ⚠️ <strong>Late returns are subject to hourly penalty fees!</strong></div>' +
+                extendQuickBtn +
               '</div>' +
             '</div>';
         } else if (remHours <= 5.0) {
           // 5 Hours
-          returnWarningBannerHtml = 
-            '<div style="background:rgba(249,115,22,0.08);border:1.5px solid #f97316;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(249,115,22,0.2);color:#ea580c;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
-                '<i class="fas fa-exclamation-triangle"></i>' +
+          returnWarningBannerHtml =
+            '<div class="bkd-alert-banner alert-warning">' +
+              '<div class="bkd-alert-icon-wrap" style="background:rgba(249,115,22,0.2);color:#ea580c;">' +
+                '<i class="fas fa-clock"></i>' +
               '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:0.95rem;font-weight:800;color:#ea580c;margin-bottom:4px;">⚠️ 5 Hours Left — Late Return Penalty Warning!</div>' +
-                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Return is due today at <strong>' + (b.end_time || 'scheduled time') + '</strong> (~' + Math.round(remHours) + ' hours remaining). ⚠️ <strong>IMPORTANT: Late returns incur strict penalty charges!</strong> Please return on or before your deadline or request an extension if available.</div>' +
+                '<div class="bkd-alert-title" style="color:#ea580c;">⚠️ 5 Hours Left — Late Return Penalty Warning!</div>' +
+                '<div class="bkd-alert-desc">Return is due today at <strong>' + (b.end_time || 'scheduled time') + '</strong> (~' + Math.round(remHours) + ' hours remaining). ⚠️ <strong>IMPORTANT: Late returns incur strict penalty charges!</strong> Please return on or before your deadline or request an extension.</div>' +
+                extendQuickBtn +
               '</div>' +
             '</div>';
         } else if (remHours <= 24.0) {
           // 24 Hours
-          returnWarningBannerHtml = 
-            '<div style="background:rgba(245,158,11,0.08);border:1.5px solid #f59e0b;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(245,158,11,0.2);color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
-                '<i class="fas fa-business-time"></i>' +
+          returnWarningBannerHtml =
+            '<div class="bkd-alert-banner alert-warning">' +
+              '<div class="bkd-alert-icon-wrap" style="background:rgba(245,158,11,0.2);color:#d97706;">' +
+                '<i class="fas fa-clock"></i>' +
               '</div>' +
-              '<div style="flex:1;">' +
-                '<div style="font-size:0.95rem;font-weight:800;color:#d97706;margin-bottom:4px;">⏰ 24 Hours Left: Return Tomorrow</div>' +
-                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Your vehicle return is scheduled for tomorrow at <strong>' + (b.end_time || 'scheduled time') + '</strong>. Please ensure the vehicle is clean and fuel level matches pickup.</div>' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">' +
+                  '<div class="bkd-alert-title" style="color:#d97706;margin:0;">⏰ 24 Hours Left: Return Scheduled for Tomorrow</div>' +
+                  '<span style="font-size:0.68rem;font-weight:800;color:#d97706;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:20px;">DUE AT ' + (b.end_time || '23:44') + '</span>' +
+                '</div>' +
+                '<div class="bkd-alert-desc">Your vehicle return is scheduled for tomorrow at <strong>' + (b.end_time || 'scheduled time') + '</strong>. Please ensure the vehicle is clean and fuel level matches pickup to ensure a quick deposit sign-off.</div>' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+                  '<span class="bkd-meta-tag" style="background:rgba(245,158,11,0.08);color:#d97706;border-color:rgba(245,158,11,0.25);font-size:0.72rem;"><i class="fas fa-gas-pump"></i> Fuel Match</span>' +
+                  '<span class="bkd-meta-tag" style="background:rgba(245,158,11,0.08);color:#d97706;border-color:rgba(245,158,11,0.25);font-size:0.72rem;"><i class="fas fa-sparkles"></i> Clean Return</span>' +
+                  extendQuickBtn +
+                '</div>' +
               '</div>' +
             '</div>';
         } else if (remHours <= 72.0 && totalDurationDays > 3) {
           // 3 Days (only if duration > 3 days)
-          returnWarningBannerHtml = 
-            '<div style="background:rgba(59,130,246,0.08);border:1.5px solid #3b82f6;border-radius:14px;padding:16px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">' +
-              '<div style="width:40px;height:40px;border-radius:50%;background:rgba(59,130,246,0.2);color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">' +
-                '<i class="fas fa-calendar-day"></i>' +
+          returnWarningBannerHtml =
+            '<div class="bkd-alert-banner alert-info">' +
+              '<div class="bkd-alert-icon-wrap" style="background:rgba(59,130,246,0.2);color:#2563eb;">' +
+                '<i class="fas fa-calendar-alt"></i>' +
               '</div>' +
               '<div style="flex:1;">' +
-                '<div style="font-size:0.95rem;font-weight:800;color:#2563eb;margin-bottom:4px;">🕒 3 Days Remaining: Vehicle Return Reminder</div>' +
-                '<div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.4;">Vehicle return is scheduled on <strong>' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '') + '</strong>. Need more time? You may request a rental extension under My Bookings.</div>' +
+                '<div class="bkd-alert-title" style="color:#2563eb;">🕒 3 Days Remaining: Vehicle Return Reminder</div>' +
+                '<div class="bkd-alert-desc">Vehicle return is scheduled on <strong>' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '') + '</strong>. Need more time? You may request a rental extension under My Bookings.</div>' +
+                extendQuickBtn +
               '</div>' +
             '</div>';
         }
@@ -6562,242 +6624,306 @@ function renderBookingDetail(b) {
     }
   }
 
-  var sColor = statusColors[b.status] || '#a1a1aa';
-  var pColor = payColors[b.payment_status] || '#f87171';
-
-  // License section
+  // Driver License Section
   var licenseHtml = '';
   if (b.license_number || b.license_full_name || b.date_of_birth || b.license_expiry) {
     var frontBtn = b.license_front_url
-      ? '<a href="' + b.license_front_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Front Image</a>'
-      : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Front Image</div>';
+      ? '<a href="' + b.license_front_url + '" target="_blank" class="bkd-media-btn"><i class="fas fa-id-card"></i> View Front License</a>'
+      : '<div class="bkd-media-btn" style="opacity:0.5;pointer-events:none;color:var(--text-muted);border-color:var(--border);background:var(--bg-input);"><i class="fas fa-id-card"></i> Front License (None)</div>';
     var backBtn = b.license_back_url
-      ? '<a href="' + b.license_back_url + '" target="_blank" style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-secondary);text-decoration:none;display:block;">Back Image</a>'
-      : '<div style="flex:1;padding:12px;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;color:var(--text-muted);">Back Image</div>';
+      ? '<a href="' + b.license_back_url + '" target="_blank" class="bkd-media-btn"><i class="fas fa-id-card-clip"></i> View Back License</a>'
+      : '<div class="bkd-media-btn" style="opacity:0.5;pointer-events:none;color:var(--text-muted);border-color:var(--border);background:var(--bg-input);"><i class="fas fa-id-card-clip"></i> Back License (None)</div>';
+
     licenseHtml =
-      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;overflow-wrap:anywhere;word-break:break-word;min-width:0;">' +
-        '<h4 style="font-weight:700;font-size:1rem;color:var(--primary);margin-bottom:12px;">Driver\'s License Details</h4>' +
-        (b.license_full_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;overflow-wrap:anywhere;word-break:break-word;">Full Name: <strong>' + b.license_full_name + '</strong></p>' : '') +
-        (b.date_of_birth ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;">DOB: ' + b.date_of_birth + '</p>' : '') +
-        (b.license_number ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:6px;overflow-wrap:anywhere;word-break:break-word;">License #: ' + b.license_number + '</p>' : '') +
-        (b.license_expiry ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:12px;">Expiry: ' + b.license_expiry + '</p>' : '') +
-        '<div style="display:flex;gap:10px;">' + frontBtn + backBtn + '</div>' +
+      '<div class="bkd-section-card">' +
+        '<div class="bkd-section-header">' +
+          '<h4 class="bkd-section-title"><i class="fas fa-id-card" style="color:var(--primary);"></i> Driver\'s License Details</h4>' +
+          '<span style="font-size:0.7rem;font-weight:800;color:#10b981;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);padding:3px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;">' +
+            '<i class="fas fa-shield-alt"></i> VERIFIED' +
+          '</span>' +
+        '</div>' +
+        '<div class="bkd-info-2col">' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">Renter Full Name</div>' +
+            '<div class="bkd-field-val">' + escapeHtml(b.license_full_name || currentUser.fullName || '-') + '</div>' +
+          '</div>' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">Driver\'s License Number</div>' +
+            '<div class="bkd-field-val" style="font-family:monospace;letter-spacing:0.5px;">' + escapeHtml(b.license_number || 'N/A') + '</div>' +
+          '</div>' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">Date of Birth</div>' +
+            '<div class="bkd-field-val">' + (b.date_of_birth ? _fmtDate(b.date_of_birth) : 'N/A') + '</div>' +
+          '</div>' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">License Expiration Date</div>' +
+            '<div class="bkd-field-val">' + (b.license_expiry ? _fmtDate(b.license_expiry) : 'N/A') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:12px;margin-top:12px;">' + frontBtn + backBtn + '</div>' +
       '</div>';
   }
 
-  // Emergency contact section
+  // Emergency Contact Section
   var emergencyHtml = '';
   if (b.emergency_contact_name || b.emergency_contact_phone) {
     emergencyHtml =
-      '<div style="margin-bottom:16px;overflow-wrap:anywhere;word-break:break-word;min-width:0;">' +
-        '<h4 style="font-weight:700;font-size:1rem;color:#1a1a1a;margin-bottom:10px;">Emergency Contact</h4>' +
-        (b.emergency_contact_name ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word;">Name: ' + b.emergency_contact_name + '</p>' : '') +
-        (b.emergency_contact_phone ? '<p style="font-size:0.875rem;color:#1a1a1a;margin-bottom:4px;overflow-wrap:anywhere;word-break:break-word;">Phone: ' + b.emergency_contact_phone + '</p>' : '') +
-        (b.emergency_contact_relationship ? '<p style="font-size:0.875rem;color:#1a1a1a;overflow-wrap:anywhere;word-break:break-word;">Rel: ' + b.emergency_contact_relationship + '</p>' : '') +
+      '<div class="bkd-section-card">' +
+        '<div class="bkd-section-header">' +
+          '<h4 class="bkd-section-title"><i class="fas fa-phone-alt" style="color:#0ea5e9;"></i> Emergency Contact</h4>' +
+          '<span class="bkd-meta-tag"><i class="fas fa-user-shield" style="color:#0ea5e9;"></i> Verified Contact</span>' +
+        '</div>' +
+        '<div class="bkd-info-2col" style="margin-bottom:0;">' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">Contact Person</div>' +
+            '<div class="bkd-field-val">' + escapeHtml(b.emergency_contact_name || '-') + '</div>' +
+          '</div>' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">Phone Number</div>' +
+            '<div class="bkd-field-val">' +
+              (b.emergency_contact_phone ? '<a href="tel:' + escapeHtml(b.emergency_contact_phone) + '" style="color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-phone-volume" style="font-size:0.75rem;"></i> ' + escapeHtml(b.emergency_contact_phone) + '</a>' : '-') +
+            '</div>' +
+          '</div>' +
+          '<div class="bkd-info-field">' +
+            '<div class="bkd-field-lbl">Relationship</div>' +
+            '<div class="bkd-field-val">' + escapeHtml(b.emergency_contact_relationship || 'Contact') + '</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
   }
 
-  // Inspections section - no button for customers, admin-only action
-  var inspectBtn = '';
-
-  // Primary action button - customer-relevant only
+  // Primary Action Button
   var primaryAction = '';
-  var canExtend = (b.status === 'Picked Up' || b.status === 'Ongoing' || b.status === 'Confirmed' || b.status === 'Approved');
   var isCashType = (b.payment_type || '').toLowerCase().indexOf('cash') !== -1;
   var payNowAmt = isCashType ? (parseFloat(b.total_price) || 0) * 0.20 : (parseFloat(b.total_price) || 0);
   var payNowLabel = isCashType ? 'Pay 20% Deposit (' + formatPHP(payNowAmt) + ')' : 'Pay Now (' + formatPHP(payNowAmt) + ')';
   if (canPayNow) {
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 14px rgba(245,158,11,0.35);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> ' + payNowLabel + '</button>';
+    primaryAction = '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 14px rgba(245,158,11,0.35);" onclick="openPayNowFromDetail(' + b.id + ')"><i class="fas fa-credit-card" style="margin-right:6px;"></i> ' + payNowLabel + '</button>';
   }
   if (canPayBalance) {
-    primaryAction += '<button class="btn-primary" style="margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
+    primaryAction += '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;" onclick="openPayBalanceScreen(' + b.id + ',' + b.balance_amount + ')"><i class="fas fa-money-bill" style="margin-right:6px;"></i> Pay Balance (' + formatPHP(b.balance_amount) + ')</button>';
   }
-  var vehicleName = ((b.brand || '') + ' ' + (b.model || '')).trim();
-  var plateInfo = b.plate_number ? ' (' + b.plate_number + ')' : '';
 
   if (!canPayNow && !canPayBalance && canReview) {
     var vNameEsc = escapeHtml(vehicleName).replace(/'/g, "\\'");
-    primaryAction = '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' }, false)"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
+    primaryAction = '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;" onclick="openMandatoryReviewModal({ id: ' + b.id + ', vehicle_id: ' + b.vehicle_id + ', vehicle_name: \'' + vNameEsc + '\', start_date: \'' + (b.start_date || '') + '\', end_date: \'' + (b.end_date || '') + '\' }, false)"><i class="fas fa-star" style="margin-right:6px;"></i> Rate Rental & Leave Feedback</button>';
   }
   if (canExtend) {
-    primaryAction += '<button class="btn-primary" style="margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
-      '<i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Extend Booking</button>';
+    primaryAction += '<button class="btn-primary" style="width:100%;padding:14px;font-size:0.92rem;margin-bottom:12px;background:linear-gradient(135deg,#00b14f,#059669);" onclick="window._openedExtendFromDetail=true;openExtendBooking(' + b.id + ',\'' + (b.end_date||'').split('T')[0] + '\',\'' + (b.daily_rate||0) + '\')">' +
+      '<i class="fas fa-calendar-plus" style="margin-right:6px;"></i> Extend Booking Schedule</button>';
   }
 
-  // Secondary action buttons
-  var secondaryActions = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">';
-  secondaryActions += '<button class="btn-outline" onclick="viewBookingReceipt(' + b.id + ')"><i class="fas fa-receipt" style="margin-right:5px;"></i>View Receipt</button>';
-  secondaryActions += '<button class="btn-outline" onclick="downloadReceipt(' + b.id + ')"><i class="fas fa-file-pdf" style="margin-right:5px;"></i>Download PDF</button>';
-  secondaryActions += '</div>';
-  if (canCancel || b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') {
-    secondaryActions += '<div style="display:grid;grid-template-columns:' + (canCancel && (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') ? '1fr 1fr' : '1fr') + ';gap:10px;margin-bottom:12px;">';
-    if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') secondaryActions += '<button class="btn-secondary" style="width:100%;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit"></i> Modify Dates</button>';
-    if (canCancel) secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);width:100%;" onclick="promptCancelBooking(' + b.id + ')">Cancel Booking</button>';
-    secondaryActions += '</div>';
+  // Secondary Action Buttons
+  var secondaryActions = '<div style="display:grid;grid-template-columns:' + (canCancel || (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') ? '1fr 1fr' : '1fr') + ';gap:10px;margin-bottom:12px;">';
+  if (b.status === 'Pending' || b.status === 'Confirmed' || b.status === 'Approved') {
+    secondaryActions += '<button class="btn-secondary" style="width:100%;padding:12px;" onclick="openModifyBooking(' + b.id + ',\'' + b.start_date + '\',\'' + b.end_date + '\',' + (b.amount_paid || 0) + ')"><i class="fas fa-edit" style="margin-right:5px;"></i> Modify Dates</button>';
   }
+  if (canCancel) {
+    secondaryActions += '<button class="btn-outline" style="color:var(--danger);border-color:var(--danger);width:100%;padding:12px;" onclick="promptCancelBooking(' + b.id + ')"><i class="fas fa-times-circle" style="margin-right:5px;"></i> Cancel Booking</button>';
+  }
+  secondaryActions += '</div>';
 
   if (b.status === 'Completed') {
-    secondaryActions += '<button class="btn-outline" style="width:100%;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openCompanyReviews()"><i class="fas fa-star" style="color:#f59e0b;"></i> View All Company Reviews</button>';
+    secondaryActions += '<button class="btn-outline" style="width:100%;margin-bottom:12px;padding:12px;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="openCompanyReviews()"><i class="fas fa-star" style="color:#f59e0b;"></i> View All Company Reviews</button>';
   }
 
+  // Trip Itinerary Extra Details (destination, purpose, driver info)
+  var extraTripDetailsHtml = '';
+  var tripExtras = [];
+  if (b.destination) {
+    tripExtras.push('<div class="bkd-meta-tag"><i class="fas fa-map-pin" style="color:var(--primary);"></i> Destination: <strong>' + escapeHtml(b.destination) + '</strong></div>');
+  }
+  if (b.rental_purpose) {
+    tripExtras.push('<div class="bkd-meta-tag"><i class="fas fa-compass" style="color:var(--primary);"></i> Purpose: ' + escapeHtml(b.rental_purpose) + '</div>');
+  }
+  if (b.rental_type === 'With Driver' && (parseFloat(b.driver_fee || 0) > 0 || parseFloat(b.driver_ot_hours || 0) > 0)) {
+    var drvStr = (parseFloat(b.driver_fee || 0) > 0 ? 'Base: ' + formatPHP(b.driver_fee) : '') +
+      (parseFloat(b.driver_ot_hours || 0) > 0 ? ' | OT (' + b.driver_ot_hours + 'h): ' + formatPHP(b.driver_ot_amount || (b.driver_ot_hours * (parseFloat(b.driver_ot_rate) || 95))) : '');
+    tripExtras.push('<div class="bkd-meta-tag"><i class="fas fa-user-tie" style="color:var(--primary);"></i> Driver Wages: ' + drvStr + '</div>');
+  }
+  if (tripExtras.length > 0) {
+    extraTripDetailsHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--border);">' + tripExtras.join('') + '</div>';
+  }
+
+  // Reference number row in receipt card
+  var refRow = b.reference_number
+    ? '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;">' +
+        '<span style="color:var(--text-muted);font-weight:700;text-transform:uppercase;font-size:0.65rem;">Payment Reference No.</span>' +
+        '<strong style="font-family:monospace;color:var(--text-primary);letter-spacing:0.5px;background:var(--bg-input);padding:3px 8px;border-radius:6px;border:1px solid var(--border);">' + escapeHtml(b.reference_number) + '</strong>' +
+      '</div>'
+    : '';
+
+  // Render Full Template
   el.innerHTML =
     '<div class="page-header">' +
-      '<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')"><i class="fas fa-times"></i></button>' +
-      '<h2 style="text-align:center;flex:1;">Booking Details</h2>' +
+      '<button class="back-btn" onclick="closeOverlay(\'page-booking-detail\')" title="Back"><i class="fas fa-arrow-left"></i></button>' +
+      '<h2 style="text-align:center;flex:1;font-weight:900;font-size:1.1rem;margin:0;color:var(--text-primary);">Booking Details</h2>' +
+      '<button type="button" class="back-btn" onclick="showOverlay(\'page-livechat\')" title="Support Live Chat" style="color:var(--primary);"><i class="fas fa-comments"></i></button>' +
     '</div>' +
-    '<div class="scroll-content" style="padding:20px;padding-bottom:40px;">' +
+    '<div class="scroll-content">' +
 
-      // Title
-      '<h2 style="font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-bottom:20px;">Booking Details #' + b.id + '</h2>' +
+      // 1. Luxury Hero Vehicle & Booking Header Card
+      '<div class="bkd-hero-card">' +
+        '<div class="bkd-hero-top">' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '<span class="bkd-ref-capsule"><i class="fas fa-receipt"></i> BOOKING #' + b.id + '</span>' +
+            (b.created_at ? '<span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;"><i class="fas fa-calendar-alt" style="margin-right:4px;"></i>' + formatBookingDate(b.created_at) + '</span>' : '') +
+          '</div>' +
+          '<div class="bkd-status-pills">' +
+            '<span class="bkd-pill" style="background:' + sBg + ';color:' + sColor + ';border:1px solid ' + sBorder + ';">' +
+              '<span class="active-pulse-dot" style="background:' + sColor + ';box-shadow:0 0 6px ' + sColor + ';"></span> ' +
+              escapeHtml(b.status.toUpperCase()) +
+            '</span>' +
+            '<span class="bkd-pill" style="background:' + pBg + ';color:' + pColor + ';border:1px solid ' + pBorder + ';">' +
+              '<i class="fas fa-credit-card" style="font-size:0.7rem;"></i> ' +
+              escapeHtml(b.payment_status || 'Unpaid') +
+            '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="bkd-hero-body">' +
+          '<div class="bkd-veh-preview">' +
+            '<div class="bkd-plate-badge"><i class="fas fa-car-side" style="color:var(--primary);margin-right:5px;"></i> ' + escapeHtml(b.plate_number || 'AUTORIDE') + '</div>' +
+            imgHtml +
+          '</div>' +
+          '<div class="bkd-veh-details">' +
+            '<h3 class="bkd-veh-title">' + escapeHtml(vehicleName) + '</h3>' +
+            '<div class="bkd-veh-meta-tags">' +
+              (b.color ? '<span class="bkd-meta-tag"><i class="fas fa-palette" style="color:var(--primary);"></i> ' + escapeHtml(b.color) + '</span>' : '') +
+              '<span class="bkd-meta-tag"><i class="fas ' + (b.rental_type === 'With Driver' ? 'fa-user-tie' : 'fa-steering-wheel') + '" style="color:var(--primary);"></i> ' + (b.rental_type === 'With Driver' ? 'With Driver' : 'Self-Drive') + '</span>' +
+              (parseFloat(b.daily_rate || 0) > 0 ? '<span class="bkd-meta-tag"><i class="fas fa-tag" style="color:var(--primary);"></i> ' + formatPHP(b.daily_rate) + ' / day</span>' : '') +
+              '<span class="bkd-meta-tag"><i class="fas fa-user-check" style="color:var(--primary);"></i> ' + escapeHtml(b.license_full_name || currentUser.fullName || 'Renter') + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
 
-      // 30-Minute Payment Deadline Card
+      // 2. 30-Minute Payment Deadline Card (if pending payment)
       payCountdownHtml +
 
-      // Approaching Return Warning Banner with Penalty Warnings
+      // 3. Approaching Return Warning Banner with Penalty Warnings (if active trip)
       returnWarningBannerHtml +
 
-      // Outstanding Penalty & Balance Alert Banner
+      // 4. Outstanding Penalty & Balance Alert Banner (if balance > 0)
       (function() {
         if (isCancelledOrRefunded) return '';
         var bal = parseFloat(b.balance_amount || 0);
         if (bal <= 0) return '';
         var pen = parseFloat(b.penalty_amount || 0);
         var penNote = pen > 0 ? ' (Includes ₱' + pen.toFixed(2) + ' in penalties)' : '';
-        return '<div style="background:rgba(239,68,68,0.08);border:1.5px solid #ef4444;border-radius:14px;padding:14px 16px;margin-bottom:16px;">' +
-          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
-            '<i class="fas fa-exclamation-circle" style="color:#ef4444;font-size:1.3rem;"></i>' +
-            '<div style="flex:1;">' +
-              '<div style="font-size:0.92rem;font-weight:800;color:#dc2626;">Outstanding Balance: ₱' + bal.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) + penNote + '</div>' +
-              '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">Please settle your balance to maintain good account standing and enable new bookings.</div>' +
-            '</div>' +
+        return '<div class="bkd-alert-banner alert-danger">' +
+          '<div class="bkd-alert-icon-wrap" style="background:#ef4444;color:#fff;">' +
+            '<i class="fas fa-exclamation-circle"></i>' +
           '</div>' +
-          '<button class="btn-primary" style="width:100%;margin-top:6px;background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 14px rgba(239,68,68,0.35);font-weight:800;" onclick="openPayBalanceScreen(' + b.id + ',' + bal + ')">' +
-            '<i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Balance via GCash / Maya / Card' +
-          '</button>' +
-          '<div style="font-size:0.7rem;color:var(--text-muted);text-align:center;margin-top:6px;">Or settle via cash over the counter upon vehicle return at our depot.</div>' +
+          '<div style="flex:1;">' +
+            '<div class="bkd-alert-title" style="color:#dc2626;">Outstanding Balance: ₱' + bal.toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) + penNote + '</div>' +
+            '<div class="bkd-alert-desc">Please settle your balance to maintain good account standing and enable new bookings.</div>' +
+            '<button class="btn-primary" style="margin-top:10px;padding:11px 18px;background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 14px rgba(239,68,68,0.35);font-weight:800;" onclick="openPayBalanceScreen(' + b.id + ',' + bal + ')">' +
+              '<i class="fas fa-credit-card" style="margin-right:6px;"></i> Pay Balance via GCash / Maya / Card' +
+            '</button>' +
+          '</div>' +
         '</div>';
       })() +
 
-      // Info grid: customer / vehicle / rental period / destination / purpose
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;margin-bottom:16px;">' +
-        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Customer</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);overflow-wrap:anywhere;word-break:break-word;">' + (b.license_full_name || currentUser.fullName || '-') + '</div>' +
+      // 5. Trip Schedule & Route Timeline Card
+      '<div class="bkd-section-card">' +
+        '<div class="bkd-section-header">' +
+          '<h3 class="bkd-section-title"><i class="fas fa-route" style="color:var(--primary);"></i> Rental Itinerary &amp; Schedule</h3>' +
+          '<span class="bkd-meta-tag"><i class="fas fa-calendar-alt" style="color:var(--primary);"></i> ' + durationLabel + '</span>' +
         '</div>' +
-        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Vehicle</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);overflow-wrap:anywhere;word-break:break-word;">' + vehicleName + plateInfo + '</div>' +
-        '</div>' +
-        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Period</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);">' + formatBookingDate(b.start_date) + ' ' + (b.start_time || '06:00') + ' to ' + formatBookingDate(b.end_date) + ' ' + (b.end_time || '06:00') + '</div>' +
-        '</div>' +
-        (b.destination ? 
-        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Destination</div>' +
-          '<div style="font-size:0.9rem;font-weight:700;color:var(--primary);overflow-wrap:anywhere;word-break:break-word;"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>' + b.destination + '</div>' +
-        '</div>' : '') +
-        (b.rental_purpose ? 
-        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Purpose</div>' +
-          '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);overflow-wrap:anywhere;word-break:break-word;">' + b.rental_purpose + '</div>' +
-        '</div>' : '') +
-        '<div style="min-width:0;overflow-wrap:anywhere;word-break:break-word;">' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Rental Service</div>' +
-          '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + (b.rental_type === 'With Driver' ? '<i class="fas fa-user-tie" style="color:var(--primary);margin-right:4px;"></i>With Driver' : 'Self-Drive') + '</div>' +
-        '</div>' +
-        (b.rental_type === 'With Driver' && (parseFloat(b.driver_fee || 0) > 0 || parseFloat(b.driver_ot_hours || 0) > 0) ? 
-        '<div>' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Driver Wage & OT</div>' +
-          '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + 
-            (parseFloat(b.driver_fee || 0) > 0 ? 'Base: ' + formatPHP(b.driver_fee) : '') + 
-            (parseFloat(b.driver_ot_hours || 0) > 0 ? ' | OT (' + b.driver_ot_hours + 'h): ' + formatPHP(b.driver_ot_amount || (b.driver_ot_hours * (parseFloat(b.driver_ot_rate) || 95))) + (b.driver_ot_collection_method === 'direct_cash' ? ' (Cash to Driver)' : ' (Charged)') : '') + 
+        '<div class="bkd-schedule-timeline">' +
+          '<div class="bkd-node">' +
+            '<div class="bkd-node-icon" style="background:rgba(14,165,233,0.12);color:#0ea5e9;">' +
+              '<i class="fas fa-key"></i>' +
+            '</div>' +
+            '<div>' +
+              '<div class="bkd-node-kicker" style="color:#0ea5e9;">PICK-UP HANDOVER</div>' +
+              '<div class="bkd-node-date">' + formatBookingDate(b.start_date) + ' • ' + (b.start_time ? String(b.start_time).substring(0,5) : '06:00') + '</div>' +
+              '<div class="bkd-node-sub"><i class="fas fa-map-marker-alt" style="color:#0ea5e9;"></i> ' + escapeHtml(b.pickup_location || 'Branch Depot Pick-up') + '</div>' +
+            '</div>' +
           '</div>' +
-        '</div>' : '') +
-      '</div>' +
-
-      // Status grid: payment status / payment method / total price / booking status
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:12px;margin-bottom:16px;">' +
-        '<div>' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Payment Status</div>' +
-          '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + pColor + ';color:#fff;">' + (b.payment_status || 'Unpaid') + '</span>' +
-        '</div>' +
-        '<div>' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Payment Method</div>' +
-          '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + (b.payment_method || (b.payment_type ? b.payment_type : 'N/A')) + '</div>' +
-        '</div>' +
-        (b.discount_amount && parseFloat(b.discount_amount) > 0 ? 
-        '<div>' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Discount Applied</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--success);">-₱' + (parseFloat(b.discount_amount) || 0).toFixed(2) + '</div>' +
-        '</div>' : '') +
-        '<div>' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Total Price</div>' +
-          '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);">₱' + (parseFloat(b.total_price) || 0).toFixed(2) + '</div>' +
-        '</div>' +
-        '<div>' +
-          '<div style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Booking Status</div>' +
-          '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:' + sColor + ';color:#fff;">' + b.status.toUpperCase() + '</span>' +
-        '</div>' +
-      '</div>' +
-
-      // Payment Settlement & Official Receipt Record
-      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:20px;">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">' +
-          '<span style="font-size:0.7rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;"><i class="fas fa-receipt" style="color:var(--primary);margin-right:5px;"></i>Official Receipt #' + String(b.id).padStart(6, '0') + '</span>' +
-          '<span style="font-size:0.72rem;color:var(--text-secondary);font-weight:600;">' + (b.created_at ? new Date(b.created_at).toLocaleString('en-PH', {timeZone:'Asia/Manila', month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'}) : formatBookingDate(b.start_date)) + '</span>' +
-        '</div>' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
-          '<div>' +
-            '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Amount Paid:</span>' +
-            '<strong style="font-size:0.9rem;color:#16a34a;">' + formatPHP(b.amount_paid || 0) + '</strong>' +
+          '<div class="bkd-connector">' +
+            '<div class="bkd-duration-badge"><i class="fas fa-clock" style="margin-right:4px;"></i>' + durationLabel + '</div>' +
+            '<div class="bkd-connector-arrow"><i class="fas fa-arrow-right"></i></div>' +
           '</div>' +
-          (b.payment_fee && parseFloat(b.payment_fee) > 0 ? 
-          '<div>' +
-            '<span style="font-size:0.65rem;color:#d97706;font-weight:700;text-transform:uppercase;margin-right:6px;">' + (b.payment_method || 'Terminal') + ' Fee (' + (b.payment_fee_percent || 3.5) + '%):</span>' +
-            '<strong style="font-size:0.9rem;color:#d97706;">+' + formatPHP(b.payment_fee) + '</strong>' +
-          '</div>' : '') +
-          '<div>' +
-            '<span style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-right:6px;">Balance Due:</span>' +
-            '<strong style="font-size:0.9rem;color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#16a34a')) + ';">' + 
-              (isCancelledOrRefunded ? '₱0.00 (Cancelled)' : (parseFloat(b.balance_amount || 0) > 0 ? formatPHP(b.balance_amount) : '₱0.00 (Settled)')) + 
-            '</strong>' +
+          '<div class="bkd-node">' +
+            '<div class="bkd-node-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">' +
+              '<i class="fas fa-flag-checkered"></i>' +
+            '</div>' +
+            '<div>' +
+              '<div class="bkd-node-kicker" style="color:#10b981;">VEHICLE RETURN</div>' +
+              '<div class="bkd-node-date">' + formatBookingDate(b.end_date) + ' • ' + (b.end_time ? String(b.end_time).substring(0,5) : '06:00') + '</div>' +
+              '<div class="bkd-node-sub"><i class="fas fa-gas-pump" style="color:#10b981;"></i> Fuel check &amp; key drop</div>' +
+            '</div>' +
           '</div>' +
         '</div>' +
-        (b.reference_number ? '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;"><span style="color:var(--text-muted);font-weight:700;text-transform:uppercase;font-size:0.65rem;">Reference No.</span><strong style="font-family:monospace;color:var(--text-primary);">' + b.reference_number + '</strong></div>' : '') +
+        extraTripDetailsHtml +
       '</div>' +
 
-      // Divider
-      '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
+      // 6. Payment & Official Receipt Card
+      '<div class="bkd-section-card">' +
+        '<div class="bkd-section-header">' +
+          '<h3 class="bkd-section-title"><i class="fas fa-receipt" style="color:var(--primary);"></i> Official Receipt &amp; Settlement</h3>' +
+          '<span class="bkd-ref-capsule"><i class="fas fa-barcode"></i> OFFICIAL RECEIPT #' + String(b.id).padStart(6, '0') + '</span>' +
+        '</div>' +
+        '<div class="bkd-finance-grid">' +
+          '<div class="bkd-finance-card">' +
+            '<div class="bkd-finance-lbl">Total Price</div>' +
+            '<div class="bkd-finance-val">₱' + (parseFloat(b.total_price) || 0).toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>' +
+            '<div class="bkd-finance-sub">Agreed rental total</div>' +
+          '</div>' +
+          '<div class="bkd-finance-card">' +
+            '<div class="bkd-finance-lbl">Payment Status</div>' +
+            '<div class="bkd-finance-val" style="color:' + pColor + ';">' + escapeHtml(b.payment_status || 'Unpaid') + '</div>' +
+            '<div class="bkd-finance-sub">via ' + escapeHtml(b.payment_method || (b.payment_type ? b.payment_type : 'N/A')) + '</div>' +
+          '</div>' +
+          '<div class="bkd-finance-card">' +
+            '<div class="bkd-finance-lbl">Amount Paid</div>' +
+            '<div class="bkd-finance-val" style="color:#10b981;">₱' + (parseFloat(b.amount_paid) || 0).toLocaleString('en-PH', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>' +
+            '<div class="bkd-finance-sub">' + (parseFloat(b.amount_paid || 0) > 0 ? 'Verified payment' : 'No payment yet') + '</div>' +
+          '</div>' +
+          '<div class="bkd-finance-card">' +
+            '<div class="bkd-finance-lbl">Balance Due</div>' +
+            '<div class="bkd-finance-val" style="color:' + (isCancelledOrRefunded ? 'var(--text-muted)' : (parseFloat(b.balance_amount || 0) > 0 ? '#ef4444' : '#10b981')) + ';">' +
+              (isCancelledOrRefunded ? '₱0.00' : (parseFloat(b.balance_amount || 0) > 0 ? formatPHP(b.balance_amount) : '₱0.00')) +
+            '</div>' +
+            '<div class="bkd-finance-sub">' +
+              (isCancelledOrRefunded ? 'Cancelled' : (parseFloat(b.balance_amount || 0) > 0 ? 'Settlement required' : 'Fully settled ✓')) +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        refRow +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;">' +
+          '<button type="button" class="btn-outline" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;font-weight:800;" onclick="viewBookingReceipt(' + b.id + ')">' +
+            '<i class="fas fa-receipt" style="color:var(--primary);"></i> View Digital Receipt' +
+          '</button>' +
+          '<button type="button" class="btn-outline" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;font-weight:800;" onclick="downloadReceipt(' + b.id + ')">' +
+            '<i class="fas fa-file-pdf" style="color:#ef4444;"></i> Download PDF Receipt' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
 
-      // Conflict affected card placeholder
+      // 7. Conflict affected card placeholder
       (b.is_conflict_affected ? '<div id="conflict-resolution-card-' + b.id + '" style="margin-bottom:20px;"></div>' : '') +
 
-      // Penalty charges placeholder (loaded async)
-      '<div id="webPenaltyCard-' + b.id + '" style="display:none;background:rgba(239,68,68,0.04);border:1.5px solid rgba(239,68,68,0.18);border-radius:14px;padding:18px;margin-bottom:18px;">' +
+      // 8. Penalty charges placeholder (loaded async)
+      '<div id="webPenaltyCard-' + b.id + '" style="display:none;background:rgba(239,68,68,0.04);border:1.5px solid rgba(239,68,68,0.18);border-radius:18px;padding:20px;margin-bottom:20px;">' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
-          '<i class="fas fa-gavel" style="color:#ef4444;font-size:1rem;"></i>' +
-          '<h4 style="font-weight:700;font-size:0.95rem;color:#dc2626;margin:0;">Additional Charges & Penalties</h4>' +
+          '<i class="fas fa-gavel" style="color:#ef4444;font-size:1.1rem;"></i>' +
+          '<h4 style="font-weight:800;font-size:1rem;color:#dc2626;margin:0;">Additional Charges &amp; Penalties</h4>' +
         '</div>' +
         '<div id="webPenaltyList-' + b.id + '"></div>' +
       '</div>' +
 
-      // Driver's License Details
+      // 9. Driver\'s License Details Card
       licenseHtml +
 
-      // Emergency Contact
+      // 10. Emergency Contact Card
       emergencyHtml +
 
-      // Divider
-      (emergencyHtml ? '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' : '') +
+      // 11. Cancellation Reason (if present)
+      (b.cancellation_reason ? '<div class="bkd-alert-banner alert-danger"><div class="bkd-alert-icon-wrap" style="background:#ef4444;color:#fff;"><i class="fas fa-info-circle"></i></div><div style="flex:1;"><div class="bkd-alert-title" style="color:#dc2626;">Cancellation Reason</div><div class="bkd-alert-desc">' + escapeHtml(b.cancellation_reason) + '</div></div></div>' : '') +
 
-      // Divider before actions
-      '<div style="border-top:1px solid var(--border);margin-bottom:20px;"></div>' +
-
-      // Cancellation reason
-      (b.cancellation_reason ? '<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:12px;padding:14px;margin-bottom:16px;"><p style="font-size:0.875rem;color:var(--danger);"><strong>Cancellation Reason:</strong> ' + b.cancellation_reason + '</p></div>' : '') +
-
-      // Refund status card (shown for cancelled bookings with payment)
+      // 12. Refund status card (shown for cancelled bookings with payment)
       (function() {
         var ps = b.payment_status;
         if (ps !== 'Refund Pending' && ps !== 'Refunded') return '';
@@ -6811,35 +6937,35 @@ function renderBookingDetail(b) {
         var totalPaid = parseFloat(b.amount_paid || b.total_price || 0);
         var nonRefundable = totalPaid - refundAmt;
 
-        var html = '<div style="background:' + bgColor + ';border:1.5px solid ' + borderColor + ';border-radius:14px;padding:16px;margin-bottom:16px;">' +
+        var html = '<div class="bkd-section-card" style="background:' + bgColor + ';border-color:' + borderColor + ';">' +
           '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
             '<i class="fas ' + icon + '" style="font-size:1.2rem;color:' + accentColor + ';"></i>' +
             '<span style="font-size:0.95rem;font-weight:800;color:' + accentColor + ';">' + statusLabel + '</span>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:' + (b.refund_note ? '10px' : '0') + ';">' +
-            '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
-              '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Refund Amount</div>' +
-              '<div style="font-size:1rem;font-weight:800;color:' + accentColor + ';">' + formatPHP(refundAmt > 0 ? refundAmt : totalPaid) + '</div>' +
+            '<div style="background:var(--bg-card);border-radius:12px;padding:12px;border:1px solid var(--border);">' +
+              '<div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Refund Amount</div>' +
+              '<div style="font-size:1.1rem;font-weight:800;color:' + accentColor + ';">' + formatPHP(refundAmt > 0 ? refundAmt : totalPaid) + '</div>' +
             '</div>' +
             (isRefunded && b.refund_method ? (
-              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + (b.refund_channel || b.refund_method) + '</div>' +
+              '<div style="background:var(--bg-card);border-radius:12px;padding:12px;border:1px solid var(--border);">' +
+                '<div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
+                '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + (b.refund_channel || b.refund_method) + '</div>' +
               '</div>'
             ) : (b.refund_channel ? (
-              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + b.refund_channel + '</div>' +
+              '<div style="background:var(--bg-card);border-radius:12px;padding:12px;border:1px solid var(--border);">' +
+                '<div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Sent via</div>' +
+                '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + b.refund_channel + '</div>' +
               '</div>'
             ) : (
-              '<div style="background:var(--bg-card);border-radius:10px;padding:10px;">' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Amount Paid</div>' +
-                '<div style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">' + formatPHP(totalPaid) + '</div>' +
+              '<div style="background:var(--bg-card);border-radius:12px;padding:12px;border:1px solid var(--border);">' +
+                '<div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Amount Paid</div>' +
+                '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);">' + formatPHP(totalPaid) + '</div>' +
               '</div>'
             ))) +
           '</div>' +
           (isRefunded && b.refund_ref ? (
-            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Reference #: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
+            '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px;">Reference #: <strong style="color:var(--text-primary);">' + b.refund_ref + '</strong></div>'
           ) : '') +
           (isRefunded && b.refund_account_name ? (
             '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Sent to: <strong style="color:var(--text-primary);">' + b.refund_account_name + '</strong> (' + (b.refund_account_number || '') + ')</div>'
@@ -6850,7 +6976,7 @@ function renderBookingDetail(b) {
           (isRefunded && b.refund_proof_url ? (
             '<div style="margin-top:10px;">' +
               '<button onclick="_viewRefundProof(\'' + b.refund_proof_url.replace(/'/g, '') + '\')" ' +
-                'style="width:100%;padding:9px;background:rgba(0,177,79,0.1);border:1.5px solid rgba(0,177,79,0.3);border-radius:10px;color:#00B14F;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+                'style="width:100%;padding:10px;background:rgba(0,177,79,0.1);border:1.5px solid rgba(0,177,79,0.3);border-radius:10px;color:#00B14F;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">' +
                 '<i class="fas fa-image"></i> View Transfer Proof' +
               '</button>' +
             '</div>'
@@ -6881,9 +7007,11 @@ function renderBookingDetail(b) {
         return html;
       }()) +
 
-      // Action buttons
-      primaryAction +
-      secondaryActions +
+      // 13. Primary & Secondary Actions Bar
+      '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">' +
+        primaryAction +
+        secondaryActions +
+      '</div>' +
 
     '</div>';
 
